@@ -13,6 +13,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   isMovingUp: boolean = false;
   private invulnerable: boolean = false;
   private invulnerableTimer: number = 0;
+  private exhaustTimer: number = 0;
+  private readonly exhaustInterval: number = 50;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     const key = 'player-ship';
@@ -112,6 +114,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   update(inputManager: InputManager): void {
     if (!this.isAlive) return;
+    const delta = this.scene.game.loop.delta;
 
     if (this.invulnerable) {
       this.invulnerableTimer -= this.scene.game.loop.delta;
@@ -138,6 +141,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.rotation = Phaser.Math.Linear(this.rotation, targetRotation, 0.1);
 
     this.isMovingUp = inputManager.isUp();
+
+    // Engine exhaust effect based on movement
+    this.exhaustTimer -= delta;
+    if (this.exhaustTimer <= 0) {
+      const isMoving = ax !== 0 || ay !== 0;
+      const intensity = isMoving ? 1.0 : 0.3;
+      this.scene.events.emit('player-exhaust', this.x, this.y + 20, intensity);
+      this.exhaustTimer = this.exhaustInterval;
+    }
   }
 
   spawn(x: number, y: number): void {

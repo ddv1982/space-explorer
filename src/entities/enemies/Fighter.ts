@@ -60,7 +60,9 @@ export class Fighter extends EnemyBase {
 
     if (this.bulletGroup && time > this.lastFireTime + this.fireCooldown) {
       this.lastFireTime = time;
-      const bullet = this.bulletGroup.getFirstDead(false) as EnemyBullet | null;
+      const bullet =
+        (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
+        (this.bulletGroup.get(this.x, this.y + 16) as EnemyBullet | null);
       if (bullet) {
         bullet.fire(this.x, this.y + 16);
       }

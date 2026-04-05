@@ -7,6 +7,7 @@ import { Asteroid } from '../entities/Asteroid';
 import { BulletPool } from './BulletPool';
 import { EnemyPool } from './EnemyPool';
 import { EffectsManager } from './EffectsManager';
+import { BomberBomb } from '../entities/BomberBomb';
 
 export class CollisionManager {
   private scene!: Phaser.Scene;
@@ -94,14 +95,13 @@ export class CollisionManager {
     scene.physics.add.overlap(
       enemyPool.getBombGroup(), player,
       (_obj1, _obj2) => {
-        const bomb = _obj1 as Phaser.Physics.Arcade.Sprite;
+        const bomb = _obj1 as BomberBomb;
         if (bomb.active && player.isAlive) {
-          bomb.setActive(false);
-          bomb.setVisible(false);
-          bomb.setVelocity(0, 0);
-          (bomb.body as Phaser.Physics.Arcade.Body).reset(0, 0);
+          const impactX = bomb.x;
+          const impactY = bomb.y;
+          bomb.kill();
           player.takeDamage(2);
-          this.effectsManager.createExplosion(bomb.x, bomb.y, 1.5);
+          this.effectsManager.createExplosion(impactX, impactY, 1.5);
           this.onPlayerHit();
         }
       }

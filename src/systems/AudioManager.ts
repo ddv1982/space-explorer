@@ -120,6 +120,30 @@ export class AudioManager {
     osc.stop(this.ctx!.currentTime + 0.35);
   }
 
+  playPowerUpPickup(): void {
+    if (!this.ensureContext() || !this.masterGain) return;
+
+    // Quick ascending arpeggio
+    const notes = [600, 900, 1200];
+    for (let i = 0; i < notes.length; i++) {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = notes[i];
+
+      const startTime = this.ctx!.currentTime + i * 0.06;
+      gain.gain.setValueAtTime(0.12, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.15);
+    }
+  }
+
   playClick(): void {
     if (!this.ensureContext() || !this.masterGain) return;
 

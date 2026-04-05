@@ -6,9 +6,16 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     const key = 'player-bullet';
     if (!scene.textures.exists(key)) {
       const g = scene.add.graphics();
+      // Core bright bullet
       g.fillStyle(0x00ffff, 1);
-      g.fillRect(0, 0, 4, 12);
-      g.generateTexture(key, 4, 12);
+      g.fillRect(2, 0, 4, 16);
+      // Outer glow
+      g.fillStyle(0x00aaff, 0.6);
+      g.fillRect(0, 2, 8, 12);
+      // Bright tip
+      g.fillStyle(0xffffff, 0.9);
+      g.fillRect(3, 0, 2, 4);
+      g.generateTexture(key, 8, 16);
       g.destroy();
     }
 
@@ -19,6 +26,11 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.setActive(false);
     this.setVisible(false);
     this.setDepth(4);
+
+    // Add glow effect
+    if (this.preFX) {
+      this.preFX.addGlow(0x00ffff, 2, 2, false);
+    }
   }
 
   fire(x: number, y: number): void {

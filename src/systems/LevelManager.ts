@@ -1,4 +1,4 @@
-import { SCROLL_SPEED } from '../utils/constants';
+import { LEVEL_DISTANCE, SCROLL_SPEED } from '../utils/constants';
 import { getLevelConfig, LevelConfig } from '../config/LevelsConfig';
 
 export class LevelManager {
@@ -7,7 +7,7 @@ export class LevelManager {
   currentLevel: number = 1;
   private scrollSpeed: number = SCROLL_SPEED;
   private levelConfig!: LevelConfig;
-  private levelDistance: number = 10000;
+  private levelDistance: number = LEVEL_DISTANCE;
   private bossSpawned: boolean = false;
   private bossDefeated: boolean = false;
 
@@ -39,6 +39,22 @@ export class LevelManager {
   shouldSpawnBoss(): boolean {
     if (!this.levelConfig.hasBoss || this.bossSpawned) return false;
     return this.progress >= this.levelConfig.bossTriggerProgress;
+  }
+
+  getEncounterProgress(): number {
+    const encounterGoal = this.levelConfig.hasBoss
+      ? this.levelConfig.bossTriggerProgress
+      : 1.0;
+
+    if (encounterGoal <= 0) {
+      return 1.0;
+    }
+
+    return Math.min(Math.max(this.progress / encounterGoal, 0), 1);
+  }
+
+  hasBossSpawned(): boolean {
+    return this.bossSpawned;
   }
 
   markBossSpawned(): void {

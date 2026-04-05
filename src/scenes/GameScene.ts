@@ -15,6 +15,7 @@ import { getPlayerState, saveScoreToState, saveCurrentHp } from '../systems/Play
 import { Boss } from '../entities/enemies/Boss';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
+import { PowerUp, PowerUpType } from '../entities/PowerUp';
 
 export class GameScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
@@ -29,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   private levelManager!: LevelManager;
   private effectsManager!: EffectsManager;
   private warpTransition!: WarpTransition;
+  private powerUpGroup!: Phaser.Physics.Arcade.Group;
   private lastFireTime: number = 0;
   private gameOver: boolean = false;
   private boss: Boss | null = null;
@@ -84,15 +86,41 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager();
     this.scoreManager.addScore(state.score);
 
+    // Power-up group
+    this.powerUpGroup = this.physics.add.group({
+      maxSize: 20,
+      classType: PowerUp,
+      runChildUpdate: true,
+    });
+
+    // Power-ups vs Player
+    this.physics.add.overlap(
+      this.powerUpGroup, this.player,
+      (_obj1, _obj2) => {
+        const powerUp = _obj1 as PowerUp;
+        if (powerUp.active && this.player.isAlive) {
+          this.applyPowerUp(powerUp.powerUpType);
+          powerUp.kill();
+        }
+      }
+    );
+
     this.hud = new HUD();
     this.hud.create(this);
+    this.hud.showLevelAnnouncement(levelConfig.name, state.level);
+    this.hud.updateShields(this.player.shields);
 
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
 
-    this.events.on('enemy-death', (score: number) => {
+    // Controls hint overlay (fades out after 5 seconds)
+    this.showControlsHint();
+
+    this.events.on('enemy-death', (score: number, x: number, y: number) => {
       this.scoreManager.addScore(score);
+      this.effectsManager.createScorePopup(x, y, score);
       audioManager.playExplosion(0.5);
+      this.tryDropPowerUp(x, y);
     });
 
     this.events.on('player-death', () => {
@@ -119,11 +147,20 @@ export class GameScene extends Phaser.Scene {
 
     this.events.on('boss-spawn', () => {
       this.levelManager.markBossSpawned();
+      this.hud.showBossWarning();
       this.spawnBoss();
     });
 
     this.events.on('player-hit', () => {
       audioManager.playPlayerHit();
+    });
+
+    this.events.on('player-exhaust', (x: number, y: number, intensity: number) => {
+      this.effectsManager.createEngineExhaust(x, y, intensity);
+    });
+
+    this.events.on('enemy-spawn-warning', (x: number) => {
+      this.effectsManager.createSpawnWarning(x);
     });
 
     this.events.on('boss-death', () => {
@@ -145,6 +182,105 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private showControlsHint(): void {
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.6);
+    bg.fillRoundedRect(cx - 160, cy - 40, 320, 80, 8);
+    bg.setDepth(200).setScrollFactor(0);
+
+    const title = this.add.text(cx, cy - 20, 'WASD / Arrows to Move', {
+      fontSize: '16px',
+      color: '#88ccff',
+      fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+    const fireHint = this.add.text(cx, cy + 10, 'SPACE / Click to Fire', {
+      fontSize: '16px',
+      color: '#88ccff',
+      fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+    // Fade out after 5 seconds
+    this.tweens.add({
+      targets: [bg, title, fireHint],
+      alpha: { from: 1, to: 0 },
+      duration: 1000,
+      delay: 4000,
+      ease: 'Power2',
+      onComplete: () => {
+        bg.destroy();
+        title.destroy();
+        fireHint.destroy();
+      },
+    });
+  }
+
+  private tryDropPowerUp(x: number, y: number): void {
+    // 12% chance to drop a power-up
+    if (Math.random() > 0.12) return;
+
+    const types: PowerUpType[] = ['health', 'shield', 'rapidfire'];
+    const type = types[Math.floor(Math.random() * types.length)];
+
+    const powerUp =
+      (this.powerUpGroup.getFirstDead(false) as PowerUp | null) ??
+      (this.powerUpGroup.get(x, y) as PowerUp | null);
+
+    if (powerUp) {
+      powerUp.spawn(x, y, type);
+    }
+  }
+
+  private applyPowerUp(type: PowerUpType): void {
+    audioManager.playPowerUpPickup();
+
+    switch (type) {
+      case 'health':
+        this.player.hp = Math.min(this.player.hp + 2, this.player.maxHp);
+        this.effectsManager.createSparkBurst(this.player.x, this.player.y);
+        break;
+      case 'shield':
+        this.player.shields += 1;
+        this.effectsManager.createSparkBurst(this.player.x, this.player.y);
+        break;
+      case 'rapidfire':
+        this.player.fireRate = Math.max(40, this.player.fireRate - 20);
+        this.effectsManager.createSparkBurst(this.player.x, this.player.y);
+        break;
+    }
+
+    // Show pickup text
+    const labels: Record<PowerUpType, string> = {
+      health: '+HP',
+      shield: '+SHIELD',
+      rapidfire: 'FIRE RATE UP',
+    };
+    const colors: Record<PowerUpType, string> = {
+      health: '#00ff44',
+      shield: '#4488ff',
+      rapidfire: '#ffcc00',
+    };
+
+    const text = this.add.text(this.player.x, this.player.y - 40, labels[type], {
+      fontSize: '14px',
+      color: colors[type],
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(50);
+
+    this.tweens.add({
+      targets: text,
+      y: this.player.y - 70,
+      alpha: { from: 1, to: 0 },
+      duration: 600,
+      ease: 'Power2',
+      onComplete: () => text.destroy(),
+    });
+  }
+
   update(time: number, delta: number): void {
     if (this.gameOver) return;
 
@@ -155,11 +291,14 @@ export class GameScene extends Phaser.Scene {
       if (time > this.lastFireTime + this.player.fireRate) {
         this.lastFireTime = time;
         this.bulletPool.fire(this.player.x, this.player.y - 20);
+        this.effectsManager.createMuzzleFlash(this.player.x, this.player.y - 24);
         audioManager.playLaser();
       }
     }
 
-    this.waveManager.update(time, delta, this.levelManager.progress);
+    if (!this.levelManager.hasBossSpawned()) {
+      this.waveManager.update(time, delta, this.levelManager.getEncounterProgress());
+    }
 
     const prevComplete = this.levelManager.isComplete();
     this.levelManager.update(delta);
@@ -183,5 +322,6 @@ export class GameScene extends Phaser.Scene {
       this.scoreManager.getScore(),
       this.levelManager.progress
     );
+    this.hud.updateShields(this.player.shields);
   }
 }

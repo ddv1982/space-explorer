@@ -52,6 +52,20 @@ export class EffectsManager {
     g2.generateTexture('particle-spark', 8, 8);
     g2.destroy();
 
+    // Muzzle flash particle
+    const g3 = this.scene.add.graphics();
+    g3.fillStyle(0xffffff, 1);
+    g3.fillCircle(6, 6, 6);
+    g3.generateTexture('particle-muzzle', 12, 12);
+    g3.destroy();
+
+    // Engine exhaust particle
+    const g4 = this.scene.add.graphics();
+    g4.fillStyle(0xffffff, 1);
+    g4.fillCircle(3, 3, 3);
+    g4.generateTexture('particle-exhaust', 6, 6);
+    g4.destroy();
+
     this.particleTextures = true;
   }
 
@@ -99,6 +113,87 @@ export class EffectsManager {
 
     this.scene.time.delayedCall(500, () => {
       particles.destroy();
+    });
+  }
+
+  createMuzzleFlash(x: number, y: number): void {
+    const particles = this.scene.add.particles(x, y, 'particle-muzzle', {
+      speed: { min: 20, max: 80 },
+      angle: { min: 240, max: 300 },
+      scale: { start: 0.6, end: 0 },
+      lifespan: { min: 60, max: 120 },
+      blendMode: Phaser.BlendModes.ADD,
+      quantity: 5,
+      emitting: false,
+      tint: [0x00ffff, 0x88ffff, 0xffffff, 0x44aaff],
+    });
+
+    particles.explode(5);
+    particles.setDepth(6);
+
+    this.scene.time.delayedCall(200, () => {
+      particles.destroy();
+    });
+  }
+
+  createEngineExhaust(x: number, y: number, intensity: number): void {
+    const count = Math.ceil(intensity * 2);
+    const particles = this.scene.add.particles(x, y, 'particle-exhaust', {
+      speed: { min: 30, max: 60 + intensity * 40 },
+      angle: { min: 250, max: 290 },
+      scale: { start: 0.4, end: 0 },
+      lifespan: { min: 80, max: 200 },
+      blendMode: Phaser.BlendModes.ADD,
+      quantity: count,
+      emitting: false,
+      tint: [0x0088ff, 0x00aaff, 0x44ccff, 0xffffff],
+    });
+
+    particles.explode(count);
+    particles.setDepth(4);
+
+    this.scene.time.delayedCall(250, () => {
+      particles.destroy();
+    });
+  }
+
+  createSpawnWarning(x: number): void {
+    // Small downward-pointing triangle at top edge
+    const arrow = this.scene.add.graphics();
+    arrow.setDepth(150);
+    arrow.setScrollFactor(0);
+
+    const ay = 30;
+    arrow.fillStyle(0xff4444, 0.8);
+    arrow.fillTriangle(x - 6, ay - 6, x + 6, ay - 6, x, ay + 6);
+    arrow.fillStyle(0xffffff, 0.5);
+    arrow.fillTriangle(x - 3, ay - 3, x + 3, ay - 3, x, ay + 3);
+
+    // Flash and fade
+    this.scene.tweens.add({
+      targets: arrow,
+      alpha: { from: 1, to: 0 },
+      duration: 600,
+      ease: 'Power2',
+      onComplete: () => arrow.destroy(),
+    });
+  }
+
+  createScorePopup(x: number, y: number, score: number): void {
+    const text = this.scene.add.text(x, y, `+${score}`, {
+      fontSize: '16px',
+      color: '#ffcc00',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(50);
+
+    this.scene.tweens.add({
+      targets: text,
+      y: y - 40,
+      alpha: { from: 1, to: 0 },
+      duration: 800,
+      ease: 'Power2',
+      onComplete: () => text.destroy(),
     });
   }
 }

@@ -6,6 +6,7 @@ import { Swarm } from '../entities/enemies/Swarm';
 import { Gunship } from '../entities/enemies/Gunship';
 import { Boss } from '../entities/enemies/Boss';
 import { EnemyBullet } from '../entities/EnemyBullet';
+import { BomberBomb } from '../entities/BomberBomb';
 
 export class EnemyPool {
   private scene!: Phaser.Scene;
@@ -17,6 +18,15 @@ export class EnemyPool {
   private bossGroup: Phaser.Physics.Arcade.Group | null = null;
   private bombGroup: Phaser.Physics.Arcade.Group | null = null;
   private enemyBulletGroup!: Phaser.Physics.Arcade.Group;
+
+  private acquireFromGroup<T>(group: Phaser.Physics.Arcade.Group, x: number, y: number): T | null {
+    const existing = group.getFirstDead(false) as T | null;
+    if (existing) {
+      return existing;
+    }
+
+    return group.get(x, y) as T | null;
+  }
 
   create(scene: Phaser.Scene): void {
     this.scene = scene;
@@ -75,14 +85,14 @@ export class EnemyPool {
     if (!this.bombGroup) {
       this.bombGroup = this.scene.physics.add.group({
         maxSize: 30,
-        classType: Phaser.Physics.Arcade.Sprite,
-        runChildUpdate: false,
+        classType: BomberBomb,
+        runChildUpdate: true,
       });
     }
   }
 
   spawnScout(x: number, y: number): Scout | null {
-    const scout = this.scoutGroup.getFirstDead(false) as Scout | null;
+    const scout = this.acquireFromGroup<Scout>(this.scoutGroup, x, y);
     if (scout) {
       scout.spawn(x, y);
     }
@@ -90,7 +100,7 @@ export class EnemyPool {
   }
 
   spawnFighter(x: number, y: number): Fighter | null {
-    const fighter = this.fighterGroup.getFirstDead(false) as Fighter | null;
+    const fighter = this.acquireFromGroup<Fighter>(this.fighterGroup, x, y);
     if (fighter) {
       fighter.spawn(x, y);
       fighter.setEnemyBulletGroup(this.enemyBulletGroup);
@@ -100,7 +110,7 @@ export class EnemyPool {
 
   spawnBomber(x: number, y: number): Bomber | null {
     this.ensureBomberGroup();
-    const bomber = this.bomberGroup!.getFirstDead(false) as Bomber | null;
+    const bomber = this.acquireFromGroup<Bomber>(this.bomberGroup!, x, y);
     if (bomber) {
       bomber.spawn(x, y);
       if (this.bombGroup) bomber.setBombGroup(this.bombGroup);
@@ -110,7 +120,7 @@ export class EnemyPool {
 
   spawnSwarm(x: number, y: number): Swarm | null {
     this.ensureSwarmGroup();
-    const swarm = this.swarmGroup!.getFirstDead(false) as Swarm | null;
+    const swarm = this.acquireFromGroup<Swarm>(this.swarmGroup!, x, y);
     if (swarm) {
       swarm.spawn(x, y);
     }
@@ -119,7 +129,7 @@ export class EnemyPool {
 
   spawnGunship(x: number, y: number): Gunship | null {
     this.ensureGunshipGroup();
-    const gunship = this.gunshipGroup!.getFirstDead(false) as Gunship | null;
+    const gunship = this.acquireFromGroup<Gunship>(this.gunshipGroup!, x, y);
     if (gunship) {
       gunship.spawn(x, y);
       gunship.setEnemyBulletGroup(this.enemyBulletGroup);
@@ -135,15 +145,10 @@ export class EnemyPool {
         runChildUpdate: true,
       });
     }
-    const boss = this.bossGroup.getFirstDead(false) as Boss | null;
-    if (!boss) {
-      // If no dead boss, check if any active
-      const activeBoss = this.bossGroup.getChildren().find(c => c.active);
-      if (activeBoss) return null;
-      // Get the first (and only) boss and respawn
-      const existing = this.bossGroup.getFirstAlive() as Boss | null;
-      if (existing) return existing;
-    }
+    const activeBoss = this.bossGroup.getChildren().find(c => c.active) as Boss | undefined;
+    if (activeBoss) return null;
+
+    const boss = this.acquireFromGroup<Boss>(this.bossGroup, x, y);
     if (boss) {
       boss.spawn(x, y);
       boss.setEnemyBulletGroup(this.enemyBulletGroup);
@@ -152,7 +157,7 @@ export class EnemyPool {
   }
 
   fireEnemyBullet(x: number, y: number): EnemyBullet | null {
-    const bullet = this.enemyBulletGroup.getFirstDead(false) as EnemyBullet | null;
+    const bullet = this.acquireFromGroup<EnemyBullet>(this.enemyBulletGroup, x, y);
     if (bullet) {
       bullet.fire(x, y);
     }

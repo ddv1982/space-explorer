@@ -5,6 +5,11 @@ export interface EnemySpawnConfig {
   weight: number;
 }
 
+export interface EncounterSizeConfig {
+  min: number;
+  max: number;
+}
+
 export interface LevelConfig {
   name: string;
   planetName: string;
@@ -14,6 +19,7 @@ export interface LevelConfig {
   nebulaAlpha: number;
   colorGrade: { brightness: number; contrast: number; saturation: number } | null;
   enemies: EnemySpawnConfig[];
+  encounterSize: EncounterSizeConfig;
   spawnRateMultiplier: number;
   levelDistance: number;
   hasBoss: boolean;
@@ -34,8 +40,9 @@ export const LEVELS: LevelConfig[] = [
       { type: 'scout', weight: 80 },
       { type: 'fighter', weight: 20 },
     ],
+    encounterSize: { min: 1, max: 2 },
     spawnRateMultiplier: 1.0,
-    levelDistance: 10000,
+    levelDistance: 7200,
     hasBoss: false,
     bossTriggerProgress: 0.8,
     asteroidInterval: 5000,
@@ -53,8 +60,9 @@ export const LEVELS: LevelConfig[] = [
       { type: 'fighter', weight: 30 },
       { type: 'bomber', weight: 20 },
     ],
+    encounterSize: { min: 1, max: 2 },
     spawnRateMultiplier: 1.2,
-    levelDistance: 12000,
+    levelDistance: 8400,
     hasBoss: false,
     bossTriggerProgress: 0.8,
     asteroidInterval: 4500,
@@ -73,10 +81,11 @@ export const LEVELS: LevelConfig[] = [
       { type: 'bomber', weight: 15 },
       { type: 'swarm', weight: 20 },
     ],
+    encounterSize: { min: 1, max: 2 },
     spawnRateMultiplier: 1.4,
-    levelDistance: 14000,
+    levelDistance: 9600,
     hasBoss: true,
-    bossTriggerProgress: 0.75,
+    bossTriggerProgress: 0.72,
     asteroidInterval: 4000,
   },
   {
@@ -94,10 +103,11 @@ export const LEVELS: LevelConfig[] = [
       { type: 'swarm', weight: 15 },
       { type: 'gunship', weight: 20 },
     ],
+    encounterSize: { min: 2, max: 2 },
     spawnRateMultiplier: 1.7,
-    levelDistance: 16000,
+    levelDistance: 10800,
     hasBoss: true,
-    bossTriggerProgress: 0.7,
+    bossTriggerProgress: 0.68,
     asteroidInterval: 3500,
   },
   {
@@ -115,10 +125,11 @@ export const LEVELS: LevelConfig[] = [
       { type: 'swarm', weight: 20 },
       { type: 'gunship', weight: 20 },
     ],
+    encounterSize: { min: 2, max: 3 },
     spawnRateMultiplier: 2.0,
-    levelDistance: 18000,
+    levelDistance: 12000,
     hasBoss: true,
-    bossTriggerProgress: 0.65,
+    bossTriggerProgress: 0.64,
     asteroidInterval: 3000,
   },
 ];

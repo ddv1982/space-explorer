@@ -19,9 +19,17 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
 
   takeDamage(amount: number): void {
     this.hp -= amount;
+    this.flashHit();
     if (this.hp <= 0) {
       this.die();
     }
+  }
+
+  private flashHit(): void {
+    this.setTint(0xffffff);
+    this.scene.time.delayedCall(80, () => {
+      if (this.active) this.clearTint();
+    });
   }
 
   die(): void {

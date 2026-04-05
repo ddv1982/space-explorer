@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
+import { BomberBomb } from '../BomberBomb';
 
 export class Bomber extends EnemyBase {
   private lastBombTime: number = 0;
@@ -56,13 +57,11 @@ export class Bomber extends EnemyBase {
 
   private dropBomb(): void {
     if (!this.bombGroup) return;
-    const bomb = this.bombGroup.getFirstDead(false) as Phaser.Physics.Arcade.Sprite | null;
+    const bomb =
+      (this.bombGroup.getFirstDead(false) as BomberBomb | null) ??
+      (this.bombGroup.get(this.x, this.y + 20) as BomberBomb | null);
     if (bomb) {
-      bomb.setPosition(this.x, this.y + 20);
-      bomb.setActive(true);
-      bomb.setVisible(true);
-      (bomb.body as Phaser.Physics.Arcade.Body).reset(this.x, this.y + 20);
-      bomb.setVelocityY(200);
+      bomb.drop(this.x, this.y + 20);
     }
   }
 }

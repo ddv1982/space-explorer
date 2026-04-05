@@ -114,7 +114,9 @@ export class Boss extends EnemyBase {
     if (!this.bulletGroup) return;
     const angles = [-30, -15, 0, 15, 30];
     for (const angleDeg of angles) {
-      const bullet = this.bulletGroup.getFirstDead(false) as EnemyBullet | null;
+      const bullet =
+        (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
+        (this.bulletGroup.get(this.x, this.y + 30) as EnemyBullet | null);
       if (bullet) {
         const rad = Phaser.Math.DegToRad(angleDeg + 90);
         bullet.fire(this.x, this.y + 30);
@@ -130,7 +132,9 @@ export class Boss extends EnemyBase {
     if (!this.bulletGroup) return;
     const baseAngle = (time / 500) * 60;
     for (let i = 0; i < 3; i++) {
-      const bullet = this.bulletGroup.getFirstDead(false) as EnemyBullet | null;
+      const bullet =
+        (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
+        (this.bulletGroup.get(this.x, this.y + 30) as EnemyBullet | null);
       if (bullet) {
         const angleDeg = baseAngle + i * 120;
         const rad = Phaser.Math.DegToRad(angleDeg);

@@ -5,12 +5,18 @@ export class HUD {
   private scene!: Phaser.Scene;
   private hpBarBg!: Phaser.GameObjects.Graphics;
   private hpBarFill!: Phaser.GameObjects.Graphics;
+  private hpLabel!: Phaser.GameObjects.Text;
+  private hpText!: Phaser.GameObjects.Text;
+  private scoreLabel!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
+  private levelText!: Phaser.GameObjects.Text;
+  private shieldIcons: Phaser.GameObjects.Graphics[] = [];
   private progressBg!: Phaser.GameObjects.Graphics;
   private progressFill!: Phaser.GameObjects.Graphics;
   private bossBarBg!: Phaser.GameObjects.Graphics;
   private bossBarFill!: Phaser.GameObjects.Graphics;
   private bossNameText!: Phaser.GameObjects.Text;
+  private announcementText!: Phaser.GameObjects.Text;
 
   private hpBarWidth = 200;
   private hpBarHeight = 16;
@@ -21,17 +27,39 @@ export class HUD {
   private bossBarWidth = 400;
   private bossBarHeight = 10;
   private bossVisible: boolean = false;
+  private currentShields: number = 0;
 
   create(scene: Phaser.Scene): void {
     this.scene = scene;
 
+    // HP label and bar
+    this.hpLabel = scene.add.text(this.hpBarX, this.hpBarY - 2, 'HP', {
+      fontSize: '11px',
+      color: '#88aacc',
+      fontFamily: 'monospace',
+    }).setDepth(100);
+
     this.hpBarBg = scene.add.graphics();
     this.hpBarBg.setDepth(100);
     this.hpBarBg.fillStyle(0x333333, 0.8);
-    this.hpBarBg.fillRoundedRect(this.hpBarX, this.hpBarY, this.hpBarWidth, this.hpBarHeight, 3);
+    this.hpBarBg.fillRoundedRect(this.hpBarX + 22, this.hpBarY, this.hpBarWidth - 22, this.hpBarHeight, 3);
 
     this.hpBarFill = scene.add.graphics();
     this.hpBarFill.setDepth(101);
+
+    // HP text (e.g. "5/5")
+    this.hpText = scene.add.text(this.hpBarX + this.hpBarWidth + 6, this.hpBarY, '', {
+      fontSize: '12px',
+      color: '#ffffff',
+      fontFamily: 'monospace',
+    }).setDepth(100);
+
+    // Score label and text
+    this.scoreLabel = scene.add.text(GAME_WIDTH - 100, this.hpBarY - 2, 'SCORE', {
+      fontSize: '11px',
+      color: '#88aacc',
+      fontFamily: 'monospace',
+    }).setOrigin(1, 0).setDepth(100);
 
     this.scoreText = scene.add.text(GAME_WIDTH - 16, this.hpBarY, '0', {
       fontSize: '20px',
@@ -41,6 +69,14 @@ export class HUD {
     this.scoreText.setOrigin(1, 0);
     this.scoreText.setDepth(100);
 
+    // Level name text (below score, top-right area)
+    this.levelText = scene.add.text(GAME_WIDTH - 16, this.hpBarY + 24, '', {
+      fontSize: '12px',
+      color: '#667788',
+      fontFamily: 'monospace',
+    }).setOrigin(1, 0).setDepth(100);
+
+    // Progress bar (center top)
     const progressX = (GAME_WIDTH - this.progressWidth) / 2;
     this.progressBg = scene.add.graphics();
     this.progressBg.setDepth(100);
@@ -49,6 +85,14 @@ export class HUD {
 
     this.progressFill = scene.add.graphics();
     this.progressFill.setDepth(101);
+
+    // Announcement text (center, for level name flash)
+    this.announcementText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, '', {
+      fontSize: '28px',
+      color: '#ffffff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(200).setAlpha(0);
 
     // Boss health bar (hidden by default)
     this.bossBarBg = scene.add.graphics();
@@ -68,15 +112,64 @@ export class HUD {
     this.setScrollFactor(0);
   }
 
+  showLevelAnnouncement(levelName: string, levelNumber: number): void {
+    this.levelText.setText(`SECTOR ${levelNumber} - ${levelName}`);
+    this.announcementText.setText(`SECTOR ${levelNumber}`);
+    this.announcementText.setAlpha(1);
+
+    this.scene.tweens.add({
+      targets: this.announcementText,
+      alpha: { from: 1, to: 0 },
+      y: { from: GAME_HEIGHT / 2 - 60, to: GAME_HEIGHT / 2 - 100 },
+      duration: 2000,
+      delay: 1000,
+      ease: 'Power2',
+    });
+  }
+
+  updateShields(shields: number): void {
+    // Remove old icons
+    for (const icon of this.shieldIcons) {
+      icon.destroy();
+    }
+    this.shieldIcons = [];
+    this.currentShields = shields;
+
+    if (shields <= 0) return;
+
+    for (let i = 0; i < shields; i++) {
+      const icon = this.scene.add.graphics();
+      icon.setDepth(100);
+      icon.setScrollFactor(0);
+      const ix = this.hpBarX + i * 20;
+      const iy = this.hpBarY + this.hpBarHeight + 4;
+
+      // Shield bubble icon
+      icon.fillStyle(0x4488ff, 0.8);
+      icon.fillCircle(ix + 8, iy + 8, 7);
+      icon.lineStyle(1.5, 0x88ccff, 1);
+      icon.strokeCircle(ix + 8, iy + 8, 7);
+      icon.fillStyle(0xaaddff, 0.6);
+      icon.fillCircle(ix + 6, iy + 6, 3);
+
+      this.shieldIcons.push(icon);
+    }
+  }
+
   private setScrollFactor(factor: number): void {
     this.hpBarBg.setScrollFactor(factor);
     this.hpBarFill.setScrollFactor(factor);
+    this.hpLabel.setScrollFactor(factor);
+    this.hpText.setScrollFactor(factor);
+    this.scoreLabel.setScrollFactor(factor);
     this.scoreText.setScrollFactor(factor);
+    this.levelText.setScrollFactor(factor);
     this.progressBg.setScrollFactor(factor);
     this.progressFill.setScrollFactor(factor);
     this.bossBarBg.setScrollFactor(factor);
     this.bossBarFill.setScrollFactor(factor);
     this.bossNameText.setScrollFactor(factor);
+    this.announcementText.setScrollFactor(factor);
   }
 
   showBossBar(): void {
@@ -119,18 +212,33 @@ export class HUD {
     const hpColor = hpRatio > 0.5 ? 0x00ff44 : hpRatio > 0.25 ? 0xffaa00 : 0xff2222;
     this.hpBarFill.fillStyle(hpColor, 1);
     this.hpBarFill.fillRoundedRect(
-      this.hpBarX + 2,
+      this.hpBarX + 24,
       this.hpBarY + 2,
-      (this.hpBarWidth - 4) * hpRatio,
+      (this.hpBarWidth - 26) * hpRatio,
       this.hpBarHeight - 4,
       2
     );
 
+    this.hpText.setText(`${hp}/${maxHp}`);
     this.scoreText.setText(score.toString().padStart(8, '0'));
 
     this.progressFill.clear();
     const progressX = (GAME_WIDTH - this.progressWidth) / 2;
     this.progressFill.fillStyle(0x00ccff, 0.8);
     this.progressFill.fillRect(progressX, 8, this.progressWidth * Math.min(progress, 1), this.progressHeight);
+  }
+
+  showBossWarning(): void {
+    this.announcementText.setText('⚠ WARNING: BOSS INCOMING ⚠');
+    this.announcementText.setColor('#ff4444');
+    this.announcementText.setAlpha(1);
+    this.announcementText.setY(GAME_HEIGHT / 2 - 60);
+
+    this.scene.tweens.add({
+      targets: this.announcementText,
+      alpha: { from: 1, to: 0 },
+      duration: 2500,
+      ease: 'Power2',
+    });
   }
 }
