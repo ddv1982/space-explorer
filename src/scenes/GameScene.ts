@@ -33,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
   private lastFireTime: number = 0;
   private gameOver: boolean = false;
+  private gameOverTransition: Phaser.Time.TimerEvent | null = null;
   private boss: Boss | null = null;
 
   constructor() {
@@ -41,6 +42,7 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.gameOver = false;
+    this.gameOverTransition = null;
     this.boss = null;
 
     audioManager.init();
@@ -124,16 +126,21 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.events.on('player-death', () => {
+      if (this.gameOverTransition) return;
+
+      const finalScore = this.scoreManager.getScore();
+
       this.gameOver = true;
-      audioManager.stopMusic();
-      audioManager.playExplosion(2.0);
-      this.effectsManager.createExplosion(this.player.x, this.player.y, 2.0);
-      saveScoreToState(this.registry, this.scoreManager.getScore());
-      this.registry.set('finalScore', this.scoreManager.getScore());
-      this.registry.set('levelReached', state.level);
-      this.time.delayedCall(1500, () => {
+      this.gameOverTransition = this.time.delayedCall(1500, () => {
         this.scene.start('GameOver');
       });
+
+      this.runBestEffort(() => audioManager.stopMusic());
+      this.runBestEffort(() => audioManager.playExplosion(2.0));
+      this.runBestEffort(() => this.effectsManager.createExplosion(this.player.x, this.player.y, 2.0));
+      this.runBestEffort(() => saveScoreToState(this.registry, finalScore));
+      this.runBestEffort(() => this.registry.set('finalScore', finalScore));
+      this.runBestEffort(() => this.registry.set('levelReached', state.level));
     });
 
     this.events.on('level-complete', () => {
@@ -216,6 +223,14 @@ export class GameScene extends Phaser.Scene {
         fireHint.destroy();
       },
     });
+  }
+
+  private runBestEffort(effect: () => void): void {
+    try {
+      effect();
+    } catch {
+      // Keep the GameOver transition alive even if optional cleanup/effects fail.
+    }
   }
 
   private tryDropPowerUp(x: number, y: number): void {

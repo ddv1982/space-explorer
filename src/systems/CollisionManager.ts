@@ -86,7 +86,9 @@ export class CollisionManager {
         if (eBullet.active && player.isAlive) {
           eBullet.kill();
           player.takeDamage(1);
-          this.onPlayerHit();
+          if (player.isAlive) {
+            this.onPlayerHit();
+          }
         }
       }
     );
@@ -102,7 +104,9 @@ export class CollisionManager {
           bomb.kill();
           player.takeDamage(2);
           this.effectsManager.createExplosion(impactX, impactY, 1.5);
-          this.onPlayerHit();
+          if (player.isAlive) {
+            this.onPlayerHit();
+          }
         }
       }
     );
@@ -122,7 +126,9 @@ export class CollisionManager {
         if (asteroid.active && player.isAlive) {
           player.takeDamage(1);
           asteroid.die();
-          this.onPlayerHit();
+          if (player.isAlive) {
+            this.onPlayerHit();
+          }
         }
       }
     );
@@ -140,7 +146,9 @@ export class CollisionManager {
           } else {
             enemy.takeDamage(1);
           }
-          this.onPlayerHit();
+          if (this.player.isAlive) {
+            this.onPlayerHit();
+          }
         }
       }
     );
