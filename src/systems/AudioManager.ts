@@ -48,7 +48,7 @@ class AudioManager {
 
     if (!this.musicGain) {
       this.musicGain = this.ctx.createGain();
-      this.musicGain.gain.value = 0.08;
+      this.musicGain.gain.value = 0.13;
       this.musicGain.connect(this.masterGain);
     }
   }
@@ -103,19 +103,21 @@ class AudioManager {
 
     const osc = this.ctx!.createOscillator();
     const gain = this.ctx!.createGain();
+    const now = this.ctx!.currentTime;
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(880, this.ctx!.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(440, this.ctx!.currentTime + 0.08);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(580, now);
+    osc.frequency.exponentialRampToValueAtTime(520, now + 0.12);
 
-    gain.gain.setValueAtTime(0.15, this.ctx!.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx!.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.04, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
 
     osc.connect(gain);
     gain.connect(this.masterGain);
 
-    osc.start(this.ctx!.currentTime);
-    osc.stop(this.ctx!.currentTime + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.14);
   }
 
   playExplosion(intensity: number = 1): void {
