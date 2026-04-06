@@ -1,4 +1,8 @@
-export class AudioManager {
+type WebkitAudioWindow = Window & typeof globalThis & {
+  webkitAudioContext?: typeof AudioContext;
+};
+
+class AudioManager {
   private ctx: AudioContext | null = null;
   private musicGain: GainNode | null = null;
   private musicOscillators: OscillatorNode[] = [];
@@ -17,7 +21,12 @@ export class AudioManager {
         return;
       }
 
-      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextCtor = window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
+      if (!AudioContextCtor) {
+        this.resetNodes();
+        return;
+      }
+
       this.ctx = new AudioContextCtor();
       this.ensureGains();
     } catch {

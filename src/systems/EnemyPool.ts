@@ -9,10 +9,10 @@ import { EnemyBullet } from '../entities/EnemyBullet';
 import { BomberBomb } from '../entities/BomberBomb';
 import type { EnemyType } from '../config/LevelsConfig';
 
-export type EnemyPoolGroupKey = EnemyType | 'boss';
-export type EnemyPlayerCollisionBehavior = 'kamikaze' | 'impact' | 'none';
+type EnemyPoolGroupKey = EnemyType | 'boss';
+type EnemyPlayerCollisionBehavior = 'kamikaze' | 'impact' | 'none';
 
-export interface EnemyGroupRegistration {
+interface EnemyGroupRegistration {
   key: EnemyPoolGroupKey;
   group: Phaser.Physics.Arcade.Group;
   playerCollisionBehavior: EnemyPlayerCollisionBehavior;

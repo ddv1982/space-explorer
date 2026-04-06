@@ -21,7 +21,7 @@ import {
 import { Boss } from '../entities/enemies/Boss';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
-import { PowerUp, PowerUpType } from '../entities/PowerUp';
+import { PowerUp, PowerUpType, resolvePowerUpOverlap } from '../entities/PowerUp';
 import {
   applyPowerUpPickup,
   GAME_SCENE_EVENTS,
@@ -147,8 +147,8 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(
       this.powerUpGroup, this.player,
       (_obj1, _obj2) => {
-        const powerUp = _obj1 as PowerUp;
-        if (!powerUp.active || !this.player.isAlive || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) return;
+        const powerUp = resolvePowerUpOverlap(_obj1, _obj2);
+        if (!powerUp || !powerUp.active || !this.player.isAlive || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) return;
 
         this.applyPowerUp(powerUp.powerUpType);
         powerUp.kill();

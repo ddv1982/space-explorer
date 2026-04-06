@@ -3,6 +3,30 @@ import { GAME_HEIGHT } from '../utils/constants';
 
 export type PowerUpType = 'health' | 'shield' | 'rapidfire';
 
+function getPowerUpFromRuntimeValue(value: unknown): PowerUp | null {
+  if (value instanceof PowerUp) {
+    return value;
+  }
+
+  if (!value || typeof value !== 'object' || !('gameObject' in value)) {
+    return null;
+  }
+
+  const { gameObject } = value as { gameObject?: unknown };
+  return gameObject instanceof PowerUp ? gameObject : null;
+}
+
+export function resolvePowerUpOverlap(...values: unknown[]): PowerUp | null {
+  for (const value of values) {
+    const powerUp = getPowerUpFromRuntimeValue(value);
+    if (powerUp) {
+      return powerUp;
+    }
+  }
+
+  return null;
+}
+
 export class PowerUp extends Phaser.Physics.Arcade.Sprite {
   powerUpType: PowerUpType = 'health';
   private bobTime: number = 0;

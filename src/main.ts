@@ -27,4 +27,4 @@ const config: Phaser.Types.Core.GameConfig = {
   },
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);

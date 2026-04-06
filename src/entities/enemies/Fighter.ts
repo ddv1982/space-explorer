@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
-import { FIGHTER_HP, FIGHTER_SPEED, FIGHTER_FIRE_RATE, ENEMY_BULLET_SPEED } from '../../utils/constants';
+import { FIGHTER_HP, FIGHTER_SPEED, FIGHTER_FIRE_RATE } from '../../utils/constants';
 import { EnemyBullet } from '../EnemyBullet';
 
 export class Fighter extends EnemyBase {

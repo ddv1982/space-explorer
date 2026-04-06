@@ -141,13 +141,10 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     const startY = 380;
     const buttonWidth = 240;
     const buttonHeight = 60;
-    const spacingX = 240;
     const spacingY = 20;
 
     for (let i = 0; i < UPGRADES.length; i++) {
       const upgrade = UPGRADES[i];
-      const x = startX + (i % 2) * (buttonWidth + spacingX - 220);
-      const y = startY + Math.floor(i / 2) * (buttonHeight + spacingY);
       const currentLevel = this.state.upgrades[upgrade.key];
       const cost = getUpgradeCost(upgrade, currentLevel);
       const maxed = isUpgradeMaxed(upgrade, currentLevel);

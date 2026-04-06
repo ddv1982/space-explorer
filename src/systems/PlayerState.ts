@@ -13,7 +13,7 @@ export interface PlayerStateData {
   };
 }
 
-export interface RunSummaryData {
+interface RunSummaryData {
   finalScore: number;
   levelReached: number;
 }
@@ -29,7 +29,7 @@ const DEFAULT_RUN_SUMMARY: RunSummaryData = {
   levelReached: 1,
 };
 
-export function getDefaultPlayerState(): PlayerStateData {
+function getDefaultPlayerState(): PlayerStateData {
   return {
     level: 1,
     score: 0,

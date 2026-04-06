@@ -27,7 +27,7 @@ export interface LevelConfig {
   asteroidInterval: number;
 }
 
-export const LEVELS: LevelConfig[] = [
+const LEVELS: LevelConfig[] = [
   {
     name: 'Asteroid Belt Alpha',
     planetName: 'Kepler-7b',

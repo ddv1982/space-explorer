@@ -40,7 +40,7 @@ export class Bomber extends EnemyBase {
     this.setVelocityY(this.speed);
   }
 
-  updateBehavior(time: number, delta: number): void {
+  updateBehavior(time: number, _delta: number): void {
     if (this.y > this.scene.cameras.main.height + 50) {
       this.setActive(false);
       this.setVisible(false);

@@ -12,6 +12,7 @@ export class HUD {
   private livesText!: Phaser.GameObjects.Text;
   private scoreLabel!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
+  private sectorText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private shieldIcons: Phaser.GameObjects.Graphics[] = [];
   private progressBg!: Phaser.GameObjects.Graphics;
@@ -34,6 +35,9 @@ export class HUD {
 
   create(scene: Phaser.Scene): void {
     this.scene = scene;
+    const topBarRight = GAME_WIDTH - 16;
+    const topBarTextWidth = 220;
+    const topBarTextX = topBarRight - topBarTextWidth;
 
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '11px',
@@ -85,27 +89,50 @@ export class HUD {
     }).setDepth(100);
 
     // Score label and text
-    this.scoreLabel = scene.add.text(GAME_WIDTH - 100, this.hpBarY - 2, 'SCORE', labelStyle).setOrigin(1, 0).setDepth(100);
+    this.scoreLabel = scene.add.text(topBarTextX, this.hpBarY - 3, 'SCORE', {
+      ...labelStyle,
+      fontSize: '10px',
+      color: '#9fd4e6',
+    }).setDepth(100);
+    this.scoreLabel.setLetterSpacing(2);
 
-    this.scoreText = scene.add.text(GAME_WIDTH - 16, this.hpBarY, '0', {
-      fontSize: '20px',
+    this.scoreText = scene.add.text(topBarTextX, this.hpBarY - 5, '0', {
+      fontSize: '18px',
       color: '#ffffff',
       fontFamily: 'monospace',
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
     });
-    this.scoreText.setOrigin(1, 0);
+    this.scoreText.setFixedSize(topBarTextWidth, 24);
+    this.scoreText.setAlign('right');
+    this.scoreText.setLetterSpacing(1.5);
     this.scoreText.setDepth(100);
 
-    // Level name text (below score, top-right area)
-    this.levelText = scene.add.text(GAME_WIDTH - 16, this.hpBarY + 24, '', {
-      fontSize: '12px',
-      color: '#b8dced',
+    // Sector and level title (below score, top-right area)
+    this.sectorText = scene.add.text(topBarTextX, this.hpBarY + 18, '', {
+      fontSize: '10px',
+      color: '#7fdcff',
       fontFamily: 'monospace',
+      fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
-    }).setOrigin(1, 0).setDepth(100);
+    }).setDepth(100);
+    this.sectorText.setFixedSize(topBarTextWidth, 12);
+    this.sectorText.setAlign('right');
+    this.sectorText.setLetterSpacing(1.5);
+
+    this.levelText = scene.add.text(topBarTextX, this.hpBarY + 30, '', {
+      fontSize: '13px',
+      color: '#eefaff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 2,
+    }).setDepth(100);
+    this.levelText.setFixedSize(topBarTextWidth, 16);
+    this.levelText.setAlign('right');
+    this.levelText.setLetterSpacing(0.5);
 
     // Progress bar (center top)
     const progressX = (GAME_WIDTH - this.progressWidth) / 2;
@@ -151,7 +178,8 @@ export class HUD {
   }
 
   showLevelAnnouncement(levelName: string, levelNumber: number): void {
-    this.levelText.setText(`SECTOR ${levelNumber} - ${levelName}`);
+    this.sectorText.setText(`SECTOR ${levelNumber.toString().padStart(2, '0')}`);
+    this.levelText.setText(levelName);
     this.announcementText.setText(`SECTOR ${levelNumber}`);
     this.announcementText.setAlpha(1);
 
@@ -211,6 +239,7 @@ export class HUD {
     this.livesText.setScrollFactor(factor);
     this.scoreLabel.setScrollFactor(factor);
     this.scoreText.setScrollFactor(factor);
+    this.sectorText.setScrollFactor(factor);
     this.levelText.setScrollFactor(factor);
     this.progressBg.setScrollFactor(factor);
     this.progressFill.setScrollFactor(factor);

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { SCROLL_SPEED } from '../utils/constants';
 import { LevelConfig } from '../config/LevelsConfig';
 
-export interface StarLayerConfig {
+interface StarLayerConfig {
   name: string;
   scrollSpeed: number;
   starCount: number;

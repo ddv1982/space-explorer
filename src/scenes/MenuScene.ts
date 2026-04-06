@@ -34,7 +34,7 @@ export class MenuScene extends Phaser.Scene {
     controlsPanel.strokeRoundedRect(centerX - 180, controlsY - 8, 360, 132, 8);
     controlsPanel.setDepth(10);
 
-    const controlsTitle = this.add.text(centerX, controlsY + 6, 'CONTROLS', {
+    this.add.text(centerX, controlsY + 6, 'CONTROLS', {
       fontSize: '14px',
       color: '#6688aa',
       fontFamily: 'monospace',
@@ -56,8 +56,7 @@ export class MenuScene extends Phaser.Scene {
       }).setDepth(11);
 
       // Key badge
-      const badgeBg = this.add.graphics().setDepth(11);
-      const badgeText = this.add.text(centerX + 10, rowY, row.keys, {
+      this.add.text(centerX + 10, rowY, row.keys, {
         fontSize: '12px',
         color: '#ffffff',
         fontFamily: 'monospace',
