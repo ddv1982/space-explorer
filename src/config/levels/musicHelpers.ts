@@ -8,15 +8,15 @@ import type {
   ProceduralNoiseLayerExpressionConfig,
 } from './types';
 
-export type LayerVariation = Partial<Omit<ProceduralMusicLayerConfig, 'expression'>> & {
+type LayerVariation = Partial<Omit<ProceduralMusicLayerConfig, 'expression'>> & {
   expression?: Partial<ProceduralMusicLayerExpressionConfig>;
 };
 
-export type NoiseVariation = Partial<Omit<ProceduralNoiseLayerConfig, 'expression'>> & {
+type NoiseVariation = Partial<Omit<ProceduralNoiseLayerConfig, 'expression'>> & {
   expression?: Partial<ProceduralNoiseLayerExpressionConfig>;
 };
 
-export type TrackVariation = Partial<Omit<ProceduralMusicTrackConfig, 'bass' | 'pulse' | 'lead' | 'noise' | 'expression'>> & {
+type TrackVariation = Partial<Omit<ProceduralMusicTrackConfig, 'bass' | 'pulse' | 'lead' | 'noise' | 'expression'>> & {
   expression?: Partial<ProceduralMusicTrackExpressionConfig>;
   bass?: LayerVariation;
   pulse?: LayerVariation;
@@ -132,7 +132,7 @@ function mergeTrackExpression(
   return { stereo, modulation, accent };
 }
 
-export function withLayerVariation(base: ProceduralMusicLayerConfig, variation: LayerVariation): ProceduralMusicLayerConfig {
+function withLayerVariation(base: ProceduralMusicLayerConfig, variation: LayerVariation): ProceduralMusicLayerConfig {
   return {
     ...base,
     ...variation,
@@ -140,7 +140,7 @@ export function withLayerVariation(base: ProceduralMusicLayerConfig, variation: 
   };
 }
 
-export function withNoiseVariation(base: ProceduralNoiseLayerConfig, variation: NoiseVariation): ProceduralNoiseLayerConfig {
+function withNoiseVariation(base: ProceduralNoiseLayerConfig, variation: NoiseVariation): ProceduralNoiseLayerConfig {
   return {
     ...base,
     ...variation,
@@ -148,7 +148,7 @@ export function withNoiseVariation(base: ProceduralNoiseLayerConfig, variation: 
   };
 }
 
-export function withTrackVariation(base: ProceduralMusicTrackConfig, variation: TrackVariation): ProceduralMusicTrackConfig {
+function withTrackVariation(base: ProceduralMusicTrackConfig, variation: TrackVariation): ProceduralMusicTrackConfig {
   return {
     ...base,
     ...variation,

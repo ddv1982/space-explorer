@@ -211,7 +211,12 @@ export class PlanetIntermissionScene extends Phaser.Scene {
         pointer.x >= btn.x && pointer.x <= btn.x + UPGRADE_GRID_LAYOUT.buttonWidth &&
         pointer.y >= btn.y && pointer.y <= btn.y + UPGRADE_GRID_LAYOUT.buttonHeight
       ) {
-        this.tryBuyUpgrade(btn.upgradeKey);
+        const evaluation = this.getButtonEvaluation(btn);
+
+        if (evaluation.canPurchase) {
+          this.tryBuyUpgrade(btn.upgradeKey);
+        }
+
         return true;
       }
     }
