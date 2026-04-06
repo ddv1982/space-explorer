@@ -219,7 +219,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerHit(): void {
-    audioManager.playPlayerHit();
+    this.runBestEffort(() => audioManager.playPlayerHit());
   }
 
   private handlePlayerExhaust(x: number, y: number, intensity: number): void {

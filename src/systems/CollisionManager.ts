@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Player } from '../entities/Player';
+import { Player, type PlayerDamageOutcome } from '../entities/Player';
 import { Bullet } from '../entities/Bullet';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
@@ -16,6 +16,8 @@ export class CollisionManager {
   private enemyPool!: EnemyPool;
   private bulletDamage: number = 1;
   private terminalTransitionActive: boolean = false;
+  private lastPlayerHitFeedbackTime: number = Number.NEGATIVE_INFINITY;
+  private readonly playerHitFeedbackCooldownMs: number = 75;
 
   setup(
     scene: Phaser.Scene,
@@ -28,6 +30,7 @@ export class CollisionManager {
     this.player = player;
     this.enemyPool = enemyPool;
     this.terminalTransitionActive = false;
+    this.lastPlayerHitFeedbackTime = Number.NEGATIVE_INFINITY;
 
     const bulletGroup = bulletPool.getGroup();
 
@@ -87,8 +90,8 @@ export class CollisionManager {
         const eBullet = _obj1 as EnemyBullet;
         if (eBullet.active && this.canProcessPlayerCollision()) {
           eBullet.kill();
-          player.takeDamage(1);
-          if (player.isAlive) {
+          const damageOutcome = player.takeDamage(1);
+          if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -104,9 +107,9 @@ export class CollisionManager {
           const impactX = bomb.x;
           const impactY = bomb.y;
           bomb.kill();
-          player.takeDamage(2);
+          const damageOutcome = player.takeDamage(2);
           this.effectsManager.createExplosion(impactX, impactY, 1.5);
-          if (player.isAlive) {
+          if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -126,9 +129,9 @@ export class CollisionManager {
       (_obj1, _obj2) => {
         const asteroid = _obj1 as Asteroid;
         if (asteroid.active && this.canProcessPlayerCollision()) {
-          player.takeDamage(1);
+          const damageOutcome = player.takeDamage(1);
           asteroid.die();
-          if (player.isAlive) {
+          if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -142,13 +145,13 @@ export class CollisionManager {
       (_obj1, _obj2) => {
         const enemy = _obj1 as EnemyBase;
         if (enemy.active && this.canProcessPlayerCollision()) {
-          this.player.takeDamage(1);
+          const damageOutcome = this.player.takeDamage(1);
           if (kamikaze) {
             enemy.die();
           } else {
             enemy.takeDamage(1);
           }
-          if (this.player.isAlive) {
+          if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -189,13 +192,32 @@ export class CollisionManager {
     return !this.terminalTransitionActive && this.player.isAlive && !!body && body.enable;
   }
 
+  private shouldEmitPlayerHit(damageOutcome: PlayerDamageOutcome): boolean {
+    return damageOutcome === 'absorbed' || damageOutcome === 'damaged';
+  }
+
   private onPlayerHit(): void {
     if (this.terminalTransitionActive) {
       return;
     }
 
-    this.effectsManager.createSparkBurst(this.player.x, this.player.y);
-    this.scene.cameras.main.shake(200, 0.01);
-    this.scene.events.emit('player-hit');
+    const now = this.scene.time.now;
+    if (now - this.lastPlayerHitFeedbackTime < this.playerHitFeedbackCooldownMs) {
+      return;
+    }
+
+    this.lastPlayerHitFeedbackTime = now;
+
+    this.runBestEffort(() => this.effectsManager.createSparkBurst(this.player.x, this.player.y));
+    this.runBestEffort(() => this.scene.cameras.main.shake(200, 0.01));
+    this.runBestEffort(() => this.scene.events.emit('player-hit'));
+  }
+
+  private runBestEffort(effect: () => void): void {
+    try {
+      effect();
+    } catch {
+      // Keep collision handling alive even if optional hit feedback fails.
+    }
   }
 }

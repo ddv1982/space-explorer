@@ -3,6 +3,8 @@ import { PLAYER_CONFIG } from '../config/playerConfig';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerShieldCount, getPlayerDamage } from '../systems/PlayerState';
 
+export type PlayerDamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   hp: number = PLAYER_CONFIG.baseMaxHp;
   maxHp: number = PLAYER_CONFIG.baseMaxHp;
@@ -66,14 +68,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.shields = getPlayerShieldCount(state);
   }
 
-  takeDamage(amount: number): void {
-    if (this.invulnerable || !this.isAlive || this.deathStarted) return;
+  takeDamage(amount: number): PlayerDamageOutcome {
+    if (this.invulnerable || !this.isAlive || this.deathStarted) {
+      return 'ignored';
+    }
 
     if (this.shields > 0) {
       this.shields--;
       this.setInvulnerable(800);
       this.flashShield();
-      return;
+      return 'absorbed';
     }
 
     this.hp -= amount;
@@ -81,11 +85,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.hp <= 0) {
       this.hp = 0;
       this.die();
-      return;
+      return 'fatal';
     }
 
     this.setInvulnerable(1500);
     this.flashWhite();
+    return 'damaged';
   }
 
   private setInvulnerable(duration: number): void {
