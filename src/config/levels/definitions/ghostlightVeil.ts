@@ -86,28 +86,28 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   ],
   music: createMusicProfile(
     {
-      cueName: 'Luminous Ghostwake',
-      mood: 'ethereal wonder with a quiet ache',
-      tempoFeel: 'floating and whisper-close',
-      musicalStyle: 'luminous drift tones over a hidden heartbeat and feathered shimmer hiss',
-      intensity: 'medium with ghostly swells',
-      shiftMoments: ['Fog ambushes bring the hidden heartbeat forward.', 'Boss cue keeps the dreamlike bed but adds a more deliberate chase layer.'],
-      bossCueName: 'Luminous Ghostwake: Veil Manta',
+      cueName: 'Ethereal Mist',
+      mood: 'ethereal wonder with quiet ache',
+      tempoFeel: 'floating in luminous fog',
+      musicalStyle: 'suspended harmonies drifting over sparse ostinato with echoing wide intervals',
+      intensity: 'medium with ghostly atmosphere',
+      shiftMoments: ['Fog ambushes bring quartal motion forward.', 'Boss cue adds call-response intensity while keeping misty texture.'],
+      bossCueName: 'Ethereal Mist: Veil Manta',
     },
     {
       tempo: 86,
-      rootHz: 98,
+      rootHz: 185,
       stepsPerBeat: 4,
-      masterGain: 0.8,
+      masterGain: 0.78,
       expression: {
         ...trackExpressionPresets.expansiveSpace,
-        stereo: { ...trackExpressionPresets.expansiveSpace.stereo, width: 0.42, rateHz: 0.07 },
-        accent: { amount: 0.05, patternBias: 0.1, emphasisSteps: [0, 8] },
+        stereo: { ...trackExpressionPresets.expansiveSpace.stereo, width: 0.48, rateHz: 0.05 },
+        accent: { amount: 0.04, patternBias: 0.08, emphasisSteps: [0, 8] },
       },
       bass: {
         waveform: 'sine',
-        pattern: bassPatterns.rootFifth(0),
-        gain: 0.13,
+        pattern: bassPatterns.rhythmicOstinato(0),
+        gain: 0.12,
         durationSteps: 4,
         expression: {
           ...layerExpressionPresets.longPad,
@@ -117,21 +117,21 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
       },
       pulse: {
         waveform: 'triangle',
-        pattern: arpeggiatorPatterns.pentatonic(8),
-        gain: 0.026,
-        durationSteps: 1,
+        pattern: arpeggiatorPatterns.quartalDrift(8),
+        gain: 0.024,
+        durationSteps: 2,
         octaveShift: 1,
-        filterHz: 1300,
+        filterHz: 1250,
         expression: {
           ...layerExpressionPresets.softPluck,
           ...layerExpressionPresets.wideSpace,
-          accent: { amount: 0.07, patternBias: 0.12, emphasisSteps: [2, 6, 10, 14] },
+          accent: { amount: 0.06, patternBias: 0.1, emphasisSteps: [2, 6, 10, 14] },
         },
       },
       lead: {
         waveform: 'sine',
-        pattern: arpeggiatorPatterns.upDownTriad(19),
-        gain: 0.026,
+        pattern: arpeggiatorPatterns.suspended2(19),
+        gain: 0.022,
         durationSteps: 4,
         octaveShift: 1,
         expression: {
@@ -141,42 +141,45 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
         },
       },
       noise: {
-        pattern: [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-        gain: 0.009,
-        filterHz: 1400,
+        pattern: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+        gain: 0.008,
+        filterHz: 1350,
         durationSteps: 1,
         expression: {
           ...noiseExpressionPresets.dreamyDrift,
-          stereo: { ...noiseExpressionPresets.dreamyDrift.stereo, width: 0.4, rateHz: 0.07 },
+          stereo: { ...noiseExpressionPresets.dreamyDrift.stereo, width: 0.45, rateHz: 0.06 },
         },
       },
     },
     {
       tempo: 92,
-      masterGain: 0.88,
+      masterGain: 0.86,
       expression: {
         ...trackExpressionPresets.expansiveSpace,
         ...trackExpressionPresets.chase,
-        modulation: { ...trackExpressionPresets.chase.modulation, depth: 190, rateHz: 0.75 },
-        accent: { amount: 0.1, patternBias: 0.2, emphasisSteps: [0, 4, 8, 12] },
+        modulation: { ...trackExpressionPresets.chase.modulation, depth: 170, rateHz: 0.7 },
+        accent: { amount: 0.09, patternBias: 0.18, emphasisSteps: [0, 4, 8, 12] },
       },
-      bass: { gain: 0.14 },
+      bass: { 
+        pattern: bassPatterns.sparseWalk(0),
+        gain: 0.13 
+      },
       pulse: {
         waveform: 'triangle',
-        pattern: arpeggiatorPatterns.flowing(8),
-        gain: 0.038,
+        pattern: arpeggiatorPatterns.echoPhrase(8),
+        gain: 0.034,
       },
       lead: { 
         waveform: 'sine', 
-        pattern: arpeggiatorPatterns.cascade(19),
-        gain: 0.032 
+        pattern: arpeggiatorPatterns.wideLeap(19),
+        gain: 0.028 
       },
       noise: {
-        gain: 0.012,
-        filterHz: 1800,
+        gain: 0.011,
+        filterHz: 1750,
         expression: {
           ...noiseExpressionPresets.dreamyDrift,
-          accent: { amount: 0.08, patternBias: 0.12, emphasisSteps: [6, 13] },
+          accent: { amount: 0.07, patternBias: 0.1, emphasisSteps: [6, 13] },
         },
       },
     }

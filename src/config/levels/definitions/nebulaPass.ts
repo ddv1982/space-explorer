@@ -65,27 +65,27 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
   music: createMusicProfile(
     {
       cueName: 'Purple Drift',
-      mood: 'mysterious and cocooned',
-      tempoFeel: 'gliding with soft interruptions',
-      musicalStyle: 'misty synth lullaby with floating pings and a silky pink-noise veil',
-      intensity: 'low to medium',
-      shiftMoments: ['Ambush pockets add extra plucks and gentle filter motion without breaking the haze.'],
+      mood: 'mysterious floating suspension',
+      tempoFeel: 'weightless nebula drift with gentle undulation',
+      musicalStyle: 'ethereal sus2 arpeggios over pedal-tone drone and silky suspended-noise haze',
+      intensity: 'low to medium with suspended tension',
+      shiftMoments: ['Ambush pockets introduce dorian modal colors and echo phrases without disturbing the veil.'],
       bossCueName: 'Purple Drift Break',
     },
     {
-      tempo: 82,
-      rootHz: 92.5,
+      tempo: 84,
+      rootHz: 98.0, // G2+ - slightly sharp for mysterious tension
       stepsPerBeat: 4,
-      masterGain: 0.78,
+      masterGain: 0.8,
       expression: {
         ...trackExpressionPresets.gentleFlow,
-        stereo: { ...trackExpressionPresets.gentleFlow.stereo, width: 0.35, rateHz: 0.06, phaseOffset: 0.25 },
-        accent: { amount: 0.05, patternBias: 0.1, emphasisSteps: [0, 8] },
+        stereo: { ...trackExpressionPresets.gentleFlow.stereo, width: 0.42, rateHz: 0.05, phaseOffset: 0.3 },
+        accent: { amount: 0.06, patternBias: 0.12, emphasisSteps: [0, 6, 10] },
       },
       bass: {
         waveform: 'sine',
-        pattern: bassPatterns.drone(0),
-        gain: 0.13,
+        pattern: bassPatterns.pedalFifths(0),
+        gain: 0.15,
         durationSteps: 4,
         expression: {
           ...layerExpressionPresets.longPad,
@@ -95,21 +95,21 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       },
       pulse: {
         waveform: 'sine',
-        pattern: arpeggiatorPatterns.ambientSparse(10),
-        gain: 0.024,
+        pattern: arpeggiatorPatterns.suspended2(10),
+        gain: 0.026,
         durationSteps: 2,
         octaveShift: 1,
-        filterHz: 1200,
+        filterHz: 1400,
         expression: {
           ...layerExpressionPresets.softPluck,
           ...layerExpressionPresets.ambientDrift,
-          accent: { amount: 0.06, patternBias: 0.1, emphasisSteps: [2, 6, 10, 14] },
+          accent: { amount: 0.08, patternBias: 0.14, emphasisSteps: [1, 5, 9, 13] },
         },
       },
       lead: {
         waveform: 'sine',
-        pattern: arpeggiatorPatterns.cascade(15),
-        gain: 0.022,
+        pattern: arpeggiatorPatterns.reverbBloom(15),
+        gain: 0.024,
         durationSteps: 4,
         octaveShift: 1,
         expression: {
@@ -119,41 +119,41 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
         },
       },
       noise: {
-        pattern: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        gain: 0.009,
-        filterHz: 1100,
+        pattern: [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+        gain: 0.01,
+        filterHz: 1300,
         durationSteps: 1,
         expression: {
           ...noiseExpressionPresets.dreamyDrift,
-          stereo: { ...noiseExpressionPresets.dreamyDrift.stereo, width: 0.35, rateHz: 0.06 },
+          stereo: { ...noiseExpressionPresets.dreamyDrift.stereo, width: 0.4, rateHz: 0.05 },
         },
       },
     },
     {
       tempo: 88,
-      masterGain: 0.86,
+      masterGain: 0.88,
       expression: {
         ...trackExpressionPresets.gentleFlow,
         ...trackExpressionPresets.chase,
-        modulation: { ...trackExpressionPresets.chase.modulation, depth: 180, rateHz: 0.65 },
-        accent: { amount: 0.09, patternBias: 0.18, emphasisSteps: [0, 4, 8, 12] },
+        modulation: { ...trackExpressionPresets.chase.modulation, depth: 200, rateHz: 0.55 },
+        accent: { amount: 0.11, patternBias: 0.2, emphasisSteps: [0, 4, 8, 12] },
       },
       pulse: {
         waveform: 'triangle',
-        pattern: arpeggiatorPatterns.flowing(10),
-        gain: 0.035,
+        pattern: arpeggiatorPatterns.dorianFlair(10),
+        gain: 0.038,
       },
       lead: { 
         waveform: 'sine', 
-        pattern: arpeggiatorPatterns.upDownTriad(15),
-        gain: 0.03 
+        pattern: arpeggiatorPatterns.echoPhrase(15),
+        gain: 0.032 
       },
       noise: {
-        gain: 0.012,
-        filterHz: 1500,
+        gain: 0.013,
+        filterHz: 1600,
         expression: {
           ...noiseExpressionPresets.dreamyDrift,
-          accent: { amount: 0.07, patternBias: 0.1, emphasisSteps: [5, 11] },
+          accent: { amount: 0.09, patternBias: 0.12, emphasisSteps: [4, 10] },
         },
       },
     }
