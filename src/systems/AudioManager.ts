@@ -9,6 +9,7 @@ class AudioManager {
   private musicPlaying: boolean = false;
   private musicTimer: number | null = null;
   private masterGain: GainNode | null = null;
+  private explosionBuffer: AudioBuffer | null = null;
 
   init(): void {
     try {
@@ -18,6 +19,7 @@ class AudioManager {
 
       if (this.ctx) {
         this.ensureGains();
+        this.getExplosionBuffer();
         return;
       }
 
@@ -29,6 +31,7 @@ class AudioManager {
 
       this.ctx = new AudioContextCtor();
       this.ensureGains();
+      this.getExplosionBuffer();
     } catch {
       this.resetNodes();
     }
@@ -60,6 +63,27 @@ class AudioManager {
     this.musicOscillators = [];
     this.musicPlaying = false;
     this.musicTimer = null;
+    this.explosionBuffer = null;
+  }
+
+  private getExplosionBuffer(): AudioBuffer | null {
+    if (!this.ctx) return null;
+
+    if (this.explosionBuffer) {
+      return this.explosionBuffer;
+    }
+
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.3);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+    }
+
+    this.explosionBuffer = buffer;
+
+    return buffer;
   }
 
   private ensureContext(): boolean {
@@ -97,13 +121,8 @@ class AudioManager {
   playExplosion(intensity: number = 1): void {
     if (!this.ensureContext() || !this.masterGain) return;
 
-    const bufferSize = this.ctx!.sampleRate * 0.3;
-    const buffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
-    }
+    const buffer = this.getExplosionBuffer();
+    if (!buffer) return;
 
     const source = this.ctx!.createBufferSource();
     source.buffer = buffer;

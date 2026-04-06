@@ -35,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   private static readonly PLAYER_RESPAWN_FREEZE_DELAY_MS = 240;
   private static readonly PLAYER_RESPAWN_INVULNERABILITY_MS = 2000;
   private static readonly PLAYER_RESPAWN_WATCHDOG_BUFFER_MS = 250;
+  private static readonly PLAYER_DEATH_EXPLOSION_INTENSITY = 1.35;
 
   private parallax!: ParallaxBackground;
   private inputManager!: InputManager;
@@ -575,8 +576,8 @@ export class GameScene extends Phaser.Scene {
         return;
       }
 
-      audioManager.playExplosion(2.0);
-      this.effectsManager.createExplosion(x, y, 2.0);
+      audioManager.playExplosion(GameScene.PLAYER_DEATH_EXPLOSION_INTENSITY);
+      this.effectsManager.createExplosion(x, y, GameScene.PLAYER_DEATH_EXPLOSION_INTENSITY);
     });
   }
 
