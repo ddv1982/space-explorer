@@ -2,6 +2,9 @@
 
 A retro arcade space exploration shooter built with [Phaser 3](https://phaser.io), TypeScript, and Vite. Fly your spaceship through five increasingly dangerous sectors, battle enemy waves, defeat bosses, and upgrade your ship between missions.
 
+Playable here:
+[Space Explorer](https://space-explorer.net)
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
 ![Phaser](https://img.shields.io/badge/Phaser-3.90-green)
 ![Vite](https://img.shields.io/badge/Vite-8.0-purple)
@@ -128,18 +131,6 @@ bun run preview    # Preview production build locally
 ```
 
 Output goes to `dist/`. Bundle is approximately 1.5 MB (350 KB gzipped), mostly Phaser.
-
-### Game link:
-
-`https://space-explorer.net`
-
-After the first successful production deployment, Vercel will assign a production URL for the project. Share that URL directly, or add a custom domain in Vercel and share the domain instead.
-
-To verify the production bundle locally before pushing:
-
-```bash
-bun run build
-```
 
 ## License
 
