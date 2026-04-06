@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, setRunSummary } from '../systems/PlayerState';
 import { getLevelConfig, isLastLevel } from '../config/LevelsConfig';
-import { UPGRADES, getUpgradeCost, isUpgradeMaxed, UpgradeDef } from '../config/UpgradesConfig';
+import { UpgradeBlockReason, UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUpgradeByKey } from '../config/UpgradesConfig';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
@@ -25,7 +25,7 @@ interface UpgradeButton {
   text: Phaser.GameObjects.Text;
   costText: Phaser.GameObjects.Text;
   levelText: Phaser.GameObjects.Text;
-  upgrade: UpgradeDef;
+  upgradeKey: UpgradeKey;
   x: number;
   y: number;
 }
@@ -154,17 +154,15 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
   private createUpgradeButtons(): void {
     const layout = getViewportLayout(this);
+    const evaluations = evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades);
     const gridWidth =
       UPGRADE_GRID_LAYOUT.buttonWidth * UPGRADE_GRID_LAYOUT.columns +
       UPGRADE_GRID_LAYOUT.spacingX * (UPGRADE_GRID_LAYOUT.columns - 1);
     const startX = centerHorizontally(layout, gridWidth);
 
-    for (let i = 0; i < UPGRADES.length; i++) {
-      const upgrade = UPGRADES[i];
-      const currentLevel = this.state.upgrades[upgrade.key];
-      const cost = getUpgradeCost(upgrade, currentLevel);
-      const maxed = isUpgradeMaxed(upgrade, currentLevel);
-      const canAfford = this.state.score >= cost;
+    for (let i = 0; i < evaluations.length; i++) {
+      const evaluation = evaluations[i];
+      const { upgrade } = evaluation;
 
       const col = i % UPGRADE_GRID_LAYOUT.columns;
       const row = Math.floor(i / UPGRADE_GRID_LAYOUT.columns);
@@ -172,30 +170,30 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       const by = UPGRADE_GRID_LAYOUT.top + row * (UPGRADE_GRID_LAYOUT.buttonHeight + UPGRADE_GRID_LAYOUT.spacingY);
 
       const bg = this.add.graphics();
-      this.drawButtonBg(bg, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, canAfford && !maxed);
+      this.drawButtonBg(bg, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, evaluation.canPurchase);
       bg.setPosition(bx, by);
       bg.setDepth(2);
 
       const text = this.add.text(bx + UPGRADE_GRID_LAYOUT.textInsetX, by + UPGRADE_GRID_LAYOUT.titleOffsetY, upgrade.name, {
         fontSize: '14px',
-        color: canAfford && !maxed ? '#ffffff' : '#666666',
+        color: evaluation.canPurchase ? '#ffffff' : '#666666',
         fontFamily: 'monospace',
       }).setDepth(3);
 
-      const levelText = this.add.text(bx + UPGRADE_GRID_LAYOUT.textInsetX, by + UPGRADE_GRID_LAYOUT.descriptionOffsetY, `${upgrade.description} [${currentLevel}/${upgrade.maxLevel}]`, {
+      const levelText = this.add.text(bx + UPGRADE_GRID_LAYOUT.textInsetX, by + UPGRADE_GRID_LAYOUT.descriptionOffsetY, this.getLevelText(evaluation), {
         fontSize: '11px',
         color: '#aaaaaa',
         fontFamily: 'monospace',
       }).setDepth(3);
 
-      const costLabel = maxed ? 'MAXED' : `${cost}`;
+      const costLabel = this.getCostLabel(evaluation);
       const costText = this.add.text(bx + UPGRADE_GRID_LAYOUT.buttonWidth - UPGRADE_GRID_LAYOUT.costInsetX, by + UPGRADE_GRID_LAYOUT.buttonHeight / 2, costLabel, {
         fontSize: '16px',
-        color: maxed ? '#44ff44' : canAfford ? '#ffcc00' : '#664444',
+        color: this.getCostColor(evaluation.blockReason),
         fontFamily: 'monospace',
       }).setOrigin(1, 0.5).setDepth(3);
 
-      this.buttons.push({ bg, text, costText, levelText, upgrade, x: bx, y: by });
+      this.buttons.push({ bg, text, costText, levelText, upgradeKey: upgrade.key, x: bx, y: by });
     }
   }
 
@@ -213,43 +211,95 @@ export class PlanetIntermissionScene extends Phaser.Scene {
         pointer.x >= btn.x && pointer.x <= btn.x + UPGRADE_GRID_LAYOUT.buttonWidth &&
         pointer.y >= btn.y && pointer.y <= btn.y + UPGRADE_GRID_LAYOUT.buttonHeight
       ) {
-        this.tryBuyUpgrade(btn.upgrade);
+        this.tryBuyUpgrade(btn.upgradeKey);
         return true;
       }
     }
     return false;
   }
 
-  private tryBuyUpgrade(upgrade: UpgradeDef): void {
-    const currentLevel = this.state.upgrades[upgrade.key];
-    if (isUpgradeMaxed(upgrade, currentLevel)) return;
+  private tryBuyUpgrade(upgradeKey: UpgradeKey): boolean {
+    const button = this.buttons.find((entry) => entry.upgradeKey === upgradeKey);
+    if (!button) {
+      return false;
+    }
 
-    const cost = getUpgradeCost(upgrade, currentLevel);
-    if (this.state.score < cost) return;
+    const evaluation = this.getButtonEvaluation(button);
+    if (!evaluation.canPurchase) {
+      return false;
+    }
 
-    this.state.score -= cost;
-    this.state.upgrades[upgrade.key] += 1;
+    this.state.score -= evaluation.cost;
+    this.state.upgrades[upgradeKey] += 1;
     setPlayerState(this.registry, this.state);
 
     audioManager.playPowerUp();
 
     this.scoreText.setText(`CREDITS: ${this.state.score}`);
     this.refreshButtons();
+    return true;
   }
 
   private refreshButtons(): void {
     for (const btn of this.buttons) {
-      const currentLevel = this.state.upgrades[btn.upgrade.key];
-      const cost = getUpgradeCost(btn.upgrade, currentLevel);
-      const maxed = isUpgradeMaxed(btn.upgrade, currentLevel);
-      const canAfford = this.state.score >= cost;
+      const evaluation = this.getButtonEvaluation(btn);
 
-      this.drawButtonBg(btn.bg, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, canAfford && !maxed);
+      this.drawButtonBg(btn.bg, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, evaluation.canPurchase);
 
-      btn.text.setColor(canAfford && !maxed ? '#ffffff' : '#666666');
-      btn.levelText.setText(`${btn.upgrade.description} [${currentLevel}/${btn.upgrade.maxLevel}]`);
-      btn.costText.setText(maxed ? 'MAXED' : `${cost}`);
-      btn.costText.setColor(maxed ? '#44ff44' : canAfford ? '#ffcc00' : '#664444');
+      btn.text.setColor(evaluation.canPurchase ? '#ffffff' : '#666666');
+      btn.levelText.setText(this.getLevelText(evaluation));
+      btn.costText.setText(this.getCostLabel(evaluation));
+      btn.costText.setColor(this.getCostColor(evaluation.blockReason));
+    }
+  }
+
+  private getButtonEvaluation(button: UpgradeButton): UpgradeEvaluation {
+    return evaluateUpgrade(
+      getUpgradeByKey(button.upgradeKey),
+      this.state.level,
+      this.state.score,
+      this.state.upgrades
+    );
+  }
+
+  private getLevelText(evaluation: UpgradeEvaluation): string {
+    const baseText = `${evaluation.upgrade.description} [${evaluation.currentLevel}/${evaluation.upgrade.maxLevel}]`;
+
+    if (evaluation.blockReason === 'locked' && evaluation.unlockReason) {
+      return `UNLOCK: ${evaluation.unlockReason}`;
+    }
+
+    if (evaluation.blockReason === 'progression') {
+      return `${baseText} CAP ${evaluation.progressionLimit}`;
+    }
+
+    return baseText;
+  }
+
+  private getCostLabel(evaluation: UpgradeEvaluation): string {
+    switch (evaluation.blockReason) {
+      case 'maxed':
+        return 'MAXED';
+      case 'locked':
+        return 'LOCKED';
+      case 'progression':
+        return `L${evaluation.progressionLimit}`;
+      default:
+        return `${evaluation.cost}`;
+    }
+  }
+
+  private getCostColor(blockReason: UpgradeBlockReason): string {
+    switch (blockReason) {
+      case 'maxed':
+        return '#44ff44';
+      case 'locked':
+      case 'progression':
+        return '#888888';
+      case 'credits':
+        return '#664444';
+      default:
+        return '#ffcc00';
     }
   }
 }

@@ -1,16 +1,12 @@
 import Phaser from 'phaser';
+import { PlayerUpgradeLevels } from '../config/UpgradesConfig';
 
 export interface PlayerStateData {
   level: number;
   score: number;
   currentHp: number;
   remainingLives: number;
-  upgrades: {
-    hp: number;
-    damage: number;
-    fireRate: number;
-    shield: number;
-  };
+  upgrades: PlayerUpgradeLevels;
 }
 
 interface RunSummaryData {
