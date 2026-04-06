@@ -129,31 +129,9 @@ bun run preview    # Preview production build locally
 
 Output goes to `dist/`. Bundle is approximately 1.5 MB (350 KB gzipped), mostly Phaser.
 
-## Deploy
+### Game link:
 
-This repo is configured for static Vercel deployments using GitHub Actions and Vercel prebuilt output.
-
-### Local Vercel setup
-
-1. Create or import the `ddv1982/space-explorer` project in Vercel.
-2. Link the local repo to that Vercel project:
-
-```bash
-bunx vercel link
-```
-
-3. The link command creates `.vercel/project.json` locally. Copy the `orgId` and `projectId` values into GitHub repository secrets named `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`.
-4. Create a Vercel access token and store it in the GitHub repository secret `VERCEL_TOKEN`.
-
-### GitHub Actions deploys
-
-- Pushes to `main` trigger a production deploy.
-- Pull requests from branches in this repository trigger preview deploys.
-- The workflow uses `vercel pull`, `vercel build`, and `vercel deploy --prebuilt`.
-
-Workflow file: [`.github/workflows/vercel.yml`](.github/workflows/vercel.yml)
-
-### Share the game publicly
+`https://space-explorer.net`
 
 After the first successful production deployment, Vercel will assign a production URL for the project. Share that URL directly, or add a custom domain in Vercel and share the domain instead.
 
