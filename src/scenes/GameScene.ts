@@ -289,16 +289,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleLevelComplete(): void {
-    if (
-      this.levelCompleteQueued ||
-      this.respawnInProgress ||
-      this.terminalTransitionState !== TERMINAL_TRANSITIONS.none
-    ) {
-      return;
-    }
-
-    this.levelCompleteQueued = true;
-    this.scheduleLevelCompleteTransition();
+    this.queueLevelComplete();
   }
 
   private handleBossSpawn(): void {
@@ -327,6 +318,20 @@ export class GameScene extends Phaser.Scene {
     }
     this.boss = null;
     this.levelManager.markBossDefeated();
+    this.queueLevelComplete();
+  }
+
+  private queueLevelComplete(): void {
+    if (
+      this.levelCompleteQueued ||
+      this.respawnInProgress ||
+      this.terminalTransitionState !== TERMINAL_TRANSITIONS.none
+    ) {
+      return;
+    }
+
+    this.levelCompleteQueued = true;
+    this.scheduleLevelCompleteTransition();
   }
 
   private spawnBoss(): void {
