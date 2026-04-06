@@ -4,6 +4,7 @@ import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { resetPlayerState } from '../systems/PlayerState';
 import { audioManager } from '../systems/AudioManager';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
+import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { createPromptText } from './shared/createPromptText';
 
 export class MenuScene extends Phaser.Scene {
@@ -57,8 +58,8 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(11);
 
     const controlsContent = [
-      { label: 'MOVE', keys: 'W A S D  /  Arrow Keys' },
-      { label: 'FIRE', keys: 'SPACE  /  Click' },
+      { label: 'MOVE', keys: 'W A S D  /  Arrows  /  Swipe' },
+      { label: 'FIRE', keys: 'SPACE  /  Tap or Click' },
       { label: 'LIVES', keys: '3 Ships Per Run' },
     ];
 
@@ -81,9 +82,9 @@ export class MenuScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(12);
     });
 
-    createPromptText(this, layout.centerX, controlsY + 140, 'Click to Start').setDepth(12);
+    createPromptText(this, layout.centerX, controlsY + 140, 'Click, Tap, or Press Any Key').setDepth(12);
 
-    this.input.once('pointerdown', () => {
+    bindProceedOnInput(this, () => {
       audioManager.init();
       audioManager.playClick();
       resetPlayerState(this.registry);

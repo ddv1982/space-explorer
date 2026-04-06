@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { audioManager } from '../systems/AudioManager';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
+import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { createPromptText } from './shared/createPromptText';
 
 export class GameOverScene extends Phaser.Scene {
@@ -38,11 +39,11 @@ export class GameOverScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    createPromptText(this, layout.centerX, layout.centerY + 110, 'Click to Restart', {
+    createPromptText(this, layout.centerX, layout.centerY + 110, 'Click, Tap, or Press Any Key', {
       color: '#ffd0d0',
     });
 
-    this.input.once('pointerdown', () => {
+    bindProceedOnInput(this, () => {
       audioManager.playClick();
       this.scene.start('Menu');
     });

@@ -5,6 +5,7 @@ import { UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUp
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
+import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { createPromptText } from './shared/createPromptText';
 import {
   drawFocusIndicator,
@@ -109,27 +110,35 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       : getLevelConfig(this.state.level + 1).name;
 
     const continueLabel = this.isFinalMissionComplete
-      ? 'CAMPAIGN COMPLETE - Click for Victory'
-      : `NEXT: ${nextLevelLabel} - Click to Continue`;
+      ? 'CAMPAIGN COMPLETE - Click, Tap, or Press Any Key'
+      : `NEXT: ${nextLevelLabel} - Click, Tap, or Press a Key`;
 
     createPromptText(this, layout.centerX, layout.bottom - 60, continueLabel, {
       color: '#b8c8dd',
       fontSize: '20px',
     });
 
-    this.pointerdownHandler = (pointer: Phaser.Input.Pointer) => {
-      if (this.transitioning) {
-        return;
-      }
+    if (this.isFinalMissionComplete) {
+      bindProceedOnInput(this, () => this.continueToNextLevel());
+    } else {
+      this.pointerdownHandler = (pointer: Phaser.Input.Pointer) => {
+        if (this.transitioning) {
+          return;
+        }
 
-      if (!this.isFinalMissionComplete && this.handleUpgradeClick(pointer)) {
-        return;
-      }
+        if (this.handleUpgradeClick(pointer)) {
+          return;
+        }
 
-      this.continueToNextLevel();
-    };
+        this.continueToNextLevel();
+      };
 
-    this.input.on('pointerdown', this.pointerdownHandler);
+      this.input.on('pointerdown', this.pointerdownHandler);
+      bindProceedOnInput(this, () => this.continueToNextLevel(), {
+        includePointer: false,
+        shouldProceedKey: (event) => this.shouldProceedFromKeyboard(event),
+      });
+    }
   }
 
   private handleSceneShutdown(): void {
@@ -434,6 +443,30 @@ export class PlanetIntermissionScene extends Phaser.Scene {
         advanceToNextLevel(this.registry);
         this.scene.start('Game');
       });
+    }
+  }
+
+  private shouldProceedFromKeyboard(event: KeyboardEvent): boolean {
+    switch (event.code) {
+      case 'Tab':
+      case 'Enter':
+      case 'Space':
+      case 'Escape':
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'ArrowUp':
+      case 'ArrowDown':
+      case 'ShiftLeft':
+      case 'ShiftRight':
+      case 'ControlLeft':
+      case 'ControlRight':
+      case 'AltLeft':
+      case 'AltRight':
+      case 'MetaLeft':
+      case 'MetaRight':
+        return false;
+      default:
+        return true;
     }
   }
 

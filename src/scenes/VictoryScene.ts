@@ -3,6 +3,7 @@ import { getTotalLevels } from '../config/LevelsConfig';
 import { audioManager } from '../systems/AudioManager';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
+import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { createPromptText } from './shared/createPromptText';
 
 export class VictoryScene extends Phaser.Scene {
@@ -49,11 +50,11 @@ export class VictoryScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    createPromptText(this, layout.centerX, layout.centerY + 130, 'Click to Play Again', {
+    createPromptText(this, layout.centerX, layout.centerY + 130, 'Click, Tap, or Press Any Key', {
       color: '#dce8ff',
     });
 
-    this.input.once('pointerdown', () => {
+    bindProceedOnInput(this, () => {
       audioManager.playClick();
       this.scene.start('Menu');
     });
