@@ -1,6 +1,8 @@
 {
   "name": "space-explorer",
   "version": "0.1.0",
+  "author": "Douwe de Vries",
+  "license": "MIT",
   "private": true,
   "packageManager": "bun@1.3.5",
   "type": "module",
