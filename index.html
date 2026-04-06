@@ -6,15 +6,46 @@
   <title>Space Explorer</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
     body {
-      background: #000;
+      position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(40, 88, 180, 0.35) 0%, rgba(40, 88, 180, 0) 26%),
+        radial-gradient(circle at 22% 78%, rgba(24, 62, 145, 0.18) 0%, rgba(24, 62, 145, 0) 24%),
+        radial-gradient(circle at 84% 68%, rgba(18, 46, 118, 0.22) 0%, rgba(18, 46, 118, 0) 22%),
+        linear-gradient(180deg, #01030b 0%, #020814 38%, #01040f 100%);
     }
-    canvas { display: block; }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.72;
+      background-image:
+        radial-gradient(circle at 8% 18%, rgba(143, 194, 255, 0.75) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 17% 62%, rgba(108, 166, 255, 0.65) 0 1.2px, transparent 1.8px),
+        radial-gradient(circle at 29% 32%, rgba(162, 206, 255, 0.55) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 36% 74%, rgba(113, 182, 255, 0.45) 0 1.3px, transparent 1.9px),
+        radial-gradient(circle at 48% 24%, rgba(154, 210, 255, 0.6) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 58% 82%, rgba(255, 216, 112, 0.55) 0 1.4px, transparent 2px),
+        radial-gradient(circle at 66% 42%, rgba(137, 195, 255, 0.62) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 78% 16%, rgba(159, 215, 255, 0.58) 0 1.2px, transparent 1.8px),
+        radial-gradient(circle at 87% 58%, rgba(126, 176, 255, 0.48) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 93% 28%, rgba(255, 220, 136, 0.4) 0 1.3px, transparent 1.9px);
+    }
+    canvas {
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
