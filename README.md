@@ -132,5 +132,3 @@ Output goes to `dist/`. Bundle is approximately 1.5 MB (350 KB gzipped), mostly 
 ## License
 
 MIT License. See [`LICENSE`](LICENSE).
-
-Author: Douwe de Vries.
