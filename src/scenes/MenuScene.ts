@@ -6,7 +6,7 @@ import { audioManager } from '../systems/AudioManager';
 import { isTouchMobileDevice } from '../utils/device';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
-import { createPromptText } from './shared/createPromptText';
+import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class MenuScene extends Phaser.Scene {
@@ -18,9 +18,9 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
 
     const menuConfig = getLevelConfig(1);
     const layout = getViewportLayout(this);
@@ -84,7 +84,7 @@ export class MenuScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(12);
     });
 
-    createPromptText(this, layout.centerX, controlsY + 140, 'Click, Tap, or Press Any Key').setDepth(12);
+    createPromptText(this, layout.centerX, controlsY + 140, CONTINUE_PROMPT).setDepth(12);
 
     bindProceedOnInput(this, () => {
       audioManager.init();
@@ -99,10 +99,6 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private handleSceneShutdown(): void {
-    this.parallax?.destroy();
-  }
-
-  private handleSceneDestroy(): void {
     this.parallax?.destroy();
   }
 }

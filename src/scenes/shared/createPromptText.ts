@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+export const CONTINUE_PROMPT = 'Click, Tap, or Press Any Key';
+
 interface PromptTextOptions {
   color?: string;
   fontSize?: string;

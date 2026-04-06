@@ -1,13 +1,16 @@
 import Phaser from 'phaser';
-import { getTotalLevels } from '../config/LevelsConfig';
+import { getTotalLevels, getLevelConfig } from '../config/LevelsConfig';
+import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { audioManager } from '../systems/AudioManager';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
-import { createPromptText } from './shared/createPromptText';
+import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class VictoryScene extends Phaser.Scene {
+  private parallax!: ParallaxBackground;
+
   constructor() {
     super({ key: 'Victory' });
   }
@@ -21,8 +24,10 @@ export class VictoryScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor('#000822');
 
-    // Animated star background
-    this.createStarBackground();
+    // Animated star background via parallax
+    const bgConfig = getLevelConfig(10);
+    this.parallax = new ParallaxBackground();
+    this.parallax.create(this, bgConfig);
 
     // Victory text with glow effect
     this.add.text(layout.centerX, layout.centerY - 120, 'MISSION COMPLETE', {
@@ -52,7 +57,7 @@ export class VictoryScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    createPromptText(this, layout.centerX, layout.centerY + 130, 'Click, Tap, or Press Any Key', {
+    createPromptText(this, layout.centerX, layout.centerY + 130, CONTINUE_PROMPT, {
       color: '#dce8ff',
     });
 
@@ -65,19 +70,11 @@ export class VictoryScene extends Phaser.Scene {
     audioManager.playPowerUp();
     this.time.delayedCall(400, () => audioManager.playPowerUp());
     this.time.delayedCall(800, () => audioManager.playPowerUp());
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.parallax.destroy());
   }
 
-  private createStarBackground(): void {
-    const layout = getViewportLayout(this);
-    const g = this.add.graphics();
-    for (let i = 0; i < 200; i++) {
-      const x = Phaser.Math.Between(layout.left, layout.right);
-      const y = Phaser.Math.Between(layout.top, layout.bottom);
-      const size = Math.random() * 2;
-      const alpha = Math.random() * 0.8 + 0.2;
-      g.fillStyle(0xffffff, alpha);
-      g.fillCircle(x, y, size);
-    }
-    g.setDepth(-10);
+  update(_time: number, delta: number): void {
+    this.parallax?.update(delta);
   }
 }

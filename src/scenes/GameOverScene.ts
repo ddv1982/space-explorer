@@ -3,7 +3,7 @@ import { audioManager } from '../systems/AudioManager';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
-import { createPromptText } from './shared/createPromptText';
+import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class GameOverScene extends Phaser.Scene {
@@ -41,7 +41,7 @@ export class GameOverScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    createPromptText(this, layout.centerX, layout.centerY + 110, 'Click, Tap, or Press Any Key', {
+    createPromptText(this, layout.centerX, layout.centerY + 110, CONTINUE_PROMPT, {
       color: '#ffd0d0',
     });
 

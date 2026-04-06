@@ -59,9 +59,9 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
   create(): void {
     this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
     registerRestartOnResize(this, () => !this.transitioning);
 
     audioManager.init();
@@ -184,10 +184,6 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.hoveredButtonIndex = -1;
     this.showKeyboardFocus = false;
     this.transitioning = false;
-  }
-
-  private handleSceneDestroy(): void {
-    this.handleSceneShutdown();
   }
 
   private generatePlanetTexture(colorPair: [number, number], y: number, scale: number): void {
