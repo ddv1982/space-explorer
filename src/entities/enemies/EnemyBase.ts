@@ -7,6 +7,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   speed: number = 100;
   scoreValue: number = 100;
   enemyType: string = 'base';
+  despawnOffscreen: boolean = true;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string) {
     super(scene, x, y, textureKey);
@@ -35,10 +36,16 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
 
   die(): void {
     this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
+    this.despawn();
+  }
+
+  despawn(): void {
     this.setActive(false);
     this.setVisible(false);
     this.setVelocity(0, 0);
-    (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
+    if (this.body) {
+      (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
+    }
   }
 
   spawn(x: number, y: number): void {
@@ -48,9 +55,25 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
     this.setVisible(true);
   }
 
+  protected updateHorizontalSine(
+    delta: number,
+    startX: number,
+    sineTime: number,
+    amplitude: number,
+    frequency: number
+  ): number {
+    const nextSineTime = sineTime + delta;
+    this.x = startX + Math.sin(nextSineTime * frequency) * amplitude;
+    return nextSineTime;
+  }
+
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     if (this.active) {
+      if (this.despawnOffscreen && this.y > this.scene.cameras.main.height + 50) {
+        this.despawn();
+        return;
+      }
       this.updateBehavior(time, delta);
     }
   }

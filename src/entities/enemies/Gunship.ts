@@ -48,16 +48,13 @@ export class Gunship extends EnemyBase {
   }
 
   updateBehavior(time: number, delta: number): void {
-    if (this.y > this.scene.cameras.main.height + 50) {
-      this.setActive(false);
-      this.setVisible(false);
-      this.setVelocity(0, 0);
-      (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
-      return;
-    }
-
-    this.sineTime += delta;
-    this.x = this.startX + Math.sin(this.sineTime * this.sineFrequency) * this.sineAmplitude;
+    this.sineTime = this.updateHorizontalSine(
+      delta,
+      this.startX,
+      this.sineTime,
+      this.sineAmplitude,
+      this.sineFrequency
+    );
 
     if (this.bulletGroup && time > this.lastFireTime + this.fireCooldown) {
       this.lastFireTime = time;

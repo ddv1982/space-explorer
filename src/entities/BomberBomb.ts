@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { despawnEntity } from '../utils/entityUtils';
 
 const BOMBER_BOMB_SPEED = 200;
 
@@ -33,10 +34,7 @@ export class BomberBomb extends Phaser.Physics.Arcade.Sprite {
   }
 
   kill(): void {
-    this.setActive(false);
-    this.setVisible(false);
-    this.setVelocity(0, 0);
-    (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
+    despawnEntity(this);
   }
 
   preUpdate(time: number, delta: number): void {

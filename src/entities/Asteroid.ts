@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ASTEROID_HP } from '../utils/constants';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
+import { despawnEntity } from '../utils/entityUtils';
 
 export interface AsteroidSpawnConfig {
   velocityX?: number;
@@ -144,9 +145,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   }
 
   private deactivate(): void {
-    this.setActive(false);
-    this.setVisible(false);
-    this.setVelocity(0, 0);
+    despawnEntity(this);
     this.setScale(1);
     this.setDepth(2);
     this.clearTint();
@@ -155,6 +154,5 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     this.indestructible = false;
     this.scoreValue = 50;
     this.baseTint = null;
-    (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
   }
 }

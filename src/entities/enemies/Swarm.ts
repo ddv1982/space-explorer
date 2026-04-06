@@ -33,14 +33,6 @@ export class Swarm extends EnemyBase {
   }
 
   updateBehavior(time: number, delta: number): void {
-    if (this.y > this.scene.cameras.main.height + 30) {
-      this.setActive(false);
-      this.setVisible(false);
-      this.setVelocity(0, 0);
-      (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
-      return;
-    }
-
     this.wobbleAngle += this.angularSpeed * delta / 1000;
     this.setVelocityY(this.speed);
     this.setVelocityX(Math.sin(this.wobbleAngle) * 100);

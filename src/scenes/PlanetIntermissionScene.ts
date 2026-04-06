@@ -1,50 +1,58 @@
 import Phaser from 'phaser';
 import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, getRunSummary, setRunSummary } from '../systems/PlayerState';
 import { getLevelConfig, isLastLevel } from '../config/LevelsConfig';
-import { UpgradeBlockReason, UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUpgradeByKey } from '../config/UpgradesConfig';
+import { UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUpgradeByKey } from '../config/UpgradesConfig';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
-
-const UPGRADE_GRID_LAYOUT = {
-  top: 380,
-  columns: 2,
-  buttonWidth: 240,
-  buttonHeight: 60,
-  spacingX: 32,
-  spacingY: 16,
-  textInsetX: 10,
-  titleOffsetY: 8,
-  descriptionOffsetY: 28,
-  costInsetX: 10,
-  borderRadius: 8,
-};
-
-interface UpgradeButton {
-  bg: Phaser.GameObjects.Graphics;
-  text: Phaser.GameObjects.Text;
-  costText: Phaser.GameObjects.Text;
-  levelText: Phaser.GameObjects.Text;
-  upgradeKey: UpgradeKey;
-  x: number;
-  y: number;
-}
+import { createPromptText } from './shared/createPromptText';
+import {
+  drawFocusIndicator,
+  drawHoverIndicator,
+  findButtonIndexAtPoint,
+  findColumnFocusIndex,
+  findFirstPurchasableButton,
+  findLinearFocusIndex,
+  findNextPurchasableAfter,
+  findRowFocusIndex,
+} from './planetIntermission/navigation';
+import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
+import { UPGRADE_GRID_LAYOUT, type UpgradeButton } from './planetIntermission/shared';
 
 export class PlanetIntermissionScene extends Phaser.Scene {
   private state!: PlayerStateData;
   private scoreText!: Phaser.GameObjects.Text;
   private buttons: UpgradeButton[] = [];
   private warpTransition!: WarpTransition;
+  private focusedButtonIndex: number = -1;
+  private focusGraphics!: Phaser.GameObjects.Graphics;
+  private hoveredButtonIndex: number = -1;
+  private hoverGraphics!: Phaser.GameObjects.Graphics;
+  private isFinalMissionComplete: boolean = false;
+  private showKeyboardFocus = false;
+  private transitioning = false;
+  // Event listener tracking for proper cleanup
+  private keyboardEventHandlers: { event: string; callback: (event?: KeyboardEvent) => void }[] = [];
+  private pointerdownHandler?: (pointer: Phaser.Input.Pointer) => void;
+  private pointermoveHandler?: (pointer: Phaser.Input.Pointer) => void;
+  private buttonPointerHandlers: Map<number, { over: () => void; out: () => void }> = new Map();
 
   constructor() {
     super({ key: 'PlanetIntermission' });
   }
 
   create(): void {
+    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
+    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+
     audioManager.init();
     audioManager.stopMusic();
     this.state = getPlayerState(this.registry);
-    const isFinalMissionComplete = isLastLevel(this.state.level);
+    this.isFinalMissionComplete = isLastLevel(this.state.level);
+    this.showKeyboardFocus = false;
+    this.transitioning = false;
     this.cameras.main.setBackgroundColor('#000011');
     const layout = getViewportLayout(this);
 
@@ -77,46 +85,80 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    if (!isFinalMissionComplete) {
+    // Initialize focus graphics for keyboard navigation
+    this.focusGraphics = this.add.graphics();
+    this.focusGraphics.setDepth(10);
+
+    // Initialize hover graphics for mouse interaction
+    this.hoverGraphics = this.add.graphics();
+    this.hoverGraphics.setDepth(9);
+
+    if (!this.isFinalMissionComplete) {
       this.createUpgradeButtons();
+      this.setupKeyboardNavigation();
+      this.setupHoverEffects();
+      // Set initial focus to first available button
+      this.setInitialFocus();
     }
 
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
 
-    const nextLevelLabel = isFinalMissionComplete
+    const nextLevelLabel = this.isFinalMissionComplete
       ? null
       : getLevelConfig(this.state.level + 1).name;
 
-    const continueLabel = isFinalMissionComplete
+    const continueLabel = this.isFinalMissionComplete
       ? 'CAMPAIGN COMPLETE - Click for Victory'
       : `NEXT: ${nextLevelLabel} - Click to Continue`;
 
-    this.add.text(layout.centerX, layout.bottom - 60, continueLabel, {
+    createPromptText(this, layout.centerX, layout.bottom - 60, continueLabel, {
+      color: '#b8c8dd',
       fontSize: '20px',
-      color: '#aaaaaa',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
+    });
 
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!isFinalMissionComplete && this.handleUpgradeClick(pointer)) {
+    this.pointerdownHandler = (pointer: Phaser.Input.Pointer) => {
+      if (this.transitioning) {
         return;
       }
 
-      audioManager.playClick();
-      this.input.off('pointerdown');
-
-      if (isFinalMissionComplete) {
-        const runSummary = getRunSummary(this.registry);
-        setRunSummary(this.registry, { finalScore: runSummary.finalScore, levelReached: this.state.level });
-        this.scene.start('Victory');
-      } else {
-        this.warpTransition.play(() => {
-          advanceToNextLevel(this.registry);
-          this.scene.start('Game');
-        });
+      if (!this.isFinalMissionComplete && this.handleUpgradeClick(pointer)) {
+        return;
       }
-    });
+
+      this.continueToNextLevel();
+    };
+
+    this.input.on('pointerdown', this.pointerdownHandler);
+  }
+
+  private handleSceneShutdown(): void {
+    for (const handler of this.keyboardEventHandlers) {
+      this.input.keyboard?.off(handler.event, handler.callback);
+    }
+    this.keyboardEventHandlers = [];
+
+    if (this.pointerdownHandler) {
+      this.input.off('pointerdown', this.pointerdownHandler);
+      this.pointerdownHandler = undefined;
+    }
+
+    if (this.pointermoveHandler) {
+      this.input.off('pointermove', this.pointermoveHandler);
+      this.pointermoveHandler = undefined;
+    }
+
+    this.buttonPointerHandlers.clear();
+    this.buttons = [];
+    this.input.setDefaultCursor('default');
+    this.focusedButtonIndex = -1;
+    this.hoveredButtonIndex = -1;
+    this.showKeyboardFocus = false;
+    this.transitioning = false;
+  }
+
+  private handleSceneDestroy(): void {
+    this.handleSceneShutdown();
   }
 
   private generatePlanetTexture(colorPair: [number, number]): void {
@@ -162,65 +204,28 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
     for (let i = 0; i < evaluations.length; i++) {
       const evaluation = evaluations[i];
-      const { upgrade } = evaluation;
 
       const col = i % UPGRADE_GRID_LAYOUT.columns;
       const row = Math.floor(i / UPGRADE_GRID_LAYOUT.columns);
       const bx = startX + col * (UPGRADE_GRID_LAYOUT.buttonWidth + UPGRADE_GRID_LAYOUT.spacingX);
       const by = UPGRADE_GRID_LAYOUT.top + row * (UPGRADE_GRID_LAYOUT.buttonHeight + UPGRADE_GRID_LAYOUT.spacingY);
 
-      const bg = this.add.graphics();
-      this.drawButtonBg(bg, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, evaluation.canPurchase);
-      bg.setPosition(bx, by);
-      bg.setDepth(2);
-
-      const text = this.add.text(bx + UPGRADE_GRID_LAYOUT.textInsetX, by + UPGRADE_GRID_LAYOUT.titleOffsetY, upgrade.name, {
-        fontSize: '14px',
-        color: evaluation.canPurchase ? '#ffffff' : '#666666',
-        fontFamily: 'monospace',
-      }).setDepth(3);
-
-      const levelText = this.add.text(bx + UPGRADE_GRID_LAYOUT.textInsetX, by + UPGRADE_GRID_LAYOUT.descriptionOffsetY, this.getLevelText(evaluation), {
-        fontSize: '11px',
-        color: '#aaaaaa',
-        fontFamily: 'monospace',
-      }).setDepth(3);
-
-      const costLabel = this.getCostLabel(evaluation);
-      const costText = this.add.text(bx + UPGRADE_GRID_LAYOUT.buttonWidth - UPGRADE_GRID_LAYOUT.costInsetX, by + UPGRADE_GRID_LAYOUT.buttonHeight / 2, costLabel, {
-        fontSize: '16px',
-        color: this.getCostColor(evaluation.blockReason),
-        fontFamily: 'monospace',
-      }).setOrigin(1, 0.5).setDepth(3);
-
-      this.buttons.push({ bg, text, costText, levelText, upgradeKey: upgrade.key, x: bx, y: by });
+      this.buttons.push(createUpgradeButton(this, bx, by, evaluation));
     }
-  }
-
-  private drawButtonBg(bg: Phaser.GameObjects.Graphics, w: number, h: number, active: boolean): void {
-    bg.clear();
-    bg.fillStyle(0x222244, 0.8);
-    bg.fillRoundedRect(0, 0, w, h, UPGRADE_GRID_LAYOUT.borderRadius);
-    bg.lineStyle(2, active ? 0x4488ff : 0x444466, 1);
-    bg.strokeRoundedRect(0, 0, w, h, UPGRADE_GRID_LAYOUT.borderRadius);
   }
 
   private handleUpgradeClick(pointer: Phaser.Input.Pointer): boolean {
-    for (const btn of this.buttons) {
-      if (
-        pointer.x >= btn.x && pointer.x <= btn.x + UPGRADE_GRID_LAYOUT.buttonWidth &&
-        pointer.y >= btn.y && pointer.y <= btn.y + UPGRADE_GRID_LAYOUT.buttonHeight
-      ) {
-        const evaluation = this.getButtonEvaluation(btn);
-
-        if (evaluation.canPurchase) {
-          this.tryBuyUpgrade(btn.upgradeKey);
-        }
-
-        return true;
-      }
+    const buttonIndex = findButtonIndexAtPoint(this.buttons, pointer.x, pointer.y);
+    if (buttonIndex === -1) {
+      return false;
     }
-    return false;
+
+    const button = this.buttons[buttonIndex];
+    if (this.getButtonEvaluation(button).canPurchase) {
+      this.tryBuyUpgrade(button.upgradeKey);
+    }
+
+    return true;
   }
 
   private tryBuyUpgrade(upgradeKey: UpgradeKey): boolean {
@@ -242,20 +247,26 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
     this.scoreText.setText(`CREDITS: ${this.state.score}`);
     this.refreshButtons();
+
+    // After purchase, if the focused button is no longer purchasable, move focus
+    const buttonIndex = this.buttons.findIndex((b) => b.upgradeKey === upgradeKey);
+    if (buttonIndex === this.focusedButtonIndex) {
+      const newEval = this.getButtonEvaluation(button);
+      if (!newEval.canPurchase) {
+        this.moveFocusAfterPurchase();
+      }
+    }
+
     return true;
   }
 
   private refreshButtons(): void {
     for (const btn of this.buttons) {
-      const evaluation = this.getButtonEvaluation(btn);
-
-      this.drawButtonBg(btn.bg, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, evaluation.canPurchase);
-
-      btn.text.setColor(evaluation.canPurchase ? '#ffffff' : '#666666');
-      btn.levelText.setText(this.getLevelText(evaluation));
-      btn.costText.setText(this.getCostLabel(evaluation));
-      btn.costText.setColor(this.getCostColor(evaluation.blockReason));
+      updateUpgradeButton(btn, this.getButtonEvaluation(btn));
     }
+
+    this.updateFocusIndicator();
+    this.updateHoverIndicator();
   }
 
   private getButtonEvaluation(button: UpgradeButton): UpgradeEvaluation {
@@ -267,44 +278,246 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     );
   }
 
-  private getLevelText(evaluation: UpgradeEvaluation): string {
-    const baseText = `${evaluation.upgrade.description} [${evaluation.currentLevel}/${evaluation.upgrade.maxLevel}]`;
+  private setupKeyboardNavigation(): void {
+    // Define keyboard handlers with tracking
+    const handlers: { event: string; callback: (event?: KeyboardEvent) => void }[] = [
+      {
+        event: 'keydown-TAB',
+        callback: (event?: KeyboardEvent) => {
+          if (event) {
+            event.preventDefault();
+            this.setKeyboardFocusVisible(true);
+            if (event.shiftKey) {
+              this.moveFocus(-1); // Shift+Tab: move backward
+            } else {
+              this.moveFocus(1); // Tab: move forward
+            }
+          }
+        },
+      },
+      {
+        event: 'keydown-ARROW_RIGHT',
+        callback: () => {
+          this.setKeyboardFocusVisible(true);
+          this.moveFocusInRow(1);
+        },
+      },
+      {
+        event: 'keydown-ARROW_LEFT',
+        callback: () => {
+          this.setKeyboardFocusVisible(true);
+          this.moveFocusInRow(-1);
+        },
+      },
+      {
+        event: 'keydown-ARROW_DOWN',
+        callback: () => {
+          this.setKeyboardFocusVisible(true);
+          this.moveFocusInColumn(1);
+        },
+      },
+      {
+        event: 'keydown-ARROW_UP',
+        callback: () => {
+          this.setKeyboardFocusVisible(true);
+          this.moveFocusInColumn(-1);
+        },
+      },
+      {
+        event: 'keydown-ENTER',
+        callback: () => {
+          this.setKeyboardFocusVisible(true);
+          this.activateFocusedButton();
+        },
+      },
+      {
+        event: 'keydown-SPACE',
+        callback: () => {
+          this.setKeyboardFocusVisible(true);
+          this.activateFocusedButton();
+        },
+      },
+      {
+        event: 'keydown-ESC',
+        callback: () => {
+          this.continueToNextLevel();
+        },
+      },
+    ];
 
-    if (evaluation.blockReason === 'locked' && evaluation.unlockReason) {
-      return `UNLOCK: ${evaluation.unlockReason}`;
+    // Register handlers and track them for cleanup
+    for (const handler of handlers) {
+      this.input.keyboard?.on(handler.event, handler.callback);
+      this.keyboardEventHandlers.push(handler);
     }
-
-    if (evaluation.blockReason === 'progression') {
-      return `${baseText} CAP ${evaluation.progressionLimit}`;
-    }
-
-    return baseText;
   }
 
-  private getCostLabel(evaluation: UpgradeEvaluation): string {
-    switch (evaluation.blockReason) {
-      case 'maxed':
-        return 'MAXED';
-      case 'locked':
-        return 'LOCKED';
-      case 'progression':
-        return `L${evaluation.progressionLimit}`;
-      default:
-        return `${evaluation.cost}`;
+  private setInitialFocus(): void {
+    this.focusedButtonIndex = findFirstPurchasableButton(this.buttons, (button) => this.getButtonEvaluation(button));
+    this.updateFocusIndicator();
+  }
+
+  private moveFocus(direction: number): void {
+    this.focusButton(
+      findLinearFocusIndex(this.buttons, this.focusedButtonIndex, direction, (button) => this.getButtonEvaluation(button))
+    );
+  }
+
+  private moveFocusInRow(direction: number): void {
+    this.focusButton(
+      findRowFocusIndex(this.buttons, this.focusedButtonIndex, direction, (button) => this.getButtonEvaluation(button))
+    );
+  }
+
+  private moveFocusInColumn(direction: number): void {
+    this.focusButton(
+      findColumnFocusIndex(this.buttons, this.focusedButtonIndex, direction, (button) => this.getButtonEvaluation(button))
+    );
+  }
+
+  private focusButton(index: number): void {
+    this.focusedButtonIndex = index;
+    this.updateFocusIndicator();
+  }
+
+  private updateFocusIndicator(): void {
+    drawFocusIndicator(this.focusGraphics, this.showKeyboardFocus ? this.buttons[this.focusedButtonIndex] : undefined);
+  }
+
+  private setKeyboardFocusVisible(visible: boolean): void {
+    if (this.showKeyboardFocus === visible) {
+      return;
+    }
+
+    this.showKeyboardFocus = visible;
+    this.updateFocusIndicator();
+  }
+
+  private activateFocusedButton(): void {
+    if (this.focusedButtonIndex === -1 || this.focusedButtonIndex >= this.buttons.length) {
+      return;
+    }
+
+    const button = this.buttons[this.focusedButtonIndex];
+    const evaluation = this.getButtonEvaluation(button);
+
+    if (evaluation.canPurchase) {
+      const success = this.tryBuyUpgrade(button.upgradeKey);
+      if (success) {
+        // Move focus to next available button after purchase
+        this.moveFocusAfterPurchase();
+      }
     }
   }
 
-  private getCostColor(blockReason: UpgradeBlockReason): string {
-    switch (blockReason) {
-      case 'maxed':
-        return '#44ff44';
-      case 'locked':
-      case 'progression':
-        return '#888888';
-      case 'credits':
-        return '#664444';
-      default:
-        return '#ffcc00';
+  private moveFocusAfterPurchase(): void {
+    this.focusButton(findNextPurchasableAfter(this.buttons, this.focusedButtonIndex, (button) => this.getButtonEvaluation(button)));
+  }
+
+  private continueToNextLevel(): void {
+    if (this.transitioning) {
+      return;
+    }
+
+    this.transitioning = true;
+    audioManager.playClick();
+    if (this.pointerdownHandler) {
+      this.input.off('pointerdown', this.pointerdownHandler);
+    }
+
+    if (this.isFinalMissionComplete) {
+      const runSummary = getRunSummary(this.registry);
+      setRunSummary(this.registry, { finalScore: runSummary.finalScore, levelReached: this.state.level });
+      this.scene.start('Victory');
+    } else {
+      this.warpTransition.play(() => {
+        advanceToNextLevel(this.registry);
+        this.scene.start('Game');
+      });
+    }
+  }
+
+  private setupHoverEffects(): void {
+    for (let i = 0; i < this.buttons.length; i++) {
+      const button = this.buttons[i];
+      const buttonBg = button.bg;
+
+      // Set up pointer events for hover detection
+      buttonBg.setInteractive(
+        new Phaser.Geom.Rectangle(0, 0, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight),
+        Phaser.Geom.Rectangle.Contains
+      );
+
+      const overHandler = () => {
+        this.onButtonHover(i);
+      };
+
+      const outHandler = () => {
+        this.onButtonUnhover();
+      };
+
+      buttonBg.on('pointerover', overHandler);
+      buttonBg.on('pointerout', outHandler);
+
+      // Track handlers for cleanup
+      this.buttonPointerHandlers.set(i, { over: overHandler, out: outHandler });
+    }
+
+    // Track global pointer movement for cursor updates outside buttons
+    this.pointermoveHandler = (pointer: Phaser.Input.Pointer) => {
+      this.updateCursorFromPointer(pointer);
+    };
+    this.input.on('pointermove', this.pointermoveHandler);
+  }
+
+  private onButtonHover(index: number): void {
+    this.setKeyboardFocusVisible(false);
+    this.hoveredButtonIndex = index;
+    this.updateHoverIndicator();
+    this.updateCursorForButton(index);
+  }
+
+  private onButtonUnhover(): void {
+    this.setKeyboardFocusVisible(false);
+    this.hoveredButtonIndex = -1;
+    this.updateHoverIndicator();
+    this.updateCursorForButton(-1);
+  }
+
+  private updateHoverIndicator(): void {
+    const button = this.buttons[this.hoveredButtonIndex];
+    if (!button || !this.getButtonEvaluation(button).canPurchase) {
+      drawHoverIndicator(this.hoverGraphics, undefined);
+      return;
+    }
+
+    drawHoverIndicator(this.hoverGraphics, button);
+  }
+
+  private updateCursorForButton(index: number): void {
+    if (index === -1 || index >= this.buttons.length) {
+      // Default cursor when not hovering a button
+      this.input.setDefaultCursor('default');
+      return;
+    }
+
+    const button = this.buttons[index];
+    const evaluation = this.getButtonEvaluation(button);
+
+    if (evaluation.canPurchase) {
+      this.input.setDefaultCursor('pointer');
+    } else {
+      // Show not-allowed cursor for disabled buttons
+      this.input.setDefaultCursor('not-allowed');
+    }
+  }
+
+  private updateCursorFromPointer(pointer: Phaser.Input.Pointer): void {
+    const buttonIndex = findButtonIndexAtPoint(this.buttons, pointer.x, pointer.y);
+    if (buttonIndex === -1) {
+      this.input.setDefaultCursor('default');
+    } else if (buttonIndex !== this.hoveredButtonIndex) {
+      this.updateCursorForButton(buttonIndex);
     }
   }
 }

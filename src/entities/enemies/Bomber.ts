@@ -41,14 +41,6 @@ export class Bomber extends EnemyBase {
   }
 
   updateBehavior(time: number, _delta: number): void {
-    if (this.y > this.scene.cameras.main.height + 50) {
-      this.setActive(false);
-      this.setVisible(false);
-      this.setVelocity(0, 0);
-      (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
-      return;
-    }
-
     if (this.bombGroup && time > this.lastBombTime + this.bombCooldown) {
       this.lastBombTime = time;
       this.dropBomb();

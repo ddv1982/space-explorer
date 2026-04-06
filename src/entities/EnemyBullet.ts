@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ENEMY_BULLET_SPEED } from '../utils/constants';
+import { despawnEntity } from '../utils/entityUtils';
 
 export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -30,10 +31,7 @@ export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
   }
 
   kill(): void {
-    this.setActive(false);
-    this.setVisible(false);
-    this.setVelocity(0, 0);
-    (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
+    despawnEntity(this);
   }
 
   preUpdate(time: number, delta: number): void {

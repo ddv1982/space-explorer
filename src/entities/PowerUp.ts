@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT } from '../utils/constants';
+import { despawnEntity } from '../utils/entityUtils';
 
 export type PowerUpType = 'health' | 'shield' | 'rapidfire';
 
@@ -134,9 +135,6 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
   }
 
   kill(): void {
-    this.setActive(false);
-    this.setVisible(false);
-    this.setVelocity(0, 0);
-    (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
+    despawnEntity(this);
   }
 }

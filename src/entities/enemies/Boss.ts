@@ -3,8 +3,9 @@ import { EnemyBase } from './EnemyBase';
 import { EnemyBullet } from '../EnemyBullet';
 import { Player } from '../Player';
 import type { BossAttackStyle, BossConfig, EnemyType } from '../../config/LevelsConfig';
-import { ENEMY_BULLET_SPEED, GAME_WIDTH } from '../../utils/constants';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
+import { fireBossPattern } from './boss/attacks';
+import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from './boss/behavior';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -89,6 +90,7 @@ export class Boss extends EnemyBase {
     this.speed = 0;
     this.scoreValue = 2000;
     this.enemyType = 'boss';
+    this.despawnOffscreen = false;
   }
 
   override takeDamage(amount: number): void {
@@ -146,39 +148,24 @@ export class Boss extends EnemyBase {
   }
 
   private updateMovement(time: number, delta: number): void {
-    switch (this.attackStyle) {
-      case 'carrier':
-        this.x += this.moveSpeed * 0.72 * this.moveDir * delta / 1000;
-        this.y = this.targetY + Math.sin(time * 0.0026) * 10;
-        if (this.x > GAME_WIDTH - 90) this.moveDir = -1;
-        if (this.x < 90) this.moveDir = 1;
-        break;
-      case 'pursuit': {
-        const player = this.getPlayer();
-        const targetX = Phaser.Math.Clamp(player?.x ?? this.x + this.moveDir * 120, 70, GAME_WIDTH - 70);
-        const maxStep = this.moveSpeed * 1.15 * delta / 1000;
-        this.x += Phaser.Math.Clamp(targetX - this.x, -maxStep, maxStep);
-        this.y = this.targetY + Math.sin(time * 0.005) * 14;
-        this.moveDir = targetX >= this.x ? 1 : -1;
-        break;
-      }
-      case 'bulwark':
-        this.x += this.moveSpeed * 0.45 * this.moveDir * delta / 1000;
-        this.y = this.targetY + Math.sin(time * 0.0018) * 6;
-        if (this.x > GAME_WIDTH - 100) this.moveDir = -1;
-        if (this.x < 100) this.moveDir = 1;
-        break;
-      default:
-        this.x += this.moveSpeed * this.moveDir * delta / 1000;
-        if (this.x > GAME_WIDTH - 60) this.moveDir = -1;
-        if (this.x < 60) this.moveDir = 1;
-        break;
-    }
+    const movement = updateBossMovement({
+      attackStyle: this.attackStyle,
+      x: this.x,
+      targetY: this.targetY,
+      moveDir: this.moveDir,
+      moveSpeed: this.moveSpeed,
+      time,
+      delta,
+      playerX: this.getPlayer()?.x,
+    });
+
+    this.x = movement.x;
+    this.y = movement.y;
+    this.moveDir = movement.moveDir;
   }
 
   private updatePhaseState(time: number): void {
-    const hpPercent = this.hp / this.maxHp;
-    if (hpPercent <= 0.5 && this.phase === 1) {
+    if (shouldEnterBossPhaseTwo(this.phase, this.hp, this.maxHp)) {
       this.phase = 2;
       this.moveSpeed = this.phase2MoveSpeed;
       this.phaseStartedAt = time;
@@ -187,15 +174,7 @@ export class Boss extends EnemyBase {
   }
 
   private updateShieldState(time: number): void {
-    if (this.attackStyle !== 'bulwark') {
-      this.setShieldActive(false);
-      return;
-    }
-
-    const cycleDuration = this.phase === 1 ? 2500 : 1900;
-    const openWindow = this.phase === 1 ? 820 : 620;
-    const cycleProgress = (time - this.phaseStartedAt) % cycleDuration;
-    this.setShieldActive(cycleProgress > openWindow);
+    this.setShieldActive(getBossShieldActive(this.attackStyle, this.phase, this.phaseStartedAt, time));
   }
 
   private setShieldActive(active: boolean): void {
@@ -213,178 +192,25 @@ export class Boss extends EnemyBase {
   }
 
   private firePattern(time: number): void {
-    switch (this.attackStyle) {
-      case 'carrier':
-        if (this.phase === 1) {
-          this.fireCarrierPattern();
-        } else {
-          this.fireCarrierAssault(time);
-        }
-        return;
-      case 'pursuit':
-        if (this.phase === 1) {
-          this.firePursuitVolley();
-        } else {
-          this.firePursuitBurst();
-        }
-        return;
-      case 'bulwark':
-        if (this.phase === 1) {
-          this.fireBulwarkSpread();
-        } else {
-          this.fireBulwarkRotary(time);
-        }
-        return;
-      default:
-        if (this.phase === 1) {
-          this.fireSpread();
-        } else {
-          this.fireSpiral(time);
-        }
-    }
-  }
-
-  private fireSpread(): void {
-    if (!this.bulletGroup) return;
-    const shotCount = Math.max(1, this.phase1SpreadShotCount);
-    const origins = this.attackStyle === 'barrage' ? [this.x - 18, this.x + 18] : [this.x];
-    const arcScale = this.attackStyle === 'barrage' ? 1.15 : this.attackStyle === 'pressure' ? 0.55 : 1;
-    const angleOffset = this.attackStyle === 'pressure' && this.attackCycle % 2 === 1 ? this.moveDir * 6 : 0;
-    const halfArc = (this.phase1SpreadArcDegrees * arcScale) / 2;
-
-    for (const originX of origins) {
-      for (let i = 0; i < shotCount; i++) {
-        const progress = shotCount === 1 ? 0.5 : i / (shotCount - 1);
-        const angleDeg = Phaser.Math.Linear(-halfArc, halfArc, progress) + angleOffset;
-        const rad = Phaser.Math.DegToRad(angleDeg + 90);
-        this.fireBullet(
-          originX,
-          this.y + 30,
-          Math.cos(rad) * ENEMY_BULLET_SPEED * this.phase1BulletSpeedScale,
-          Math.sin(rad) * ENEMY_BULLET_SPEED * this.phase1BulletSpeedScale
-        );
-      }
-    }
-  }
-
-  private fireSpiral(time: number): void {
-    if (!this.bulletGroup) return;
-    const shotCount = Math.max(1, this.phase2SpiralShotCount);
-    const angleStep = 360 / shotCount;
-    const timeDivisor = this.attackStyle === 'pressure' ? 420 : 500;
-    const turnRate = this.phase2SpiralTurnRate * (this.attackStyle === 'pressure' ? 1.15 : 1);
-    const baseAngle = (time / timeDivisor) * turnRate;
-    const spiralAngles = this.attackStyle === 'maelstrom' ? [baseAngle, -baseAngle + angleStep / 2] : [baseAngle];
-
-    for (const spiralAngle of spiralAngles) {
-      this.fireRadialPattern(this.x, this.y + 30, shotCount, spiralAngle, angleStep, this.phase2BulletSpeedScale);
-    }
-  }
-
-  private fireCarrierPattern(): void {
-    this.fireArc(this.x - 22, this.y + 24, 4, 54, this.phase1BulletSpeedScale * 0.95, -8);
-    this.fireArc(this.x + 22, this.y + 24, 4, 54, this.phase1BulletSpeedScale * 0.95, 8);
-
-    if (this.attackCycle % 2 === 0) {
-      this.summonEscorts(['swarm', 'scout']);
-    }
-  }
-
-  private fireCarrierAssault(time: number): void {
-    this.fireSpiral(time);
-    this.fireArc(this.x, this.y + 26, 5, 38, this.phase2BulletSpeedScale, this.moveDir * 4);
-
-    if (this.attackCycle % 2 === 1) {
-      this.summonEscorts(['fighter', 'swarm']);
-    }
-  }
-
-  private firePursuitVolley(): void {
-    this.fireAimedArc(this.getPlayerAimAngle(), 5, 32, this.phase1BulletSpeedScale);
-  }
-
-  private firePursuitBurst(): void {
-    this.fireAimedArc(this.getPlayerAimAngle(), 7, 24, this.phase2BulletSpeedScale * 1.02);
-    this.fireArc(this.x, this.y + 28, 3, 18, this.phase2BulletSpeedScale, this.moveDir * 10);
-  }
-
-  private fireBulwarkSpread(): void {
-    const laneOffsets = [-28, 0, 28];
-    laneOffsets.forEach((offset) => {
-      this.fireArc(this.x + offset, this.y + 26, 3, 18, this.phase1BulletSpeedScale, offset * 0.08);
+    fireBossPattern({
+      attackStyle: this.attackStyle,
+      phase: this.phase,
+      x: this.x,
+      y: this.y,
+      moveDir: this.moveDir,
+      attackCycle: this.attackCycle,
+      shieldActive: this.shieldActive,
+      phase1SpreadShotCount: this.phase1SpreadShotCount,
+      phase1SpreadArcDegrees: this.phase1SpreadArcDegrees,
+      phase1BulletSpeedScale: this.phase1BulletSpeedScale,
+      phase2SpiralShotCount: this.phase2SpiralShotCount,
+      phase2SpiralTurnRate: this.phase2SpiralTurnRate,
+      phase2BulletSpeedScale: this.phase2BulletSpeedScale,
+      time,
+      fireBullet: (x, y, velocityX, velocityY) => this.fireBullet(x, y, velocityX, velocityY),
+      summonEscorts: (types) => this.summonEscorts(types),
+      getPlayerAimAngle: () => this.getPlayerAimAngle(),
     });
-  }
-
-  private fireBulwarkRotary(time: number): void {
-    const spokes = Math.max(4, this.phase2SpiralShotCount);
-    const angleStep = 360 / spokes;
-    const baseAngle = (time / 520) * this.phase2SpiralTurnRate;
-
-    this.fireRadialPattern(this.x, this.y + 26, spokes, baseAngle, angleStep, this.phase2BulletSpeedScale);
-
-    if (!this.shieldActive) {
-      this.fireArc(this.x, this.y + 26, 5, 28, this.phase2BulletSpeedScale * 0.95, this.moveDir * 4);
-    }
-  }
-
-  private fireAimedArc(baseAngle: number, shotCount: number, arcDegrees: number, speedScale: number): void {
-    this.fireArcPattern(this.x, this.y + 28, baseAngle, shotCount, arcDegrees, speedScale);
-  }
-
-  private fireArc(
-    originX: number,
-    originY: number,
-    shotCount: number,
-    arcDegrees: number,
-    speedScale: number,
-    angleOffset = 0
-  ): void {
-    this.fireArcPattern(originX, originY, 90 + angleOffset, shotCount, arcDegrees, speedScale);
-  }
-
-  private fireArcPattern(
-    originX: number,
-    originY: number,
-    baseAngle: number,
-    shotCount: number,
-    arcDegrees: number,
-    speedScale: number
-  ): void {
-    const halfArc = arcDegrees / 2;
-
-    for (let i = 0; i < shotCount; i++) {
-      const progress = shotCount === 1 ? 0.5 : i / (shotCount - 1);
-      const angleDeg = Phaser.Math.Linear(-halfArc, halfArc, progress) + baseAngle;
-      const rad = Phaser.Math.DegToRad(angleDeg);
-
-      this.fireBullet(
-        originX,
-        originY,
-        Math.cos(rad) * ENEMY_BULLET_SPEED * speedScale,
-        Math.sin(rad) * ENEMY_BULLET_SPEED * speedScale
-      );
-    }
-  }
-
-  private fireRadialPattern(
-    originX: number,
-    originY: number,
-    shotCount: number,
-    baseAngle: number,
-    angleStep: number,
-    speedScale: number
-  ): void {
-    for (let i = 0; i < shotCount; i++) {
-      const angleDeg = baseAngle + i * angleStep;
-      const rad = Phaser.Math.DegToRad(angleDeg);
-
-      this.fireBullet(
-        originX,
-        originY,
-        Math.cos(rad) * ENEMY_BULLET_SPEED * speedScale,
-        Math.sin(rad) * ENEMY_BULLET_SPEED * speedScale
-      );
-    }
   }
 
   private summonEscorts(types: EnemyType[]): void {
@@ -400,12 +226,16 @@ export class Boss extends EnemyBase {
   }
 
   private fireBullet(x: number, y: number, velocityX: number, velocityY: number): void {
-    if (!this.bulletGroup) return;
+    if (!this.bulletGroup) {
+      return;
+    }
 
     const bullet =
       (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
       (this.bulletGroup.get(x, y) as EnemyBullet | null);
-    if (!bullet) return;
+    if (!bullet) {
+      return;
+    }
 
     bullet.fire(x, y);
     bullet.setVelocity(velocityX, velocityY);
@@ -460,14 +290,11 @@ export class Boss extends EnemyBase {
     });
   }
 
-  die(): void {
+  override die(): void {
     this.scene.events.emit(GAME_SCENE_EVENTS.bossDeath, this.scoreValue, this.x, this.y);
     this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.shieldActive = false;
-    this.setActive(false);
-    this.setVisible(false);
     this.clearTint();
-    this.setVelocity(0, 0);
-    (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
+    this.despawn();
   }
 }

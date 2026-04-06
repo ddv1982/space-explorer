@@ -3,6 +3,7 @@ import { getTotalLevels } from '../config/LevelsConfig';
 import { audioManager } from '../systems/AudioManager';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
+import { createPromptText } from './shared/createPromptText';
 
 export class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -48,19 +49,8 @@ export class VictoryScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    // Pulsing continue text
-    const continueText = this.add.text(layout.centerX, layout.centerY + 130, 'Click to Play Again', {
-      fontSize: '24px',
-      color: '#aaaaaa',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
-
-    this.tweens.add({
-      targets: continueText,
-      alpha: { from: 1, to: 0.3 },
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
+    createPromptText(this, layout.centerX, layout.centerY + 130, 'Click to Play Again', {
+      color: '#dce8ff',
     });
 
     this.input.once('pointerdown', () => {

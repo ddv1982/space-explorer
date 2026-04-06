@@ -14,10 +14,6 @@ import { LevelManager } from '../systems/LevelManager';
 import { EffectsManager } from '../systems/EffectsManager';
 import {
   getPlayerState,
-  saveScoreToState,
-  saveCurrentHp,
-  saveRemainingLives,
-  setRunSummary,
 } from '../systems/PlayerState';
 import { Boss } from '../entities/enemies/Boss';
 import { WarpTransition } from '../systems/WarpTransition';
@@ -26,17 +22,12 @@ import { PowerUp, PowerUpType, resolvePowerUpOverlap } from '../entities/PowerUp
 import {
   applyPowerUpPickup,
   GAME_SCENE_EVENTS,
-  TERMINAL_TRANSITIONS,
   trySpawnRandomPowerUp,
-  type TerminalTransitionState,
 } from '../systems/GameplayFlow';
-import { centerHorizontally, getViewportLayout } from '../utils/layout';
+import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
+import { showControlsHint } from './gameScene/showControlsHint';
 
 export class GameScene extends Phaser.Scene {
-  private static readonly PLAYER_RESPAWN_DELAY_MS = 1000;
-  private static readonly PLAYER_RESPAWN_FREEZE_DELAY_MS = 240;
-  private static readonly PLAYER_RESPAWN_INVULNERABILITY_MS = 2000;
-  private static readonly PLAYER_RESPAWN_WATCHDOG_BUFFER_MS = 250;
   private static readonly PLAYER_DEATH_EXPLOSION_INTENSITY = 1.35;
 
   private parallax!: ParallaxBackground;
@@ -52,22 +43,10 @@ export class GameScene extends Phaser.Scene {
   private effectsManager!: EffectsManager;
   private warpTransition!: WarpTransition;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
+  private readonly flow = new GameSceneFlowController();
   private lastFireTime: number = 0;
-  private gameOver: boolean = false;
-  private gameOverTransition: Phaser.Time.TimerEvent | null = null;
-  private gameOverWatchdog: ReturnType<typeof setTimeout> | null = null;
-  private gameOverSceneStarted: boolean = false;
-  private pendingLevelCompleteTransition: Phaser.Time.TimerEvent | null = null;
-  private pendingRespawn: Phaser.Time.TimerEvent | null = null;
-  private pendingRespawnFreeze: Phaser.Time.TimerEvent | null = null;
-  private respawnWatchdog: ReturnType<typeof setTimeout> | null = null;
   private boss: Boss | null = null;
-  private terminalTransitionState: TerminalTransitionState = TERMINAL_TRANSITIONS.none;
-  private levelCompleteQueued: boolean = false;
   private lastHudShieldCount: number | null = null;
-  private remainingLives: number = 0;
-  private respawnInProgress: boolean = false;
-  private respawnScenePaused: boolean = false;
   private readonly shotDirection = new Phaser.Math.Vector2();
   private readonly shotOrigin = new Phaser.Math.Vector2();
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
@@ -78,25 +57,13 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.lastFireTime = 0;
-    this.gameOver = false;
-    this.gameOverTransition = null;
-    this.gameOverWatchdog = null;
-    this.gameOverSceneStarted = false;
-    this.pendingLevelCompleteTransition = null;
-    this.pendingRespawn = null;
-    this.pendingRespawnFreeze = null;
-    this.respawnWatchdog = null;
     this.boss = null;
-    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
-    this.levelCompleteQueued = false;
     this.lastHudShieldCount = null;
-    this.respawnInProgress = false;
-    this.respawnScenePaused = false;
 
     this.registerLifecycleHandlers();
 
     const state = getPlayerState(this.registry);
-    this.remainingLives = state.remainingLives;
+    this.flow.reset(state.remainingLives);
 
     this.levelManager = new LevelManager();
     this.levelManager.init(state.level);
@@ -154,7 +121,7 @@ export class GameScene extends Phaser.Scene {
       this.powerUpGroup, this.player,
       (_obj1, _obj2) => {
         const powerUp = resolvePowerUpOverlap(_obj1, _obj2);
-        if (!powerUp || !powerUp.active || !this.player.isAlive || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) return;
+        if (!powerUp || !powerUp.active || !this.player.isAlive || this.flow.isTerminalTransitionActive()) return;
 
         this.applyPowerUp(powerUp.powerUpType);
         powerUp.kill();
@@ -169,8 +136,7 @@ export class GameScene extends Phaser.Scene {
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
 
-    // Controls hint overlay (fades out after 5 seconds)
-    this.showControlsHint();
+    showControlsHint(this);
 
     this.registerSceneEventHandlers();
   }
@@ -219,21 +185,11 @@ export class GameScene extends Phaser.Scene {
     this.parallax?.destroy();
     this.effectsManager?.destroy();
 
-    this.clearGameOverTransitionTimers();
-    this.clearPendingLevelCompleteTransition();
-    this.clearPendingRespawn();
-    this.collisionManager.setRespawnInProgress(false);
+    this.flow.shutdown(this.collisionManager);
 
     this.lastFireTime = 0;
-    this.gameOver = false;
-    this.gameOverSceneStarted = false;
     this.boss = null;
-    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
-    this.levelCompleteQueued = false;
     this.lastHudShieldCount = null;
-    this.remainingLives = 0;
-    this.respawnInProgress = false;
-    this.respawnScenePaused = false;
   }
 
   private handleSceneDestroy(): void {
@@ -241,6 +197,7 @@ export class GameScene extends Phaser.Scene {
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
     this.parallax?.destroy();
     this.effectsManager?.destroy();
+    this.flow.shutdown(this.collisionManager);
   }
 
   private handleScaleResize(): void {
@@ -259,33 +216,11 @@ export class GameScene extends Phaser.Scene {
     const deathY = this.player.y;
 
     this.runBestEffort(() => this.playPlayerDeathCue(deathX, deathY));
-
-    if (this.remainingLives > 1) {
-      this.remainingLives -= 1;
-      saveRemainingLives(this.registry, this.remainingLives);
-      this.beginRespawnTransition();
-      return;
-    }
-
-    this.levelCompleteQueued = false;
-    this.clearPendingLevelCompleteTransition();
-
-    if (!this.beginTerminalTransition(TERMINAL_TRANSITIONS.playerDeath)) return;
-
-    const finalScore = this.scoreManager.getScore();
-    const level = this.levelManager.currentLevel;
-
-    this.gameOver = true;
-    this.scheduleGameOverTransition();
-
-    this.runBestEffort(() => audioManager.stopMusic());
-    this.runBestEffort(() => saveRemainingLives(this.registry, 0));
-    this.runBestEffort(() => saveScoreToState(this.registry, finalScore));
-    this.runBestEffort(() => setRunSummary(this.registry, { finalScore, levelReached: level }));
+    this.flow.handlePlayerDeath(this.getFlowContext());
   }
 
   private handlePlayerFatalHit(): void {
-    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
+    if (!this.flow.isPlayerDeathTransitionActive()) {
       return;
     }
 
@@ -293,7 +228,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleLevelComplete(): void {
-    this.queueLevelComplete();
+    this.flow.queueLevelComplete(this.getFlowContext());
   }
 
   private handleBossSpawn(): void {
@@ -342,20 +277,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.boss = null;
     this.levelManager.markBossDefeated();
-    this.queueLevelComplete();
-  }
-
-  private queueLevelComplete(): void {
-    if (
-      this.levelCompleteQueued ||
-      this.respawnInProgress ||
-      this.terminalTransitionState !== TERMINAL_TRANSITIONS.none
-    ) {
-      return;
-    }
-
-    this.levelCompleteQueued = true;
-    this.scheduleLevelCompleteTransition();
+    this.flow.queueLevelComplete(this.getFlowContext());
   }
 
   private spawnBoss(): void {
@@ -370,45 +292,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private showControlsHint(): void {
-    const layout = getViewportLayout(this);
-    const hintWidth = 320;
-    const hintHeight = 80;
-    const bgX = centerHorizontally(layout, hintWidth);
-    const bgY = layout.centerY - hintHeight / 2;
-
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.6);
-    bg.fillRoundedRect(bgX, bgY, hintWidth, hintHeight, 8);
-    bg.setDepth(200).setScrollFactor(0);
-
-    const title = this.add.text(layout.centerX, layout.centerY - 20, 'WASD / Arrows to Move', {
-      fontSize: '16px',
-      color: '#88ccff',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-
-    const fireHint = this.add.text(layout.centerX, layout.centerY + 10, 'SPACE / Click to Fire', {
-      fontSize: '16px',
-      color: '#88ccff',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-
-    // Fade out after 5 seconds
-    this.tweens.add({
-      targets: [bg, title, fireHint],
-      alpha: { from: 1, to: 0 },
-      duration: 1000,
-      delay: 4000,
-      ease: 'Power2',
-      onComplete: () => {
-        bg.destroy();
-        title.destroy();
-        fireHint.destroy();
-      },
-    });
-  }
-
   private runBestEffort(effect: () => void): void {
     try {
       effect();
@@ -417,212 +300,10 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private scheduleGameOverTransition(): void {
-    this.clearGameOverTransitionTimers();
-
-    this.gameOverTransition = this.time.delayedCall(1500, () => {
-      this.completePlayerDeathTransition();
-    });
-
-    // Backstop the Phaser timer so death still completes if that callback is disrupted.
-    this.gameOverWatchdog = setTimeout(() => {
-      this.completePlayerDeathTransition();
-    }, 2000);
-  }
-
-  private completePlayerDeathTransition(): void {
-    if (this.gameOverSceneStarted || this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
-      return;
-    }
-
-    this.gameOverSceneStarted = true;
-    this.clearGameOverTransitionTimers();
-    this.scene.start('GameOver');
-  }
-
-  private clearGameOverTransitionTimers(): void {
-    if (this.gameOverTransition) {
-      this.gameOverTransition.remove(false);
-      this.gameOverTransition = null;
-    }
-
-    if (this.gameOverWatchdog !== null) {
-      clearTimeout(this.gameOverWatchdog);
-      this.gameOverWatchdog = null;
-    }
-  }
-
-  private clearPendingLevelCompleteTransition(): void {
-    if (this.pendingLevelCompleteTransition) {
-      this.pendingLevelCompleteTransition.remove(false);
-      this.pendingLevelCompleteTransition = null;
-    }
-  }
-
-  private scheduleLevelCompleteTransition(): void {
-    if (this.pendingLevelCompleteTransition || !this.levelCompleteQueued) {
-      return;
-    }
-
-    this.pendingLevelCompleteTransition = this.time.delayedCall(0, () => {
-      this.pendingLevelCompleteTransition = null;
-      this.flushQueuedLevelCompleteTransition();
-    });
-  }
-
-  private flushQueuedLevelCompleteTransition(): void {
-    if (
-      !this.levelCompleteQueued ||
-      this.respawnInProgress ||
-      !this.player.isAlive ||
-      this.terminalTransitionState !== TERMINAL_TRANSITIONS.none
-    ) {
-      return;
-    }
-
-    this.levelCompleteQueued = false;
-
-    if (!this.beginTerminalTransition(TERMINAL_TRANSITIONS.levelComplete)) {
-      this.levelCompleteQueued = true;
-      return;
-    }
-
-    saveScoreToState(this.registry, this.scoreManager.getScore());
-    saveCurrentHp(this.registry, this.player.hp);
-    saveRemainingLives(this.registry, this.remainingLives);
-    setRunSummary(this.registry, { finalScore: this.scoreManager.getScore() });
-    this.warpTransition.play(() => {
-      this.scene.start('PlanetIntermission');
-    });
-  }
-
-  private scheduleRespawn(): void {
-    this.clearPendingRespawn();
-
-    this.pendingRespawn = this.time.delayedCall(GameScene.PLAYER_RESPAWN_DELAY_MS, () => {
-      this.completeRespawnTransition();
-    });
-
-    this.pendingRespawnFreeze = this.time.delayedCall(GameScene.PLAYER_RESPAWN_FREEZE_DELAY_MS, () => {
-      this.pendingRespawnFreeze = null;
-      this.pauseSceneForRespawn();
-    });
-
-    this.respawnWatchdog = setTimeout(() => {
-      this.completeRespawnTransition();
-    }, GameScene.PLAYER_RESPAWN_DELAY_MS + GameScene.PLAYER_RESPAWN_WATCHDOG_BUFFER_MS);
-  }
-
-  private clearPendingRespawn(): void {
-    if (this.pendingRespawn) {
-      this.pendingRespawn.remove(false);
-      this.pendingRespawn = null;
-    }
-
-    if (this.pendingRespawnFreeze) {
-      this.pendingRespawnFreeze.remove(false);
-      this.pendingRespawnFreeze = null;
-    }
-
-    if (this.respawnWatchdog !== null) {
-      clearTimeout(this.respawnWatchdog);
-      this.respawnWatchdog = null;
-    }
-  }
-
-  private beginRespawnTransition(): void {
-    if (this.respawnInProgress || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
-      return;
-    }
-
-    this.respawnInProgress = true;
-    this.clearPendingLevelCompleteTransition();
-    this.stopPlayerMotion();
-    this.collisionManager.setRespawnInProgress(true);
-    this.collisionManager.clearPlayerHazards();
-    this.scheduleRespawn();
-  }
-
-  private pauseSceneForRespawn(): void {
-    if (!this.respawnInProgress || this.respawnScenePaused) {
-      return;
-    }
-
-    this.collisionManager.clearPlayerHazards();
-    this.player.prepareForRespawn();
-    this.respawnScenePaused = true;
-    this.scene.pause();
-  }
-
-  private resumeSceneAfterRespawnPause(): void {
-    if (!this.respawnScenePaused) {
-      return;
-    }
-
-    this.respawnScenePaused = false;
-    this.scene.resume();
-  }
-
-  private completeRespawnTransition(): void {
-    if (!this.respawnInProgress) {
-      return;
-    }
-
-    this.clearPendingRespawn();
-    this.resumeSceneAfterRespawnPause();
-
-    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none || this.player.isAlive) {
-      this.respawnInProgress = false;
-      this.collisionManager.setRespawnInProgress(false);
-      return;
-    }
-
-    this.collisionManager.clearPlayerHazards();
-    this.player.spawn(GAME_WIDTH / 2, GAME_HEIGHT - 80, {
-      hp: this.player.maxHp,
-      invulnerabilityDuration: GameScene.PLAYER_RESPAWN_INVULNERABILITY_MS,
-    });
-    this.respawnInProgress = false;
-    this.collisionManager.setRespawnInProgress(false);
-    this.flushQueuedLevelCompleteTransition();
-  }
-
-  private beginTerminalTransition(state: Exclude<TerminalTransitionState, 'none'>): boolean {
-    if (state === TERMINAL_TRANSITIONS.playerDeath) {
-      this.clearPendingLevelCompleteTransition();
-    }
-
-    if (
-      state === TERMINAL_TRANSITIONS.playerDeath &&
-      this.terminalTransitionState === TERMINAL_TRANSITIONS.levelComplete
-    ) {
-      this.cancelLevelCompleteTransition();
-    }
-
-    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
-      return false;
-    }
-
-    this.terminalTransitionState = state;
-    this.stopPlayerMotion();
-    this.collisionManager.setTerminalTransitionActive(true);
-    return true;
-  }
-
-  private cancelLevelCompleteTransition(): void {
-    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.levelComplete) {
-      return;
-    }
-
-    this.warpTransition.cancel();
-    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
-    this.collisionManager.setTerminalTransitionActive(false);
-  }
-
   private playPlayerDeathCue(x: number, y: number): void {
     this.player.playDeathAnimation();
     this.time.delayedCall(120, () => {
-      if (this.player.isAlive && this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
+      if (this.player.isAlive && !this.flow.isPlayerDeathTransitionActive()) {
         return;
       }
 
@@ -650,6 +331,23 @@ export class GameScene extends Phaser.Scene {
     applyPowerUpPickup(this, this.player, this.effectsManager, type);
   }
 
+  private getFlowContext(): GameSceneFlowContext {
+    return {
+      scene: this,
+      registry: this.registry,
+      player: this.player,
+      collisionManager: this.collisionManager,
+      levelManager: this.levelManager,
+      scoreManager: this.scoreManager,
+      warpTransition: this.warpTransition,
+      stopPlayerMotion: () => this.stopPlayerMotion(),
+      runBestEffort: (effect) => this.runBestEffort(effect),
+      startScene: (key) => this.scene.start(key),
+      pauseScene: () => this.scene.pause(),
+      resumeScene: () => this.scene.resume(),
+    };
+  }
+
   private syncHudShields(): void {
     if (this.lastHudShieldCount === this.player.shields) {
       return;
@@ -660,13 +358,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (this.gameOver || this.respawnInProgress || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
+    if (this.flow.isGameplayLocked()) {
       this.hud.update(
         this.player.hp,
         this.player.maxHp,
         this.scoreManager.getScore(),
         this.levelManager.progress,
-        this.remainingLives
+        this.flow.getRemainingLives()
       );
       this.syncHudShields();
       return;
@@ -710,7 +408,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (
-      this.terminalTransitionState === TERMINAL_TRANSITIONS.none &&
+      !this.flow.isTerminalTransitionActive() &&
       this.levelManager.isComplete() &&
       !prevComplete
     ) {
@@ -727,7 +425,7 @@ export class GameScene extends Phaser.Scene {
       this.player.maxHp,
       this.scoreManager.getScore(),
       this.levelManager.progress,
-      this.remainingLives
+      this.flow.getRemainingLives()
     );
     this.syncHudShields();
   }

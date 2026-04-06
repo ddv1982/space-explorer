@@ -4,6 +4,7 @@ import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { resetPlayerState } from '../systems/PlayerState';
 import { audioManager } from '../systems/AudioManager';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
+import { createPromptText } from './shared/createPromptText';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
@@ -80,22 +81,7 @@ export class MenuScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(12);
     });
 
-    // Pulsing subtitle
-    const subtitle = this.add.text(layout.centerX, controlsY + 140, 'Click to Start', {
-      fontSize: '24px',
-      color: '#cfefff',
-      fontFamily: 'monospace',
-      stroke: '#040b12',
-      strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(12);
-
-    this.tweens.add({
-      targets: subtitle,
-      alpha: { from: 1, to: 0.3 },
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-    });
+    createPromptText(this, layout.centerX, controlsY + 140, 'Click to Start').setDepth(12);
 
     this.input.once('pointerdown', () => {
       audioManager.init();
