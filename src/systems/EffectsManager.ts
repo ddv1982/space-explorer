@@ -32,8 +32,8 @@ export class EffectsManager {
     const camera = this.scene.cameras.main;
 
     if (camera.postFX) {
-      camera.postFX.addBloom(0x000000, 1, 1, 1, 1.2);
-      camera.postFX.addVignette(0.5, 0.5, 0.72, 0.48);
+      camera.postFX.addBloom(0x9fd8ff, 1, 1, 1, 0.7);
+      camera.postFX.addVignette(0.5, 0.5, 0.78, 0.28);
     }
   }
 

@@ -17,6 +17,7 @@ export class CollisionManager {
   private enemyPool!: EnemyPool;
   private bulletDamage: number = 1;
   private terminalTransitionActive: boolean = false;
+  private respawnInProgress: boolean = false;
   private lastPlayerHitFeedbackTime: number = Number.NEGATIVE_INFINITY;
   private readonly playerHitFeedbackCooldownMs: number = 75;
 
@@ -31,6 +32,7 @@ export class CollisionManager {
     this.player = player;
     this.enemyPool = enemyPool;
     this.terminalTransitionActive = false;
+    this.respawnInProgress = false;
     this.lastPlayerHitFeedbackTime = Number.NEGATIVE_INFINITY;
 
     const bulletGroup = bulletPool.getGroup();
@@ -157,6 +159,15 @@ export class CollisionManager {
     this.terminalTransitionActive = active;
   }
 
+  setRespawnInProgress(active: boolean): void {
+    this.respawnInProgress = active;
+  }
+
+  clearPlayerHazards(): void {
+    this.clearHazardGroup(this.enemyPool.getEnemyBulletGroup());
+    this.clearHazardGroup(this.enemyPool.getBombGroup());
+  }
+
   private bulletVsEnemy(bullet: Bullet, enemy: EnemyBase): void {
     if (bullet.active && enemy.active) {
       bullet.kill();
@@ -175,7 +186,7 @@ export class CollisionManager {
 
   private canProcessPlayerCollision(): boolean {
     const body = this.player.body as Phaser.Physics.Arcade.Body | null;
-    return !this.terminalTransitionActive && this.player.isAlive && !!body && body.enable;
+    return !this.terminalTransitionActive && !this.respawnInProgress && this.player.isAlive && !!body && body.enable;
   }
 
   private shouldEmitPlayerHit(damageOutcome: PlayerDamageOutcome): boolean {
@@ -183,7 +194,7 @@ export class CollisionManager {
   }
 
   private onPlayerHit(): void {
-    if (this.terminalTransitionActive) {
+    if (this.terminalTransitionActive || this.respawnInProgress) {
       return;
     }
 
@@ -200,7 +211,20 @@ export class CollisionManager {
   }
 
   private onPlayerFatalHit(): void {
+    if (this.respawnInProgress) {
+      return;
+    }
+
     this.runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerFatalHit));
+  }
+
+  private clearHazardGroup(group: Phaser.Physics.Arcade.Group): void {
+    group.getChildren().forEach(child => {
+      const sprite = child as EnemyBullet | BomberBomb;
+      if (sprite.active) {
+        sprite.kill();
+      }
+    });
   }
 
   private runBestEffort(effect: () => void): void {

@@ -22,10 +22,10 @@ export class BulletPool {
     });
   }
 
-  fire(x: number, y: number): Bullet | null {
+  fire(x: number, y: number, velocityX: number = 0, velocityY?: number): Bullet | null {
     const bullet = this.acquireBullet(x, y);
     if (bullet) {
-      bullet.fire(x, y);
+      bullet.fire(x, y, velocityX, velocityY);
       return bullet;
     }
     return null;

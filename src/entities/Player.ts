@@ -117,6 +117,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  getFireDirection(out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
+    return out.set(0, -1).rotate(this.getShotRotation()).normalize();
+  }
+
+  getMuzzlePosition(distance: number, out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
+    this.getFireDirection(out).scale(distance);
+    out.x += this.x;
+    out.y += this.y;
+    return out;
+  }
+
+  private getShotRotation(): number {
+    const shotRotationDeadzone = Phaser.Math.DegToRad(1);
+    return Math.abs(this.rotation) < shotRotationDeadzone ? 0 : this.rotation;
+  }
+
   private setInvulnerable(duration: number): void {
     this.invulnerable = true;
     this.invulnerableTimer = duration;
@@ -203,12 +219,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  spawn(x: number, y: number): void {
+  spawn(
+    x: number,
+    y: number,
+    options: { hp?: number; invulnerabilityDuration?: number } = {}
+  ): void {
     this.enableBody(true, x, y, true, true);
-    this.hp = this.maxHp;
+    this.hp = options.hp ?? this.maxHp;
     this.isAlive = true;
     this.isMovingUp = false;
     this.deathStarted = false;
+    this.setAcceleration(0, 0);
     this.setVisible(true);
     this.setAlpha(1);
     this.setScale(1);
@@ -216,5 +237,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnerable = false;
     this.invulnerableTimer = 0;
     this.clearTint();
+
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    body?.stop();
+
+    if ((options.invulnerabilityDuration ?? 0) > 0) {
+      this.setInvulnerable(options.invulnerabilityDuration ?? 0);
+    }
+  }
+
+  prepareForRespawn(): void {
+    if (this.isAlive) {
+      return;
+    }
+
+    this.scene.tweens.killTweensOf(this);
+    this.clearTint();
+    this.setVisible(false);
+    this.setAlpha(0);
   }
 }

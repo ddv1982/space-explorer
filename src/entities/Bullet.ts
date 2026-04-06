@@ -33,24 +33,29 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  fire(x: number, y: number): void {
+  fire(x: number, y: number, velocityX: number = 0, velocityY?: number): void {
+    const resolvedVelocityY = velocityY ?? BULLET_SPEED;
+
     this.setPosition(x, y);
     this.setActive(true);
     this.setVisible(true);
     (this.body as Phaser.Physics.Arcade.Body).reset(x, y);
-    this.setVelocityY(BULLET_SPEED);
+    this.setVelocity(velocityX, resolvedVelocityY);
+    this.setRotation(Phaser.Math.Angle.Between(0, 0, velocityX, resolvedVelocityY) + Phaser.Math.DegToRad(90));
   }
 
   kill(): void {
     this.setActive(false);
     this.setVisible(false);
     this.setVelocity(0, 0);
+    this.setRotation(0);
     (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
   }
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
-    if (this.y < -20 || this.y > (this.scene.cameras.main.height + 20)) {
+    const { width, height } = this.scene.cameras.main;
+    if (this.x < -20 || this.x > width + 20 || this.y < -20 || this.y > height + 20) {
       this.kill();
     }
   }

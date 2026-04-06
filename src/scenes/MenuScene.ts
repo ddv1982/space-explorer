@@ -29,9 +29,9 @@ export class MenuScene extends Phaser.Scene {
     const controlsY = centerY + 40;
     const controlsPanel = this.add.graphics();
     controlsPanel.fillStyle(0x111133, 0.7);
-    controlsPanel.fillRoundedRect(centerX - 180, controlsY - 8, 360, 120, 8);
+    controlsPanel.fillRoundedRect(centerX - 180, controlsY - 8, 360, 132, 8);
     controlsPanel.lineStyle(1, 0x334466, 0.6);
-    controlsPanel.strokeRoundedRect(centerX - 180, controlsY - 8, 360, 120, 8);
+    controlsPanel.strokeRoundedRect(centerX - 180, controlsY - 8, 360, 132, 8);
     controlsPanel.setDepth(10);
 
     const controlsTitle = this.add.text(centerX, controlsY + 6, 'CONTROLS', {
@@ -43,10 +43,11 @@ export class MenuScene extends Phaser.Scene {
     const controlsContent = [
       { label: 'MOVE', keys: 'W A S D  /  Arrow Keys' },
       { label: 'FIRE', keys: 'SPACE  /  Click' },
+      { label: 'LIVES', keys: '3 Ships Per Run' },
     ];
 
     controlsContent.forEach((row, i) => {
-      const rowY = controlsY + 32 + i * 36;
+      const rowY = controlsY + 28 + i * 28;
       this.add.text(centerX - 160, rowY, row.label, {
         fontSize: '13px',
         color: '#88aacc',

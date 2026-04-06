@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
+import { BULLET_SPEED, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { InputManager } from '../systems/InputManager';
 import { Player } from '../entities/Player';
@@ -11,7 +11,13 @@ import { ScoreManager } from '../systems/ScoreManager';
 import { HUD } from '../systems/HUD';
 import { LevelManager } from '../systems/LevelManager';
 import { EffectsManager } from '../systems/EffectsManager';
-import { getPlayerState, saveScoreToState, saveCurrentHp, setRunSummary } from '../systems/PlayerState';
+import {
+  getPlayerState,
+  saveScoreToState,
+  saveCurrentHp,
+  saveRemainingLives,
+  setRunSummary,
+} from '../systems/PlayerState';
 import { Boss } from '../entities/enemies/Boss';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
@@ -25,6 +31,11 @@ import {
 } from '../systems/GameplayFlow';
 
 export class GameScene extends Phaser.Scene {
+  private static readonly PLAYER_RESPAWN_DELAY_MS = 1000;
+  private static readonly PLAYER_RESPAWN_FREEZE_DELAY_MS = 240;
+  private static readonly PLAYER_RESPAWN_INVULNERABILITY_MS = 2000;
+  private static readonly PLAYER_RESPAWN_WATCHDOG_BUFFER_MS = 250;
+
   private parallax!: ParallaxBackground;
   private inputManager!: InputManager;
   private player!: Player;
@@ -44,9 +55,19 @@ export class GameScene extends Phaser.Scene {
   private gameOverWatchdog: ReturnType<typeof setTimeout> | null = null;
   private gameOverSceneStarted: boolean = false;
   private pendingLevelCompleteTransition: Phaser.Time.TimerEvent | null = null;
+  private pendingRespawn: Phaser.Time.TimerEvent | null = null;
+  private pendingRespawnFreeze: Phaser.Time.TimerEvent | null = null;
+  private respawnWatchdog: ReturnType<typeof setTimeout> | null = null;
   private boss: Boss | null = null;
   private terminalTransitionState: TerminalTransitionState = TERMINAL_TRANSITIONS.none;
+  private levelCompleteQueued: boolean = false;
   private lastHudShieldCount: number | null = null;
+  private remainingLives: number = 0;
+  private respawnInProgress: boolean = false;
+  private respawnScenePaused: boolean = false;
+  private readonly shotDirection = new Phaser.Math.Vector2();
+  private readonly shotOrigin = new Phaser.Math.Vector2();
+  private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
 
   constructor() {
     super({ key: 'Game' });
@@ -59,9 +80,15 @@ export class GameScene extends Phaser.Scene {
     this.gameOverWatchdog = null;
     this.gameOverSceneStarted = false;
     this.pendingLevelCompleteTransition = null;
+    this.pendingRespawn = null;
+    this.pendingRespawnFreeze = null;
+    this.respawnWatchdog = null;
     this.boss = null;
     this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
+    this.levelCompleteQueued = false;
     this.lastHudShieldCount = null;
+    this.respawnInProgress = false;
+    this.respawnScenePaused = false;
 
     this.registerLifecycleHandlers();
 
@@ -69,6 +96,7 @@ export class GameScene extends Phaser.Scene {
     audioManager.startMusic();
 
     const state = getPlayerState(this.registry);
+    this.remainingLives = state.remainingLives;
 
     this.levelManager = new LevelManager();
     this.levelManager.init(state.level);
@@ -179,13 +207,19 @@ export class GameScene extends Phaser.Scene {
 
     this.clearGameOverTransitionTimers();
     this.clearPendingLevelCompleteTransition();
+    this.clearPendingRespawn();
+    this.collisionManager.setRespawnInProgress(false);
 
     this.lastFireTime = 0;
     this.gameOver = false;
     this.gameOverSceneStarted = false;
     this.boss = null;
     this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
+    this.levelCompleteQueued = false;
     this.lastHudShieldCount = null;
+    this.remainingLives = 0;
+    this.respawnInProgress = false;
+    this.respawnScenePaused = false;
   }
 
   private handleSceneDestroy(): void {
@@ -200,20 +234,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerDeath(): void {
+    const deathX = this.player.x;
+    const deathY = this.player.y;
+
+    this.runBestEffort(() => this.playPlayerDeathCue(deathX, deathY));
+
+    if (this.remainingLives > 1) {
+      this.remainingLives -= 1;
+      saveRemainingLives(this.registry, this.remainingLives);
+      this.beginRespawnTransition();
+      return;
+    }
+
+    this.levelCompleteQueued = false;
     this.clearPendingLevelCompleteTransition();
 
     if (!this.beginTerminalTransition(TERMINAL_TRANSITIONS.playerDeath)) return;
 
     const finalScore = this.scoreManager.getScore();
     const level = this.levelManager.currentLevel;
-    const deathX = this.player.x;
-    const deathY = this.player.y;
 
     this.gameOver = true;
     this.scheduleGameOverTransition();
 
     this.runBestEffort(() => audioManager.stopMusic());
-    this.runBestEffort(() => this.playPlayerDeathCue(deathX, deathY));
+    this.runBestEffort(() => saveRemainingLives(this.registry, 0));
     this.runBestEffort(() => saveScoreToState(this.registry, finalScore));
     this.runBestEffort(() => setRunSummary(this.registry, { finalScore, levelReached: level }));
   }
@@ -227,26 +272,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleLevelComplete(): void {
-    if (this.pendingLevelCompleteTransition || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
+    if (
+      this.levelCompleteQueued ||
+      this.respawnInProgress ||
+      this.terminalTransitionState !== TERMINAL_TRANSITIONS.none
+    ) {
       return;
     }
 
-    this.pendingLevelCompleteTransition = this.time.delayedCall(0, () => {
-      this.pendingLevelCompleteTransition = null;
-
-      if (!this.player.isAlive || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
-        return;
-      }
-
-      if (!this.beginTerminalTransition(TERMINAL_TRANSITIONS.levelComplete)) return;
-
-      saveScoreToState(this.registry, this.scoreManager.getScore());
-      saveCurrentHp(this.registry, this.player.hp);
-      setRunSummary(this.registry, { finalScore: this.scoreManager.getScore() });
-      this.warpTransition.play(() => {
-        this.scene.start('PlanetIntermission');
-      });
-    });
+    this.levelCompleteQueued = true;
+    this.scheduleLevelCompleteTransition();
   }
 
   private handleBossSpawn(): void {
@@ -371,6 +406,134 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private scheduleLevelCompleteTransition(): void {
+    if (this.pendingLevelCompleteTransition || !this.levelCompleteQueued) {
+      return;
+    }
+
+    this.pendingLevelCompleteTransition = this.time.delayedCall(0, () => {
+      this.pendingLevelCompleteTransition = null;
+      this.flushQueuedLevelCompleteTransition();
+    });
+  }
+
+  private flushQueuedLevelCompleteTransition(): void {
+    if (
+      !this.levelCompleteQueued ||
+      this.respawnInProgress ||
+      !this.player.isAlive ||
+      this.terminalTransitionState !== TERMINAL_TRANSITIONS.none
+    ) {
+      return;
+    }
+
+    this.levelCompleteQueued = false;
+
+    if (!this.beginTerminalTransition(TERMINAL_TRANSITIONS.levelComplete)) {
+      this.levelCompleteQueued = true;
+      return;
+    }
+
+    saveScoreToState(this.registry, this.scoreManager.getScore());
+    saveCurrentHp(this.registry, this.player.hp);
+    saveRemainingLives(this.registry, this.remainingLives);
+    setRunSummary(this.registry, { finalScore: this.scoreManager.getScore() });
+    this.warpTransition.play(() => {
+      this.scene.start('PlanetIntermission');
+    });
+  }
+
+  private scheduleRespawn(): void {
+    this.clearPendingRespawn();
+
+    this.pendingRespawn = this.time.delayedCall(GameScene.PLAYER_RESPAWN_DELAY_MS, () => {
+      this.completeRespawnTransition();
+    });
+
+    this.pendingRespawnFreeze = this.time.delayedCall(GameScene.PLAYER_RESPAWN_FREEZE_DELAY_MS, () => {
+      this.pendingRespawnFreeze = null;
+      this.pauseSceneForRespawn();
+    });
+
+    this.respawnWatchdog = setTimeout(() => {
+      this.completeRespawnTransition();
+    }, GameScene.PLAYER_RESPAWN_DELAY_MS + GameScene.PLAYER_RESPAWN_WATCHDOG_BUFFER_MS);
+  }
+
+  private clearPendingRespawn(): void {
+    if (this.pendingRespawn) {
+      this.pendingRespawn.remove(false);
+      this.pendingRespawn = null;
+    }
+
+    if (this.pendingRespawnFreeze) {
+      this.pendingRespawnFreeze.remove(false);
+      this.pendingRespawnFreeze = null;
+    }
+
+    if (this.respawnWatchdog !== null) {
+      clearTimeout(this.respawnWatchdog);
+      this.respawnWatchdog = null;
+    }
+  }
+
+  private beginRespawnTransition(): void {
+    if (this.respawnInProgress || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
+      return;
+    }
+
+    this.respawnInProgress = true;
+    this.clearPendingLevelCompleteTransition();
+    this.stopPlayerMotion();
+    this.collisionManager.setRespawnInProgress(true);
+    this.collisionManager.clearPlayerHazards();
+    this.scheduleRespawn();
+  }
+
+  private pauseSceneForRespawn(): void {
+    if (!this.respawnInProgress || this.respawnScenePaused) {
+      return;
+    }
+
+    this.collisionManager.clearPlayerHazards();
+    this.player.prepareForRespawn();
+    this.respawnScenePaused = true;
+    this.scene.pause();
+  }
+
+  private resumeSceneAfterRespawnPause(): void {
+    if (!this.respawnScenePaused) {
+      return;
+    }
+
+    this.respawnScenePaused = false;
+    this.scene.resume();
+  }
+
+  private completeRespawnTransition(): void {
+    if (!this.respawnInProgress) {
+      return;
+    }
+
+    this.clearPendingRespawn();
+    this.resumeSceneAfterRespawnPause();
+
+    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none || this.player.isAlive) {
+      this.respawnInProgress = false;
+      this.collisionManager.setRespawnInProgress(false);
+      return;
+    }
+
+    this.collisionManager.clearPlayerHazards();
+    this.player.spawn(GAME_WIDTH / 2, GAME_HEIGHT - 80, {
+      hp: this.player.maxHp,
+      invulnerabilityDuration: GameScene.PLAYER_RESPAWN_INVULNERABILITY_MS,
+    });
+    this.respawnInProgress = false;
+    this.collisionManager.setRespawnInProgress(false);
+    this.flushQueuedLevelCompleteTransition();
+  }
+
   private beginTerminalTransition(state: Exclude<TerminalTransitionState, 'none'>): boolean {
     if (state === TERMINAL_TRANSITIONS.playerDeath) {
       this.clearPendingLevelCompleteTransition();
@@ -406,7 +569,7 @@ export class GameScene extends Phaser.Scene {
   private playPlayerDeathCue(x: number, y: number): void {
     this.player.playDeathAnimation();
     this.time.delayedCall(120, () => {
-      if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
+      if (this.player.isAlive && this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
         return;
       }
 
@@ -444,7 +607,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (this.gameOver || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) return;
+    if (this.gameOver || this.respawnInProgress || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
+      this.hud.update(
+        this.player.hp,
+        this.player.maxHp,
+        this.scoreManager.getScore(),
+        this.levelManager.progress,
+        this.remainingLives
+      );
+      this.syncHudShields();
+      return;
+    }
 
     this.parallax.update(delta);
     this.player.update(this.inputManager);
@@ -452,8 +625,19 @@ export class GameScene extends Phaser.Scene {
     if (this.inputManager.isFiring() && this.player.isAlive) {
       if (time > this.lastFireTime + this.player.fireRate) {
         this.lastFireTime = time;
-        this.bulletPool.fire(this.player.x, this.player.y - 20);
-        this.effectsManager.createMuzzleFlash(this.player.x, this.player.y - 24);
+
+        const shotSpeed = Math.abs(BULLET_SPEED);
+        const shotDirection = this.player.getFireDirection(this.shotDirection);
+        const shotOrigin = this.player.getMuzzlePosition(20, this.shotOrigin);
+        const muzzleFlashOrigin = this.player.getMuzzlePosition(24, this.muzzleFlashOrigin);
+
+        this.bulletPool.fire(
+          shotOrigin.x,
+          shotOrigin.y,
+          shotDirection.x * shotSpeed,
+          shotDirection.y * shotSpeed
+        );
+        this.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
         audioManager.playLaser();
       }
     }
@@ -470,7 +654,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (
-      this.player.isAlive &&
       this.terminalTransitionState === TERMINAL_TRANSITIONS.none &&
       this.levelManager.isComplete() &&
       !prevComplete
@@ -487,7 +670,8 @@ export class GameScene extends Phaser.Scene {
       this.player.hp,
       this.player.maxHp,
       this.scoreManager.getScore(),
-      this.levelManager.progress
+      this.levelManager.progress,
+      this.remainingLives
     );
     this.syncHudShields();
   }

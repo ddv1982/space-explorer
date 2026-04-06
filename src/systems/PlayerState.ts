@@ -4,6 +4,7 @@ export interface PlayerStateData {
   level: number;
   score: number;
   currentHp: number;
+  remainingLives: number;
   upgrades: {
     hp: number;
     damage: number;
@@ -18,6 +19,7 @@ export interface RunSummaryData {
 }
 
 const PLAYER_STATE_KEY = 'playerState';
+const DEFAULT_REMAINING_LIVES = 3;
 const RUN_SUMMARY_KEYS = {
   finalScore: 'finalScore',
   levelReached: 'levelReached',
@@ -32,6 +34,7 @@ export function getDefaultPlayerState(): PlayerStateData {
     level: 1,
     score: 0,
     currentHp: 5,
+    remainingLives: DEFAULT_REMAINING_LIVES,
     upgrades: {
       hp: 0,
       damage: 0,
@@ -41,18 +44,41 @@ export function getDefaultPlayerState(): PlayerStateData {
   };
 }
 
+function normalizePlayerState(state: Partial<PlayerStateData> | null | undefined): PlayerStateData {
+  const defaultState = getDefaultPlayerState();
+
+  return {
+    level: typeof state?.level === 'number' ? state.level : defaultState.level,
+    score: typeof state?.score === 'number' ? state.score : defaultState.score,
+    currentHp: typeof state?.currentHp === 'number' ? state.currentHp : defaultState.currentHp,
+    remainingLives:
+      typeof state?.remainingLives === 'number'
+        ? Math.max(0, state.remainingLives)
+        : defaultState.remainingLives,
+    upgrades: {
+      hp: state?.upgrades?.hp ?? defaultState.upgrades.hp,
+      damage: state?.upgrades?.damage ?? defaultState.upgrades.damage,
+      fireRate: state?.upgrades?.fireRate ?? defaultState.upgrades.fireRate,
+      shield: state?.upgrades?.shield ?? defaultState.upgrades.shield,
+    },
+  };
+}
+
 export function getPlayerState(registry: Phaser.Data.DataManager): PlayerStateData {
-  const state = registry.get(PLAYER_STATE_KEY);
+  const state = registry.get(PLAYER_STATE_KEY) as Partial<PlayerStateData> | undefined;
   if (!state) {
     const defaultState = getDefaultPlayerState();
     registry.set(PLAYER_STATE_KEY, defaultState);
     return defaultState;
   }
-  return state as PlayerStateData;
+
+  const normalizedState = normalizePlayerState(state);
+  registry.set(PLAYER_STATE_KEY, normalizedState);
+  return normalizedState;
 }
 
 export function setPlayerState(registry: Phaser.Data.DataManager, state: PlayerStateData): void {
-  registry.set(PLAYER_STATE_KEY, state);
+  registry.set(PLAYER_STATE_KEY, normalizePlayerState(state));
 }
 
 export function resetPlayerState(registry: Phaser.Data.DataManager): void {
@@ -113,5 +139,11 @@ export function saveScoreToState(registry: Phaser.Data.DataManager, score: numbe
 export function saveCurrentHp(registry: Phaser.Data.DataManager, hp: number): void {
   const state = getPlayerState(registry);
   state.currentHp = hp;
+  setPlayerState(registry, state);
+}
+
+export function saveRemainingLives(registry: Phaser.Data.DataManager, remainingLives: number): void {
+  const state = getPlayerState(registry);
+  state.remainingLives = Math.max(0, remainingLives);
   setPlayerState(registry, state);
 }

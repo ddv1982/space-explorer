@@ -3,10 +3,13 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class HUD {
   private scene!: Phaser.Scene;
+  private topBarPanel!: Phaser.GameObjects.Graphics;
   private hpBarBg!: Phaser.GameObjects.Graphics;
   private hpBarFill!: Phaser.GameObjects.Graphics;
   private hpLabel!: Phaser.GameObjects.Text;
   private hpText!: Phaser.GameObjects.Text;
+  private livesLabel!: Phaser.GameObjects.Text;
+  private livesText!: Phaser.GameObjects.Text;
   private scoreLabel!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
@@ -32,39 +35,65 @@ export class HUD {
   create(scene: Phaser.Scene): void {
     this.scene = scene;
 
-    // HP label and bar
-    this.hpLabel = scene.add.text(this.hpBarX, this.hpBarY - 2, 'HP', {
+    const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '11px',
-      color: '#88aacc',
+      color: '#d8f4ff',
       fontFamily: 'monospace',
-    }).setDepth(100);
+      fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 2,
+    };
+    const valueStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontSize: '12px',
+      color: '#f6fbff',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 2,
+    };
+
+    this.topBarPanel = scene.add.graphics();
+    this.topBarPanel.setDepth(99);
+    this.topBarPanel.fillStyle(0x030915, 0.58);
+    this.topBarPanel.fillRoundedRect(10, 6, GAME_WIDTH - 20, 50, 10);
+
+    // HP label and bar
+    this.hpLabel = scene.add.text(this.hpBarX, this.hpBarY - 2, 'HP', labelStyle).setDepth(100);
 
     this.hpBarBg = scene.add.graphics();
     this.hpBarBg.setDepth(100);
-    this.hpBarBg.fillStyle(0x333333, 0.8);
+    this.hpBarBg.fillStyle(0x091521, 0.92);
     this.hpBarBg.fillRoundedRect(this.hpBarX + 22, this.hpBarY, this.hpBarWidth - 22, this.hpBarHeight, 3);
+    this.hpBarBg.lineStyle(1, 0x8ee8ff, 0.35);
+    this.hpBarBg.strokeRoundedRect(this.hpBarX + 22, this.hpBarY, this.hpBarWidth - 22, this.hpBarHeight, 3);
 
     this.hpBarFill = scene.add.graphics();
     this.hpBarFill.setDepth(101);
 
     // HP text (e.g. "5/5")
-    this.hpText = scene.add.text(this.hpBarX + this.hpBarWidth + 6, this.hpBarY, '', {
-      fontSize: '12px',
+    this.hpText = scene.add.text(this.hpBarX + this.hpBarWidth + 6, this.hpBarY, '', valueStyle).setDepth(100);
+
+    this.livesLabel = scene.add.text(this.hpBarX + this.hpBarWidth + 6, this.hpBarY + 24, 'LIVES', labelStyle).setDepth(100);
+
+    this.livesText = scene.add.text(this.hpBarX + this.hpBarWidth + 48, this.hpBarY + 22, '', {
+      fontSize: '14px',
       color: '#ffffff',
       fontFamily: 'monospace',
+      fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 2,
     }).setDepth(100);
 
     // Score label and text
-    this.scoreLabel = scene.add.text(GAME_WIDTH - 100, this.hpBarY - 2, 'SCORE', {
-      fontSize: '11px',
-      color: '#88aacc',
-      fontFamily: 'monospace',
-    }).setOrigin(1, 0).setDepth(100);
+    this.scoreLabel = scene.add.text(GAME_WIDTH - 100, this.hpBarY - 2, 'SCORE', labelStyle).setOrigin(1, 0).setDepth(100);
 
     this.scoreText = scene.add.text(GAME_WIDTH - 16, this.hpBarY, '0', {
       fontSize: '20px',
       color: '#ffffff',
       fontFamily: 'monospace',
+      fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 2,
     });
     this.scoreText.setOrigin(1, 0);
     this.scoreText.setDepth(100);
@@ -72,16 +101,20 @@ export class HUD {
     // Level name text (below score, top-right area)
     this.levelText = scene.add.text(GAME_WIDTH - 16, this.hpBarY + 24, '', {
       fontSize: '12px',
-      color: '#667788',
+      color: '#b8dced',
       fontFamily: 'monospace',
+      stroke: '#040b12',
+      strokeThickness: 2,
     }).setOrigin(1, 0).setDepth(100);
 
     // Progress bar (center top)
     const progressX = (GAME_WIDTH - this.progressWidth) / 2;
     this.progressBg = scene.add.graphics();
     this.progressBg.setDepth(100);
-    this.progressBg.fillStyle(0x333333, 0.6);
+    this.progressBg.fillStyle(0x08141f, 0.82);
     this.progressBg.fillRect(progressX, 8, this.progressWidth, this.progressHeight);
+    this.progressBg.lineStyle(1, 0x7fdcff, 0.3);
+    this.progressBg.strokeRect(progressX, 8, this.progressWidth, this.progressHeight);
 
     this.progressFill = scene.add.graphics();
     this.progressFill.setDepth(101);
@@ -92,6 +125,8 @@ export class HUD {
       color: '#ffffff',
       fontFamily: 'monospace',
       fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 4,
     }).setOrigin(0.5).setDepth(200).setAlpha(0);
 
     // Boss health bar (hidden by default)
@@ -105,8 +140,11 @@ export class HUD {
 
     this.bossNameText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 40, 'BOSS', {
       fontSize: '14px',
-      color: '#ff4444',
+      color: '#ff8c8c',
       fontFamily: 'monospace',
+      fontStyle: 'bold',
+      stroke: '#140406',
+      strokeThickness: 3,
     }).setOrigin(0.5).setDepth(100).setVisible(false);
 
     this.setScrollFactor(0);
@@ -164,10 +202,13 @@ export class HUD {
   }
 
   private setScrollFactor(factor: number): void {
+    this.topBarPanel.setScrollFactor(factor);
     this.hpBarBg.setScrollFactor(factor);
     this.hpBarFill.setScrollFactor(factor);
     this.hpLabel.setScrollFactor(factor);
     this.hpText.setScrollFactor(factor);
+    this.livesLabel.setScrollFactor(factor);
+    this.livesText.setScrollFactor(factor);
     this.scoreLabel.setScrollFactor(factor);
     this.scoreText.setScrollFactor(factor);
     this.levelText.setScrollFactor(factor);
@@ -213,7 +254,7 @@ export class HUD {
     this.bossBarFill.fillRect(bx + 1, by + 1, (this.bossBarWidth - 2) * ratio, this.bossBarHeight - 2);
   }
 
-  update(hp: number, maxHp: number, score: number, progress: number): void {
+  update(hp: number, maxHp: number, score: number, progress: number, lives: number): void {
     this.hpBarFill.clear();
     const hpRatio = hp / maxHp;
     const hpColor = hpRatio > 0.5 ? 0x00ff44 : hpRatio > 0.25 ? 0xffaa00 : 0xff2222;
@@ -227,11 +268,12 @@ export class HUD {
     );
 
     this.hpText.setText(`${hp}/${maxHp}`);
+    this.livesText.setText(lives.toString());
     this.scoreText.setText(score.toString().padStart(8, '0'));
 
     this.progressFill.clear();
     const progressX = (GAME_WIDTH - this.progressWidth) / 2;
-    this.progressFill.fillStyle(0x00ccff, 0.8);
+    this.progressFill.fillStyle(0x54dcff, 0.95);
     this.progressFill.fillRect(progressX, 8, this.progressWidth * Math.min(progress, 1), this.progressHeight);
   }
 

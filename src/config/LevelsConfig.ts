@@ -35,7 +35,7 @@ export const LEVELS: LevelConfig[] = [
     accentColor: 0x00ccff,
     nebulaColor: 0x1133aa,
     nebulaAlpha: 0.08,
-    colorGrade: null,
+    colorGrade: { brightness: 0.02, contrast: 1.03, saturation: 1.05 },
     enemies: [
       { type: 'scout', weight: 80 },
       { type: 'fighter', weight: 20 },
@@ -54,7 +54,7 @@ export const LEVELS: LevelConfig[] = [
     accentColor: 0x8844ff,
     nebulaColor: 0x4422aa,
     nebulaAlpha: 0.12,
-    colorGrade: { brightness: 0.03, contrast: 1.1, saturation: 1.2 },
+    colorGrade: { brightness: 0.06, contrast: 1.08, saturation: 1.18 },
     enemies: [
       { type: 'scout', weight: 50 },
       { type: 'fighter', weight: 30 },
@@ -74,7 +74,7 @@ export const LEVELS: LevelConfig[] = [
     accentColor: 0x44ff88,
     nebulaColor: 0x116633,
     nebulaAlpha: 0.10,
-    colorGrade: { brightness: 0.05, contrast: 1.15, saturation: 0.9 },
+    colorGrade: { brightness: 0.08, contrast: 1.12, saturation: 0.92 },
     enemies: [
       { type: 'scout', weight: 35 },
       { type: 'fighter', weight: 30 },
@@ -95,7 +95,7 @@ export const LEVELS: LevelConfig[] = [
     accentColor: 0xff4444,
     nebulaColor: 0x662211,
     nebulaAlpha: 0.10,
-    colorGrade: { brightness: -0.01, contrast: 1.2, saturation: 1.3 },
+    colorGrade: { brightness: 0.03, contrast: 1.14, saturation: 1.24 },
     enemies: [
       { type: 'scout', weight: 20 },
       { type: 'fighter', weight: 25 },
@@ -117,7 +117,7 @@ export const LEVELS: LevelConfig[] = [
     accentColor: 0xff4488,
     nebulaColor: 0x661133,
     nebulaAlpha: 0.12,
-    colorGrade: { brightness: -0.03, contrast: 1.25, saturation: 1.4 },
+    colorGrade: { brightness: 0.02, contrast: 1.18, saturation: 1.32 },
     enemies: [
       { type: 'scout', weight: 15 },
       { type: 'fighter', weight: 25 },
