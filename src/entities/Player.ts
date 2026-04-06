@@ -93,6 +93,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return 'damaged';
   }
 
+  playDeathAnimation(): void {
+    this.scene.tweens.killTweensOf(this);
+    this.setVisible(true);
+    this.setAlpha(1);
+    this.setScale(1);
+    this.setAngle(0);
+    this.setTint(0xff6644);
+
+    this.scene.tweens.add({
+      targets: this,
+      y: this.y - 28,
+      angle: 35,
+      scaleX: 1.1,
+      scaleY: 0.3,
+      alpha: 0,
+      duration: 220,
+      ease: 'Cubic.easeIn',
+      onComplete: () => {
+        this.setVisible(false);
+      },
+    });
+  }
+
   private setInvulnerable(duration: number): void {
     this.invulnerable = true;
     this.invulnerableTimer = duration;
@@ -123,15 +146,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnerableTimer = 0;
     this.isAlive = false;
     this.isMovingUp = false;
+    this.scene.tweens.killTweensOf(this);
     this.setAcceleration(0, 0);
-    this.clearTint();
+    this.setAlpha(1);
+    this.setScale(1);
+    this.setAngle(0);
+    this.setTint(0xff6644);
 
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     if (body) {
       body.stop();
+      body.enable = false;
     }
 
-    this.disableBody(true, true);
     this.scene.events.emit('player-death');
   }
 
@@ -181,7 +208,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.isAlive = true;
     this.isMovingUp = false;
     this.deathStarted = false;
+    this.setVisible(true);
     this.setAlpha(1);
+    this.setScale(1);
+    this.setAngle(0);
     this.invulnerable = false;
     this.invulnerableTimer = 0;
     this.clearTint();

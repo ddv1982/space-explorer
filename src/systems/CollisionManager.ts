@@ -91,7 +91,9 @@ export class CollisionManager {
         if (eBullet.active && this.canProcessPlayerCollision()) {
           eBullet.kill();
           const damageOutcome = player.takeDamage(1);
-          if (this.shouldEmitPlayerHit(damageOutcome)) {
+          if (damageOutcome === 'fatal') {
+            this.onPlayerFatalHit();
+          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -109,7 +111,9 @@ export class CollisionManager {
           bomb.kill();
           const damageOutcome = player.takeDamage(2);
           this.effectsManager.createExplosion(impactX, impactY, 1.5);
-          if (this.shouldEmitPlayerHit(damageOutcome)) {
+          if (damageOutcome === 'fatal') {
+            this.onPlayerFatalHit();
+          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -131,7 +135,9 @@ export class CollisionManager {
         if (asteroid.active && this.canProcessPlayerCollision()) {
           const damageOutcome = player.takeDamage(1);
           asteroid.die();
-          if (this.shouldEmitPlayerHit(damageOutcome)) {
+          if (damageOutcome === 'fatal') {
+            this.onPlayerFatalHit();
+          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -151,7 +157,9 @@ export class CollisionManager {
           } else {
             enemy.takeDamage(1);
           }
-          if (this.shouldEmitPlayerHit(damageOutcome)) {
+          if (damageOutcome === 'fatal') {
+            this.onPlayerFatalHit();
+          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
             this.onPlayerHit();
           }
         }
@@ -211,6 +219,10 @@ export class CollisionManager {
     this.runBestEffort(() => this.effectsManager.createSparkBurst(this.player.x, this.player.y));
     this.runBestEffort(() => this.scene.cameras.main.shake(200, 0.01));
     this.runBestEffort(() => this.scene.events.emit('player-hit'));
+  }
+
+  private onPlayerFatalHit(): void {
+    this.runBestEffort(() => this.scene.events.emit('player-fatal-hit'));
   }
 
   private runBestEffort(effect: () => void): void {

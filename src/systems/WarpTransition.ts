@@ -114,9 +114,10 @@ export class WarpTransition {
 
     // Complete
     if (progress >= 1) {
+      const onComplete = this.onCompleteCallback;
       this.cleanup();
-      if (this.onCompleteCallback) {
-        this.onCompleteCallback();
+      if (onComplete) {
+        onComplete();
       }
     }
   }
@@ -138,6 +139,10 @@ export class WarpTransition {
 
     this.running = false;
     this.onCompleteCallback = null;
+  }
+
+  cancel(): void {
+    this.cleanup();
   }
 
   isRunning(): boolean {
