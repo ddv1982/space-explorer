@@ -7,10 +7,11 @@ const MAX_HORIZONTAL_INSET = 170;
 const MIN_HORIZONTAL_INSET = 104;
 const MAX_VERTICAL_INSET = 160;
 const MIN_VERTICAL_INSET = 112;
-const JOYSTICK_BASE_RADIUS = 76;
+const JOYSTICK_BASE_RADIUS = 62;
 const JOYSTICK_HIT_RADIUS = 96;
-const JOYSTICK_THUMB_RADIUS = 30;
-const JOYSTICK_MAX_DISTANCE = 52;
+const JOYSTICK_THUMB_RADIUS = 25;
+const JOYSTICK_MAX_DISTANCE = 44;
+const JOYSTICK_INPUT_DISTANCE = 52;
 
 export class MobileControls {
   private scene: Phaser.Scene | null = null;
@@ -177,7 +178,7 @@ export class MobileControls {
     const limitedDistance = Math.min(distance, JOYSTICK_MAX_DISTANCE);
     const scale = limitedDistance / distance;
 
-    this.movementVector.set(dx / JOYSTICK_MAX_DISTANCE, dy / JOYSTICK_MAX_DISTANCE).limit(1);
+    this.movementVector.set(dx / JOYSTICK_INPUT_DISTANCE, dy / JOYSTICK_INPUT_DISTANCE).limit(1);
 
     this.joystickThumb?.setPosition(
       this.joystickX + dx * scale,

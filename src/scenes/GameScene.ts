@@ -260,8 +260,8 @@ export class GameScene extends Phaser.Scene {
     const viewport = getViewportBounds(this);
     const halfWidth = this.player.displayWidth / 2;
     const halfHeight = this.player.displayHeight / 2;
-    const clampedX = Phaser.Math.Clamp(this.player.x, halfWidth, viewport.width - halfWidth);
-    const clampedY = Phaser.Math.Clamp(this.player.y, halfHeight, viewport.height - halfHeight);
+    const clampedX = Phaser.Math.Clamp(this.player.x, viewport.left + halfWidth, viewport.right - halfWidth);
+    const clampedY = Phaser.Math.Clamp(this.player.y, viewport.top + halfHeight, viewport.bottom - halfHeight);
 
     this.player.setPosition(clampedX, clampedY);
     (this.player.body as Phaser.Physics.Arcade.Body).updateFromGameObject();

@@ -12,8 +12,11 @@ export interface ViewportLayout {
 }
 
 export function getViewportBounds(scene: Phaser.Scene): ViewportLayout {
-  const { x: left, y: top } = scene.cameras.main;
-  const { width, height } = scene.scale.gameSize;
+  const viewport = scene.scale.getViewPort();
+  const left = viewport.x;
+  const top = viewport.y;
+  const width = viewport.width;
+  const height = viewport.height;
 
   return {
     left,

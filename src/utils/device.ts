@@ -1,5 +1,16 @@
 const hasWindow = typeof window !== 'undefined';
 
+function getViewportSize(): { width: number; height: number } {
+  if (!hasWindow) {
+    return { width: 0, height: 0 };
+  }
+
+  return {
+    width: window.visualViewport?.width ?? window.innerWidth,
+    height: window.visualViewport?.height ?? window.innerHeight,
+  };
+}
+
 function matchesMedia(query: string): boolean {
   return hasWindow && typeof window.matchMedia === 'function'
     ? window.matchMedia(query).matches
@@ -19,5 +30,7 @@ export function isPortraitTouchViewport(): boolean {
     return false;
   }
 
-  return matchesMedia('(orientation: portrait)') || window.innerHeight > window.innerWidth;
+  const { width, height } = getViewportSize();
+
+  return matchesMedia('(orientation: portrait)') || height > width;
 }
