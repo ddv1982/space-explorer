@@ -65,8 +65,7 @@ export class HUD {
     this.progressFillColor = mixColor(0x54dcff, accentColor, 0.86);
 
     const topBarRight = GAME_WIDTH - 16;
-    const topBarTextWidth = 220;
-    const topBarTextX = topBarRight - topBarTextWidth;
+    const topBarPanelHeight = 60;
 
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '11px',
@@ -88,9 +87,9 @@ export class HUD {
     this.topBarPanel = scene.add.graphics();
     this.topBarPanel.setDepth(99);
     this.topBarPanel.fillStyle(0x030915, 0.58);
-    this.topBarPanel.fillRoundedRect(10, 6, GAME_WIDTH - 20, 50, 10);
+    this.topBarPanel.fillRoundedRect(10, 6, GAME_WIDTH - 20, topBarPanelHeight, 10);
     this.topBarPanel.lineStyle(1, this.panelStrokeColor, 0.34);
-    this.topBarPanel.strokeRoundedRect(10, 6, GAME_WIDTH - 20, 50, 10);
+    this.topBarPanel.strokeRoundedRect(10, 6, GAME_WIDTH - 20, topBarPanelHeight, 10);
 
     // HP label and bar
     this.hpLabel = scene.add.text(this.hpBarX, this.hpBarY - 2, 'HP', labelStyle).setDepth(100);
@@ -120,14 +119,15 @@ export class HUD {
     }).setDepth(100);
 
     // Score label and text
-    this.scoreLabel = scene.add.text(topBarTextX, this.hpBarY - 3, 'SCORE', {
+    this.scoreLabel = scene.add.text(topBarRight, this.hpBarY - 3, 'SCORE', {
       ...labelStyle,
       fontSize: '10px',
       color: scoreLabelColor,
     }).setDepth(100);
+    this.scoreLabel.setOrigin(1, 0);
     this.scoreLabel.setLetterSpacing(2);
 
-    this.scoreText = scene.add.text(topBarTextX, this.hpBarY - 5, '0', {
+    this.scoreText = scene.add.text(topBarRight, this.hpBarY - 5, '0', {
       fontSize: '18px',
       color: '#ffffff',
       fontFamily: 'monospace',
@@ -135,13 +135,12 @@ export class HUD {
       stroke: '#040b12',
       strokeThickness: 2,
     });
-    this.scoreText.setFixedSize(topBarTextWidth, 24);
-    this.scoreText.setAlign('right');
+    this.scoreText.setOrigin(1, 0);
     this.scoreText.setLetterSpacing(1.5);
     this.scoreText.setDepth(100);
 
     // Sector and level title (below score, top-right area)
-    this.sectorText = scene.add.text(topBarTextX, this.hpBarY + 18, '', {
+    this.sectorText = scene.add.text(topBarRight, this.hpBarY + 18, '', {
       fontSize: '10px',
       color: sectorColor,
       fontFamily: 'monospace',
@@ -149,11 +148,10 @@ export class HUD {
       stroke: '#040b12',
       strokeThickness: 2,
     }).setDepth(100);
-    this.sectorText.setFixedSize(topBarTextWidth, 12);
-    this.sectorText.setAlign('right');
+    this.sectorText.setOrigin(1, 0);
     this.sectorText.setLetterSpacing(1.5);
 
-    this.levelText = scene.add.text(topBarTextX, this.hpBarY + 30, '', {
+    this.levelText = scene.add.text(topBarRight, this.hpBarY + 30, '', {
       fontSize: '13px',
       color: '#eefaff',
       fontFamily: 'monospace',
@@ -161,8 +159,7 @@ export class HUD {
       stroke: '#040b12',
       strokeThickness: 2,
     }).setDepth(100);
-    this.levelText.setFixedSize(topBarTextWidth, 16);
-    this.levelText.setAlign('right');
+    this.levelText.setOrigin(1, 0);
     this.levelText.setLetterSpacing(0.5);
 
     // Progress bar (center top)
