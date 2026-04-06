@@ -10,6 +10,8 @@ import { EffectsManager } from './EffectsManager';
 import { BomberBomb } from '../entities/BomberBomb';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
 
+type CollisionTargetCtor<T> = abstract new (...args: never[]) => T;
+
 export class CollisionManager {
   private scene!: Phaser.Scene;
   private player!: Player;
@@ -41,7 +43,7 @@ export class CollisionManager {
     enemyGroups.forEach(({ group }) => {
       scene.physics.add.overlap(
         bulletGroup, group,
-        (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
+        (_obj1, _obj2) => this.bulletVsEnemy(_obj1, _obj2)
       );
     });
 
@@ -49,9 +51,9 @@ export class CollisionManager {
     scene.physics.add.overlap(
       bulletGroup, asteroidGroup,
       (_obj1, _obj2) => {
-        const bullet = _obj1 as Bullet;
-        const asteroid = _obj2 as Asteroid;
-        if (bullet.active && asteroid.active) {
+        const bullet = this.resolveCollisionTarget(Bullet, _obj1, _obj2);
+        const asteroid = this.resolveCollisionTarget(Asteroid, _obj1, _obj2);
+        if (bullet?.active && asteroid?.active) {
           bullet.kill();
           asteroid.takeDamage(this.bulletDamage);
         }
@@ -62,8 +64,8 @@ export class CollisionManager {
     scene.physics.add.overlap(
       enemyPool.getEnemyBulletGroup(), player,
       (_obj1, _obj2) => {
-        const eBullet = _obj1 as EnemyBullet;
-        if (eBullet.active && this.canProcessPlayerCollision()) {
+        const eBullet = this.resolveCollisionTarget(EnemyBullet, _obj1, _obj2);
+        if (eBullet?.active && this.canProcessPlayerCollision()) {
           eBullet.kill();
           const damageOutcome = player.takeDamage(1);
           if (damageOutcome === 'fatal') {
@@ -79,8 +81,8 @@ export class CollisionManager {
     scene.physics.add.overlap(
       enemyPool.getBombGroup(), player,
       (_obj1, _obj2) => {
-        const bomb = _obj1 as BomberBomb;
-        if (bomb.active && this.canProcessPlayerCollision()) {
+        const bomb = this.resolveCollisionTarget(BomberBomb, _obj1, _obj2);
+        if (bomb?.active && this.canProcessPlayerCollision()) {
           const impactX = bomb.x;
           const impactY = bomb.y;
           bomb.kill();
@@ -108,8 +110,8 @@ export class CollisionManager {
     scene.physics.add.overlap(
       asteroidGroup, player,
       (_obj1, _obj2) => {
-        const asteroid = _obj1 as Asteroid;
-        if (asteroid.active && this.canProcessPlayerCollision()) {
+        const asteroid = this.resolveCollisionTarget(Asteroid, _obj1, _obj2);
+        if (asteroid?.active && this.canProcessPlayerCollision()) {
           const damageOutcome = player.takeDamage(1);
           asteroid.die();
           if (damageOutcome === 'fatal') {
@@ -129,8 +131,8 @@ export class CollisionManager {
     this.scene.physics.add.overlap(
       group, this.player,
       (_obj1, _obj2) => {
-        const enemy = _obj1 as EnemyBase;
-        if (enemy.active && this.canProcessPlayerCollision()) {
+        const enemy = this.resolveCollisionTarget(EnemyBase, _obj1, _obj2);
+        if (enemy?.active && this.canProcessPlayerCollision()) {
           const damageOutcome = this.player.takeDamage(1);
           if (playerCollisionBehavior === 'kamikaze') {
             enemy.die();
@@ -168,8 +170,11 @@ export class CollisionManager {
     this.clearHazardGroup(this.enemyPool.getBombGroup());
   }
 
-  private bulletVsEnemy(bullet: Bullet, enemy: EnemyBase): void {
-    if (bullet.active && enemy.active) {
+  private bulletVsEnemy(...values: unknown[]): void {
+    const bullet = this.resolveCollisionTarget(Bullet, ...values);
+    const enemy = this.resolveCollisionTarget(EnemyBase, ...values);
+
+    if (bullet?.active && enemy?.active) {
       bullet.kill();
       enemy.takeDamage(this.bulletDamage);
       this.onEnemyHit(enemy);
@@ -225,6 +230,25 @@ export class CollisionManager {
         sprite.kill();
       }
     });
+  }
+
+  private resolveCollisionTarget<T>(ctor: CollisionTargetCtor<T>, ...values: unknown[]): T | null {
+    for (const value of values) {
+      if (value instanceof ctor) {
+        return value;
+      }
+
+      if (!value || typeof value !== 'object' || !('gameObject' in value)) {
+        continue;
+      }
+
+      const { gameObject } = value as { gameObject?: unknown };
+      if (gameObject instanceof ctor) {
+        return gameObject;
+      }
+    }
+
+    return null;
   }
 
   private runBestEffort(effect: () => void): void {

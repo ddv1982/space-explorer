@@ -11,6 +11,11 @@
     "lint": "eslint .",
     "knip": "knip"
   },
+  "knip": {
+    "project": [
+      "src/**/*.ts"
+    ]
+  },
   "dependencies": {
     "phaser": "^3.90.0"
   },
