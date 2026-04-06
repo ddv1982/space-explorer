@@ -26,6 +26,9 @@ import {
 } from '../systems/GameplayFlow';
 import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
 import { showControlsHint } from './gameScene/showControlsHint';
+import { MobileViewportGuard } from '../systems/MobileViewportGuard';
+import { MobileControls } from '../systems/MobileControls';
+import { isTouchMobileDevice } from '../utils/device';
 
 export class GameScene extends Phaser.Scene {
   private static readonly PLAYER_DEATH_EXPLOSION_INTENSITY = 1.35;
@@ -42,6 +45,8 @@ export class GameScene extends Phaser.Scene {
   private levelManager!: LevelManager;
   private effectsManager!: EffectsManager;
   private warpTransition!: WarpTransition;
+  private mobileViewportGuard: MobileViewportGuard | null = null;
+  private mobileControls: MobileControls | null = null;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
   private readonly flow = new GameSceneFlowController();
   private lastFireTime: number = 0;
@@ -85,8 +90,11 @@ export class GameScene extends Phaser.Scene {
     this.effectsManager.setup(this);
     this.effectsManager.applyLevelColorGrade(levelConfig);
 
+    this.mobileControls = new MobileControls();
+    this.mobileControls.create(this);
+
     this.inputManager = new InputManager();
-    this.inputManager.create(this);
+    this.inputManager.create(this, this.mobileControls);
 
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 80);
     this.player.applyState(state);
@@ -136,7 +144,10 @@ export class GameScene extends Phaser.Scene {
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
 
-    showControlsHint(this);
+    this.mobileViewportGuard = MobileViewportGuard.create(this, () => this.stopPlayerMotion());
+    this.syncMobileControlsBlockedState();
+
+    showControlsHint(this, { mobile: isTouchMobileDevice() });
 
     this.registerSceneEventHandlers();
   }
@@ -182,6 +193,10 @@ export class GameScene extends Phaser.Scene {
   private handleSceneShutdown(): void {
     this.removeSceneEventHandlers();
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
+    this.mobileViewportGuard?.destroy();
+    this.mobileViewportGuard = null;
+    this.mobileControls?.destroy();
+    this.mobileControls = null;
     this.parallax?.destroy();
     this.effectsManager?.destroy();
 
@@ -195,6 +210,10 @@ export class GameScene extends Phaser.Scene {
   private handleSceneDestroy(): void {
     this.removeSceneEventHandlers();
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
+    this.mobileViewportGuard?.destroy();
+    this.mobileViewportGuard = null;
+    this.mobileControls?.destroy();
+    this.mobileControls = null;
     this.parallax?.destroy();
     this.effectsManager?.destroy();
     this.flow.shutdown(this.collisionManager);
@@ -202,6 +221,7 @@ export class GameScene extends Phaser.Scene {
 
   private handleScaleResize(): void {
     this.parallax?.resize(this.cameras.main.width, this.cameras.main.height);
+    this.syncMobileControlsBlockedState();
   }
 
   private handleEnemyDeath(score: number, x: number, y: number): void {
@@ -327,6 +347,10 @@ export class GameScene extends Phaser.Scene {
     trySpawnRandomPowerUp(this.powerUpGroup, x, y);
   }
 
+  private syncMobileControlsBlockedState(): void {
+    this.mobileControls?.setBlocked(this.mobileViewportGuard?.isBlocked() ?? false);
+  }
+
   private applyPowerUp(type: PowerUpType): void {
     applyPowerUpPickup(this, this.player, this.effectsManager, type);
   }
@@ -357,16 +381,22 @@ export class GameScene extends Phaser.Scene {
     this.hud.updateShields(this.player.shields);
   }
 
+  private updateHud(): void {
+    this.hud.update(
+      this.player.hp,
+      this.player.maxHp,
+      this.scoreManager.getScore(),
+      this.levelManager.progress,
+      this.flow.getRemainingLives()
+    );
+    this.syncHudShields();
+  }
+
   update(time: number, delta: number): void {
-    if (this.flow.isGameplayLocked()) {
-      this.hud.update(
-        this.player.hp,
-        this.player.maxHp,
-        this.scoreManager.getScore(),
-        this.levelManager.progress,
-        this.flow.getRemainingLives()
-      );
-      this.syncHudShields();
+    this.syncMobileControlsBlockedState();
+
+    if (this.mobileViewportGuard?.isBlocked() || this.flow.isGameplayLocked()) {
+      this.updateHud();
       return;
     }
 
@@ -420,13 +450,6 @@ export class GameScene extends Phaser.Scene {
       this.hud.updateBossHp(this.boss.hp, this.boss.maxHp);
     }
 
-    this.hud.update(
-      this.player.hp,
-      this.player.maxHp,
-      this.scoreManager.getScore(),
-      this.levelManager.progress,
-      this.flow.getRemainingLives()
-    );
-    this.syncHudShields();
+    this.updateHud();
   }
 }

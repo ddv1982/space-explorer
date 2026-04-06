@@ -3,6 +3,7 @@ import { getLevelConfig } from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { resetPlayerState } from '../systems/PlayerState';
 import { audioManager } from '../systems/AudioManager';
+import { isTouchMobileDevice } from '../utils/device';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { createPromptText } from './shared/createPromptText';
@@ -27,6 +28,7 @@ export class MenuScene extends Phaser.Scene {
     const controlsPanelHeight = 132;
     const controlsY = layout.centerY + 40;
     const controlsPanelX = centerHorizontally(layout, controlsPanelWidth);
+    const mobile = isTouchMobileDevice();
 
     this.cameras.main.setBackgroundColor(menuConfig.bgColor);
 
@@ -58,8 +60,8 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(11);
 
     const controlsContent = [
-      { label: 'MOVE', keys: 'W A S D  /  Arrows  /  Swipe' },
-      { label: 'FIRE', keys: 'SPACE  /  Tap or Click' },
+      { label: 'MOVE', keys: mobile ? 'On-screen Joystick' : 'W A S D  /  Arrows' },
+      { label: 'FIRE', keys: mobile ? 'Fire Button' : 'SPACE  /  Click' },
       { label: 'LIVES', keys: '3 Ships Per Run' },
     ];
 
