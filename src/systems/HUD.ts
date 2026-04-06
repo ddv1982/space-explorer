@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { LevelConfig } from '../config/LevelsConfig';
 import { GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class HUD {
@@ -32,16 +33,44 @@ export class HUD {
   private bossBarHeight = 10;
   private bossVisible: boolean = false;
   private currentShields: number | null = null;
+  private currentHp: number | null = null;
+  private currentMaxHp: number | null = null;
+  private currentLives: number | null = null;
+  private currentScore: number | null = null;
+  private currentProgress: number | null = null;
+  private currentBossHp: number | null = null;
+  private currentBossMaxHp: number | null = null;
+  private panelStrokeColor = 0x3f6b8b;
+  private hpBorderColor = 0x8ee8ff;
+  private progressBorderColor = 0x7fdcff;
+  private progressFillColor = 0x54dcff;
 
-  create(scene: Phaser.Scene): void {
+  create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.scene = scene;
+    this.currentHp = null;
+    this.currentMaxHp = null;
+    this.currentLives = null;
+    this.currentScore = null;
+    this.currentProgress = null;
+    this.currentBossHp = null;
+    this.currentBossMaxHp = null;
+
+    const accentColor = levelConfig?.accentColor ?? 0x54dcff;
+    const labelColor = colorToHexString(mixColor(0xd8f4ff, accentColor, 0.28));
+    const scoreLabelColor = colorToHexString(mixColor(0x9fd4e6, accentColor, 0.55));
+    const sectorColor = colorToHexString(mixColor(0x7fdcff, accentColor, 0.62));
+    this.panelStrokeColor = mixColor(0x334466, accentColor, 0.42);
+    this.hpBorderColor = mixColor(0x8ee8ff, accentColor, 0.48);
+    this.progressBorderColor = mixColor(0x7fdcff, accentColor, 0.72);
+    this.progressFillColor = mixColor(0x54dcff, accentColor, 0.86);
+
     const topBarRight = GAME_WIDTH - 16;
     const topBarTextWidth = 220;
     const topBarTextX = topBarRight - topBarTextWidth;
 
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '11px',
-      color: '#d8f4ff',
+      color: labelColor,
       fontFamily: 'monospace',
       fontStyle: 'bold',
       stroke: '#040b12',
@@ -60,6 +89,8 @@ export class HUD {
     this.topBarPanel.setDepth(99);
     this.topBarPanel.fillStyle(0x030915, 0.58);
     this.topBarPanel.fillRoundedRect(10, 6, GAME_WIDTH - 20, 50, 10);
+    this.topBarPanel.lineStyle(1, this.panelStrokeColor, 0.34);
+    this.topBarPanel.strokeRoundedRect(10, 6, GAME_WIDTH - 20, 50, 10);
 
     // HP label and bar
     this.hpLabel = scene.add.text(this.hpBarX, this.hpBarY - 2, 'HP', labelStyle).setDepth(100);
@@ -68,7 +99,7 @@ export class HUD {
     this.hpBarBg.setDepth(100);
     this.hpBarBg.fillStyle(0x091521, 0.92);
     this.hpBarBg.fillRoundedRect(this.hpBarX + 22, this.hpBarY, this.hpBarWidth - 22, this.hpBarHeight, 3);
-    this.hpBarBg.lineStyle(1, 0x8ee8ff, 0.35);
+    this.hpBarBg.lineStyle(1, this.hpBorderColor, 0.35);
     this.hpBarBg.strokeRoundedRect(this.hpBarX + 22, this.hpBarY, this.hpBarWidth - 22, this.hpBarHeight, 3);
 
     this.hpBarFill = scene.add.graphics();
@@ -92,7 +123,7 @@ export class HUD {
     this.scoreLabel = scene.add.text(topBarTextX, this.hpBarY - 3, 'SCORE', {
       ...labelStyle,
       fontSize: '10px',
-      color: '#9fd4e6',
+      color: scoreLabelColor,
     }).setDepth(100);
     this.scoreLabel.setLetterSpacing(2);
 
@@ -112,7 +143,7 @@ export class HUD {
     // Sector and level title (below score, top-right area)
     this.sectorText = scene.add.text(topBarTextX, this.hpBarY + 18, '', {
       fontSize: '10px',
-      color: '#7fdcff',
+      color: sectorColor,
       fontFamily: 'monospace',
       fontStyle: 'bold',
       stroke: '#040b12',
@@ -140,7 +171,7 @@ export class HUD {
     this.progressBg.setDepth(100);
     this.progressBg.fillStyle(0x08141f, 0.82);
     this.progressBg.fillRect(progressX, 8, this.progressWidth, this.progressHeight);
-    this.progressBg.lineStyle(1, 0x7fdcff, 0.3);
+    this.progressBg.lineStyle(1, this.progressBorderColor, 0.36);
     this.progressBg.strokeRect(progressX, 8, this.progressWidth, this.progressHeight);
 
     this.progressFill = scene.add.graphics();
@@ -267,6 +298,8 @@ export class HUD {
 
   hideBossBar(): void {
     this.bossVisible = false;
+    this.currentBossHp = null;
+    this.currentBossMaxHp = null;
     this.bossBarBg.setVisible(false);
     this.bossBarFill.setVisible(false);
     this.bossNameText.setVisible(false);
@@ -274,6 +307,11 @@ export class HUD {
 
   updateBossHp(hp: number, maxHp: number): void {
     if (!this.bossVisible) return;
+
+    if (this.currentBossHp === hp && this.currentBossMaxHp === maxHp) {
+      return;
+    }
+
     this.bossBarFill.clear();
     const ratio = hp / maxHp;
     const bx = (GAME_WIDTH - this.bossBarWidth) / 2;
@@ -281,29 +319,55 @@ export class HUD {
     const color = ratio > 0.5 ? 0xff4444 : ratio > 0.25 ? 0xff8800 : 0xffff00;
     this.bossBarFill.fillStyle(color, 1);
     this.bossBarFill.fillRect(bx + 1, by + 1, (this.bossBarWidth - 2) * ratio, this.bossBarHeight - 2);
+    this.currentBossHp = hp;
+    this.currentBossMaxHp = maxHp;
   }
 
   update(hp: number, maxHp: number, score: number, progress: number, lives: number): void {
-    this.hpBarFill.clear();
-    const hpRatio = hp / maxHp;
-    const hpColor = hpRatio > 0.5 ? 0x00ff44 : hpRatio > 0.25 ? 0xffaa00 : 0xff2222;
-    this.hpBarFill.fillStyle(hpColor, 1);
-    this.hpBarFill.fillRoundedRect(
-      this.hpBarX + 24,
-      this.hpBarY + 2,
-      (this.hpBarWidth - 26) * hpRatio,
-      this.hpBarHeight - 4,
-      2
-    );
-
-    this.hpText.setText(`${hp}/${maxHp}`);
-    this.livesText.setText(lives.toString());
-    this.scoreText.setText(score.toString().padStart(8, '0'));
-
-    this.progressFill.clear();
     const progressX = (GAME_WIDTH - this.progressWidth) / 2;
-    this.progressFill.fillStyle(0x54dcff, 0.95);
-    this.progressFill.fillRect(progressX, 8, this.progressWidth * Math.min(progress, 1), this.progressHeight);
+    const progressStep = 1 / this.progressWidth;
+    const hpChanged = this.currentHp !== hp || this.currentMaxHp !== maxHp;
+
+    if (hpChanged) {
+      this.hpBarFill.clear();
+      const hpRatio = hp / maxHp;
+      const hpColor = hpRatio > 0.5 ? 0x00ff44 : hpRatio > 0.25 ? 0xffaa00 : 0xff2222;
+      this.hpBarFill.fillStyle(hpColor, 1);
+      this.hpBarFill.fillRoundedRect(
+        this.hpBarX + 24,
+        this.hpBarY + 2,
+        (this.hpBarWidth - 26) * hpRatio,
+        this.hpBarHeight - 4,
+        2
+      );
+
+      this.hpText.setText(`${hp}/${maxHp}`);
+      this.currentHp = hp;
+      this.currentMaxHp = maxHp;
+    }
+
+    if (this.currentLives !== lives) {
+      this.livesText.setText(lives.toString());
+      this.currentLives = lives;
+    }
+
+    if (this.currentScore !== score) {
+      this.scoreText.setText(score.toString().padStart(8, '0'));
+      this.currentScore = score;
+    }
+
+    const clampedProgress = Math.min(progress, 1);
+    if (
+      this.currentProgress === null ||
+      Math.abs(clampedProgress - this.currentProgress) >= progressStep ||
+      clampedProgress === 0 ||
+      clampedProgress === 1
+    ) {
+      this.progressFill.clear();
+      this.progressFill.fillStyle(this.progressFillColor, 0.95);
+      this.progressFill.fillRect(progressX, 8, this.progressWidth * clampedProgress, this.progressHeight);
+      this.currentProgress = clampedProgress;
+    }
   }
 
   showBossWarning(): void {
@@ -319,4 +383,26 @@ export class HUD {
       ease: 'Power2',
     });
   }
+}
+
+function mixColor(baseColor: number, accentColor: number, weight: number): number {
+  const clampedWeight = Phaser.Math.Clamp(weight, 0, 1);
+
+  const baseR = (baseColor >> 16) & 0xff;
+  const baseG = (baseColor >> 8) & 0xff;
+  const baseB = baseColor & 0xff;
+
+  const accentR = (accentColor >> 16) & 0xff;
+  const accentG = (accentColor >> 8) & 0xff;
+  const accentB = accentColor & 0xff;
+
+  const r = Math.round(baseR + (accentR - baseR) * clampedWeight);
+  const g = Math.round(baseG + (accentG - baseG) * clampedWeight);
+  const b = Math.round(baseB + (accentB - baseB) * clampedWeight);
+
+  return (r << 16) | (g << 8) | b;
+}
+
+function colorToHexString(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`;
 }

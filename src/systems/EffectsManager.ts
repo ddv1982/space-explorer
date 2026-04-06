@@ -8,6 +8,7 @@ export class EffectsManager {
   private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private exhaustEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private exhaustConfigKey: string | null = null;
 
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
@@ -21,6 +22,7 @@ export class EffectsManager {
     this.destroyEmitters();
     this.clearCameraFX();
     this.colorMatrix = null;
+    this.exhaustConfigKey = null;
   }
 
   applyLevelColorGrade(config: LevelConfig): void {
@@ -68,6 +70,7 @@ export class EffectsManager {
 
   private createParticleEmitters(): void {
     this.destroyEmitters();
+    this.exhaustConfigKey = null;
 
     this.explosionEmitter = this.createPooledEmitter(
       'particle-explosion',
@@ -127,6 +130,7 @@ export class EffectsManager {
     this.sparkEmitter = null;
     this.muzzleEmitter = null;
     this.exhaustEmitter = null;
+    this.exhaustConfigKey = null;
   }
 
   private getExplosionConfig(
@@ -213,8 +217,13 @@ export class EffectsManager {
     }
 
     const count = Math.ceil(intensity * 2);
+    const configKey = `${intensity.toFixed(1)}-${count}`;
 
-    this.exhaustEmitter.updateConfig(this.getExhaustConfig(intensity, count));
+    if (this.exhaustConfigKey !== configKey) {
+      this.exhaustEmitter.updateConfig(this.getExhaustConfig(intensity, count));
+      this.exhaustConfigKey = configKey;
+    }
+
     this.exhaustEmitter.explode(count, x, y);
   }
 

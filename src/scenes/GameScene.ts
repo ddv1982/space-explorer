@@ -108,6 +108,7 @@ export class GameScene extends Phaser.Scene {
 
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, levelConfig);
+    this.registerScaleHandlers();
 
     this.effectsManager = new EffectsManager();
     this.effectsManager.setup(this);
@@ -157,7 +158,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.hud = new HUD();
-    this.hud.create(this);
+    this.hud.create(this, levelConfig);
     this.hud.showLevelAnnouncement(levelConfig.name, state.level);
     this.syncHudShields();
 
@@ -191,6 +192,11 @@ export class GameScene extends Phaser.Scene {
     this.events.on(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
   }
 
+  private registerScaleHandlers(): void {
+    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
+  }
+
   private removeSceneEventHandlers(): void {
     this.events.off(GAME_SCENE_EVENTS.enemyDeath, this.handleEnemyDeath, this);
     this.events.off(GAME_SCENE_EVENTS.playerDeath, this.handlePlayerDeath, this);
@@ -205,6 +211,8 @@ export class GameScene extends Phaser.Scene {
 
   private handleSceneShutdown(): void {
     this.removeSceneEventHandlers();
+    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
+    this.parallax?.destroy();
     this.effectsManager?.destroy();
 
     this.clearGameOverTransitionTimers();
@@ -226,7 +234,13 @@ export class GameScene extends Phaser.Scene {
 
   private handleSceneDestroy(): void {
     this.removeSceneEventHandlers();
+    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
+    this.parallax?.destroy();
     this.effectsManager?.destroy();
+  }
+
+  private handleScaleResize(): void {
+    this.parallax?.resize(this.cameras.main.width, this.cameras.main.height);
   }
 
   private handleEnemyDeath(score: number, x: number, y: number): void {
