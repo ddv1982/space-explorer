@@ -46,7 +46,7 @@ export class InputManager {
 
   isFiring(): boolean {
     if (this.mobileInputMode) {
-      return this.space.isDown || this.mobileControls?.isFiring() === true;
+      return this.space.isDown || this.hasMobileFireTouch();
     }
 
     return this.space.isDown || this.scene.input.activePointer.isDown;
@@ -62,5 +62,11 @@ export class InputManager {
     }
 
     return this.mobileControls?.getMovementVector(this.movementVector) ?? this.movementVector.set(0, 0);
+  }
+
+  private hasMobileFireTouch(): boolean {
+    return this.scene.input.manager.pointers.some((pointer) => {
+      return pointer.isDown && this.mobileControls?.isJoystickPointer(pointer) !== true;
+    });
   }
 }

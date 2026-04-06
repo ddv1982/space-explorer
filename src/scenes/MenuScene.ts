@@ -61,7 +61,7 @@ export class MenuScene extends Phaser.Scene {
 
     const controlsContent = [
       { label: 'MOVE', keys: mobile ? 'On-screen Joystick' : 'W A S D  /  Arrows' },
-      { label: 'FIRE', keys: mobile ? 'Fire Button' : 'SPACE  /  Click' },
+      { label: 'FIRE', keys: mobile ? 'Tap Screen' : 'SPACE  /  Click' },
       { label: 'LIVES', keys: '3 Ships Per Run' },
     ];
 

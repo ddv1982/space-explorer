@@ -11,43 +11,28 @@ const JOYSTICK_BASE_RADIUS = 76;
 const JOYSTICK_HIT_RADIUS = 96;
 const JOYSTICK_THUMB_RADIUS = 30;
 const JOYSTICK_MAX_DISTANCE = 52;
-const FIRE_BUTTON_RADIUS = 68;
 
 export class MobileControls {
   private scene: Phaser.Scene | null = null;
   private joystickBase: Phaser.GameObjects.Arc | null = null;
   private joystickCenter: Phaser.GameObjects.Arc | null = null;
   private joystickThumb: Phaser.GameObjects.Arc | null = null;
-  private fireButton: Phaser.GameObjects.Arc | null = null;
-  private fireCore: Phaser.GameObjects.Arc | null = null;
-  private fireLabel: Phaser.GameObjects.Text | null = null;
   private enabledForTouchDevice: boolean = false;
   private blocked: boolean = false;
   private joystickPointerId: number | null = null;
-  private firePointerId: number | null = null;
   private joystickX: number = 0;
   private joystickY: number = 0;
-  private fireButtonX: number = 0;
-  private fireButtonY: number = 0;
   private readonly movementVector = new Phaser.Math.Vector2();
 
   private readonly handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
     if (pointer.id === this.joystickPointerId) {
       this.updateJoystick(pointer);
     }
-
-    if (pointer.id === this.firePointerId && !this.isPointInsideFireButton(pointer.x, pointer.y)) {
-      this.releaseFire();
-    }
   };
 
   private readonly handlePointerUp = (pointer: Phaser.Input.Pointer): void => {
     if (pointer.id === this.joystickPointerId) {
       this.releaseJoystick();
-    }
-
-    if (pointer.id === this.firePointerId) {
-      this.releaseFire();
     }
   };
 
@@ -90,37 +75,12 @@ export class MobileControls {
       .setDepth(CONTROLS_DEPTH + 2)
       .setScrollFactor(0);
 
-    this.fireButton = scene.add.circle(this.fireButtonX, this.fireButtonY, FIRE_BUTTON_RADIUS, 0x6a1010, 0.72)
-      .setStrokeStyle(5, 0xff7a5c, 0.95)
-      .setDepth(CONTROLS_DEPTH)
-      .setScrollFactor(0);
-    this.fireButton.setInteractive(
-      new Phaser.Geom.Circle(0, 0, FIRE_BUTTON_RADIUS),
-      Phaser.Geom.Circle.Contains
-    );
-    this.fireButton.on('pointerdown', this.handleFireDown, this);
-
-    this.fireCore = scene.add.circle(this.fireButtonX, this.fireButtonY, FIRE_BUTTON_RADIUS - 20, 0xff5e3a, 0.45)
-      .setDepth(CONTROLS_DEPTH + 1)
-      .setScrollFactor(0);
-
-    this.fireLabel = scene.add.text(this.fireButtonX, this.fireButtonY, 'FIRE', {
-      fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#ffe9d9',
-      fontStyle: 'bold',
-    })
-      .setOrigin(0.5)
-      .setDepth(CONTROLS_DEPTH + 2)
-      .setScrollFactor(0);
-
     scene.input.on('pointermove', this.handlePointerMove);
     scene.input.on('pointerup', this.handlePointerUp);
     scene.input.on('pointerupoutside', this.handlePointerUp);
 
     this.refreshVisibility();
     this.updateJoystickVisual();
-    this.updateFireVisual();
 
     return this;
   }
@@ -135,22 +95,15 @@ export class MobileControls {
     this.releaseActiveTouches();
 
     this.joystickBase?.off('pointerdown', this.handleJoystickDown, this);
-    this.fireButton?.off('pointerdown', this.handleFireDown, this);
 
     this.joystickBase?.destroy();
     this.joystickCenter?.destroy();
     this.joystickThumb?.destroy();
-    this.fireButton?.destroy();
-    this.fireCore?.destroy();
-    this.fireLabel?.destroy();
 
     this.scene = null;
     this.joystickBase = null;
     this.joystickCenter = null;
     this.joystickThumb = null;
-    this.fireButton = null;
-    this.fireCore = null;
-    this.fireLabel = null;
     this.enabledForTouchDevice = false;
     this.blocked = false;
   }
@@ -166,9 +119,6 @@ export class MobileControls {
     this.joystickBase?.setPosition(this.joystickX, this.joystickY);
     this.joystickCenter?.setPosition(this.joystickX, this.joystickY);
     this.joystickThumb?.setPosition(this.joystickX, this.joystickY);
-    this.fireButton?.setPosition(this.fireButtonX, this.fireButtonY);
-    this.fireCore?.setPosition(this.fireButtonX, this.fireButtonY);
-    this.fireLabel?.setPosition(this.fireButtonX, this.fireButtonY);
 
     this.refreshVisibility();
   }
@@ -187,16 +137,20 @@ export class MobileControls {
     return this.enabledForTouchDevice && !this.blocked && this.scene !== null;
   }
 
-  isFiring(): boolean {
-    return this.isEnabled() && this.firePointerId !== null;
-  }
-
   getMovementVector(out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
     if (!this.isEnabled()) {
       return out.set(0, 0);
     }
 
     return out.copy(this.movementVector);
+  }
+
+  isJoystickPointer(pointer: Phaser.Input.Pointer): boolean {
+    if (!this.isEnabled()) {
+      return false;
+    }
+
+    return pointer.id === this.joystickPointerId;
   }
 
   private handleJoystickDown(pointer: Phaser.Input.Pointer): void {
@@ -207,15 +161,6 @@ export class MobileControls {
     this.joystickPointerId = pointer.id;
     this.updateJoystick(pointer);
     this.updateJoystickVisual();
-  }
-
-  private handleFireDown(pointer: Phaser.Input.Pointer): void {
-    if (!this.isEnabled() || this.firePointerId !== null) {
-      return;
-    }
-
-    this.firePointerId = pointer.id;
-    this.updateFireVisual();
   }
 
   private updateJoystick(pointer: Phaser.Input.Pointer): void {
@@ -259,55 +204,26 @@ export class MobileControls {
       .setScale(active ? 1.04 : 1);
   }
 
-  private updateFireVisual(): void {
-    const active = this.firePointerId !== null && this.isEnabled();
-
-    this.fireButton
-      ?.setFillStyle(active ? 0xa61f12 : 0x6a1010, active ? 0.92 : 0.72)
-      .setScale(active ? 0.96 : 1);
-    this.fireCore
-      ?.setFillStyle(active ? 0xffc56b : 0xff5e3a, active ? 0.82 : 0.45)
-      .setScale(active ? 0.92 : 1);
-    this.fireLabel?.setAlpha(active ? 1 : 0.9);
-  }
-
   private refreshVisibility(): void {
     const visible = this.isEnabled();
 
     this.joystickBase?.setVisible(visible);
     this.joystickCenter?.setVisible(visible);
     this.joystickThumb?.setVisible(visible);
-    this.fireButton?.setVisible(visible);
-    this.fireCore?.setVisible(visible);
-    this.fireLabel?.setVisible(visible);
 
     if (this.joystickBase?.input) {
       this.joystickBase.input.enabled = visible;
-    }
-
-    if (this.fireButton?.input) {
-      this.fireButton.input.enabled = visible;
     }
   }
 
   private releaseActiveTouches(): void {
     this.releaseJoystick();
-    this.releaseFire();
   }
 
   private releaseJoystick(): void {
     this.joystickPointerId = null;
     this.movementVector.set(0, 0);
     this.updateJoystickVisual();
-  }
-
-  private releaseFire(): void {
-    this.firePointerId = null;
-    this.updateFireVisual();
-  }
-
-  private isPointInsideFireButton(x: number, y: number): boolean {
-    return Phaser.Math.Distance.Between(x, y, this.fireButtonX, this.fireButtonY) <= FIRE_BUTTON_RADIUS;
   }
 
   private updateControlAnchors(): void {
@@ -321,7 +237,5 @@ export class MobileControls {
 
     this.joystickX = viewport.left + horizontalInset;
     this.joystickY = viewport.bottom - verticalInset;
-    this.fireButtonX = viewport.right - horizontalInset;
-    this.fireButtonY = viewport.bottom - verticalInset;
   }
 }
