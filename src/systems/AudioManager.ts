@@ -1,15 +1,57 @@
+import type {
+  ProceduralMusicLayerConfig,
+  ProceduralMusicTrackConfig,
+  ProceduralNoiseLayerConfig,
+} from '../config/LevelsConfig';
+
 type WebkitAudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
 };
 
+const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
+  tempo: 112,
+  rootHz: 110,
+  stepsPerBeat: 4,
+  masterGain: 0.95,
+  bass: {
+    waveform: 'triangle',
+    pattern: [0, null, null, null, 7, null, null, null, 12, null, null, null, 7, null, null, null],
+    gain: 0.18,
+    durationSteps: 3,
+  },
+  pulse: {
+    waveform: 'square',
+    pattern: [12, null, 12, null, 7, null, 12, null, 14, null, 12, null, 7, null, 5, null],
+    gain: 0.05,
+    durationSteps: 1,
+    octaveShift: 1,
+    filterHz: 1900,
+  },
+  lead: {
+    waveform: 'sine',
+    pattern: [null, 12, null, 14, null, 12, null, 7, null, 12, null, 14, null, 19, null, 14],
+    gain: 0.04,
+    durationSteps: 2,
+    octaveShift: 1,
+  },
+};
+
 class AudioManager {
+  private readonly musicScheduleLookaheadMs = 50;
+  private readonly musicScheduleAheadSeconds = 0.18;
+  private readonly minimumMusicIntensity = 0.2;
+  private readonly maximumMusicIntensity = 1.2;
+
   private ctx: AudioContext | null = null;
   private musicGain: GainNode | null = null;
-  private musicOscillators: OscillatorNode[] = [];
-  private musicPlaying: boolean = false;
+  private musicPlaying = false;
   private musicTimer: number | null = null;
   private masterGain: GainNode | null = null;
   private explosionBuffer: AudioBuffer | null = null;
+  private activeTrack: ProceduralMusicTrackConfig | null = null;
+  private musicStepIndex = 0;
+  private musicNextStepTime = 0;
+  private musicIntensity = 1;
 
   init(): void {
     try {
@@ -42,28 +84,48 @@ class AudioManager {
 
     if (!this.masterGain) {
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.3;
+      this.masterGain.gain.value = 0.26;
       this.masterGain.connect(this.ctx.destination);
     }
 
     if (!this.musicGain) {
-      this.musicGain = this.ctx.createGain();
-      this.musicGain.gain.value = 0.13;
-      this.musicGain.connect(this.masterGain);
+      this.recreateMusicBus();
     }
+  }
+
+  private recreateMusicBus(): void {
+    if (!this.ctx || !this.masterGain) {
+      return;
+    }
+
+    if (this.musicGain) {
+      try {
+        this.musicGain.disconnect();
+      } catch {
+        // Best effort bus teardown for already-disconnected nodes.
+      }
+    }
+
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.gain.value = 0.001;
+    this.musicGain.connect(this.masterGain);
   }
 
   private resetNodes(): void {
     if (this.musicTimer !== null) {
-      clearInterval(this.musicTimer);
+      clearTimeout(this.musicTimer);
     }
+
     this.ctx = null;
     this.masterGain = null;
     this.musicGain = null;
-    this.musicOscillators = [];
     this.musicPlaying = false;
     this.musicTimer = null;
     this.explosionBuffer = null;
+    this.activeTrack = null;
+    this.musicStepIndex = 0;
+    this.musicNextStepTime = 0;
+    this.musicIntensity = 1;
   }
 
   private getExplosionBuffer(): AudioBuffer | null {
@@ -82,7 +144,6 @@ class AudioManager {
     }
 
     this.explosionBuffer = buffer;
-
     return buffer;
   }
 
@@ -120,7 +181,7 @@ class AudioManager {
     osc.stop(now + 0.14);
   }
 
-  playExplosion(intensity: number = 1): void {
+  playExplosion(intensity = 1): void {
     if (!this.ensureContext() || !this.masterGain) return;
 
     const buffer = this.getExplosionBuffer();
@@ -189,7 +250,6 @@ class AudioManager {
   playPowerUpPickup(): void {
     if (!this.ensureContext() || !this.masterGain) return;
 
-    // Quick ascending arpeggio
     const notes = [600, 900, 1200];
     for (let i = 0; i < notes.length; i++) {
       const osc = this.ctx!.createOscillator();
@@ -249,50 +309,206 @@ class AudioManager {
     osc.stop(this.ctx!.currentTime + 0.2);
   }
 
-  startMusic(): void {
-    if (!this.ensureContext() || this.musicPlaying || !this.musicGain) return;
+  startMusic(track: ProceduralMusicTrackConfig = DEFAULT_TRACK): void {
+    if (!this.ensureContext()) return;
+
+    this.stopMusic();
+    this.ensureGains();
+
+    if (!this.musicGain) {
+      return;
+    }
+
+    this.activeTrack = track;
     this.musicPlaying = true;
+    this.musicStepIndex = 0;
+    this.musicNextStepTime = this.ctx!.currentTime + 0.02;
+    this.musicIntensity = 1;
 
-    // Simple arpeggiated bass pattern
-    const notes = [110, 130.81, 164.81, 196, 164.81, 130.81]; // A2 C3 E3 G3 E3 C3
-    const noteDuration = 0.25;
-    let noteIndex = 0;
+    this.musicGain.gain.cancelScheduledValues(this.ctx!.currentTime);
+    this.musicGain.gain.setValueAtTime(0.001, this.ctx!.currentTime);
+    this.musicGain.gain.linearRampToValueAtTime(1, this.ctx!.currentTime + 0.08);
 
-    const playNote = () => {
-      if (!this.ctx || !this.musicPlaying || !this.musicGain) return;
+    this.scheduleMusic();
+  }
 
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
+  private scheduleMusic(): void {
+    if (!this.ensureContext() || !this.musicPlaying || !this.activeTrack) {
+      return;
+    }
 
-      osc.type = 'triangle';
-      osc.frequency.value = notes[noteIndex % notes.length];
+    while (this.musicNextStepTime < this.ctx!.currentTime + this.musicScheduleAheadSeconds) {
+      this.scheduleTrackStep(this.activeTrack, this.musicStepIndex, this.musicNextStepTime);
+      this.musicStepIndex += 1;
+      this.musicNextStepTime += this.getStepDuration(this.activeTrack);
+    }
 
-      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + noteDuration * 0.9);
+    this.musicTimer = window.setTimeout(() => {
+      this.scheduleMusic();
+    }, this.musicScheduleLookaheadMs);
+  }
 
+  private scheduleTrackStep(track: ProceduralMusicTrackConfig, stepIndex: number, time: number): void {
+    const stepDuration = this.getStepDuration(track);
+
+    this.scheduleLayer(track, track.bass, stepIndex, time, stepDuration);
+    if (track.pulse) {
+      this.scheduleLayer(track, track.pulse, stepIndex, time, stepDuration);
+    }
+    if (track.lead) {
+      this.scheduleLayer(track, track.lead, stepIndex, time, stepDuration);
+    }
+    if (track.noise) {
+      this.scheduleNoise(track, track.noise, stepIndex, time, stepDuration);
+    }
+  }
+
+  private scheduleLayer(
+    track: ProceduralMusicTrackConfig,
+    layer: ProceduralMusicLayerConfig,
+    stepIndex: number,
+    time: number,
+    stepDuration: number
+  ): void {
+    const note = layer.pattern[stepIndex % layer.pattern.length];
+    if (note === null) {
+      return;
+    }
+
+    const octaveShift = layer.octaveShift ?? 0;
+    const semitoneOffset = note + octaveShift * 12;
+    const frequency = track.rootHz * Math.pow(2, semitoneOffset / 12);
+    const duration = Math.max(stepDuration * layer.durationSteps * 0.92, 0.04);
+
+    this.scheduleTone(layer, frequency, time, duration, track.masterGain);
+  }
+
+  private scheduleTone(
+    layer: ProceduralMusicLayerConfig,
+    frequency: number,
+    time: number,
+    duration: number,
+    trackMasterGain: number
+  ): void {
+    if (!this.ctx || !this.musicGain) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const attackTime = Math.min(0.02, duration * 0.35);
+    const releaseTime = Math.max(duration * 0.85, attackTime + 0.01);
+    const peakGain = layer.gain * trackMasterGain;
+
+    osc.type = layer.waveform;
+    osc.frequency.setValueAtTime(frequency, time);
+
+    if (layer.detune) {
+      osc.detune.setValueAtTime(layer.detune, time);
+    }
+
+    gain.gain.setValueAtTime(0.001, time);
+    gain.gain.linearRampToValueAtTime(peakGain, time + attackTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + releaseTime);
+
+    if (layer.filterHz) {
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(layer.filterHz, time);
+      osc.connect(filter);
+      filter.connect(gain);
+    } else {
       osc.connect(gain);
-      gain.connect(this.musicGain);
+    }
 
-      osc.start(this.ctx.currentTime);
-      osc.stop(this.ctx.currentTime + noteDuration);
+    gain.connect(this.musicGain);
 
-      noteIndex++;
-    };
+    osc.start(time);
+    osc.stop(time + duration + 0.02);
+  }
 
-    playNote();
-    this.musicTimer = window.setInterval(playNote, noteDuration * 1000);
+  private scheduleNoise(
+    track: ProceduralMusicTrackConfig,
+    noiseLayer: ProceduralNoiseLayerConfig,
+    stepIndex: number,
+    time: number,
+    stepDuration: number
+  ): void {
+    if (!this.ctx || !this.musicGain) return;
+
+    const shouldPlay = noiseLayer.pattern[stepIndex % noiseLayer.pattern.length] === 1;
+    if (!shouldPlay) {
+      return;
+    }
+
+    const buffer = this.getExplosionBuffer();
+    if (!buffer) return;
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(noiseLayer.filterHz, time);
+
+    const gain = this.ctx.createGain();
+    const duration = Math.max(stepDuration * noiseLayer.durationSteps * 0.75, 0.04);
+    const peakGain = noiseLayer.gain * track.masterGain;
+
+    gain.gain.setValueAtTime(0.001, time);
+    gain.gain.linearRampToValueAtTime(peakGain, time + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.musicGain);
+
+    source.start(time);
+    source.stop(time + duration + 0.02);
+  }
+
+  private getStepDuration(track: ProceduralMusicTrackConfig): number {
+    return 60 / track.tempo / track.stepsPerBeat;
   }
 
   stopMusic(): void {
     this.musicPlaying = false;
+    this.activeTrack = null;
+    this.musicStepIndex = 0;
+    this.musicNextStepTime = 0;
+    this.musicIntensity = 1;
+
     if (this.musicTimer !== null) {
-      clearInterval(this.musicTimer);
+      clearTimeout(this.musicTimer);
       this.musicTimer = null;
     }
-    for (const osc of this.musicOscillators) {
-      try { osc.stop(); } catch { /* already stopped */ }
+
+    if (this.musicGain) {
+      try {
+        this.musicGain.disconnect();
+      } catch {
+        // Best effort bus teardown for already-disconnected nodes.
+      }
+      this.musicGain = null;
     }
-    this.musicOscillators = [];
+  }
+
+  setMusicIntensity(intensity: number): void {
+    if (!this.ctx || !this.musicGain) {
+      return;
+    }
+
+    const clampedIntensity = Math.min(
+      this.maximumMusicIntensity,
+      Math.max(this.minimumMusicIntensity, intensity)
+    );
+
+    if (Math.abs(clampedIntensity - this.musicIntensity) < 0.01) {
+      return;
+    }
+
+    this.musicIntensity = clampedIntensity;
+    this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value, this.ctx.currentTime);
+    this.musicGain.gain.linearRampToValueAtTime(clampedIntensity, this.ctx.currentTime + 0.08);
   }
 
   destroy(): void {
@@ -304,5 +520,4 @@ class AudioManager {
   }
 }
 
-// Singleton instance
 export const audioManager = new AudioManager();

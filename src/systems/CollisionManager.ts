@@ -17,6 +17,7 @@ export class CollisionManager {
   private player!: Player;
   private effectsManager!: EffectsManager;
   private enemyPool!: EnemyPool;
+  private asteroidGroup!: Phaser.Physics.Arcade.Group;
   private bulletDamage: number = 1;
   private terminalTransitionActive: boolean = false;
   private respawnInProgress: boolean = false;
@@ -33,6 +34,7 @@ export class CollisionManager {
     this.scene = scene;
     this.player = player;
     this.enemyPool = enemyPool;
+    this.asteroidGroup = asteroidGroup;
     this.terminalTransitionActive = false;
     this.respawnInProgress = false;
     this.lastPlayerHitFeedbackTime = Number.NEGATIVE_INFINITY;
@@ -112,8 +114,8 @@ export class CollisionManager {
       (_obj1, _obj2) => {
         const asteroid = this.resolveCollisionTarget(Asteroid, _obj1, _obj2);
         if (asteroid?.active && this.canProcessPlayerCollision()) {
-          const damageOutcome = player.takeDamage(1);
-          asteroid.die();
+          const damageOutcome = player.takeDamage(asteroid.getCollisionDamage());
+          asteroid.onPlayerCollision();
           if (damageOutcome === 'fatal') {
             this.onPlayerFatalHit();
           } else if (this.shouldEmitPlayerHit(damageOutcome)) {
@@ -168,6 +170,7 @@ export class CollisionManager {
   clearPlayerHazards(): void {
     this.clearHazardGroup(this.enemyPool.getEnemyBulletGroup());
     this.clearHazardGroup(this.enemyPool.getBombGroup());
+    this.clearHazardGroup(this.asteroidGroup);
   }
 
   private bulletVsEnemy(...values: unknown[]): void {
@@ -225,9 +228,20 @@ export class CollisionManager {
 
   private clearHazardGroup(group: Phaser.Physics.Arcade.Group): void {
     group.getChildren().forEach(child => {
-      const sprite = child as EnemyBullet | BomberBomb;
-      if (sprite.active) {
-        sprite.kill();
+      if (!(child instanceof Phaser.GameObjects.GameObject)) {
+        return;
+      }
+
+      if ('kill' in child && typeof child.kill === 'function') {
+        const sprite = child as EnemyBullet | BomberBomb;
+        if (sprite.active) {
+          sprite.kill();
+        }
+        return;
+      }
+
+      if (child instanceof Asteroid && child.active) {
+        child.clear();
       }
     });
   }

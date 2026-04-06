@@ -1,5 +1,6 @@
 import { LEVEL_DISTANCE, SCROLL_SPEED } from '../utils/constants';
-import { getLevelConfig, LevelConfig } from '../config/LevelsConfig';
+import { getLevelConfig } from '../config/LevelsConfig';
+import type { LevelConfig } from '../config/LevelsConfig';
 
 export class LevelManager {
   distance: number = 0;

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { LevelConfig } from '../config/LevelsConfig';
+import type { LevelConfig } from '../config/LevelsConfig';
 
 export class EffectsManager {
   private scene!: Phaser.Scene;

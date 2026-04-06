@@ -177,6 +177,9 @@ export class EnemyPool {
     if (boss) {
       boss.spawn(x, y, config);
       boss.setEnemyBulletGroup(this.enemyBulletGroup);
+      boss.setSummonHandler((type, spawnX, spawnY) => {
+        this.spawnEnemy(type, spawnX, spawnY);
+      });
     }
     return boss;
   }

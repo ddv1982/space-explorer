@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, setRunSummary } from '../systems/PlayerState';
+import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, getRunSummary, setRunSummary } from '../systems/PlayerState';
 import { getLevelConfig, isLastLevel } from '../config/LevelsConfig';
 import { UpgradeBlockReason, UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUpgradeByKey } from '../config/UpgradesConfig';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
@@ -35,13 +35,6 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private buttons: UpgradeButton[] = [];
   private warpTransition!: WarpTransition;
-  private planetColors: number[][] = [
-    [0x2266aa, 0x4488cc],
-    [0x884488, 0xaa66aa],
-    [0x448844, 0x66aa66],
-    [0x886644, 0xaa8866],
-    [0x884444, 0xaa6666],
-  ];
 
   constructor() {
     super({ key: 'PlanetIntermission' });
@@ -51,13 +44,13 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     audioManager.init();
     audioManager.stopMusic();
     this.state = getPlayerState(this.registry);
+    const isFinalMissionComplete = isLastLevel(this.state.level);
     this.cameras.main.setBackgroundColor('#000011');
     const layout = getViewportLayout(this);
 
-    this.generatePlanetTexture();
-
     const completedLevelConfig = getLevelConfig(this.state.level);
-    const nextLevelConfig = getLevelConfig(this.state.level + 1);
+
+    this.generatePlanetTexture(completedLevelConfig.planetPalette);
 
     this.add.text(layout.centerX, 50, completedLevelConfig.planetName, {
       fontSize: '20px',
@@ -84,14 +77,20 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    this.createUpgradeButtons();
+    if (!isFinalMissionComplete) {
+      this.createUpgradeButtons();
+    }
 
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
 
-    const continueLabel = isLastLevel(this.state.level)
-      ? 'FINAL MISSION - Click to Continue'
-      : `NEXT: ${nextLevelConfig.name} - Click to Continue`;
+    const nextLevelLabel = isFinalMissionComplete
+      ? null
+      : getLevelConfig(this.state.level + 1).name;
+
+    const continueLabel = isFinalMissionComplete
+      ? 'CAMPAIGN COMPLETE - Click for Victory'
+      : `NEXT: ${nextLevelLabel} - Click to Continue`;
 
     this.add.text(layout.centerX, layout.bottom - 60, continueLabel, {
       fontSize: '20px',
@@ -100,27 +99,28 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!this.handleUpgradeClick(pointer)) {
-        audioManager.playClick();
-        this.input.off('pointerdown');
+      if (!isFinalMissionComplete && this.handleUpgradeClick(pointer)) {
+        return;
+      }
 
-        if (isLastLevel(this.state.level)) {
-          // All levels beaten - go to Victory
-          setRunSummary(this.registry, { finalScore: this.state.score, levelReached: this.state.level });
-          this.scene.start('Victory');
-        } else {
-          this.warpTransition.play(() => {
-            advanceToNextLevel(this.registry);
-            this.scene.start('Game');
-          });
-        }
+      audioManager.playClick();
+      this.input.off('pointerdown');
+
+      if (isFinalMissionComplete) {
+        const runSummary = getRunSummary(this.registry);
+        setRunSummary(this.registry, { finalScore: runSummary.finalScore, levelReached: this.state.level });
+        this.scene.start('Victory');
+      } else {
+        this.warpTransition.play(() => {
+          advanceToNextLevel(this.registry);
+          this.scene.start('Game');
+        });
       }
     });
   }
 
-  private generatePlanetTexture(): void {
+  private generatePlanetTexture(colorPair: [number, number]): void {
     const layout = getViewportLayout(this);
-    const colorPair = this.planetColors[(this.state.level - 1) % this.planetColors.length];
     const key = `planet-level-${this.state.level}`;
 
     const g = this.add.graphics();

@@ -15,7 +15,7 @@ This document describes the scene boundaries, system contracts, and coding rules
 - `GameScene` composes systems and entities; it should stay responsible for scene lifecycle, scene transitions, and top-level event wiring.
 - Systems in `src/systems` should stay focused on one area of behavior:
   - `LevelManager` tracks progress, boss timing, and completion state.
-  - `WaveManager` converts `LevelsConfig` data into live encounters and asteroid spawns.
+  - `WaveManager` converts `LevelsConfig` data into live encounters, hazard sections, and asteroid spawns.
   - `EnemyPool` owns pooled enemy, bomb, boss, and enemy-bullet groups.
   - `CollisionManager` owns overlap wiring and emits gameplay events instead of changing scenes directly.
   - `HUD`, `EffectsManager`, `AudioManager`, `ParallaxBackground`, `WarpTransition`, `InputManager`, and `ScoreManager` should remain presentation or support systems.
@@ -40,6 +40,10 @@ This document describes the scene boundaries, system contracts, and coding rules
 ## Data-Driven Enemy Wiring Expectations
 
 - New encounter tuning should start in `src/config/LevelsConfig.ts`. Adjust weights, encounter sizes, boss thresholds, and cadence there before adding scene logic.
+- Keep `src/config/LevelsConfig.ts` as the public entrypoint, but prefer organizing large authored datasets behind focused modules (for example types, selectors, internal helpers, and separate definition files) instead of letting one config file accumulate every concern.
+- Level identity should stay in the level-config module boundary as well. Background/theme metadata, music config, authored stage sections, boss identity, and difficulty role belong in focused config modules behind the `src/config/LevelsConfig.ts` entrypoint instead of ad hoc scene branches.
+- Per-level music should stay declarative. `AudioManager` may interpret procedural track config, but `GameScene` should only select the current stage or boss cue from level config.
+- Authored stage moments should be represented as reusable `sections` / hazard descriptors in level config. Keep `WaveManager` responsible for interpreting them instead of pushing timeline logic into scenes.
 - Adding a new enemy type requires a full wiring pass:
   - Add the type to `EnemyType` and update level enemy weights.
   - Add or update the pooled group and spawn method in `EnemyPool`.

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { LevelConfig } from '../config/LevelsConfig';
+import type { LevelConfig } from '../config/LevelsConfig';
 import { GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class HUD {
@@ -280,12 +280,13 @@ export class HUD {
     this.announcementText.setScrollFactor(factor);
   }
 
-  showBossBar(): void {
+  showBossBar(name: string = 'BOSS'): void {
     if (this.bossVisible) return;
     this.bossVisible = true;
     this.bossBarBg.setVisible(true);
     this.bossBarFill.setVisible(true);
     this.bossNameText.setVisible(true);
+    this.bossNameText.setText(name.toUpperCase());
 
     const bx = (GAME_WIDTH - this.bossBarWidth) / 2;
     const by = GAME_HEIGHT - 28;

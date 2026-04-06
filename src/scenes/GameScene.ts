@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BULLET_SPEED, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
+import { getActiveSection } from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { InputManager } from '../systems/InputManager';
 import { Player } from '../entities/Player';
@@ -94,9 +95,6 @@ export class GameScene extends Phaser.Scene {
 
     this.registerLifecycleHandlers();
 
-    audioManager.init();
-    audioManager.startMusic();
-
     const state = getPlayerState(this.registry);
     this.remainingLives = state.remainingLives;
 
@@ -104,6 +102,11 @@ export class GameScene extends Phaser.Scene {
     this.levelManager.init(state.level);
 
     const levelConfig = this.levelManager.getLevelConfig();
+
+    audioManager.init();
+    audioManager.startMusic(levelConfig.music.stage);
+    audioManager.setMusicIntensity(getActiveSection(levelConfig, 0)?.musicIntensity ?? 1);
+
     this.cameras.main.setBackgroundColor(levelConfig.bgColor);
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
@@ -295,8 +298,28 @@ export class GameScene extends Phaser.Scene {
 
   private handleBossSpawn(): void {
     this.levelManager.markBossSpawned();
+    this.clearFieldForBossIntro();
     this.hud.showBossWarning();
+    audioManager.startMusic(this.levelManager.getLevelConfig().music.boss);
     this.spawnBoss();
+  }
+
+  private clearFieldForBossIntro(): void {
+    this.collisionManager.clearPlayerHazards();
+
+    for (const enemy of this.enemyPool.getAllEnemies()) {
+      if (!enemy.active) {
+        continue;
+      }
+
+      enemy.setActive(false);
+      enemy.setVisible(false);
+      enemy.clearTint();
+      enemy.setVelocity(0, 0);
+
+      const body = enemy.body as Phaser.Physics.Arcade.Body | null;
+      body?.reset(0, 0);
+    }
   }
 
   private handlePlayerHit(): void {
@@ -343,7 +366,7 @@ export class GameScene extends Phaser.Scene {
     );
     if (boss) {
       this.boss = boss;
-      this.hud.showBossBar();
+      this.hud.showBossBar(this.levelManager.getLevelConfig().boss?.name ?? 'BOSS');
     }
   }
 
@@ -673,11 +696,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (!this.levelManager.hasBossSpawned()) {
-      this.waveManager.update(time, delta, this.levelManager.getEncounterProgress());
+      this.waveManager.update(time, delta, this.levelManager.progress);
     }
 
     const prevComplete = this.levelManager.isComplete();
     this.levelManager.update(delta);
+
+    const activeSection = getActiveSection(this.levelManager.getLevelConfig(), this.levelManager.progress);
+    audioManager.setMusicIntensity(this.levelManager.hasBossSpawned() ? 1.1 : activeSection?.musicIntensity ?? 1);
 
     if (this.levelManager.shouldSpawnBoss()) {
       this.events.emit(GAME_SCENE_EVENTS.bossSpawn);

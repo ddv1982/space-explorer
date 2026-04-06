@@ -39,7 +39,7 @@ export interface UpgradeEvaluation {
   unlockReason: string | null;
 }
 
-export const UPGRADES: UpgradeDef[] = [
+const UPGRADES: UpgradeDef[] = [
   {
     key: 'hp',
     name: 'HULL ARMOR',
@@ -98,11 +98,11 @@ const UPGRADE_NAME_LOOKUP: Record<UpgradeKey, string> = UPGRADES.reduce(
   {} as Record<UpgradeKey, string>
 );
 
-export function getUpgradeCost(upgrade: UpgradeDef, currentLevel: number): number {
+function getUpgradeCost(upgrade: UpgradeDef, currentLevel: number): number {
   return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMultiplier, currentLevel));
 }
 
-export function isUpgradeMaxed(upgrade: UpgradeDef, currentLevel: number): boolean {
+function isUpgradeMaxed(upgrade: UpgradeDef, currentLevel: number): boolean {
   return currentLevel >= upgrade.maxLevel;
 }
 
@@ -115,7 +115,7 @@ export function getUpgradeByKey(key: UpgradeKey): UpgradeDef {
   return upgrade;
 }
 
-export function getUpgradeProgressionLimit(upgrade: UpgradeDef, playerLevel: number): number {
+function getUpgradeProgressionLimit(upgrade: UpgradeDef, playerLevel: number): number {
   const cappedLevel = Math.max(1, playerLevel);
   const configuredCap = upgrade.progressionCaps[cappedLevel - 1] ?? upgrade.progressionCaps[upgrade.progressionCaps.length - 1];
   return Math.min(upgrade.maxLevel, Math.max(0, configuredCap ?? upgrade.maxLevel));

@@ -1,6 +1,6 @@
 # Space Explorer
 
-A retro arcade space exploration shooter built with [Phaser 3](https://phaser.io), TypeScript, and Vite. Fly your spaceship through five increasingly dangerous sectors, battle enemy waves, defeat bosses, and upgrade your ship between missions.
+A retro arcade space shooter built with [Phaser 3](https://phaser.io), TypeScript, and Vite. Pilot a responsive ship through a **10-level campaign**, survive escalating hazards, defeat themed bosses, collect power-ups, and upgrade your ship between missions.
 
 Playable here:
 [Space Explorer](https://space-explorer.net)
@@ -9,7 +9,7 @@ Playable here:
 ![Phaser](https://img.shields.io/badge/Phaser-3.90-green)
 ![Vite](https://img.shields.io/badge/Vite-8.0-purple)
 
-## Play
+## Quick start
 
 ```bash
 bun install
@@ -25,112 +25,138 @@ Open `http://localhost:5173` in your browser.
 | Arrow keys / WASD | Move ship |
 | Space / Click | Fire weapons |
 
-## Game Overview
+## Game overview
 
-### Game Loop
+### Core loop
 
+```text
+Menu → Game → Planet Intermission → Game → ... → Victory
 ```
-Menu → Game (Level 1) → Planet Intermission → Game (Level 2) → ... → Victory
-```
 
-Each level has increasing difficulty. Between levels you land on a planet and can spend your score as credits to upgrade your ship. If your HP reaches zero, it's game over.
+- Fight through enemy waves, hazards, and bosses
+- Lose HP on hits, but continue the run while you still have remaining lives
+- Respawn after death if lives remain
+- Spend score as credits between levels to upgrade your ship
+- Reach the end of the campaign to trigger the Victory flow
 
-### Sectors
+### Campaign roster
 
-| Level | Name | Enemies | Boss |
-|-------|------|---------|------|
-| 1 | Asteroid Belt Alpha | Scouts, Fighters | No |
-| 2 | Nebula Pass | Scouts, Fighters, Bombers | No |
-| 3 | Ion Storm Sector | Scouts, Fighters, Bombers, Swarm | Yes |
-| 4 | Warzone Corridor | All types including Gunships | Yes |
-| 5 | Deep Space Inferno | All types, maximum spawn rate | Yes |
+| Level | Name | Highlights | Boss |
+|------:|------|------------|------|
+| 1 | Asteroid Belt Alpha | readable opener, debris rhythm | No |
+| 2 | Nebula Pass | low-visibility ambushes | No |
+| 3 | Ion Storm Sector | storm pressure, first boss gate | Storm Binder |
+| 4 | Warzone Corridor | dense frontal pressure | Siegebreaker Vaal |
+| 5 | Deep Space Inferno | endurance gauntlet | Inferno Harbinger |
+| 6 | Wreckfield Run | collapsing wreck lanes | Scrap Regent |
+| 7 | Ghostlight Veil | fog ambushes, mine pockets | Veil Manta |
+| 8 | Crown of Rings | orbital lane hazards | Ring Shepherd |
+| 9 | Obsidian Maw | canyon / rock corridor set piece | Maw Serpent |
+| 10 | Terminus Black | anomaly hazards, final exam | Null Crown |
 
-### Enemies
+### Enemy roster
 
-- **Scout** — Fast, low HP, kamikaze on contact
-- **Fighter** — Medium speed, fires bullets at the player
-- **Bomber** — Slow, high HP, drops proximity bombs that deal 2 damage
-- **Swarm** — Tiny, fast, spawns in groups, low HP each
-- **Gunship** — Heavy, fires a 3-bullet spread pattern
-- **Boss** — 30 HP, two phases (5-bullet spread → spiral pattern), appears on levels 3-5
+- **Scout** — fast, low-HP contact threat
+- **Fighter** — mobile ranged pressure
+- **Bomber** — slower, heavier target that drops bombs
+- **Swarm** — fragile group attackers
+- **Gunship** — heavier enemy with spread fire
+- **Bosses** — named encounters with distinct styles such as barrage, pursuit, carrier, bulwark, and maelstrom patterns
+
+### Gameplay systems
+
+- **Scripted level sections** — pacing, hazard cadence, and encounter focus can shift inside a level
+- **Hazard scripting** — asteroid bursts, ring crossfire, nebula ambushes, gravity wells, and canyon-wall rock corridors
+- **Per-level procedural music** — each level and boss has its own Web Audio-driven music identity
+- **Power-up drops** — temporary pickups such as health, shield, and rapid-fire boosts
+- **Lives + respawn flow** — the run continues after death if lives remain
+- **Upgrade progression** — intermission upgrades unlock over time and obey progression caps
 
 ### Upgrades
 
-Spent at the planet intermission screen between levels using your score as currency:
+Bought during the planet intermission screen using score as currency:
 
-- **Hull Plating** — +2 max HP per level
-- **Weapons** — +1 damage per level
-- **Fire Rate** — Faster shooting per level
-- **Shield** — Absorbs one full hit per level
+- **Hull Armor** — raises max HP
+- **Weapons** — increases damage
+- **Fire Rate** — improves firing speed
+- **Shield** — increases hit absorption
 
-## Tech Stack
+Some upgrades unlock later in the campaign and use progression caps so the run scales in a controlled way.
 
-- **Phaser 3.90** — Game engine (WebGL with Canvas fallback)
-- **TypeScript** — Strict mode, ES2020 target
-- **Vite 8** — Build tool and dev server
+## Tech stack
 
-## Architecture
+- **Phaser 3.90** — game engine
+- **TypeScript** — strict typing across gameplay and config
+- **Vite 8** — dev server and production build
+- **Bun** — package manager / script runner
 
-The current architectural and coding guidance for this repo lives in [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md). Keep that document in sync with future scene/system refactors.
+## Project structure
 
-```
+The internal architecture rules live in [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md).
+
+```text
 src/
-├── config/           # Game configuration
-│   ├── LevelsConfig.ts    # 5 level definitions (enemies, themes, bosses)
-│   ├── playerConfig.ts    # Base player stats and upgrade scaling
-│   └── UpgradesConfig.ts  # Upgrade definitions and cost formulas
-├── entities/         # Game objects
-│   ├── enemies/           # Enemy types (Scout, Fighter, Bomber, Swarm, Gunship, Boss)
-│   │   └── EnemyBase.ts       # Abstract base class for all enemies
+├── config/
+│   ├── LevelsConfig.ts          # public level-config entrypoint
+│   ├── UpgradesConfig.ts        # upgrade definitions and progression rules
+│   ├── playerConfig.ts          # player stat scaling
+│   └── levels/
+│       ├── types.ts            # level config types
+│       ├── selectors.ts        # getLevelConfig / campaign selectors
+│       ├── registry.ts         # ordered campaign registry
+│       ├── musicHelpers.ts     # procedural music config helpers
+│       └── definitions/        # one file per level
+├── entities/
+│   ├── Player.ts
+│   ├── PowerUp.ts
 │   ├── Asteroid.ts
+│   ├── BomberBomb.ts
 │   ├── Bullet.ts
 │   ├── EnemyBullet.ts
-│   └── Player.ts
-├── scenes/           # Phaser scenes
+│   └── enemies/
+├── scenes/
 │   ├── BootScene.ts
 │   ├── PreloadScene.ts
-│   ├── MenuScene.ts           # Animated star field title screen
-│   ├── GameScene.ts           # Main gameplay
-│   ├── PlanetIntermissionScene.ts  # Upgrade shop
-│   ├── GameOverScene.ts       # Death screen with level reached
-│   └── VictoryScene.ts        # Victory screen after all levels
-├── systems/          # Game systems
-│   ├── AudioManager.ts       # Procedural Web Audio API sounds
-│   ├── BulletPool.ts         # Object-pooled bullet management
-│   ├── CollisionManager.ts   # All overlap/collision handlers
-│   ├── EffectsManager.ts     # Particle effects, camera FX, color grading
-│   ├── GameplayFlow.ts       # Shared gameplay event + transition contracts
-│   ├── EnemyPool.ts          # Object-pooled enemy groups by type
-│   ├── HUD.ts                # HP bar, score, progress, boss health
-│   ├── InputManager.ts       # Keyboard + mouse input
-│   ├── LevelManager.ts       # Level progression and boss gating
-│   ├── ParallaxBackground.ts # Multi-layer star field + nebula
-│   ├── PlayerState.ts        # Persistent state via Phaser registry
-│   ├── ScoreManager.ts       # Score tracking
-│   ├── WarpTransition.ts     # Star streak transition effect
-│   └── WaveManager.ts        # Config-driven enemy spawning
-├── utils/
-│   └── constants.ts          # Game dimensions, speeds, pool sizes
-└── main.ts           # Phaser game config and scene registration
+│   ├── MenuScene.ts
+│   ├── GameScene.ts
+│   ├── PlanetIntermissionScene.ts
+│   ├── GameOverScene.ts
+│   └── VictoryScene.ts
+├── systems/
+│   ├── AudioManager.ts         # procedural audio and music
+│   ├── CollisionManager.ts
+│   ├── EnemyPool.ts
+│   ├── HUD.ts
+│   ├── LevelManager.ts
+│   ├── PlayerState.ts
+│   ├── WaveManager.ts          # config-driven enemy + hazard spawning
+│   └── ...
+└── utils/
+    ├── constants.ts
+    └── layout.ts
 ```
 
-### Design Decisions
+## Design notes
 
-- **All graphics are procedural** — Generated via `Phaser.Graphics.generateTexture()`. No external sprite or image assets needed.
-- **Object pooling** — Bullets, enemies, and enemy bullets use `Phaser.Physics.Arcade.Group` with `maxSize` and `runChildUpdate`.
-- **WebGL guards** — Camera post-FX (bloom, vignette, color matrix) and sprite pre-FX (glow) check for `camera.postFX` / `sprite.preFX` existence before use.
-- **Procedural audio** — All sounds generated via Web Audio API `OscillatorNode` and `GainNode`. No audio files.
-- **State persistence** — Player state stored in Phaser's `registry`, carried across scene transitions.
-- **Config-driven** — Level definitions, enemy spawn weights, upgrade costs, and player stats are all in config files for easy tuning.
+- **Config-driven campaign** — levels, music, hazard sections, and bosses are authored through config
+- **Procedural presentation** — visuals and audio avoid external asset-heavy pipelines where possible
+- **Object pooling** — bullets, enemies, bombs, asteroids, and bullets are pooled for performance
+- **Arcade readability first** — later levels add complexity through authored pacing and hazards, not only stat inflation
 
-## Build
+## Development
 
 ```bash
-bun run build      # TypeScript check + Vite production build
-bun run preview    # Preview production build locally
+bun run dev      # start local dev server
+bun run build    # type-check and production build
+bun run preview  # preview production build
+bun run lint     # eslint
+bun run knip     # unused-code analysis
 ```
 
-Output goes to `dist/`. Bundle is approximately 1.5 MB (350 KB gzipped), mostly Phaser.
+## Additional docs
+
+- [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
+- [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
 
 ## License
 
