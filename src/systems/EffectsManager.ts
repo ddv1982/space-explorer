@@ -33,7 +33,7 @@ export class EffectsManager {
 
     if (camera.postFX) {
       camera.postFX.addBloom(0x000000, 1, 1, 1, 1.2);
-      camera.postFX.addVignette(0.5, 0.5, 0.7, 0.6);
+      camera.postFX.addVignette(0.5, 0.5, 0.72, 0.48);
     }
   }
 

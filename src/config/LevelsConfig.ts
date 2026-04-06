@@ -50,11 +50,11 @@ export const LEVELS: LevelConfig[] = [
   {
     name: 'Nebula Pass',
     planetName: 'Vega Prime',
-    bgColor: '#0a0018',
+    bgColor: '#100022',
     accentColor: 0x8844ff,
     nebulaColor: 0x4422aa,
     nebulaAlpha: 0.12,
-    colorGrade: { brightness: 0, contrast: 1.1, saturation: 1.2 },
+    colorGrade: { brightness: 0.03, contrast: 1.1, saturation: 1.2 },
     enemies: [
       { type: 'scout', weight: 50 },
       { type: 'fighter', weight: 30 },
@@ -91,11 +91,11 @@ export const LEVELS: LevelConfig[] = [
   {
     name: 'Warzone Corridor',
     planetName: 'Antares Fortress',
-    bgColor: '#110500',
+    bgColor: '#180900',
     accentColor: 0xff4444,
     nebulaColor: 0x662211,
     nebulaAlpha: 0.10,
-    colorGrade: { brightness: -0.05, contrast: 1.2, saturation: 1.3 },
+    colorGrade: { brightness: -0.01, contrast: 1.2, saturation: 1.3 },
     enemies: [
       { type: 'scout', weight: 20 },
       { type: 'fighter', weight: 25 },
@@ -113,11 +113,11 @@ export const LEVELS: LevelConfig[] = [
   {
     name: 'Deep Space Inferno',
     planetName: 'Betelgeuse Gate',
-    bgColor: '#110008',
+    bgColor: '#18010c',
     accentColor: 0xff4488,
     nebulaColor: 0x661133,
     nebulaAlpha: 0.12,
-    colorGrade: { brightness: -0.08, contrast: 1.25, saturation: 1.4 },
+    colorGrade: { brightness: -0.03, contrast: 1.25, saturation: 1.4 },
     enemies: [
       { type: 'scout', weight: 15 },
       { type: 'fighter', weight: 25 },
