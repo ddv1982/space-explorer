@@ -160,7 +160,7 @@ function getCostLabel(evaluation: UpgradeEvaluation): string {
     case 'progression':
       return `L${evaluation.progressionLimit}`;
     default:
-      return `${evaluation.cost}`;
+      return `${evaluation.cost} L${evaluation.progressionLimit}`;
   }
 }
 
