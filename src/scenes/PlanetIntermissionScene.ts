@@ -137,11 +137,13 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private createUpgradeButtons(): void {
-    const startX = 160;
     const startY = 380;
     const buttonWidth = 240;
     const buttonHeight = 60;
-    const spacingY = 20;
+    const spacingX = 32;
+    const spacingY = 16;
+    const totalWidth = buttonWidth * 2 + spacingX;
+    const startX = (GAME_WIDTH - totalWidth) / 2;
 
     for (let i = 0; i < UPGRADES.length; i++) {
       const upgrade = UPGRADES[i];
@@ -152,7 +154,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
       const col = i % 2;
       const row = Math.floor(i / 2);
-      const bx = startX + col * (buttonWidth + 40);
+      const bx = startX + col * (buttonWidth + spacingX);
       const by = startY + row * (buttonHeight + spacingY);
 
       const bg = this.add.graphics();
