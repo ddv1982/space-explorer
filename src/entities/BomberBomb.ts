@@ -1,22 +1,14 @@
 import Phaser from 'phaser';
 import { despawnEntity } from '../utils/entityUtils';
+import { ensureBomberBombTexture } from '../utils/SpriteFactory';
 
 const BOMBER_BOMB_SPEED = 200;
 
 export class BomberBomb extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'bomber-bomb';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      g.fillStyle(0xffcc55, 1);
-      g.fillCircle(6, 6, 6);
-      g.fillStyle(0xaa5522, 1);
-      g.fillCircle(6, 8, 3);
-      g.generateTexture(key, 12, 14);
-      g.destroy();
-    }
+    ensureBomberBombTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'bomber-bomb');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 

@@ -1,25 +1,13 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { SCOUT_SPEED, SCOUT_HP } from '../../utils/constants';
+import { ensureScoutTexture } from '../../utils/SpriteFactory';
 
 export class Scout extends EnemyBase {
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'scout-texture';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      g.fillStyle(0xff4444, 1);
-      g.beginPath();
-      g.moveTo(12, 24);
-      g.lineTo(24, 0);
-      g.lineTo(12, 6);
-      g.lineTo(0, 0);
-      g.closePath();
-      g.fillPath();
-      g.generateTexture(key, 24, 24);
-      g.destroy();
-    }
+    ensureScoutTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'scout-texture');
     this.maxHp = SCOUT_HP;
     this.hp = SCOUT_HP;
     this.speed = SCOUT_SPEED;

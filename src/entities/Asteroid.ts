@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ASTEROID_HP } from '../utils/constants';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { despawnEntity } from '../utils/entityUtils';
+import { ensureAsteroidTexture } from '../utils/SpriteFactory';
 
 export interface AsteroidSpawnConfig {
   velocityX?: number;
@@ -27,28 +28,9 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   private baseTint: number | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'asteroid-texture';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      g.fillStyle(0x886644, 1);
-      g.beginPath();
-      g.moveTo(20, 0);
-      g.lineTo(35, 5);
-      g.lineTo(40, 20);
-      g.lineTo(35, 35);
-      g.lineTo(20, 40);
-      g.lineTo(8, 35);
-      g.lineTo(0, 20);
-      g.lineTo(5, 5);
-      g.closePath();
-      g.fillPath();
-      g.lineStyle(2, 0x665533, 0.5);
-      g.strokePath();
-      g.generateTexture(key, 40, 40);
-      g.destroy();
-    }
+    ensureAsteroidTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'asteroid-texture');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 

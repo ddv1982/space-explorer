@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { FIGHTER_HP, FIGHTER_SPEED, FIGHTER_FIRE_RATE } from '../../utils/constants';
 import { EnemyBullet } from '../EnemyBullet';
+import { ensureFighterTexture } from '../../utils/SpriteFactory';
 
 export class Fighter extends EnemyBase {
   startX: number = 0;
@@ -13,20 +14,9 @@ export class Fighter extends EnemyBase {
   private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'fighter-texture';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      g.fillStyle(0x44ff88, 1);
-      g.fillRect(4, 0, 24, 8);
-      g.fillStyle(0x22cc66, 1);
-      g.fillRect(0, 8, 32, 16);
-      g.fillStyle(0x44ff88, 1);
-      g.fillRect(8, 24, 16, 8);
-      g.generateTexture(key, 32, 32);
-      g.destroy();
-    }
+    ensureFighterTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'fighter-texture');
     this.maxHp = FIGHTER_HP;
     this.hp = FIGHTER_HP;
     this.speed = FIGHTER_SPEED;

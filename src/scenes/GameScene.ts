@@ -145,6 +145,7 @@ export class GameScene extends Phaser.Scene {
 
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
+    this.warpTransition.setAccentColor(levelConfig.accentColor);
 
     this.mobileViewportGuard = MobileViewportGuard.create(this, () => this.stopPlayerMotion());
     this.syncMobileControlsBlockedState();

@@ -3,6 +3,7 @@ import { PLAYER_CONFIG } from '../config/playerConfig';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerShieldCount, getPlayerDamage } from '../systems/PlayerState';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
+import { ensurePlayerTexture } from '../utils/SpriteFactory';
 
 export type PlayerDamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
 
@@ -21,32 +22,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly exhaustInterval: number = 50;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'player-ship';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      g.fillStyle(0x00ddff, 1);
-      g.beginPath();
-      g.moveTo(16, 0);
-      g.lineTo(32, 40);
-      g.lineTo(16, 32);
-      g.lineTo(0, 40);
-      g.closePath();
-      g.fillPath();
-      g.fillStyle(0x0088cc, 1);
-      g.beginPath();
-      g.moveTo(0, 40);
-      g.lineTo(16, 20);
-      g.lineTo(32, 40);
-      g.lineTo(24, 40);
-      g.lineTo(16, 32);
-      g.lineTo(8, 40);
-      g.closePath();
-      g.fillPath();
-      g.generateTexture(key, 32, 40);
-      g.destroy();
-    }
+    ensurePlayerTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'player-ship');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 

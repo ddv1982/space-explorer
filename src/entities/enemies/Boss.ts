@@ -7,6 +7,7 @@ import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from './boss/behavior';
 import { getViewportBounds } from '../../utils/layout';
+import { ensureBossTexture } from '../../utils/SpriteFactory';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -49,43 +50,9 @@ export class Boss extends EnemyBase {
   private phaseStartedAt = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'boss-texture';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
+    ensureBossTexture(scene);
 
-      g.fillStyle(0xcc2244, 1);
-      g.fillRect(16, 8, 48, 32);
-      g.fillStyle(0xaa1133, 1);
-      g.fillRect(0, 20, 16, 16);
-      g.fillRect(64, 20, 16, 16);
-
-      g.fillStyle(0xdd3355, 1);
-      g.beginPath();
-      g.moveTo(0, 36);
-      g.lineTo(16, 20);
-      g.lineTo(16, 40);
-      g.closePath();
-      g.fillPath();
-      g.beginPath();
-      g.moveTo(80, 36);
-      g.lineTo(64, 20);
-      g.lineTo(64, 40);
-      g.closePath();
-      g.fillPath();
-
-      g.fillStyle(0xff6688, 1);
-      g.fillCircle(40, 24, 8);
-
-      g.fillStyle(0x881122, 1);
-      g.fillRect(20, 40, 8, 8);
-      g.fillRect(36, 40, 8, 8);
-      g.fillRect(52, 40, 8, 8);
-
-      g.generateTexture(key, 80, 48);
-      g.destroy();
-    }
-
-    super(scene, x, y, key);
+    super(scene, x, y, 'boss-texture');
     this.maxHp = DEFAULT_BOSS_CONFIG.maxHp;
     this.hp = DEFAULT_BOSS_CONFIG.maxHp;
     this.speed = 0;

@@ -40,6 +40,12 @@ const POWER_UP_COLORS: Record<PowerUpType, string> = {
   rapidfire: '#ffcc00',
 };
 
+const POWER_UP_TINTS: Record<PowerUpType, number> = {
+  health: 0x00ff44,
+  shield: 0x4488ff,
+  rapidfire: 0xffcc00,
+};
+
 export function trySpawnRandomPowerUp(
   group: Phaser.Physics.Arcade.Group,
   x: number,
@@ -78,6 +84,7 @@ export function applyPowerUpPickup(
   }
 
   effectsManager.createSparkBurst(player.x, player.y);
+  effectsManager.createPowerUpBurst(player.x, player.y, POWER_UP_TINTS[type]);
 
   const text = scene.add.text(player.x, player.y - 40, POWER_UP_LABELS[type], {
     fontSize: '14px',

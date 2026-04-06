@@ -58,6 +58,10 @@ export class CollisionManager {
         if (bullet?.active && asteroid?.active) {
           bullet.kill();
           asteroid.takeDamage(this.bulletDamage);
+          this.effectsManager.createSparkBurst(asteroid.x, asteroid.y);
+          if (!asteroid.active) {
+            this.effectsManager.createAsteroidDebris(asteroid.x, asteroid.y);
+          }
         }
       }
     );
@@ -189,6 +193,7 @@ export class CollisionManager {
       this.effectsManager.createExplosion(enemy.x, enemy.y, 1.0);
     } else {
       this.effectsManager.createSparkBurst(enemy.x, enemy.y);
+      this.effectsManager.createHitSplash(enemy.x, enemy.y);
     }
   }
 

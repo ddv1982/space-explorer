@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { EnemyBullet } from '../EnemyBullet';
 import { ENEMY_BULLET_SPEED } from '../../utils/constants';
+import { ensureGunshipTexture } from '../../utils/SpriteFactory';
 
 export class Gunship extends EnemyBase {
   startX: number = 0;
@@ -13,21 +14,9 @@ export class Gunship extends EnemyBase {
   private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'gunship-texture';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      g.fillStyle(0x4488ff, 1);
-      g.fillRect(4, 0, 8, 8);
-      g.fillRect(24, 0, 8, 8);
-      g.fillStyle(0x2266cc, 1);
-      g.fillRect(0, 8, 36, 20);
-      g.fillStyle(0x4488ff, 1);
-      g.fillRect(12, 28, 12, 8);
-      g.generateTexture(key, 36, 36);
-      g.destroy();
-    }
+    ensureGunshipTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'gunship-texture');
     this.maxHp = 6;
     this.hp = 6;
     this.speed = 70;

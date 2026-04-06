@@ -1,19 +1,13 @@
 import Phaser from 'phaser';
 import { ENEMY_BULLET_SPEED } from '../utils/constants';
 import { despawnEntity } from '../utils/entityUtils';
+import { ensureEnemyBulletTexture } from '../utils/SpriteFactory';
 
 export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'enemy-bullet';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      g.fillStyle(0xff6644, 1);
-      g.fillCircle(3, 3, 3);
-      g.generateTexture(key, 6, 6);
-      g.destroy();
-    }
+    ensureEnemyBulletTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'enemy-bullet');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 

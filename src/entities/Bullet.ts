@@ -1,26 +1,13 @@
 import Phaser from 'phaser';
 import { BULLET_SPEED } from '../utils/constants';
 import { despawnEntity } from '../utils/entityUtils';
+import { ensurePlayerBulletTexture } from '../utils/SpriteFactory';
 
 export class Bullet extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const key = 'player-bullet';
-    if (!scene.textures.exists(key)) {
-      const g = scene.add.graphics();
-      // Core bright bullet
-      g.fillStyle(0x00ffff, 1);
-      g.fillRect(2, 0, 4, 16);
-      // Outer glow
-      g.fillStyle(0x00aaff, 0.6);
-      g.fillRect(0, 2, 8, 12);
-      // Bright tip
-      g.fillStyle(0xffffff, 0.9);
-      g.fillRect(3, 0, 2, 4);
-      g.generateTexture(key, 8, 16);
-      g.destroy();
-    }
+    ensurePlayerBulletTexture(scene);
 
-    super(scene, x, y, key);
+    super(scene, x, y, 'player-bullet');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 

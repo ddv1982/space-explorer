@@ -415,15 +415,31 @@ export class HUD {
     }
 
     const hpRatio = this.currentHp / this.currentMaxHp;
+    const barWidth = (layout.hpBarWidth - 26) * hpRatio;
+    const barX = layout.hpBarX + 24;
+    const barY = layout.hpBarY + 2;
+    const barH = this.hpBarHeight - 4;
+
+    // Gradient HP bar: multi-stop fill for depth
     const hpColor = hpRatio > 0.5 ? 0x00ff44 : hpRatio > 0.25 ? 0xffaa00 : 0xff2222;
+    const hpHighlight = hpRatio > 0.5 ? 0x66ff88 : hpRatio > 0.25 ? 0xffcc44 : 0xff6666;
+    const hpDark = hpRatio > 0.5 ? 0x00aa22 : hpRatio > 0.25 ? 0xaa7700 : 0xaa1111;
+
+    // Dark base
+    this.hpBarFill.fillStyle(hpDark, 1);
+    this.hpBarFill.fillRoundedRect(barX, barY, barWidth, barH, 2);
+
+    // Main color (upper portion)
     this.hpBarFill.fillStyle(hpColor, 1);
-    this.hpBarFill.fillRoundedRect(
-      layout.hpBarX + 24,
-      layout.hpBarY + 2,
-      (layout.hpBarWidth - 26) * hpRatio,
-      this.hpBarHeight - 4,
-      2
-    );
+    this.hpBarFill.fillRoundedRect(barX, barY, barWidth, barH * 0.65, 2);
+
+    // Highlight strip (top edge)
+    this.hpBarFill.fillStyle(hpHighlight, 0.6);
+    this.hpBarFill.fillRect(barX + 2, barY + 1, Math.max(0, barWidth - 4), 2);
+
+    // Shine line (horizontal gloss)
+    this.hpBarFill.fillStyle(0xffffff, 0.12);
+    this.hpBarFill.fillRect(barX + 2, barY + barH * 0.3, Math.max(0, barWidth - 4), 1);
   }
 
   private renderProgressBar(): void {
@@ -435,8 +451,27 @@ export class HUD {
       return;
     }
 
+    const fillWidth = layout.progressWidth * this.currentProgress;
+
+    // Dark base
+    const darkFill = mixColor(this.progressFillColor, 0x000000, 0.3);
+    this.progressFill.fillStyle(darkFill, 0.95);
+    this.progressFill.fillRect(layout.progressX, layout.progressY, fillWidth, this.progressHeight);
+
+    // Main color (upper portion)
     this.progressFill.fillStyle(this.progressFillColor, 0.95);
-    this.progressFill.fillRect(layout.progressX, layout.progressY, layout.progressWidth * this.currentProgress, this.progressHeight);
+    this.progressFill.fillRect(layout.progressX, layout.progressY, fillWidth, this.progressHeight * 0.6);
+
+    // Highlight strip at top
+    const highlightColor = mixColor(this.progressFillColor, 0xffffff, 0.4);
+    this.progressFill.fillStyle(highlightColor, 0.5);
+    this.progressFill.fillRect(layout.progressX + 1, layout.progressY, Math.max(0, fillWidth - 2), 1);
+
+    // Pulse glow at the leading edge
+    if (fillWidth > 4) {
+      this.progressFill.fillStyle(0xffffff, 0.3);
+      this.progressFill.fillRect(layout.progressX + fillWidth - 3, layout.progressY, 3, this.progressHeight);
+    }
   }
 
   private renderShieldIcons(): void {
@@ -455,12 +490,49 @@ export class HUD {
       const ix = layout.hpBarX + i * 20;
       const iy = layout.hpBarY + this.hpBarHeight + 4;
 
+      // Outer glow
+      icon.fillStyle(0x4488ff, 0.3);
+      icon.fillCircle(ix + 8, iy + 8, 9);
+
+      // Main shield body
       icon.fillStyle(0x4488ff, 0.8);
-      icon.fillCircle(ix + 8, iy + 8, 7);
-      icon.lineStyle(1.5, 0x88ccff, 1);
-      icon.strokeCircle(ix + 8, iy + 8, 7);
+      icon.beginPath();
+      icon.moveTo(ix + 8, iy + 1);
+      icon.lineTo(ix + 14, iy + 4);
+      icon.lineTo(ix + 14, iy + 10);
+      icon.lineTo(ix + 8, iy + 16);
+      icon.lineTo(ix + 2, iy + 10);
+      icon.lineTo(ix + 2, iy + 4);
+      icon.closePath();
+      icon.fillPath();
+
+      // Inner highlight
+      icon.fillStyle(0x88ccff, 0.5);
+      icon.beginPath();
+      icon.moveTo(ix + 8, iy + 3);
+      icon.lineTo(ix + 12, iy + 5);
+      icon.lineTo(ix + 12, iy + 9);
+      icon.lineTo(ix + 8, iy + 13);
+      icon.lineTo(ix + 5, iy + 9);
+      icon.lineTo(ix + 5, iy + 5);
+      icon.closePath();
+      icon.fillPath();
+
+      // Bright center
       icon.fillStyle(0xaaddff, 0.6);
-      icon.fillCircle(ix + 6, iy + 6, 3);
+      icon.fillCircle(ix + 8, iy + 8, 3);
+
+      // Border ring
+      icon.lineStyle(1, 0x88ccff, 0.6);
+      icon.beginPath();
+      icon.moveTo(ix + 8, iy + 1);
+      icon.lineTo(ix + 14, iy + 4);
+      icon.lineTo(ix + 14, iy + 10);
+      icon.lineTo(ix + 8, iy + 16);
+      icon.lineTo(ix + 2, iy + 10);
+      icon.lineTo(ix + 2, iy + 4);
+      icon.closePath();
+      icon.strokePath();
 
       this.shieldIcons.push(icon);
     }
@@ -486,8 +558,27 @@ export class HUD {
 
     const ratio = this.currentBossHp / this.currentBossMaxHp;
     const color = ratio > 0.5 ? 0xff4444 : ratio > 0.25 ? 0xff8800 : 0xffff00;
+    const darkColor = ratio > 0.5 ? 0xaa2222 : ratio > 0.25 ? 0xaa5500 : 0xaaaa00;
+    const fillWidth = (layout.bossBarWidth - 2) * ratio;
+
+    // Dark base
+    this.bossBarFill.fillStyle(darkColor, 1);
+    this.bossBarFill.fillRect(layout.bossBarX + 1, layout.bossBarY + 1, fillWidth, this.bossBarHeight - 2);
+
+    // Main color upper portion
     this.bossBarFill.fillStyle(color, 1);
-    this.bossBarFill.fillRect(layout.bossBarX + 1, layout.bossBarY + 1, (layout.bossBarWidth - 2) * ratio, this.bossBarHeight - 2);
+    this.bossBarFill.fillRect(layout.bossBarX + 1, layout.bossBarY + 1, fillWidth, (this.bossBarHeight - 2) * 0.6);
+
+    // Highlight strip
+    const highlightColor = ratio > 0.5 ? 0xff8888 : ratio > 0.25 ? 0xffaa44 : 0xffff66;
+    this.bossBarFill.fillStyle(highlightColor, 0.5);
+    this.bossBarFill.fillRect(layout.bossBarX + 2, layout.bossBarY + 1, Math.max(0, fillWidth - 2), 1);
+
+    // Leading edge pulse
+    if (fillWidth > 4) {
+      this.bossBarFill.fillStyle(0xffffff, 0.25);
+      this.bossBarFill.fillRect(layout.bossBarX + 1 + fillWidth - 3, layout.bossBarY + 1, 3, this.bossBarHeight - 2);
+    }
   }
 }
 
