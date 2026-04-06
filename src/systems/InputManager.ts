@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { isTouchMobileDevice } from '../utils/device';
+import { getViewportBounds } from '../utils/layout';
 import type { MobileControls } from './MobileControls';
 
 export class InputManager {
@@ -65,8 +66,14 @@ export class InputManager {
   }
 
   private hasMobileFireTouch(): boolean {
+    const viewport = getViewportBounds(this.scene);
+
     return this.scene.input.manager.pointers.some((pointer) => {
-      return pointer.isDown && this.mobileControls?.isJoystickPointer(pointer) !== true;
+      return (
+        pointer.isDown &&
+        pointer.downX >= viewport.centerX &&
+        this.mobileControls?.isJoystickPointer(pointer) !== true
+      );
     });
   }
 }

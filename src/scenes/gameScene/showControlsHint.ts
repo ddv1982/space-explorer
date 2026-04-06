@@ -19,7 +19,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
     fontFamily: 'monospace',
   }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
 
-  const fireHint = scene.add.text(0, 0, mobile ? 'Tap the screen to shoot' : 'SPACE / Click to Fire', {
+  const fireHint = scene.add.text(0, 0, mobile ? 'Tap the right side to shoot' : 'SPACE / Click to Fire', {
     fontSize: '16px',
     color: '#88ccff',
     fontFamily: 'monospace',
