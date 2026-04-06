@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getViewportLayout } from '../utils/layout';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -9,10 +10,9 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    const centerX = this.cameras.main.width / 2;
-    const centerY = this.cameras.main.height / 2;
+    const layout = getViewportLayout(this);
 
-    this.add.text(centerX, centerY, 'LOADING...', {
+    this.add.text(layout.centerX, layout.centerY, 'LOADING...', {
       fontSize: '32px',
       color: '#ffffff',
     }).setOrigin(0.5);

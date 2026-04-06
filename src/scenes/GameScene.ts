@@ -29,6 +29,7 @@ import {
   trySpawnRandomPowerUp,
   type TerminalTransitionState,
 } from '../systems/GameplayFlow';
+import { centerHorizontally, getViewportLayout } from '../utils/layout';
 
 export class GameScene extends Phaser.Scene {
   private static readonly PLAYER_RESPAWN_DELAY_MS = 1000;
@@ -347,21 +348,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showControlsHint(): void {
-    const cx = GAME_WIDTH / 2;
-    const cy = GAME_HEIGHT / 2;
+    const layout = getViewportLayout(this);
+    const hintWidth = 320;
+    const hintHeight = 80;
+    const bgX = centerHorizontally(layout, hintWidth);
+    const bgY = layout.centerY - hintHeight / 2;
 
     const bg = this.add.graphics();
     bg.fillStyle(0x000000, 0.6);
-    bg.fillRoundedRect(cx - 160, cy - 40, 320, 80, 8);
+    bg.fillRoundedRect(bgX, bgY, hintWidth, hintHeight, 8);
     bg.setDepth(200).setScrollFactor(0);
 
-    const title = this.add.text(cx, cy - 20, 'WASD / Arrows to Move', {
+    const title = this.add.text(layout.centerX, layout.centerY - 20, 'WASD / Arrows to Move', {
       fontSize: '16px',
       color: '#88ccff',
       fontFamily: 'monospace',
     }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
 
-    const fireHint = this.add.text(cx, cy + 10, 'SPACE / Click to Fire', {
+    const fireHint = this.add.text(layout.centerX, layout.centerY + 10, 'SPACE / Click to Fire', {
       fontSize: '16px',
       color: '#88ccff',
       fontFamily: 'monospace',
