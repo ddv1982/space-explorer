@@ -10,11 +10,14 @@ export interface EncounterSizeConfig {
   max: number;
 }
 
+export type BossAttackStyle = 'barrage' | 'pressure' | 'maelstrom';
+
 export interface BossConfig {
   maxHp: number;
   phase1Cooldown: number;
   phase2Cooldown: number;
   phase2MoveSpeed: number;
+  attackStyle: BossAttackStyle;
   phase1SpreadShotCount: number;
   phase1SpreadArcDegrees: number;
   phase1BulletSpeedScale: number;
@@ -106,11 +109,12 @@ const LEVELS: LevelConfig[] = [
       phase1Cooldown: 1200,
       phase2Cooldown: 650,
       phase2MoveSpeed: 150,
+      attackStyle: 'barrage',
       phase1SpreadShotCount: 5,
-      phase1SpreadArcDegrees: 60,
+      phase1SpreadArcDegrees: 72,
       phase1BulletSpeedScale: 0.8,
-      phase2SpiralShotCount: 3,
-      phase2SpiralTurnRate: 60,
+      phase2SpiralShotCount: 2,
+      phase2SpiralTurnRate: 56,
       phase2BulletSpeedScale: 0.9,
     },
     bossTriggerProgress: 0.72,
@@ -138,14 +142,15 @@ const LEVELS: LevelConfig[] = [
     boss: {
       maxHp: 62,
       phase1Cooldown: 1000,
-      phase2Cooldown: 525,
+      phase2Cooldown: 500,
       phase2MoveSpeed: 175,
+      attackStyle: 'pressure',
       phase1SpreadShotCount: 7,
-      phase1SpreadArcDegrees: 72,
-      phase1BulletSpeedScale: 0.9,
+      phase1SpreadArcDegrees: 52,
+      phase1BulletSpeedScale: 0.98,
       phase2SpiralShotCount: 4,
-      phase2SpiralTurnRate: 78,
-      phase2BulletSpeedScale: 0.98,
+      phase2SpiralTurnRate: 88,
+      phase2BulletSpeedScale: 1.02,
     },
     bossTriggerProgress: 0.68,
     asteroidInterval: 3500,
@@ -174,11 +179,12 @@ const LEVELS: LevelConfig[] = [
       phase1Cooldown: 850,
       phase2Cooldown: 425,
       phase2MoveSpeed: 205,
+      attackStyle: 'maelstrom',
       phase1SpreadShotCount: 9,
-      phase1SpreadArcDegrees: 84,
+      phase1SpreadArcDegrees: 70,
       phase1BulletSpeedScale: 1,
       phase2SpiralShotCount: 5,
-      phase2SpiralTurnRate: 96,
+      phase2SpiralTurnRate: 104,
       phase2BulletSpeedScale: 1.05,
     },
     bossTriggerProgress: 0.64,

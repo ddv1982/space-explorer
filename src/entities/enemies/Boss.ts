@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { EnemyBullet } from '../EnemyBullet';
-import type { BossConfig } from '../../config/LevelsConfig';
+import type { BossAttackStyle, BossConfig } from '../../config/LevelsConfig';
 import { ENEMY_BULLET_SPEED, GAME_WIDTH } from '../../utils/constants';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 
@@ -10,6 +10,7 @@ const DEFAULT_BOSS_CONFIG: BossConfig = {
   phase1Cooldown: 1200,
   phase2Cooldown: 650,
   phase2MoveSpeed: 150,
+  attackStyle: 'barrage',
   phase1SpreadShotCount: 5,
   phase1SpreadArcDegrees: 60,
   phase1BulletSpeedScale: 0.8,
@@ -27,6 +28,7 @@ export class Boss extends EnemyBase {
   private phase1Cooldown: number = DEFAULT_BOSS_CONFIG.phase1Cooldown;
   private phase2Cooldown: number = DEFAULT_BOSS_CONFIG.phase2Cooldown;
   private phase2MoveSpeed: number = DEFAULT_BOSS_CONFIG.phase2MoveSpeed;
+  private attackStyle: BossAttackStyle = DEFAULT_BOSS_CONFIG.attackStyle;
   private phase1SpreadShotCount: number = DEFAULT_BOSS_CONFIG.phase1SpreadShotCount;
   private phase1SpreadArcDegrees: number = DEFAULT_BOSS_CONFIG.phase1SpreadArcDegrees;
   private phase1BulletSpeedScale: number = DEFAULT_BOSS_CONFIG.phase1BulletSpeedScale;
@@ -35,6 +37,7 @@ export class Boss extends EnemyBase {
   private phase2BulletSpeedScale: number = DEFAULT_BOSS_CONFIG.phase2BulletSpeedScale;
   private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
   private arrived: boolean = false;
+  private attackCycle: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     const key = 'boss-texture';
@@ -95,6 +98,7 @@ export class Boss extends EnemyBase {
     this.phase = 1;
     this.arrived = false;
     this.lastFireTime = 0;
+    this.attackCycle = 0;
     this.moveDir = 1;
     this.moveSpeed = 80;
     this.setVelocityY(60);
@@ -137,45 +141,66 @@ export class Boss extends EnemyBase {
   private fireSpread(): void {
     if (!this.bulletGroup) return;
     const shotCount = Math.max(1, this.phase1SpreadShotCount);
-    const halfArc = this.phase1SpreadArcDegrees / 2;
+    const origins = this.attackStyle === 'barrage' ? [this.x - 18, this.x + 18] : [this.x];
+    const arcScale = this.attackStyle === 'barrage' ? 1.15 : this.attackStyle === 'pressure' ? 0.55 : 1;
+    const angleOffset = this.attackStyle === 'pressure' && this.attackCycle % 2 === 1 ? this.moveDir * 6 : 0;
+    const halfArc = (this.phase1SpreadArcDegrees * arcScale) / 2;
 
-    for (let i = 0; i < shotCount; i++) {
-      const bullet =
-        (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
-        (this.bulletGroup.get(this.x, this.y + 30) as EnemyBullet | null);
-      if (bullet) {
+    for (const originX of origins) {
+      for (let i = 0; i < shotCount; i++) {
         const progress = shotCount === 1 ? 0.5 : i / (shotCount - 1);
-        const angleDeg = Phaser.Math.Linear(-halfArc, halfArc, progress);
+        const angleDeg = Phaser.Math.Linear(-halfArc, halfArc, progress) + angleOffset;
         const rad = Phaser.Math.DegToRad(angleDeg + 90);
-        bullet.fire(this.x, this.y + 30);
-        bullet.setVelocity(
+        this.fireBullet(
+          originX,
+          this.y + 30,
           Math.cos(rad) * ENEMY_BULLET_SPEED * this.phase1BulletSpeedScale,
           Math.sin(rad) * ENEMY_BULLET_SPEED * this.phase1BulletSpeedScale
         );
       }
     }
+
+    this.attackCycle += 1;
   }
 
   private fireSpiral(time: number): void {
     if (!this.bulletGroup) return;
     const shotCount = Math.max(1, this.phase2SpiralShotCount);
     const angleStep = 360 / shotCount;
-    const baseAngle = (time / 500) * this.phase2SpiralTurnRate;
+    const timeDivisor = this.attackStyle === 'pressure' ? 420 : 500;
+    const turnRate = this.phase2SpiralTurnRate * (this.attackStyle === 'pressure' ? 1.15 : 1);
+    const baseAngle = (time / timeDivisor) * turnRate;
+    const spiralAngles =
+      this.attackStyle === 'maelstrom'
+        ? [baseAngle, -baseAngle + angleStep / 2]
+        : [baseAngle];
 
-    for (let i = 0; i < shotCount; i++) {
-      const bullet =
-        (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
-        (this.bulletGroup.get(this.x, this.y + 30) as EnemyBullet | null);
-      if (bullet) {
-        const angleDeg = baseAngle + i * angleStep;
+    for (const spiralAngle of spiralAngles) {
+      for (let i = 0; i < shotCount; i++) {
+        const angleDeg = spiralAngle + i * angleStep;
         const rad = Phaser.Math.DegToRad(angleDeg);
-        bullet.fire(this.x, this.y + 30);
-        bullet.setVelocity(
+        this.fireBullet(
+          this.x,
+          this.y + 30,
           Math.cos(rad) * ENEMY_BULLET_SPEED * this.phase2BulletSpeedScale,
           Math.sin(rad) * ENEMY_BULLET_SPEED * this.phase2BulletSpeedScale
         );
       }
     }
+
+    this.attackCycle += 1;
+  }
+
+  private fireBullet(x: number, y: number, velocityX: number, velocityY: number): void {
+    if (!this.bulletGroup) return;
+
+    const bullet =
+      (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
+      (this.bulletGroup.get(x, y) as EnemyBullet | null);
+    if (!bullet) return;
+
+    bullet.fire(x, y);
+    bullet.setVelocity(velocityX, velocityY);
   }
 
   private applyConfig(config: BossConfig): void {
@@ -183,6 +208,7 @@ export class Boss extends EnemyBase {
     this.phase1Cooldown = config.phase1Cooldown;
     this.phase2Cooldown = config.phase2Cooldown;
     this.phase2MoveSpeed = config.phase2MoveSpeed;
+    this.attackStyle = config.attackStyle;
     this.phase1SpreadShotCount = config.phase1SpreadShotCount;
     this.phase1SpreadArcDegrees = config.phase1SpreadArcDegrees;
     this.phase1BulletSpeedScale = config.phase1BulletSpeedScale;
