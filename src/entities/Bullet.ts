@@ -27,10 +27,6 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.setVisible(false);
     this.setDepth(4);
 
-    // Add glow effect
-    if (this.preFX) {
-      this.preFX.addGlow(0x00ffff, 2, 2, false);
-    }
   }
 
   fire(x: number, y: number, velocityX: number = 0, velocityY?: number): void {

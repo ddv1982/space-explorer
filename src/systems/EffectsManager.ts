@@ -3,13 +3,24 @@ import { LevelConfig } from '../config/LevelsConfig';
 
 export class EffectsManager {
   private scene!: Phaser.Scene;
-  private particleTextures: boolean = false;
   private colorMatrix: Phaser.FX.ColorMatrix | null = null;
+  private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private exhaustEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
 
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
+    this.clearCameraFX();
     this.setupCameraFX();
     this.generateParticleTextures();
+    this.createParticleEmitters();
+  }
+
+  destroy(): void {
+    this.destroyEmitters();
+    this.clearCameraFX();
+    this.colorMatrix = null;
   }
 
   applyLevelColorGrade(config: LevelConfig): void {
@@ -32,129 +43,179 @@ export class EffectsManager {
     const camera = this.scene.cameras.main;
 
     if (camera.postFX) {
-      camera.postFX.addBloom(0x9fd8ff, 1, 1, 1, 0.7);
       camera.postFX.addVignette(0.5, 0.5, 0.78, 0.28);
     }
   }
 
   private generateParticleTextures(): void {
-    if (this.particleTextures) return;
-
-    const g = this.scene.add.graphics();
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(8, 8, 8);
-    g.generateTexture('particle-explosion', 16, 16);
-    g.destroy();
-
-    const g2 = this.scene.add.graphics();
-    g2.fillStyle(0xffffff, 1);
-    g2.fillCircle(4, 4, 4);
-    g2.generateTexture('particle-spark', 8, 8);
-    g2.destroy();
-
-    // Muzzle flash particle
-    const g3 = this.scene.add.graphics();
-    g3.fillStyle(0xffffff, 1);
-    g3.fillCircle(6, 6, 6);
-    g3.generateTexture('particle-muzzle', 12, 12);
-    g3.destroy();
-
-    // Engine exhaust particle
-    const g4 = this.scene.add.graphics();
-    g4.fillStyle(0xffffff, 1);
-    g4.fillCircle(3, 3, 3);
-    g4.generateTexture('particle-exhaust', 6, 6);
-    g4.destroy();
-
-    this.particleTextures = true;
+    this.generateCircleTexture('particle-explosion', 16, 8);
+    this.generateCircleTexture('particle-spark', 8, 4);
+    this.generateCircleTexture('particle-muzzle', 12, 6);
+    this.generateCircleTexture('particle-exhaust', 6, 3);
   }
 
-  createExplosion(x: number, y: number, intensity: number = 1): void {
-    const particleCount = Math.floor(20 * intensity);
+  private generateCircleTexture(key: string, size: number, radius: number): void {
+    if (this.scene.textures.exists(key)) {
+      return;
+    }
 
-    const particles = this.scene.add.particles(x, y, 'particle-explosion', {
+    const graphics = this.scene.add.graphics();
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillCircle(size / 2, size / 2, radius);
+    graphics.generateTexture(key, size, size);
+    graphics.destroy();
+  }
+
+  private createParticleEmitters(): void {
+    this.destroyEmitters();
+
+    this.explosionEmitter = this.createPooledEmitter(
+      'particle-explosion',
+      this.getExplosionConfig(1, 20),
+      6,
+      192
+    );
+    this.sparkEmitter = this.createPooledEmitter(
+      'particle-spark',
+      this.getSparkConfig(),
+      6,
+      48
+    );
+    this.muzzleEmitter = this.createPooledEmitter(
+      'particle-muzzle',
+      this.getMuzzleConfig(),
+      6,
+      48
+    );
+    this.exhaustEmitter = this.createPooledEmitter(
+      'particle-exhaust',
+      this.getExhaustConfig(1, 2),
+      4,
+      64
+    );
+  }
+
+  private createPooledEmitter(
+    textureKey: string,
+    config: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+    depth: number,
+    reserveCount: number
+  ): Phaser.GameObjects.Particles.ParticleEmitter {
+    const emitter = this.scene.add.particles(0, 0, textureKey, {
+      ...config,
+      emitting: false,
+    });
+
+    emitter.setDepth(depth);
+    emitter.reserve(reserveCount);
+
+    return emitter;
+  }
+
+  private clearCameraFX(): void {
+    const camera = this.scene?.cameras?.main;
+    camera?.postFX?.clear();
+  }
+
+  private destroyEmitters(): void {
+    this.explosionEmitter?.destroy();
+    this.sparkEmitter?.destroy();
+    this.muzzleEmitter?.destroy();
+    this.exhaustEmitter?.destroy();
+
+    this.explosionEmitter = null;
+    this.sparkEmitter = null;
+    this.muzzleEmitter = null;
+    this.exhaustEmitter = null;
+  }
+
+  private getExplosionConfig(
+    intensity: number,
+    quantity: number
+  ): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
+    return {
       speed: { min: 50, max: 200 * intensity },
       angle: { min: 0, max: 360 },
       scale: { start: 0.8 * intensity, end: 0 },
       lifespan: { min: 300, max: 600 },
       blendMode: Phaser.BlendModes.ADD,
-      quantity: particleCount,
-      emitting: false,
+      quantity,
       tint: [0xff4444, 0xff8800, 0xffcc00, 0xffff44],
-    });
+    };
+  }
 
-    particles.explode(particleCount);
-    particles.setDepth(6);
+  private getSparkConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
+    return {
+      speed: { min: 30, max: 100 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.5, end: 0 },
+      lifespan: { min: 100, max: 300 },
+      blendMode: Phaser.BlendModes.NORMAL,
+      quantity: 8,
+      tint: [0x00ffff, 0x88ffff, 0xffffff],
+    };
+  }
+
+  private getMuzzleConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
+    return {
+      speed: { min: 20, max: 80 },
+      angle: { min: 240, max: 300 },
+      scale: { start: 0.6, end: 0 },
+      lifespan: { min: 60, max: 120 },
+      blendMode: Phaser.BlendModes.NORMAL,
+      quantity: 5,
+      tint: [0x00ffff, 0x88ffff, 0xffffff, 0x44aaff],
+    };
+  }
+
+  private getExhaustConfig(
+    intensity: number,
+    quantity: number
+  ): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
+    return {
+      speed: { min: 30, max: 60 + intensity * 40 },
+      angle: { min: 250, max: 290 },
+      scale: { start: 0.4, end: 0 },
+      lifespan: { min: 80, max: 200 },
+      blendMode: Phaser.BlendModes.NORMAL,
+      quantity,
+      tint: [0x0088ff, 0x00aaff, 0x44ccff, 0xffffff],
+    };
+  }
+
+  createExplosion(x: number, y: number, intensity: number = 1): void {
+    if (!this.explosionEmitter) {
+      return;
+    }
+
+    const particleCount = Math.floor(20 * intensity);
+
+    this.explosionEmitter.updateConfig(this.getExplosionConfig(intensity, particleCount));
+    this.explosionEmitter.explode(particleCount, x, y);
 
     this.scene.cameras.main.shake(
       Math.floor(100 * intensity),
       0.005 * intensity
     );
-
-    this.scene.time.delayedCall(1000, () => {
-      particles.destroy();
-    });
   }
 
   createSparkBurst(x: number, y: number): void {
-    const particles = this.scene.add.particles(x, y, 'particle-spark', {
-      speed: { min: 30, max: 100 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 0.5, end: 0 },
-      lifespan: { min: 100, max: 300 },
-      blendMode: Phaser.BlendModes.ADD,
-      quantity: 8,
-      emitting: false,
-      tint: [0x00ffff, 0x88ffff, 0xffffff],
-    });
-
-    particles.explode(8);
-    particles.setDepth(6);
-
-    this.scene.time.delayedCall(500, () => {
-      particles.destroy();
-    });
+    this.sparkEmitter?.explode(8, x, y);
   }
 
   createMuzzleFlash(x: number, y: number): void {
-    const particles = this.scene.add.particles(x, y, 'particle-muzzle', {
-      speed: { min: 20, max: 80 },
-      angle: { min: 240, max: 300 },
-      scale: { start: 0.6, end: 0 },
-      lifespan: { min: 60, max: 120 },
-      blendMode: Phaser.BlendModes.ADD,
-      quantity: 5,
-      emitting: false,
-      tint: [0x00ffff, 0x88ffff, 0xffffff, 0x44aaff],
-    });
-
-    particles.explode(5);
-    particles.setDepth(6);
-
-    this.scene.time.delayedCall(200, () => {
-      particles.destroy();
-    });
+    this.muzzleEmitter?.explode(5, x, y);
   }
 
   createEngineExhaust(x: number, y: number, intensity: number): void {
+    if (!this.exhaustEmitter) {
+      return;
+    }
+
     const count = Math.ceil(intensity * 2);
-    const particles = this.scene.add.particles(x, y, 'particle-exhaust', {
-      speed: { min: 30, max: 60 + intensity * 40 },
-      angle: { min: 250, max: 290 },
-      scale: { start: 0.4, end: 0 },
-      lifespan: { min: 80, max: 200 },
-      blendMode: Phaser.BlendModes.ADD,
-      quantity: count,
-      emitting: false,
-      tint: [0x0088ff, 0x00aaff, 0x44ccff, 0xffffff],
-    });
 
-    particles.explode(count);
-    particles.setDepth(4);
-
-    this.scene.time.delayedCall(250, () => {
-      particles.destroy();
-    });
+    this.exhaustEmitter.updateConfig(this.getExhaustConfig(intensity, count));
+    this.exhaustEmitter.explode(count, x, y);
   }
 
   createSpawnWarning(x: number): void {

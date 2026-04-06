@@ -204,6 +204,7 @@ export class GameScene extends Phaser.Scene {
 
   private handleSceneShutdown(): void {
     this.removeSceneEventHandlers();
+    this.effectsManager?.destroy();
 
     this.clearGameOverTransitionTimers();
     this.clearPendingLevelCompleteTransition();
@@ -224,6 +225,7 @@ export class GameScene extends Phaser.Scene {
 
   private handleSceneDestroy(): void {
     this.removeSceneEventHandlers();
+    this.effectsManager?.destroy();
   }
 
   private handleEnemyDeath(score: number, x: number, y: number): void {
