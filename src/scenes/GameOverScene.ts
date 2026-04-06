@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audioManager } from '../systems/AudioManager';
+import { getRunSummary } from '../systems/PlayerState';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -21,14 +22,15 @@ export class GameOverScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    const finalScore = this.registry.get('finalScore') || 0;
+    const runSummary = getRunSummary(this.registry);
+    const finalScore = runSummary.finalScore;
     this.add.text(centerX, centerY, `SCORE: ${finalScore}`, {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    const levelReached = this.registry.get('levelReached') || 1;
+    const levelReached = runSummary.levelReached;
     this.add.text(centerX, centerY + 45, `REACHED LEVEL ${levelReached}`, {
       fontSize: '20px',
       color: '#ff8844',

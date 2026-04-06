@@ -11,11 +11,18 @@ import { ScoreManager } from '../systems/ScoreManager';
 import { HUD } from '../systems/HUD';
 import { LevelManager } from '../systems/LevelManager';
 import { EffectsManager } from '../systems/EffectsManager';
-import { getPlayerState, saveScoreToState, saveCurrentHp } from '../systems/PlayerState';
+import { getPlayerState, saveScoreToState, saveCurrentHp, setRunSummary } from '../systems/PlayerState';
 import { Boss } from '../entities/enemies/Boss';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
 import { PowerUp, PowerUpType } from '../entities/PowerUp';
+import {
+  applyPowerUpPickup,
+  GAME_SCENE_EVENTS,
+  TERMINAL_TRANSITIONS,
+  trySpawnRandomPowerUp,
+  type TerminalTransitionState,
+} from '../systems/GameplayFlow';
 
 export class GameScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
@@ -38,7 +45,8 @@ export class GameScene extends Phaser.Scene {
   private gameOverSceneStarted: boolean = false;
   private pendingLevelCompleteTransition: Phaser.Time.TimerEvent | null = null;
   private boss: Boss | null = null;
-  private terminalTransitionState: 'none' | 'player-death' | 'level-complete' = 'none';
+  private terminalTransitionState: TerminalTransitionState = TERMINAL_TRANSITIONS.none;
+  private lastHudShieldCount: number | null = null;
 
   constructor() {
     super({ key: 'Game' });
@@ -52,7 +60,8 @@ export class GameScene extends Phaser.Scene {
     this.gameOverSceneStarted = false;
     this.pendingLevelCompleteTransition = null;
     this.boss = null;
-    this.terminalTransitionState = 'none';
+    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
+    this.lastHudShieldCount = null;
 
     this.registerLifecycleHandlers();
 
@@ -111,7 +120,7 @@ export class GameScene extends Phaser.Scene {
       this.powerUpGroup, this.player,
       (_obj1, _obj2) => {
         const powerUp = _obj1 as PowerUp;
-        if (!powerUp.active || !this.player.isAlive || this.terminalTransitionState !== 'none') return;
+        if (!powerUp.active || !this.player.isAlive || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) return;
 
         this.applyPowerUp(powerUp.powerUpType);
         powerUp.kill();
@@ -121,7 +130,7 @@ export class GameScene extends Phaser.Scene {
     this.hud = new HUD();
     this.hud.create(this);
     this.hud.showLevelAnnouncement(levelConfig.name, state.level);
-    this.hud.updateShields(this.player.shields);
+    this.syncHudShields();
 
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
@@ -142,27 +151,27 @@ export class GameScene extends Phaser.Scene {
   private registerSceneEventHandlers(): void {
     this.removeSceneEventHandlers();
 
-    this.events.on('enemy-death', this.handleEnemyDeath, this);
-    this.events.on('player-death', this.handlePlayerDeath, this);
-    this.events.on('player-fatal-hit', this.handlePlayerFatalHit, this);
-    this.events.on('level-complete', this.handleLevelComplete, this);
-    this.events.on('boss-spawn', this.handleBossSpawn, this);
-    this.events.on('player-hit', this.handlePlayerHit, this);
-    this.events.on('player-exhaust', this.handlePlayerExhaust, this);
-    this.events.on('enemy-spawn-warning', this.handleEnemySpawnWarning, this);
-    this.events.on('boss-death', this.handleBossDeath, this);
+    this.events.on(GAME_SCENE_EVENTS.enemyDeath, this.handleEnemyDeath, this);
+    this.events.on(GAME_SCENE_EVENTS.playerDeath, this.handlePlayerDeath, this);
+    this.events.on(GAME_SCENE_EVENTS.playerFatalHit, this.handlePlayerFatalHit, this);
+    this.events.on(GAME_SCENE_EVENTS.levelComplete, this.handleLevelComplete, this);
+    this.events.on(GAME_SCENE_EVENTS.bossSpawn, this.handleBossSpawn, this);
+    this.events.on(GAME_SCENE_EVENTS.playerHit, this.handlePlayerHit, this);
+    this.events.on(GAME_SCENE_EVENTS.playerExhaust, this.handlePlayerExhaust, this);
+    this.events.on(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
+    this.events.on(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
   }
 
   private removeSceneEventHandlers(): void {
-    this.events.off('enemy-death', this.handleEnemyDeath, this);
-    this.events.off('player-death', this.handlePlayerDeath, this);
-    this.events.off('player-fatal-hit', this.handlePlayerFatalHit, this);
-    this.events.off('level-complete', this.handleLevelComplete, this);
-    this.events.off('boss-spawn', this.handleBossSpawn, this);
-    this.events.off('player-hit', this.handlePlayerHit, this);
-    this.events.off('player-exhaust', this.handlePlayerExhaust, this);
-    this.events.off('enemy-spawn-warning', this.handleEnemySpawnWarning, this);
-    this.events.off('boss-death', this.handleBossDeath, this);
+    this.events.off(GAME_SCENE_EVENTS.enemyDeath, this.handleEnemyDeath, this);
+    this.events.off(GAME_SCENE_EVENTS.playerDeath, this.handlePlayerDeath, this);
+    this.events.off(GAME_SCENE_EVENTS.playerFatalHit, this.handlePlayerFatalHit, this);
+    this.events.off(GAME_SCENE_EVENTS.levelComplete, this.handleLevelComplete, this);
+    this.events.off(GAME_SCENE_EVENTS.bossSpawn, this.handleBossSpawn, this);
+    this.events.off(GAME_SCENE_EVENTS.playerHit, this.handlePlayerHit, this);
+    this.events.off(GAME_SCENE_EVENTS.playerExhaust, this.handlePlayerExhaust, this);
+    this.events.off(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
+    this.events.off(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
   }
 
   private handleSceneShutdown(): void {
@@ -175,7 +184,8 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = false;
     this.gameOverSceneStarted = false;
     this.boss = null;
-    this.terminalTransitionState = 'none';
+    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
+    this.lastHudShieldCount = null;
   }
 
   private handleSceneDestroy(): void {
@@ -192,7 +202,7 @@ export class GameScene extends Phaser.Scene {
   private handlePlayerDeath(): void {
     this.clearPendingLevelCompleteTransition();
 
-    if (!this.beginTerminalTransition('player-death')) return;
+    if (!this.beginTerminalTransition(TERMINAL_TRANSITIONS.playerDeath)) return;
 
     const finalScore = this.scoreManager.getScore();
     const level = this.levelManager.currentLevel;
@@ -205,12 +215,11 @@ export class GameScene extends Phaser.Scene {
     this.runBestEffort(() => audioManager.stopMusic());
     this.runBestEffort(() => this.playPlayerDeathCue(deathX, deathY));
     this.runBestEffort(() => saveScoreToState(this.registry, finalScore));
-    this.runBestEffort(() => this.registry.set('finalScore', finalScore));
-    this.runBestEffort(() => this.registry.set('levelReached', level));
+    this.runBestEffort(() => setRunSummary(this.registry, { finalScore, levelReached: level }));
   }
 
   private handlePlayerFatalHit(): void {
-    if (this.terminalTransitionState !== 'player-death') {
+    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
       return;
     }
 
@@ -218,22 +227,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleLevelComplete(): void {
-    if (this.pendingLevelCompleteTransition || this.terminalTransitionState !== 'none') {
+    if (this.pendingLevelCompleteTransition || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
       return;
     }
 
     this.pendingLevelCompleteTransition = this.time.delayedCall(0, () => {
       this.pendingLevelCompleteTransition = null;
 
-      if (!this.player.isAlive || this.terminalTransitionState !== 'none') {
+      if (!this.player.isAlive || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
         return;
       }
 
-      if (!this.beginTerminalTransition('level-complete')) return;
+      if (!this.beginTerminalTransition(TERMINAL_TRANSITIONS.levelComplete)) return;
 
       saveScoreToState(this.registry, this.scoreManager.getScore());
       saveCurrentHp(this.registry, this.player.hp);
-      this.registry.set('finalScore', this.scoreManager.getScore());
+      setRunSummary(this.registry, { finalScore: this.scoreManager.getScore() });
       this.warpTransition.play(() => {
         this.scene.start('PlanetIntermission');
       });
@@ -334,7 +343,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private completePlayerDeathTransition(): void {
-    if (this.gameOverSceneStarted || this.terminalTransitionState !== 'player-death') {
+    if (this.gameOverSceneStarted || this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
       return;
     }
 
@@ -362,16 +371,19 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private beginTerminalTransition(state: 'player-death' | 'level-complete'): boolean {
-    if (state === 'player-death') {
+  private beginTerminalTransition(state: Exclude<TerminalTransitionState, 'none'>): boolean {
+    if (state === TERMINAL_TRANSITIONS.playerDeath) {
       this.clearPendingLevelCompleteTransition();
     }
 
-    if (state === 'player-death' && this.terminalTransitionState === 'level-complete') {
+    if (
+      state === TERMINAL_TRANSITIONS.playerDeath &&
+      this.terminalTransitionState === TERMINAL_TRANSITIONS.levelComplete
+    ) {
       this.cancelLevelCompleteTransition();
     }
 
-    if (this.terminalTransitionState !== 'none') {
+    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
       return false;
     }
 
@@ -382,19 +394,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private cancelLevelCompleteTransition(): void {
-    if (this.terminalTransitionState !== 'level-complete') {
+    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.levelComplete) {
       return;
     }
 
     this.warpTransition.cancel();
-    this.terminalTransitionState = 'none';
+    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
     this.collisionManager.setTerminalTransitionActive(false);
   }
 
   private playPlayerDeathCue(x: number, y: number): void {
     this.player.playDeathAnimation();
     this.time.delayedCall(120, () => {
-      if (this.terminalTransitionState !== 'player-death') {
+      if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.playerDeath) {
         return;
       }
 
@@ -415,70 +427,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   private tryDropPowerUp(x: number, y: number): void {
-    // 12% chance to drop a power-up
-    if (Math.random() > 0.12) return;
-
-    const types: PowerUpType[] = ['health', 'shield', 'rapidfire'];
-    const type = types[Math.floor(Math.random() * types.length)];
-
-    const powerUp =
-      (this.powerUpGroup.getFirstDead(false) as PowerUp | null) ??
-      (this.powerUpGroup.get(x, y) as PowerUp | null);
-
-    if (powerUp) {
-      powerUp.spawn(x, y, type);
-    }
+    trySpawnRandomPowerUp(this.powerUpGroup, x, y);
   }
 
   private applyPowerUp(type: PowerUpType): void {
-    audioManager.playPowerUpPickup();
+    applyPowerUpPickup(this, this.player, this.effectsManager, type);
+  }
 
-    switch (type) {
-      case 'health':
-        this.player.hp = Math.min(this.player.hp + 2, this.player.maxHp);
-        this.effectsManager.createSparkBurst(this.player.x, this.player.y);
-        break;
-      case 'shield':
-        this.player.shields += 1;
-        this.effectsManager.createSparkBurst(this.player.x, this.player.y);
-        break;
-      case 'rapidfire':
-        this.player.fireRate = Math.max(40, this.player.fireRate - 20);
-        this.effectsManager.createSparkBurst(this.player.x, this.player.y);
-        break;
+  private syncHudShields(): void {
+    if (this.lastHudShieldCount === this.player.shields) {
+      return;
     }
 
-    // Show pickup text
-    const labels: Record<PowerUpType, string> = {
-      health: '+HP',
-      shield: '+SHIELD',
-      rapidfire: 'FIRE RATE UP',
-    };
-    const colors: Record<PowerUpType, string> = {
-      health: '#00ff44',
-      shield: '#4488ff',
-      rapidfire: '#ffcc00',
-    };
-
-    const text = this.add.text(this.player.x, this.player.y - 40, labels[type], {
-      fontSize: '14px',
-      color: colors[type],
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(50);
-
-    this.tweens.add({
-      targets: text,
-      y: this.player.y - 70,
-      alpha: { from: 1, to: 0 },
-      duration: 600,
-      ease: 'Power2',
-      onComplete: () => text.destroy(),
-    });
+    this.lastHudShieldCount = this.player.shields;
+    this.hud.updateShields(this.player.shields);
   }
 
   update(time: number, delta: number): void {
-    if (this.gameOver || this.terminalTransitionState !== 'none') return;
+    if (this.gameOver || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) return;
 
     this.parallax.update(delta);
     this.player.update(this.inputManager);
@@ -500,11 +466,16 @@ export class GameScene extends Phaser.Scene {
     this.levelManager.update(delta);
 
     if (this.levelManager.shouldSpawnBoss()) {
-      this.events.emit('boss-spawn');
+      this.events.emit(GAME_SCENE_EVENTS.bossSpawn);
     }
 
-    if (this.player.isAlive && this.terminalTransitionState === 'none' && this.levelManager.isComplete() && !prevComplete) {
-      this.events.emit('level-complete');
+    if (
+      this.player.isAlive &&
+      this.terminalTransitionState === TERMINAL_TRANSITIONS.none &&
+      this.levelManager.isComplete() &&
+      !prevComplete
+    ) {
+      this.events.emit(GAME_SCENE_EVENTS.levelComplete);
     }
 
     // Update boss HUD
@@ -518,6 +489,6 @@ export class GameScene extends Phaser.Scene {
       this.scoreManager.getScore(),
       this.levelManager.progress
     );
-    this.hud.updateShields(this.player.shields);
+    this.syncHudShields();
   }
 }

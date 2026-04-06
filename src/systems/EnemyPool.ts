@@ -7,6 +7,16 @@ import { Gunship } from '../entities/enemies/Gunship';
 import { Boss } from '../entities/enemies/Boss';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { BomberBomb } from '../entities/BomberBomb';
+import type { EnemyType } from '../config/LevelsConfig';
+
+export type EnemyPoolGroupKey = EnemyType | 'boss';
+export type EnemyPlayerCollisionBehavior = 'kamikaze' | 'impact' | 'none';
+
+export interface EnemyGroupRegistration {
+  key: EnemyPoolGroupKey;
+  group: Phaser.Physics.Arcade.Group;
+  playerCollisionBehavior: EnemyPlayerCollisionBehavior;
+}
 
 export class EnemyPool {
   private scene!: Phaser.Scene;
@@ -137,6 +147,21 @@ export class EnemyPool {
     return gunship;
   }
 
+  spawnEnemy(type: EnemyType, x: number, y: number): Phaser.Physics.Arcade.Sprite | null {
+    switch (type) {
+      case 'scout':
+        return this.spawnScout(x, y);
+      case 'fighter':
+        return this.spawnFighter(x, y);
+      case 'bomber':
+        return this.spawnBomber(x, y);
+      case 'swarm':
+        return this.spawnSwarm(x, y);
+      case 'gunship':
+        return this.spawnGunship(x, y);
+    }
+  }
+
   spawnBoss(x: number, y: number): Boss | null {
     if (!this.bossGroup) {
       this.bossGroup = this.scene.physics.add.group({
@@ -205,6 +230,41 @@ export class EnemyPool {
 
   getEnemyBulletGroup(): Phaser.Physics.Arcade.Group {
     return this.enemyBulletGroup;
+  }
+
+  getEnemyGroupRegistry(): EnemyGroupRegistration[] {
+    return [
+      {
+        key: 'scout',
+        group: this.getScoutGroup(),
+        playerCollisionBehavior: 'kamikaze',
+      },
+      {
+        key: 'fighter',
+        group: this.getFighterGroup(),
+        playerCollisionBehavior: 'impact',
+      },
+      {
+        key: 'bomber',
+        group: this.getBomberGroup(),
+        playerCollisionBehavior: 'impact',
+      },
+      {
+        key: 'swarm',
+        group: this.getSwarmGroup(),
+        playerCollisionBehavior: 'kamikaze',
+      },
+      {
+        key: 'gunship',
+        group: this.getGunshipGroup(),
+        playerCollisionBehavior: 'impact',
+      },
+      {
+        key: 'boss',
+        group: this.getBossGroup(),
+        playerCollisionBehavior: 'none',
+      },
+    ];
   }
 
   getAllEnemies(): Phaser.Physics.Arcade.Sprite[] {

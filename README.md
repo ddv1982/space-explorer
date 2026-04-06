@@ -68,6 +68,8 @@ Spent at the planet intermission screen between levels using your score as curre
 
 ## Architecture
 
+The current architectural and coding guidance for this repo lives in [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md). Keep that document in sync with future scene/system refactors.
+
 ```
 src/
 ├── config/           # Game configuration
@@ -94,6 +96,7 @@ src/
 │   ├── BulletPool.ts         # Object-pooled bullet management
 │   ├── CollisionManager.ts   # All overlap/collision handlers
 │   ├── EffectsManager.ts     # Particle effects, camera FX, color grading
+│   ├── GameplayFlow.ts       # Shared gameplay event + transition contracts
 │   ├── EnemyPool.ts          # Object-pooled enemy groups by type
 │   ├── HUD.ts                # HP bar, score, progress, boss health
 │   ├── InputManager.ts       # Keyboard + mouse input

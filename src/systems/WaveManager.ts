@@ -3,6 +3,7 @@ import { EnemyPool } from './EnemyPool';
 import { Asteroid } from '../entities/Asteroid';
 import { GAME_WIDTH } from '../utils/constants';
 import { LevelConfig, getLevelConfig, EnemyType } from '../config/LevelsConfig';
+import { GAME_SCENE_EVENTS } from './GameplayFlow';
 
 interface SpawnEntry {
   type: EnemyType;
@@ -18,6 +19,42 @@ export class WaveManager {
   private lastEncounterSpawn: number = 0;
   private lastAsteroidSpawn: number = 0;
   private levelConfig!: LevelConfig;
+  private readonly enemySpawnHandlers: Record<EnemyType, (anchorX: number) => boolean> = {
+    scout: (anchorX) => this.spawnRepeatedEnemies(
+      'scout',
+      Phaser.Math.Between(1, 2),
+      () => this.getEncounterSpawnX(anchorX, 50),
+      () => Phaser.Math.Between(-100, -30)
+    ),
+    fighter: (anchorX) => this.spawnRepeatedEnemies(
+      'fighter',
+      1,
+      () => this.getEncounterSpawnX(anchorX, 100),
+      () => Phaser.Math.Between(-80, -30)
+    ),
+    bomber: (anchorX) => this.spawnRepeatedEnemies(
+      'bomber',
+      1,
+      () => this.getEncounterSpawnX(anchorX, 80),
+      () => Phaser.Math.Between(-80, -30)
+    ),
+    swarm: (anchorX) => {
+      const baseX = this.getEncounterSpawnX(anchorX, 100);
+
+      return this.spawnRepeatedEnemies(
+        'swarm',
+        Phaser.Math.Between(3, 5),
+        () => Phaser.Math.Clamp(baseX + Phaser.Math.Between(-60, 60), 50, GAME_WIDTH - 50),
+        () => Phaser.Math.Between(-120, -30)
+      );
+    },
+    gunship: (anchorX) => this.spawnRepeatedEnemies(
+      'gunship',
+      1,
+      () => this.getEncounterSpawnX(anchorX, 120),
+      () => Phaser.Math.Between(-80, -30)
+    ),
+  };
 
   private acquireAsteroid(x: number, y: number): Asteroid | null {
     const existing = this.asteroidGroup.getFirstDead(false) as Asteroid | null;
@@ -58,7 +95,7 @@ export class WaveManager {
   }
 
   private emitSpawnWarning(x: number): void {
-    this.scene.events.emit('enemy-spawn-warning', x);
+    this.scene.events.emit(GAME_SCENE_EVENTS.enemySpawnWarning, x);
   }
 
   private buildSpawnTable(): void {
@@ -103,69 +140,24 @@ export class WaveManager {
     return this.levelConfig.spawnRateMultiplier * intensityMultiplier;
   }
 
-  private spawnEnemyByType(type: EnemyType, anchorX: number): boolean {
-    switch (type) {
-      case 'scout': {
-        const count = Phaser.Math.Between(1, 2);
-        let spawnedAny = false;
+  private spawnRepeatedEnemies(
+    type: EnemyType,
+    count: number,
+    getSpawnX: () => number,
+    getSpawnY: () => number
+  ): boolean {
+    let spawnedAny = false;
 
-        for (let i = 0; i < count; i++) {
-          const spawnX = this.getEncounterSpawnX(anchorX, 50);
-          const scout = this.enemyPool.spawnScout(
-            spawnX,
-            Phaser.Math.Between(-100, -30)
-          );
-          spawnedAny = spawnedAny || Boolean(scout);
-        }
-
-        return spawnedAny;
-      }
-
-      case 'fighter': {
-        const spawnX = this.getEncounterSpawnX(anchorX, 100);
-        return Boolean(this.enemyPool.spawnFighter(
-          spawnX,
-          Phaser.Math.Between(-80, -30)
-        ));
-      }
-
-      case 'bomber': {
-        const spawnX = this.getEncounterSpawnX(anchorX, 80);
-        return Boolean(this.enemyPool.spawnBomber(
-          spawnX,
-          Phaser.Math.Between(-80, -30)
-        ));
-      }
-
-      case 'swarm': {
-        const baseX = this.getEncounterSpawnX(anchorX, 100);
-        const count = Phaser.Math.Between(3, 5);
-        let spawnedAny = false;
-
-        for (let i = 0; i < count; i++) {
-          const spawnX = Phaser.Math.Clamp(
-            baseX + Phaser.Math.Between(-60, 60),
-            50,
-            GAME_WIDTH - 50
-          );
-          const swarm = this.enemyPool.spawnSwarm(
-            spawnX,
-            Phaser.Math.Between(-120, -30)
-          );
-          spawnedAny = spawnedAny || Boolean(swarm);
-        }
-
-        return spawnedAny;
-      }
-
-      case 'gunship': {
-        const spawnX = this.getEncounterSpawnX(anchorX, 120);
-        return Boolean(this.enemyPool.spawnGunship(
-          spawnX,
-          Phaser.Math.Between(-80, -30)
-        ));
-      }
+    for (let i = 0; i < count; i++) {
+      const enemy = this.enemyPool.spawnEnemy(type, getSpawnX(), getSpawnY());
+      spawnedAny = Boolean(enemy) || spawnedAny;
     }
+
+    return spawnedAny;
+  }
+
+  private spawnEnemyByType(type: EnemyType, anchorX: number): boolean {
+    return this.enemySpawnHandlers[type](anchorX);
   }
 
   private spawnEnemiesByConfig(time: number, rateMultiplier: number): void {

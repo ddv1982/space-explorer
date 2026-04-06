@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 
 export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   hp: number = 1;
@@ -33,7 +34,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   }
 
   die(): void {
-    this.scene.events.emit('enemy-death', this.scoreValue, this.x, this.y);
+    this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.setActive(false);
     this.setVisible(false);
     this.setVelocity(0, 0);

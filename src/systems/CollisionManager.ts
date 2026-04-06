@@ -8,6 +8,7 @@ import { BulletPool } from './BulletPool';
 import { EnemyPool } from './EnemyPool';
 import { EffectsManager } from './EffectsManager';
 import { BomberBomb } from '../entities/BomberBomb';
+import { GAME_SCENE_EVENTS } from './GameplayFlow';
 
 export class CollisionManager {
   private scene!: Phaser.Scene;
@@ -33,42 +34,14 @@ export class CollisionManager {
     this.lastPlayerHitFeedbackTime = Number.NEGATIVE_INFINITY;
 
     const bulletGroup = bulletPool.getGroup();
+    const enemyGroups = enemyPool.getEnemyGroupRegistry();
 
-    // Bullets vs Scouts
-    scene.physics.add.overlap(
-      bulletGroup, enemyPool.getScoutGroup(),
-      (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
-    );
-
-    // Bullets vs Fighters
-    scene.physics.add.overlap(
-      bulletGroup, enemyPool.getFighterGroup(),
-      (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
-    );
-
-    // Bullets vs Bombers
-    scene.physics.add.overlap(
-      bulletGroup, enemyPool.getBomberGroup(),
-      (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
-    );
-
-    // Bullets vs Swarm
-    scene.physics.add.overlap(
-      bulletGroup, enemyPool.getSwarmGroup(),
-      (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
-    );
-
-    // Bullets vs Gunships
-    scene.physics.add.overlap(
-      bulletGroup, enemyPool.getGunshipGroup(),
-      (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
-    );
-
-    // Bullets vs Boss
-    scene.physics.add.overlap(
-      bulletGroup, enemyPool.getBossGroup(),
-      (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
-    );
+    enemyGroups.forEach(({ group }) => {
+      scene.physics.add.overlap(
+        bulletGroup, group,
+        (_obj1, _obj2) => this.bulletVsEnemy(_obj1 as Bullet, _obj2 as EnemyBase)
+      );
+    });
 
     // Bullets vs Asteroids
     scene.physics.add.overlap(
@@ -121,11 +94,13 @@ export class CollisionManager {
     );
 
     // All enemy types vs Player (contact damage)
-    this.setupEnemyPlayerCollision(enemyPool.getScoutGroup(), true);
-    this.setupEnemyPlayerCollision(enemyPool.getFighterGroup(), false);
-    this.setupEnemyPlayerCollision(enemyPool.getBomberGroup(), false);
-    this.setupEnemyPlayerCollision(enemyPool.getSwarmGroup(), true);
-    this.setupEnemyPlayerCollision(enemyPool.getGunshipGroup(), false);
+    enemyGroups.forEach(({ group, playerCollisionBehavior }) => {
+      if (playerCollisionBehavior === 'none') {
+        return;
+      }
+
+      this.setupEnemyPlayerCollision(group, playerCollisionBehavior);
+    });
 
     // Asteroids vs Player
     scene.physics.add.overlap(
@@ -145,14 +120,17 @@ export class CollisionManager {
     );
   }
 
-  private setupEnemyPlayerCollision(group: Phaser.Physics.Arcade.Group, kamikaze: boolean): void {
+  private setupEnemyPlayerCollision(
+    group: Phaser.Physics.Arcade.Group,
+    playerCollisionBehavior: 'kamikaze' | 'impact'
+  ): void {
     this.scene.physics.add.overlap(
       group, this.player,
       (_obj1, _obj2) => {
         const enemy = _obj1 as EnemyBase;
         if (enemy.active && this.canProcessPlayerCollision()) {
           const damageOutcome = this.player.takeDamage(1);
-          if (kamikaze) {
+          if (playerCollisionBehavior === 'kamikaze') {
             enemy.die();
           } else {
             enemy.takeDamage(1);
@@ -218,11 +196,11 @@ export class CollisionManager {
 
     this.runBestEffort(() => this.effectsManager.createSparkBurst(this.player.x, this.player.y));
     this.runBestEffort(() => this.scene.cameras.main.shake(200, 0.01));
-    this.runBestEffort(() => this.scene.events.emit('player-hit'));
+    this.runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerHit));
   }
 
   private onPlayerFatalHit(): void {
-    this.runBestEffort(() => this.scene.events.emit('player-fatal-hit'));
+    this.runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerFatalHit));
   }
 
   private runBestEffort(effect: () => void): void {

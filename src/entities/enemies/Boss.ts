@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { EnemyBullet } from '../EnemyBullet';
 import { ENEMY_BULLET_SPEED, GAME_WIDTH } from '../../utils/constants';
+import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 
 export class Boss extends EnemyBase {
   phase: number = 1;
@@ -156,8 +157,8 @@ export class Boss extends EnemyBase {
   }
 
   die(): void {
-    this.scene.events.emit('boss-death', this.scoreValue, this.x, this.y);
-    this.scene.events.emit('enemy-death', this.scoreValue, this.x, this.y);
+    this.scene.events.emit(GAME_SCENE_EVENTS.bossDeath, this.scoreValue, this.x, this.y);
+    this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.setActive(false);
     this.setVisible(false);
     this.setVelocity(0, 0);

@@ -27,7 +27,7 @@ export class HUD {
   private bossBarWidth = 400;
   private bossBarHeight = 10;
   private bossVisible: boolean = false;
-  private currentShields: number = 0;
+  private currentShields: number | null = null;
 
   create(scene: Phaser.Scene): void {
     this.scene = scene;
@@ -128,11 +128,11 @@ export class HUD {
   }
 
   updateShields(shields: number): void {
-    // Remove old icons
-    for (const icon of this.shieldIcons) {
-      icon.destroy();
+    if (this.currentShields === shields) {
+      return;
     }
-    this.shieldIcons = [];
+
+    this.clearShieldIcons();
     this.currentShields = shields;
 
     if (shields <= 0) return;
@@ -154,6 +154,13 @@ export class HUD {
 
       this.shieldIcons.push(icon);
     }
+  }
+
+  private clearShieldIcons(): void {
+    for (const icon of this.shieldIcons) {
+      icon.destroy();
+    }
+    this.shieldIcons = [];
   }
 
   private setScrollFactor(factor: number): void {

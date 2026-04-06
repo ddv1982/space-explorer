@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { getTotalLevels } from '../config/LevelsConfig';
 import { audioManager } from '../systems/AudioManager';
+import { getRunSummary } from '../systems/PlayerState';
 
 export class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -33,7 +34,7 @@ export class VictoryScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    const finalScore = this.registry.get('finalScore') || 0;
+    const finalScore = getRunSummary(this.registry).finalScore;
     this.add.text(centerX, centerY, `FINAL SCORE: ${finalScore}`, {
       fontSize: '32px',
       color: '#ffffff',

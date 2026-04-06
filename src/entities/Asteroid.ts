@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ASTEROID_HP } from '../utils/constants';
+import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 
 export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   hp: number = ASTEROID_HP;
@@ -55,7 +56,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   }
 
   die(): void {
-    this.scene.events.emit('enemy-death', 50, this.x, this.y);
+    this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, 50, this.x, this.y);
     this.setActive(false);
     this.setVisible(false);
     this.setVelocity(0, 0);

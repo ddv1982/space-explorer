@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData } from '../systems/PlayerState';
+import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, setRunSummary } from '../systems/PlayerState';
 import { getLevelConfig, isLastLevel } from '../config/LevelsConfig';
 import { UPGRADES, getUpgradeCost, isUpgradeMaxed, UpgradeDef } from '../config/UpgradesConfig';
 import { GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
@@ -91,8 +91,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
         if (isLastLevel(this.state.level)) {
           // All levels beaten - go to Victory
-          this.registry.set('finalScore', this.state.score);
-          this.registry.set('levelReached', this.state.level);
+          setRunSummary(this.registry, { finalScore: this.state.score, levelReached: this.state.level });
           this.scene.start('Victory');
         } else {
           this.warpTransition.play(() => {

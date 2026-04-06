@@ -12,7 +12,20 @@ export interface PlayerStateData {
   };
 }
 
+export interface RunSummaryData {
+  finalScore: number;
+  levelReached: number;
+}
+
 const PLAYER_STATE_KEY = 'playerState';
+const RUN_SUMMARY_KEYS = {
+  finalScore: 'finalScore',
+  levelReached: 'levelReached',
+} as const;
+const DEFAULT_RUN_SUMMARY: RunSummaryData = {
+  finalScore: 0,
+  levelReached: 1,
+};
 
 export function getDefaultPlayerState(): PlayerStateData {
   return {
@@ -44,6 +57,28 @@ export function setPlayerState(registry: Phaser.Data.DataManager, state: PlayerS
 
 export function resetPlayerState(registry: Phaser.Data.DataManager): void {
   registry.set(PLAYER_STATE_KEY, getDefaultPlayerState());
+}
+
+export function getRunSummary(registry: Phaser.Data.DataManager): RunSummaryData {
+  return {
+    finalScore: registry.get(RUN_SUMMARY_KEYS.finalScore) ?? DEFAULT_RUN_SUMMARY.finalScore,
+    levelReached: registry.get(RUN_SUMMARY_KEYS.levelReached) ?? DEFAULT_RUN_SUMMARY.levelReached,
+  };
+}
+
+export function setRunSummary(
+  registry: Phaser.Data.DataManager,
+  summary: Partial<RunSummaryData>
+): RunSummaryData {
+  const nextSummary = {
+    ...getRunSummary(registry),
+    ...summary,
+  };
+
+  registry.set(RUN_SUMMARY_KEYS.finalScore, nextSummary.finalScore);
+  registry.set(RUN_SUMMARY_KEYS.levelReached, nextSummary.levelReached);
+
+  return nextSummary;
 }
 
 export function getPlayerMaxHp(state: PlayerStateData): number {

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerShieldCount, getPlayerDamage } from '../systems/PlayerState';
+import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 
 export type PlayerDamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
 
@@ -159,7 +160,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       body.enable = false;
     }
 
-    this.scene.events.emit('player-death');
+    this.scene.events.emit(GAME_SCENE_EVENTS.playerDeath);
   }
 
   update(inputManager: InputManager): void {
@@ -197,7 +198,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.exhaustTimer <= 0) {
       const isMoving = ax !== 0 || ay !== 0;
       const intensity = isMoving ? 1.0 : 0.3;
-      this.scene.events.emit('player-exhaust', this.x, this.y + 20, intensity);
+      this.scene.events.emit(GAME_SCENE_EVENTS.playerExhaust, this.x, this.y + 20, intensity);
       this.exhaustTimer = this.exhaustInterval;
     }
   }
