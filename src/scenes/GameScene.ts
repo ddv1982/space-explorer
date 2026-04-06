@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BULLET_SPEED, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
+import { BULLET_SPEED } from '../utils/constants';
 import { getActiveSection } from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { InputManager } from '../systems/InputManager';
@@ -29,6 +29,7 @@ import { showControlsHint } from './gameScene/showControlsHint';
 import { MobileViewportGuard } from '../systems/MobileViewportGuard';
 import { MobileControls } from '../systems/MobileControls';
 import { isTouchMobileDevice } from '../utils/device';
+import { getViewportBounds } from '../utils/layout';
 
 export class GameScene extends Phaser.Scene {
   private static readonly PLAYER_DEATH_EXPLOSION_INTENSITY = 1.35;
@@ -80,7 +81,8 @@ export class GameScene extends Phaser.Scene {
     audioManager.setMusicIntensity(getActiveSection(levelConfig, 0)?.musicIntensity ?? 1);
 
     this.cameras.main.setBackgroundColor(levelConfig.bgColor);
-    this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    this.syncViewportBounds();
+    const playerSpawnPoint = this.getPlayerSpawnPoint();
 
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, levelConfig);
@@ -96,7 +98,7 @@ export class GameScene extends Phaser.Scene {
     this.inputManager = new InputManager();
     this.inputManager.create(this, this.mobileControls);
 
-    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 80);
+    this.player = new Player(this, playerSpawnPoint.x, playerSpawnPoint.y);
     this.player.applyState(state);
 
     this.bulletPool = new BulletPool();
@@ -220,8 +222,49 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleScaleResize(): void {
-    this.parallax?.resize(this.cameras.main.width, this.cameras.main.height);
+    const viewport = this.syncViewportBounds();
+
+    this.parallax?.resize(viewport.width, viewport.height);
+    this.mobileControls?.relayout();
+    this.hud?.relayout();
+    this.warpTransition?.resize();
+    this.clampPlayerToViewport();
     this.syncMobileControlsBlockedState();
+  }
+
+  private getPlayerSpawnPoint(): { x: number; y: number } {
+    const viewport = getViewportBounds(this);
+
+    return {
+      x: viewport.centerX,
+      y: viewport.bottom - 80,
+    };
+  }
+
+  private syncViewportBounds(): ReturnType<typeof getViewportBounds> {
+    const viewport = getViewportBounds(this);
+
+    this.cameras.main.setViewport(0, 0, viewport.width, viewport.height);
+    this.cameras.main.setSize(viewport.width, viewport.height);
+    this.cameras.main.setBounds(0, 0, viewport.width, viewport.height);
+    this.physics.world.setBounds(0, 0, viewport.width, viewport.height);
+
+    return viewport;
+  }
+
+  private clampPlayerToViewport(): void {
+    if (!this.player?.body) {
+      return;
+    }
+
+    const viewport = getViewportBounds(this);
+    const halfWidth = this.player.displayWidth / 2;
+    const halfHeight = this.player.displayHeight / 2;
+    const clampedX = Phaser.Math.Clamp(this.player.x, halfWidth, viewport.width - halfWidth);
+    const clampedY = Phaser.Math.Clamp(this.player.y, halfHeight, viewport.height - halfHeight);
+
+    this.player.setPosition(clampedX, clampedY);
+    (this.player.body as Phaser.Physics.Arcade.Body).updateFromGameObject();
   }
 
   private handleEnemyDeath(score: number, x: number, y: number): void {
@@ -301,8 +344,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnBoss(): void {
+    const viewport = getViewportBounds(this);
     const boss = this.enemyPool.spawnBoss(
-      GAME_WIDTH / 2,
+      viewport.centerX,
       -60,
       this.levelManager.getLevelConfig().boss ?? undefined
     );
@@ -369,6 +413,7 @@ export class GameScene extends Phaser.Scene {
       startScene: (key) => this.scene.start(key),
       pauseScene: () => this.scene.pause(),
       resumeScene: () => this.scene.resume(),
+      getPlayerRespawnPosition: () => this.getPlayerSpawnPoint(),
     };
   }
 

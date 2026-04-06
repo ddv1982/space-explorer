@@ -18,7 +18,22 @@ import {
   findRowFocusIndex,
 } from './planetIntermission/navigation';
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
-import { UPGRADE_GRID_LAYOUT, type UpgradeButton } from './planetIntermission/shared';
+import { getUpgradeGridLayout, type UpgradeButton, type UpgradeGridLayout } from './planetIntermission/shared';
+import { registerRestartOnResize } from './shared/registerRestartOnResize';
+
+interface IntermissionLayoutMetrics {
+  planetNameY: number;
+  titleY: number;
+  levelCompleteY: number;
+  scoreY: number;
+  planetY: number;
+  planetScale: number;
+  promptY: number;
+  gridTop: number;
+  gridLayout: UpgradeGridLayout;
+  compact: boolean;
+  tight: boolean;
+}
 
 export class PlanetIntermissionScene extends Phaser.Scene {
   private state!: PlayerStateData;
@@ -47,6 +62,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    registerRestartOnResize(this, () => !this.transitioning);
 
     audioManager.init();
     audioManager.stopMusic();
@@ -56,32 +72,36 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.transitioning = false;
     this.cameras.main.setBackgroundColor('#000011');
     const layout = getViewportLayout(this);
+    const upgradeCount = this.isFinalMissionComplete
+      ? 0
+      : evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades).length;
+    const intermissionLayout = this.getIntermissionLayout(upgradeCount);
 
     const completedLevelConfig = getLevelConfig(this.state.level);
 
-    this.generatePlanetTexture(completedLevelConfig.planetPalette);
+    this.generatePlanetTexture(completedLevelConfig.planetPalette, intermissionLayout.planetY, intermissionLayout.planetScale);
 
-    this.add.text(layout.centerX, 50, completedLevelConfig.planetName, {
-      fontSize: '20px',
+    this.add.text(layout.centerX, intermissionLayout.planetNameY, completedLevelConfig.planetName, {
+      fontSize: intermissionLayout.compact ? '16px' : intermissionLayout.tight ? '18px' : '20px',
       color: '#888888',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    this.add.text(layout.centerX, 85, 'PLANET APPROACHED', {
-      fontSize: '36px',
+    this.add.text(layout.centerX, intermissionLayout.titleY, 'PLANET APPROACHED', {
+      fontSize: intermissionLayout.compact ? '28px' : intermissionLayout.tight ? '32px' : '36px',
       color: '#ffffff',
       fontStyle: 'bold',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    this.add.text(layout.centerX, 130, `LEVEL ${this.state.level} COMPLETE`, {
-      fontSize: '18px',
+    this.add.text(layout.centerX, intermissionLayout.levelCompleteY, `LEVEL ${this.state.level} COMPLETE`, {
+      fontSize: intermissionLayout.compact ? '14px' : intermissionLayout.tight ? '16px' : '18px',
       color: '#44ff88',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    this.scoreText = this.add.text(layout.centerX, 170, `CREDITS: ${this.state.score}`, {
-      fontSize: '24px',
+    this.scoreText = this.add.text(layout.centerX, intermissionLayout.scoreY, `CREDITS: ${this.state.score}`, {
+      fontSize: intermissionLayout.compact ? '18px' : intermissionLayout.tight ? '20px' : '24px',
       color: '#ffcc00',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
@@ -95,7 +115,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.hoverGraphics.setDepth(9);
 
     if (!this.isFinalMissionComplete) {
-      this.createUpgradeButtons();
+      this.createUpgradeButtons(intermissionLayout);
       this.setupKeyboardNavigation();
       this.setupHoverEffects();
       // Set initial focus to first available button
@@ -113,9 +133,9 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       ? 'CAMPAIGN COMPLETE - Click, Tap, or Press Any Key'
       : `NEXT: ${nextLevelLabel} - Click, Tap, or Press a Key`;
 
-    createPromptText(this, layout.centerX, layout.bottom - 60, continueLabel, {
+    createPromptText(this, layout.centerX, intermissionLayout.promptY, continueLabel, {
       color: '#b8c8dd',
-      fontSize: '20px',
+      fontSize: intermissionLayout.compact ? '16px' : intermissionLayout.tight ? '18px' : '20px',
     });
 
     if (this.isFinalMissionComplete) {
@@ -170,57 +190,97 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.handleSceneShutdown();
   }
 
-  private generatePlanetTexture(colorPair: [number, number]): void {
+  private generatePlanetTexture(colorPair: [number, number], y: number, scale: number): void {
     const layout = getViewportLayout(this);
     const key = `planet-level-${this.state.level}`;
 
-    const g = this.add.graphics();
-    const cx = 60;
-    const cy = 60;
-    const r = 50;
+    if (!this.textures.exists(key)) {
+      const g = this.add.graphics();
+      const cx = 60;
+      const cy = 60;
+      const r = 50;
 
-    g.fillStyle(colorPair[0], 1);
-    g.fillCircle(cx, cy, r);
+      g.fillStyle(colorPair[0], 1);
+      g.fillCircle(cx, cy, r);
 
-    g.fillStyle(colorPair[1], 0.6);
-    g.fillCircle(cx - 10, cy - 8, r * 0.7);
+      g.fillStyle(colorPair[1], 0.6);
+      g.fillCircle(cx - 10, cy - 8, r * 0.7);
 
-    g.fillStyle(0x000000, 0.2);
-    g.fillCircle(cx + 15, cy + 10, r * 0.5);
+      g.fillStyle(0x000000, 0.2);
+      g.fillCircle(cx + 15, cy + 10, r * 0.5);
 
-    g.lineStyle(1, colorPair[1], 0.3);
-    for (let i = 0; i < 3; i++) {
-      const ringY = cy - 20 + i * 20;
-      g.beginPath();
-      g.moveTo(cx - r + 5, ringY);
-      g.lineTo(cx + r - 5, ringY);
-      g.strokePath();
+      g.lineStyle(1, colorPair[1], 0.3);
+      for (let i = 0; i < 3; i++) {
+        const ringY = cy - 20 + i * 20;
+        g.beginPath();
+        g.moveTo(cx - r + 5, ringY);
+        g.lineTo(cx + r - 5, ringY);
+        g.strokePath();
+      }
+
+      g.generateTexture(key, 120, 120);
+      g.destroy();
     }
 
-    g.generateTexture(key, 120, 120);
-    g.destroy();
-
-    this.add.image(layout.centerX, 270, key).setScale(1.5).setDepth(1);
+    this.add.image(layout.centerX, y, key).setScale(scale).setDepth(1);
   }
 
-  private createUpgradeButtons(): void {
+  private createUpgradeButtons(intermissionLayout: IntermissionLayoutMetrics): void {
     const layout = getViewportLayout(this);
     const evaluations = evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades);
+    const gridLayout = intermissionLayout.gridLayout;
     const gridWidth =
-      UPGRADE_GRID_LAYOUT.buttonWidth * UPGRADE_GRID_LAYOUT.columns +
-      UPGRADE_GRID_LAYOUT.spacingX * (UPGRADE_GRID_LAYOUT.columns - 1);
+      gridLayout.buttonWidth * gridLayout.columns +
+      gridLayout.spacingX * (gridLayout.columns - 1);
     const startX = centerHorizontally(layout, gridWidth);
 
     for (let i = 0; i < evaluations.length; i++) {
       const evaluation = evaluations[i];
 
-      const col = i % UPGRADE_GRID_LAYOUT.columns;
-      const row = Math.floor(i / UPGRADE_GRID_LAYOUT.columns);
-      const bx = startX + col * (UPGRADE_GRID_LAYOUT.buttonWidth + UPGRADE_GRID_LAYOUT.spacingX);
-      const by = UPGRADE_GRID_LAYOUT.top + row * (UPGRADE_GRID_LAYOUT.buttonHeight + UPGRADE_GRID_LAYOUT.spacingY);
+      const col = i % gridLayout.columns;
+      const row = Math.floor(i / gridLayout.columns);
+      const bx = startX + col * (gridLayout.buttonWidth + gridLayout.spacingX);
+      const by = intermissionLayout.gridTop + row * (gridLayout.buttonHeight + gridLayout.spacingY);
 
-      this.buttons.push(createUpgradeButton(this, bx, by, evaluation));
+      this.buttons.push(createUpgradeButton(this, bx, by, evaluation, gridLayout));
     }
+  }
+
+  private getIntermissionLayout(buttonCount: number): IntermissionLayoutMetrics {
+    const layout = getViewportLayout(this);
+    const compact = layout.height < 430;
+    const tight = layout.height < 520;
+    const gridLayout = getUpgradeGridLayout(layout.height);
+    const promptY = layout.bottom - (compact ? 22 : tight ? 32 : 60);
+    const planetNameY = layout.top + (compact ? 18 : tight ? 28 : 50);
+    const titleY = planetNameY + (compact ? 22 : tight ? 28 : 35);
+    const levelCompleteY = titleY + (compact ? 24 : tight ? 30 : 45);
+    const scoreY = levelCompleteY + (compact ? 22 : tight ? 28 : 40);
+    const planetY = scoreY + (compact ? 28 : tight ? 46 : 100);
+    const planetScale = compact ? 0.65 : tight ? 0.95 : 1.5;
+    const rows = buttonCount > 0 ? Math.ceil(buttonCount / gridLayout.columns) : 0;
+    const gridHeight = rows > 0
+      ? rows * gridLayout.buttonHeight + (rows - 1) * gridLayout.spacingY
+      : 0;
+    const minGridTop = planetY + (compact ? 46 : tight ? 72 : 110);
+    const desiredGridTop = compact ? 168 : tight ? 244 : gridLayout.top;
+    const gridTop = rows > 0
+      ? Math.max(minGridTop, Math.min(desiredGridTop, promptY - (compact ? 18 : 24) - gridHeight))
+      : desiredGridTop;
+
+    return {
+      planetNameY,
+      titleY,
+      levelCompleteY,
+      scoreY,
+      planetY,
+      planetScale,
+      promptY,
+      gridTop,
+      gridLayout,
+      compact,
+      tight,
+    };
   }
 
   private handleUpgradeClick(pointer: Phaser.Input.Pointer): boolean {
@@ -477,7 +537,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
       // Set up pointer events for hover detection
       buttonBg.setInteractive(
-        new Phaser.Geom.Rectangle(0, 0, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight),
+        new Phaser.Geom.Rectangle(0, 0, button.width, button.height),
         Phaser.Geom.Rectangle.Contains
       );
 

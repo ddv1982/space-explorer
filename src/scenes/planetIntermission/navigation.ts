@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { UpgradeEvaluation } from '../../config/UpgradesConfig';
-import { UPGRADE_GRID_LAYOUT, type UpgradeButton } from './shared';
+import type { UpgradeButton } from './shared';
 
 type EvaluateButton = (button: UpgradeButton) => UpgradeEvaluation;
 
@@ -16,9 +16,9 @@ function getGridFocusState(buttons: UpgradeButton[], currentIndex: number): Grid
   }
 
   return {
-    currentRow: Math.floor(currentIndex / UPGRADE_GRID_LAYOUT.columns),
-    currentCol: currentIndex % UPGRADE_GRID_LAYOUT.columns,
-    totalRows: Math.ceil(buttons.length / UPGRADE_GRID_LAYOUT.columns),
+    currentRow: Math.floor(currentIndex / buttons[0].layout.columns),
+    currentCol: currentIndex % buttons[0].layout.columns,
+    totalRows: Math.ceil(buttons.length / buttons[0].layout.columns),
   };
 }
 
@@ -27,9 +27,9 @@ export function findButtonIndexAtPoint(buttons: UpgradeButton[], x: number, y: n
     const button = buttons[i];
     if (
       x >= button.x &&
-      x <= button.x + UPGRADE_GRID_LAYOUT.buttonWidth &&
+      x <= button.x + button.width &&
       y >= button.y &&
-      y <= button.y + UPGRADE_GRID_LAYOUT.buttonHeight
+      y <= button.y + button.height
     ) {
       return i;
     }
@@ -91,17 +91,18 @@ export function findRowFocusIndex(
   }
 
   const { currentRow, currentCol, totalRows } = state;
+  const columns = buttons[0].layout.columns;
 
   let newCol = currentCol + direction;
   let newRow = currentRow;
 
   if (newCol < 0) {
-    newCol = UPGRADE_GRID_LAYOUT.columns - 1;
+    newCol = columns - 1;
     newRow = currentRow - 1;
     if (newRow < 0) {
       newRow = totalRows - 1;
     }
-  } else if (newCol >= UPGRADE_GRID_LAYOUT.columns) {
+  } else if (newCol >= columns) {
     newCol = 0;
     newRow = currentRow + 1;
     if (newRow >= totalRows) {
@@ -109,7 +110,7 @@ export function findRowFocusIndex(
     }
   }
 
-  const newIndex = newRow * UPGRADE_GRID_LAYOUT.columns + newCol;
+  const newIndex = newRow * columns + newCol;
   if (newIndex < buttons.length && evaluateButton(buttons[newIndex]).canPurchase) {
     return newIndex;
   }
@@ -129,6 +130,7 @@ export function findColumnFocusIndex(
   }
 
   const { currentRow, currentCol, totalRows } = state;
+  const columns = buttons[0].layout.columns;
 
   let newRow = currentRow + direction;
   if (newRow < 0) {
@@ -137,9 +139,9 @@ export function findColumnFocusIndex(
     newRow = 0;
   }
 
-  let newIndex = newRow * UPGRADE_GRID_LAYOUT.columns + currentCol;
+  let newIndex = newRow * columns + currentCol;
   if (newIndex >= buttons.length) {
-    newIndex = (newRow + 1) * UPGRADE_GRID_LAYOUT.columns - 1;
+    newIndex = (newRow + 1) * columns - 1;
     if (newIndex >= buttons.length) {
       newIndex = buttons.length - 1;
     }
@@ -149,7 +151,7 @@ export function findColumnFocusIndex(
     return newIndex;
   }
 
-  return findLinearFocusIndex(buttons, currentIndex, direction * UPGRADE_GRID_LAYOUT.columns, evaluateButton);
+  return findLinearFocusIndex(buttons, currentIndex, direction * columns, evaluateButton);
 }
 
 export function findNextPurchasableAfter(
@@ -184,27 +186,27 @@ export function drawFocusIndicator(
   graphics.strokeRoundedRect(
     button.x - padding - glowSize,
     button.y - padding - glowSize,
-    UPGRADE_GRID_LAYOUT.buttonWidth + (padding + glowSize) * 2,
-    UPGRADE_GRID_LAYOUT.buttonHeight + (padding + glowSize) * 2,
-    UPGRADE_GRID_LAYOUT.borderRadius + padding
+    button.width + (padding + glowSize) * 2,
+    button.height + (padding + glowSize) * 2,
+    button.borderRadius + padding
   );
 
   graphics.lineStyle(2, 0xaaccff, 0.95);
   graphics.strokeRoundedRect(
     button.x - padding,
     button.y - padding,
-    UPGRADE_GRID_LAYOUT.buttonWidth + padding * 2,
-    UPGRADE_GRID_LAYOUT.buttonHeight + padding * 2,
-    UPGRADE_GRID_LAYOUT.borderRadius + padding / 2
+    button.width + padding * 2,
+    button.height + padding * 2,
+    button.borderRadius + padding / 2
   );
 
   graphics.lineStyle(1, 0xe8f3ff, 0.9);
   graphics.strokeRoundedRect(
     button.x - padding + 2,
     button.y - padding + 2,
-    UPGRADE_GRID_LAYOUT.buttonWidth + (padding - 2) * 2,
-    UPGRADE_GRID_LAYOUT.buttonHeight + (padding - 2) * 2,
-    UPGRADE_GRID_LAYOUT.borderRadius
+    button.width + (padding - 2) * 2,
+    button.height + (padding - 2) * 2,
+    button.borderRadius
   );
 }
 
@@ -223,17 +225,17 @@ export function drawHoverIndicator(
   graphics.fillRoundedRect(
     button.x + padding,
     button.y + padding,
-    UPGRADE_GRID_LAYOUT.buttonWidth - padding * 2,
-    UPGRADE_GRID_LAYOUT.buttonHeight - padding * 2,
-    UPGRADE_GRID_LAYOUT.borderRadius - 2
+    button.width - padding * 2,
+    button.height - padding * 2,
+    button.borderRadius - 2
   );
 
   graphics.lineStyle(1, 0xaaccff, 0.6);
   graphics.strokeRoundedRect(
     button.x + padding,
     button.y + padding,
-    UPGRADE_GRID_LAYOUT.buttonWidth - padding * 2,
-    UPGRADE_GRID_LAYOUT.buttonHeight - padding * 2,
-    UPGRADE_GRID_LAYOUT.borderRadius - 2
+    button.width - padding * 2,
+    button.height - padding * 2,
+    button.borderRadius - 2
   );
 }

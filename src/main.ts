@@ -22,7 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   scene: [BootScene, PreloadScene, MenuScene, GameScene, PlanetIntermissionScene, GameOverScene, VictoryScene],
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 };

@@ -1,21 +1,22 @@
 import Phaser from 'phaser';
 import type { UpgradeBlockReason, UpgradeEvaluation } from '../../config/UpgradesConfig';
-import { UPGRADE_GRID_LAYOUT, type UpgradeButton } from './shared';
+import type { UpgradeButton, UpgradeGridLayout } from './shared';
 
 export function createUpgradeButton(
   scene: Phaser.Scene,
   x: number,
   y: number,
-  evaluation: UpgradeEvaluation
+  evaluation: UpgradeEvaluation,
+  layout: UpgradeGridLayout
 ): UpgradeButton {
   const bg = scene.add.graphics();
-  drawUpgradeButtonBackground(bg, evaluation.canPurchase, evaluation.blockReason);
+  drawUpgradeButtonBackground(bg, evaluation.canPurchase, evaluation.blockReason, layout);
   bg.setPosition(x, y);
   bg.setDepth(2);
 
   const text = scene.add
-    .text(x + UPGRADE_GRID_LAYOUT.textInsetX, y + UPGRADE_GRID_LAYOUT.titleOffsetY, evaluation.upgrade.name, {
-      fontSize: '14px',
+    .text(x + layout.textInsetX, y + layout.titleOffsetY, evaluation.upgrade.name, {
+      fontSize: layout.titleFontSize,
       color: evaluation.canPurchase ? '#ffffff' : '#999999',
       fontFamily: 'monospace',
     })
@@ -23,11 +24,11 @@ export function createUpgradeButton(
 
   const levelText = scene.add
     .text(
-      x + UPGRADE_GRID_LAYOUT.textInsetX,
-      y + UPGRADE_GRID_LAYOUT.descriptionOffsetY,
+      x + layout.textInsetX,
+      y + layout.descriptionOffsetY,
       getLevelText(evaluation),
       {
-        fontSize: '11px',
+        fontSize: layout.descriptionFontSize,
         color: evaluation.canPurchase ? '#aaaaaa' : '#777777',
         fontFamily: 'monospace',
       }
@@ -36,11 +37,11 @@ export function createUpgradeButton(
 
   const costText = scene.add
     .text(
-      x + UPGRADE_GRID_LAYOUT.buttonWidth - UPGRADE_GRID_LAYOUT.costInsetX,
-      y + UPGRADE_GRID_LAYOUT.buttonHeight / 2,
+      x + layout.buttonWidth - layout.costInsetX,
+      y + layout.buttonHeight / 2,
       getCostLabel(evaluation),
       {
-        fontSize: '16px',
+        fontSize: layout.costFontSize,
         color: getCostColor(evaluation.blockReason),
         fontFamily: 'monospace',
       }
@@ -48,11 +49,23 @@ export function createUpgradeButton(
     .setOrigin(1, 0.5)
     .setDepth(3);
 
-  return { bg, text, costText, levelText, upgradeKey: evaluation.upgrade.key, x, y };
+  return {
+    bg,
+    text,
+    costText,
+    levelText,
+    upgradeKey: evaluation.upgrade.key,
+    x,
+    y,
+    width: layout.buttonWidth,
+    height: layout.buttonHeight,
+    borderRadius: layout.borderRadius,
+    layout,
+  };
 }
 
 export function updateUpgradeButton(button: UpgradeButton, evaluation: UpgradeEvaluation): void {
-  drawUpgradeButtonBackground(button.bg, evaluation.canPurchase, evaluation.blockReason);
+  drawUpgradeButtonBackground(button.bg, evaluation.canPurchase, evaluation.blockReason, button.layout);
   button.text.setColor(evaluation.canPurchase ? '#ffffff' : '#999999');
   button.levelText.setText(getLevelText(evaluation));
   button.levelText.setColor(evaluation.canPurchase ? '#aaaaaa' : '#777777');
@@ -63,7 +76,8 @@ export function updateUpgradeButton(button: UpgradeButton, evaluation: UpgradeEv
 function drawUpgradeButtonBackground(
   bg: Phaser.GameObjects.Graphics,
   active: boolean,
-  blockReason: UpgradeBlockReason
+  blockReason: UpgradeBlockReason,
+  layout: UpgradeGridLayout
 ): void {
   bg.clear();
 
@@ -106,21 +120,21 @@ function drawUpgradeButtonBackground(
   }
 
   bg.fillStyle(bgColor, bgAlpha);
-  bg.fillRoundedRect(0, 0, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, UPGRADE_GRID_LAYOUT.borderRadius);
+  bg.fillRoundedRect(0, 0, layout.buttonWidth, layout.buttonHeight, layout.borderRadius);
 
   if (blockReason === null && active) {
     bg.fillStyle(0x79a9ff, 0.08);
     bg.fillRoundedRect(
       2,
       2,
-      UPGRADE_GRID_LAYOUT.buttonWidth - 4,
-      UPGRADE_GRID_LAYOUT.buttonHeight / 2 - 2,
-      UPGRADE_GRID_LAYOUT.borderRadius - 2
+      layout.buttonWidth - 4,
+      layout.buttonHeight / 2 - 2,
+      layout.borderRadius - 2
     );
   }
 
   bg.lineStyle(borderWidth, borderColor, 1);
-  bg.strokeRoundedRect(0, 0, UPGRADE_GRID_LAYOUT.buttonWidth, UPGRADE_GRID_LAYOUT.buttonHeight, UPGRADE_GRID_LAYOUT.borderRadius);
+  bg.strokeRoundedRect(0, 0, layout.buttonWidth, layout.buttonHeight, layout.borderRadius);
 }
 
 function getLevelText(evaluation: UpgradeEvaluation): string {

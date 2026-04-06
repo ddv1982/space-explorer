@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyPool } from './EnemyPool';
 import { Asteroid, type AsteroidSpawnConfig } from '../entities/Asteroid';
-import { GAME_WIDTH } from '../utils/constants';
 import {
   type EnemySpawnConfig,
   type EnemyType,
@@ -12,6 +11,7 @@ import {
   getLevelConfig,
 } from '../config/LevelsConfig';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
+import { getViewportBounds } from '../utils/layout';
 
 interface SpawnEntry {
   type: EnemyType;
@@ -31,7 +31,7 @@ export class WaveManager {
   private levelConfig!: LevelConfig;
   private activeSection: LevelSectionConfig | null = null;
   private activeSectionStartedAt = 0;
-  private corridorGapCenter = GAME_WIDTH / 2;
+  private corridorGapCenter = 0;
   private readonly hazardLastTriggered = new Map<string, number>();
   private readonly enemySpawnHandlers: Record<EnemyType, (anchorX: number) => boolean> = {
     scout: (anchorX) => this.spawnRepeatedEnemies(
@@ -58,7 +58,7 @@ export class WaveManager {
       return this.spawnRepeatedEnemies(
         'swarm',
         Phaser.Math.Between(3, 5),
-        () => Phaser.Math.Clamp(baseX + Phaser.Math.Between(-60, 60), 50, GAME_WIDTH - 50),
+        () => this.clampX(baseX + Phaser.Math.Between(-60, 60), 50),
         () => Phaser.Math.Between(-120, -30)
       );
     },
@@ -73,6 +73,7 @@ export class WaveManager {
   create(scene: Phaser.Scene, enemyPool: EnemyPool): Phaser.Physics.Arcade.Group {
     this.scene = scene;
     this.enemyPool = enemyPool;
+    this.corridorGapCenter = this.getViewportCenterX();
 
     this.asteroidGroup = scene.physics.add.group({
       maxSize: 40,
@@ -88,7 +89,7 @@ export class WaveManager {
     this.lastEncounterSpawn = 0;
     this.lastAsteroidSpawn = 0;
     this.activeSection = null;
-    this.corridorGapCenter = GAME_WIDTH / 2;
+    this.corridorGapCenter = this.getViewportCenterX();
     this.hazardLastTriggered.clear();
     this.buildSpawnTable(this.levelConfig.enemies);
   }
@@ -152,7 +153,7 @@ export class WaveManager {
   }
 
   private getEncounterSpawnX(anchorX: number, padding: number): number {
-    return Phaser.Math.Clamp(anchorX + Phaser.Math.Between(-70, 70), padding, GAME_WIDTH - padding);
+    return this.clampX(anchorX + Phaser.Math.Between(-70, 70), padding);
   }
 
   private getEncounterRateMultiplier(progress: number, activeSection: LevelSectionConfig | null): number {
@@ -218,7 +219,7 @@ export class WaveManager {
     this.lastEncounterSpawn = time;
 
     const encounterSize = activeSection?.encounterSizeOverride ?? this.levelConfig.encounterSize;
-    const anchorX = Phaser.Math.Between(120, GAME_WIDTH - 120);
+    const anchorX = this.getRandomX(120);
     const encounterCount = Phaser.Math.Between(encounterSize.min, encounterSize.max);
 
     this.spawnEncounterBatch(anchorX, encounterCount, () => this.pickEnemyType());
@@ -231,7 +232,7 @@ export class WaveManager {
     }
 
     this.lastAsteroidSpawn = time;
-    this.spawnSingleAsteroid(Phaser.Math.Between(50, GAME_WIDTH - 50), Phaser.Math.Between(60, 120));
+    this.spawnSingleAsteroid(this.getRandomX(50), Phaser.Math.Between(60, 120));
   }
 
   private spawnSectionHazards(time: number, activeSection: LevelSectionConfig | null): void {
@@ -284,7 +285,7 @@ export class WaveManager {
 
   private spawnHazardEncounter(preferredTypes: EnemyType[], intensity: number): void {
     const allowedTypes = preferredTypes.filter((type) => this.spawnEntries.some((entry) => entry.type === type));
-    const anchorX = Phaser.Math.Between(120, GAME_WIDTH - 120);
+    const anchorX = this.getRandomX(120);
     const spawnCount = Phaser.Math.Clamp(Math.round(1 + intensity * 2), 1, 3);
 
     this.spawnEncounterBatch(anchorX, spawnCount, () => {
@@ -295,15 +296,16 @@ export class WaveManager {
   private spawnAsteroidBurst(count: number, minSpeed: number, maxSpeed: number, edgePadding: number = 50): void {
     for (let i = 0; i < count; i++) {
       this.spawnSingleAsteroid(
-        Phaser.Math.Between(edgePadding, GAME_WIDTH - edgePadding),
+        this.getRandomX(edgePadding),
         Phaser.Math.Between(minSpeed, maxSpeed)
       );
     }
   }
 
   private spawnMirroredAsteroids(leftSpeed: number, rightSpeed: number): void {
-    const leftX = Phaser.Math.Between(70, 150);
-    const rightX = GAME_WIDTH - leftX;
+    const { min, max } = this.getHorizontalRange(70);
+    const leftX = Phaser.Math.Between(min, Math.min(max, min + 80));
+    const rightX = this.clampX(this.getViewportWidth() - leftX, 70);
     this.spawnSingleAsteroid(leftX, leftSpeed);
     this.spawnSingleAsteroid(rightX, rightSpeed);
   }
@@ -311,15 +313,18 @@ export class WaveManager {
   private spawnEdgeAsteroids(hazard: ScriptedHazardConfig): void {
     const corridorWidth = Phaser.Math.Clamp(hazard.corridorWidth ?? 190, 150, 240);
     const laneCount = Phaser.Math.Clamp(hazard.laneCount ?? 2, 1, 3);
+    const viewportWidth = this.getViewportWidth();
+    const viewportCenterX = this.getViewportCenterX();
+    const sidePadding = Math.min(170, viewportWidth / 2);
     this.corridorGapCenter = Phaser.Math.Clamp(
       this.corridorGapCenter + Phaser.Math.Between(-28, 28),
-      170,
-      GAME_WIDTH - 170
+      sidePadding,
+      Math.max(sidePadding, viewportWidth - sidePadding)
     );
 
     const gapCenter = this.corridorGapCenter;
-    const leftEdge = Phaser.Math.Clamp(gapCenter - corridorWidth / 2, 70, GAME_WIDTH / 2 - 40);
-    const rightEdge = Phaser.Math.Clamp(gapCenter + corridorWidth / 2, GAME_WIDTH / 2 + 40, GAME_WIDTH - 70);
+    const leftEdge = Phaser.Math.Clamp(gapCenter - corridorWidth / 2, 70, viewportCenterX - 40);
+    const rightEdge = Phaser.Math.Clamp(gapCenter + corridorWidth / 2, viewportCenterX + 40, viewportWidth - 70);
     const collisionDamage = hazard.damage ?? 1;
     const baseConfig: AsteroidSpawnConfig = {
       collisionDamage,
@@ -367,5 +372,33 @@ export class WaveManager {
     }
 
     return this.asteroidGroup.get(x, y) as Asteroid | null;
+  }
+
+  private getViewportWidth(): number {
+    return getViewportBounds(this.scene).width;
+  }
+
+  private getViewportCenterX(): number {
+    return getViewportBounds(this.scene).centerX;
+  }
+
+  private getRandomX(padding: number): number {
+    const { min, max } = this.getHorizontalRange(padding);
+    return Phaser.Math.Between(min, max);
+  }
+
+  private clampX(x: number, padding: number): number {
+    const { min, max } = this.getHorizontalRange(padding);
+    return Phaser.Math.Clamp(x, min, max);
+  }
+
+  private getHorizontalRange(padding: number): { min: number; max: number } {
+    const viewportWidth = this.getViewportWidth();
+    const effectivePadding = Math.min(padding, viewportWidth / 2);
+
+    return {
+      min: effectivePadding,
+      max: Math.max(effectivePadding, viewportWidth - effectivePadding),
+    };
   }
 }

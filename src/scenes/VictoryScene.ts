@@ -5,6 +5,7 @@ import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { createPromptText } from './shared/createPromptText';
+import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class VictoryScene extends Phaser.Scene {
   constructor() {
@@ -14,6 +15,7 @@ export class VictoryScene extends Phaser.Scene {
   create(): void {
     audioManager.init();
     audioManager.stopMusic();
+    registerRestartOnResize(this);
 
     const layout = getViewportLayout(this);
 

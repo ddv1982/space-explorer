@@ -6,6 +6,7 @@ import type { BossAttackStyle, BossConfig, EnemyType } from '../../config/Levels
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from './boss/behavior';
+import { getViewportBounds } from '../../utils/layout';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -148,6 +149,7 @@ export class Boss extends EnemyBase {
   }
 
   private updateMovement(time: number, delta: number): void {
+    const viewport = getViewportBounds(this.scene);
     const movement = updateBossMovement({
       attackStyle: this.attackStyle,
       x: this.x,
@@ -157,6 +159,8 @@ export class Boss extends EnemyBase {
       time,
       delta,
       playerX: this.getPlayer()?.x,
+      minX: viewport.left,
+      maxX: viewport.right,
     });
 
     this.x = movement.x;
@@ -219,9 +223,15 @@ export class Boss extends EnemyBase {
       return;
     }
 
+    const viewport = getViewportBounds(this.scene);
+    const effectivePadding = Math.min(50, viewport.width / 2);
+    const minX = viewport.left + effectivePadding;
+    const maxX = Math.max(minX, viewport.right - effectivePadding);
+
     types.forEach((type, index) => {
       const offset = index === 0 ? -36 : 36;
-      summonHandler(type, this.x + offset, this.y + 10);
+      const summonX = Phaser.Math.Clamp(this.x + offset, minX, maxX);
+      summonHandler(type, summonX, this.y + 10);
     });
   }
 

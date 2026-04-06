@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getViewportLayout } from '../utils/layout';
+import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +11,8 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    registerRestartOnResize(this);
+
     const layout = getViewportLayout(this);
 
     this.add.text(layout.centerX, layout.centerY, 'LOADING...', {

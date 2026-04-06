@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT } from '../utils/constants';
 import { despawnEntity } from '../utils/entityUtils';
 
 export type PowerUpType = 'health' | 'shield' | 'rapidfire';
@@ -129,7 +128,7 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     this.x += Math.sin(this.bobTime * 0.005) * 0.3;
 
     // Go off screen
-    if (this.y > GAME_HEIGHT + 30) {
+    if (this.y > this.scene.scale.gameSize.height + 30) {
       this.kill();
     }
   }

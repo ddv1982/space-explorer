@@ -1,16 +1,16 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '../utils/constants';
 import { isTouchMobileDevice } from '../utils/device';
+import { getViewportBounds } from '../utils/layout';
 
 const CONTROLS_DEPTH = 1000;
-const JOYSTICK_X = 170;
-const JOYSTICK_Y = GAME_HEIGHT - 160;
+const MAX_HORIZONTAL_INSET = 170;
+const MIN_HORIZONTAL_INSET = 104;
+const MAX_VERTICAL_INSET = 160;
+const MIN_VERTICAL_INSET = 112;
 const JOYSTICK_BASE_RADIUS = 76;
 const JOYSTICK_HIT_RADIUS = 96;
 const JOYSTICK_THUMB_RADIUS = 30;
 const JOYSTICK_MAX_DISTANCE = 52;
-const FIRE_BUTTON_X = GAME_WIDTH - 170;
-const FIRE_BUTTON_Y = GAME_HEIGHT - 160;
 const FIRE_BUTTON_RADIUS = 68;
 
 export class MobileControls {
@@ -25,6 +25,10 @@ export class MobileControls {
   private blocked: boolean = false;
   private joystickPointerId: number | null = null;
   private firePointerId: number | null = null;
+  private joystickX: number = 0;
+  private joystickY: number = 0;
+  private fireButtonX: number = 0;
+  private fireButtonY: number = 0;
   private readonly movementVector = new Phaser.Math.Vector2();
 
   private readonly handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
@@ -64,7 +68,9 @@ export class MobileControls {
       scene.input.addPointer(extraPointers);
     }
 
-    this.joystickBase = scene.add.circle(JOYSTICK_X, JOYSTICK_Y, JOYSTICK_BASE_RADIUS, 0x0b1020, 0.4)
+    this.updateControlAnchors();
+
+    this.joystickBase = scene.add.circle(this.joystickX, this.joystickY, JOYSTICK_BASE_RADIUS, 0x0b1020, 0.4)
       .setStrokeStyle(5, 0x88ccff, 0.8)
       .setDepth(CONTROLS_DEPTH)
       .setScrollFactor(0);
@@ -74,17 +80,17 @@ export class MobileControls {
     );
     this.joystickBase.on('pointerdown', this.handleJoystickDown, this);
 
-    this.joystickCenter = scene.add.circle(JOYSTICK_X, JOYSTICK_Y, 11, 0xdaf3ff, 0.3)
+    this.joystickCenter = scene.add.circle(this.joystickX, this.joystickY, 11, 0xdaf3ff, 0.3)
       .setStrokeStyle(2, 0xe7f8ff, 0.45)
       .setDepth(CONTROLS_DEPTH + 1)
       .setScrollFactor(0);
 
-    this.joystickThumb = scene.add.circle(JOYSTICK_X, JOYSTICK_Y, JOYSTICK_THUMB_RADIUS, 0xa8e5ff, 0.95)
+    this.joystickThumb = scene.add.circle(this.joystickX, this.joystickY, JOYSTICK_THUMB_RADIUS, 0xa8e5ff, 0.95)
       .setStrokeStyle(3, 0xe7f8ff, 0.95)
       .setDepth(CONTROLS_DEPTH + 2)
       .setScrollFactor(0);
 
-    this.fireButton = scene.add.circle(FIRE_BUTTON_X, FIRE_BUTTON_Y, FIRE_BUTTON_RADIUS, 0x6a1010, 0.72)
+    this.fireButton = scene.add.circle(this.fireButtonX, this.fireButtonY, FIRE_BUTTON_RADIUS, 0x6a1010, 0.72)
       .setStrokeStyle(5, 0xff7a5c, 0.95)
       .setDepth(CONTROLS_DEPTH)
       .setScrollFactor(0);
@@ -94,11 +100,11 @@ export class MobileControls {
     );
     this.fireButton.on('pointerdown', this.handleFireDown, this);
 
-    this.fireCore = scene.add.circle(FIRE_BUTTON_X, FIRE_BUTTON_Y, FIRE_BUTTON_RADIUS - 20, 0xff5e3a, 0.45)
+    this.fireCore = scene.add.circle(this.fireButtonX, this.fireButtonY, FIRE_BUTTON_RADIUS - 20, 0xff5e3a, 0.45)
       .setDepth(CONTROLS_DEPTH + 1)
       .setScrollFactor(0);
 
-    this.fireLabel = scene.add.text(FIRE_BUTTON_X, FIRE_BUTTON_Y, 'FIRE', {
+    this.fireLabel = scene.add.text(this.fireButtonX, this.fireButtonY, 'FIRE', {
       fontFamily: 'monospace',
       fontSize: '24px',
       color: '#ffe9d9',
@@ -149,6 +155,24 @@ export class MobileControls {
     this.blocked = false;
   }
 
+  relayout(): void {
+    if (!this.scene || !this.enabledForTouchDevice) {
+      return;
+    }
+
+    this.updateControlAnchors();
+    this.releaseActiveTouches();
+
+    this.joystickBase?.setPosition(this.joystickX, this.joystickY);
+    this.joystickCenter?.setPosition(this.joystickX, this.joystickY);
+    this.joystickThumb?.setPosition(this.joystickX, this.joystickY);
+    this.fireButton?.setPosition(this.fireButtonX, this.fireButtonY);
+    this.fireCore?.setPosition(this.fireButtonX, this.fireButtonY);
+    this.fireLabel?.setPosition(this.fireButtonX, this.fireButtonY);
+
+    this.refreshVisibility();
+  }
+
   setBlocked(blocked: boolean): void {
     this.blocked = blocked;
 
@@ -195,8 +219,8 @@ export class MobileControls {
   }
 
   private updateJoystick(pointer: Phaser.Input.Pointer): void {
-    const dx = pointer.x - JOYSTICK_X;
-    const dy = pointer.y - JOYSTICK_Y;
+    const dx = pointer.x - this.joystickX;
+    const dy = pointer.y - this.joystickY;
     const distance = Math.hypot(dx, dy);
 
     if (distance === 0) {
@@ -211,8 +235,8 @@ export class MobileControls {
     this.movementVector.set(dx / JOYSTICK_MAX_DISTANCE, dy / JOYSTICK_MAX_DISTANCE).limit(1);
 
     this.joystickThumb?.setPosition(
-      JOYSTICK_X + dx * scale,
-      JOYSTICK_Y + dy * scale
+      this.joystickX + dx * scale,
+      this.joystickY + dy * scale
     );
   }
 
@@ -220,7 +244,7 @@ export class MobileControls {
     const active = this.joystickPointerId !== null && this.isEnabled();
 
     if (!active) {
-      this.joystickThumb?.setPosition(JOYSTICK_X, JOYSTICK_Y);
+      this.joystickThumb?.setPosition(this.joystickX, this.joystickY);
     }
 
     this.joystickBase
@@ -283,6 +307,21 @@ export class MobileControls {
   }
 
   private isPointInsideFireButton(x: number, y: number): boolean {
-    return Phaser.Math.Distance.Between(x, y, FIRE_BUTTON_X, FIRE_BUTTON_Y) <= FIRE_BUTTON_RADIUS;
+    return Phaser.Math.Distance.Between(x, y, this.fireButtonX, this.fireButtonY) <= FIRE_BUTTON_RADIUS;
+  }
+
+  private updateControlAnchors(): void {
+    if (!this.scene) {
+      return;
+    }
+
+    const viewport = getViewportBounds(this.scene);
+    const horizontalInset = Phaser.Math.Clamp(viewport.width * 0.13, MIN_HORIZONTAL_INSET, MAX_HORIZONTAL_INSET);
+    const verticalInset = Phaser.Math.Clamp(viewport.height * 0.22, MIN_VERTICAL_INSET, MAX_VERTICAL_INSET);
+
+    this.joystickX = viewport.left + horizontalInset;
+    this.joystickY = viewport.bottom - verticalInset;
+    this.fireButtonX = viewport.right - horizontalInset;
+    this.fireButtonY = viewport.bottom - verticalInset;
   }
 }

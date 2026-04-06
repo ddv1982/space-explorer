@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import type { BossAttackStyle } from '../../../config/LevelsConfig';
-import { GAME_WIDTH } from '../../../utils/constants';
 
 export interface BossMovementInput {
   attackStyle: BossAttackStyle;
@@ -11,6 +10,8 @@ export interface BossMovementInput {
   time: number;
   delta: number;
   playerX?: number;
+  minX: number;
+  maxX: number;
 }
 
 export interface BossMovementOutput {
@@ -19,22 +20,45 @@ export interface BossMovementOutput {
   moveDir: number;
 }
 
+function getHorizontalBounds(minX: number, maxX: number, padding: number): { min: number; max: number } {
+  const halfWidth = Math.max(0, (maxX - minX) / 2);
+  const effectivePadding = Math.min(padding, halfWidth);
+
+  return {
+    min: minX + effectivePadding,
+    max: Math.max(minX + effectivePadding, maxX - effectivePadding),
+  };
+}
+
 export function updateBossMovement(input: BossMovementInput): BossMovementOutput {
   const { attackStyle, targetY, time, delta } = input;
+  const minX = input.minX;
+  const maxX = input.maxX;
 
   switch (attackStyle) {
     case 'carrier': {
-      const x = input.x + input.moveSpeed * 0.72 * input.moveDir * delta / 1000;
+      const horizontalBounds = getHorizontalBounds(minX, maxX, 90);
+      const rawX = input.x + input.moveSpeed * 0.72 * input.moveDir * delta / 1000;
+      const x = Phaser.Math.Clamp(
+        rawX,
+        horizontalBounds.min,
+        horizontalBounds.max
+      );
       return {
         x,
         y: targetY + Math.sin(time * 0.0026) * 10,
-        moveDir: x > GAME_WIDTH - 90 ? -1 : x < 90 ? 1 : input.moveDir,
+        moveDir: rawX >= horizontalBounds.max ? -1 : rawX <= horizontalBounds.min ? 1 : input.moveDir,
       };
     }
     case 'pursuit': {
-      const targetX = Phaser.Math.Clamp(input.playerX ?? input.x + input.moveDir * 120, 70, GAME_WIDTH - 70);
+      const horizontalBounds = getHorizontalBounds(minX, maxX, 70);
+      const targetX = Phaser.Math.Clamp(input.playerX ?? input.x + input.moveDir * 120, horizontalBounds.min, horizontalBounds.max);
       const maxStep = input.moveSpeed * 1.15 * delta / 1000;
-      const x = input.x + Phaser.Math.Clamp(targetX - input.x, -maxStep, maxStep);
+      const x = Phaser.Math.Clamp(
+        input.x + Phaser.Math.Clamp(targetX - input.x, -maxStep, maxStep),
+        horizontalBounds.min,
+        horizontalBounds.max
+      );
       return {
         x,
         y: targetY + Math.sin(time * 0.005) * 14,
@@ -42,19 +66,31 @@ export function updateBossMovement(input: BossMovementInput): BossMovementOutput
       };
     }
     case 'bulwark': {
-      const x = input.x + input.moveSpeed * 0.45 * input.moveDir * delta / 1000;
+      const horizontalBounds = getHorizontalBounds(minX, maxX, 100);
+      const rawX = input.x + input.moveSpeed * 0.45 * input.moveDir * delta / 1000;
+      const x = Phaser.Math.Clamp(
+        rawX,
+        horizontalBounds.min,
+        horizontalBounds.max
+      );
       return {
         x,
         y: targetY + Math.sin(time * 0.0018) * 6,
-        moveDir: x > GAME_WIDTH - 100 ? -1 : x < 100 ? 1 : input.moveDir,
+        moveDir: rawX >= horizontalBounds.max ? -1 : rawX <= horizontalBounds.min ? 1 : input.moveDir,
       };
     }
     default: {
-      const x = input.x + input.moveSpeed * input.moveDir * delta / 1000;
+      const horizontalBounds = getHorizontalBounds(minX, maxX, 60);
+      const rawX = input.x + input.moveSpeed * input.moveDir * delta / 1000;
+      const x = Phaser.Math.Clamp(
+        rawX,
+        horizontalBounds.min,
+        horizontalBounds.max
+      );
       return {
         x,
         y: targetY,
-        moveDir: x > GAME_WIDTH - 60 ? -1 : x < 60 ? 1 : input.moveDir,
+        moveDir: rawX >= horizontalBounds.max ? -1 : rawX <= horizontalBounds.min ? 1 : input.moveDir,
       };
     }
   }

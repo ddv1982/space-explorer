@@ -34,6 +34,7 @@ export interface GameSceneFlowContext {
   startScene: (key: string) => void;
   pauseScene: () => void;
   resumeScene: () => void;
+  getPlayerRespawnPosition: () => { x: number; y: number };
 }
 
 export class GameSceneFlowController {
@@ -301,7 +302,8 @@ export class GameSceneFlowController {
     }
 
     context.collisionManager.clearPlayerHazards();
-    context.player.spawn(400, 520, {
+    const respawnPosition = context.getPlayerRespawnPosition();
+    context.player.spawn(respawnPosition.x, respawnPosition.y, {
       hp: context.player.maxHp,
       invulnerabilityDuration: PLAYER_RESPAWN_INVULNERABILITY_MS,
     });

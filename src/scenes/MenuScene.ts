@@ -7,6 +7,7 @@ import { isTouchMobileDevice } from '../utils/device';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { createPromptText } from './shared/createPromptText';
+import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
@@ -20,7 +21,6 @@ export class MenuScene extends Phaser.Scene {
     this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
-    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
 
     const menuConfig = getLevelConfig(1);
     const layout = getViewportLayout(this);
@@ -34,7 +34,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, menuConfig);
-    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
+    registerRestartOnResize(this);
 
     this.add.text(layout.centerX, layout.centerY - 60, 'SPACE EXPLORER', {
       fontSize: '64px',
@@ -98,17 +98,11 @@ export class MenuScene extends Phaser.Scene {
     this.parallax?.update(delta);
   }
 
-  private handleScaleResize(): void {
-    this.parallax?.resize(this.cameras.main.width, this.cameras.main.height);
-  }
-
   private handleSceneShutdown(): void {
-    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
     this.parallax?.destroy();
   }
 
   private handleSceneDestroy(): void {
-    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
     this.parallax?.destroy();
   }
 }
