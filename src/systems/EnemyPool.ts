@@ -7,7 +7,7 @@ import { Gunship } from '../entities/enemies/Gunship';
 import { Boss } from '../entities/enemies/Boss';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { BomberBomb } from '../entities/BomberBomb';
-import type { EnemyType } from '../config/LevelsConfig';
+import type { BossConfig, EnemyType } from '../config/LevelsConfig';
 
 type EnemyPoolGroupKey = EnemyType | 'boss';
 type EnemyPlayerCollisionBehavior = 'kamikaze' | 'impact' | 'none';
@@ -162,7 +162,7 @@ export class EnemyPool {
     }
   }
 
-  spawnBoss(x: number, y: number): Boss | null {
+  spawnBoss(x: number, y: number, config?: BossConfig): Boss | null {
     if (!this.bossGroup) {
       this.bossGroup = this.scene.physics.add.group({
         maxSize: 1,
@@ -175,7 +175,7 @@ export class EnemyPool {
 
     const boss = this.acquireFromGroup<Boss>(this.bossGroup, x, y);
     if (boss) {
-      boss.spawn(x, y);
+      boss.spawn(x, y, config);
       boss.setEnemyBulletGroup(this.enemyBulletGroup);
     }
     return boss;

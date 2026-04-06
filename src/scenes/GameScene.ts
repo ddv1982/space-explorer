@@ -335,7 +335,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnBoss(): void {
-    const boss = this.enemyPool.spawnBoss(GAME_WIDTH / 2, -60);
+    const boss = this.enemyPool.spawnBoss(
+      GAME_WIDTH / 2,
+      -60,
+      this.levelManager.getLevelConfig().boss ?? undefined
+    );
     if (boss) {
       this.boss = boss;
       this.hud.showBossBar();

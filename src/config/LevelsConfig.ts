@@ -10,6 +10,19 @@ export interface EncounterSizeConfig {
   max: number;
 }
 
+export interface BossConfig {
+  maxHp: number;
+  phase1Cooldown: number;
+  phase2Cooldown: number;
+  phase2MoveSpeed: number;
+  phase1SpreadShotCount: number;
+  phase1SpreadArcDegrees: number;
+  phase1BulletSpeedScale: number;
+  phase2SpiralShotCount: number;
+  phase2SpiralTurnRate: number;
+  phase2BulletSpeedScale: number;
+}
+
 export interface LevelConfig {
   name: string;
   planetName: string;
@@ -23,6 +36,7 @@ export interface LevelConfig {
   spawnRateMultiplier: number;
   levelDistance: number;
   hasBoss: boolean;
+  boss: BossConfig | null;
   bossTriggerProgress: number;
   asteroidInterval: number;
 }
@@ -44,6 +58,7 @@ const LEVELS: LevelConfig[] = [
     spawnRateMultiplier: 1.0,
     levelDistance: 7200,
     hasBoss: false,
+    boss: null,
     bossTriggerProgress: 0.8,
     asteroidInterval: 5000,
   },
@@ -64,6 +79,7 @@ const LEVELS: LevelConfig[] = [
     spawnRateMultiplier: 1.2,
     levelDistance: 8400,
     hasBoss: false,
+    boss: null,
     bossTriggerProgress: 0.8,
     asteroidInterval: 4500,
   },
@@ -85,6 +101,18 @@ const LEVELS: LevelConfig[] = [
     spawnRateMultiplier: 1.4,
     levelDistance: 9600,
     hasBoss: true,
+    boss: {
+      maxHp: 48,
+      phase1Cooldown: 1200,
+      phase2Cooldown: 650,
+      phase2MoveSpeed: 150,
+      phase1SpreadShotCount: 5,
+      phase1SpreadArcDegrees: 60,
+      phase1BulletSpeedScale: 0.8,
+      phase2SpiralShotCount: 3,
+      phase2SpiralTurnRate: 60,
+      phase2BulletSpeedScale: 0.9,
+    },
     bossTriggerProgress: 0.72,
     asteroidInterval: 4000,
   },
@@ -107,6 +135,18 @@ const LEVELS: LevelConfig[] = [
     spawnRateMultiplier: 1.7,
     levelDistance: 10800,
     hasBoss: true,
+    boss: {
+      maxHp: 62,
+      phase1Cooldown: 1000,
+      phase2Cooldown: 525,
+      phase2MoveSpeed: 175,
+      phase1SpreadShotCount: 7,
+      phase1SpreadArcDegrees: 72,
+      phase1BulletSpeedScale: 0.9,
+      phase2SpiralShotCount: 4,
+      phase2SpiralTurnRate: 78,
+      phase2BulletSpeedScale: 0.98,
+    },
     bossTriggerProgress: 0.68,
     asteroidInterval: 3500,
   },
@@ -129,6 +169,18 @@ const LEVELS: LevelConfig[] = [
     spawnRateMultiplier: 2.0,
     levelDistance: 12000,
     hasBoss: true,
+    boss: {
+      maxHp: 80,
+      phase1Cooldown: 850,
+      phase2Cooldown: 425,
+      phase2MoveSpeed: 205,
+      phase1SpreadShotCount: 9,
+      phase1SpreadArcDegrees: 84,
+      phase1BulletSpeedScale: 1,
+      phase2SpiralShotCount: 5,
+      phase2SpiralTurnRate: 96,
+      phase2BulletSpeedScale: 1.05,
+    },
     bossTriggerProgress: 0.64,
     asteroidInterval: 3000,
   },
