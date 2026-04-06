@@ -8,21 +8,57 @@ export class AudioManager {
 
   init(): void {
     try {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (this.ctx?.state === 'closed') {
+        this.resetNodes();
+      }
+
+      if (this.ctx) {
+        this.ensureGains();
+        return;
+      }
+
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      this.ctx = new AudioContextCtor();
+      this.ensureGains();
+    } catch {
+      this.resetNodes();
+    }
+  }
+
+  private ensureGains(): void {
+    if (!this.ctx) return;
+
+    if (!this.masterGain) {
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.value = 0.3;
       this.masterGain.connect(this.ctx.destination);
+    }
 
+    if (!this.musicGain) {
       this.musicGain = this.ctx.createGain();
       this.musicGain.gain.value = 0.08;
       this.musicGain.connect(this.masterGain);
-    } catch {
-      this.ctx = null;
     }
+  }
+
+  private resetNodes(): void {
+    if (this.musicTimer !== null) {
+      clearInterval(this.musicTimer);
+    }
+    this.ctx = null;
+    this.masterGain = null;
+    this.musicGain = null;
+    this.musicOscillators = [];
+    this.musicPlaying = false;
+    this.musicTimer = null;
   }
 
   private ensureContext(): boolean {
     if (!this.ctx) return false;
+    if (this.ctx.state === 'closed') {
+      this.resetNodes();
+      return false;
+    }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
@@ -233,8 +269,8 @@ export class AudioManager {
     this.stopMusic();
     if (this.ctx) {
       this.ctx.close();
-      this.ctx = null;
     }
+    this.resetNodes();
   }
 }
 

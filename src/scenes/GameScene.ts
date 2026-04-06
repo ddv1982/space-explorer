@@ -35,15 +35,20 @@ export class GameScene extends Phaser.Scene {
   private gameOver: boolean = false;
   private gameOverTransition: Phaser.Time.TimerEvent | null = null;
   private boss: Boss | null = null;
+  private terminalTransitionState: 'none' | 'player-death' | 'level-complete' = 'none';
 
   constructor() {
     super({ key: 'Game' });
   }
 
   create(): void {
+    this.lastFireTime = 0;
     this.gameOver = false;
     this.gameOverTransition = null;
     this.boss = null;
+    this.terminalTransitionState = 'none';
+
+    this.registerLifecycleHandlers();
 
     audioManager.init();
     audioManager.startMusic();
@@ -100,10 +105,10 @@ export class GameScene extends Phaser.Scene {
       this.powerUpGroup, this.player,
       (_obj1, _obj2) => {
         const powerUp = _obj1 as PowerUp;
-        if (powerUp.active && this.player.isAlive) {
-          this.applyPowerUp(powerUp.powerUpType);
-          powerUp.kill();
-        }
+        if (!powerUp.active || !this.player.isAlive || this.terminalTransitionState !== 'none') return;
+
+        this.applyPowerUp(powerUp.powerUpType);
+        powerUp.kill();
       }
     );
 
@@ -118,67 +123,121 @@ export class GameScene extends Phaser.Scene {
     // Controls hint overlay (fades out after 5 seconds)
     this.showControlsHint();
 
-    this.events.on('enemy-death', (score: number, x: number, y: number) => {
-      this.scoreManager.addScore(score);
-      this.effectsManager.createScorePopup(x, y, score);
-      audioManager.playExplosion(0.5);
-      this.tryDropPowerUp(x, y);
+    this.registerSceneEventHandlers();
+  }
+
+  private registerLifecycleHandlers(): void {
+    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
+    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+  }
+
+  private registerSceneEventHandlers(): void {
+    this.removeSceneEventHandlers();
+
+    this.events.on('enemy-death', this.handleEnemyDeath, this);
+    this.events.on('player-death', this.handlePlayerDeath, this);
+    this.events.on('level-complete', this.handleLevelComplete, this);
+    this.events.on('boss-spawn', this.handleBossSpawn, this);
+    this.events.on('player-hit', this.handlePlayerHit, this);
+    this.events.on('player-exhaust', this.handlePlayerExhaust, this);
+    this.events.on('enemy-spawn-warning', this.handleEnemySpawnWarning, this);
+    this.events.on('boss-death', this.handleBossDeath, this);
+  }
+
+  private removeSceneEventHandlers(): void {
+    this.events.off('enemy-death', this.handleEnemyDeath, this);
+    this.events.off('player-death', this.handlePlayerDeath, this);
+    this.events.off('level-complete', this.handleLevelComplete, this);
+    this.events.off('boss-spawn', this.handleBossSpawn, this);
+    this.events.off('player-hit', this.handlePlayerHit, this);
+    this.events.off('player-exhaust', this.handlePlayerExhaust, this);
+    this.events.off('enemy-spawn-warning', this.handleEnemySpawnWarning, this);
+    this.events.off('boss-death', this.handleBossDeath, this);
+  }
+
+  private handleSceneShutdown(): void {
+    this.removeSceneEventHandlers();
+
+    if (this.gameOverTransition) {
+      this.gameOverTransition.remove(false);
+      this.gameOverTransition = null;
+    }
+
+    this.lastFireTime = 0;
+    this.gameOver = false;
+    this.boss = null;
+    this.terminalTransitionState = 'none';
+  }
+
+  private handleSceneDestroy(): void {
+    this.removeSceneEventHandlers();
+  }
+
+  private handleEnemyDeath(score: number, x: number, y: number): void {
+    this.scoreManager.addScore(score);
+    this.effectsManager.createScorePopup(x, y, score);
+    audioManager.playExplosion(0.5);
+    this.tryDropPowerUp(x, y);
+  }
+
+  private handlePlayerDeath(): void {
+    if (!this.beginTerminalTransition('player-death')) return;
+
+    const finalScore = this.scoreManager.getScore();
+    const level = this.levelManager.currentLevel;
+
+    this.gameOver = true;
+    this.gameOverTransition = this.time.delayedCall(1500, () => {
+      this.scene.start('GameOver');
     });
 
-    this.events.on('player-death', () => {
-      if (this.gameOverTransition) return;
+    this.runBestEffort(() => audioManager.stopMusic());
+    this.runBestEffort(() => audioManager.playExplosion(2.0));
+    this.runBestEffort(() => this.effectsManager.createExplosion(this.player.x, this.player.y, 2.0));
+    this.runBestEffort(() => saveScoreToState(this.registry, finalScore));
+    this.runBestEffort(() => this.registry.set('finalScore', finalScore));
+    this.runBestEffort(() => this.registry.set('levelReached', level));
+  }
 
-      const finalScore = this.scoreManager.getScore();
+  private handleLevelComplete(): void {
+    if (!this.beginTerminalTransition('level-complete')) return;
 
-      this.gameOver = true;
-      this.gameOverTransition = this.time.delayedCall(1500, () => {
-        this.scene.start('GameOver');
-      });
-
-      this.runBestEffort(() => audioManager.stopMusic());
-      this.runBestEffort(() => audioManager.playExplosion(2.0));
-      this.runBestEffort(() => this.effectsManager.createExplosion(this.player.x, this.player.y, 2.0));
-      this.runBestEffort(() => saveScoreToState(this.registry, finalScore));
-      this.runBestEffort(() => this.registry.set('finalScore', finalScore));
-      this.runBestEffort(() => this.registry.set('levelReached', state.level));
+    saveScoreToState(this.registry, this.scoreManager.getScore());
+    saveCurrentHp(this.registry, this.player.hp);
+    this.registry.set('finalScore', this.scoreManager.getScore());
+    this.warpTransition.play(() => {
+      this.scene.start('PlanetIntermission');
     });
+  }
 
-    this.events.on('level-complete', () => {
-      saveScoreToState(this.registry, this.scoreManager.getScore());
-      saveCurrentHp(this.registry, this.player.hp);
-      this.registry.set('finalScore', this.scoreManager.getScore());
-      this.warpTransition.play(() => {
-        this.scene.start('PlanetIntermission');
-      });
-    });
+  private handleBossSpawn(): void {
+    this.levelManager.markBossSpawned();
+    this.hud.showBossWarning();
+    this.spawnBoss();
+  }
 
-    this.events.on('boss-spawn', () => {
-      this.levelManager.markBossSpawned();
-      this.hud.showBossWarning();
-      this.spawnBoss();
-    });
+  private handlePlayerHit(): void {
+    audioManager.playPlayerHit();
+  }
 
-    this.events.on('player-hit', () => {
-      audioManager.playPlayerHit();
-    });
+  private handlePlayerExhaust(x: number, y: number, intensity: number): void {
+    this.effectsManager.createEngineExhaust(x, y, intensity);
+  }
 
-    this.events.on('player-exhaust', (x: number, y: number, intensity: number) => {
-      this.effectsManager.createEngineExhaust(x, y, intensity);
-    });
+  private handleEnemySpawnWarning(x: number): void {
+    this.effectsManager.createSpawnWarning(x);
+  }
 
-    this.events.on('enemy-spawn-warning', (x: number) => {
-      this.effectsManager.createSpawnWarning(x);
-    });
-
-    this.events.on('boss-death', () => {
-      if (this.boss) {
-        this.effectsManager.createExplosion(this.boss.x, this.boss.y, 3.0);
-        audioManager.playExplosion(2.0);
-        this.hud.hideBossBar();
-      }
-      this.boss = null;
-      this.levelManager.markBossDefeated();
-    });
+  private handleBossDeath(): void {
+    if (this.boss) {
+      this.effectsManager.createExplosion(this.boss.x, this.boss.y, 3.0);
+      audioManager.playExplosion(2.0);
+      this.hud.hideBossBar();
+    }
+    this.boss = null;
+    this.levelManager.markBossDefeated();
   }
 
   private spawnBoss(): void {
@@ -231,6 +290,28 @@ export class GameScene extends Phaser.Scene {
     } catch {
       // Keep the GameOver transition alive even if optional cleanup/effects fail.
     }
+  }
+
+  private beginTerminalTransition(state: 'player-death' | 'level-complete'): boolean {
+    if (this.terminalTransitionState !== 'none') {
+      return false;
+    }
+
+    this.terminalTransitionState = state;
+    this.stopPlayerMotion();
+    this.collisionManager.setTerminalTransitionActive(true);
+    return true;
+  }
+
+  private stopPlayerMotion(): void {
+    const body = this.player.body as Phaser.Physics.Arcade.Body | null;
+    if (!body) {
+      return;
+    }
+
+    this.player.isMovingUp = false;
+    this.player.setAcceleration(0, 0);
+    body.stop();
   }
 
   private tryDropPowerUp(x: number, y: number): void {
@@ -297,7 +378,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (this.gameOver) return;
+    if (this.gameOver || this.terminalTransitionState !== 'none') return;
 
     this.parallax.update(delta);
     this.player.update(this.inputManager);

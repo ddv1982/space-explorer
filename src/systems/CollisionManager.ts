@@ -15,6 +15,7 @@ export class CollisionManager {
   private effectsManager!: EffectsManager;
   private enemyPool!: EnemyPool;
   private bulletDamage: number = 1;
+  private terminalTransitionActive: boolean = false;
 
   setup(
     scene: Phaser.Scene,
@@ -26,6 +27,7 @@ export class CollisionManager {
     this.scene = scene;
     this.player = player;
     this.enemyPool = enemyPool;
+    this.terminalTransitionActive = false;
 
     const bulletGroup = bulletPool.getGroup();
 
@@ -83,7 +85,7 @@ export class CollisionManager {
       enemyPool.getEnemyBulletGroup(), player,
       (_obj1, _obj2) => {
         const eBullet = _obj1 as EnemyBullet;
-        if (eBullet.active && player.isAlive) {
+        if (eBullet.active && this.canProcessPlayerCollision()) {
           eBullet.kill();
           player.takeDamage(1);
           if (player.isAlive) {
@@ -98,7 +100,7 @@ export class CollisionManager {
       enemyPool.getBombGroup(), player,
       (_obj1, _obj2) => {
         const bomb = _obj1 as BomberBomb;
-        if (bomb.active && player.isAlive) {
+        if (bomb.active && this.canProcessPlayerCollision()) {
           const impactX = bomb.x;
           const impactY = bomb.y;
           bomb.kill();
@@ -123,7 +125,7 @@ export class CollisionManager {
       asteroidGroup, player,
       (_obj1, _obj2) => {
         const asteroid = _obj1 as Asteroid;
-        if (asteroid.active && player.isAlive) {
+        if (asteroid.active && this.canProcessPlayerCollision()) {
           player.takeDamage(1);
           asteroid.die();
           if (player.isAlive) {
@@ -139,7 +141,7 @@ export class CollisionManager {
       group, this.player,
       (_obj1, _obj2) => {
         const enemy = _obj1 as EnemyBase;
-        if (enemy.active && this.player.isAlive) {
+        if (enemy.active && this.canProcessPlayerCollision()) {
           this.player.takeDamage(1);
           if (kamikaze) {
             enemy.die();
@@ -162,6 +164,10 @@ export class CollisionManager {
     this.bulletDamage = damage;
   }
 
+  setTerminalTransitionActive(active: boolean): void {
+    this.terminalTransitionActive = active;
+  }
+
   private bulletVsEnemy(bullet: Bullet, enemy: EnemyBase): void {
     if (bullet.active && enemy.active) {
       bullet.kill();
@@ -178,7 +184,16 @@ export class CollisionManager {
     }
   }
 
+  private canProcessPlayerCollision(): boolean {
+    const body = this.player.body as Phaser.Physics.Arcade.Body | null;
+    return !this.terminalTransitionActive && this.player.isAlive && !!body && body.enable;
+  }
+
   private onPlayerHit(): void {
+    if (this.terminalTransitionActive) {
+      return;
+    }
+
     this.effectsManager.createSparkBurst(this.player.x, this.player.y);
     this.scene.cameras.main.shake(200, 0.01);
     this.scene.events.emit('player-hit');

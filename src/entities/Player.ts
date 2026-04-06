@@ -11,6 +11,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   shields: number = 0;
   isAlive: boolean = true;
   isMovingUp: boolean = false;
+  private deathStarted: boolean = false;
   private invulnerable: boolean = false;
   private invulnerableTimer: number = 0;
   private exhaustTimer: number = 0;
@@ -66,7 +67,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   takeDamage(amount: number): void {
-    if (this.invulnerable || !this.isAlive) return;
+    if (this.invulnerable || !this.isAlive || this.deathStarted) return;
 
     if (this.shields > 0) {
       this.shields--;
@@ -76,13 +77,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.hp -= amount;
-    this.setInvulnerable(1500);
-    this.flashWhite();
 
     if (this.hp <= 0) {
       this.hp = 0;
       this.die();
+      return;
     }
+
+    this.setInvulnerable(1500);
+    this.flashWhite();
   }
 
   private setInvulnerable(duration: number): void {
@@ -106,9 +109,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private die(): void {
+    if (this.deathStarted) {
+      return;
+    }
+
+    this.deathStarted = true;
+    this.invulnerable = true;
+    this.invulnerableTimer = 0;
     this.isAlive = false;
-    this.setActive(false);
-    this.setVisible(false);
+    this.isMovingUp = false;
+    this.setAcceleration(0, 0);
+    this.clearTint();
+
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    if (body) {
+      body.stop();
+    }
+
+    this.disableBody(true, true);
     this.scene.events.emit('player-death');
   }
 
@@ -153,13 +171,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   spawn(x: number, y: number): void {
-    this.setPosition(x, y);
+    this.enableBody(true, x, y, true, true);
     this.hp = this.maxHp;
     this.isAlive = true;
-    this.setActive(true);
-    this.setVisible(true);
+    this.isMovingUp = false;
+    this.deathStarted = false;
     this.setAlpha(1);
     this.invulnerable = false;
+    this.invulnerableTimer = 0;
     this.clearTint();
   }
 }
