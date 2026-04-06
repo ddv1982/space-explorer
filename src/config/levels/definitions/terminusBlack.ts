@@ -1,5 +1,5 @@
 import type { LevelConfig } from '../types';
-import { createMusicProfile } from '../musicHelpers';
+import { createMusicProfile, layerExpressionPresets, noiseExpressionPresets, trackExpressionPresets } from '../musicHelpers';
 
 export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   name: 'Terminus Black',
@@ -88,53 +88,92 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   music: createMusicProfile(
     {
       cueName: 'Event Horizon Vector',
-      mood: 'ominous awe turning into final-battle resolve',
-      tempoFeel: 'starts suspended, ends in a hard relentless drive',
-      musicalStyle: 'cosmic ambient intro collapsing into high-pressure synth assault',
-      intensity: 'maximum',
-      shiftMoments: ['Early section leaves more empty space in the motif.', 'Anomaly tides introduce full pulse/noise drive.', 'Boss cue escalates immediately and never releases.'],
+      mood: 'ominous awe and final clarity',
+      tempoFeel: 'suspended orbit pulling inward',
+      musicalStyle: 'cosmic low-end bloom with distant beacon tones and a grave breathing noise bed',
+      intensity: 'high with a restrained opening',
+      shiftMoments: ['Early space leaves the motif intentionally hollow.', 'Anomaly tides add a steady counterpulse under the void tones.', 'Boss cue escalates by layering texture, width, and pressure around the same motif.'],
       bossCueName: 'Event Horizon Vector: Null Crown',
     },
     {
-      tempo: 124,
+      tempo: 116,
       rootHz: 87.31,
       stepsPerBeat: 4,
-      masterGain: 1.0,
+      masterGain: 0.94,
+      expression: {
+        ...trackExpressionPresets.orbit,
+        accent: { amount: 0.09, patternBias: 0.14, emphasisSteps: [0, 8] },
+      },
       bass: {
         waveform: 'sine',
-        pattern: [0, null, null, null, null, null, 5, null, 7, null, null, null, 10, null, null, null],
-        gain: 0.18,
+        pattern: [0, null, null, null, null, null, 5, null, 7, null, null, null, 10, null, 7, null],
+        gain: 0.16,
         durationSteps: 4,
+        expression: {
+          ...layerExpressionPresets.pad,
+          ...layerExpressionPresets.drift,
+          accent: { ...layerExpressionPresets.gentleAccent.accent, emphasisSteps: [0, 8] },
+        },
       },
       pulse: {
         waveform: 'triangle',
         pattern: [null, null, 12, null, null, 15, null, null, 17, null, null, 19, null, 22, null, null],
-        gain: 0.048,
+        gain: 0.034,
         durationSteps: 1,
         octaveShift: 1,
-        filterHz: 1900,
+        filterHz: 1500,
+        expression: {
+          ...layerExpressionPresets.pluck,
+          ...layerExpressionPresets.orbit,
+          accent: { amount: 0.08, patternBias: 0.12, emphasisSteps: [2, 5, 8, 13] },
+        },
       },
       lead: {
         waveform: 'sine',
         pattern: [24, null, null, null, 22, null, null, null, 27, null, null, null, 29, null, null, null],
-        gain: 0.045,
-        durationSteps: 2,
+        gain: 0.032,
+        durationSteps: 4,
         octaveShift: 1,
+        expression: {
+          ...layerExpressionPresets.swell,
+          ...layerExpressionPresets.orbit,
+          ...layerExpressionPresets.vibrato,
+        },
       },
       noise: {
         pattern: [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        gain: 0.015,
-        filterHz: 1700,
+        gain: 0.011,
+        filterHz: 1200,
         durationSteps: 1,
+        expression: {
+          ...noiseExpressionPresets.rumble,
+        },
       },
     },
     {
-      tempo: 158,
-      masterGain: 1.18,
-      bass: { waveform: 'sawtooth', gain: 0.22, filterHz: 1100 },
-      pulse: { waveform: 'square', gain: 0.074, filterHz: 2400 },
-      lead: { waveform: 'sawtooth', gain: 0.066 },
-      noise: { gain: 0.03, filterHz: 3200 },
+      tempo: 124,
+      masterGain: 1.02,
+      expression: {
+        ...trackExpressionPresets.orbit,
+        ...trackExpressionPresets.chase,
+        modulation: { ...trackExpressionPresets.chase.modulation, depth: 240, rateHz: 0.95 },
+        accent: { amount: 0.17, patternBias: 0.3, emphasisSteps: [0, 4, 8, 12] },
+      },
+      bass: { waveform: 'triangle', gain: 0.18, filterHz: 850 },
+      pulse: {
+        waveform: 'square',
+        pattern: [null, 12, null, 15, null, 17, null, 19, null, 22, null, 24, null, 19, null, 15],
+        gain: 0.046,
+        filterHz: 1900,
+      },
+      lead: { waveform: 'triangle', gain: 0.038 },
+      noise: {
+        gain: 0.016,
+        filterHz: 1800,
+        expression: {
+          ...noiseExpressionPresets.grit,
+        },
+      },
     }
   ),
 };

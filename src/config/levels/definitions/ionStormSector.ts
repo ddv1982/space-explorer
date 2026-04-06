@@ -1,5 +1,5 @@
 import type { LevelConfig } from '../types';
-import { createMusicProfile } from '../musicHelpers';
+import { createMusicProfile, layerExpressionPresets, noiseExpressionPresets, trackExpressionPresets } from '../musicHelpers';
 
 export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
   name: 'Ion Storm Sector',
@@ -79,54 +79,92 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
   music: createMusicProfile(
     {
       cueName: 'Static Pressure',
-      mood: 'charged urgency',
-      tempoFeel: 'marching upward',
-      musicalStyle: 'urgent synth bass with clipped high-voltage pulses',
-      intensity: 'medium-high',
-      shiftMoments: ['Noise layer thickens during the swarm crossing.', 'Boss music sharpens the pulse into a warning siren feel.'],
+      mood: 'charged concentration',
+      tempoFeel: 'measured electrical stride',
+      musicalStyle: 'storm-lit synth bass with airy current hiss and a patient warning motif',
+      intensity: 'medium with sharper peaks',
+      shiftMoments: ['Storm crossings thicken the charged air texture.', 'Boss music escalates by adding counterpulse and grain around the motif.'],
       bossCueName: 'Static Pressure: Storm Binder',
     },
     {
-      tempo: 122,
-      rootHz: 123.47,
+      tempo: 114,
+      rootHz: 116.54,
       stepsPerBeat: 4,
-      masterGain: 1.0,
+      masterGain: 0.96,
+      expression: {
+        ...trackExpressionPresets.subtleWidth,
+        accent: { amount: 0.09, patternBias: 0.2, emphasisSteps: [0, 8] },
+      },
       bass: {
-        waveform: 'sawtooth',
-        pattern: [0, null, null, null, 2, null, null, null, 7, null, null, null, 9, null, null, null],
-        gain: 0.16,
-        durationSteps: 3,
-        filterHz: 900,
+        waveform: 'triangle',
+        pattern: [0, null, null, null, 2, null, null, null, 7, null, null, null, 9, null, 7, null],
+        gain: 0.15,
+        durationSteps: 4,
+        filterHz: 820,
+        expression: {
+          ...layerExpressionPresets.pad,
+          ...layerExpressionPresets.drift,
+          accent: { ...layerExpressionPresets.gentleAccent.accent, emphasisSteps: [0, 8] },
+        },
       },
       pulse: {
-        waveform: 'square',
-        pattern: [12, null, 12, null, 14, null, 12, null, 17, null, 12, null, 14, null, 10, null],
-        gain: 0.055,
+        waveform: 'triangle',
+        pattern: [12, null, null, 12, null, 14, null, null, 17, null, null, 14, null, 12, null, null],
+        gain: 0.042,
         durationSteps: 1,
         octaveShift: 1,
-        filterHz: 2200,
+        filterHz: 1700,
+        expression: {
+          ...layerExpressionPresets.pluck,
+          accent: { amount: 0.14, patternBias: 0.22, emphasisSteps: [0, 3, 8, 11] },
+        },
       },
       lead: {
-        waveform: 'triangle',
-        pattern: [null, 19, null, 17, null, 14, null, 12, null, 19, null, 21, null, 17, null, 14],
-        gain: 0.045,
-        durationSteps: 2,
+        waveform: 'sine',
+        pattern: [null, 14, null, 17, null, 14, null, 12, null, 19, null, 17, null, 14, null, 12],
+        gain: 0.034,
+        durationSteps: 3,
         octaveShift: 1,
+        expression: {
+          ...layerExpressionPresets.swell,
+          ...layerExpressionPresets.vibrato,
+        },
       },
       noise: {
-        pattern: [0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1],
-        gain: 0.018,
-        filterHz: 2100,
+        pattern: [0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+        gain: 0.013,
+        filterHz: 1600,
         durationSteps: 1,
+        expression: {
+          ...noiseExpressionPresets.shimmer,
+          accent: { amount: 0.08, patternBias: 0.12, emphasisSteps: [2, 5, 9, 13] },
+        },
       },
     },
     {
-      tempo: 134,
-      masterGain: 1.08,
-      bass: { gain: 0.18 },
-      pulse: { gain: 0.065 },
-      lead: { waveform: 'sawtooth', gain: 0.055 },
-      noise: { gain: 0.022, filterHz: 2600 },
+      tempo: 120,
+      masterGain: 1.02,
+      expression: {
+        ...trackExpressionPresets.subtleWidth,
+        ...trackExpressionPresets.chase,
+        modulation: { ...trackExpressionPresets.chase.modulation, depth: 260, rateHz: 1.1 },
+        accent: { amount: 0.16, patternBias: 0.38, emphasisSteps: [0, 4, 8, 12] },
+      },
+      bass: { gain: 0.17, filterHz: 950 },
+      pulse: {
+        waveform: 'square',
+        pattern: [12, null, 12, null, 14, null, 12, null, 17, null, 14, null, 12, null, 10, null],
+        gain: 0.052,
+      },
+      lead: { waveform: 'triangle', gain: 0.042 },
+      noise: {
+        gain: 0.018,
+        filterHz: 2100,
+        expression: {
+          ...noiseExpressionPresets.grit,
+          accent: { amount: 0.12, patternBias: 0.22, emphasisSteps: [1, 5, 9, 13] },
+        },
+      },
     }
   ),
 };

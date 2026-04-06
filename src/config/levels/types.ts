@@ -86,6 +86,65 @@ export interface LevelSectionConfig {
 export type MusicWaveform = OscillatorType;
 export type MusicStep = number | null;
 
+export type MusicEnvelopeCurve = 'linear' | 'soft' | 'hard';
+
+export interface MusicEnvelopeShapeConfig {
+  attack?: number;
+  decay?: number;
+  sustain?: number;
+  release?: number;
+  curve?: MusicEnvelopeCurve;
+}
+
+export interface MusicStereoMotionConfig {
+  pan?: number;
+  width?: number;
+  rateHz?: number;
+  phaseOffset?: number;
+}
+
+export type MusicModulationTarget = 'gain' | 'filter' | 'pitch' | 'pan';
+
+export interface MusicModulationConfig {
+  target?: MusicModulationTarget;
+  depth?: number;
+  rateHz?: number;
+  waveform?: MusicWaveform | 'random';
+}
+
+export interface MusicAccentConfig {
+  amount?: number;
+  patternBias?: number;
+  emphasisSteps?: number[];
+}
+
+export type MusicNoiseColor = 'white' | 'pink' | 'brown';
+export type MusicNoiseTexture = 'smooth' | 'grainy' | 'shimmer';
+
+export interface MusicNoiseCharacterConfig {
+  color?: MusicNoiseColor;
+  texture?: MusicNoiseTexture;
+  drift?: number;
+  burst?: number;
+}
+
+export interface ProceduralMusicLayerExpressionConfig {
+  envelope?: MusicEnvelopeShapeConfig;
+  stereo?: MusicStereoMotionConfig;
+  modulation?: MusicModulationConfig;
+  accent?: MusicAccentConfig;
+}
+
+export interface ProceduralNoiseLayerExpressionConfig extends ProceduralMusicLayerExpressionConfig {
+  noiseCharacter?: MusicNoiseCharacterConfig;
+}
+
+export interface ProceduralMusicTrackExpressionConfig {
+  stereo?: MusicStereoMotionConfig;
+  modulation?: MusicModulationConfig;
+  accent?: MusicAccentConfig;
+}
+
 export interface ProceduralMusicLayerConfig {
   waveform: MusicWaveform;
   pattern: MusicStep[];
@@ -94,6 +153,7 @@ export interface ProceduralMusicLayerConfig {
   octaveShift?: number;
   detune?: number;
   filterHz?: number;
+  expression?: ProceduralMusicLayerExpressionConfig;
 }
 
 export interface ProceduralNoiseLayerConfig {
@@ -101,6 +161,7 @@ export interface ProceduralNoiseLayerConfig {
   gain: number;
   filterHz: number;
   durationSteps: number;
+  expression?: ProceduralNoiseLayerExpressionConfig;
 }
 
 export interface ProceduralMusicTrackConfig {
@@ -108,6 +169,7 @@ export interface ProceduralMusicTrackConfig {
   rootHz: number;
   stepsPerBeat: number;
   masterGain: number;
+  expression?: ProceduralMusicTrackExpressionConfig;
   bass: ProceduralMusicLayerConfig;
   pulse?: ProceduralMusicLayerConfig;
   lead?: ProceduralMusicLayerConfig;

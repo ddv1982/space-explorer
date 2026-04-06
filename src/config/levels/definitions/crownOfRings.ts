@@ -1,5 +1,5 @@
 import type { LevelConfig } from '../types';
-import { createMusicProfile } from '../musicHelpers';
+import { createMusicProfile, layerExpressionPresets, noiseExpressionPresets, trackExpressionPresets } from '../musicHelpers';
 
 export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   name: 'Crown of Rings',
@@ -88,55 +88,92 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   music: createMusicProfile(
     {
       cueName: 'Orbital Crown',
-      mood: 'majestic tension',
-      tempoFeel: 'propulsive with a ceremonial pulse',
-      musicalStyle: 'bright synth brass lead over urgent arcade percussion simulation',
-      intensity: 'high',
-      shiftMoments: ['Crossfire sections add extra pulse density.', 'Boss variation sharpens the lead into artillery fanfares.'],
+      mood: 'majestic focus',
+      tempoFeel: 'ceremonial orbit with forward motion',
+      musicalStyle: 'regal synth fanfare softened by ring-dust shimmer and elegant pulse ostinato',
+      intensity: 'medium-high',
+      shiftMoments: ['Crossfire sections add more pulse interlock.', 'Boss variation broadens the fanfare and adds brighter ring-dust texture.'],
       bossCueName: 'Orbital Crown: Ring Shepherd',
     },
     {
-      tempo: 132,
+      tempo: 122,
       rootHz: 130.81,
       stepsPerBeat: 4,
-      masterGain: 1.03,
+      masterGain: 0.98,
+      expression: {
+        ...trackExpressionPresets.orbit,
+        accent: { amount: 0.11, patternBias: 0.2, emphasisSteps: [0, 8] },
+      },
       bass: {
         waveform: 'triangle',
         pattern: [0, null, 0, null, 5, null, 7, null, 10, null, 7, null, 12, null, 10, null],
-        gain: 0.18,
+        gain: 0.17,
         durationSteps: 2,
         filterHz: 1000,
+        expression: {
+          ...layerExpressionPresets.pad,
+          accent: { ...layerExpressionPresets.gentleAccent.accent, emphasisSteps: [0, 4, 8, 12] },
+        },
       },
       pulse: {
-        waveform: 'square',
-        pattern: [12, null, 15, 12, null, 15, null, 19, 20, null, 19, null, 15, null, 12, null],
-        gain: 0.058,
+        waveform: 'triangle',
+        pattern: [12, null, 15, null, null, 15, null, 19, 20, null, 19, null, 15, null, 12, null],
+        gain: 0.046,
         durationSteps: 1,
         octaveShift: 1,
-        filterHz: 2300,
+        filterHz: 1900,
+        expression: {
+          ...layerExpressionPresets.pluck,
+          ...layerExpressionPresets.orbit,
+          accent: { ...layerExpressionPresets.drivingAccent.accent, emphasisSteps: [0, 2, 5, 8, 12] },
+        },
       },
       lead: {
-        waveform: 'sawtooth',
+        waveform: 'triangle',
         pattern: [24, null, null, 22, 24, null, null, 27, 29, null, null, 27, 24, null, 22, null],
-        gain: 0.048,
+        gain: 0.04,
         durationSteps: 2,
         octaveShift: 1,
-        filterHz: 1800,
+        filterHz: 1700,
+        expression: {
+          ...layerExpressionPresets.swell,
+          ...layerExpressionPresets.orbit,
+          ...layerExpressionPresets.vibrato,
+        },
       },
       noise: {
-        pattern: [1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0],
-        gain: 0.019,
-        filterHz: 2600,
+        pattern: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0],
+        gain: 0.015,
+        filterHz: 1800,
         durationSteps: 1,
+        expression: {
+          ...noiseExpressionPresets.shimmer,
+        },
       },
     },
     {
-      tempo: 144,
-      masterGain: 1.12,
-      bass: { gain: 0.2 },
-      pulse: { gain: 0.066 },
-      lead: { gain: 0.058 },
-      noise: { gain: 0.024, filterHz: 3000 },
+      tempo: 128,
+      masterGain: 1.05,
+      expression: {
+        ...trackExpressionPresets.orbit,
+        ...trackExpressionPresets.chase,
+        modulation: { ...trackExpressionPresets.chase.modulation, depth: 260, rateHz: 1.0 },
+        accent: { amount: 0.18, patternBias: 0.34, emphasisSteps: [0, 4, 8, 12] },
+      },
+      bass: { gain: 0.18, filterHz: 1100 },
+      pulse: {
+        waveform: 'square',
+        pattern: [12, null, 15, 12, null, 17, null, 19, 20, null, 19, null, 17, null, 15, null],
+        gain: 0.054,
+      },
+      lead: { waveform: 'sawtooth', gain: 0.047, filterHz: 1850 },
+      noise: {
+        gain: 0.019,
+        filterHz: 2400,
+        expression: {
+          ...noiseExpressionPresets.grit,
+        },
+      },
     }
   ),
 };

@@ -1,5 +1,5 @@
 import type { LevelConfig } from '../types';
-import { createMusicProfile } from '../musicHelpers';
+import { createMusicProfile, layerExpressionPresets, noiseExpressionPresets, trackExpressionPresets } from '../musicHelpers';
 
 export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   name: 'Obsidian Maw',
@@ -97,54 +97,90 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   music: createMusicProfile(
     {
       cueName: 'Maw Dive',
-      mood: 'claustrophobic adrenaline',
-      tempoFeel: 'tight, tense, and accelerating',
-      musicalStyle: 'low synth rumble with sharp arcade stabs and percussive noise ticks',
-      intensity: 'very high',
-      shiftMoments: ['The canyon section adds constant percussion-like ticks.', 'Boss variation becomes a relentless pursuit loop.'],
+      mood: 'claustrophobic focus',
+      tempoFeel: 'tight and stalking',
+      musicalStyle: 'canyon rumble drone with clipped echo-stabs and close-mic grit',
+      intensity: 'high',
+      shiftMoments: ['The corridor adds more echo-stab activity and low dust rumble.', 'Boss variation escalates by tightening the pursuit texture and response phrases.'],
       bossCueName: 'Maw Dive: Serpent Wake',
     },
     {
-      tempo: 142,
+      tempo: 132,
       rootHz: 103.83,
       stepsPerBeat: 4,
-      masterGain: 1.06,
+      masterGain: 1.0,
+      expression: {
+        ...trackExpressionPresets.subtleWidth,
+        accent: { amount: 0.14, patternBias: 0.26, emphasisSteps: [0, 8] },
+      },
       bass: {
         waveform: 'sawtooth',
         pattern: [0, null, null, 0, 3, null, null, 5, 7, null, null, 8, 10, null, null, 12],
-        gain: 0.2,
+        gain: 0.19,
         durationSteps: 2,
-        filterHz: 950,
+        filterHz: 820,
+        expression: {
+          ...layerExpressionPresets.pad,
+          accent: { ...layerExpressionPresets.gentleAccent.accent, emphasisSteps: [0, 3, 8, 12] },
+        },
       },
       pulse: {
-        waveform: 'square',
-        pattern: [12, null, 12, 15, null, 15, 17, null, 19, null, 19, 17, null, 15, 12, null],
-        gain: 0.062,
+        waveform: 'triangle',
+        pattern: [null, 12, null, 15, null, 15, null, null, 19, null, 19, null, null, 15, 12, null],
+        gain: 0.048,
         durationSteps: 1,
         octaveShift: 1,
-        filterHz: 2200,
+        filterHz: 1700,
+        expression: {
+          ...layerExpressionPresets.pluck,
+          accent: { ...layerExpressionPresets.drivingAccent.accent, emphasisSteps: [1, 3, 5, 8, 10, 14] },
+        },
       },
       lead: {
-        waveform: 'triangle',
+        waveform: 'sine',
         pattern: [24, null, 22, null, 24, null, 27, null, 29, null, 27, null, 24, null, 22, null],
-        gain: 0.052,
-        durationSteps: 1,
+        gain: 0.038,
+        durationSteps: 2,
         octaveShift: 1,
+        expression: {
+          ...layerExpressionPresets.swell,
+          ...layerExpressionPresets.drift,
+          ...layerExpressionPresets.vibrato,
+        },
       },
       noise: {
-        pattern: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0],
-        gain: 0.022,
-        filterHz: 2400,
+        pattern: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+        gain: 0.016,
+        filterHz: 1300,
         durationSteps: 1,
+        expression: {
+          ...noiseExpressionPresets.rumble,
+        },
       },
     },
     {
-      tempo: 156,
-      masterGain: 1.16,
-      bass: { gain: 0.22 },
-      pulse: { gain: 0.07 },
-      lead: { waveform: 'sawtooth', gain: 0.062 },
-      noise: { gain: 0.028, filterHz: 3200 },
+      tempo: 138,
+      masterGain: 1.08,
+      expression: {
+        ...trackExpressionPresets.subtleWidth,
+        ...trackExpressionPresets.chase,
+        modulation: { ...trackExpressionPresets.chase.modulation, depth: 300, rateHz: 1.18 },
+        accent: { amount: 0.2, patternBias: 0.42, emphasisSteps: [0, 4, 8, 12] },
+      },
+      bass: { gain: 0.21, filterHz: 950 },
+      pulse: {
+        waveform: 'square',
+        pattern: [12, null, 12, 15, null, 15, 17, null, 19, null, 19, 17, null, 15, 12, null],
+        gain: 0.058,
+      },
+      lead: { waveform: 'triangle', gain: 0.044, filterHz: 1650 },
+      noise: {
+        gain: 0.021,
+        filterHz: 1900,
+        expression: {
+          ...noiseExpressionPresets.grit,
+        },
+      },
     }
   ),
 };

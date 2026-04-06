@@ -1,5 +1,5 @@
 import type { LevelConfig } from '../types';
-import { createMusicProfile } from '../musicHelpers';
+import { createMusicProfile, layerExpressionPresets, noiseExpressionPresets, trackExpressionPresets } from '../musicHelpers';
 
 export const NEBULA_PASS_LEVEL: LevelConfig = {
   name: 'Nebula Pass',
@@ -65,52 +65,93 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
   music: createMusicProfile(
     {
       cueName: 'Purple Drift',
-      mood: 'mysterious and slightly tense',
-      tempoFeel: 'gliding but nervous',
-      musicalStyle: 'ambient pads implied through soft oscillators and syncopated synth pings',
-      intensity: 'medium',
-      shiftMoments: ['Bring in higher pulse accents during ambush pockets.'],
+      mood: 'mysterious and cocooned',
+      tempoFeel: 'gliding with soft interruptions',
+      musicalStyle: 'misty synth lullaby with floating pings and a silky pink-noise veil',
+      intensity: 'low to medium',
+      shiftMoments: ['Ambush pockets add extra plucks and gentle filter motion without breaking the haze.'],
       bossCueName: 'Purple Drift Break',
     },
     {
-      tempo: 96,
-      rootHz: 98,
+      tempo: 92,
+      rootHz: 92.5,
       stepsPerBeat: 4,
-      masterGain: 0.92,
+      masterGain: 0.88,
+      expression: {
+        ...trackExpressionPresets.orbit,
+        stereo: { ...trackExpressionPresets.orbit.stereo, width: 0.28, rateHz: 0.07 },
+        accent: { amount: 0.06, patternBias: 0.12, emphasisSteps: [0, 8] },
+      },
       bass: {
         waveform: 'sine',
-        pattern: [0, null, null, null, 3, null, null, null, 10, null, null, null, 5, null, null, null],
-        gain: 0.16,
+        pattern: [0, null, null, null, 3, null, null, null, 10, null, null, null, 5, null, 3, null],
+        gain: 0.14,
         durationSteps: 4,
+        expression: {
+          ...layerExpressionPresets.pad,
+          ...layerExpressionPresets.drift,
+          accent: { ...layerExpressionPresets.gentleAccent.accent, emphasisSteps: [0, 8] },
+        },
       },
       pulse: {
         waveform: 'triangle',
-        pattern: [null, 15, null, null, null, 10, null, null, null, 15, null, null, null, 17, null, null],
-        gain: 0.04,
+        pattern: [null, 15, null, null, null, 10, null, null, null, 17, null, null, null, 15, null, null],
+        gain: 0.032,
         durationSteps: 2,
         octaveShift: 1,
-        filterHz: 1500,
+        filterHz: 1300,
+        expression: {
+          ...layerExpressionPresets.pluck,
+          ...layerExpressionPresets.orbit,
+          accent: { amount: 0.08, patternBias: 0.14, emphasisSteps: [1, 9] },
+        },
       },
       lead: {
         waveform: 'sine',
-        pattern: [12, null, null, 15, null, null, 10, null, 12, null, null, 17, null, null, 15, null],
-        gain: 0.038,
-        durationSteps: 3,
+        pattern: [12, null, null, 15, null, null, 10, null, 17, null, null, 15, null, null, 12, null],
+        gain: 0.03,
+        durationSteps: 4,
         octaveShift: 1,
+        expression: {
+          ...layerExpressionPresets.swell,
+          ...layerExpressionPresets.orbit,
+          ...layerExpressionPresets.vibrato,
+        },
       },
       noise: {
         pattern: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        gain: 0.013,
-        filterHz: 1400,
+        gain: 0.011,
+        filterHz: 1350,
         durationSteps: 1,
+        expression: {
+          ...noiseExpressionPresets.shimmer,
+          stereo: { ...noiseExpressionPresets.shimmer.stereo, width: 0.3, rateHz: 0.08 },
+        },
       },
     },
     {
-      tempo: 110,
-      masterGain: 1.0,
-      pulse: { waveform: 'square', gain: 0.05 },
-      lead: { gain: 0.048 },
-      noise: { gain: 0.016, filterHz: 1800 },
+      tempo: 98,
+      masterGain: 0.94,
+      expression: {
+        ...trackExpressionPresets.orbit,
+        ...trackExpressionPresets.chase,
+        modulation: { ...trackExpressionPresets.chase.modulation, depth: 220, rateHz: 0.75 },
+        accent: { amount: 0.1, patternBias: 0.22, emphasisSteps: [0, 4, 8, 12] },
+      },
+      pulse: {
+        waveform: 'square',
+        pattern: [null, 15, null, 12, null, 10, null, 12, null, 17, null, 15, null, 12, null, 10],
+        gain: 0.04,
+      },
+      lead: { waveform: 'triangle', gain: 0.036 },
+      noise: {
+        gain: 0.015,
+        filterHz: 1700,
+        expression: {
+          ...noiseExpressionPresets.shimmer,
+          accent: { amount: 0.08, patternBias: 0.12, emphasisSteps: [5, 11] },
+        },
+      },
     }
   ),
 };
