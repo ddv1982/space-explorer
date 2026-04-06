@@ -2,15 +2,15 @@
 
 A retro arcade space exploration shooter built with [Phaser 3](https://phaser.io), TypeScript, and Vite. Fly your spaceship through five increasingly dangerous sectors, battle enemy waves, defeat bosses, and upgrade your ship between missions.
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)
-![Phaser](https://img.shields.io/badge/Phaser-3.88-green)
-![Vite](https://img.shields.io/badge/Vite-6.0-purple)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
+![Phaser](https://img.shields.io/badge/Phaser-3.90-green)
+![Vite](https://img.shields.io/badge/Vite-8.0-purple)
 
 ## Play
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Open `http://localhost:5173` in your browser.
@@ -62,9 +62,9 @@ Spent at the planet intermission screen between levels using your score as curre
 
 ## Tech Stack
 
-- **Phaser 3.88** — Game engine (WebGL with Canvas fallback)
+- **Phaser 3.90** — Game engine (WebGL with Canvas fallback)
 - **TypeScript** — Strict mode, ES2020 target
-- **Vite 6** — Build tool and dev server
+- **Vite 8** — Build tool and dev server
 
 ## Architecture
 
@@ -123,8 +123,8 @@ src/
 ## Build
 
 ```bash
-npm run build      # TypeScript check + Vite production build
-npm run preview    # Preview production build locally
+bun run build      # TypeScript check + Vite production build
+bun run preview    # Preview production build locally
 ```
 
 Output goes to `dist/`. Bundle is approximately 1.5 MB (350 KB gzipped), mostly Phaser.
