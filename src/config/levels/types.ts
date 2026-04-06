@@ -81,6 +81,13 @@ export interface LevelSectionConfig {
   asteroidInterval?: number;
   hazardEvents?: ScriptedHazardConfig[];
   musicIntensity?: number;
+  // VAT emotion targets for this section
+  vatTarget?: {
+    valence: number;   // -1.0 to 1.0
+    arousal: number;   // 0.0 to 1.0
+    tension: number;   // 0.0 to 1.0
+  };
+  tensionArc?: 'constant' | 'gradualBuild' | 'buildRelease' | 'waves';
 }
 
 export type MusicWaveform = OscillatorType;

@@ -51,6 +51,11 @@ class AudioManager {
 
   private ctx: AudioContext | null = null;
   private musicGain: GainNode | null = null;
+  private musicFX: {
+    widener: StereoPannerNode | null;
+    reverbDelay: DelayNode | null;
+    reverbGain: GainNode | null;
+  } | null = null;
   private musicPlaying = false;
   private musicTimer: number | null = null;
   private masterGain: GainNode | null = null;
@@ -101,6 +106,29 @@ class AudioManager {
     }
   }
 
+  private createAmbientReverb(): { delay: DelayNode; gain: GainNode } | null {
+    if (!this.ctx) return null;
+
+    // Create a subtle delay-based reverb for ambient space
+    const delay = this.ctx.createDelay();
+    delay.delayTime.value = 0.25; // 250ms delay for spaciousness
+
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.12; // Very subtle reverb level
+
+    // Add a lowpass filter to soften the reverb tail
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 2800;
+    filter.Q.value = 0.5;
+
+    // Chain: delay -> filter -> gain
+    delay.connect(filter);
+    filter.connect(gain);
+
+    return { delay, gain };
+  }
+
   private recreateMusicBus(): void {
     if (!this.ctx || !this.masterGain) {
       return;
@@ -114,14 +142,71 @@ class AudioManager {
       }
     }
 
+    if (this.musicFX?.widener) {
+      try {
+        this.musicFX.widener.disconnect();
+      } catch {
+        // Cleanup widener
+      }
+    }
+
     this.musicGain = this.ctx.createGain();
     this.musicGain.gain.value = 0.001;
-    this.musicGain.connect(this.masterGain);
+
+    // Create stereo widener for spatial depth
+    const widener = this.ctx.createStereoPanner();
+    widener.pan.value = 0; // Center, but we'll add subtle modulation later if needed
+
+    // Create ambient reverb
+    const reverb = this.createAmbientReverb();
+
+    // Store FX chain reference
+    this.musicFX = {
+      widener,
+      reverbDelay: reverb?.delay ?? null,
+      reverbGain: reverb?.gain ?? null,
+    };
+
+    // Chain: musicGain -> widener -> masterGain
+    this.musicGain.connect(widener);
+    widener.connect(this.masterGain);
+
+    // Reverb send: musicGain -> reverbDelay -> reverbGain -> masterGain
+    if (reverb) {
+      this.musicGain.connect(reverb.delay);
+      reverb.gain.connect(this.masterGain);
+    }
   }
 
   private resetNodes(): void {
     if (this.musicTimer !== null) {
       clearTimeout(this.musicTimer);
+    }
+
+    // Clean up music FX chain
+    if (this.musicFX) {
+      if (this.musicFX.widener) {
+        try {
+          this.musicFX.widener.disconnect();
+        } catch {
+          // Best effort cleanup
+        }
+      }
+      if (this.musicFX.reverbDelay) {
+        try {
+          this.musicFX.reverbDelay.disconnect();
+        } catch {
+          // Best effort cleanup
+        }
+      }
+      if (this.musicFX.reverbGain) {
+        try {
+          this.musicFX.reverbGain.disconnect();
+        } catch {
+          // Best effort cleanup
+        }
+      }
+      this.musicFX = null;
     }
 
     this.ctx = null;
@@ -911,6 +996,32 @@ class AudioManager {
         // Best effort bus teardown for already-disconnected nodes.
       }
       this.musicGain = null;
+    }
+
+    // Clean up FX chain when stopping music
+    if (this.musicFX) {
+      if (this.musicFX.widener) {
+        try {
+          this.musicFX.widener.disconnect();
+        } catch {
+          // Best effort cleanup
+        }
+      }
+      if (this.musicFX.reverbDelay) {
+        try {
+          this.musicFX.reverbDelay.disconnect();
+        } catch {
+          // Best effort cleanup
+        }
+      }
+      if (this.musicFX.reverbGain) {
+        try {
+          this.musicFX.reverbGain.disconnect();
+        } catch {
+          // Best effort cleanup
+        }
+      }
+      this.musicFX = null;
     }
   }
 

@@ -11,7 +11,6 @@ export class HUD {
   private hpText!: Phaser.GameObjects.Text;
   private livesLabel!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
-  private scoreLabel!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private sectorText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
@@ -57,7 +56,6 @@ export class HUD {
 
     const accentColor = levelConfig?.accentColor ?? 0x54dcff;
     const labelColor = colorToHexString(mixColor(0xd8f4ff, accentColor, 0.28));
-    const scoreLabelColor = colorToHexString(mixColor(0x9fd4e6, accentColor, 0.55));
     const sectorColor = colorToHexString(mixColor(0x7fdcff, accentColor, 0.62));
     this.panelStrokeColor = mixColor(0x334466, accentColor, 0.42);
     this.hpBorderColor = mixColor(0x8ee8ff, accentColor, 0.48);
@@ -118,16 +116,8 @@ export class HUD {
       strokeThickness: 2,
     }).setDepth(100);
 
-    // Score label and text
-    this.scoreLabel = scene.add.text(topBarRight, this.hpBarY - 3, 'SCORE', {
-      ...labelStyle,
-      fontSize: '10px',
-      color: scoreLabelColor,
-    }).setDepth(100);
-    this.scoreLabel.setOrigin(1, 0);
-    this.scoreLabel.setLetterSpacing(2);
-
-    this.scoreText = scene.add.text(topBarRight, this.hpBarY - 5, '0', {
+    // Score text only (no label)
+    this.scoreText = scene.add.text(topBarRight, this.hpBarY - 3, '0', {
       fontSize: '18px',
       color: '#ffffff',
       fontFamily: 'monospace',
@@ -265,7 +255,6 @@ export class HUD {
     this.hpText.setScrollFactor(factor);
     this.livesLabel.setScrollFactor(factor);
     this.livesText.setScrollFactor(factor);
-    this.scoreLabel.setScrollFactor(factor);
     this.scoreText.setScrollFactor(factor);
     this.sectorText.setScrollFactor(factor);
     this.levelText.setScrollFactor(factor);
