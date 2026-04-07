@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2026-04-07
+
+### Changed
+- Reduced player life-loss explosion severity by lowering player-only explosion visual and audio intensity values.
+- Kept player death explosion timing immediate (no delayed trigger) and preserved existing boss explosion intensity.
+
+### Quality
+- Verified with `bun run lint`, `bun run knip`, and `bun run build`.
+
 ## [0.3.1] - 2026-04-07
 
 ### Changed

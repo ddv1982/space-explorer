@@ -35,6 +35,8 @@ import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
   private static readonly BOSS_EXPLOSION_AUDIO_INTENSITY = 2.0;
+  private static readonly PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY = 2.2;
+  private static readonly PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY = 1.4;
 
   private parallax!: ParallaxBackground;
   private inputManager!: InputManager;
@@ -368,8 +370,8 @@ export class GameScene extends Phaser.Scene {
 
   private playPlayerDeathCue(x: number, y: number): void {
     this.player.playDeathAnimation();
-    audioManager.playExplosion(GameScene.BOSS_EXPLOSION_AUDIO_INTENSITY);
-    this.effectsManager.createExplosion(x, y, GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY);
+    audioManager.playExplosion(GameScene.PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY);
+    this.effectsManager.createExplosion(x, y, GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY);
   }
 
   private stopPlayerMotion(): void {
