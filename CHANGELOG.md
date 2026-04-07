@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2026-04-07
+
+### Changed
+- Rebalanced adaptive boss HP scaling to react much more strongly to offensive upgrades, especially fire-rate and damage investment.
+- Added level-gated offense scaling and stronger progression/defense contributions so upgraded runs still face durable, readable boss fights.
+
+### Quality
+- Verified with `bun run lint`, `bun run build`, `bun run knip`, and `bun run levels:validate`.
+
 ## [0.5.2] - 2026-04-07
 
 ### Added
