@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-04-07
+
+### Changed
+- Updated the life-loss explosion cue to reuse the same visual and audio intensities as boss explosions.
+- Removed the delayed player death explosion trigger so the effect now fires immediately with no perceptible lag.
+
+### Quality
+- Verified with `bun run lint`, `bun run knip`, and `bun run build`.
+
 ## [0.2.1] - 2026-04-07
 
 ### Changed
