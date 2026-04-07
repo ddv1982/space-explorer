@@ -436,14 +436,13 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     this.syncMobileControlsBlockedState();
-    this.effectsManager.updateRuntimePerformance(delta);
 
     if (this.mobileViewportGuard?.isBlocked() || this.flow.isGameplayLocked()) {
       this.updateHud();
       return;
     }
 
-    this.parallax.update(delta, this.game.loop.actualFps);
+    this.parallax.update(delta);
     this.player.update(this.inputManager);
 
     if (this.inputManager.isFiring() && this.player.isAlive) {

@@ -55,18 +55,15 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     this.bobTime = 0;
 
     // Add glow based on type
-    if (!this.filters) {
-      this.enableFilters();
+    if (this.preFX) {
+      this.preFX.clear();
+      const colors: Record<PowerUpType, number> = {
+        health: 0x00ff44,
+        shield: 0x4488ff,
+        rapidfire: 0xffcc00,
+      };
+      this.preFX.addGlow(colors[type], 2, 2, false);
     }
-
-    const colors: Record<PowerUpType, number> = {
-      health: 0x00ff44,
-      shield: 0x4488ff,
-      rapidfire: 0xffcc00,
-    };
-
-    this.filters?.internal.clear();
-    this.filters?.internal.addGlow(colors[type], 2, 2, 1, false);
   }
 
   preUpdate(time: number, delta: number): void {

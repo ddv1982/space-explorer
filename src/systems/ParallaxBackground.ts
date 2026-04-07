@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { SCROLL_SPEED } from '../utils/constants';
 import type { LevelConfig } from '../config/LevelsConfig';
 import { mixColor } from '../utils/colorUtils';
-import { resolvePerformancePolicy, SustainedFpsFallbackGate } from '../utils/performancePolicy';
 
 interface StarLayerConfig {
   name: string;
@@ -65,21 +64,21 @@ interface DebrisMote {
 }
 
 const LAYER_CONFIGS: StarLayerConfig[] = [
-  { name: 'far-stars', scrollSpeed: 0.15, starCount: 125, starSize: { min: 0.35, max: 1.4 }, starAlpha: { min: 0.15, max: 0.55 }, baseColor: 0x8888aa, accentMix: 0.08, sparkleFraction: 0.04, colorStarCount: 4 },
-  { name: 'mid-stars', scrollSpeed: 0.35, starCount: 84, starSize: { min: 0.8, max: 2.0 }, starAlpha: { min: 0.3, max: 0.8 }, baseColor: 0xaaaacc, accentMix: 0.14, sparkleFraction: 0.08, colorStarCount: 6 },
-  { name: 'near-stars', scrollSpeed: 0.6, starCount: 48, starSize: { min: 1.1, max: 3.1 }, starAlpha: { min: 0.5, max: 1.0 }, baseColor: 0xccccee, accentMix: 0.22, sparkleFraction: 0.12, colorStarCount: 6 },
-  { name: 'dust', scrollSpeed: 0.85, starCount: 28, starSize: { min: 0.4, max: 1.25 }, starAlpha: { min: 0.08, max: 0.24 }, baseColor: 0x6666aa, accentMix: 0.32, sparkleFraction: 0, colorStarCount: 3 },
+  { name: 'far-stars', scrollSpeed: 0.15, starCount: 100, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.15, max: 0.5 }, baseColor: 0x8888aa, accentMix: 0.08, sparkleFraction: 0.03, colorStarCount: 3 },
+  { name: 'mid-stars', scrollSpeed: 0.35, starCount: 65, starSize: { min: 0.8, max: 1.8 }, starAlpha: { min: 0.3, max: 0.75 }, baseColor: 0xaaaacc, accentMix: 0.14, sparkleFraction: 0.06, colorStarCount: 5 },
+  { name: 'near-stars', scrollSpeed: 0.6, starCount: 35, starSize: { min: 1.2, max: 2.8 }, starAlpha: { min: 0.5, max: 1.0 }, baseColor: 0xccccee, accentMix: 0.22, sparkleFraction: 0.1, colorStarCount: 4 },
+  { name: 'dust', scrollSpeed: 0.85, starCount: 20, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.08, max: 0.22 }, baseColor: 0x6666aa, accentMix: 0.32, sparkleFraction: 0, colorStarCount: 2 },
 ];
 
 const SCENIC_LAYER_CONFIGS: ScenicLayerConfig[] = [
   {
     name: 'nebula-far',
     depth: -9,
-    alpha: 0.86,
-    hazeCount: 5,
-    cloudCount: 9,
+    alpha: 0.82,
+    hazeCount: 4,
+    cloudCount: 8,
     shadowCount: 4,
-    sparkleCount: 18,
+    sparkleCount: 14,
     filamentCount: 3,
     radius: { min: 140, max: 280 },
     drift: { x: 18, y: 12 },
@@ -89,11 +88,11 @@ const SCENIC_LAYER_CONFIGS: ScenicLayerConfig[] = [
   {
     name: 'nebula-near',
     depth: -7,
-    alpha: 0.58,
+    alpha: 0.52,
     hazeCount: 3,
-    cloudCount: 8,
+    cloudCount: 7,
     shadowCount: 5,
-    sparkleCount: 26,
+    sparkleCount: 20,
     filamentCount: 4,
     radius: { min: 90, max: 200 },
     drift: { x: 32, y: 18 },
@@ -114,7 +113,6 @@ const STAR_ACCENT_COLORS = [0xffddaa, 0xaaddff, 0xffaa88, 0xaaffcc, 0xddaaff];
 export class ParallaxBackground {
   private scene: Phaser.Scene | null = null;
   private levelConfig?: LevelConfig;
-  private qualityScale = 1;
   private tileSprites: Phaser.GameObjects.TileSprite[] = [];
   private scenicLayers: ScenicLayerState[] = [];
   private planetLayer: PlanetLayerState | null = null;
@@ -122,10 +120,6 @@ export class ParallaxBackground {
   private elapsed = 0;
   private currentWidth = 0;
   private currentHeight = 0;
-  private motionUpdateStride = 1;
-  private motionUpdateTick = 0;
-  private runtimeLowFpsMode = false;
-  private readonly runtimeFpsFallback = new SustainedFpsFallbackGate();
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
@@ -138,28 +132,19 @@ export class ParallaxBackground {
     this.elapsed = 0;
     this.currentWidth = scene.cameras.main.width;
     this.currentHeight = scene.cameras.main.height;
-    const performancePolicy = resolvePerformancePolicy(this.currentWidth, this.currentHeight);
-    this.qualityScale = performancePolicy.qualityScale;
-    this.motionUpdateStride = performancePolicy.motionUpdateStride;
-    this.motionUpdateTick = 0;
-    this.runtimeLowFpsMode = false;
-    this.runtimeFpsFallback.reset();
 
     for (let i = 0; i < LAYER_CONFIGS.length; i++) {
       const config = LAYER_CONFIGS[i];
       const starColor = levelConfig
         ? mixColor(config.baseColor, levelConfig.accentColor, config.accentMix)
         : config.baseColor;
-      const starCount = this.scaleDetailCount(config.starCount, 8);
-      const sparkleCount = Math.floor(starCount * config.sparkleFraction);
-      const colorStarCount = this.scaleDetailCount(config.colorStarCount, 1);
-      const textureKey = `${config.name}-${starColor.toString(16)}-q${Math.round(this.qualityScale * 100)}-v4`;
+      const textureKey = `${config.name}-${starColor.toString(16)}-v2`;
 
       // Only generate texture if it doesn't exist
       if (!scene.textures.exists(textureKey)) {
         const g = scene.add.graphics();
 
-        for (let s = 0; s < starCount; s++) {
+        for (let s = 0; s < config.starCount; s++) {
           const x = Phaser.Math.Between(0, TILE_WIDTH);
           const y = Phaser.Math.Between(0, TILE_HEIGHT);
           const size = Phaser.Math.FloatBetween(config.starSize.min, config.starSize.max);
@@ -167,15 +152,11 @@ export class ParallaxBackground {
 
           g.fillStyle(starColor, alpha);
           g.fillCircle(x, y, size);
-
-          if (size > 1.35) {
-            g.fillStyle(starColor, alpha * 0.22);
-            g.fillCircle(x, y, size * 2.2);
-          }
         }
 
         // Bright sparkle crosses for near stars
         if (config.sparkleFraction > 0) {
+          const sparkleCount = Math.floor(config.starCount * config.sparkleFraction);
           for (let s = 0; s < sparkleCount; s++) {
             const x = Phaser.Math.Between(10, TILE_WIDTH - 10);
             const y = Phaser.Math.Between(10, TILE_HEIGHT - 10);
@@ -194,7 +175,7 @@ export class ParallaxBackground {
         }
 
         // Colored accent stars
-        for (let c = 0; c < colorStarCount; c++) {
+        for (let c = 0; c < config.colorStarCount; c++) {
           const x = Phaser.Math.Between(0, TILE_WIDTH);
           const y = Phaser.Math.Between(0, TILE_HEIGHT);
           const accentIdx = Phaser.Math.Between(0, STAR_ACCENT_COLORS.length - 1);
@@ -278,14 +259,9 @@ export class ParallaxBackground {
     this.tileSprites = [];
     this.scene = null;
     this.levelConfig = undefined;
-    this.qualityScale = 1;
     this.elapsed = 0;
     this.currentWidth = 0;
     this.currentHeight = 0;
-    this.motionUpdateStride = 1;
-    this.motionUpdateTick = 0;
-    this.runtimeLowFpsMode = false;
-    this.runtimeFpsFallback.reset();
   }
 
   // ---------------------------------------------------------------------------
@@ -301,10 +277,10 @@ export class ParallaxBackground {
 
     for (let i = 0; i < SCENIC_LAYER_CONFIGS.length; i++) {
       const layer = SCENIC_LAYER_CONFIGS[i];
-      const textureKey = `${layer.name}-${config.nebulaColor.toString(16)}-${config.accentColor.toString(16)}-${alphaKey}-${scenicWidth}x${scenicHeight}-q${Math.round(this.qualityScale * 100)}-v4`;
+      const textureKey = `${layer.name}-${config.nebulaColor.toString(16)}-${config.accentColor.toString(16)}-${alphaKey}-${scenicWidth}x${scenicHeight}-v2`;
 
       if (!scene.textures.exists(textureKey)) {
-        this.generateScenicTexture(scene, textureKey, scenicWidth, scenicHeight, config, layer, this.qualityScale);
+        this.generateScenicTexture(scene, textureKey, scenicWidth, scenicHeight, config, layer);
       }
 
       const sprite = scene.add.image(centerX, centerY, textureKey);
@@ -332,8 +308,7 @@ export class ParallaxBackground {
     width: number,
     height: number,
     levelConfig: LevelConfig,
-    layerConfig: ScenicLayerConfig,
-    detailScale: number
+    layerConfig: ScenicLayerConfig
   ): void {
     const graphics = scene.add.graphics();
     const bgColor = parseHexColor(levelConfig.bgColor);
@@ -343,15 +318,8 @@ export class ParallaxBackground {
     const shadowColor = mixColor(bgColor, 0x000000, 0.58);
     const filamentColor = mixColor(levelConfig.nebulaColor, levelConfig.accentColor, 0.6);
 
-    const hazeCount = this.scaleDetailCount(layerConfig.hazeCount, 2, detailScale);
-    const shadowCount = this.scaleDetailCount(layerConfig.shadowCount, 2, detailScale);
-    const cloudCount = this.scaleDetailCount(layerConfig.cloudCount, 3, detailScale);
-    const filamentCount = this.scaleDetailCount(layerConfig.filamentCount, 1, detailScale);
-    const sparkleCount = this.scaleDetailCount(layerConfig.sparkleCount, 4, detailScale);
-    const glowSpotCount = this.scaleDetailCount(4, 2, detailScale);
-
     // Large background haze
-    for (let i = 0; i < hazeCount; i++) {
+    for (let i = 0; i < layerConfig.hazeCount; i++) {
       const radius = Phaser.Math.Between(
         Math.floor(Math.min(width, height) * 0.28),
         Math.floor(Math.min(width, height) * 0.46)
@@ -368,7 +336,7 @@ export class ParallaxBackground {
     }
 
     // Deep shadows
-    for (let i = 0; i < shadowCount; i++) {
+    for (let i = 0; i < layerConfig.shadowCount; i++) {
       const radius = Phaser.Math.Between(
         Math.floor(layerConfig.radius.min * 0.75),
         Math.floor(layerConfig.radius.max * 1.1)
@@ -385,7 +353,7 @@ export class ParallaxBackground {
     }
 
     // Cloud formations with layered depth
-    for (let i = 0; i < cloudCount; i++) {
+    for (let i = 0; i < layerConfig.cloudCount; i++) {
       const cx = Phaser.Math.Between(-60, width + 60);
       const cy = Phaser.Math.Between(-60, height + 60);
       const radius = Phaser.Math.Between(layerConfig.radius.min, layerConfig.radius.max);
@@ -425,7 +393,7 @@ export class ParallaxBackground {
     }
 
     // Bright glow spots
-    for (let i = 0; i < glowSpotCount; i++) {
+    for (let i = 0; i < 4; i++) {
       const cx = Phaser.Math.Between(0, width);
       const cy = Phaser.Math.Between(0, height);
       const radius = Phaser.Math.Between(80, 200);
@@ -442,7 +410,7 @@ export class ParallaxBackground {
     }
 
     // Filament/tendril shapes for organic feel
-    for (let i = 0; i < filamentCount; i++) {
+    for (let i = 0; i < layerConfig.filamentCount; i++) {
       const startX = Phaser.Math.Between(0, width);
       const startY = Phaser.Math.Between(0, height);
       const length = Phaser.Math.Between(120, 400);
@@ -471,7 +439,7 @@ export class ParallaxBackground {
     }
 
     // Sparkle points
-    for (let i = 0; i < sparkleCount; i++) {
+    for (let i = 0; i < layerConfig.sparkleCount; i++) {
       const sparkleX = Phaser.Math.Between(0, width);
       const sparkleY = Phaser.Math.Between(0, height);
       const sparkleAlpha = Phaser.Math.FloatBetween(0.08, 0.22);
@@ -570,7 +538,7 @@ export class ParallaxBackground {
   // ---------------------------------------------------------------------------
 
   private createDebrisMotes(scene: Phaser.Scene, config: LevelConfig): void {
-    const moteCount = this.scaleDetailCount(Phaser.Math.Between(6, 12), 4);
+    const moteCount = Phaser.Math.Between(6, 12);
 
     for (let i = 0; i < moteCount; i++) {
       const size = Phaser.Math.FloatBetween(1.5, 4);
@@ -615,22 +583,14 @@ export class ParallaxBackground {
   // Update
   // ---------------------------------------------------------------------------
 
-  update(delta: number, actualFps: number = 60): void {
+  update(delta: number): void {
     this.elapsed += delta;
-    this.sampleRuntimePerformance(delta, actualFps);
 
     // Star layers scroll
     for (let i = 0; i < this.tileSprites.length; i++) {
       const speed = LAYER_CONFIGS[i].scrollSpeed * SCROLL_SPEED * delta / 16;
       this.tileSprites[i].tilePositionY += speed;
     }
-
-    this.motionUpdateTick += 1;
-    if (this.motionUpdateTick % this.motionUpdateStride !== 0) {
-      return;
-    }
-
-    const motionDelta = delta * this.motionUpdateStride;
 
     // Nebula drift
     for (let i = 0; i < this.scenicLayers.length; i++) {
@@ -653,7 +613,7 @@ export class ParallaxBackground {
       const phase = this.elapsed * mote.speed + mote.phase;
       mote.sprite.x = mote.baseX + Math.sin(phase) * mote.driftX;
       mote.sprite.y = mote.baseY + Math.cos(phase * 0.7) * mote.driftY;
-      mote.sprite.angle += mote.rotSpeed * motionDelta / 16;
+      mote.sprite.angle += mote.rotSpeed * delta / 16;
     }
   }
 
@@ -689,40 +649,6 @@ export class ParallaxBackground {
     this.planetLayer.baseX = centerX;
     this.planetLayer.baseY = centerY;
     this.planetLayer.sprite.setPosition(centerX, centerY);
-  }
-
-  private scaleDetailCount(count: number, floor: number, scale: number = this.qualityScale): number {
-    return Math.max(floor, Math.round(count * scale));
-  }
-
-  private sampleRuntimePerformance(delta: number, actualFps: number): void {
-    if (this.runtimeLowFpsMode) {
-      return;
-    }
-
-    if (this.runtimeFpsFallback.update(delta, actualFps)) {
-      this.applyRuntimeLowFpsMode();
-    }
-  }
-
-  private applyRuntimeLowFpsMode(): void {
-    this.runtimeLowFpsMode = true;
-    this.motionUpdateStride = Math.max(this.motionUpdateStride, 2);
-
-    if (this.scenicLayers.length > 0) {
-      const nearLayer = this.scenicLayers[this.scenicLayers.length - 1];
-      nearLayer.sprite.setAlpha(Math.max(0.32, nearLayer.sprite.alpha * 0.72));
-    }
-
-    if (this.planetLayer) {
-      this.planetLayer.sprite.setAlpha(Math.max(0.14, this.planetLayer.sprite.alpha * 0.75));
-    }
-
-    for (let i = 0; i < this.debrisMotes.length; i++) {
-      if (i % 2 === 1) {
-        this.debrisMotes[i].sprite.setVisible(false);
-      }
-    }
   }
 
   // ---------------------------------------------------------------------------

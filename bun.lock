@@ -5,7 +5,7 @@
     "": {
       "name": "space-explorer",
       "dependencies": {
-        "phaser": "^4.0.0-rc.7",
+        "phaser": "^3.90.0",
       },
       "devDependencies": {
         "@eslint/js": "^10.0.1",
@@ -353,7 +353,7 @@
 
     "path-key": ["path-key@3.1.1", "", {}, "sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q=="],
 
-    "phaser": ["phaser@4.0.0-rc.7", "", { "dependencies": { "eventemitter3": "^5.0.1" } }, "sha512-4ResXEPHK4+jBdrYdq6HtfSSmX6bvTIw3js6Y9p4nniYog4Y0CZxmZ+xabCNCFDE9vBj2D/mxexJ4TPObJ5WCg=="],
+    "phaser": ["phaser@3.90.0", "", { "dependencies": { "eventemitter3": "^5.0.1" } }, "sha512-/cziz/5ZIn02uDkC9RzN8VF9x3Gs3XdFFf9nkiMEQT3p7hQlWuyjy4QWosU802qqno2YSLn2BfqwOKLv/sSVfQ=="],
 
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 

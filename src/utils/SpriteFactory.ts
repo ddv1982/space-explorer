@@ -120,27 +120,6 @@ export function ensurePlayerTexture(scene: Phaser.Scene): string {
     g.moveTo(10, 30);
     g.lineTo(26, 30);
     g.strokePath();
-
-    // Outer hull rim light for higher-fidelity silhouette
-    g.lineStyle(1, 0x66ddff, 0.55);
-    g.beginPath();
-    g.moveTo(18, 1);
-    g.lineTo(32, 30);
-    g.lineTo(27, 39);
-    g.lineTo(18, 35);
-    g.lineTo(9, 39);
-    g.lineTo(4, 30);
-    g.closePath();
-    g.strokePath();
-
-    // Engine plume bloom
-    g.fillStyle(0x99eeff, 0.28);
-    g.fillEllipse(12, 42, 8, 5);
-    g.fillEllipse(24, 42, 8, 5);
-
-    // Nose beacon highlight
-    g.fillStyle(0xd8ffff, 0.7);
-    g.fillCircle(18, 3, 1.2);
   });
 }
 
@@ -198,25 +177,6 @@ export function ensureScoutTexture(scene: Phaser.Scene): string {
     // Engine glow
     g.fillStyle(0xff4444, 0.6);
     g.fillCircle(13, 26, 2);
-
-    // Additional wing trim and depth shadow
-    g.fillStyle(0x550a18, 0.45);
-    g.fillTriangle(6, 24, 13, 18, 10, 26);
-    g.fillTriangle(20, 24, 13, 18, 16, 26);
-
-    g.lineStyle(1, 0xff99aa, 0.6);
-    g.beginPath();
-    g.moveTo(13, 1);
-    g.lineTo(21, 19);
-    g.lineTo(19, 27);
-    g.lineTo(7, 27);
-    g.lineTo(5, 19);
-    g.closePath();
-    g.strokePath();
-
-    // Hot trail bloom
-    g.fillStyle(0xff8866, 0.35);
-    g.fillEllipse(13, 26, 7, 4);
   });
 }
 
@@ -297,27 +257,6 @@ export function ensureFighterTexture(scene: Phaser.Scene): string {
     g.moveTo(18, 4);
     g.lineTo(18, 32);
     g.strokePath();
-
-    // Hard-edge silhouette and wing energy rails
-    g.lineStyle(1, 0x88ffcc, 0.55);
-    g.beginPath();
-    g.moveTo(18, 1);
-    g.lineTo(29, 13);
-    g.lineTo(33, 28);
-    g.lineTo(29, 35);
-    g.lineTo(7, 35);
-    g.lineTo(3, 28);
-    g.lineTo(7, 13);
-    g.closePath();
-    g.strokePath();
-
-    g.fillStyle(0x44ffaa, 0.28);
-    g.fillEllipse(11, 27, 7, 3);
-    g.fillEllipse(25, 27, 7, 3);
-
-    g.fillStyle(0xaaffdd, 0.45);
-    g.fillRect(6, 24, 6, 1);
-    g.fillRect(24, 24, 6, 1);
   });
 }
 
@@ -399,26 +338,6 @@ export function ensureBomberTexture(scene: Phaser.Scene): string {
     g.fillStyle(0xffcc00, 0.4);
     g.fillRect(16, 30, 4, 2);
     g.fillRect(24, 30, 4, 2);
-
-    // Armor edge definition
-    g.lineStyle(1, 0xffb777, 0.5);
-    g.beginPath();
-    g.moveTo(22, 1);
-    g.lineTo(35, 9);
-    g.lineTo(39, 20);
-    g.lineTo(37, 31);
-    g.lineTo(29, 37);
-    g.lineTo(15, 37);
-    g.lineTo(7, 31);
-    g.lineTo(5, 20);
-    g.lineTo(9, 9);
-    g.closePath();
-    g.strokePath();
-
-    // Heavy engine heat haze
-    g.fillStyle(0xffcc66, 0.28);
-    g.fillEllipse(5, 26, 10, 6);
-    g.fillEllipse(39, 26, 10, 6);
   });
 }
 
@@ -500,28 +419,6 @@ export function ensureGunshipTexture(scene: Phaser.Scene): string {
     g.moveTo(20, 4);
     g.lineTo(20, 36);
     g.strokePath();
-
-    // Hull contour line for clearer silhouette
-    g.lineStyle(1, 0x88ccff, 0.52);
-    g.beginPath();
-    g.moveTo(20, 1);
-    g.lineTo(33, 12);
-    g.lineTo(35, 30);
-    g.lineTo(29, 39);
-    g.lineTo(11, 39);
-    g.lineTo(5, 30);
-    g.lineTo(7, 12);
-    g.closePath();
-    g.strokePath();
-
-    // Muzzle light strips and vent glows
-    g.fillStyle(0x99cfff, 0.45);
-    g.fillRect(2, 19, 4, 2);
-    g.fillRect(34, 19, 4, 2);
-
-    g.fillStyle(0x66bbff, 0.22);
-    g.fillEllipse(14, 38, 8, 4);
-    g.fillEllipse(26, 38, 8, 4);
   });
 }
 
