@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2026-04-07
+
+### Added
+- Adaptive boss durability scaling that increases boss max HP based on player upgrade investment and campaign progression.
+- New `bun run levels:validate` command with level authoring guardrails for section continuity, boss trigger coherence, and hazard parameter sanity.
+
+### Changed
+- Introduced section-identity pacing hooks (tension-arc + VAT tension bias) to shape spawn and music intensity over section progress.
+- Added hazard-pressure fairness throttling in `WaveManager` to smooth extreme hazard + encounter overlap spikes.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun run lint`, `bun run build`, and `bun run knip`.
+
 ## [0.5.1] - 2026-04-07
 
 ### Changed
