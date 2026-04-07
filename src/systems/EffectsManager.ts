@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
+import {
+  applyBaselineCameraFilters,
+  applyCameraColorGrade,
+  clearCameraFilters,
+} from '../utils/renderingCompat';
 
 export class EffectsManager {
   private scene!: Phaser.Scene;
-  private colorMatrix: Phaser.FX.ColorMatrix | null = null;
-  private bloom: Phaser.FX.Bloom | null = null;
+  private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
+  private bloom: Phaser.Filters.Glow | null = null;
   private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -40,32 +45,12 @@ export class EffectsManager {
     if (!config.colorGrade) return;
 
     const camera = this.scene.cameras.main;
-    if (!camera.postFX) return;
-
-    if (!this.colorMatrix) {
-      this.colorMatrix = camera.postFX.addColorMatrix();
-    }
-
-    const { brightness, contrast, saturation } = config.colorGrade;
-    this.colorMatrix.brightness(brightness);
-    this.colorMatrix.contrast(contrast);
-    this.colorMatrix.saturate(saturation);
+    this.colorMatrix = applyCameraColorGrade(camera, this.colorMatrix, config.colorGrade);
   }
 
   private setupCameraFX(): void {
     const camera = this.scene.cameras.main;
-
-    if (camera.postFX) {
-      camera.postFX.addVignette(0.5, 0.5, 0.78, 0.28);
-
-      // Add bloom for glowing highlights (WebGL only)
-      try {
-        this.bloom = camera.postFX.addBloom(0, 0, 0, 0, 1.0, 4);
-      } catch {
-        // Bloom not available (Canvas renderer) - skip silently
-        this.bloom = null;
-      }
-    }
+    this.bloom = applyBaselineCameraFilters(camera);
   }
 
   private generateParticleTextures(): void {
@@ -190,7 +175,11 @@ export class EffectsManager {
 
   private clearCameraFX(): void {
     const camera = this.scene?.cameras?.main;
-    camera?.postFX?.clear();
+    if (!camera) {
+      return;
+    }
+
+    clearCameraFilters(camera);
   }
 
   private destroyEmitters(): void {

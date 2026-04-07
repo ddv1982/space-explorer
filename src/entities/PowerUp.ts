@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { despawnEntity } from '../utils/entityUtils';
 import { ensurePowerUpTextures } from '../utils/SpriteFactory';
+import { applyGameObjectGlow } from '../utils/renderingCompat';
 
 export type PowerUpType = 'health' | 'shield' | 'rapidfire';
 
@@ -55,15 +56,13 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     this.bobTime = 0;
 
     // Add glow based on type
-    if (this.preFX) {
-      this.preFX.clear();
-      const colors: Record<PowerUpType, number> = {
-        health: 0x00ff44,
-        shield: 0x4488ff,
-        rapidfire: 0xffcc00,
-      };
-      this.preFX.addGlow(colors[type], 2, 2, false);
-    }
+    const colors: Record<PowerUpType, number> = {
+      health: 0x00ff44,
+      shield: 0x4488ff,
+      rapidfire: 0xffcc00,
+    };
+
+    applyGameObjectGlow(this, colors[type]);
   }
 
   preUpdate(time: number, delta: number): void {

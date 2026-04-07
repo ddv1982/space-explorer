@@ -4,6 +4,7 @@ import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerShieldCount, getPlayerDamage } from '../systems/PlayerState';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { ensurePlayerTexture } from '../utils/SpriteFactory';
+import { applyGameObjectGlow } from '../utils/renderingCompat';
 
 export type PlayerDamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
 
@@ -34,9 +35,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5);
 
-    if (this.preFX) {
-      this.preFX.addGlow(0x00aaff, 2, 2, false);
-    }
+    applyGameObjectGlow(this, 0x00aaff, { clearFirst: false });
   }
 
   applyState(state: PlayerStateData): void {

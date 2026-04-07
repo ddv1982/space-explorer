@@ -1,12 +1,12 @@
 # Space Explorer
 
-A retro arcade space shooter built with [Phaser 3](https://phaser.io), TypeScript, and Vite. Pilot a responsive ship through a **10-level campaign**, survive escalating hazards, defeat themed bosses, collect power-ups, and upgrade your ship between missions.
+A retro arcade space shooter built with [Phaser 4 RC](https://phaser.io), TypeScript, and Vite. Pilot a responsive ship through a **10-level campaign**, survive escalating hazards, defeat themed bosses, collect power-ups, and upgrade your ship between missions.
 
 Playable here:
 [Space Explorer](https://space-explorer.net)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
-![Phaser](https://img.shields.io/badge/Phaser-3.90-green)
+![Phaser](https://img.shields.io/badge/Phaser-4.0.0--rc.7-green)
 ![Vite](https://img.shields.io/badge/Vite-8.0-purple)
 
 ## Quick start
@@ -85,7 +85,7 @@ Some upgrades unlock later in the campaign and use progression caps so the run s
 
 ## Tech stack
 
-- **Phaser 3.90** — game engine
+- **Phaser 4 RC (4.0.0-rc.7)** — game engine
 - **TypeScript** — strict typing across gameplay and config
 - **Vite 8** — dev server and production build
 - **Bun** — package manager / script runner
@@ -157,6 +157,7 @@ bun run knip     # unused-code analysis
 
 - [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
 - [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
+- [`docs/releases/0.2.0.md`](docs/releases/0.2.0.md) — Phaser 4 compatibility-first migration notes
 
 ## Acknowledgements
 
