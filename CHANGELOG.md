@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-04-07
+
+### Changed
+- Replaced all 10 particle textures with visually distinct procedural shapes: irregular fire-burst explosions, elongated spark streaks, flash-ring muzzle effects, soft smoke wisps for exhaust, multi-layered glow trails, star-burst impacts, four-point sparkle stars, multi-layered burst glows, and irregular debris polygon chunks.
+- Enhanced nebula rendering with vortex/swirl arm patterns, dense cloud cluster formations, color gradient bands, and more varied organic cloud shapes.
+- Upgraded planet rendering with surface band noise (gas giant feel), specular highlight, limb darkening, multi-ring system with gap detail, cloud wisps on surface, and outer atmospheric halo layer.
+- Added star twinkle shimmer system with 12-24 animated sparkle sprites per level that pulse in brightness using sine-wave oscillation.
+
+### Quality
+- Verified with `bun run lint`, `bun run knip`, and `bun run build`.
+
 ## [0.3.3] - 2026-04-07
 
 ### Changed

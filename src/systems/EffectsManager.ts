@@ -54,34 +54,271 @@ export class EffectsManager {
   }
 
   private generateParticleTextures(): void {
-    this.generateCircleTexture('particle-explosion', 16, 8);
-    this.generateCircleTexture('particle-spark', 8, 4);
-    this.generateCircleTexture('particle-muzzle', 12, 6);
-    this.generateCircleTexture('particle-exhaust', 6, 3);
-    this.generateCircleTexture('particle-trail', 4, 2);
-    this.generateCircleTexture('particle-hit', 10, 5);
-    this.generateCircleTexture('particle-sparkle', 6, 3);
-    this.generateCircleTexture('particle-burst', 12, 6);
-    this.generateCircleTexture('particle-debris', 5, 2);
+    this.generateExplosionTexture('particle-explosion', 20);
+    this.generateSparkTexture('particle-spark', 10, 4);
+    this.generateMuzzleTexture('particle-muzzle', 12);
+    this.generateSmokeTexture('particle-exhaust', 8);
+    this.generateGlowTexture('particle-trail', 6);
+    this.generateHitTexture('particle-hit', 12);
+    this.generateStarBurstTexture('particle-sparkle', 8);
+    this.generateBurstTexture('particle-burst', 14);
+    this.generateDebrisTexture('particle-debris', 6);
     this.generateSquareTexture('particle-ember', 3);
   }
 
-  private generateCircleTexture(key: string, size: number, radius: number): void {
-    if (this.scene.textures.exists(key)) {
-      return;
+  private fillPolygonFromCenter(
+    g: Phaser.GameObjects.Graphics,
+    cx: number,
+    cy: number,
+    points: { x: number; y: number }[]
+  ): void {
+    for (let i = 0; i < points.length; i++) {
+      const next = points[(i + 1) % points.length];
+      g.fillTriangle(cx, cy, points[i].x, points[i].y, next.x, next.y);
+    }
+  }
+
+  private generateExplosionTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+
+    // Outer irregular fire burst
+    g.fillStyle(0xffffff, 0.3);
+    const outerPoints = 8;
+    const outerPts: { x: number; y: number }[] = [];
+    for (let i = 0; i < outerPoints; i++) {
+      const angle = (i / outerPoints) * Math.PI * 2;
+      const dist = r * (0.6 + 0.4 * Math.abs(Math.sin(angle * 2.7 + 1.3)));
+      outerPts.push({ x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist });
+    }
+    this.fillPolygonFromCenter(g, cx, cy, outerPts);
+
+    // Inner bright core
+    g.fillStyle(0xffffff, 0.6);
+    const innerPoints = 6;
+    const innerPts: { x: number; y: number }[] = [];
+    for (let i = 0; i < innerPoints; i++) {
+      const angle = (i / innerPoints) * Math.PI * 2 + 0.5;
+      const dist = r * (0.3 + 0.2 * Math.abs(Math.sin(angle * 3.1)));
+      innerPts.push({ x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist });
+    }
+    this.fillPolygonFromCenter(g, cx, cy, innerPts);
+
+    // Hot center
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(cx, cy, r * 0.2);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  private generateSparkTexture(key: string, width: number, height: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = width / 2;
+    const cy = height / 2;
+
+    // Elongated streak with bright core
+    g.fillStyle(0xffffff, 0.3);
+    g.fillEllipse(cx, cy, width, height);
+
+    g.fillStyle(0xffffff, 0.7);
+    g.fillEllipse(cx, cy, width * 0.5, height * 0.7);
+
+    g.fillStyle(0xffffff, 1);
+    g.fillEllipse(cx, cy, width * 0.2, height * 0.4);
+
+    g.generateTexture(key, width, height);
+    g.destroy();
+  }
+
+  private generateMuzzleTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+
+    // Flash ring with center void
+    g.fillStyle(0xffffff, 0.15);
+    g.fillCircle(cx, cy, r);
+
+    g.fillStyle(0xffffff, 0.5);
+    g.fillCircle(cx, cy, r * 0.7);
+
+    g.fillStyle(0xffffff, 0);
+    g.fillCircle(cx, cy, r * 0.35);
+
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(cx, cy, r * 0.15);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  private generateSmokeTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+
+    // Soft-edged wispy cloud from overlapping soft circles
+    g.fillStyle(0xffffff, 0.15);
+    g.fillCircle(cx - 1, cy + 1, size * 0.45);
+    g.fillCircle(cx + 1, cy - 1, size * 0.4);
+    g.fillCircle(cx, cy, size * 0.5);
+
+    g.fillStyle(0xffffff, 0.35);
+    g.fillCircle(cx, cy, size * 0.3);
+
+    g.fillStyle(0xffffff, 0.1);
+    g.fillCircle(cx, cy, size * 0.55);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  private generateGlowTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+
+    // Soft glow with concentric alpha rings
+    g.fillStyle(0xffffff, 0.08);
+    g.fillCircle(cx, cy, r);
+
+    g.fillStyle(0xffffff, 0.25);
+    g.fillCircle(cx, cy, r * 0.6);
+
+    g.fillStyle(0xffffff, 0.6);
+    g.fillCircle(cx, cy, r * 0.3);
+
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(cx, cy, r * 0.12);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  private generateHitTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+
+    // Star burst impact with pointed rays
+    g.fillStyle(0xffffff, 0.2);
+    const rayCount = 8;
+    for (let i = 0; i < rayCount; i++) {
+      const angle = (i / rayCount) * Math.PI * 2;
+      const nextAngle = angle + Math.PI / rayCount;
+      const innerR = r * 0.25;
+      const outerR = r * 0.9;
+      g.fillTriangle(
+        cx + Math.cos(angle) * innerR, cy + Math.sin(angle) * innerR,
+        cx + Math.cos(angle) * outerR, cy + Math.sin(angle) * outerR,
+        cx + Math.cos(nextAngle) * innerR, cy + Math.sin(nextAngle) * innerR,
+      );
     }
 
-    const graphics = this.scene.add.graphics();
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillCircle(size / 2, size / 2, radius);
-    graphics.generateTexture(key, size, size);
-    graphics.destroy();
+    // Bright center
+    g.fillStyle(0xffffff, 0.8);
+    g.fillCircle(cx, cy, r * 0.3);
+
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(cx, cy, r * 0.12);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  private generateStarBurstTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+
+    // Four-point star
+    g.fillStyle(0xffffff, 0.4);
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 - Math.PI / 4;
+      const dist = i % 2 === 0 ? r * 0.9 : r * 0.25;
+      pts.push({ x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist });
+    }
+    this.fillPolygonFromCenter(g, cx, cy, pts);
+
+    g.fillStyle(0xffffff, 0.8);
+    g.fillCircle(cx, cy, r * 0.15);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  private generateBurstTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+
+    // Multi-layered glow burst
+    g.fillStyle(0xffffff, 0.06);
+    g.fillCircle(cx, cy, r);
+
+    g.fillStyle(0xffffff, 0.2);
+    g.fillCircle(cx, cy, r * 0.7);
+
+    g.fillStyle(0xffffff, 0.5);
+    g.fillCircle(cx, cy, r * 0.4);
+
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(cx, cy, r * 0.15);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  private generateDebrisTexture(key: string, size: number): void {
+    if (this.scene.textures.exists(key)) return;
+
+    const g = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+
+    // Irregular polygon chunk
+    g.fillStyle(0xffffff, 1);
+    const cornerCount = 5;
+    const corners: { x: number; y: number }[] = [];
+    for (let i = 0; i < cornerCount; i++) {
+      const angle = (i / cornerCount) * Math.PI * 2 + i * 0.3;
+      const dist = r * (0.5 + 0.5 * Math.abs(Math.sin(angle * 1.7 + 0.8)));
+      corners.push({ x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist });
+    }
+    this.fillPolygonFromCenter(g, cx, cy, corners);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
   }
 
   private generateSquareTexture(key: string, size: number): void {
-    if (this.scene.textures.exists(key)) {
-      return;
-    }
+    if (this.scene.textures.exists(key)) return;
 
     const graphics = this.scene.add.graphics();
     graphics.fillStyle(0xffffff, 1);

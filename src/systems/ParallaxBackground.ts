@@ -33,6 +33,14 @@ interface ScenicLayerConfig {
   accentMix: number;
 }
 
+interface TwinkleState {
+  sprite: Phaser.GameObjects.Image;
+  phase: number;
+  speed: number;
+  minAlpha: number;
+  maxAlpha: number;
+}
+
 interface ScenicLayerState {
   sprite: Phaser.GameObjects.Image;
   textureKey: string;
@@ -117,6 +125,7 @@ export class ParallaxBackground {
   private scenicLayers: ScenicLayerState[] = [];
   private planetLayer: PlanetLayerState | null = null;
   private debrisMotes: DebrisMote[] = [];
+  private twinkles: TwinkleState[] = [];
   private elapsed = 0;
   private currentWidth = 0;
   private currentHeight = 0;
@@ -213,6 +222,7 @@ export class ParallaxBackground {
       this.createScenicLayers(scene, levelConfig);
       this.createPlanetLayer(scene, levelConfig);
       this.createDebrisMotes(scene, levelConfig);
+      this.createStarTwinkles(scene, levelConfig);
     }
 
     this.layoutTileSprites();
@@ -251,6 +261,7 @@ export class ParallaxBackground {
     this.destroyScenicLayers();
     this.destroyPlanetLayer();
     this.destroyDebrisMotes();
+    this.destroyTwinkles();
 
     for (let i = 0; i < this.tileSprites.length; i++) {
       this.tileSprites[i].destroy();
@@ -438,6 +449,82 @@ export class ParallaxBackground {
       }
     }
 
+    // Vortex/swirl patterns for organic flow
+    const vortexCount = Phaser.Math.Between(1, 2);
+    for (let v = 0; v < vortexCount; v++) {
+      const vcx = Phaser.Math.Between(Math.floor(width * 0.15), Math.floor(width * 0.85));
+      const vcy = Phaser.Math.Between(Math.floor(height * 0.15), Math.floor(height * 0.85));
+      const vortexR = Phaser.Math.Between(80, 200);
+      const swirlColor = mixColor(levelConfig.accentColor, levelConfig.nebulaColor, 0.55);
+
+      // Swirl arms
+      const armCount = Phaser.Math.Between(2, 4);
+      for (let arm = 0; arm < armCount; arm++) {
+        const startAngle = (arm / armCount) * Math.PI * 2;
+        const armSegments = 12;
+        graphics.lineStyle(Phaser.Math.FloatBetween(2, 5), swirlColor, levelConfig.nebulaAlpha * 0.1);
+
+        graphics.beginPath();
+        for (let s = 0; s < armSegments; s++) {
+          const t = s / armSegments;
+          const angle = startAngle + t * Math.PI * 1.8;
+          const r = t * vortexR;
+          const px = vcx + Math.cos(angle) * r;
+          const py = vcy + Math.sin(angle) * r;
+          if (s === 0) {
+            graphics.moveTo(px, py);
+          } else {
+            graphics.lineTo(px, py);
+          }
+        }
+        graphics.strokePath();
+
+        // Glow nodes along arms
+        for (let s = 2; s < armSegments; s += 3) {
+          const t = s / armSegments;
+          const angle = startAngle + t * Math.PI * 1.8;
+          const r = t * vortexR;
+          const px = vcx + Math.cos(angle) * r;
+          const py = vcy + Math.sin(angle) * r;
+          drawSoftCircle(graphics, px, py, Phaser.Math.Between(12, 28), swirlColor, levelConfig.nebulaAlpha * 0.07, 6);
+        }
+      }
+
+      // Vortex core glow
+      drawSoftCircle(graphics, vcx, vcy, Math.floor(vortexR * 0.25), glowColor, levelConfig.nebulaAlpha * 0.1, 10);
+    }
+
+    // Dense cloud cluster zones (bunched formations)
+    const clusterCount = Phaser.Math.Between(1, 3);
+    for (let c = 0; c < clusterCount; c++) {
+      const clusterCx = Phaser.Math.Between(0, width);
+      const clusterCy = Phaser.Math.Between(0, height);
+      const clusterSpread = Phaser.Math.Between(60, 150);
+      const clusterClouds = Phaser.Math.Between(4, 8);
+
+      for (let cc = 0; cc < clusterClouds; cc++) {
+        const cx = clusterCx + Phaser.Math.Between(-clusterSpread, clusterSpread);
+        const cy = clusterCy + Phaser.Math.Between(-clusterSpread, clusterSpread);
+        const radius = Phaser.Math.Between(40, 100);
+
+        const clusterCloudColor = mixColor(cloudColor, glowColor, Phaser.Math.FloatBetween(0, 0.4));
+        drawSoftCircle(graphics, cx, cy, radius, clusterCloudColor, levelConfig.nebulaAlpha * 0.22, 8);
+
+        // Secondary glow within cluster clouds
+        if (cc % 2 === 0) {
+          drawSoftCircle(graphics, cx + 8, cy - 6, Math.floor(radius * 0.4), glowColor, levelConfig.nebulaAlpha * 0.1, 8);
+        }
+      }
+    }
+
+    // Color gradient band (horizontal sweep of tinted haze)
+    const bandY = Phaser.Math.Between(Math.floor(height * 0.2), Math.floor(height * 0.8));
+    const bandColor = mixColor(levelConfig.accentColor, levelConfig.nebulaColor, 0.4);
+    for (let bx = 0; bx < width; bx += 30) {
+      const by = bandY + Math.sin(bx * 0.02) * 20;
+      drawSoftCircle(graphics, bx, by, Phaser.Math.Between(40, 80), bandColor, levelConfig.nebulaAlpha * 0.06, 8);
+    }
+
     // Sparkle points
     for (let i = 0; i < layerConfig.sparkleCount; i++) {
       const sparkleX = Phaser.Math.Between(0, width);
@@ -495,13 +582,35 @@ export class ParallaxBackground {
     const planetY = height * Phaser.Math.FloatBetween(0.08, 0.25);
     const planetRadius = Phaser.Math.Between(80, 160);
 
+    // Outer atmospheric halo (largest, faintest)
+    const atmoColor2 = mixColor(config.accentColor, 0xffffff, 0.15);
+    drawSoftCircle(graphics, planetX, planetY, planetRadius + 40, atmoColor2, 0.025, 14);
+
     // Planet body shadow
     drawSoftCircle(graphics, planetX + 4, planetY + 4, planetRadius + 2, 0x000000, 0.15, 8);
 
     // Planet body
     drawSoftCircle(graphics, planetX, planetY, planetRadius, palette[0], 0.3, 6);
 
-    // Planet lit side highlight
+    // Surface band noise (horizontal striping for gas giant feel)
+    const bandCount = Phaser.Math.Between(3, 6);
+    for (let b = 0; b < bandCount; b++) {
+      const bandY = planetY - planetRadius + (b + 0.5) * (planetRadius * 2 / bandCount);
+      const bandColor = mixColor(palette[0], palette[1], Phaser.Math.FloatBetween(0.2, 0.8));
+      const bandAlpha = Phaser.Math.FloatBetween(0.04, 0.1);
+
+      // Only draw bands that fall within planet disc
+      for (let bx = planetX - planetRadius; bx < planetX + planetRadius; bx += 8) {
+        const distFromCenter = Math.abs(bx - planetX);
+        const maxY = Math.sqrt(Math.max(0, planetRadius * planetRadius - distFromCenter * distFromCenter));
+        if (Math.abs(bandY - planetY) < maxY) {
+          const jitter = Phaser.Math.Between(-4, 4);
+          drawSoftCircle(graphics, bx, bandY + jitter, Phaser.Math.Between(6, 14), bandColor, bandAlpha, 4);
+        }
+      }
+    }
+
+    // Planet lit side highlight (larger, more diffuse)
     drawSoftCircle(
       graphics,
       planetX - planetRadius * 0.2,
@@ -512,13 +621,40 @@ export class ParallaxBackground {
       8
     );
 
-    // Atmosphere glow
+    // Secondary highlight for specular feel
+    const specColor = mixColor(palette[1], 0xffffff, 0.4);
+    drawSoftCircle(
+      graphics,
+      planetX - planetRadius * 0.3,
+      planetY - planetRadius * 0.25,
+      Math.floor(planetRadius * 0.25),
+      specColor,
+      0.12,
+      10
+    );
+
+    // Inner atmosphere glow
     const atmoColor = mixColor(config.accentColor, 0xffffff, 0.3);
     drawSoftCircle(graphics, planetX, planetY, planetRadius + 15, atmoColor, 0.06, 10);
 
-    // Ring hint for gas giants (partial arc)
+    // Limb darkening (darker edge on far side)
+    const limbColor = mixColor(palette[0], 0x000000, 0.4);
+    drawSoftCircle(
+      graphics,
+      planetX + planetRadius * 0.35,
+      planetY + planetRadius * 0.1,
+      Math.floor(planetRadius * 0.65),
+      limbColor,
+      0.08,
+      8
+    );
+
+    // Ring system for gas giants (multiple arcs with varying thickness)
     if (Phaser.Math.Between(0, 1) === 1) {
       const ringColor = mixColor(palette[0], palette[1], 0.5);
+      const ringAccentColor = mixColor(ringColor, config.accentColor, 0.3);
+
+      // Outer ring
       graphics.lineStyle(3, ringColor, 0.15);
       graphics.beginPath();
       graphics.arc(planetX, planetY, planetRadius * 1.5, -0.4, 0.4);
@@ -527,6 +663,31 @@ export class ParallaxBackground {
       graphics.beginPath();
       graphics.arc(planetX, planetY, planetRadius * 1.6, -0.35, 0.35);
       graphics.strokePath();
+
+      // Inner ring (thinner, brighter)
+      graphics.lineStyle(1.5, ringAccentColor, 0.18);
+      graphics.beginPath();
+      graphics.arc(planetX, planetY, planetRadius * 1.35, -0.45, 0.45);
+      graphics.strokePath();
+
+      // Gap between rings (dark line)
+      const gapColor = mixColor(ringColor, 0x000000, 0.7);
+      graphics.lineStyle(1, gapColor, 0.08);
+      graphics.beginPath();
+      graphics.arc(planetX, planetY, planetRadius * 1.42, -0.42, 0.42);
+      graphics.strokePath();
+    }
+
+    // Cloud wisps on planet surface
+    const cloudWispCount = Phaser.Math.Between(2, 5);
+    for (let w = 0; w < cloudWispCount; w++) {
+      const wx = planetX + Phaser.Math.Between(-Math.floor(planetRadius * 0.6), Math.floor(planetRadius * 0.6));
+      const wy = planetY + Phaser.Math.Between(-Math.floor(planetRadius * 0.5), Math.floor(planetRadius * 0.5));
+      const dist = Math.sqrt((wx - planetX) ** 2 + (wy - planetY) ** 2);
+      if (dist < planetRadius * 0.8) {
+        const wispColor = mixColor(palette[1], 0xffffff, 0.5);
+        drawSoftCircle(graphics, wx, wy, Phaser.Math.Between(8, 20), wispColor, 0.05, 6);
+      }
     }
 
     graphics.generateTexture(textureKey, width, height);
@@ -580,6 +741,61 @@ export class ParallaxBackground {
   }
 
   // ---------------------------------------------------------------------------
+  // Star twinkle shimmer
+  // ---------------------------------------------------------------------------
+
+  private createStarTwinkles(scene: Phaser.Scene, _config: LevelConfig): void {
+    const twinkleCount = Phaser.Math.Between(12, 24);
+
+    for (let i = 0; i < twinkleCount; i++) {
+      const size = Phaser.Math.FloatBetween(2, 5);
+      const textureKey = `twinkle-${Math.round(size * 10)}`;
+
+      if (!scene.textures.exists(textureKey)) {
+        const g = scene.add.graphics();
+        // Four-point star twinkle
+        const cx = size;
+        const cy = size;
+        const ts = size;
+
+        // Soft outer glow
+        g.fillStyle(0xffffff, 0.08);
+        g.fillCircle(cx, cy, ts);
+
+        g.fillStyle(0xffffff, 0.25);
+        g.fillCircle(cx, cy, ts * 0.5);
+
+        // Cross rays
+        g.fillStyle(0xffffff, 0.5);
+        g.fillRect(cx - ts, cy - 0.3, ts * 2, 0.6);
+        g.fillRect(cx - 0.3, cy - ts, 0.6, ts * 2);
+
+        // Hot center
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(cx, cy, 0.6);
+
+        g.generateTexture(textureKey, Math.ceil(size * 2), Math.ceil(size * 2));
+        g.destroy();
+      }
+
+      const x = Phaser.Math.Between(0, this.currentWidth);
+      const y = Phaser.Math.Between(0, this.currentHeight);
+      const depth = DEPTHS[Phaser.Math.Between(0, DEPTHS.length - 1)];
+      const sprite = scene.add.image(x, y, textureKey);
+      sprite.setDepth(depth + 1);
+      sprite.setAlpha(0);
+
+      this.twinkles.push({
+        sprite,
+        phase: Phaser.Math.FloatBetween(0, Math.PI * 2),
+        speed: Phaser.Math.FloatBetween(0.0008, 0.003),
+        minAlpha: Phaser.Math.FloatBetween(0, 0.15),
+        maxAlpha: Phaser.Math.FloatBetween(0.3, 0.8),
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Update
   // ---------------------------------------------------------------------------
 
@@ -614,6 +830,14 @@ export class ParallaxBackground {
       mote.sprite.x = mote.baseX + Math.sin(phase) * mote.driftX;
       mote.sprite.y = mote.baseY + Math.cos(phase * 0.7) * mote.driftY;
       mote.sprite.angle += mote.rotSpeed * delta / 16;
+    }
+
+    // Star twinkle shimmer
+    for (let i = 0; i < this.twinkles.length; i++) {
+      const twinkle = this.twinkles[i];
+      const t = Math.sin(this.elapsed * twinkle.speed + twinkle.phase);
+      const normalizedT = (t + 1) / 2;
+      twinkle.sprite.setAlpha(twinkle.minAlpha + normalizedT * (twinkle.maxAlpha - twinkle.minAlpha));
     }
   }
 
@@ -681,6 +905,13 @@ export class ParallaxBackground {
       mote.sprite.destroy();
     }
     this.debrisMotes = [];
+  }
+
+  private destroyTwinkles(): void {
+    for (const twinkle of this.twinkles) {
+      twinkle.sprite.destroy();
+    }
+    this.twinkles = [];
   }
 }
 
