@@ -23,6 +23,7 @@ interface ToneLayerArgs {
   time: number;
   stepDuration: number;
   intensityBlend: number;
+  creativityDrive: number;
 }
 
 interface NoiseLayerArgs {
@@ -34,6 +35,7 @@ interface NoiseLayerArgs {
   time: number;
   stepDuration: number;
   intensityBlend: number;
+  creativityDrive: number;
   getNoiseBuffer: (color?: MusicNoiseCharacterConfig['color']) => AudioBuffer | null;
   getExplosionBuffer: () => AudioBuffer | null;
 }
@@ -44,14 +46,15 @@ function createPanner(
   stereo: ProceduralMusicLayerExpressionConfig['stereo'],
   time: number,
   duration: number,
-  intensityBlend: number
+  intensityBlend: number,
+  creativityDrive: number
 ): StereoPannerNode | null {
   if (!stereo || (Math.abs(basePan) < 0.001 && (stereo.width ?? 0) <= 0)) {
     return null;
   }
 
   const panner = ctx.createStereoPanner();
-  const width = clamp(stereo.width ?? 0, 0, 1);
+  const width = clamp((stereo.width ?? 0) * (0.62 + creativityDrive * 0.56), 0, 1);
   const phaseOffset = stereo.phaseOffset ?? 0;
   const startingPan = clamp(basePan + Math.sin(phaseOffset * Math.PI * 2) * width * 0.35, -1, 1);
   panner.pan.setValueAtTime(startingPan, time);
@@ -60,7 +63,7 @@ function createPanner(
     const panLfo = ctx.createOscillator();
     const panDepth = ctx.createGain();
     panLfo.type = 'sine';
-    panLfo.frequency.setValueAtTime((stereo.rateHz ?? 0) * (0.85 + intensityBlend * 0.45), time);
+    panLfo.frequency.setValueAtTime((stereo.rateHz ?? 0) * (0.72 + intensityBlend * 0.42 + creativityDrive * 0.3), time);
     panDepth.gain.setValueAtTime(width * (0.3 + intensityBlend * 0.45), time);
     panLfo.connect(panDepth);
     panDepth.connect(panner.pan);
@@ -151,6 +154,7 @@ function scheduleTone({
   time,
   duration,
   intensityBlend,
+  creativityDrive,
 }: ToneLayerArgs & { frequency: number; duration: number }): void {
   if (!track.expression && !layer.expression) {
     scheduleLegacyTone(ctx, musicGain, layer, frequency, time, duration, track.masterGain);
@@ -159,19 +163,19 @@ function scheduleTone({
 
   const expression = resolveLayerExpression(track.expression, layer.expression);
   const envelope = getEnvelopeShape(duration, layer.waveform, expression?.envelope);
-  const accentScale = getAccentScale(stepIndex, expression?.accent);
+  const accentScale = getAccentScale(stepIndex, expression?.accent) * (0.72 + creativityDrive * 0.38);
   const noteGain = ctx.createGain();
   const voiceMix = ctx.createGain();
   const stereo = expression?.stereo;
   const basePan = clamp(stereo?.pan ?? 0, -1, 1);
-  const panner = createPanner(ctx, basePan, stereo, time, duration + envelope.release, intensityBlend);
+  const panner = createPanner(ctx, basePan, stereo, time, duration + envelope.release, intensityBlend, creativityDrive);
   const attackPeak = layer.gain * track.masterGain * accentScale * (0.9 + intensityBlend * 0.18);
   const sustainGain = Math.max(attackPeak * envelope.sustain, 0.001);
   const attackEnd = time + envelope.attack;
   const decayEnd = attackEnd + envelope.decay;
   const releaseStart = Math.max(decayEnd, time + Math.max(duration - envelope.release, duration * 0.45));
   const stopTime = releaseStart + envelope.release + 0.04;
-  const voiceCount = frequency > 180 && intensityBlend > 0.45 ? 2 : 1;
+  const voiceCount = frequency > 180 && intensityBlend + creativityDrive * 0.26 > 0.45 ? 2 : 1;
   const voiceSpread = (voiceCount - 1) * (5 + intensityBlend * 5);
 
   noteGain.gain.setValueAtTime(0.001, time);
@@ -220,7 +224,15 @@ function scheduleTone({
     osc.connect(voiceMix);
 
     if (expression?.modulation?.target === 'pitch') {
-      applyModulation(ctx, expression.modulation, osc.detune, detune, time, duration + envelope.release, 1 + intensityBlend * 0.15);
+      applyModulation(
+        ctx,
+        expression.modulation,
+        osc.detune,
+        detune,
+        time,
+        duration + envelope.release,
+        1 + intensityBlend * 0.15 + creativityDrive * 0.3
+      );
     }
 
     osc.start(time);
@@ -235,12 +247,20 @@ function scheduleTone({
       sustainGain,
       Math.max(decayEnd, time + 0.01),
       Math.max(stopTime - decayEnd, 0.05),
-      attackPeak * 0.45 * (0.6 + intensityBlend * 0.5)
+      attackPeak * 0.45 * (0.52 + intensityBlend * 0.46 + creativityDrive * 0.3)
     );
   }
 
   if (filter && expression?.modulation?.target === 'filter') {
-    applyModulation(ctx, expression.modulation, filter.frequency, filter.frequency.value, time, duration + envelope.release, 1 + intensityBlend * 0.35);
+    applyModulation(
+      ctx,
+      expression.modulation,
+      filter.frequency,
+      filter.frequency.value,
+      time,
+      duration + envelope.release,
+      1 + intensityBlend * 0.35 + creativityDrive * 0.32
+    );
   }
 
   if (panner && expression?.modulation?.target === 'pan') {
@@ -308,6 +328,7 @@ export function scheduleNoise({
   time,
   stepDuration,
   intensityBlend,
+  creativityDrive,
   getNoiseBuffer,
   getExplosionBuffer,
 }: NoiseLayerArgs): void {
@@ -340,16 +361,24 @@ export function scheduleNoise({
   filter.Q.setValueAtTime(0.5, time);
 
   const gain = ctx.createGain();
-  const panner = createPanner(ctx, clamp(expression?.stereo?.pan ?? 0, -1, 1), expression?.stereo, time, stepDuration * noiseLayer.durationSteps, intensityBlend);
-  const accentScale = getAccentScale(stepIndex, expression?.accent);
+  const panner = createPanner(
+    ctx,
+    clamp(expression?.stereo?.pan ?? 0, -1, 1),
+    expression?.stereo,
+    time,
+    stepDuration * noiseLayer.durationSteps,
+    intensityBlend,
+    creativityDrive
+  );
+  const accentScale = getAccentScale(stepIndex, expression?.accent) * (0.78 + creativityDrive * 0.34);
   const texture = noiseCharacter?.texture ?? 'smooth';
-  const burst = noiseCharacter?.burst ?? 0;
+  const burst = (noiseCharacter?.burst ?? 0) + creativityDrive * 0.12;
   const drift = noiseCharacter?.drift ?? 0;
   const durationMultiplier = texture === 'shimmer' ? 0.55 : texture === 'grainy' ? 0.68 : 0.9;
   const duration = Math.max(stepDuration * noiseLayer.durationSteps * durationMultiplier, 0.04);
   const peakGain = noiseLayer.gain * track.masterGain * accentScale * (0.8 + intensityBlend * 0.45 + burst * 0.8);
   const highpassHz = texture === 'shimmer' ? 1800 : texture === 'grainy' ? 900 : 250;
-  const bandpassHz = noiseLayer.filterHz * (1 + drift * Math.sin(stepIndex * 0.65) + intensityBlend * 0.18);
+  const bandpassHz = noiseLayer.filterHz * (1 + drift * Math.sin(stepIndex * 0.65) + intensityBlend * 0.18 + creativityDrive * 0.12);
 
   source.playbackRate.setValueAtTime(1 + burst * 0.06 + intensityBlend * 0.03, time);
   highpass.frequency.setValueAtTime(highpassHz, time);
@@ -371,7 +400,15 @@ export function scheduleNoise({
   }
 
   if (expression?.modulation?.target === 'filter') {
-    applyModulation(ctx, expression.modulation, filter.frequency, filter.frequency.value, time, duration, 1 + intensityBlend * 0.35);
+    applyModulation(
+      ctx,
+      expression.modulation,
+      filter.frequency,
+      filter.frequency.value,
+      time,
+      duration,
+      1 + intensityBlend * 0.35 + creativityDrive * 0.32
+    );
   }
 
   if (panner && expression?.modulation?.target === 'pan') {

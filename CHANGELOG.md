@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-04-08
+
+### Added
+- New in-game pause menu triggered by `ESC`, with dedicated overlay actions for resume and return to main menu.
+- Mobile portrait orientation pause behavior that uses the same pause overlay variant and requires rotating back to landscape to resume gameplay.
+- Shared runtime music controls (`creativity`, `energy`, `ambience`) in both Menu and Pause screens, with immediate audible effect across active music playback.
+
+### Changed
+- Tuned procedural music runtime response curves and defaults for stronger, more perceptible slider behavior while keeping runtime-only reset semantics on reload.
+
+### Architecture
+- Introduced `PauseStateController` to centralize pause responsibility (manual/orientation state, physics pause/resume, and pause overlay coordination) outside `GameScene`.
+- Split pause overlay implementation into focused modules (`pauseOverlay/types.ts`, `pauseOverlay/view.ts`, and `pauseOverlay/controls.ts`) to reduce file size and improve separation of concerns.
+- Split `MenuScene` UI construction into `menuScene/layout.ts` and `menuScene/panels.ts`, leaving scene flow orchestration in `MenuScene`.
+- Added shared music runtime tuning helpers and profile mapping modules to remove duplication and keep audio mapping policy isolated.
+
+### Quality
+- Verified with `npm run lint` and `npm run build`.
+
 ## [0.5.4] - 2026-04-07
 
 ### Changed

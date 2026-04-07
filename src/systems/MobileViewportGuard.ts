@@ -1,27 +1,26 @@
 import Phaser from 'phaser';
 import { isPortraitTouchViewport } from '../utils/device';
 
-type OnBlockedHandler = () => void;
+type OnBlockedStateChangeHandler = (blocked: boolean) => void;
 
 export class MobileViewportGuard {
   private scene: Phaser.Scene | null = null;
-  private onBlocked: OnBlockedHandler | null = null;
+  private onBlockedStateChange: OnBlockedStateChangeHandler | null = null;
   private blocked: boolean = false;
-  private pausedPhysicsWorld: boolean = false;
 
   private readonly handleViewportChange = (): void => {
     this.refresh();
   };
 
-  static create(scene: Phaser.Scene, onBlocked: OnBlockedHandler): MobileViewportGuard {
-    return new MobileViewportGuard().create(scene, onBlocked);
+  static create(scene: Phaser.Scene, onBlockedStateChange: OnBlockedStateChangeHandler): MobileViewportGuard {
+    return new MobileViewportGuard().create(scene, onBlockedStateChange);
   }
 
-  create(scene: Phaser.Scene, onBlocked: OnBlockedHandler): this {
+  create(scene: Phaser.Scene, onBlockedStateChange: OnBlockedStateChangeHandler): this {
     this.destroy();
 
     this.scene = scene;
-    this.onBlocked = onBlocked;
+    this.onBlockedStateChange = onBlockedStateChange;
 
     scene.scale.on(Phaser.Scale.Events.RESIZE, this.handleViewportChange, this);
 
@@ -47,14 +46,9 @@ export class MobileViewportGuard {
       window.removeEventListener('orientationchange', this.handleViewportChange);
     }
 
-    if (this.pausedPhysicsWorld) {
-      this.scene.physics.world.resume();
-    }
-
     this.scene = null;
-    this.onBlocked = null;
+    this.onBlockedStateChange = null;
     this.blocked = false;
-    this.pausedPhysicsWorld = false;
   }
 
   isBlocked(): boolean {
@@ -75,21 +69,7 @@ export class MobileViewportGuard {
 
     this.blocked = nextBlocked;
 
-    if (nextBlocked) {
-      this.onBlocked?.();
-
-      if (!this.scene.physics.world.isPaused) {
-        this.scene.physics.world.pause();
-        this.pausedPhysicsWorld = true;
-      }
-
-      return this.blocked;
-    }
-
-    if (this.pausedPhysicsWorld) {
-      this.scene.physics.world.resume();
-      this.pausedPhysicsWorld = false;
-    }
+    this.onBlockedStateChange?.(nextBlocked);
 
     return this.blocked;
   }

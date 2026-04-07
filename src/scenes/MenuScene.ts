@@ -3,16 +3,21 @@ import { getLevelConfig } from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { resetPlayerState } from '../systems/PlayerState';
 import { audioManager } from '../systems/AudioManager';
-import { colorToHexString } from '../utils/colorUtils';
 import { isTouchMobileDevice } from '../utils/device';
-import { centerHorizontally, getViewportLayout } from '../utils/layout';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
+import {
+  destroyMusicRuntimeTuningSliders,
+  type MusicTuningSliders,
+} from './shared/musicRuntimeTuning';
+import { createMenuLayoutPlan } from './menuScene/layout';
+import { createControlsPanel, createMenuTitle, createMusicLabPanel } from './menuScene/panels';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
+  private musicSliders: MusicTuningSliders | null = null;
 
   constructor() {
     super({ key: 'Menu' });
@@ -25,68 +30,23 @@ export class MenuScene extends Phaser.Scene {
     });
 
     const menuConfig = getLevelConfig(1);
-    const layout = getViewportLayout(this);
-    const controlsPanelWidth = 360;
-    const controlsPanelHeight = 132;
-    const controlsY = layout.centerY + 40;
-    const controlsPanelX = centerHorizontally(layout, controlsPanelWidth);
-    const mobile = isTouchMobileDevice();
+    const layoutPlan = createMenuLayoutPlan(this);
 
     this.cameras.main.setBackgroundColor(menuConfig.bgColor);
+
+    audioManager.init();
+    audioManager.startMusic(menuConfig.music.stage);
+    audioManager.setMusicIntensity(0.9);
 
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, menuConfig);
     registerRestartOnResize(this);
 
-    this.add.text(layout.centerX, layout.centerY - 60, 'SPACE EXPLORER', {
-      fontSize: '64px',
-      color: '#eefaff',
-      fontStyle: 'bold',
-      fontFamily: 'monospace',
-      stroke: '#040b12',
-      strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(12);
+    createMenuTitle(this, layoutPlan);
+    createControlsPanel(this, layoutPlan, menuConfig.accentColor, isTouchMobileDevice());
+    this.musicSliders = createMusicLabPanel(this, layoutPlan, menuConfig.accentColor, () => this.musicSliders);
 
-    // Controls panel
-    const controlsPanel = this.add.graphics();
-    controlsPanel.fillStyle(0x050b14, 0.76);
-    controlsPanel.fillRoundedRect(controlsPanelX, controlsY - 8, controlsPanelWidth, controlsPanelHeight, 8);
-    controlsPanel.lineStyle(1, menuConfig.accentColor, 0.38);
-    controlsPanel.strokeRoundedRect(controlsPanelX, controlsY - 8, controlsPanelWidth, controlsPanelHeight, 8);
-    controlsPanel.setDepth(10);
-
-    this.add.text(layout.centerX, controlsY + 6, 'CONTROLS', {
-      fontSize: '14px',
-      color: colorToHexString(menuConfig.accentColor),
-      fontFamily: 'monospace',
-    }).setOrigin(0.5).setDepth(11);
-
-    const controlsContent = [
-      { label: 'MOVE', keys: mobile ? 'On-screen Joystick' : 'W A S D  /  Arrows' },
-      { label: 'FIRE', keys: mobile ? 'Tap Right Side' : 'SPACE  /  Click' },
-      { label: 'LIVES', keys: '3 Ships Per Run' },
-    ];
-
-    controlsContent.forEach((row, i) => {
-      const rowY = controlsY + 28 + i * 28;
-      this.add.text(controlsPanelX + 20, rowY, row.label, {
-        fontSize: '13px',
-        color: '#d6f6ff',
-        fontFamily: 'monospace',
-        fontStyle: 'bold',
-      }).setDepth(11);
-
-      // Key badge
-      this.add.text(layout.centerX + 10, rowY, row.keys, {
-        fontSize: '12px',
-        color: '#ffffff',
-        fontFamily: 'monospace',
-        backgroundColor: '#112033',
-        padding: { x: 8, y: 4 },
-      }).setOrigin(0.5).setDepth(12);
-    });
-
-    createPromptText(this, layout.centerX, controlsY + 140, CONTINUE_PROMPT).setDepth(12);
+    createPromptText(this, layoutPlan.centerX, layoutPlan.promptY, CONTINUE_PROMPT).setDepth(12);
 
     bindProceedOnInput(this, () => {
       audioManager.init();
@@ -102,5 +62,7 @@ export class MenuScene extends Phaser.Scene {
 
   private handleSceneShutdown(): void {
     this.parallax?.destroy();
+    destroyMusicRuntimeTuningSliders(this.musicSliders);
+    this.musicSliders = null;
   }
 }

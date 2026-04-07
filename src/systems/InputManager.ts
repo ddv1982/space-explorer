@@ -9,6 +9,7 @@ export class InputManager {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
   private space!: Phaser.Input.Keyboard.Key;
+  private escape!: Phaser.Input.Keyboard.Key;
   private scene!: Phaser.Scene;
   private mobileControls: MobileControls | null = null;
   private mobileInputMode: boolean = false;
@@ -20,6 +21,7 @@ export class InputManager {
     this.mobileInputMode = isTouchMobileDevice() && mobileControls !== null;
     this.cursors = scene.input.keyboard!.createCursorKeys();
     this.space = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.escape = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
     this.wasd = {
       W: scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -55,6 +57,10 @@ export class InputManager {
 
   getPointer(): Phaser.Input.Pointer {
     return this.scene.input.activePointer;
+  }
+
+  consumePauseToggleRequest(): boolean {
+    return Phaser.Input.Keyboard.JustDown(this.escape);
   }
 
   private getMobileMovementVector(): Phaser.Math.Vector2 {

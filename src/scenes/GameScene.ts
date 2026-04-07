@@ -31,6 +31,7 @@ import {
 } from '../systems/GameplayFlow';
 import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
 import { showControlsHint } from './gameScene/showControlsHint';
+import { PauseStateController } from './gameScene/PauseStateController';
 import { MobileViewportGuard } from '../systems/MobileViewportGuard';
 import { MobileControls } from '../systems/MobileControls';
 import { isTouchMobileDevice } from '../utils/device';
@@ -58,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private effectsManager!: EffectsManager;
   private warpTransition!: WarpTransition;
   private mobileViewportGuard: MobileViewportGuard | null = null;
+  private pauseStateController: PauseStateController | null = null;
   private mobileControls: MobileControls | null = null;
   private scaledBossConfig: BossConfig | null = null;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
@@ -169,8 +171,15 @@ export class GameScene extends Phaser.Scene {
     this.warpTransition.create(this);
     this.warpTransition.setAccentColor(levelConfig.accentColor);
 
-    this.mobileViewportGuard = MobileViewportGuard.create(this, () => this.stopPlayerMotion());
-    this.syncMobileControlsBlockedState();
+    this.pauseStateController = PauseStateController.create({
+      scene: this,
+      stopPlayerMotion: () => this.stopPlayerMotion(),
+      setMobileControlsBlocked: (blocked) => this.mobileControls?.setBlocked(blocked),
+      onReturnToMenu: () => this.returnToMenuFromPause(),
+    });
+
+    this.mobileViewportGuard = MobileViewportGuard.create(this, (blocked) => this.pauseStateController?.setOrientationBlocked(blocked));
+    this.pauseStateController.setOrientationBlocked(this.mobileViewportGuard.isBlocked());
 
     showControlsHint(this, { mobile: isTouchMobileDevice() });
 
@@ -232,6 +241,8 @@ export class GameScene extends Phaser.Scene {
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
     this.mobileViewportGuard?.destroy();
     this.mobileViewportGuard = null;
+    this.pauseStateController?.destroy();
+    this.pauseStateController = null;
     this.mobileControls?.destroy();
     this.mobileControls = null;
     this.parallax?.destroy();
@@ -246,8 +257,8 @@ export class GameScene extends Phaser.Scene {
     this.mobileControls?.relayout();
     this.hud?.relayout();
     this.warpTransition?.resize();
+    this.pauseStateController?.relayout();
     this.clampPlayerToViewport();
-    this.syncMobileControlsBlockedState();
   }
 
   private getPlayerSpawnPoint(): { x: number; y: number } {
@@ -407,8 +418,9 @@ export class GameScene extends Phaser.Scene {
     trySpawnRandomPowerUp(this.powerUpGroup, x, y);
   }
 
-  private syncMobileControlsBlockedState(): void {
-    this.mobileControls?.setBlocked(this.mobileViewportGuard?.isBlocked() ?? false);
+  private returnToMenuFromPause(): void {
+    audioManager.stopMusic();
+    this.scene.start('Menu');
   }
 
   private applyPowerUp(type: PowerUpType): void {
@@ -454,9 +466,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    this.syncMobileControlsBlockedState();
+    if (this.inputManager.consumePauseToggleRequest()) {
+      this.pauseStateController?.togglePauseRequest(this.flow.isGameplayLocked());
+    }
 
-    if (this.mobileViewportGuard?.isBlocked() || this.flow.isGameplayLocked()) {
+    if (this.pauseStateController?.isGameplayPaused() || this.flow.isGameplayLocked()) {
       this.updateHud();
       return;
     }

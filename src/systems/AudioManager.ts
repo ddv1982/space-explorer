@@ -1,7 +1,12 @@
 import type { ProceduralMusicTrackConfig } from '../config/LevelsConfig';
 import { AudioContextManager } from './audio/AudioContextManager';
 import { SFXManager } from './audio/SFXManager';
-import { ProceduralMusicManager, DEFAULT_TRACK } from './audio/ProceduralMusicManager';
+import {
+  DEFAULT_MUSIC_RUNTIME_TUNING,
+  ProceduralMusicManager,
+  DEFAULT_TRACK,
+  type MusicRuntimeTuning,
+} from './audio/ProceduralMusicManager';
 
 class AudioManager {
   private contextManager = new AudioContextManager();
@@ -73,10 +78,26 @@ class AudioManager {
     this.musicManager.setMusicIntensity(intensity);
   }
 
+  getMusicRuntimeTuning(): MusicRuntimeTuning {
+    return this.musicManager.getMusicRuntimeTuning();
+  }
+
+  setMusicRuntimeTuning(nextTuning: Partial<MusicRuntimeTuning>): MusicRuntimeTuning {
+    this.ensureContext();
+    return this.musicManager.setMusicRuntimeTuning(nextTuning);
+  }
+
+  resetMusicRuntimeTuning(): MusicRuntimeTuning {
+    this.ensureContext();
+    return this.musicManager.resetMusicRuntimeTuning();
+  }
+
   destroy(): void {
     this.musicManager.resetNodes();
     this.contextManager.destroy();
   }
 }
 
+export type { MusicRuntimeTuning };
+export { DEFAULT_MUSIC_RUNTIME_TUNING };
 export const audioManager = new AudioManager();
