@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-04-07
+
+### Changed
+- Refactored `ParallaxBackground` lifecycle orchestration to reduce DRY duplication by centralizing create/destroy/rebuild paths for level visual layers.
+- Cleaned moon surface and passing-planet layer state modeling with dedicated typed state and helper-based reset/offscreen handling.
+- Replaced fragile magic-number motion/reset behavior with named constants and config-driven motion parameters while preserving visuals.
+
+### Quality
+- Verified with `bun run lint`, `bun run knip`, and `bun run build`.
+
 ## [0.5.0] - 2026-04-07
 
 ### Added

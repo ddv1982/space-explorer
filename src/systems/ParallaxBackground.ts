@@ -59,7 +59,6 @@ interface ScenicLayerState {
 interface PlanetLayerState {
   sprite: Phaser.GameObjects.Image;
   textureKey: string;
-  scrollSpeed: number;
   baseX: number;
   baseY: number;
 }
@@ -79,7 +78,15 @@ interface PassingPlanetState {
   sprite: Phaser.GameObjects.Image;
   scrollSpeed: number;
   baseY: number;
-  startY: number;
+}
+
+interface MoonSurfaceState {
+  sprite: Phaser.GameObjects.Image;
+  textureKey: string;
+  baseX: number;
+  baseY: number;
+  motionSpeed: number;
+  motionAmplitude: number;
 }
 
 const LAYER_CONFIGS: StarLayerConfig[] = [
@@ -125,6 +132,13 @@ const TILE_HEIGHT = 2048;
 const DEPTHS = [-10, -8, -6, -4];
 const SCENIC_PADDING_X = 220;
 const SCENIC_PADDING_Y = 180;
+const PASSING_PLANET_RESPAWN_MIN_X = 100;
+const PASSING_PLANET_RESPAWN_MAX_X = 400;
+const PASSING_PLANET_OFFSCREEN_PADDING = 220;
+const MOON_SURFACE_MIN_MOTION_SPEED = 0.00005;
+const MOON_SURFACE_MOTION_SPEED_SCALE = 0.0015;
+const MOON_SURFACE_BASE_AMPLITUDE = 10;
+const MOON_SURFACE_AMPLITUDE_SCALE = 80;
 
 /** Accent colors for colored accent stars (warm/cool variety) */
 const STAR_ACCENT_COLORS = [0xffddaa, 0xaaddff, 0xffaa88, 0xaaffcc, 0xddaaff];
@@ -137,7 +151,7 @@ export class ParallaxBackground {
   private planetLayer: PlanetLayerState | null = null;
   private debrisMotes: DebrisMote[] = [];
   private twinkles: TwinkleState[] = [];
-  private moonSurface: PlanetLayerState | null = null;
+  private moonSurface: MoonSurfaceState | null = null;
   private passingPlanetSprites: PassingPlanetState[] = [];
   private elapsed = 0;
   private currentWidth = 0;
@@ -230,14 +244,8 @@ export class ParallaxBackground {
       this.tileSprites.push(tile);
     }
 
-    // Add nebula layers if level config provided
     if (levelConfig) {
-      this.createScenicLayers(scene, levelConfig);
-      this.createMoonSurfaceLayer(scene, levelConfig);
-      this.createPassingPlanetLayers(scene, levelConfig);
-      this.createPlanetLayer(scene, levelConfig);
-      this.createDebrisMotes(scene, levelConfig);
-      this.createStarTwinkles(scene, levelConfig);
+      this.createLevelVisualLayers(scene, levelConfig);
     }
 
     this.layoutTileSprites();
@@ -263,10 +271,34 @@ export class ParallaxBackground {
     this.moonSurface = {
       sprite,
       textureKey,
-      scrollSpeed: ms.scrollSpeed,
       baseX: centerX,
       baseY: bottomY,
+      motionSpeed: Math.max(MOON_SURFACE_MIN_MOTION_SPEED, ms.scrollSpeed * MOON_SURFACE_MOTION_SPEED_SCALE),
+      motionAmplitude: MOON_SURFACE_BASE_AMPLITUDE + ms.scrollSpeed * MOON_SURFACE_AMPLITUDE_SCALE,
     };
+  }
+
+  private createLevelVisualLayers(scene: Phaser.Scene, config: LevelConfig): void {
+    this.createScenicLayers(scene, config);
+    this.createMoonSurfaceLayer(scene, config);
+    this.createPassingPlanetLayers(scene, config);
+    this.createPlanetLayer(scene, config);
+    this.createDebrisMotes(scene, config);
+    this.createStarTwinkles(scene, config);
+  }
+
+  private destroyLevelVisualLayers(): void {
+    this.destroyScenicLayers();
+    this.destroyMoonSurfaceLayer();
+    this.destroyPassingPlanetLayers();
+    this.destroyPlanetLayer();
+    this.destroyDebrisMotes();
+    this.destroyTwinkles();
+  }
+
+  private rebuildLevelVisualLayers(scene: Phaser.Scene, config: LevelConfig): void {
+    this.destroyLevelVisualLayers();
+    this.createLevelVisualLayers(scene, config);
   }
 
   private createPassingPlanetLayers(scene: Phaser.Scene, config: LevelConfig): void {
@@ -276,9 +308,8 @@ export class ParallaxBackground {
 
     for (let i = 0; i < config.passingPlanets.length; i++) {
       const pp = config.passingPlanets[i];
-      const startX = this.currentWidth + Phaser.Math.Between(50, 300);
       const y = this.currentHeight * pp.yPosition;
-      const sprite = scene.add.image(startX, y, textureKeys[i]);
+      const sprite = scene.add.image(this.currentWidth, y, textureKeys[i]);
       sprite.setDepth(-12 - i);
       sprite.setAlpha(pp.alpha);
 
@@ -286,9 +317,22 @@ export class ParallaxBackground {
         sprite,
         scrollSpeed: pp.scrollSpeed,
         baseY: y,
-        startY: startX,
       });
+
+      this.resetPassingPlanetPosition(this.passingPlanetSprites[this.passingPlanetSprites.length - 1]);
     }
+  }
+
+  private resetPassingPlanetPosition(planet: PassingPlanetState): void {
+    planet.sprite.x = this.currentWidth + Phaser.Math.Between(
+      PASSING_PLANET_RESPAWN_MIN_X,
+      PASSING_PLANET_RESPAWN_MAX_X
+    );
+    planet.sprite.y = planet.baseY;
+  }
+
+  private getPassingPlanetOffscreenThreshold(sprite: Phaser.GameObjects.Image): number {
+    return -Math.max(PASSING_PLANET_OFFSCREEN_PADDING, sprite.displayWidth * 0.5);
   }
 
   resize(width: number, height: number): void {
@@ -302,35 +346,22 @@ export class ParallaxBackground {
 
     this.layoutTileSprites();
 
-    if (!this.levelConfig || this.scenicLayers.length === 0) {
+    if (!this.levelConfig) {
       return;
     }
 
     if (sizeChanged) {
-      this.destroyScenicLayers();
-      this.destroyMoonSurfaceLayer();
-      this.destroyPassingPlanetLayers();
-      this.destroyPlanetLayer();
-      this.destroyDebrisMotes();
-      this.createScenicLayers(this.scene, this.levelConfig);
-      this.createMoonSurfaceLayer(this.scene, this.levelConfig);
-      this.createPassingPlanetLayers(this.scene, this.levelConfig);
-      this.createPlanetLayer(this.scene, this.levelConfig);
-      this.createDebrisMotes(this.scene, this.levelConfig);
+      this.rebuildLevelVisualLayers(this.scene, this.levelConfig);
       return;
     }
 
     this.layoutScenicLayers();
+    this.layoutMoonSurfaceLayer();
     this.layoutPlanetLayer();
   }
 
   destroy(): void {
-    this.destroyScenicLayers();
-    this.destroyMoonSurfaceLayer();
-    this.destroyPassingPlanetLayers();
-    this.destroyPlanetLayer();
-    this.destroyDebrisMotes();
-    this.destroyTwinkles();
+    this.destroyLevelVisualLayers();
 
     for (let i = 0; i < this.tileSprites.length; i++) {
       this.tileSprites[i].destroy();
@@ -404,7 +435,6 @@ export class ParallaxBackground {
     this.planetLayer = {
       sprite,
       textureKey,
-      scrollSpeed: 0.03,
       baseX: centerX,
       baseY: centerY,
     };
@@ -558,8 +588,8 @@ export class ParallaxBackground {
 
     // Moon surface scroll
     if (this.moonSurface) {
-      const elapsed = this.elapsed;
-      const scrollOffset = Math.sin(elapsed * 0.00015) * 20;
+      const phase = this.elapsed * this.moonSurface.motionSpeed;
+      const scrollOffset = Math.sin(phase) * this.moonSurface.motionAmplitude;
       this.moonSurface.sprite.x = this.moonSurface.baseX + scrollOffset;
       this.moonSurface.sprite.y = this.moonSurface.baseY;
     }
@@ -568,9 +598,8 @@ export class ParallaxBackground {
     for (let i = 0; i < this.passingPlanetSprites.length; i++) {
       const pp = this.passingPlanetSprites[i];
       pp.sprite.x -= pp.scrollSpeed * SCROLL_SPEED * delta / 16;
-      // Reset when off screen
-      if (pp.sprite.x < -200) {
-        pp.sprite.x = this.currentWidth + Phaser.Math.Between(100, 400);
+      if (pp.sprite.x < this.getPassingPlanetOffscreenThreshold(pp.sprite)) {
+        this.resetPassingPlanetPosition(pp);
       }
     }
   }
@@ -607,6 +636,15 @@ export class ParallaxBackground {
     this.planetLayer.baseX = centerX;
     this.planetLayer.baseY = centerY;
     this.planetLayer.sprite.setPosition(centerX, centerY);
+  }
+
+  private layoutMoonSurfaceLayer(): void {
+    if (!this.moonSurface) return;
+    const centerX = this.currentWidth / 2;
+    const baseY = this.currentHeight * 0.75;
+    this.moonSurface.baseX = centerX;
+    this.moonSurface.baseY = baseY;
+    this.moonSurface.sprite.setPosition(centerX, baseY);
   }
 
   // ---------------------------------------------------------------------------
@@ -664,4 +702,3 @@ export class ParallaxBackground {
     this.passingPlanetSprites = [];
   }
 }
-
