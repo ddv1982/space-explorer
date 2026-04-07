@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { BossAttackStyle, EnemyType } from '../../../config/LevelsConfig';
 import { ENEMY_BULLET_SPEED } from '../../../utils/constants';
 
-export interface BossAttackContext {
+interface BossAttackContext {
   attackStyle: BossAttackStyle;
   phase: number;
   x: number;

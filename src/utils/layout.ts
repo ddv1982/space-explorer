@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-export interface ViewportLayout {
+interface ViewportLayout {
   left: number;
   top: number;
   width: number;

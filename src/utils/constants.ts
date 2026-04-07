@@ -1,5 +1,3 @@
-export const GAME_WIDTH = 1280;
-export const GAME_HEIGHT = 720;
 export const BULLET_SPEED = -600;
 export const BULLET_POOL_SIZE = 100;
 export const ENEMY_BULLET_SPEED = 300;

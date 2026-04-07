@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-export interface ProceedOnInputOptions {
+interface ProceedOnInputOptions {
   includePointer?: boolean;
   shouldProceedKey?: (event: KeyboardEvent) => boolean;
 }

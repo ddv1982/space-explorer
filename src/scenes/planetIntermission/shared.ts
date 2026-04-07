@@ -18,7 +18,7 @@ export interface UpgradeGridLayout {
   costFontSize: string;
 }
 
-export const DEFAULT_UPGRADE_GRID_LAYOUT: UpgradeGridLayout = {
+const DEFAULT_UPGRADE_GRID_LAYOUT: UpgradeGridLayout = {
   top: 380,
   columns: 2,
   buttonWidth: 240,
