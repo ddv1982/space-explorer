@@ -58,7 +58,7 @@ export function applyCameraColorGrade(
   const matrix = filter.colorMatrix;
 
   const mappedBrightness = Phaser.Math.Clamp(
-    grade.brightness <= 0.35 ? 1 + grade.brightness : grade.brightness,
+    grade.brightness <= 0.35 ? 1.025 + grade.brightness : grade.brightness,
     0.8,
     1.4
   );
@@ -68,7 +68,7 @@ export function applyCameraColorGrade(
     1
   );
   const mappedSaturation = Phaser.Math.Clamp(
-    grade.saturation >= 0.5 ? grade.saturation - 1 : grade.saturation,
+    (grade.saturation >= 0.5 ? grade.saturation - 1 : grade.saturation) + 0.04,
     -1,
     1.2
   );
@@ -84,8 +84,8 @@ export function applyCameraColorGrade(
 export function applyBaselineCameraFilters(
   camera: Phaser.Cameras.Scene2D.Camera
 ): Phaser.Filters.Glow {
-  camera.filters.external.addVignette(0.5, 0.5, 0.84, 0.16);
-  return camera.filters.external.addGlow(0x88c8ff, 0.24, 0.06, 1, false, 0, 5);
+  camera.filters.external.addVignette(0.5, 0.5, 0.87, 0.12);
+  return camera.filters.external.addGlow(0x88c8ff, 0.3, 0.08, 1, false, 0, 5);
 }
 
 export function clearCameraFilters(camera: Phaser.Cameras.Scene2D.Camera): void {
