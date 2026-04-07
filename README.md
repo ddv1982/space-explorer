@@ -158,6 +158,10 @@ bun run knip     # unused-code analysis
 - [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
 - [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
 
+## Acknowledgements
+
+This project was largely autonomously built using [Flow for OpenCode](https://github.com/ddv1982/flow-opencode), a planning-and-execution workflow plugin that turns goals into tracked, reviewer-gated feature sessions.
+
 ## License
 
 MIT License. See [`LICENSE`](LICENSE).
