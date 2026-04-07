@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-04-07
+
+### Added
+- New moon base surface background layer for Graveyard Lattice level (Wreckfield Run): procedurally generated terrain with horizon glow, crater field, lit base structures (buildings with windows, antennas with blinking lights), runway strips, and atmospheric scatter — the player now flies over a wrecked relay surface.
+- New passing planet fly-by background layers for Prism Reef level (Nebula Pass): three procedurally generated planets at varying depths (200/100/300px), scroll speeds, and opacity levels drift across the background creating depth parallax as the player flies through the nebula system. Planets feature surface band noise, atmospheric halos, specular highlights, and optional ring systems.
+
+### Architecture
+- Extended `LevelConfig` with optional `moonSurface` (MoonSurfaceConfig) and `passingPlanets` (PassingPlanetConfig[]) fields for per-level background layer configuration.
+- Added two new modular texture generators under `src/systems/parallax/`: `moonSurfaceGenerator.ts` and `passingPlanetGenerator.ts`, following established DRY patterns.
+- Wired new layers into `ParallaxBackground` lifecycle (create/update/destroy/resize) alongside existing scenic/planet/debris/twinkle systems.
+
+### Quality
+- Verified with `bun run lint` (zero errors/warnings), `bun run knip`, and `bun run build`.
+
 ## [0.4.1] - 2026-04-07
 
 ### Changed

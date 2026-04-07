@@ -4,6 +4,8 @@ import type { LevelConfig } from '../config/LevelsConfig';
 import { mixColor } from '../utils/colorUtils';
 import { generateScenicTexture } from './parallax/scenicTextureGenerator';
 import { generatePlanetTexture } from './parallax/planetTextureGenerator';
+import { generateMoonSurfaceTexture } from './parallax/moonSurfaceGenerator';
+import { generatePassingPlanetTextures } from './parallax/passingPlanetGenerator';
 
 interface StarLayerConfig {
   name: string;
@@ -73,6 +75,13 @@ interface DebrisMote {
   rotSpeed: number;
 }
 
+interface PassingPlanetState {
+  sprite: Phaser.GameObjects.Image;
+  scrollSpeed: number;
+  baseY: number;
+  startY: number;
+}
+
 const LAYER_CONFIGS: StarLayerConfig[] = [
   { name: 'far-stars', scrollSpeed: 0.15, starCount: 100, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.15, max: 0.5 }, baseColor: 0x8888aa, accentMix: 0.08, sparkleFraction: 0.03, colorStarCount: 3 },
   { name: 'mid-stars', scrollSpeed: 0.35, starCount: 65, starSize: { min: 0.8, max: 1.8 }, starAlpha: { min: 0.3, max: 0.75 }, baseColor: 0xaaaacc, accentMix: 0.14, sparkleFraction: 0.06, colorStarCount: 5 },
@@ -128,6 +137,8 @@ export class ParallaxBackground {
   private planetLayer: PlanetLayerState | null = null;
   private debrisMotes: DebrisMote[] = [];
   private twinkles: TwinkleState[] = [];
+  private moonSurface: PlanetLayerState | null = null;
+  private passingPlanetSprites: PassingPlanetState[] = [];
   private elapsed = 0;
   private currentWidth = 0;
   private currentHeight = 0;
@@ -222,12 +233,62 @@ export class ParallaxBackground {
     // Add nebula layers if level config provided
     if (levelConfig) {
       this.createScenicLayers(scene, levelConfig);
+      this.createMoonSurfaceLayer(scene, levelConfig);
+      this.createPassingPlanetLayers(scene, levelConfig);
       this.createPlanetLayer(scene, levelConfig);
       this.createDebrisMotes(scene, levelConfig);
       this.createStarTwinkles(scene, levelConfig);
     }
 
     this.layoutTileSprites();
+  }
+
+  private createMoonSurfaceLayer(scene: Phaser.Scene, config: LevelConfig): void {
+    if (!config.moonSurface) return;
+    const ms = config.moonSurface;
+    const width = Math.ceil(this.currentWidth + 300);
+    const height = Math.ceil(this.currentHeight + 100);
+    const textureKey = `moon-surface-${ms.surfaceColor.toString(16)}-${ms.accentColor.toString(16)}-${width}x${height}-v1`;
+
+    if (!scene.textures.exists(textureKey)) {
+      generateMoonSurfaceTexture(scene, textureKey, width, height, ms);
+    }
+
+    const centerX = this.currentWidth / 2;
+    const bottomY = this.currentHeight * 0.75;
+    const sprite = scene.add.image(centerX, bottomY, textureKey);
+    sprite.setDepth(-3);
+    sprite.setAlpha(0.45);
+
+    this.moonSurface = {
+      sprite,
+      textureKey,
+      scrollSpeed: ms.scrollSpeed,
+      baseX: centerX,
+      baseY: bottomY,
+    };
+  }
+
+  private createPassingPlanetLayers(scene: Phaser.Scene, config: LevelConfig): void {
+    if (!config.passingPlanets || config.passingPlanets.length === 0) return;
+
+    const textureKeys = generatePassingPlanetTextures(scene, config.passingPlanets);
+
+    for (let i = 0; i < config.passingPlanets.length; i++) {
+      const pp = config.passingPlanets[i];
+      const startX = this.currentWidth + Phaser.Math.Between(50, 300);
+      const y = this.currentHeight * pp.yPosition;
+      const sprite = scene.add.image(startX, y, textureKeys[i]);
+      sprite.setDepth(-12 - i);
+      sprite.setAlpha(pp.alpha);
+
+      this.passingPlanetSprites.push({
+        sprite,
+        scrollSpeed: pp.scrollSpeed,
+        baseY: y,
+        startY: startX,
+      });
+    }
   }
 
   resize(width: number, height: number): void {
@@ -247,9 +308,13 @@ export class ParallaxBackground {
 
     if (sizeChanged) {
       this.destroyScenicLayers();
+      this.destroyMoonSurfaceLayer();
+      this.destroyPassingPlanetLayers();
       this.destroyPlanetLayer();
       this.destroyDebrisMotes();
       this.createScenicLayers(this.scene, this.levelConfig);
+      this.createMoonSurfaceLayer(this.scene, this.levelConfig);
+      this.createPassingPlanetLayers(this.scene, this.levelConfig);
       this.createPlanetLayer(this.scene, this.levelConfig);
       this.createDebrisMotes(this.scene, this.levelConfig);
       return;
@@ -261,6 +326,8 @@ export class ParallaxBackground {
 
   destroy(): void {
     this.destroyScenicLayers();
+    this.destroyMoonSurfaceLayer();
+    this.destroyPassingPlanetLayers();
     this.destroyPlanetLayer();
     this.destroyDebrisMotes();
     this.destroyTwinkles();
@@ -488,6 +555,24 @@ export class ParallaxBackground {
       const normalizedT = (t + 1) / 2;
       twinkle.sprite.setAlpha(twinkle.minAlpha + normalizedT * (twinkle.maxAlpha - twinkle.minAlpha));
     }
+
+    // Moon surface scroll
+    if (this.moonSurface) {
+      const elapsed = this.elapsed;
+      const scrollOffset = Math.sin(elapsed * 0.00015) * 20;
+      this.moonSurface.sprite.x = this.moonSurface.baseX + scrollOffset;
+      this.moonSurface.sprite.y = this.moonSurface.baseY;
+    }
+
+    // Passing planets drift
+    for (let i = 0; i < this.passingPlanetSprites.length; i++) {
+      const pp = this.passingPlanetSprites[i];
+      pp.sprite.x -= pp.scrollSpeed * SCROLL_SPEED * delta / 16;
+      // Reset when off screen
+      if (pp.sprite.x < -200) {
+        pp.sprite.x = this.currentWidth + Phaser.Math.Between(100, 400);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -561,6 +646,22 @@ export class ParallaxBackground {
       twinkle.sprite.destroy();
     }
     this.twinkles = [];
+  }
+
+  private destroyMoonSurfaceLayer(): void {
+    if (!this.moonSurface) return;
+    this.moonSurface.sprite.destroy();
+    if (this.scene?.textures.exists(this.moonSurface.textureKey)) {
+      this.scene.textures.remove(this.moonSurface.textureKey);
+    }
+    this.moonSurface = null;
+  }
+
+  private destroyPassingPlanetLayers(): void {
+    for (const pp of this.passingPlanetSprites) {
+      pp.sprite.destroy();
+    }
+    this.passingPlanetSprites = [];
   }
 }
 

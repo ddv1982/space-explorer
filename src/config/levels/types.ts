@@ -214,4 +214,24 @@ export interface LevelConfig extends LevelThemeSummary {
   asteroidInterval: number;
   sections: LevelSectionConfig[];
   music: LevelMusicConfig;
+  moonSurface?: MoonSurfaceConfig;
+  passingPlanets?: PassingPlanetConfig[];
+}
+
+export interface MoonSurfaceConfig {
+  scrollSpeed: number;
+  surfaceColor: number;
+  accentColor: number;
+  buildingCount: number;
+  craterCount: number;
+  horizonGlow: number;
+}
+
+export interface PassingPlanetConfig {
+  scrollSpeed: number;
+  planetPalette: [number, number];
+  size: number;
+  yPosition: number;
+  alpha: number;
+  ringChance: number;
 }
