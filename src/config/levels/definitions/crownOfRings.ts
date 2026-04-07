@@ -32,7 +32,7 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Orbital Cantor',
-    maxHp: 104,
+    maxHp: 4400,
     phase1Cooldown: 810,
     phase2Cooldown: 390,
     phase2MoveSpeed: 234,

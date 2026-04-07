@@ -32,7 +32,7 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Rift Basilisk',
-    maxHp: 112,
+    maxHp: 5300,
     phase1Cooldown: 780,
     phase2Cooldown: 370,
     phase2MoveSpeed: 242,

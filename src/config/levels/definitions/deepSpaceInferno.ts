@@ -32,7 +32,7 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Pyre Leviathan',
-    maxHp: 84,
+    maxHp: 2300,
     phase1Cooldown: 900,
     phase2Cooldown: 470,
     phase2MoveSpeed: 205,

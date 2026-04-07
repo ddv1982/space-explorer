@@ -32,7 +32,7 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Arc Warden Khepri',
-    maxHp: 54,
+    maxHp: 1200,
     phase1Cooldown: 1140,
     phase2Cooldown: 590,
     phase2MoveSpeed: 170,

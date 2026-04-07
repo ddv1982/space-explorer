@@ -164,6 +164,7 @@ bun run levels:validate # config validation for level authoring
 - [`docs/releases/0.2.0.md`](docs/releases/0.2.0.md) — Phaser 4 compatibility-first migration notes
 - [`docs/releases/0.5.2.md`](docs/releases/0.5.2.md) — adaptive boss scaling, hazard fairness pacing, and level validator release notes
 - [`docs/releases/0.5.3.md`](docs/releases/0.5.3.md) — stronger boss durability scaling for upgrade-heavy runs
+- [`docs/releases/0.5.4.md`](docs/releases/0.5.4.md) — order-of-magnitude boss HP increase across campaign bosses
 
 ## Acknowledgements
 

@@ -32,7 +32,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Axiom Null',
-    maxHp: 126,
+    maxHp: 6400,
     phase1Cooldown: 740,
     phase2Cooldown: 340,
     phase2MoveSpeed: 252,

@@ -32,7 +32,7 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Reliquary Crown',
-    maxHp: 90,
+    maxHp: 2900,
     phase1Cooldown: 860,
     phase2Cooldown: 430,
     phase2MoveSpeed: 214,

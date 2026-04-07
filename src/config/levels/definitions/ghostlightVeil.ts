@@ -32,7 +32,7 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Archivist Shade',
-    maxHp: 96,
+    maxHp: 3600,
     phase1Cooldown: 840,
     phase2Cooldown: 410,
     phase2MoveSpeed: 226,

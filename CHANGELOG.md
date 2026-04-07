@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.4] - 2026-04-07
+
+### Changed
+- Increased every campaign boss base `maxHp` to a much higher four-digit progression ladder to address under-tuned boss durability.
+- Kept strict level-by-level boss HP escalation so each boss is tougher than the previous one.
+
+### Quality
+- Verified with `bun run lint`, `bun run build`, `bun run knip`, and `bun run levels:validate`.
+
 ## [0.5.3] - 2026-04-07
 
 ### Changed

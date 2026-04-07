@@ -32,7 +32,7 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Marshal Bront',
-    maxHp: 70,
+    maxHp: 1700,
     phase1Cooldown: 980,
     phase2Cooldown: 520,
     phase2MoveSpeed: 188,
