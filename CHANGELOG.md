@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.2] - 2026-04-08
+
+### Fixed
+- Ensured gameplay simulation truly halts while pause overlay is visible by short-circuiting entity `preUpdate` behavior when Arcade physics is paused.
+- Prevented enemies, bullets, bombs, asteroid spin, and power-up bobbing/offscreen lifecycle updates from progressing during pause.
+
+### Quality
+- Verified with `npm run lint` and `npm run build`.
+
 ## [0.6.1] - 2026-04-08
 
 ### Changed

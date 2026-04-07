@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
+import { isArcadeSimulationPaused } from '../../utils/entityUtils';
 
 export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   hp: number = 1;
@@ -69,6 +70,10 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
+    if (isArcadeSimulationPaused(this.scene)) {
+      return;
+    }
+
     if (this.active) {
       if (this.despawnOffscreen && this.y > this.scene.cameras.main.height + 50) {
         this.despawn();

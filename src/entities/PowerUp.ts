@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { despawnEntity } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
 import { ensurePowerUpTextures } from '../utils/SpriteFactory';
 import { applyGameObjectGlow } from '../utils/renderingCompat';
 
@@ -67,6 +67,10 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
+    if (isArcadeSimulationPaused(this.scene)) {
+      return;
+    }
+
     if (!this.active) return;
 
     // Gentle bobbing motion

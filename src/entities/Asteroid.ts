@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ASTEROID_HP } from '../utils/constants';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
-import { despawnEntity } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
 import { ensureAsteroidTexture } from '../utils/SpriteFactory';
 
 export interface AsteroidSpawnConfig {
@@ -116,6 +116,10 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
+    if (isArcadeSimulationPaused(this.scene)) {
+      return;
+    }
+
     if (!this.active) {
       return;
     }

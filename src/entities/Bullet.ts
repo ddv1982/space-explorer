@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BULLET_SPEED } from '../utils/constants';
-import { despawnEntity } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
 import { ensurePlayerBulletTexture } from '../utils/SpriteFactory';
 
 export class Bullet extends Phaser.Physics.Arcade.Sprite {
@@ -35,6 +35,10 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
+    if (isArcadeSimulationPaused(this.scene)) {
+      return;
+    }
+
     const { width, height } = this.scene.cameras.main;
     if (this.x < -20 || this.x > width + 20 || this.y < -20 || this.y > height + 20) {
       this.kill();

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { despawnEntity } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
 import { ensureBomberBombTexture } from '../utils/SpriteFactory';
 
 const BOMBER_BOMB_SPEED = 200;
@@ -31,6 +31,10 @@ export class BomberBomb extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
+    if (isArcadeSimulationPaused(this.scene)) {
+      return;
+    }
+
     if (this.y > this.scene.cameras.main.height + 20) {
       this.kill();
     }
