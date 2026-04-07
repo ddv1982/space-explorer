@@ -157,6 +157,7 @@ bun run knip     # unused-code analysis
 
 - [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
 - [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
+- [`docs/releases/0.2.2.md`](docs/releases/0.2.2.md) — patch notes for performance smoothing and level-1 vibrancy retune
 - [`docs/releases/0.2.1.md`](docs/releases/0.2.1.md) — patch notes for brightness/performance tuning
 - [`docs/releases/0.2.0.md`](docs/releases/0.2.0.md) — release notes for the Phaser 4 + visual refresh update
 

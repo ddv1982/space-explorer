@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-04-07
+
+### Performance
+- Added conservative runtime FPS fallback logic to reduce optional visual workload only under sustained low FPS (5-second grace period + two low-FPS windows).
+- Optimized effects/background behavior in fallback mode (reduced burst density, optional glow cost, and background motion/detail load).
+
+### Changed
+- Retuned **Asteroid Belt Alpha** to keep a dark mood while improving vibrancy through stronger cyan palette values and grade settings.
+
+### Quality
+- Verified with `bun run lint`, `bun run knip`, and `bun run build`.
+
 ## [0.2.1] - 2026-04-07
 
 ### Fixed

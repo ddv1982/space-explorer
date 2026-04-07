@@ -74,11 +74,11 @@ const SCENIC_LAYER_CONFIGS: ScenicLayerConfig[] = [
   {
     name: 'nebula-far',
     depth: -9,
-      alpha: 0.86,
-      hazeCount: 5,
-      cloudCount: 9,
+    alpha: 0.86,
+    hazeCount: 5,
+    cloudCount: 9,
     shadowCount: 4,
-      sparkleCount: 18,
+    sparkleCount: 18,
     filamentCount: 3,
     radius: { min: 140, max: 280 },
     drift: { x: 18, y: 12 },
@@ -88,11 +88,11 @@ const SCENIC_LAYER_CONFIGS: ScenicLayerConfig[] = [
   {
     name: 'nebula-near',
     depth: -7,
-      alpha: 0.58,
+    alpha: 0.58,
     hazeCount: 3,
-      cloudCount: 8,
+    cloudCount: 8,
     shadowCount: 5,
-      sparkleCount: 26,
+    sparkleCount: 26,
     filamentCount: 4,
     radius: { min: 90, max: 200 },
     drift: { x: 32, y: 18 },
@@ -121,6 +121,12 @@ export class ParallaxBackground {
   private elapsed = 0;
   private currentWidth = 0;
   private currentHeight = 0;
+  private motionUpdateStride = 1;
+  private motionUpdateTick = 0;
+  private runtimeLowFpsMode = false;
+  private runtimeFpsSampleElapsed = 0;
+  private runtimePerfGraceElapsed = 0;
+  private runtimeLowFpsStreak = 0;
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
@@ -134,6 +140,12 @@ export class ParallaxBackground {
     this.elapsed = 0;
     this.currentWidth = scene.cameras.main.width;
     this.currentHeight = scene.cameras.main.height;
+    this.motionUpdateStride = this.qualityScale < 0.8 ? 2 : 1;
+    this.motionUpdateTick = 0;
+    this.runtimeLowFpsMode = false;
+    this.runtimeFpsSampleElapsed = 0;
+    this.runtimePerfGraceElapsed = 0;
+    this.runtimeLowFpsStreak = 0;
 
     for (let i = 0; i < LAYER_CONFIGS.length; i++) {
       const config = LAYER_CONFIGS[i];
@@ -272,6 +284,12 @@ export class ParallaxBackground {
     this.elapsed = 0;
     this.currentWidth = 0;
     this.currentHeight = 0;
+    this.motionUpdateStride = 1;
+    this.motionUpdateTick = 0;
+    this.runtimeLowFpsMode = false;
+    this.runtimeFpsSampleElapsed = 0;
+    this.runtimePerfGraceElapsed = 0;
+    this.runtimeLowFpsStreak = 0;
   }
 
   // ---------------------------------------------------------------------------
@@ -601,14 +619,22 @@ export class ParallaxBackground {
   // Update
   // ---------------------------------------------------------------------------
 
-  update(delta: number): void {
+  update(delta: number, actualFps: number = 60): void {
     this.elapsed += delta;
+    this.sampleRuntimePerformance(delta, actualFps);
 
     // Star layers scroll
     for (let i = 0; i < this.tileSprites.length; i++) {
       const speed = LAYER_CONFIGS[i].scrollSpeed * SCROLL_SPEED * delta / 16;
       this.tileSprites[i].tilePositionY += speed;
     }
+
+    this.motionUpdateTick += 1;
+    if (this.motionUpdateTick % this.motionUpdateStride !== 0) {
+      return;
+    }
+
+    const motionDelta = delta * this.motionUpdateStride;
 
     // Nebula drift
     for (let i = 0; i < this.scenicLayers.length; i++) {
@@ -631,7 +657,7 @@ export class ParallaxBackground {
       const phase = this.elapsed * mote.speed + mote.phase;
       mote.sprite.x = mote.baseX + Math.sin(phase) * mote.driftX;
       mote.sprite.y = mote.baseY + Math.cos(phase * 0.7) * mote.driftY;
-      mote.sprite.angle += mote.rotSpeed * delta / 16;
+      mote.sprite.angle += mote.rotSpeed * motionDelta / 16;
     }
   }
 
@@ -692,6 +718,54 @@ export class ParallaxBackground {
 
   private scaleDetailCount(count: number, floor: number, scale: number = this.qualityScale): number {
     return Math.max(floor, Math.round(count * scale));
+  }
+
+  private sampleRuntimePerformance(delta: number, actualFps: number): void {
+    if (this.runtimeLowFpsMode || !Number.isFinite(actualFps) || actualFps <= 0) {
+      return;
+    }
+
+    this.runtimePerfGraceElapsed += delta;
+    if (this.runtimePerfGraceElapsed < 5000) {
+      return;
+    }
+
+    this.runtimeFpsSampleElapsed += delta;
+    if (this.runtimeFpsSampleElapsed < 1800) {
+      return;
+    }
+
+    if (actualFps < 52) {
+      this.runtimeLowFpsStreak += 1;
+    } else if (actualFps > 56) {
+      this.runtimeLowFpsStreak = 0;
+    }
+
+    if (this.runtimeLowFpsStreak >= 2) {
+      this.applyRuntimeLowFpsMode();
+    }
+
+    this.runtimeFpsSampleElapsed = 0;
+  }
+
+  private applyRuntimeLowFpsMode(): void {
+    this.runtimeLowFpsMode = true;
+    this.motionUpdateStride = Math.max(this.motionUpdateStride, 2);
+
+    if (this.scenicLayers.length > 0) {
+      const nearLayer = this.scenicLayers[this.scenicLayers.length - 1];
+      nearLayer.sprite.setAlpha(Math.max(0.32, nearLayer.sprite.alpha * 0.72));
+    }
+
+    if (this.planetLayer) {
+      this.planetLayer.sprite.setAlpha(Math.max(0.14, this.planetLayer.sprite.alpha * 0.75));
+    }
+
+    for (let i = 0; i < this.debrisMotes.length; i++) {
+      if (i % 2 === 1) {
+        this.debrisMotes[i].sprite.setVisible(false);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

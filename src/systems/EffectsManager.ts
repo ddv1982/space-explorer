@@ -6,6 +6,11 @@ export class EffectsManager {
   private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
   private bloom: Phaser.Filters.Glow | null = null;
   private lowPerformanceMode: boolean = false;
+  private adaptiveBurstScale = 1;
+  private fpsSampleElapsed = 0;
+  private fpsLowStreak = 0;
+  private runtimePerfGraceElapsed = 0;
+  private runtimeThrottleApplied = false;
   private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -22,6 +27,11 @@ export class EffectsManager {
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
     this.lowPerformanceMode = this.detectLowPerformanceMode();
+    this.adaptiveBurstScale = this.lowPerformanceMode ? 0.86 : 1;
+    this.fpsSampleElapsed = 0;
+    this.fpsLowStreak = 0;
+    this.runtimePerfGraceElapsed = 0;
+    this.runtimeThrottleApplied = false;
     this.clearCameraFX();
     this.setupCameraFX();
     this.generateParticleTextures();
@@ -34,6 +44,11 @@ export class EffectsManager {
     this.colorMatrix = null;
     this.bloom = null;
     this.lowPerformanceMode = false;
+    this.adaptiveBurstScale = 1;
+    this.fpsSampleElapsed = 0;
+    this.fpsLowStreak = 0;
+    this.runtimePerfGraceElapsed = 0;
+    this.runtimeThrottleApplied = false;
     this.exhaustConfigKey = null;
     this.currentLevelConfig = null;
   }
@@ -79,10 +94,49 @@ export class EffectsManager {
 
     if (!this.lowPerformanceMode) {
       // Keep only a lightweight glow on stronger devices
-      this.bloom = camera.filters.external.addGlow(0x88c8ff, 0.28, 0.06, 1, false, 0, 5);
+      this.bloom = camera.filters.external.addGlow(0x88c8ff, 0.32, 0.07, 1, false, 0, 5);
     } else {
       this.bloom = null;
     }
+  }
+
+  updateRuntimePerformance(delta: number): void {
+    if (this.runtimeThrottleApplied) {
+      return;
+    }
+
+    this.runtimePerfGraceElapsed += delta;
+    if (this.runtimePerfGraceElapsed < 5000) {
+      return;
+    }
+
+    const fps = this.scene?.game?.loop?.actualFps ?? 60;
+    if (!Number.isFinite(fps) || fps <= 0) {
+      return;
+    }
+
+    this.fpsSampleElapsed += delta;
+    if (this.fpsSampleElapsed < 1500) {
+      return;
+    }
+
+    if (fps < 52) {
+      this.fpsLowStreak += 1;
+    } else if (fps > 56) {
+      this.fpsLowStreak = 0;
+    }
+
+    if (this.fpsLowStreak >= 2) {
+      this.runtimeThrottleApplied = true;
+      this.lowPerformanceMode = true;
+      this.adaptiveBurstScale = Math.min(this.adaptiveBurstScale, 0.64);
+
+      if (this.bloom) {
+        this.bloom.active = false;
+      }
+    }
+
+    this.fpsSampleElapsed = 0;
   }
 
   private generateParticleTextures(): void {
@@ -239,11 +293,8 @@ export class EffectsManager {
   }
 
   private scaleBurstCount(count: number): number {
-    if (!this.lowPerformanceMode) {
-      return count;
-    }
-
-    return Math.max(1, Math.round(count * 0.72));
+    const baseScale = this.lowPerformanceMode ? 0.72 : 1;
+    return Math.max(1, Math.round(count * baseScale * this.adaptiveBurstScale));
   }
 
   private detectLowPerformanceMode(): boolean {
