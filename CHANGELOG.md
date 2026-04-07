@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-04-07
+
+### Performance
+- Refactored runtime performance policy into a shared module to remove duplicated heuristics and keep fallback behavior consistent.
+- Added particle emitter bounds/culling controls (`maxAliveParticles`, `maxParticles`, `viewBounds`) to reduce avoidable update/render load.
+- Reduced emitter config churn by caching explosion and power-up burst config updates.
+
+### Changed
+- Rebalanced Asteroid Belt Alpha visuals to restore a darker baseline while retaining vibrant cyan upgrade styling.
+
+### Quality
+- Verified with `bun run lint`, `bun run knip`, and `bun run build`.
+
 ## [0.2.2] - 2026-04-07
 
 ### Performance

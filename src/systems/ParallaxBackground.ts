@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCROLL_SPEED } from '../utils/constants';
 import type { LevelConfig } from '../config/LevelsConfig';
 import { mixColor } from '../utils/colorUtils';
+import { resolvePerformancePolicy, SustainedFpsFallbackGate } from '../utils/performancePolicy';
 
 interface StarLayerConfig {
   name: string;
@@ -124,28 +125,25 @@ export class ParallaxBackground {
   private motionUpdateStride = 1;
   private motionUpdateTick = 0;
   private runtimeLowFpsMode = false;
-  private runtimeFpsSampleElapsed = 0;
-  private runtimePerfGraceElapsed = 0;
-  private runtimeLowFpsStreak = 0;
+  private readonly runtimeFpsFallback = new SustainedFpsFallbackGate();
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
 
     this.scene = scene;
     this.levelConfig = levelConfig;
-    this.qualityScale = this.resolveQualityScale();
     this.tileSprites = [];
     this.scenicLayers = [];
     this.debrisMotes = [];
     this.elapsed = 0;
     this.currentWidth = scene.cameras.main.width;
     this.currentHeight = scene.cameras.main.height;
-    this.motionUpdateStride = this.qualityScale < 0.8 ? 2 : 1;
+    const performancePolicy = resolvePerformancePolicy(this.currentWidth, this.currentHeight);
+    this.qualityScale = performancePolicy.qualityScale;
+    this.motionUpdateStride = performancePolicy.motionUpdateStride;
     this.motionUpdateTick = 0;
     this.runtimeLowFpsMode = false;
-    this.runtimeFpsSampleElapsed = 0;
-    this.runtimePerfGraceElapsed = 0;
-    this.runtimeLowFpsStreak = 0;
+    this.runtimeFpsFallback.reset();
 
     for (let i = 0; i < LAYER_CONFIGS.length; i++) {
       const config = LAYER_CONFIGS[i];
@@ -287,9 +285,7 @@ export class ParallaxBackground {
     this.motionUpdateStride = 1;
     this.motionUpdateTick = 0;
     this.runtimeLowFpsMode = false;
-    this.runtimeFpsSampleElapsed = 0;
-    this.runtimePerfGraceElapsed = 0;
-    this.runtimeLowFpsStreak = 0;
+    this.runtimeFpsFallback.reset();
   }
 
   // ---------------------------------------------------------------------------
@@ -695,57 +691,18 @@ export class ParallaxBackground {
     this.planetLayer.sprite.setPosition(centerX, centerY);
   }
 
-  private resolveQualityScale(): number {
-    if (typeof window === 'undefined') {
-      return 1;
-    }
-
-    const nav = window.navigator as Navigator & { deviceMemory?: number };
-    const cores = nav.hardwareConcurrency ?? 8;
-    const memory = nav.deviceMemory ?? 8;
-    const pixels = this.currentWidth * this.currentHeight;
-
-    if (cores <= 4 || memory <= 4 || pixels > 1920 * 1080) {
-      return 0.72;
-    }
-
-    if (cores <= 6 || memory <= 6) {
-      return 0.85;
-    }
-
-    return 1;
-  }
-
   private scaleDetailCount(count: number, floor: number, scale: number = this.qualityScale): number {
     return Math.max(floor, Math.round(count * scale));
   }
 
   private sampleRuntimePerformance(delta: number, actualFps: number): void {
-    if (this.runtimeLowFpsMode || !Number.isFinite(actualFps) || actualFps <= 0) {
+    if (this.runtimeLowFpsMode) {
       return;
     }
 
-    this.runtimePerfGraceElapsed += delta;
-    if (this.runtimePerfGraceElapsed < 5000) {
-      return;
-    }
-
-    this.runtimeFpsSampleElapsed += delta;
-    if (this.runtimeFpsSampleElapsed < 1800) {
-      return;
-    }
-
-    if (actualFps < 52) {
-      this.runtimeLowFpsStreak += 1;
-    } else if (actualFps > 56) {
-      this.runtimeLowFpsStreak = 0;
-    }
-
-    if (this.runtimeLowFpsStreak >= 2) {
+    if (this.runtimeFpsFallback.update(delta, actualFps)) {
       this.applyRuntimeLowFpsMode();
     }
-
-    this.runtimeFpsSampleElapsed = 0;
   }
 
   private applyRuntimeLowFpsMode(): void {

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
+import { resolvePerformancePolicy, SustainedFpsFallbackGate } from '../utils/performancePolicy';
 
 export class EffectsManager {
   private scene!: Phaser.Scene;
@@ -7,9 +8,7 @@ export class EffectsManager {
   private bloom: Phaser.Filters.Glow | null = null;
   private lowPerformanceMode: boolean = false;
   private adaptiveBurstScale = 1;
-  private fpsSampleElapsed = 0;
-  private fpsLowStreak = 0;
-  private runtimePerfGraceElapsed = 0;
+  private readonly runtimeFpsFallback = new SustainedFpsFallbackGate({ sampleWindowMs: 1500 });
   private runtimeThrottleApplied = false;
   private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -21,17 +20,21 @@ export class EffectsManager {
   private ambientSparkleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private powerUpBurstEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private debrisEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private emitterViewBounds: Phaser.Geom.Rectangle | null = null;
   private exhaustConfigKey: string | null = null;
+  private explosionConfigKey: string | null = null;
+  private powerUpBurstTintKey = 'default';
   private currentLevelConfig: LevelConfig | null = null;
 
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
-    this.lowPerformanceMode = this.detectLowPerformanceMode();
-    this.adaptiveBurstScale = this.lowPerformanceMode ? 0.86 : 1;
-    this.fpsSampleElapsed = 0;
-    this.fpsLowStreak = 0;
-    this.runtimePerfGraceElapsed = 0;
+    const { width, height } = this.scene.scale.gameSize;
+    const performancePolicy = resolvePerformancePolicy(width, height);
+    this.lowPerformanceMode = performancePolicy.lowPerformanceMode;
+    this.adaptiveBurstScale = performancePolicy.burstScale;
+    this.runtimeFpsFallback.reset();
     this.runtimeThrottleApplied = false;
+    this.emitterViewBounds = this.createEmitterViewBounds();
     this.clearCameraFX();
     this.setupCameraFX();
     this.generateParticleTextures();
@@ -45,11 +48,12 @@ export class EffectsManager {
     this.bloom = null;
     this.lowPerformanceMode = false;
     this.adaptiveBurstScale = 1;
-    this.fpsSampleElapsed = 0;
-    this.fpsLowStreak = 0;
-    this.runtimePerfGraceElapsed = 0;
+    this.runtimeFpsFallback.reset();
     this.runtimeThrottleApplied = false;
+    this.emitterViewBounds = null;
     this.exhaustConfigKey = null;
+    this.explosionConfigKey = null;
+    this.powerUpBurstTintKey = 'default';
     this.currentLevelConfig = null;
   }
 
@@ -105,28 +109,8 @@ export class EffectsManager {
       return;
     }
 
-    this.runtimePerfGraceElapsed += delta;
-    if (this.runtimePerfGraceElapsed < 5000) {
-      return;
-    }
-
     const fps = this.scene?.game?.loop?.actualFps ?? 60;
-    if (!Number.isFinite(fps) || fps <= 0) {
-      return;
-    }
-
-    this.fpsSampleElapsed += delta;
-    if (this.fpsSampleElapsed < 1500) {
-      return;
-    }
-
-    if (fps < 52) {
-      this.fpsLowStreak += 1;
-    } else if (fps > 56) {
-      this.fpsLowStreak = 0;
-    }
-
-    if (this.fpsLowStreak >= 2) {
+    if (this.runtimeFpsFallback.update(delta, fps)) {
       this.runtimeThrottleApplied = true;
       this.lowPerformanceMode = true;
       this.adaptiveBurstScale = Math.min(this.adaptiveBurstScale, 0.64);
@@ -135,8 +119,6 @@ export class EffectsManager {
         this.bloom.active = false;
       }
     }
-
-    this.fpsSampleElapsed = 0;
   }
 
   private generateParticleTextures(): void {
@@ -196,6 +178,8 @@ export class EffectsManager {
   private createParticleEmitters(): void {
     this.destroyEmitters();
     this.exhaustConfigKey = null;
+    this.explosionConfigKey = null;
+    this.powerUpBurstTintKey = 'default';
 
     this.explosionEmitter = this.createPooledEmitter(
       'particle-explosion',
@@ -273,9 +257,22 @@ export class EffectsManager {
     });
 
     emitter.setDepth(depth);
-    emitter.reserve(this.lowPerformanceMode ? Math.max(8, Math.round(reserveCount * 0.65)) : reserveCount);
+
+    const poolTarget = this.lowPerformanceMode ? Math.max(8, Math.round(reserveCount * 0.65)) : reserveCount;
+    emitter.reserve(poolTarget);
+    emitter.maxAliveParticles = poolTarget;
+    emitter.maxParticles = Math.max(poolTarget, Math.round(poolTarget * 1.35));
+
+    const viewBounds = this.emitterViewBounds ?? this.createEmitterViewBounds();
+    emitter.viewBounds = viewBounds;
 
     return emitter;
+  }
+
+  private createEmitterViewBounds(): Phaser.Geom.Rectangle {
+    const padding = this.lowPerformanceMode ? 80 : 120;
+    const { width, height } = this.scene.scale.gameSize;
+    return new Phaser.Geom.Rectangle(-padding, -padding, width + padding * 2, height + padding * 2);
   }
 
   private scaleEmitterConfig(
@@ -295,20 +292,6 @@ export class EffectsManager {
   private scaleBurstCount(count: number): number {
     const baseScale = this.lowPerformanceMode ? 0.72 : 1;
     return Math.max(1, Math.round(count * baseScale * this.adaptiveBurstScale));
-  }
-
-  private detectLowPerformanceMode(): boolean {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    const nav = window.navigator as Navigator & { deviceMemory?: number };
-    const cpuCores = nav.hardwareConcurrency ?? 8;
-    const deviceMemory = nav.deviceMemory ?? 8;
-    const { width, height } = this.scene.scale.gameSize;
-    const pixelBudget = width * height;
-
-    return cpuCores <= 4 || deviceMemory <= 4 || pixelBudget > 1920 * 1080;
   }
 
   private clearCameraFX(): void {
@@ -340,6 +323,8 @@ export class EffectsManager {
     this.powerUpBurstEmitter = null;
     this.debrisEmitter = null;
     this.exhaustConfigKey = null;
+    this.explosionConfigKey = null;
+    this.powerUpBurstTintKey = 'default';
   }
 
   // ---------------------------------------------------------------------------
@@ -486,8 +471,13 @@ export class EffectsManager {
     }
 
     const particleCount = this.scaleBurstCount(Math.floor(20 * intensity));
+    const configKey = `${intensity.toFixed(2)}-${particleCount}`;
 
-    this.explosionEmitter.updateConfig(this.getExplosionConfig(intensity, particleCount));
+    if (this.explosionConfigKey !== configKey) {
+      this.explosionEmitter.updateConfig(this.getExplosionConfig(intensity, particleCount));
+      this.explosionConfigKey = configKey;
+    }
+
     this.explosionEmitter.explode(particleCount, x, y);
 
     // Add debris for larger explosions
@@ -585,11 +575,14 @@ export class EffectsManager {
   createPowerUpBurst(x: number, y: number, color?: number): void {
     if (!this.powerUpBurstEmitter) return;
 
-    if (color) {
+    const tintKey = color ? `tinted-${color.toString(16)}` : 'default';
+    if (this.powerUpBurstTintKey !== tintKey) {
       this.powerUpBurstEmitter.updateConfig({
         ...this.getPowerUpBurstConfig(),
-        tint: [0xffffff, color],
+        tint: color ? [0xffffff, color] : [0xffffff, 0xffee88],
       });
+
+      this.powerUpBurstTintKey = tintKey;
     }
 
     this.powerUpBurstEmitter.explode(this.scaleBurstCount(14), x, y);
