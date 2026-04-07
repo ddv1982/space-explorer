@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2026-04-08
+
+### Changed
+- Reduced scaled boss HP output to a global 30% tuning multiplier to significantly soften boss durability while preserving existing adaptive scaling behavior.
+
+### Quality
+- Verified with `npm run lint` and `npm run build`.
+
 ## [0.6.0] - 2026-04-08
 
 ### Added

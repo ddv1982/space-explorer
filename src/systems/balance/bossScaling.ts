@@ -12,6 +12,7 @@ const MAX_LEVEL_BONUS = 1.1;
 const MAX_OFFENSE_BONUS = 2.4;
 const MAX_DEFENSE_BONUS = 0.7;
 const MAX_TOTAL_SCALING = 4.6;
+const GLOBAL_BOSS_HP_TUNING = 0.3;
 
 const OFFENSE_REFERENCE_SPAN = 5;
 const DEFENSE_REFERENCE_SPAN = 6;
@@ -84,9 +85,10 @@ export function createScaledBossConfig(
   context: BossScalingContext
 ): BossConfig {
   const multiplier = getBossDifficultyMultiplier(context);
+  const tunedMultiplier = multiplier * GLOBAL_BOSS_HP_TUNING;
 
   return {
     ...baseConfig,
-    maxHp: Math.max(1, Math.round(baseConfig.maxHp * multiplier)),
+    maxHp: Math.max(1, Math.round(baseConfig.maxHp * tunedMultiplier)),
   };
 }
