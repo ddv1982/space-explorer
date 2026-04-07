@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2026-04-07
+
+### Changed
+- Refactored oversized rendering systems for maintainability: extracted particle texture generation into `src/systems/effects/particleTextureFactory.ts` and split parallax texture generation into focused modules under `src/systems/parallax/`.
+- Reduced DRY violations by centralizing shared texture-generation utilities and reusable drawing workflows.
+- Brightened first level (Solar Slipstream) readability by tuning `bgColor`, `nebulaAlpha`, and `colorGrade` values while preserving level identity.
+- Validated implementation approach against Phaser 4 guidance (modular rendering responsibilities, reusable texture workflows, and context-safe filter architecture) using Exa + local Phaser API research.
+
+### Quality
+- Verified with `bun run lint`, `bun run knip`, and `bun run build`.
+
 ## [0.4.0] - 2026-04-07
 
 ### Changed
