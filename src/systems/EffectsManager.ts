@@ -5,7 +5,7 @@ export class EffectsManager {
   private scene!: Phaser.Scene;
   private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
   private bloom: Phaser.Filters.Glow | null = null;
-  private cameraBlur: Phaser.Filters.Blur | null = null;
+  private lowPerformanceMode: boolean = false;
   private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -21,6 +21,7 @@ export class EffectsManager {
 
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
+    this.lowPerformanceMode = this.detectLowPerformanceMode();
     this.clearCameraFX();
     this.setupCameraFX();
     this.generateParticleTextures();
@@ -32,7 +33,7 @@ export class EffectsManager {
     this.clearCameraFX();
     this.colorMatrix = null;
     this.bloom = null;
-    this.cameraBlur = null;
+    this.lowPerformanceMode = false;
     this.exhaustConfigKey = null;
     this.currentLevelConfig = null;
   }
@@ -49,22 +50,39 @@ export class EffectsManager {
 
     const { brightness, contrast, saturation } = config.colorGrade;
     const matrix = this.colorMatrix.colorMatrix;
+    const mappedBrightness = Phaser.Math.Clamp(
+      brightness <= 0.35 ? 1 + brightness : brightness,
+      0.8,
+      1.4
+    );
+    const mappedContrast = Phaser.Math.Clamp(
+      contrast >= 0.5 ? contrast - 1 : contrast,
+      -0.8,
+      1
+    );
+    const mappedSaturation = Phaser.Math.Clamp(
+      saturation >= 0.5 ? saturation - 1 : saturation,
+      -1,
+      1.2
+    );
+
     matrix.reset();
-    matrix.brightness(brightness);
-    matrix.contrast(contrast);
-    matrix.saturate(saturation);
+    matrix.brightness(mappedBrightness);
+    matrix.contrast(mappedContrast, true);
+    matrix.saturate(mappedSaturation, true);
   }
 
   private setupCameraFX(): void {
     const camera = this.scene.cameras.main;
 
-    camera.filters.external.addVignette(0.5, 0.5, 0.78, 0.28);
+    camera.filters.external.addVignette(0.5, 0.5, 0.93, this.lowPerformanceMode ? 0.08 : 0.1);
 
-    // Add subtle glow for highlighted elements
-    this.bloom = camera.filters.external.addGlow(0x66bbff, 0.7, 0.2, 1, false, 0, 8);
-
-    // Slight cinematic softness to push depth in busy scenes
-    this.cameraBlur = camera.filters.external.addBlur(0, 0.7, 0.7, 0.35, 0xaaccff, 2);
+    if (!this.lowPerformanceMode) {
+      // Keep only a lightweight glow on stronger devices
+      this.bloom = camera.filters.external.addGlow(0x88c8ff, 0.28, 0.06, 1, false, 0, 5);
+    } else {
+      this.bloom = null;
+    }
   }
 
   private generateParticleTextures(): void {
@@ -193,15 +211,53 @@ export class EffectsManager {
     depth: number,
     reserveCount: number
   ): Phaser.GameObjects.Particles.ParticleEmitter {
+    const tunedConfig = this.lowPerformanceMode ? this.scaleEmitterConfig(config, 0.75) : config;
+
     const emitter = this.scene.add.particles(0, 0, textureKey, {
-      ...config,
+      ...tunedConfig,
       emitting: false,
     });
 
     emitter.setDepth(depth);
-    emitter.reserve(reserveCount);
+    emitter.reserve(this.lowPerformanceMode ? Math.max(8, Math.round(reserveCount * 0.65)) : reserveCount);
 
     return emitter;
+  }
+
+  private scaleEmitterConfig(
+    config: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+    factor: number
+  ): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
+    if (typeof config.quantity !== 'number') {
+      return config;
+    }
+
+    return {
+      ...config,
+      quantity: Math.max(1, Math.round(config.quantity * factor)),
+    };
+  }
+
+  private scaleBurstCount(count: number): number {
+    if (!this.lowPerformanceMode) {
+      return count;
+    }
+
+    return Math.max(1, Math.round(count * 0.72));
+  }
+
+  private detectLowPerformanceMode(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const nav = window.navigator as Navigator & { deviceMemory?: number };
+    const cpuCores = nav.hardwareConcurrency ?? 8;
+    const deviceMemory = nav.deviceMemory ?? 8;
+    const { width, height } = this.scene.scale.gameSize;
+    const pixelBudget = width * height;
+
+    return cpuCores <= 4 || deviceMemory <= 4 || pixelBudget > 1920 * 1080;
   }
 
   private clearCameraFX(): void {
@@ -378,29 +434,29 @@ export class EffectsManager {
       return;
     }
 
-    const particleCount = Math.floor(20 * intensity);
+    const particleCount = this.scaleBurstCount(Math.floor(20 * intensity));
 
     this.explosionEmitter.updateConfig(this.getExplosionConfig(intensity, particleCount));
     this.explosionEmitter.explode(particleCount, x, y);
 
     // Add debris for larger explosions
     if (intensity >= 1.0 && this.debrisEmitter) {
-      const debrisCount = Math.floor(8 * intensity);
+      const debrisCount = this.scaleBurstCount(Math.floor(8 * intensity));
       this.debrisEmitter.explode(debrisCount, x, y);
     }
 
     this.scene.cameras.main.shake(
       Math.floor(100 * intensity),
-      0.005 * intensity
+      (this.lowPerformanceMode ? 0.0038 : 0.005) * intensity
     );
   }
 
   createSparkBurst(x: number, y: number): void {
-    this.sparkEmitter?.explode(8, x, y);
+    this.sparkEmitter?.explode(this.scaleBurstCount(8), x, y);
   }
 
   createMuzzleFlash(x: number, y: number): void {
-    this.muzzleEmitter?.explode(5, x, y);
+    this.muzzleEmitter?.explode(this.scaleBurstCount(5), x, y);
   }
 
   createEngineExhaust(x: number, y: number, intensity: number): void {
@@ -408,7 +464,7 @@ export class EffectsManager {
       return;
     }
 
-    const count = Math.ceil(intensity * 2);
+    const count = this.scaleBurstCount(Math.ceil(intensity * 2));
     const configKey = `${intensity.toFixed(1)}-${count}`;
 
     if (this.exhaustConfigKey !== configKey) {
@@ -468,7 +524,7 @@ export class EffectsManager {
   }
 
   createHitSplash(x: number, y: number): void {
-    this.hitSplashEmitter?.explode(10, x, y);
+    this.hitSplashEmitter?.explode(this.scaleBurstCount(10), x, y);
   }
 
   createAmbientSparkle(x: number, y: number): void {
@@ -485,10 +541,10 @@ export class EffectsManager {
       });
     }
 
-    this.powerUpBurstEmitter.explode(14, x, y);
+    this.powerUpBurstEmitter.explode(this.scaleBurstCount(14), x, y);
   }
 
   createAsteroidDebris(x: number, y: number): void {
-    this.debrisEmitter?.explode(10, x, y);
+    this.debrisEmitter?.explode(this.scaleBurstCount(10), x, y);
   }
 }
