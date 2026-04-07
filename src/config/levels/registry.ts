@@ -1,8 +1,12 @@
 import type { LevelConfig } from './types';
-import { CORE_CAMPAIGN_LEVELS } from './definitions/coreCampaign';
-import { EXPANSION_CAMPAIGN_LEVELS } from './definitions/expansionCampaign';
+import { flattenCampaignLevels } from './campaigns';
+import { CORE_CAMPAIGN } from './definitions/coreCampaign';
+import { EXPANSION_CAMPAIGN } from './definitions/expansionCampaign';
 
-export const LEVELS: LevelConfig[] = [
-  ...CORE_CAMPAIGN_LEVELS,
-  ...EXPANSION_CAMPAIGN_LEVELS,
-];
+const CAMPAIGN_SEQUENCE = [
+  CORE_CAMPAIGN,
+  EXPANSION_CAMPAIGN,
+] as const;
+
+// Canonical campaign ordering for runtime progression.
+export const LEVELS: LevelConfig[] = flattenCampaignLevels(CAMPAIGN_SEQUENCE);
