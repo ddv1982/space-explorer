@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { getViewportBounds } from '../utils/layout';
 import { mixColor } from '../utils/colorUtils';
+import { rebindSceneLifecycleHandlers, unbindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 
 interface WarpStreak {
   line: Phaser.GameObjects.Graphics;
@@ -48,10 +49,10 @@ export class WarpTransition {
 
     scene.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
     scene.scale.on(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
-    scene.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    scene.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
-    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    scene.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
+    rebindSceneLifecycleHandlers(scene, {
+      onShutdown: this.handleSceneShutdown,
+      context: this,
+    });
   }
 
   setAccentColor(color: number): void {
@@ -244,8 +245,10 @@ export class WarpTransition {
     }
 
     this.scene.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
-    this.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.scene.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
+    unbindSceneLifecycleHandlers(this.scene, {
+      onShutdown: this.handleSceneShutdown,
+      context: this,
+    });
     this.scene = null;
   }
 

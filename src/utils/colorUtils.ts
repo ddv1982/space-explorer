@@ -17,3 +17,7 @@ export function mixColor(baseColor: number, accentColor: number, weight: number)
 
   return (r << 16) | (g << 8) | b;
 }
+
+export function colorToHexString(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`;
+}

@@ -3,8 +3,10 @@ import { getLevelConfig } from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { resetPlayerState } from '../systems/PlayerState';
 import { audioManager } from '../systems/AudioManager';
+import { colorToHexString } from '../utils/colorUtils';
 import { isTouchMobileDevice } from '../utils/device';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
+import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
@@ -17,10 +19,10 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
+    rebindSceneLifecycleHandlers(this, {
+      onShutdown: this.handleSceneShutdown,
+      context: this,
+    });
 
     const menuConfig = getLevelConfig(1);
     const layout = getViewportLayout(this);
@@ -101,8 +103,4 @@ export class MenuScene extends Phaser.Scene {
   private handleSceneShutdown(): void {
     this.parallax?.destroy();
   }
-}
-
-function colorToHexString(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`;
 }

@@ -30,6 +30,7 @@ import { MobileViewportGuard } from '../systems/MobileViewportGuard';
 import { MobileControls } from '../systems/MobileControls';
 import { isTouchMobileDevice } from '../utils/device';
 import { getViewportBounds } from '../utils/layout';
+import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 
 export class GameScene extends Phaser.Scene {
   private static readonly PLAYER_DEATH_EXPLOSION_INTENSITY = 1.35;
@@ -156,10 +157,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private registerLifecycleHandlers(): void {
-    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneDestroy, this);
+    rebindSceneLifecycleHandlers(this, {
+      onShutdown: this.handleSceneShutdown,
+      onDestroy: this.handleSceneDestroy,
+      context: this,
+    });
   }
 
   private registerSceneEventHandlers(): void {
@@ -194,23 +196,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleSceneShutdown(): void {
-    this.removeSceneEventHandlers();
-    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
-    this.mobileViewportGuard?.destroy();
-    this.mobileViewportGuard = null;
-    this.mobileControls?.destroy();
-    this.mobileControls = null;
-    this.parallax?.destroy();
-    this.effectsManager?.destroy();
-
-    this.flow.shutdown(this.collisionManager);
-
+    this.teardownSceneResources();
     this.lastFireTime = 0;
     this.boss = null;
     this.lastHudShieldCount = null;
   }
 
   private handleSceneDestroy(): void {
+    this.teardownSceneResources();
+  }
+
+  private teardownSceneResources(): void {
     this.removeSceneEventHandlers();
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
     this.mobileViewportGuard?.destroy();

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
-import { mixColor } from '../utils/colorUtils';
+import { colorToHexString, mixColor } from '../utils/colorUtils';
 import { getViewportBounds } from '../utils/layout';
 
 interface HudLayoutMetrics {
@@ -580,8 +580,4 @@ export class HUD {
       this.bossBarFill.fillRect(layout.bossBarX + 1 + fillWidth - 3, layout.bossBarY + 1, 3, this.bossBarHeight - 2);
     }
   }
-}
-
-function colorToHexString(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`;
 }

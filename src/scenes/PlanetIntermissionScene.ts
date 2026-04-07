@@ -3,6 +3,7 @@ import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, ge
 import { getLevelConfig, isLastLevel } from '../config/LevelsConfig';
 import { UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUpgradeByKey } from '../config/UpgradesConfig';
 import { centerHorizontally, getViewportLayout } from '../utils/layout';
+import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
@@ -58,10 +59,10 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.off(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown, this);
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleSceneShutdown, this);
+    rebindSceneLifecycleHandlers(this, {
+      onShutdown: this.handleSceneShutdown,
+      context: this,
+    });
     registerRestartOnResize(this, () => !this.transitioning);
 
     audioManager.init();
