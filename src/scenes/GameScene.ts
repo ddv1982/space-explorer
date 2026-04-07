@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
 import { BULLET_SPEED } from '../utils/constants';
-import { getActiveSection } from '../config/LevelsConfig';
+import {
+  getActiveSection,
+  getSectionProgress,
+  getTotalLevels,
+  type BossConfig,
+} from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { InputManager } from '../systems/InputManager';
 import { Player } from '../entities/Player';
@@ -31,6 +36,8 @@ import { MobileControls } from '../systems/MobileControls';
 import { isTouchMobileDevice } from '../utils/device';
 import { getViewportBounds } from '../utils/layout';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
+import { createScaledBossConfig } from '../systems/balance/bossScaling';
+import { resolveSectionMusicIntensity } from '../systems/sectionIdentity';
 
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
@@ -52,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private warpTransition!: WarpTransition;
   private mobileViewportGuard: MobileViewportGuard | null = null;
   private mobileControls: MobileControls | null = null;
+  private scaledBossConfig: BossConfig | null = null;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
   private readonly flow = new GameSceneFlowController();
   private lastFireTime: number = 0;
@@ -68,6 +76,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.lastFireTime = 0;
     this.boss = null;
+    this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
 
     this.registerLifecycleHandlers();
@@ -79,10 +88,19 @@ export class GameScene extends Phaser.Scene {
     this.levelManager.init(state.level);
 
     const levelConfig = this.levelManager.getLevelConfig();
+    if (levelConfig.boss) {
+      this.scaledBossConfig = createScaledBossConfig(levelConfig.boss, {
+        levelNumber: state.level,
+        totalLevels: getTotalLevels(),
+        upgrades: state.upgrades,
+      });
+    }
 
     audioManager.init();
     audioManager.startMusic(levelConfig.music.stage);
-    audioManager.setMusicIntensity(getActiveSection(levelConfig, 0)?.musicIntensity ?? 1);
+    const initialSection = getActiveSection(levelConfig, 0);
+    const initialSectionProgress = initialSection ? getSectionProgress(initialSection, 0) : 0;
+    audioManager.setMusicIntensity(resolveSectionMusicIntensity(initialSection, initialSectionProgress));
 
     this.cameras.main.setBackgroundColor(levelConfig.bgColor);
     this.syncViewportBounds();
@@ -352,7 +370,7 @@ export class GameScene extends Phaser.Scene {
     const boss = this.enemyPool.spawnBoss(
       viewport.centerX,
       -60,
-      this.levelManager.getLevelConfig().boss ?? undefined
+      this.scaledBossConfig ?? this.levelManager.getLevelConfig().boss ?? undefined
     );
     if (boss) {
       this.boss = boss;
@@ -474,7 +492,11 @@ export class GameScene extends Phaser.Scene {
     this.levelManager.update(delta);
 
     const activeSection = getActiveSection(this.levelManager.getLevelConfig(), this.levelManager.progress);
-    audioManager.setMusicIntensity(this.levelManager.hasBossSpawned() ? 1.1 : activeSection?.musicIntensity ?? 1);
+    const sectionProgress = activeSection
+      ? getSectionProgress(activeSection, this.levelManager.progress)
+      : 0;
+    const sectionMusicIntensity = resolveSectionMusicIntensity(activeSection, sectionProgress);
+    audioManager.setMusicIntensity(this.levelManager.hasBossSpawned() ? 1.1 : sectionMusicIntensity);
 
     if (this.levelManager.shouldSpawnBoss()) {
       this.events.emit(GAME_SCENE_EVENTS.bossSpawn);

@@ -21,3 +21,14 @@ export function getActiveSection(levelConfig: LevelConfig, progress: number): Le
     (section) => clampedProgress >= section.startProgress && clampedProgress < section.endProgress
   ) ?? levelConfig.sections.find((section) => clampedProgress === 1 && section.endProgress === 1) ?? null;
 }
+
+export function getSectionProgress(section: LevelSectionConfig, progress: number): number {
+  const clampedProgress = Math.max(0, Math.min(progress, 1));
+  const sectionSpan = section.endProgress - section.startProgress;
+
+  if (sectionSpan <= 0) {
+    return 1;
+  }
+
+  return Math.max(0, Math.min((clampedProgress - section.startProgress) / sectionSpan, 1));
+}

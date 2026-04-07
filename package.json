@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -11,7 +11,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "knip": "knip"
+    "knip": "knip",
+    "levels:validate": "bun scripts/validateLevels.ts"
   },
   "knip": {
     "project": [

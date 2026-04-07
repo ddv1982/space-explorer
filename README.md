@@ -67,6 +67,8 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 
 - **Scripted level sections** — pacing, hazard cadence, and encounter focus can shift inside a level
 - **Hazard scripting** — asteroid bursts, ring crossfire, nebula ambushes, gravity wells, and canyon-wall rock corridors
+- **Adaptive section pacing** — tension-arc shaping and fairness throttles smooth extreme overlap spikes
+- **Adaptive boss scaling** — boss durability scales with player upgrade investment and campaign progression
 - **Per-level procedural music** — each level and boss has its own Web Audio-driven music identity
 - **Power-up drops** — temporary pickups such as health, shield, and rapid-fire boosts
 - **Lives + respawn flow** — the run continues after death if lives remain
@@ -151,6 +153,7 @@ bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
 bun run knip     # unused-code analysis
+bun run levels:validate # config validation for level authoring
 ```
 
 ## Additional docs
@@ -159,6 +162,7 @@ bun run knip     # unused-code analysis
 - [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
 - [`docs/releases/0.2.1.md`](docs/releases/0.2.1.md) — subtle brightness and color-pop patch notes
 - [`docs/releases/0.2.0.md`](docs/releases/0.2.0.md) — Phaser 4 compatibility-first migration notes
+- [`docs/releases/0.5.2.md`](docs/releases/0.5.2.md) — adaptive boss scaling, hazard fairness pacing, and level validator release notes
 
 ## Acknowledgements
 

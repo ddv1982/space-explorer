@@ -8,10 +8,12 @@ import {
   type LevelSectionConfig,
   type ScriptedHazardConfig,
   getActiveSection,
+  getSectionProgress,
   getLevelConfig,
 } from '../config/LevelsConfig';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
 import { getViewportBounds } from '../utils/layout';
+import { resolveSectionSpawnRateScale } from './sectionIdentity';
 
 interface SpawnEntry {
   type: EnemyType;
@@ -19,6 +21,20 @@ interface SpawnEntry {
 }
 
 const ASTEROID_SPAWN_Y = -50;
+const HAZARD_PRESSURE_DECAY_PER_MS = 1 / 1800;
+const HAZARD_PRESSURE_SPAWN_REDUCTION = 0.28;
+const HAZARD_PRESSURE_MAX = 2.4;
+
+const HAZARD_BASE_PRESSURE_COST: Record<ScriptedHazardConfig['type'], number> = {
+  'ambient-asteroids': 0.35,
+  'debris-surge': 0.55,
+  minefield: 0.7,
+  'nebula-ambush': 0.78,
+  'ring-crossfire': 0.85,
+  'rock-corridor': 1.05,
+  'energy-storm': 0.95,
+  'gravity-well': 1.1,
+};
 
 export class WaveManager {
   private scene!: Phaser.Scene;
@@ -32,6 +48,7 @@ export class WaveManager {
   private activeSection: LevelSectionConfig | null = null;
   private activeSectionStartedAt = 0;
   private corridorGapCenter = 0;
+  private hazardPressure = 0;
   private readonly hazardLastTriggered = new Map<string, number>();
   private readonly enemySpawnHandlers: Record<EnemyType, (anchorX: number) => boolean> = {
     scout: (anchorX) => this.spawnRepeatedEnemies(
@@ -90,21 +107,24 @@ export class WaveManager {
     this.lastAsteroidSpawn = 0;
     this.activeSection = null;
     this.corridorGapCenter = this.getViewportCenterX();
+    this.hazardPressure = 0;
     this.hazardLastTriggered.clear();
     this.buildSpawnTable(this.levelConfig.enemies);
   }
 
-  update(time: number, _delta: number, progress: number): void {
+  update(time: number, delta: number, progress: number): void {
     if (!this.levelConfig) return;
 
     const activeSection = getActiveSection(this.levelConfig, progress);
+    const sectionProgress = activeSection ? getSectionProgress(activeSection, progress) : 0;
     this.setActiveSection(activeSection, time);
+    this.decayHazardPressure(delta);
 
-    const rateMultiplier = this.getEncounterRateMultiplier(progress, activeSection);
+    const rateMultiplier = this.getEncounterRateMultiplier(progress, activeSection, sectionProgress);
 
+    this.spawnSectionHazards(time, activeSection);
     this.spawnEnemiesByConfig(time, rateMultiplier, activeSection);
     this.spawnAsteroids(time, activeSection);
-    this.spawnSectionHazards(time, activeSection);
   }
 
   getAsteroidGroup(): Phaser.Physics.Arcade.Group {
@@ -118,6 +138,7 @@ export class WaveManager {
 
     this.activeSection = section;
     this.activeSectionStartedAt = time;
+    this.hazardPressure = 0;
     this.hazardLastTriggered.clear();
     this.buildSpawnTable(section?.enemyFocus ?? this.levelConfig.enemies);
   }
@@ -156,13 +177,18 @@ export class WaveManager {
     return this.clampX(anchorX + Phaser.Math.Between(-70, 70), padding);
   }
 
-  private getEncounterRateMultiplier(progress: number, activeSection: LevelSectionConfig | null): number {
+  private getEncounterRateMultiplier(
+    progress: number,
+    activeSection: LevelSectionConfig | null,
+    sectionProgress: number
+  ): number {
     const clampedProgress = Phaser.Math.Clamp(progress, 0, 1);
     const rampProgress = Phaser.Math.Easing.Cubic.In(clampedProgress);
     const intensityMultiplier = Phaser.Math.Linear(1, 1.5, rampProgress);
     const sectionMultiplier = activeSection?.spawnRateMultiplier ?? this.levelConfig.spawnRateMultiplier;
+    const sectionArcMultiplier = resolveSectionSpawnRateScale(activeSection, sectionProgress);
 
-    return sectionMultiplier * intensityMultiplier;
+    return sectionMultiplier * intensityMultiplier * sectionArcMultiplier;
   }
 
   private spawnRepeatedEnemies(
@@ -211,7 +237,7 @@ export class WaveManager {
     rateMultiplier: number,
     activeSection: LevelSectionConfig | null
   ): void {
-    const encounterInterval = 2000 / rateMultiplier;
+    const encounterInterval = (2000 / rateMultiplier) * this.getEncounterIntervalPressureScale();
     if (time <= this.lastEncounterSpawn + encounterInterval) {
       return;
     }
@@ -220,7 +246,10 @@ export class WaveManager {
 
     const encounterSize = activeSection?.encounterSizeOverride ?? this.levelConfig.encounterSize;
     const anchorX = this.getRandomX(120);
-    const encounterCount = Phaser.Math.Between(encounterSize.min, encounterSize.max);
+    const pressureScale = this.getEncounterCountPressureScale();
+    const minCount = Math.max(1, Math.round(encounterSize.min * pressureScale));
+    const maxCount = Math.max(minCount, Math.round(encounterSize.max * pressureScale));
+    const encounterCount = Phaser.Math.Between(minCount, maxCount);
 
     this.spawnEncounterBatch(anchorX, encounterCount, () => this.pickEnemyType());
   }
@@ -245,14 +274,61 @@ export class WaveManager {
       const key = `${activeSection.id}:${hazard.type}:${index}`;
       const cadence = hazard.cadenceMs ?? 2000;
       const lastTriggered = this.hazardLastTriggered.get(key) ?? this.activeSectionStartedAt;
+      const sectionElapsedMs = Math.max(0, time - this.activeSectionStartedAt);
+
+      if (!this.isHazardWithinDuration(hazard, sectionElapsedMs)) {
+        continue;
+      }
 
       if (time <= lastTriggered + cadence) {
         continue;
       }
 
+      if (!this.canTriggerHazard(hazard)) {
+        continue;
+      }
+
       this.hazardLastTriggered.set(key, time);
       this.triggerHazardEvent(hazard);
+      this.consumeHazardPressure(hazard);
     }
+  }
+
+  private isHazardWithinDuration(hazard: ScriptedHazardConfig, sectionElapsedMs: number): boolean {
+    if (hazard.durationMs === undefined) {
+      return true;
+    }
+
+    return sectionElapsedMs <= Math.max(0, hazard.durationMs);
+  }
+
+  private decayHazardPressure(delta: number): void {
+    this.hazardPressure = Math.max(0, this.hazardPressure - delta * HAZARD_PRESSURE_DECAY_PER_MS);
+  }
+
+  private getHazardPressureCost(hazard: ScriptedHazardConfig): number {
+    const baseCost = HAZARD_BASE_PRESSURE_COST[hazard.type];
+    const intensity = Phaser.Math.Clamp(hazard.intensity ?? 0.5, 0, 1.25);
+    return baseCost * Phaser.Math.Linear(0.8, 1.35, intensity);
+  }
+
+  private canTriggerHazard(hazard: ScriptedHazardConfig): boolean {
+    return this.hazardPressure + this.getHazardPressureCost(hazard) <= HAZARD_PRESSURE_MAX;
+  }
+
+  private consumeHazardPressure(hazard: ScriptedHazardConfig): void {
+    this.hazardPressure = Math.min(
+      HAZARD_PRESSURE_MAX,
+      this.hazardPressure + this.getHazardPressureCost(hazard)
+    );
+  }
+
+  private getEncounterCountPressureScale(): number {
+    return Phaser.Math.Clamp(1 - this.hazardPressure * HAZARD_PRESSURE_SPAWN_REDUCTION, 0.6, 1);
+  }
+
+  private getEncounterIntervalPressureScale(): number {
+    return Phaser.Math.Linear(1, 1.45, Phaser.Math.Clamp(this.hazardPressure / HAZARD_PRESSURE_MAX, 0, 1));
   }
 
   private triggerHazardEvent(hazard: ScriptedHazardConfig): void {
