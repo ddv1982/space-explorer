@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-04-07
+
+### Changed
+- Upgraded the engine dependency from Phaser 3.90 to Phaser 4.0.0-rc.7, including migration from legacy `preFX` / `postFX` usage to Phaser 4 filter lists.
+- Increased ship visual fidelity by adding richer contour lighting, rim highlights, heat bloom, and extra procedural panel detail in `SpriteFactory`.
+- Upgraded scene presentation with denser parallax starfields, richer nebula layers, softened particle textures, and enhanced camera filtering.
+
+### Quality
+- Verified with `bun run build` and `bun run lint`.
+
 ## [0.1.3] - 2026-04-07
 
 ### Changed

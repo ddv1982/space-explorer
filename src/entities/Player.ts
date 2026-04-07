@@ -34,9 +34,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5);
 
-    if (this.preFX) {
-      this.preFX.addGlow(0x00aaff, 2, 2, false);
-    }
+    this.enableFilters();
+    this.filters?.internal.addGlow(0x00aaff, 2, 2, 1, false);
   }
 
   applyState(state: PlayerStateData): void {

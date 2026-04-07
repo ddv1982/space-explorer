@@ -3,8 +3,9 @@ import type { LevelConfig } from '../config/LevelsConfig';
 
 export class EffectsManager {
   private scene!: Phaser.Scene;
-  private colorMatrix: Phaser.FX.ColorMatrix | null = null;
-  private bloom: Phaser.FX.Bloom | null = null;
+  private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
+  private bloom: Phaser.Filters.Glow | null = null;
+  private cameraBlur: Phaser.Filters.Blur | null = null;
   private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -31,6 +32,7 @@ export class EffectsManager {
     this.clearCameraFX();
     this.colorMatrix = null;
     this.bloom = null;
+    this.cameraBlur = null;
     this.exhaustConfigKey = null;
     this.currentLevelConfig = null;
   }
@@ -40,32 +42,29 @@ export class EffectsManager {
     if (!config.colorGrade) return;
 
     const camera = this.scene.cameras.main;
-    if (!camera.postFX) return;
 
     if (!this.colorMatrix) {
-      this.colorMatrix = camera.postFX.addColorMatrix();
+      this.colorMatrix = camera.filters.internal.addColorMatrix();
     }
 
     const { brightness, contrast, saturation } = config.colorGrade;
-    this.colorMatrix.brightness(brightness);
-    this.colorMatrix.contrast(contrast);
-    this.colorMatrix.saturate(saturation);
+    const matrix = this.colorMatrix.colorMatrix;
+    matrix.reset();
+    matrix.brightness(brightness);
+    matrix.contrast(contrast);
+    matrix.saturate(saturation);
   }
 
   private setupCameraFX(): void {
     const camera = this.scene.cameras.main;
 
-    if (camera.postFX) {
-      camera.postFX.addVignette(0.5, 0.5, 0.78, 0.28);
+    camera.filters.external.addVignette(0.5, 0.5, 0.78, 0.28);
 
-      // Add bloom for glowing highlights (WebGL only)
-      try {
-        this.bloom = camera.postFX.addBloom(0, 0, 0, 0, 1.0, 4);
-      } catch {
-        // Bloom not available (Canvas renderer) - skip silently
-        this.bloom = null;
-      }
-    }
+    // Add subtle glow for highlighted elements
+    this.bloom = camera.filters.external.addGlow(0x66bbff, 0.7, 0.2, 1, false, 0, 8);
+
+    // Slight cinematic softness to push depth in busy scenes
+    this.cameraBlur = camera.filters.external.addBlur(0, 0.7, 0.7, 0.35, 0xaaccff, 2);
   }
 
   private generateParticleTextures(): void {
@@ -87,8 +86,22 @@ export class EffectsManager {
     }
 
     const graphics = this.scene.add.graphics();
+    const cx = size / 2;
+    const cy = size / 2;
+
+    for (let layer = 4; layer >= 1; layer--) {
+      const layerRadius = radius * (layer / 4);
+      const alpha = 0.08 + layer * 0.12;
+      graphics.fillStyle(0xffffff, alpha);
+      graphics.fillCircle(cx, cy, layerRadius);
+    }
+
     graphics.fillStyle(0xffffff, 1);
-    graphics.fillCircle(size / 2, size / 2, radius);
+    graphics.fillCircle(cx, cy, Math.max(1, radius * 0.35));
+
+    graphics.fillStyle(0xffffff, 0.55);
+    graphics.fillCircle(cx - radius * 0.18, cy - radius * 0.18, Math.max(0.6, radius * 0.18));
+
     graphics.generateTexture(key, size, size);
     graphics.destroy();
   }
@@ -99,8 +112,11 @@ export class EffectsManager {
     }
 
     const graphics = this.scene.add.graphics();
-    graphics.fillStyle(0xffffff, 1);
+    graphics.fillStyle(0xffffff, 0.9);
     graphics.fillRect(0, 0, size, size);
+    graphics.fillStyle(0xffffff, 0.55);
+    graphics.fillRect(0, 0, size, 1);
+    graphics.fillRect(0, 0, 1, size);
     graphics.generateTexture(key, size, size);
     graphics.destroy();
   }
@@ -190,7 +206,8 @@ export class EffectsManager {
 
   private clearCameraFX(): void {
     const camera = this.scene?.cameras?.main;
-    camera?.postFX?.clear();
+    camera?.filters?.internal.clear();
+    camera?.filters?.external.clear();
   }
 
   private destroyEmitters(): void {

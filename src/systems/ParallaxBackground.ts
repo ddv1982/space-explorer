@@ -64,21 +64,21 @@ interface DebrisMote {
 }
 
 const LAYER_CONFIGS: StarLayerConfig[] = [
-  { name: 'far-stars', scrollSpeed: 0.15, starCount: 100, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.15, max: 0.5 }, baseColor: 0x8888aa, accentMix: 0.08, sparkleFraction: 0.03, colorStarCount: 3 },
-  { name: 'mid-stars', scrollSpeed: 0.35, starCount: 65, starSize: { min: 0.8, max: 1.8 }, starAlpha: { min: 0.3, max: 0.75 }, baseColor: 0xaaaacc, accentMix: 0.14, sparkleFraction: 0.06, colorStarCount: 5 },
-  { name: 'near-stars', scrollSpeed: 0.6, starCount: 35, starSize: { min: 1.2, max: 2.8 }, starAlpha: { min: 0.5, max: 1.0 }, baseColor: 0xccccee, accentMix: 0.22, sparkleFraction: 0.1, colorStarCount: 4 },
-  { name: 'dust', scrollSpeed: 0.85, starCount: 20, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.08, max: 0.22 }, baseColor: 0x6666aa, accentMix: 0.32, sparkleFraction: 0, colorStarCount: 2 },
+  { name: 'far-stars', scrollSpeed: 0.15, starCount: 125, starSize: { min: 0.35, max: 1.4 }, starAlpha: { min: 0.15, max: 0.55 }, baseColor: 0x8888aa, accentMix: 0.08, sparkleFraction: 0.04, colorStarCount: 4 },
+  { name: 'mid-stars', scrollSpeed: 0.35, starCount: 84, starSize: { min: 0.8, max: 2.0 }, starAlpha: { min: 0.3, max: 0.8 }, baseColor: 0xaaaacc, accentMix: 0.14, sparkleFraction: 0.08, colorStarCount: 6 },
+  { name: 'near-stars', scrollSpeed: 0.6, starCount: 48, starSize: { min: 1.1, max: 3.1 }, starAlpha: { min: 0.5, max: 1.0 }, baseColor: 0xccccee, accentMix: 0.22, sparkleFraction: 0.12, colorStarCount: 6 },
+  { name: 'dust', scrollSpeed: 0.85, starCount: 28, starSize: { min: 0.4, max: 1.25 }, starAlpha: { min: 0.08, max: 0.24 }, baseColor: 0x6666aa, accentMix: 0.32, sparkleFraction: 0, colorStarCount: 3 },
 ];
 
 const SCENIC_LAYER_CONFIGS: ScenicLayerConfig[] = [
   {
     name: 'nebula-far',
     depth: -9,
-    alpha: 0.82,
-    hazeCount: 4,
-    cloudCount: 8,
+      alpha: 0.86,
+      hazeCount: 5,
+      cloudCount: 9,
     shadowCount: 4,
-    sparkleCount: 14,
+      sparkleCount: 18,
     filamentCount: 3,
     radius: { min: 140, max: 280 },
     drift: { x: 18, y: 12 },
@@ -88,11 +88,11 @@ const SCENIC_LAYER_CONFIGS: ScenicLayerConfig[] = [
   {
     name: 'nebula-near',
     depth: -7,
-    alpha: 0.52,
+      alpha: 0.58,
     hazeCount: 3,
-    cloudCount: 7,
+      cloudCount: 8,
     shadowCount: 5,
-    sparkleCount: 20,
+      sparkleCount: 26,
     filamentCount: 4,
     radius: { min: 90, max: 200 },
     drift: { x: 32, y: 18 },
@@ -138,7 +138,7 @@ export class ParallaxBackground {
       const starColor = levelConfig
         ? mixColor(config.baseColor, levelConfig.accentColor, config.accentMix)
         : config.baseColor;
-      const textureKey = `${config.name}-${starColor.toString(16)}-v2`;
+      const textureKey = `${config.name}-${starColor.toString(16)}-v3`;
 
       // Only generate texture if it doesn't exist
       if (!scene.textures.exists(textureKey)) {
@@ -152,6 +152,11 @@ export class ParallaxBackground {
 
           g.fillStyle(starColor, alpha);
           g.fillCircle(x, y, size);
+
+          if (size > 1.35) {
+            g.fillStyle(starColor, alpha * 0.22);
+            g.fillCircle(x, y, size * 2.2);
+          }
         }
 
         // Bright sparkle crosses for near stars
@@ -277,7 +282,7 @@ export class ParallaxBackground {
 
     for (let i = 0; i < SCENIC_LAYER_CONFIGS.length; i++) {
       const layer = SCENIC_LAYER_CONFIGS[i];
-      const textureKey = `${layer.name}-${config.nebulaColor.toString(16)}-${config.accentColor.toString(16)}-${alphaKey}-${scenicWidth}x${scenicHeight}-v2`;
+      const textureKey = `${layer.name}-${config.nebulaColor.toString(16)}-${config.accentColor.toString(16)}-${alphaKey}-${scenicWidth}x${scenicHeight}-v3`;
 
       if (!scene.textures.exists(textureKey)) {
         this.generateScenicTexture(scene, textureKey, scenicWidth, scenicHeight, config, layer);
