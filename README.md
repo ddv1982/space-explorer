@@ -43,16 +43,16 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 
 | Level | Name | Highlights | Boss |
 |------:|------|------------|------|
-| 1 | Asteroid Belt Alpha | readable opener, debris rhythm | No |
-| 2 | Nebula Pass | low-visibility ambushes | No |
-| 3 | Ion Storm Sector | storm pressure, first boss gate | Storm Binder |
-| 4 | Warzone Corridor | dense frontal pressure | Siegebreaker Vaal |
-| 5 | Deep Space Inferno | endurance gauntlet | Inferno Harbinger |
-| 6 | Wreckfield Run | collapsing wreck lanes | Scrap Regent |
-| 7 | Ghostlight Veil | fog ambushes, mine pockets | Veil Manta |
-| 8 | Crown of Rings | orbital lane hazards | Ring Shepherd |
-| 9 | Obsidian Maw | canyon / rock corridor set piece | Maw Serpent |
-| 10 | Terminus Black | anomaly hazards, final exam | Null Crown |
+| 1 | Solar Slipstream | high-contrast onboarding, rhythmic telegraphs | No |
+| 2 | Prism Reef | visibility pressure + ambush timing | No |
+| 3 | Magnetar Foundry | storm-and-gravity pressure, first wall | Arc Warden Khepri |
+| 4 | Fracture Convoy | frontal lane control and convoy choke points | Marshal Bront |
+| 5 | Cinder Vault | attrition gauntlet through ember hazards | Pyre Leviathan |
+| 6 | Graveyard Lattice | collapsing salvage corridors | Reliquary Crown |
+| 7 | Mirage Archive | deceptive calm, memory-fog ambushes | Archivist Shade |
+| 8 | Halo Cartography | fast orbital pattern prediction | Orbital Cantor |
+| 9 | Glass Rift Narrows | claustrophobic canyon precision flying | Rift Basilisk |
+| 10 | Eventide Singularity | full-system anomaly finale | Axiom Null |
 
 ### Enemy roster
 
