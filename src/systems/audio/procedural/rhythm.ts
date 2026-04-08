@@ -25,20 +25,19 @@ function positiveModulo(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
 }
 
-function passesDistributedThreshold(ordinal: number, ratio: number): boolean {
+function passesGridThreshold(ordinal: number, ratio: number, slots = 16): boolean {
   const clampedRatio = clamp01(ratio);
+  const activeSlots = Math.round(clampedRatio * slots);
 
-  if (clampedRatio <= 0) {
+  if (activeSlots <= 0) {
     return false;
   }
 
-  if (clampedRatio >= 1) {
+  if (activeSlots >= slots) {
     return true;
   }
 
-  const previousBucket = Math.floor(ordinal * clampedRatio);
-  const currentBucket = Math.floor((ordinal + 1) * clampedRatio);
-  return currentBucket > previousBucket;
+  return positiveModulo(ordinal, slots) < activeSlots;
 }
 
 export function resolveLayerRhythmScheduling(
@@ -61,9 +60,9 @@ export function resolveLayerRhythmScheduling(
   const pulseOrdinal = Math.floor(pulsePosition);
   const patternStepIndex = stepInBar;
   const pulseStarted = pulseOrdinal !== Math.floor(previousPulsePosition);
-  const gatePassed = passesDistributedThreshold(pulseOrdinal, gate);
+  const gatePassed = passesGridThreshold(pulseOrdinal, gate);
   const density = clamp01(modulation?.density ?? 1);
-  const densityPassed = passesDistributedThreshold(pulseOrdinal, density);
+  const densityPassed = passesGridThreshold(pulseOrdinal, density);
 
   let gainScale = 1;
   if (accentAmount > 0 && rhythm?.accentPattern && rhythm.accentPattern.length > 0) {

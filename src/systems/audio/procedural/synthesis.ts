@@ -321,7 +321,7 @@ export function scheduleLayer(args: ToneLayerArgs): void {
   const semitoneOffset = note + octaveShift * 12;
   const baseRootHz = args.harmonicRootHz ?? args.track.rootHz;
   const frequency = baseRootHz * Math.pow(2, semitoneOffset / 12);
-  const duration = Math.max(args.stepDuration * args.layer.durationSteps * 0.92, 0.04);
+  const duration = Math.max(args.stepDuration * args.layer.durationSteps * 0.96, 0.04);
 
   scheduleTone({ ...args, frequency, duration });
 }
