@@ -26,6 +26,29 @@ function resolveStepsInBar(args: {
   );
 }
 
+function resolveTriggerStepsAcrossBars(args: {
+  rhythm?: MusicLayerRhythmConfig;
+  stepsPerBar: number;
+  totalBars: number;
+  modulation?: RhythmSchedulingModulation;
+}): number[][] {
+  return Array.from({ length: args.totalBars }, (_, barIndex) =>
+    Array.from({ length: args.stepsPerBar }, (_, stepInBar) =>
+      resolveLayerRhythmScheduling(
+        args.rhythm,
+        {
+          barIndex,
+          stepInBar,
+          stepsPerBar: args.stepsPerBar,
+        },
+        args.modulation
+      ).shouldTrigger
+        ? stepInBar
+        : -1
+    ).filter((stepInBar) => stepInBar >= 0)
+  );
+}
+
 describe('resolveLayerRhythmScheduling quantization', () => {
   test('quantizes trigger starts for divisor and non-divisor divisions', () => {
     const division4 = resolveStepsInBar({ rhythm: { division: 4, gate: 1 }, stepsPerBar: 16 });
@@ -210,5 +233,45 @@ describe('resolveLayerRhythmScheduling odd meter boundaries', () => {
     expect(firstStepBar1.shouldTrigger).toBe(true);
     expect(secondStepBar1.shouldTrigger).toBe(false);
     expect(firstStepBar1.patternStepIndex).toBe(0);
+  });
+
+  test('keeps deterministic 7/8 trigger cadence for Nebula-style raised gates', () => {
+    const bassStepsByBar = resolveTriggerStepsAcrossBars({
+      rhythm: { division: 7, phase: 0, gate: 0.96 },
+      stepsPerBar: 14,
+      totalBars: 8,
+    });
+    const pulseStepsByBar = resolveTriggerStepsAcrossBars({
+      rhythm: { division: 14, phase: 1, gate: 0.76 },
+      stepsPerBar: 14,
+      totalBars: 8,
+    });
+
+    expect(bassStepsByBar).toEqual([
+      [0, 2, 4, 6, 8, 10, 12],
+      [0, 2, 4, 6, 8, 10, 12],
+      [0, 4, 6, 8, 10, 12],
+      [0, 2, 4, 6, 8, 10, 12],
+      [0, 2, 4, 8, 10, 12],
+      [0, 2, 4, 6, 8, 10, 12],
+      [0, 2, 4, 6, 8, 12],
+      [0, 2, 4, 6, 8, 10, 12],
+    ]);
+    expect(pulseStepsByBar).toEqual([
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+      [0, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+      [0, 1, 2, 7, 8, 9, 10, 11, 12, 13],
+      [0, 1, 2, 3, 4, 9, 10, 11, 12, 13],
+      [0, 1, 2, 3, 4, 5, 6, 11, 12, 13],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 13],
+    ]);
+
+    const bassTriggerCount = bassStepsByBar.reduce((sum, bar) => sum + bar.length, 0);
+    const pulseTriggerCount = pulseStepsByBar.reduce((sum, bar) => sum + bar.length, 0);
+
+    expect(bassTriggerCount).toBe(53);
+    expect(pulseTriggerCount).toBe(84);
   });
 });

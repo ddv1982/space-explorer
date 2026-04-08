@@ -108,15 +108,15 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
     rhythm: {
       stage: {
         bass: { division: 7, phase: 0, gate: 0.9, accentAmount: 0.22, accentPattern: [0, 3, 5] },
-        pulse: { division: 8, phase: 1, gate: 0.62, accentAmount: 0.2, accentPattern: [0, 3, 6] },
-        lead: { division: 14, phase: 2, gate: 0.68, accentAmount: 0.14, accentPattern: [1, 6, 10, 13] },
-        noise: { division: 7, phase: 4, gate: 0.38, accentAmount: 0.16, accentPattern: [2, 6] },
+        pulse: { division: 14, phase: 1, gate: 0.68, accentAmount: 0.16, accentPattern: [0, 4, 8, 12] },
+        lead: { division: 14, phase: 2, gate: 0.72, accentAmount: 0.12, accentPattern: [1, 6, 10, 13] },
+        noise: { division: 7, phase: 3, gate: 0.52, accentAmount: 0.1, accentPattern: [2, 6] },
       },
       boss: {
-        bass: { division: 7, phase: 0, gate: 0.96, accentAmount: 0.26, accentPattern: [0, 2, 4, 6] },
-        pulse: { division: 10, phase: 3, gate: 0.72, accentAmount: 0.24, accentPattern: [0, 4, 7, 9] },
-        lead: { division: 14, phase: 1, gate: 0.74, accentAmount: 0.2, accentPattern: [0, 5, 9, 12] },
-        noise: { division: 7, phase: 1, gate: 0.56, accentAmount: 0.18, accentPattern: [1, 3, 5] },
+        bass: { division: 7, phase: 0, gate: 0.96, accentAmount: 0.22, accentPattern: [0, 2, 4, 6] },
+        pulse: { division: 14, phase: 1, gate: 0.76, accentAmount: 0.18, accentPattern: [0, 4, 8, 12] },
+        lead: { division: 14, phase: 2, gate: 0.76, accentAmount: 0.16, accentPattern: [0, 5, 9, 12] },
+        noise: { division: 7, phase: 3, gate: 0.6, accentAmount: 0.14, accentPattern: [1, 3, 5] },
       },
     },
     intent: {

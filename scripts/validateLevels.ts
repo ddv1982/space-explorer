@@ -1,4 +1,5 @@
 import { LEVELS } from '../src/config/levels/registry';
+import { CORE_CAMPAIGN } from '../src/config/levels/definitions/coreCampaign';
 import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../src/config/levels/types';
 
 interface ValidationIssue {
@@ -8,6 +9,13 @@ interface ValidationIssue {
 
 const errors: ValidationIssue[] = [];
 const warnings: ValidationIssue[] = [];
+
+const EARLY_LEVEL_GUARDRAIL_COUNT = 2;
+const EARLY_LEVEL_GATE_WARNING_THRESHOLD = 0.5;
+const EARLY_LEVEL_PHASE_SCATTER_WARNING_THRESHOLD = 3;
+const EARLY_LEVELS = new Set(
+  CORE_CAMPAIGN.levels.slice(0, EARLY_LEVEL_GUARDRAIL_COUNT).map((level) => levelLabel(level))
+);
 
 function pushError(level: string, message: string): void {
   errors.push({ level, message });
@@ -148,6 +156,71 @@ function isFiniteNumber(value: number): boolean {
   return Number.isFinite(value);
 }
 
+function validateEarlyLevelRhythmGuardrails(level: LevelConfig, trackName: 'stage' | 'boss'): void {
+  const levelName = levelLabel(level);
+  if (!EARLY_LEVELS.has(levelName)) {
+    return;
+  }
+
+  const track = level.music[trackName];
+  const trackScope = `music.${trackName}`;
+  const { beatsPerBar, beatUnit } = track.intent.timeSignature;
+  const quarterNotesPerBar = beatsPerBar * (4 / beatUnit);
+  const stepsPerBar = Math.max(1, Math.round(track.stepsPerBeat * quarterNotesPerBar));
+  const isOddMeter = Number.isInteger(beatsPerBar) && Math.abs(beatsPerBar % 2) === 1;
+  const rhythmLayers = [
+    ['bass', track.bass.rhythm],
+    ['pulse', track.pulse?.rhythm],
+    ['lead', track.lead?.rhythm],
+    ['noise', track.noise?.rhythm],
+  ] as const;
+
+  for (const [layerName, rhythm] of rhythmLayers) {
+    if (!rhythm) {
+      continue;
+    }
+
+    const rhythmScope = `${trackScope}.${layerName}.rhythm`;
+
+    if (
+      isOddMeter &&
+      isFiniteNumber(rhythm.division ?? Number.NaN) &&
+      rhythm.division !== beatsPerBar &&
+      rhythm.division !== stepsPerBar
+    ) {
+      pushWarning(
+        levelName,
+        `${rhythmScope}: early-level odd-meter division ${rhythm.division} is off bar grid; expected ${beatsPerBar} (beatsPerBar) or ${stepsPerBar} (stepsPerBar)`
+      );
+    }
+
+    if (isFiniteNumber(rhythm.gate ?? Number.NaN) && rhythm.gate < EARLY_LEVEL_GATE_WARNING_THRESHOLD) {
+      pushWarning(
+        levelName,
+        `${rhythmScope}: early-level gate ${rhythm.gate.toFixed(2)} is below recommended threshold ${EARLY_LEVEL_GATE_WARNING_THRESHOLD.toFixed(2)}`
+      );
+    }
+  }
+
+  const phaseValues = rhythmLayers
+    .filter(([, rhythm]) => rhythm && isFiniteNumber(rhythm.phase ?? Number.NaN))
+    .map(([, rhythm]) => rhythm!.phase as number);
+
+  if (phaseValues.length < 2) {
+    return;
+  }
+
+  const minPhase = Math.min(...phaseValues);
+  const maxPhase = Math.max(...phaseValues);
+  const scatter = maxPhase - minPhase;
+  if (scatter > EARLY_LEVEL_PHASE_SCATTER_WARNING_THRESHOLD) {
+    pushWarning(
+      levelName,
+      `${trackScope}: early-level rhythm phase scatter ${scatter.toFixed(2)} exceeds recommended limit ${EARLY_LEVEL_PHASE_SCATTER_WARNING_THRESHOLD.toFixed(2)}`
+    );
+  }
+}
+
 function validateMusicLayerRhythm(
   levelName: string,
   trackScope: string,
@@ -270,6 +343,7 @@ function validateMusicTrack(level: LevelConfig, trackName: 'stage' | 'boss'): vo
   validateMusicLayerRhythm(levelName, trackScope, 'pulse', track.pulse?.rhythm);
   validateMusicLayerRhythm(levelName, trackScope, 'lead', track.lead?.rhythm);
   validateMusicLayerRhythm(levelName, trackScope, 'noise', track.noise?.rhythm);
+  validateEarlyLevelRhythmGuardrails(level, trackName);
 }
 
 for (const level of LEVELS) {
