@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {
   createPauseButton,
+  type PauseMusicSliders,
   createPauseMusicSliders,
   destroyPauseButton,
   destroyPauseMusicSliders,
@@ -21,7 +22,6 @@ import {
   PAUSE_OVERLAY_BUTTON_HEIGHT,
   PAUSE_OVERLAY_BUTTON_WIDTH,
 } from './pauseOverlay/view';
-import type { MusicTuningSliders } from '../shared/musicRuntimeTuning';
 
 export class PauseOverlay {
   private scene: Phaser.Scene | null = null;
@@ -40,7 +40,7 @@ export class PauseOverlay {
   private hintText: Phaser.GameObjects.Text | null = null;
   private resumeButton: PauseButton | null = null;
   private menuButton: PauseButton | null = null;
-  private musicSliders: MusicTuningSliders | null = null;
+  private musicSliders: PauseMusicSliders | null = null;
 
   static create(scene: Phaser.Scene, handlers: PauseOverlayHandlers): PauseOverlay {
     return new PauseOverlay().create(scene, handlers);

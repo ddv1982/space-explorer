@@ -3,12 +3,12 @@ import { centerHorizontally, getViewportLayout } from '../../../utils/layout';
 import type { PauseOverlayLayout, PauseOverlayMessage, PauseOverlayState } from './types';
 
 export const PAUSE_OVERLAY_PANEL_WIDTH = 520;
-export const PAUSE_OVERLAY_PANEL_HEIGHT = 430;
+export const PAUSE_OVERLAY_PANEL_HEIGHT = 500;
 export const PAUSE_OVERLAY_BUTTON_WIDTH = 190;
 export const PAUSE_OVERLAY_BUTTON_HEIGHT = 52;
 export const PAUSE_OVERLAY_BUTTON_GAP = 20;
 export const PAUSE_OVERLAY_SLIDER_X_OFFSET = 45;
-export const PAUSE_OVERLAY_SLIDER_START_Y_OFFSET = 190;
+export const PAUSE_OVERLAY_SLIDER_START_Y_OFFSET = 176;
 export const PAUSE_OVERLAY_SLIDER_SPACING = 52;
 
 export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
@@ -53,7 +53,7 @@ export function getPauseOverlayMessage(state: PauseOverlayState): PauseOverlayMe
     return {
       title: 'PAUSED - ROTATE DEVICE',
       subtitle: 'Gameplay is paused in portrait mode.\nRotate to landscape to continue.',
-      hint: 'Rotate to resume, or tune music while paused.',
+      hint: 'Rotate to resume, or tune music + volume while paused.',
       resumeLabel: 'ROTATE TO RESUME',
     };
   }
@@ -61,7 +61,7 @@ export function getPauseOverlayMessage(state: PauseOverlayState): PauseOverlayMe
   return {
     title: 'PAUSED',
     subtitle: 'Press ESC or tap RESUME to continue.',
-    hint: 'Tune music live. Changes carry into gameplay this run.',
+    hint: 'Tune music and volume live. Changes carry into gameplay this run.',
     resumeLabel: 'RESUME',
   };
 }

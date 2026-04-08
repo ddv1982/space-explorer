@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.6] - 2026-04-09
+
+### Added
+- Added a dedicated **MUSIC VOLUME** slider to the in-game pause overlay so players can directly control live music loudness while paused.
+
+### Changed
+- Introduced explicit music-volume state and API methods in the audio managers, with pause-slider updates now scaling procedural music gain in real time.
+- Expanded pause overlay layout sizing and copy so all four sliders (`creativity`, `energy`, `ambience`, `music volume`) fit cleanly without overlapping controls.
+
+### Quality
+- Verified with `bun test` and `bun run build`.
+
 ## [0.6.2] - 2026-04-08
 
 ### Fixed

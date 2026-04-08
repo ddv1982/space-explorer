@@ -78,6 +78,15 @@ class AudioManager {
     this.musicManager.setMusicIntensity(intensity);
   }
 
+  getMusicVolume(): number {
+    return this.musicManager.getMusicVolume();
+  }
+
+  setMusicVolume(volume: number): number {
+    this.ensureContext();
+    return this.musicManager.setMusicVolume(volume);
+  }
+
   getMusicRuntimeTuning(): MusicRuntimeTuning {
     return this.musicManager.getMusicRuntimeTuning();
   }

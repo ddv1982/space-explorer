@@ -92,6 +92,7 @@ export class ProceduralMusicManager {
   private musicStepIndex = 0;
   private musicNextStepTime = 0;
   private musicIntensity = 1;
+  private musicVolume = 1;
   private runtimeTuning: MusicRuntimeTuning = { ...DEFAULT_MUSIC_RUNTIME_TUNING };
 
   constructor(contextManager: AudioContextManager) {
@@ -139,7 +140,7 @@ export class ProceduralMusicManager {
 
     this.musicGain.gain.cancelScheduledValues(ctx.currentTime);
     this.musicGain.gain.setValueAtTime(0.001, ctx.currentTime);
-    this.musicGain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.08);
+    this.musicGain.gain.linearRampToValueAtTime(this.resolveOutputGain(), ctx.currentTime + 0.08);
 
     this.scheduleMusic();
   }
@@ -158,20 +159,23 @@ export class ProceduralMusicManager {
   }
 
   setMusicIntensity(intensity: number): void {
-    const ctx = this.contextManager.getCtx();
-    if (!ctx || !this.musicGain) {
-      return;
-    }
-
     const clampedIntensity = Math.min(this.maximumMusicIntensity, Math.max(this.minimumMusicIntensity, intensity));
     if (Math.abs(clampedIntensity - this.musicIntensity) < 0.01) {
       return;
     }
 
     this.musicIntensity = clampedIntensity;
-    this.musicGain.gain.cancelScheduledValues(ctx.currentTime);
-    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value, ctx.currentTime);
-    this.musicGain.gain.linearRampToValueAtTime(clampedIntensity, ctx.currentTime + 0.08);
+    this.applyMusicGainFromState();
+  }
+
+  getMusicVolume(): number {
+    return this.musicVolume;
+  }
+
+  setMusicVolume(volume: number): number {
+    this.musicVolume = this.clamp01(volume);
+    this.applyMusicGainFromState();
+    return this.musicVolume;
   }
 
   getMusicRuntimeTuning(): MusicRuntimeTuning {
@@ -207,6 +211,7 @@ export class ProceduralMusicManager {
     this.musicGain = bus.musicGain;
     this.musicFX = bus.musicFX;
     this.applyAmbienceFromRuntimeTuning();
+    this.applyMusicGainFromState(0);
   }
 
   private disconnectMusicBus(): void {
@@ -376,6 +381,28 @@ export class ProceduralMusicManager {
     }
 
     setMusicBusReverbGain(ctx, this.musicFX, resolveMusicRuntimeTuning(this.runtimeTuning).reverbGain);
+  }
+
+  private applyMusicGainFromState(rampSeconds = 0.08): void {
+    const ctx = this.contextManager.getCtx();
+    if (!ctx || !this.musicGain) {
+      return;
+    }
+
+    const targetGain = this.resolveOutputGain();
+    this.musicGain.gain.cancelScheduledValues(ctx.currentTime);
+    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value, ctx.currentTime);
+
+    if (rampSeconds <= 0) {
+      this.musicGain.gain.setValueAtTime(targetGain, ctx.currentTime);
+      return;
+    }
+
+    this.musicGain.gain.linearRampToValueAtTime(targetGain, ctx.currentTime + rampSeconds);
+  }
+
+  private resolveOutputGain(): number {
+    return Math.max(0, this.musicIntensity * this.musicVolume);
   }
 
   private clamp01(value: number): number {

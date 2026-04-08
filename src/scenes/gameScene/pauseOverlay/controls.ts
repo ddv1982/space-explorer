@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audioManager } from '../../../systems/AudioManager';
-import { createMusicSliderControl } from '../../shared/musicSliderControl';
+import { createMusicSliderControl, type MusicSliderControl } from '../../shared/musicSliderControl';
 import {
   applyMusicRuntimeTuningValue,
   destroyMusicRuntimeTuningSliders,
@@ -11,6 +11,10 @@ import {
   PAUSE_OVERLAY_PANEL_WIDTH,
 } from './view';
 import type { PauseButton } from './types';
+
+export type PauseMusicSliders = MusicTuningSliders & {
+  volume: MusicSliderControl;
+};
 
 function drawPauseButtonBackground(
   graphic: Phaser.GameObjects.Graphics,
@@ -132,8 +136,8 @@ export function destroyPauseButton(button: PauseButton | null): void {
 
 export function createPauseMusicSliders(
   scene: Phaser.Scene,
-  getSliders: () => MusicTuningSliders | null
-): MusicTuningSliders {
+  getSliders: () => PauseMusicSliders | null
+): PauseMusicSliders {
   const tuning = audioManager.getMusicRuntimeTuning();
 
   return {
@@ -155,27 +159,40 @@ export function createPauseMusicSliders(
       width: PAUSE_OVERLAY_PANEL_WIDTH - 90,
       onChange: (value) => applyMusicRuntimeTuningValue('ambience', value, getSliders()),
     }),
+    volume: createMusicSliderControl(scene, {
+      label: 'MUSIC VOLUME',
+      value: audioManager.getMusicVolume(),
+      width: PAUSE_OVERLAY_PANEL_WIDTH - 90,
+      onChange: (value) => {
+        const nextVolume = audioManager.setMusicVolume(value);
+        getSliders()?.volume.setValue(nextVolume);
+      },
+    }),
   };
 }
 
-export function setPauseMusicSlidersPosition(sliders: MusicTuningSliders, x: number, y: number): void {
+export function setPauseMusicSlidersPosition(sliders: PauseMusicSliders, x: number, y: number): void {
   sliders.creativity.setPosition(x, y);
   sliders.energy.setPosition(x, y + PAUSE_OVERLAY_SLIDER_SPACING);
   sliders.ambience.setPosition(x, y + PAUSE_OVERLAY_SLIDER_SPACING * 2);
+  sliders.volume.setPosition(x, y + PAUSE_OVERLAY_SLIDER_SPACING * 3);
 }
 
-export function setPauseMusicSlidersDepth(sliders: MusicTuningSliders, depth: number): void {
+export function setPauseMusicSlidersDepth(sliders: PauseMusicSliders, depth: number): void {
   sliders.creativity.setDepth(depth);
   sliders.energy.setDepth(depth);
   sliders.ambience.setDepth(depth);
+  sliders.volume.setDepth(depth);
 }
 
-export function setPauseMusicSlidersVisible(sliders: MusicTuningSliders, visible: boolean): void {
+export function setPauseMusicSlidersVisible(sliders: PauseMusicSliders, visible: boolean): void {
   sliders.creativity.setVisible(visible);
   sliders.energy.setVisible(visible);
   sliders.ambience.setVisible(visible);
+  sliders.volume.setVisible(visible);
 }
 
-export function destroyPauseMusicSliders(sliders: MusicTuningSliders | null): void {
+export function destroyPauseMusicSliders(sliders: PauseMusicSliders | null): void {
+  sliders?.volume.destroy();
   destroyMusicRuntimeTuningSliders(sliders);
 }
