@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.5] - 2026-04-09
+
+### Added
+- Added Phase 3 signature-moment design map (`docs/phase3-signature-moments.md`) describing distinct encounter identity goals for levels 4-10.
+
+### Changed
+- Implemented a signature encounter pass for levels 4-10 by differentiating each stage’s hazard choreography and section narrative cues.
+- Updated section hazard blends and summaries across `Fracture Convoy`, `Cinder Vault`, `Graveyard Lattice`, `Mirage Archive`, `Halo Cartography`, `Glass Rift Narrows`, and `Eventide Singularity` to emphasize unique stage personalities.
+- Preserved fairness/readability while increasing personality by keeping cadence and intensity transitions within validator guardrails.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.4] - 2026-04-09
 
 ### Changed

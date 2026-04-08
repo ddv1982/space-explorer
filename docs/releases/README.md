@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`0.8.5`](./0.8.5.md) — phase 3 signature encounter identity pass for levels 4-10
 - [`0.8.4`](./0.8.4.md) — phase 2 campaign pacing/readability uplift for levels 4-10
 - [`0.8.3`](./0.8.3.md) — level design research synthesis + core campaign pacing/readability uplift
 - [`0.7.5`](./0.7.5.md) — simplified music-flow follow-up, closer to pre-0.7.4 behavior
