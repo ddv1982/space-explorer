@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2026-04-09
+
+### Changed
+- Reworked Level 2 (`Prism Reef`) music for a clearer groove and stronger progression: faster tempo, more grounded bass patterning, a more memorable lead motif, and denser section intensities.
+- Added a custom stage arrangement curve for Level 2 so intro/build/peak/release transitions feel more intentional during ambush and hazard phases.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.1] - 2026-04-09
 
 ### Changed
