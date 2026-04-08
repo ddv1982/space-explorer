@@ -119,5 +119,37 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
     bossPulsePattern: arpeggiatorPatterns.darkChromatic,
     bossLeadPattern: arpeggiatorPatterns.tensionMaximum,
     bossTempo: 116,
+    intent: {
+      deterministicSeed: 'deep-space-inferno-furnace-pulse',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'aeolian',
+        chordProgressionTags: ['power-chord-engine', 'molten-pedal'],
+        rhythmicFeel: 'heavy stride with ignition bursts',
+        energyProfile: { baseline: 0.48, peak: 0.9, curve: 'build-release' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 6, barsDuration: 1, quality: 'major' },
+            { degree: 3, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'major' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'phrygian-dominant',
+        chordProgressionTags: ['chromatic-burn', 'fifth-stack-surge'],
+        rhythmicFeel: 'serrated barrage drive',
+        energyProfile: { baseline: 0.72, peak: 0.98, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'major' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'major' },
+          ],
+        },
+      },
+    },
   }),
 };

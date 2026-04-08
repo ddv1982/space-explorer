@@ -119,5 +119,37 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
     bossPulsePattern: arpeggiatorPatterns.finalBossIntensity,
     bossLeadPattern: arpeggiatorPatterns.tensionMaximum,
     bossTempo: 124,
+    intent: {
+      deterministicSeed: 'crown-of-rings-crown-geometry',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'mixolydian',
+        chordProgressionTags: ['quartal-fanfare', 'ceremonial-dominant-loop'],
+        rhythmicFeel: 'measured barrage pulse',
+        energyProfile: { baseline: 0.56, peak: 0.95, curve: 'build' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'major' },
+            { degree: 4, barsDuration: 1, quality: 'major' },
+            { degree: 5, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'phrygian-dominant',
+        chordProgressionTags: ['sovereign-ostinato', 'tritone-declaration'],
+        rhythmicFeel: 'artillery surge cadence',
+        energyProfile: { baseline: 0.74, peak: 0.99, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'major' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'major' },
+          ],
+        },
+      },
+    },
   }),
 };

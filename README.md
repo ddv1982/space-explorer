@@ -159,9 +159,11 @@ bun run levels:validate # config validation for level authoring
 ## Additional docs
 
 - [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
+- [`docs/procedural-music-system.md`](docs/procedural-music-system.md) — procedural music architecture, authoring contract, and deterministic QA workflow
 - [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
 - [`docs/releases/0.2.1.md`](docs/releases/0.2.1.md) — subtle brightness and color-pop patch notes
 - [`docs/releases/0.2.0.md`](docs/releases/0.2.0.md) — Phaser 4 compatibility-first migration notes
+- [`docs/releases/0.7.0.md`](docs/releases/0.7.0.md) — deterministic procedural music architecture upgrade (intent, harmony, rhythm, arrangement, QA)
 - [`docs/releases/0.5.2.md`](docs/releases/0.5.2.md) — adaptive boss scaling, hazard fairness pacing, and level validator release notes
 - [`docs/releases/0.5.3.md`](docs/releases/0.5.3.md) — stronger boss durability scaling for upgrade-heavy runs
 - [`docs/releases/0.5.4.md`](docs/releases/0.5.4.md) — order-of-magnitude boss HP increase across campaign bosses

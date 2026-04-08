@@ -20,10 +20,12 @@ interface ToneLayerArgs {
   track: ProceduralMusicTrackConfig;
   layer: ProceduralMusicLayerConfig;
   stepIndex: number;
+  harmonicRootHz?: number;
   time: number;
   stepDuration: number;
   intensityBlend: number;
   creativityDrive: number;
+  gainScale?: number;
 }
 
 interface NoiseLayerArgs {
@@ -36,6 +38,7 @@ interface NoiseLayerArgs {
   stepDuration: number;
   intensityBlend: number;
   creativityDrive: number;
+  gainScale?: number;
   getNoiseBuffer: (color?: MusicNoiseCharacterConfig['color']) => AudioBuffer | null;
   getExplosionBuffer: () => AudioBuffer | null;
 }
@@ -110,13 +113,14 @@ function scheduleLegacyTone(
   frequency: number,
   time: number,
   duration: number,
-  trackMasterGain: number
+  trackMasterGain: number,
+  gainScale = 1
 ): void {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   const attackTime = Math.min(0.02, duration * 0.35);
   const releaseTime = Math.max(duration * 0.85, attackTime + 0.01);
-  const peakGain = layer.gain * trackMasterGain;
+  const peakGain = layer.gain * trackMasterGain * gainScale;
 
   osc.type = layer.waveform;
   osc.frequency.setValueAtTime(frequency, time);
@@ -155,9 +159,10 @@ function scheduleTone({
   duration,
   intensityBlend,
   creativityDrive,
+  gainScale = 1,
 }: ToneLayerArgs & { frequency: number; duration: number }): void {
   if (!track.expression && !layer.expression) {
-    scheduleLegacyTone(ctx, musicGain, layer, frequency, time, duration, track.masterGain);
+    scheduleLegacyTone(ctx, musicGain, layer, frequency, time, duration, track.masterGain, gainScale);
     return;
   }
 
@@ -169,7 +174,7 @@ function scheduleTone({
   const stereo = expression?.stereo;
   const basePan = clamp(stereo?.pan ?? 0, -1, 1);
   const panner = createPanner(ctx, basePan, stereo, time, duration + envelope.release, intensityBlend, creativityDrive);
-  const attackPeak = layer.gain * track.masterGain * accentScale * (0.9 + intensityBlend * 0.18);
+  const attackPeak = layer.gain * track.masterGain * gainScale * accentScale * (0.9 + intensityBlend * 0.18);
   const sustainGain = Math.max(attackPeak * envelope.sustain, 0.001);
   const attackEnd = time + envelope.attack;
   const decayEnd = attackEnd + envelope.decay;
@@ -275,7 +280,8 @@ function scheduleLegacyNoise(
   track: ProceduralMusicTrackConfig,
   noiseLayer: ProceduralNoiseLayerConfig,
   time: number,
-  stepDuration: number
+  stepDuration: number,
+  gainScale = 1
 ): void {
   const buffer = getExplosionBuffer();
   if (!buffer) {
@@ -291,7 +297,7 @@ function scheduleLegacyNoise(
 
   const gain = ctx.createGain();
   const duration = Math.max(stepDuration * noiseLayer.durationSteps * 0.75, 0.04);
-  const peakGain = noiseLayer.gain * track.masterGain;
+  const peakGain = noiseLayer.gain * track.masterGain * gainScale;
 
   gain.gain.setValueAtTime(0.001, time);
   gain.gain.linearRampToValueAtTime(peakGain, time + 0.01);
@@ -313,7 +319,8 @@ export function scheduleLayer(args: ToneLayerArgs): void {
 
   const octaveShift = args.layer.octaveShift ?? 0;
   const semitoneOffset = note + octaveShift * 12;
-  const frequency = args.track.rootHz * Math.pow(2, semitoneOffset / 12);
+  const baseRootHz = args.harmonicRootHz ?? args.track.rootHz;
+  const frequency = baseRootHz * Math.pow(2, semitoneOffset / 12);
   const duration = Math.max(args.stepDuration * args.layer.durationSteps * 0.92, 0.04);
 
   scheduleTone({ ...args, frequency, duration });
@@ -329,6 +336,7 @@ export function scheduleNoise({
   stepDuration,
   intensityBlend,
   creativityDrive,
+  gainScale = 1,
   getNoiseBuffer,
   getExplosionBuffer,
 }: NoiseLayerArgs): void {
@@ -338,7 +346,7 @@ export function scheduleNoise({
   }
 
   if (!track.expression && !noiseLayer.expression) {
-    scheduleLegacyNoise(ctx, musicGain, getExplosionBuffer, track, noiseLayer, time, stepDuration);
+    scheduleLegacyNoise(ctx, musicGain, getExplosionBuffer, track, noiseLayer, time, stepDuration, gainScale);
     return;
   }
 
@@ -376,7 +384,8 @@ export function scheduleNoise({
   const drift = noiseCharacter?.drift ?? 0;
   const durationMultiplier = texture === 'shimmer' ? 0.55 : texture === 'grainy' ? 0.68 : 0.9;
   const duration = Math.max(stepDuration * noiseLayer.durationSteps * durationMultiplier, 0.04);
-  const peakGain = noiseLayer.gain * track.masterGain * accentScale * (0.8 + intensityBlend * 0.45 + burst * 0.8);
+  const peakGain =
+    noiseLayer.gain * track.masterGain * gainScale * accentScale * (0.8 + intensityBlend * 0.45 + burst * 0.8);
   const highpassHz = texture === 'shimmer' ? 1800 : texture === 'grainy' ? 900 : 250;
   const bandpassHz = noiseLayer.filterHz * (1 + drift * Math.sin(stepIndex * 0.65) + intensityBlend * 0.18 + creativityDrive * 0.12);
 

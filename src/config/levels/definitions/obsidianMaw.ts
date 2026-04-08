@@ -121,5 +121,37 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
     bossPulsePattern: arpeggiatorPatterns.darkChromatic,
     bossLeadPattern: arpeggiatorPatterns.stalkingPursuit,
     bossTempo: 126,
+    intent: {
+      deterministicSeed: 'obsidian-maw-rift-pressure',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'phrygian',
+        chordProgressionTags: ['low-pedal-grind', 'chromatic-crawl'],
+        rhythmicFeel: 'compressed pursuit swing',
+        energyProfile: { baseline: 0.58, peak: 0.97, curve: 'build' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'locrian',
+        chordProgressionTags: ['predator-rise', 'dissonant-rift-hit'],
+        rhythmicFeel: 'relentless lockjaw chase',
+        energyProfile: { baseline: 0.78, peak: 1, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+            { degree: 2, barsDuration: 1, quality: 'minor' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+          ],
+        },
+      },
+    },
   }),
 };

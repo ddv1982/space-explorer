@@ -144,6 +144,134 @@ function validateBossConfig(level: LevelConfig): void {
   }
 }
 
+function isFiniteNumber(value: number): boolean {
+  return Number.isFinite(value);
+}
+
+function validateMusicLayerRhythm(
+  levelName: string,
+  trackScope: string,
+  layerName: 'bass' | 'pulse' | 'lead' | 'noise',
+  rhythm: LevelConfig['music']['stage']['bass']['rhythm']
+): void {
+  if (!rhythm) {
+    return;
+  }
+
+  const rhythmScope = `${trackScope}.${layerName}.rhythm`;
+
+  if (!isFiniteNumber(rhythm.division ?? Number.NaN) || (rhythm.division ?? 0) <= 0) {
+    pushError(levelName, `${rhythmScope}: division must be a finite number > 0`);
+  }
+
+  if (!isFiniteNumber(rhythm.gate ?? Number.NaN) || (rhythm.gate ?? -1) < 0 || (rhythm.gate ?? 2) > 1) {
+    pushError(levelName, `${rhythmScope}: gate must be a finite number in [0, 1]`);
+  }
+
+  if (rhythm.phase !== undefined && !isFiniteNumber(rhythm.phase)) {
+    pushError(levelName, `${rhythmScope}: phase must be finite when provided`);
+  }
+
+  if (rhythm.accentAmount !== undefined && !isFiniteNumber(rhythm.accentAmount)) {
+    pushError(levelName, `${rhythmScope}: accentAmount must be finite when provided`);
+  }
+
+  rhythm.accentPattern?.forEach((step, stepIndex) => {
+    if (!isFiniteNumber(step)) {
+      pushError(levelName, `${rhythmScope}: accentPattern[${stepIndex}] must be finite`);
+    }
+  });
+}
+
+function validateMusicTrack(level: LevelConfig, trackName: 'stage' | 'boss'): void {
+  const levelName = levelLabel(level);
+  const track = level.music[trackName];
+  const trackScope = `music.${trackName}`;
+
+  if (!isFiniteNumber(track.tempo) || track.tempo <= 0) {
+    pushError(levelName, `${trackScope}: tempo must be a finite number > 0`);
+  }
+
+  if (!isFiniteNumber(track.rootHz) || track.rootHz <= 0) {
+    pushError(levelName, `${trackScope}: rootHz must be a finite number > 0`);
+  }
+
+  if (!isFiniteNumber(track.stepsPerBeat) || track.stepsPerBeat <= 0) {
+    pushError(levelName, `${trackScope}: stepsPerBeat must be a finite number > 0`);
+  }
+
+  if (!isFiniteNumber(track.masterGain) || track.masterGain <= 0) {
+    pushError(levelName, `${trackScope}: masterGain must be a finite number > 0`);
+  }
+
+  if (track.intent.deterministicSeed.trim().length === 0) {
+    pushError(levelName, `${trackScope}.intent: deterministicSeed must be non-empty`);
+  }
+
+  if (!isFiniteNumber(track.intent.timeSignature.beatsPerBar) || track.intent.timeSignature.beatsPerBar <= 0) {
+    pushError(levelName, `${trackScope}.intent.timeSignature: beatsPerBar must be a finite number > 0`);
+  }
+
+  if (![2, 4, 8, 16].includes(track.intent.timeSignature.beatUnit)) {
+    pushError(levelName, `${trackScope}.intent.timeSignature: beatUnit must be one of 2, 4, 8, 16`);
+  }
+
+  const harmonySteps = track.intent.descriptors.harmony.steps;
+  if (harmonySteps.length === 0) {
+    pushError(levelName, `${trackScope}.intent.descriptors.harmony: steps must be non-empty`);
+  }
+
+  harmonySteps.forEach((step, stepIndex) => {
+    if (step.degree < 1 || step.degree > 7) {
+      pushError(levelName, `${trackScope}.intent.descriptors.harmony.steps[${stepIndex}]: degree must be in [1, 7]`);
+    }
+
+    if (!isFiniteNumber(step.barsDuration) || step.barsDuration <= 0) {
+      pushError(
+        levelName,
+        `${trackScope}.intent.descriptors.harmony.steps[${stepIndex}]: barsDuration must be a finite number > 0`
+      );
+    }
+  });
+
+  const arrangement = track.intent.descriptors.arrangement;
+  if (arrangement) {
+    if (arrangement.sections.length === 0) {
+      pushError(levelName, `${trackScope}.intent.descriptors.arrangement: sections must be non-empty`);
+    }
+
+    arrangement.sections.forEach((section, sectionIndex) => {
+      const sectionScope = `${trackScope}.intent.descriptors.arrangement.sections[${sectionIndex}]`;
+      if (!isFiniteNumber(section.barsDuration) || section.barsDuration <= 0) {
+        pushError(levelName, `${sectionScope}: barsDuration must be a finite number > 0`);
+      }
+
+      if (!isFiniteNumber(section.density) || section.density < 0 || section.density > 1) {
+        pushError(levelName, `${sectionScope}: density must be a finite number in [0, 1]`);
+      }
+
+      if (!isFiniteNumber(section.energyLift)) {
+        pushError(levelName, `${sectionScope}: energyLift must be finite`);
+      }
+
+      const multipliers = section.layerGainMultipliers;
+      if (multipliers) {
+        for (const layer of ['bass', 'pulse', 'lead', 'noise'] as const) {
+          const value = multipliers[layer];
+          if (value !== undefined && !isFiniteNumber(value)) {
+            pushError(levelName, `${sectionScope}.layerGainMultipliers.${layer}: must be finite when provided`);
+          }
+        }
+      }
+    });
+  }
+
+  validateMusicLayerRhythm(levelName, trackScope, 'bass', track.bass.rhythm);
+  validateMusicLayerRhythm(levelName, trackScope, 'pulse', track.pulse?.rhythm);
+  validateMusicLayerRhythm(levelName, trackScope, 'lead', track.lead?.rhythm);
+  validateMusicLayerRhythm(levelName, trackScope, 'noise', track.noise?.rhythm);
+}
+
 for (const level of LEVELS) {
   const name = levelLabel(level);
 
@@ -165,6 +293,8 @@ for (const level of LEVELS) {
 
   validateSectionSequence(level);
   validateBossConfig(level);
+  validateMusicTrack(level, 'stage');
+  validateMusicTrack(level, 'boss');
 }
 
 if (warnings.length > 0) {

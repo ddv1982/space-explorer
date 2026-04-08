@@ -102,5 +102,37 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
     leadPattern: arpeggiatorPatterns.wideLeap,
     bossPulsePattern: arpeggiatorPatterns.drivingPulse,
     bossLeadPattern: arpeggiatorPatterns.forwardMomentum,
+    intent: {
+      deterministicSeed: 'asteroid-belt-alpha-slipstream-anthem',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'ionian',
+        chordProgressionTags: ['bright-pedal', 'launch-ostinato'],
+        rhythmicFeel: 'syncopated glide',
+        energyProfile: { baseline: 0.34, peak: 0.72, curve: 'build-release' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'major' },
+            { degree: 5, barsDuration: 1, quality: 'major' },
+            { degree: 6, barsDuration: 1, quality: 'minor' },
+            { degree: 4, barsDuration: 1, quality: 'major' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'mixolydian',
+        chordProgressionTags: ['dominant-drive', 'open-fifth-push'],
+        rhythmicFeel: 'driving pursuit pulse',
+        energyProfile: { baseline: 0.62, peak: 0.9, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'major' },
+            { degree: 4, barsDuration: 1, quality: 'major' },
+            { degree: 5, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+    },
   }),
 };

@@ -117,5 +117,37 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
     bossPulsePattern: arpeggiatorPatterns.martialStomp,
     bossLeadPattern: arpeggiatorPatterns.tensionChromatic,
     bossTempo: 114,
+    intent: {
+      deterministicSeed: 'warzone-corridor-march-of-fragments',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'phrygian',
+        chordProgressionTags: ['minor-pedal', 'quartal-command-voicing'],
+        rhythmicFeel: 'forward military stomp',
+        energyProfile: { baseline: 0.5, peak: 0.9, curve: 'build' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'locrian',
+        chordProgressionTags: ['chromatic-march', 'cluster-pressure'],
+        rhythmicFeel: 'unbroken chase ostinato',
+        energyProfile: { baseline: 0.7, peak: 0.96, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+            { degree: 2, barsDuration: 1, quality: 'minor' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+          ],
+        },
+      },
+    },
   }),
 };

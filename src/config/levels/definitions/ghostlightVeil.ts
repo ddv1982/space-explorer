@@ -118,5 +118,37 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
     bossPulsePattern: arpeggiatorPatterns.stalkingPursuit,
     bossLeadPattern: arpeggiatorPatterns.darkChromatic,
     bossTempo: 120,
+    intent: {
+      deterministicSeed: 'ghostlight-veil-archive-ghostline',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'phrygian',
+        chordProgressionTags: ['suspended-dread', 'echo-minor-cells'],
+        rhythmicFeel: 'floating pulse with snap accents',
+        energyProfile: { baseline: 0.45, peak: 0.92, curve: 'build-release' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'locrian',
+        chordProgressionTags: ['chromatic-hunter-line', 'diminished-pressure'],
+        rhythmicFeel: 'predator chase subdivisions',
+        energyProfile: { baseline: 0.7, peak: 0.97, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+            { degree: 2, barsDuration: 1, quality: 'minor' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+          ],
+        },
+      },
+    },
   }),
 };

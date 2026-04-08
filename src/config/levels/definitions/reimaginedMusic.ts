@@ -4,6 +4,12 @@ import {
   noiseExpressionPresets,
   trackExpressionPresets,
 } from '../musicHelpers';
+import type {
+  MusicArrangementConfig,
+  MusicCompositionalDescriptorsConfig,
+  MusicLayerRhythmConfig,
+  MusicTimeSignatureConfig,
+} from '../types';
 
 type PatternFactory = (root: number) => Array<number | null>;
 
@@ -27,11 +33,107 @@ interface MusicSeed {
   masterGain?: number;
   bossTempo?: number;
   bossGain?: number;
+  rhythm?: {
+    stage?: {
+      bass?: MusicLayerRhythmConfig;
+      pulse?: MusicLayerRhythmConfig;
+      lead?: MusicLayerRhythmConfig;
+      noise?: MusicLayerRhythmConfig;
+    };
+    boss?: {
+      bass?: MusicLayerRhythmConfig;
+      pulse?: MusicLayerRhythmConfig;
+      lead?: MusicLayerRhythmConfig;
+      noise?: MusicLayerRhythmConfig;
+    };
+  };
+  intent: {
+    deterministicSeed: string;
+    timeSignature: MusicTimeSignatureConfig;
+    stage: MusicCompositionalDescriptorsConfig;
+    boss: MusicCompositionalDescriptorsConfig;
+  };
+  arrangement?: {
+    stage?: MusicArrangementConfig;
+    boss?: MusicArrangementConfig;
+  };
 }
 
 const DEFAULT_NOISE_PATTERN: Array<0 | 1> = [0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0];
 
+const DEFAULT_STAGE_LAYER_RHYTHM: Record<'bass' | 'pulse' | 'lead' | 'noise', MusicLayerRhythmConfig> = {
+  bass: { division: 4, phase: 0, gate: 0.88, accentAmount: 0.1, accentPattern: [0, 8] },
+  pulse: { division: 8, phase: 0, gate: 0.62, accentAmount: 0.14, accentPattern: [0, 3, 6] },
+  lead: { division: 16, phase: 1, gate: 0.72, accentAmount: 0.08, accentPattern: [4, 12] },
+  noise: { division: 8, phase: 2, gate: 0.44, accentAmount: 0.07, accentPattern: [2, 6] },
+};
+
+const DEFAULT_BOSS_LAYER_RHYTHM: Record<'bass' | 'pulse' | 'lead' | 'noise', MusicLayerRhythmConfig> = {
+  bass: { division: 4, phase: 0, gate: 0.94, accentAmount: 0.16, accentPattern: [0, 4, 8, 12] },
+  pulse: { division: 8, phase: 1, gate: 0.68, accentAmount: 0.2, accentPattern: [1, 5, 9, 13] },
+  lead: { division: 16, phase: 0, gate: 0.76, accentAmount: 0.12, accentPattern: [3, 7, 11, 15] },
+  noise: { division: 8, phase: 0, gate: 0.54, accentAmount: 0.1, accentPattern: [0, 2, 4, 6] },
+};
+
+const DEFAULT_STAGE_ARRANGEMENT: MusicArrangementConfig = {
+  loop: true,
+  sections: [
+    { phase: 'intro', barsDuration: 4, density: 0.38, energyLift: 0.08, layerGainMultipliers: { bass: 0.84, pulse: 0.58, lead: 0.5, noise: 0.52 } },
+    { phase: 'build', barsDuration: 8, density: 0.62, energyLift: 0.2, layerGainMultipliers: { bass: 0.98, pulse: 0.92, lead: 0.84, noise: 0.76 } },
+    { phase: 'peak', barsDuration: 4, density: 0.84, energyLift: 0.34, layerGainMultipliers: { bass: 1.06, pulse: 1.12, lead: 1.08, noise: 0.92 } },
+    { phase: 'release', barsDuration: 4, density: 0.5, energyLift: 0.12, layerGainMultipliers: { bass: 0.9, pulse: 0.76, lead: 0.68, noise: 0.62 } },
+  ],
+};
+
+const DEFAULT_BOSS_ARRANGEMENT: MusicArrangementConfig = {
+  loop: true,
+  sections: [
+    { phase: 'intro', barsDuration: 2, density: 0.68, energyLift: 0.18, layerGainMultipliers: { bass: 1.04, pulse: 1, lead: 0.96, noise: 0.84 } },
+    { phase: 'build', barsDuration: 4, density: 0.82, energyLift: 0.3, layerGainMultipliers: { bass: 1.12, pulse: 1.14, lead: 1.08, noise: 0.92 } },
+    { phase: 'peak', barsDuration: 4, density: 0.96, energyLift: 0.46, layerGainMultipliers: { bass: 1.2, pulse: 1.24, lead: 1.18, noise: 1.02 } },
+    { phase: 'release', barsDuration: 2, density: 0.72, energyLift: 0.22, layerGainMultipliers: { bass: 1.08, pulse: 1, lead: 0.92, noise: 0.8 } },
+  ],
+};
+
+function cloneArrangement(config: MusicArrangementConfig): MusicArrangementConfig {
+  return {
+    loop: config.loop,
+    sections: config.sections.map((section) => ({
+      ...section,
+      layerGainMultipliers: section.layerGainMultipliers ? { ...section.layerGainMultipliers } : undefined,
+    })),
+  };
+}
+
+function mergeArrangement(
+  defaults: MusicArrangementConfig,
+  override?: MusicArrangementConfig
+): MusicArrangementConfig {
+  if (!override) {
+    return cloneArrangement(defaults);
+  }
+
+  return {
+    ...cloneArrangement(defaults),
+    ...override,
+    sections: (override.sections ?? defaults.sections).map((section) => ({
+      ...section,
+      layerGainMultipliers: section.layerGainMultipliers ? { ...section.layerGainMultipliers } : undefined,
+    })),
+  };
+}
+
 export function createSignatureMusic(seed: MusicSeed) {
+  const stageDescriptors: MusicCompositionalDescriptorsConfig = {
+    ...seed.intent.stage,
+    arrangement: mergeArrangement(DEFAULT_STAGE_ARRANGEMENT, seed.arrangement?.stage),
+  };
+
+  const bossDescriptors: MusicCompositionalDescriptorsConfig = {
+    ...seed.intent.boss,
+    arrangement: mergeArrangement(DEFAULT_BOSS_ARRANGEMENT, seed.arrangement?.boss),
+  };
+
   return createMusicProfile(
     {
       cueName: seed.cueName,
@@ -47,6 +149,11 @@ export function createSignatureMusic(seed: MusicSeed) {
       rootHz: seed.rootHz,
       stepsPerBeat: 4,
       masterGain: seed.masterGain ?? 0.9,
+      intent: {
+        deterministicSeed: `${seed.intent.deterministicSeed}:stage`,
+        timeSignature: seed.intent.timeSignature,
+        descriptors: stageDescriptors,
+      },
       expression: {
         ...trackExpressionPresets.expansiveSpace,
         ...trackExpressionPresets.gentleFlow,
@@ -57,6 +164,7 @@ export function createSignatureMusic(seed: MusicSeed) {
         pattern: seed.bassPattern(seed.patternRoot),
         gain: 0.16,
         durationSteps: 3,
+        rhythm: { ...DEFAULT_STAGE_LAYER_RHYTHM.bass, ...seed.rhythm?.stage?.bass },
         filterHz: 980,
         expression: {
           ...layerExpressionPresets.longPad,
@@ -69,6 +177,7 @@ export function createSignatureMusic(seed: MusicSeed) {
         pattern: seed.pulsePattern(seed.patternRoot),
         gain: 0.04,
         durationSteps: 1,
+        rhythm: { ...DEFAULT_STAGE_LAYER_RHYTHM.pulse, ...seed.rhythm?.stage?.pulse },
         octaveShift: 1,
         filterHz: 1750,
         expression: {
@@ -82,6 +191,7 @@ export function createSignatureMusic(seed: MusicSeed) {
         pattern: seed.leadPattern(seed.patternRoot + 12),
         gain: 0.032,
         durationSteps: 2,
+        rhythm: { ...DEFAULT_STAGE_LAYER_RHYTHM.lead, ...seed.rhythm?.stage?.lead },
         octaveShift: 0,
         filterHz: 1400,
         expression: {
@@ -94,6 +204,7 @@ export function createSignatureMusic(seed: MusicSeed) {
         gain: 0.011,
         filterHz: 1900,
         durationSteps: 1,
+        rhythm: { ...DEFAULT_STAGE_LAYER_RHYTHM.noise, ...seed.rhythm?.stage?.noise },
         expression: {
           ...noiseExpressionPresets.shimmer,
           accent: { amount: 0.09, patternBias: 0.16, emphasisSteps: [2, 6, 10, 14] },
@@ -103,6 +214,11 @@ export function createSignatureMusic(seed: MusicSeed) {
     {
       tempo: seed.bossTempo ?? seed.tempo + 10,
       masterGain: seed.bossGain ?? Math.min(1.08, (seed.masterGain ?? 0.9) + 0.14),
+      intent: {
+        deterministicSeed: `${seed.intent.deterministicSeed}:boss`,
+        timeSignature: seed.intent.timeSignature,
+        descriptors: bossDescriptors,
+      },
       expression: {
         ...trackExpressionPresets.chase,
         accent: { amount: 0.22, patternBias: 0.38, emphasisSteps: [0, 4, 8, 12] },
@@ -111,23 +227,27 @@ export function createSignatureMusic(seed: MusicSeed) {
         waveform: 'square',
         pattern: (seed.bossBassPattern ?? seed.bassPattern)(seed.patternRoot),
         gain: 0.2,
+        rhythm: { ...DEFAULT_BOSS_LAYER_RHYTHM.bass, ...seed.rhythm?.boss?.bass },
         filterHz: 880,
       },
       pulse: {
         waveform: 'sawtooth',
         pattern: (seed.bossPulsePattern ?? seed.pulsePattern)(seed.patternRoot),
         gain: 0.052,
+        rhythm: { ...DEFAULT_BOSS_LAYER_RHYTHM.pulse, ...seed.rhythm?.boss?.pulse },
         filterHz: 2000,
       },
       lead: {
         waveform: 'sawtooth',
         pattern: (seed.bossLeadPattern ?? seed.leadPattern)(seed.patternRoot + 12),
         gain: 0.044,
+        rhythm: { ...DEFAULT_BOSS_LAYER_RHYTHM.lead, ...seed.rhythm?.boss?.lead },
         filterHz: 1650,
       },
       noise: {
         gain: 0.02,
         filterHz: 2100,
+        rhythm: { ...DEFAULT_BOSS_LAYER_RHYTHM.noise, ...seed.rhythm?.boss?.noise },
         expression: {
           ...noiseExpressionPresets.rumble,
           accent: { amount: 0.14, patternBias: 0.3, emphasisSteps: [0, 4, 8, 12] },

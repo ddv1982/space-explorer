@@ -120,5 +120,37 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
     bossBassPattern: bassPatterns.aggressiveBass,
     bossPulsePattern: arpeggiatorPatterns.martialStomp,
     bossLeadPattern: arpeggiatorPatterns.aggressiveAttack,
+    intent: {
+      deterministicSeed: 'ion-storm-sector-forge-current',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'dorian',
+        chordProgressionTags: ['electro-minor-loop', 'suspended-charge'],
+        rhythmicFeel: 'march pulse with burst accents',
+        energyProfile: { baseline: 0.44, peak: 0.82, curve: 'build' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 4, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'major' },
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'aeolian',
+        chordProgressionTags: ['minor-dominant-drive', 'descending-threat'],
+        rhythmicFeel: 'stomped pursuit cadence',
+        energyProfile: { baseline: 0.66, peak: 0.92, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 6, barsDuration: 1, quality: 'major' },
+            { degree: 3, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'major' },
+          ],
+        },
+      },
+    },
   }),
 };

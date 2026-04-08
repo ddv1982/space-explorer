@@ -124,5 +124,37 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
     bossLeadPattern: arpeggiatorPatterns.tensionMaximum,
     bossTempo: 128,
     bossGain: 1.1,
+    intent: {
+      deterministicSeed: 'terminus-black-eventide-threshold',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'aeolian',
+        chordProgressionTags: ['void-drone-pedal', 'catastrophic-tilt'],
+        rhythmicFeel: 'gravitational draw with fracture accents',
+        energyProfile: { baseline: 0.62, peak: 0.99, curve: 'build' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 6, barsDuration: 1, quality: 'major' },
+            { degree: 3, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'major' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'ultralocrian',
+        chordProgressionTags: ['final-sovereign-ostinato', 'chromatic-collapse'],
+        rhythmicFeel: 'continuous catastrophe drive',
+        energyProfile: { baseline: 0.84, peak: 1, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+            { degree: 2, barsDuration: 1, quality: 'minor' },
+            { degree: 5, barsDuration: 1, quality: 'diminished' },
+            { degree: 1, barsDuration: 1, quality: 'diminished' },
+          ],
+        },
+      },
+    },
   }),
 };

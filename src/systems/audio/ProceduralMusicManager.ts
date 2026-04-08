@@ -12,6 +12,10 @@ import {
   resolveMusicRuntimeTuning,
   type MusicRuntimeTuningValues,
 } from './procedural/musicRuntimeTuningProfile';
+import { getMeterStepContext, resolveIntentEnergy } from './procedural/musicIntent';
+import { resolveHarmonicContext } from './procedural/harmony';
+import { resolveLayerRhythmScheduling } from './procedural/rhythm';
+import { resolveArrangementForBar } from './procedural/arrangement';
 import { scheduleLayer, scheduleNoise } from './procedural/synthesis';
 
 export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
@@ -19,17 +23,37 @@ export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
   rootHz: 110,
   stepsPerBeat: 4,
   masterGain: 0.95,
+  intent: {
+    deterministicSeed: 'default-runtime-track',
+    timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+    descriptors: {
+      mode: 'aeolian',
+      chordProgressionTags: ['fallback-loop', 'neutral-pedal'],
+      rhythmicFeel: 'steady arcade pulse',
+      energyProfile: { baseline: 0.45, peak: 0.72, curve: 'steady' },
+      harmony: {
+        steps: [
+          { degree: 1, barsDuration: 1, quality: 'minor' },
+          { degree: 6, barsDuration: 1, quality: 'major' },
+          { degree: 3, barsDuration: 1, quality: 'major' },
+          { degree: 7, barsDuration: 1, quality: 'major' },
+        ],
+      },
+    },
+  },
   bass: {
     waveform: 'triangle',
     pattern: [0, null, null, null, 7, null, null, null, 12, null, null, null, 7, null, null, null],
     gain: 0.18,
     durationSteps: 3,
+    rhythm: { division: 4, phase: 0, gate: 0.9, accentAmount: 0.1, accentPattern: [0, 8] },
   },
   pulse: {
     waveform: 'square',
     pattern: [12, null, 12, null, 7, null, 12, null, 14, null, 12, null, 7, null, 5, null],
     gain: 0.05,
     durationSteps: 1,
+    rhythm: { division: 8, phase: 0, gate: 0.66, accentAmount: 0.12, accentPattern: [0, 4, 8, 12] },
     octaveShift: 1,
     filterHz: 1900,
   },
@@ -38,7 +62,15 @@ export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
     pattern: [null, 12, null, 14, null, 12, null, 7, null, 12, null, 14, null, 19, null, 14],
     gain: 0.04,
     durationSteps: 2,
+    rhythm: { division: 16, phase: 2, gate: 0.74, accentAmount: 0.09, accentPattern: [2, 10] },
     octaveShift: 1,
+  },
+  noise: {
+    pattern: [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+    gain: 0.012,
+    filterHz: 1700,
+    durationSteps: 1,
+    rhythm: { division: 8, phase: 2, gate: 0.42, accentAmount: 0.08, accentPattern: [2, 6, 10, 14] },
   },
 };
 
@@ -225,64 +257,111 @@ export class ProceduralMusicManager {
     }
 
     const runtimeTuning = resolveMusicRuntimeTuning(this.runtimeTuning);
+    const meterStepContext = getMeterStepContext(track, stepIndex);
+    const harmonicContext = resolveHarmonicContext(track, meterStepContext.barIndex);
+    const arrangement = resolveArrangementForBar(track.intent.descriptors.arrangement, meterStepContext.barIndex);
     const stepDuration = this.getStepDuration(track, runtimeTuning.tempoScale);
-    const intensityBlend = getIntensityBlend(this.musicIntensity, this.minimumMusicIntensity, this.maximumMusicIntensity);
-    const creativityDrive = runtimeTuning.creativityDrive;
-
-    scheduleLayer({
-      ctx,
-      musicGain: this.musicGain,
-      track,
-      layer: track.bass,
-      stepIndex,
-      time,
-      stepDuration,
-      intensityBlend,
-      creativityDrive,
+    const intentEnergy = resolveIntentEnergy(
+      track.intent.descriptors.energyProfile,
+      meterStepContext.barProgress,
+      meterStepContext.deterministicPulse
+    );
+    const arrangementEnergy = this.clamp01(intentEnergy * (1 + (arrangement.density - 1) * 0.35) + arrangement.energyLift);
+    const shapedIntensity = Math.min(
+      this.maximumMusicIntensity,
+      Math.max(this.minimumMusicIntensity, this.musicIntensity * (0.78 + arrangementEnergy * 0.44))
+    );
+    const intensityBlend = getIntensityBlend(shapedIntensity, this.minimumMusicIntensity, this.maximumMusicIntensity);
+    const creativityDrive = runtimeTuning.creativityDrive * (0.9 + meterStepContext.deterministicPulse * 0.2);
+    const bassGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.bass ?? 1);
+    const bassRhythm = resolveLayerRhythmScheduling(track.bass.rhythm, meterStepContext, {
+      density: this.clamp01(arrangement.density * Math.min(1, bassGainMultiplier)),
+      gainMultiplier: bassGainMultiplier,
     });
-
-    if (track.pulse) {
+    if (bassRhythm.shouldTrigger) {
       scheduleLayer({
         ctx,
         musicGain: this.musicGain,
         track,
-        layer: track.pulse,
-        stepIndex,
+        layer: track.bass,
+        stepIndex: bassRhythm.patternStepIndex,
+        harmonicRootHz: harmonicContext.harmonicRootHz,
         time,
         stepDuration,
         intensityBlend,
         creativityDrive,
+        gainScale: bassRhythm.gainScale,
       });
+    }
+
+    if (track.pulse) {
+      const pulseGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.pulse ?? 1);
+      const pulseRhythm = resolveLayerRhythmScheduling(track.pulse.rhythm, meterStepContext, {
+        density: this.clamp01(arrangement.density * Math.min(1, pulseGainMultiplier)),
+        gainMultiplier: pulseGainMultiplier,
+      });
+      if (pulseRhythm.shouldTrigger) {
+        scheduleLayer({
+          ctx,
+          musicGain: this.musicGain,
+          track,
+          layer: track.pulse,
+          stepIndex: pulseRhythm.patternStepIndex,
+          harmonicRootHz: harmonicContext.harmonicRootHz,
+          time,
+          stepDuration,
+          intensityBlend,
+          creativityDrive,
+          gainScale: pulseRhythm.gainScale,
+        });
+      }
     }
 
     if (track.lead) {
-      scheduleLayer({
-        ctx,
-        musicGain: this.musicGain,
-        track,
-        layer: track.lead,
-        stepIndex,
-        time,
-        stepDuration,
-        intensityBlend,
-        creativityDrive,
+      const leadGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.lead ?? 1);
+      const leadRhythm = resolveLayerRhythmScheduling(track.lead.rhythm, meterStepContext, {
+        density: this.clamp01(arrangement.density * Math.min(1, leadGainMultiplier)),
+        gainMultiplier: leadGainMultiplier,
       });
+      if (leadRhythm.shouldTrigger) {
+        scheduleLayer({
+          ctx,
+          musicGain: this.musicGain,
+          track,
+          layer: track.lead,
+          stepIndex: leadRhythm.patternStepIndex,
+          harmonicRootHz: harmonicContext.harmonicRootHz,
+          time,
+          stepDuration,
+          intensityBlend,
+          creativityDrive,
+          gainScale: leadRhythm.gainScale,
+        });
+      }
     }
 
     if (track.noise) {
-      scheduleNoise({
-        ctx,
-        musicGain: this.musicGain,
-        track,
-        noiseLayer: track.noise,
-        stepIndex,
-        time,
-        stepDuration,
-        intensityBlend,
-        creativityDrive,
-        getNoiseBuffer: (color) => this.contextManager.getNoiseBuffer(color),
-        getExplosionBuffer: () => this.contextManager.getExplosionBuffer(),
+      const noiseGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.noise ?? 1);
+      const noiseRhythm = resolveLayerRhythmScheduling(track.noise.rhythm, meterStepContext, {
+        density: this.clamp01(arrangement.density * Math.min(1, noiseGainMultiplier)),
+        gainMultiplier: noiseGainMultiplier,
       });
+      if (noiseRhythm.shouldTrigger) {
+        scheduleNoise({
+          ctx,
+          musicGain: this.musicGain,
+          track,
+          noiseLayer: track.noise,
+          stepIndex: noiseRhythm.patternStepIndex,
+          time,
+          stepDuration,
+          intensityBlend,
+          creativityDrive,
+          gainScale: noiseRhythm.gainScale,
+          getNoiseBuffer: (color) => this.contextManager.getNoiseBuffer(color),
+          getExplosionBuffer: () => this.contextManager.getExplosionBuffer(),
+        });
+      }
     }
   }
 

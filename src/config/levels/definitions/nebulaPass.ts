@@ -105,6 +105,52 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
     bossBassPattern: bassPatterns.drivingPulseBass,
     bossPulsePattern: arpeggiatorPatterns.urgentDash,
     bossLeadPattern: arpeggiatorPatterns.tensionChromatic,
+    rhythm: {
+      stage: {
+        bass: { division: 7, phase: 0, gate: 0.9, accentAmount: 0.22, accentPattern: [0, 3, 5] },
+        pulse: { division: 8, phase: 1, gate: 0.62, accentAmount: 0.2, accentPattern: [0, 3, 6] },
+        lead: { division: 14, phase: 2, gate: 0.68, accentAmount: 0.14, accentPattern: [1, 6, 10, 13] },
+        noise: { division: 7, phase: 4, gate: 0.38, accentAmount: 0.16, accentPattern: [2, 6] },
+      },
+      boss: {
+        bass: { division: 7, phase: 0, gate: 0.96, accentAmount: 0.26, accentPattern: [0, 2, 4, 6] },
+        pulse: { division: 10, phase: 3, gate: 0.72, accentAmount: 0.24, accentPattern: [0, 4, 7, 9] },
+        lead: { division: 14, phase: 1, gate: 0.74, accentAmount: 0.2, accentPattern: [0, 5, 9, 12] },
+        noise: { division: 7, phase: 1, gate: 0.56, accentAmount: 0.18, accentPattern: [1, 3, 5] },
+      },
+    },
+    intent: {
+      deterministicSeed: 'nebula-pass-refracted-pulse',
+      timeSignature: { beatsPerBar: 7, beatUnit: 8 },
+      stage: {
+        mode: 'lydian',
+        chordProgressionTags: ['floating-sus', 'open-cluster-drift'],
+        rhythmicFeel: 'asymmetric 7/8 breathing haze',
+        energyProfile: { baseline: 0.38, peak: 0.78, curve: 'build-release' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'major' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 5, barsDuration: 1, quality: 'major' },
+            { degree: 1, barsDuration: 1, quality: 'major' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'phrygian',
+        chordProgressionTags: ['chromatic-pivot', 'tritone-pressure'],
+        rhythmicFeel: 'urgent 7/8 subdivision chase',
+        energyProfile: { baseline: 0.68, peak: 0.94, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+    },
   }),
   passingPlanets: [
     { scrollSpeed: 0.015, planetPalette: [0x7445b0, 0xc593ff], size: 200, yPosition: 0.18, alpha: 0.2, ringChance: 0.5 },

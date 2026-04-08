@@ -116,6 +116,38 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     bossPulsePattern: arpeggiatorPatterns.finalBossIntensity,
     bossLeadPattern: arpeggiatorPatterns.stalkingPursuit,
     bossTempo: 118,
+    intent: {
+      deterministicSeed: 'wreckfield-run-relic-machine',
+      timeSignature: { beatsPerBar: 4, beatUnit: 4 },
+      stage: {
+        mode: 'dorian',
+        chordProgressionTags: ['machine-pedal', 'metallic-stab-loop'],
+        rhythmicFeel: 'mechanical march syncopation',
+        energyProfile: { baseline: 0.52, peak: 0.93, curve: 'build' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 4, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'major' },
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+      boss: {
+        mode: 'phrygian',
+        chordProgressionTags: ['boss-ostinato', 'chromatic-command-rise'],
+        rhythmicFeel: 'industrial assault pulse',
+        energyProfile: { baseline: 0.74, peak: 0.98, curve: 'surge' },
+        harmony: {
+          steps: [
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+            { degree: 2, barsDuration: 1, quality: 'major' },
+            { degree: 7, barsDuration: 1, quality: 'minor' },
+            { degree: 1, barsDuration: 1, quality: 'minor' },
+          ],
+        },
+      },
+    },
   }),
   moonSurface: {
     scrollSpeed: 0.12,

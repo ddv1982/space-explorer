@@ -125,6 +125,14 @@ export interface MusicAccentConfig {
   emphasisSteps?: number[];
 }
 
+export interface MusicLayerRhythmConfig {
+  division?: number;
+  phase?: number;
+  gate?: number;
+  accentAmount?: number;
+  accentPattern?: number[];
+}
+
 export type MusicNoiseColor = 'white' | 'pink' | 'brown';
 export type MusicNoiseTexture = 'smooth' | 'grainy' | 'shimmer';
 
@@ -152,11 +160,82 @@ export interface ProceduralMusicTrackExpressionConfig {
   accent?: MusicAccentConfig;
 }
 
+export type MusicTimeSignatureBeatUnit = 2 | 4 | 8 | 16;
+
+export interface MusicTimeSignatureConfig {
+  beatsPerBar: number;
+  beatUnit: MusicTimeSignatureBeatUnit;
+}
+
+export interface MusicEnergyProfileConfig {
+  baseline: number;
+  peak: number;
+  curve: 'steady' | 'build' | 'build-release' | 'surge';
+}
+
+export type MusicChordQuality =
+  | 'major'
+  | 'minor'
+  | 'diminished'
+  | 'augmented'
+  | 'suspended2'
+  | 'suspended4'
+  | 'power';
+
+export interface MusicHarmonicChordStepConfig {
+  degree: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  barsDuration: number;
+  quality: MusicChordQuality;
+  octaveShift?: number;
+}
+
+export interface MusicHarmonicProgressionConfig {
+  steps: MusicHarmonicChordStepConfig[];
+}
+
+export type MusicArrangementPhase = 'intro' | 'build' | 'peak' | 'release';
+
+export interface MusicArrangementLayerGainMultipliersConfig {
+  bass?: number;
+  pulse?: number;
+  lead?: number;
+  noise?: number;
+}
+
+export interface MusicArrangementSectionConfig {
+  phase: MusicArrangementPhase;
+  barsDuration: number;
+  density: number;
+  energyLift: number;
+  layerGainMultipliers?: MusicArrangementLayerGainMultipliersConfig;
+}
+
+export interface MusicArrangementConfig {
+  sections: MusicArrangementSectionConfig[];
+  loop?: boolean;
+}
+
+export interface MusicCompositionalDescriptorsConfig {
+  mode: string;
+  chordProgressionTags: string[];
+  rhythmicFeel: string;
+  energyProfile: MusicEnergyProfileConfig;
+  harmony: MusicHarmonicProgressionConfig;
+  arrangement?: MusicArrangementConfig;
+}
+
+export interface ProceduralMusicIntentConfig {
+  deterministicSeed: string;
+  timeSignature: MusicTimeSignatureConfig;
+  descriptors: MusicCompositionalDescriptorsConfig;
+}
+
 export interface ProceduralMusicLayerConfig {
   waveform: MusicWaveform;
   pattern: MusicStep[];
   gain: number;
   durationSteps: number;
+  rhythm?: MusicLayerRhythmConfig;
   octaveShift?: number;
   detune?: number;
   filterHz?: number;
@@ -168,6 +247,7 @@ export interface ProceduralNoiseLayerConfig {
   gain: number;
   filterHz: number;
   durationSteps: number;
+  rhythm?: MusicLayerRhythmConfig;
   expression?: ProceduralNoiseLayerExpressionConfig;
 }
 
@@ -176,6 +256,7 @@ export interface ProceduralMusicTrackConfig {
   rootHz: number;
   stepsPerBeat: number;
   masterGain: number;
+  intent: ProceduralMusicIntentConfig;
   expression?: ProceduralMusicTrackExpressionConfig;
   bass: ProceduralMusicLayerConfig;
   pulse?: ProceduralMusicLayerConfig;
