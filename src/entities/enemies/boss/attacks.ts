@@ -108,17 +108,24 @@ function fireCarrierAssault(context: BossAttackContext): void {
 }
 
 function firePursuitVolley(context: BossAttackContext): void {
-  fireAimedArc(context, context.getPlayerAimAngle(), 5, 32, context.phase1BulletSpeedScale);
+  const shotCount = Phaser.Math.Clamp(context.phase1SpreadShotCount, 3, 9);
+  const arcDegrees = Phaser.Math.Clamp(context.phase1SpreadArcDegrees * 0.55, 18, 48);
+  fireAimedArc(context, context.getPlayerAimAngle(), shotCount, arcDegrees, context.phase1BulletSpeedScale);
 }
 
 function firePursuitBurst(context: BossAttackContext): void {
-  fireAimedArc(context, context.getPlayerAimAngle(), 7, 24, context.phase2BulletSpeedScale * 1.02);
-  fireArc(context, context.x, context.y + 28, 3, 18, context.phase2BulletSpeedScale, context.moveDir * 10);
+  const burstCount = Phaser.Math.Clamp(context.phase2SpiralShotCount + 1, 5, 9);
+  const burstArc = Phaser.Math.Clamp(context.phase1SpreadArcDegrees * 0.42, 16, 34);
+  const flankCount = Phaser.Math.Clamp(Math.floor(context.phase2SpiralShotCount / 2) + 2, 3, 5);
+  fireAimedArc(context, context.getPlayerAimAngle(), burstCount, burstArc, context.phase2BulletSpeedScale * 1.02);
+  fireArc(context, context.x, context.y + 28, flankCount, 18, context.phase2BulletSpeedScale, context.moveDir * 10);
 }
 
 function fireBulwarkSpread(context: BossAttackContext): void {
+  const shotCount = Phaser.Math.Clamp(Math.round(context.phase1SpreadShotCount / 2), 3, 6);
+  const arcDegrees = Phaser.Math.Clamp(context.phase1SpreadArcDegrees * 0.3, 14, 30);
   [-28, 0, 28].forEach((offset) => {
-    fireArc(context, context.x + offset, context.y + 26, 3, 18, context.phase1BulletSpeedScale, offset * 0.08);
+    fireArc(context, context.x + offset, context.y + 26, shotCount, arcDegrees, context.phase1BulletSpeedScale, offset * 0.08);
   });
 }
 

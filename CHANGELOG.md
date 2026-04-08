@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.6] - 2026-04-09
+
+### Added
+- Added a boss identity matrix (`docs/phase4-boss-identity-matrix.md`) mapping Levels 4-10 bosses to distinct rhythm, movement, and projectile-grammar goals.
+
+### Changed
+- Tuned BossConfig values across Levels 4-10 to increase per-boss identity contrast in phase cadence, mobility profile, and projectile pressure shape.
+- Updated boss attack pattern logic so `pursuit` and `bulwark` styles respond more directly to configured spread/shot tuning, improving authored differentiation without changing core boss architecture.
+- Preserved progression fairness by keeping boss identity changes within existing validation/test guardrails.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.5] - 2026-04-09
 
 ### Added
