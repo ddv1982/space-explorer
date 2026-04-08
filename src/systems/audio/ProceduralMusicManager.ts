@@ -275,7 +275,7 @@ export class ProceduralMusicManager {
     const creativityDrive = runtimeTuning.creativityDrive * (0.9 + meterStepContext.deterministicPulse * 0.2);
     const bassGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.bass ?? 1);
     const bassRhythm = resolveLayerRhythmScheduling(track.bass.rhythm, meterStepContext, {
-      density: this.clamp01(arrangement.density * Math.min(1, bassGainMultiplier)),
+      density: this.clamp01(arrangement.density),
       gainMultiplier: bassGainMultiplier,
     });
     if (bassRhythm.shouldTrigger) {
@@ -297,7 +297,7 @@ export class ProceduralMusicManager {
     if (track.pulse) {
       const pulseGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.pulse ?? 1);
       const pulseRhythm = resolveLayerRhythmScheduling(track.pulse.rhythm, meterStepContext, {
-        density: this.clamp01(arrangement.density * Math.min(1, pulseGainMultiplier)),
+        density: this.clamp01(arrangement.density),
         gainMultiplier: pulseGainMultiplier,
       });
       if (pulseRhythm.shouldTrigger) {
@@ -320,7 +320,7 @@ export class ProceduralMusicManager {
     if (track.lead) {
       const leadGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.lead ?? 1);
       const leadRhythm = resolveLayerRhythmScheduling(track.lead.rhythm, meterStepContext, {
-        density: this.clamp01(arrangement.density * Math.min(1, leadGainMultiplier)),
+        density: this.clamp01(arrangement.density),
         gainMultiplier: leadGainMultiplier,
       });
       if (leadRhythm.shouldTrigger) {
@@ -343,7 +343,7 @@ export class ProceduralMusicManager {
     if (track.noise) {
       const noiseGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.noise ?? 1);
       const noiseRhythm = resolveLayerRhythmScheduling(track.noise.rhythm, meterStepContext, {
-        density: this.clamp01(arrangement.density * Math.min(1, noiseGainMultiplier)),
+        density: this.clamp01(arrangement.density),
         gainMultiplier: noiseGainMultiplier,
       });
       if (noiseRhythm.shouldTrigger) {

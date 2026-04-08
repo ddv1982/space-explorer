@@ -25,11 +25,19 @@ function positiveModulo(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
 }
 
-function hash01(value: number): number {
-  let hash = value ^ 0x9e3779b9;
-  hash = Math.imul(hash ^ (hash >>> 16), 0x85ebca6b);
-  hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35);
-  return ((hash ^ (hash >>> 16)) >>> 0) / 0xffffffff;
+function passesGridThreshold(ordinal: number, ratio: number, slots = 16): boolean {
+  const clampedRatio = clamp01(ratio);
+  const activeSlots = Math.round(clampedRatio * slots);
+
+  if (activeSlots <= 0) {
+    return false;
+  }
+
+  if (activeSlots >= slots) {
+    return true;
+  }
+
+  return positiveModulo(ordinal, slots) < activeSlots;
 }
 
 export function resolveLayerRhythmScheduling(
@@ -49,14 +57,12 @@ export function resolveLayerRhythmScheduling(
   const shiftedStep = absoluteStep + phaseOffsetSteps;
   const pulsePosition = (shiftedStep * division) / stepsPerBar;
   const previousPulsePosition = ((shiftedStep - 1) * division) / stepsPerBar;
+  const pulseOrdinal = Math.floor(pulsePosition);
   const patternStepIndex = stepInBar;
-  const pulseStarted = Math.floor(pulsePosition) !== Math.floor(previousPulsePosition);
-  const gateSeed = (barIndex + 1) * 131071 + (Math.floor(pulsePosition) + 17) * 8191 + phase * 911;
-  const gatePassed = hash01(gateSeed) <= gate;
+  const pulseStarted = pulseOrdinal !== Math.floor(previousPulsePosition);
+  const gatePassed = passesGridThreshold(pulseOrdinal, gate);
   const density = clamp01(modulation?.density ?? 1);
-  const densitySeed =
-    (barIndex + 1) * 524287 + (Math.floor(pulsePosition) + 31) * 65537 + phase * 8191 + division * 257;
-  const densityPassed = hash01(densitySeed) <= density;
+  const densityPassed = passesGridThreshold(pulseOrdinal, density);
 
   let gainScale = 1;
   if (accentAmount > 0 && rhythm?.accentPattern && rhythm.accentPattern.length > 0) {
@@ -66,6 +72,7 @@ export function resolveLayerRhythmScheduling(
     gainScale = isAccentStep ? 1 + accentAmount : Math.max(0.05, 1 - accentAmount * 0.5);
   }
 
+  gainScale *= 0.6 + density * 0.4;
   gainScale *= Math.max(0, modulation?.gainMultiplier ?? 1);
 
   return {
