@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-04-09
+
+### Changed
+- Shortened the in-game pause hint copy to avoid overflow in the pause panel.
+- Simplified README release notes link to a single `Latest` entry.
+
+### Quality
+- Verified with `bun test` and `bun run build`.
+
 ## [0.8.0] - 2026-04-09
 
 ### Changed

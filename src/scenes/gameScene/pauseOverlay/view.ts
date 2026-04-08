@@ -61,7 +61,7 @@ export function getPauseOverlayMessage(state: PauseOverlayState): PauseOverlayMe
   return {
     title: 'PAUSED',
     subtitle: 'Press ESC or tap RESUME to continue.',
-    hint: 'Tune music and volume live. Changes carry into gameplay this run.',
+    hint: 'Tune music + volume for this run.',
     resumeLabel: 'RESUME',
   };
 }
