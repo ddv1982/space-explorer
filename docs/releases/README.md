@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`0.8.3`](./0.8.3.md) — level design research synthesis + core campaign pacing/readability uplift
 - [`0.7.5`](./0.7.5.md) — simplified music-flow follow-up, closer to pre-0.7.4 behavior
 - [`0.7.4`](./0.7.4.md) — flow continuity patch reducing rhythmic interruption clusters and scheduler drift hiccups
 - [`0.7.3`](./0.7.3.md) — music simplification and consistency pass across defaults, Nebula overrides, and guardrails

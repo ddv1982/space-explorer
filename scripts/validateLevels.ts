@@ -13,6 +13,11 @@ const warnings: ValidationIssue[] = [];
 const EARLY_LEVEL_GUARDRAIL_COUNT = 2;
 const EARLY_LEVEL_GATE_WARNING_THRESHOLD = 0.5;
 const EARLY_LEVEL_PHASE_SCATTER_WARNING_THRESHOLD = 3;
+const EARLY_LEVEL_MIN_HAZARD_CADENCE_MS = 1800;
+const EARLY_LEVEL_MAX_HAZARD_INTENSITY = 0.62;
+const MIN_RELEASE_INTENSITY_DELTA = 0.18;
+const HAZARD_INTENSITY_JUMP_WARNING_DELTA = 0.35;
+const HAZARD_CADENCE_JUMP_WARNING_RATIO = 1.8;
 const EARLY_LEVELS = new Set(
   CORE_CAMPAIGN.levels.slice(0, EARLY_LEVEL_GUARDRAIL_COUNT).map((level) => levelLabel(level))
 );
@@ -121,6 +126,110 @@ function validateSectionSequence(level: LevelConfig): void {
     const delta = next.startProgress - section.endProgress;
     if (Math.abs(delta) > 1e-6) {
       pushError(name, `${section.id} -> ${next.id}: sections must be contiguous without gaps/overlaps`);
+    }
+  }
+}
+
+function average(values: number[]): number | null {
+  if (values.length === 0) {
+    return null;
+  }
+
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function validatePacingGuardrails(level: LevelConfig): void {
+  const name = levelLabel(level);
+  const sorted = [...level.sections].sort((a, b) => a.startProgress - b.startProgress);
+  if (sorted.length === 0) {
+    return;
+  }
+
+  if (sorted[0]?.phase !== 'intro') {
+    pushWarning(name, `first section phase is '${sorted[0]?.phase}', expected 'intro' for onboarding readability`);
+  }
+
+  const hasBuild = sorted.some((section) => section.phase === 'build');
+  const hasHazardOrClimax = sorted.some((section) => section.phase === 'hazard' || section.phase === 'climax');
+  if (!hasBuild || !hasHazardOrClimax) {
+    pushWarning(name, 'section progression should include both build and hazard/climax phases to create a readable difficulty arc');
+  }
+
+  const musicIntensities = sorted
+    .map((section) => section.musicIntensity)
+    .filter((value): value is number => value !== undefined);
+  if (!level.hasBoss && musicIntensities.length >= 2) {
+    const peakIntensity = Math.max(...musicIntensities);
+    const lastIntensity = musicIntensities[musicIntensities.length - 1] ?? peakIntensity;
+    if (peakIntensity - lastIntensity < MIN_RELEASE_INTENSITY_DELTA) {
+      pushWarning(
+        name,
+        `music intensity release window is shallow (peak ${peakIntensity.toFixed(2)} -> end ${lastIntensity.toFixed(2)}); consider stronger post-climax recovery`
+      );
+    }
+  }
+
+  let previousCadence: number | null = null;
+  let previousIntensity: number | null = null;
+  for (const section of sorted) {
+    const cadences = section.hazardEvents
+      ?.map((hazard) => hazard.cadenceMs)
+      .filter((value): value is number => value !== undefined) ?? [];
+    const intensities = section.hazardEvents
+      ?.map((hazard) => hazard.intensity)
+      .filter((value): value is number => value !== undefined) ?? [];
+
+    const cadence = average(cadences);
+    const intensity = average(intensities);
+
+    if (cadence !== null && previousCadence !== null) {
+      const ratio = cadence > previousCadence ? cadence / previousCadence : previousCadence / cadence;
+      if (ratio >= HAZARD_CADENCE_JUMP_WARNING_RATIO) {
+        pushWarning(
+          name,
+          `${section.id}: average hazard cadence jump vs previous section may feel abrupt (${previousCadence.toFixed(0)}ms -> ${cadence.toFixed(0)}ms)`
+        );
+      }
+    }
+
+    if (intensity !== null && previousIntensity !== null) {
+      const delta = Math.abs(intensity - previousIntensity);
+      if (delta >= HAZARD_INTENSITY_JUMP_WARNING_DELTA) {
+        pushWarning(
+          name,
+          `${section.id}: average hazard intensity jump vs previous section is large (${previousIntensity.toFixed(2)} -> ${intensity.toFixed(2)})`
+        );
+      }
+    }
+
+    if (cadence !== null) {
+      previousCadence = cadence;
+    }
+
+    if (intensity !== null) {
+      previousIntensity = intensity;
+    }
+  }
+
+  if (!EARLY_LEVELS.has(name)) {
+    return;
+  }
+
+  for (const section of sorted) {
+    for (const [hazardIndex, hazard] of section.hazardEvents?.entries() ?? []) {
+      if (hazard.cadenceMs !== undefined && hazard.cadenceMs < EARLY_LEVEL_MIN_HAZARD_CADENCE_MS) {
+        pushWarning(
+          name,
+          `${section.id} hazard[${hazardIndex}]: early-level cadence ${hazard.cadenceMs}ms may reduce telegraph readability (recommended >= ${EARLY_LEVEL_MIN_HAZARD_CADENCE_MS}ms)`
+        );
+      }
+
+      if (hazard.intensity !== undefined && hazard.intensity > EARLY_LEVEL_MAX_HAZARD_INTENSITY) {
+        pushWarning(
+          name,
+          `${section.id} hazard[${hazardIndex}]: early-level intensity ${hazard.intensity.toFixed(2)} may be too punishing (recommended <= ${EARLY_LEVEL_MAX_HAZARD_INTENSITY.toFixed(2)})`
+        );
+      }
     }
   }
 }
@@ -366,6 +475,7 @@ for (const level of LEVELS) {
   }
 
   validateSectionSequence(level);
+  validatePacingGuardrails(level);
   validateBossConfig(level);
   validateMusicTrack(level, 'stage');
   validateMusicTrack(level, 'boss');

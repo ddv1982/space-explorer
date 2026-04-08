@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.3] - 2026-04-09
+
+### Added
+- Added a research synthesis note (`docs/level-design-research-notes.md`) translating Exa/Ref findings into practical level-design heuristics for pacing, telegraphing, readability, and recovery windows.
+
+### Changed
+- Added new level pacing/readability validator guardrails for section arc quality, early-level telegraph cadence, and abrupt hazard-transition detection.
+- Retuned core campaign Levels 1-3 (`Solar Slipstream`, `Prism Reef`, `Magnetar Foundry`) for clearer intensity contours by adjusting hazard cadence/intensity, spawn pressure ramps, and section release windows.
+- Introduced explicit `tensionArc` and `vatTarget` emotion shaping across those levels to make intra-section progression feel more intentional and legible.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.2] - 2026-04-09
 
 ### Changed
