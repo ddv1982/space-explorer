@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.9] - 2026-04-09
+
+### Changed
+- Increased music headroom once more by raising runtime output gain boost, so `100%` volume is stronger than v0.7.8.
+
+### Quality
+- Verified with `bun test` and `bun run build`.
+
 ## [0.7.8] - 2026-04-09
 
 ### Changed
