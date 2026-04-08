@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.4] - 2026-04-09
+
+### Changed
+- Completed Phase 2 level design tuning across the remaining campaign levels (Levels 4-10): `Fracture Convoy`, `Cinder Vault`, `Graveyard Lattice`, `Mirage Archive`, `Halo Cartography`, `Glass Rift Narrows`, and `Eventide Singularity`.
+- Rebalanced hazard cadence/intensity and section spawn pressure to keep high-end difficulty while improving telegraph readability and reducing abrupt pressure spikes.
+- Added explicit section `tensionArc` and `vatTarget` shaping throughout those levels to strengthen intro/build/hazard/climax/boss-approach emotional contouring.
+- Lowered boss-approach pressure carryover in late stages to improve anticipation clarity before boss handoff.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.3] - 2026-04-09
 
 ### Added
