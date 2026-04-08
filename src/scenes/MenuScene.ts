@@ -8,16 +8,18 @@ import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
-import {
-  destroyMusicRuntimeTuningSliders,
-  type MusicTuningSliders,
-} from './shared/musicRuntimeTuning';
 import { createMenuLayoutPlan } from './menuScene/layout';
-import { createControlsPanel, createMenuTitle, createMusicLabPanel } from './menuScene/panels';
+import {
+  createControlsPanel,
+  createMenuTitle,
+  createMusicLabPanel,
+  destroyMenuMusicSliders,
+  type MenuMusicSliders,
+} from './menuScene/panels';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
-  private musicSliders: MusicTuningSliders | null = null;
+  private musicSliders: MenuMusicSliders | null = null;
 
   constructor() {
     super({ key: 'Menu' });
@@ -62,7 +64,7 @@ export class MenuScene extends Phaser.Scene {
 
   private handleSceneShutdown(): void {
     this.parallax?.destroy();
-    destroyMusicRuntimeTuningSliders(this.musicSliders);
+    destroyMenuMusicSliders(this.musicSliders);
     this.musicSliders = null;
   }
 }

@@ -27,7 +27,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const controlsY = layout.centerY - (compact ? 24 : 8);
   const controlsPanelX = centerHorizontally(layout, controlsPanelWidth);
   const musicPanelWidth = 430;
-  const musicPanelHeight = compact ? 170 : 188;
+  const musicPanelHeight = compact ? 222 : 238;
   const musicPanelX = centerHorizontally(layout, musicPanelWidth);
   const musicPanelY = controlsY + controlsPanelHeight + (compact ? 16 : 24);
 

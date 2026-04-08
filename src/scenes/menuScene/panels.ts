@@ -1,9 +1,13 @@
 import Phaser from 'phaser';
 import { audioManager } from '../../systems/AudioManager';
 import { colorToHexString } from '../../utils/colorUtils';
-import { createMusicSliderControl } from '../shared/musicSliderControl';
-import { applyMusicRuntimeTuningValue, type MusicTuningSliders } from '../shared/musicRuntimeTuning';
+import { createMusicSliderControl, type MusicSliderControl } from '../shared/musicSliderControl';
+import { applyMusicRuntimeTuningValue, destroyMusicRuntimeTuningSliders, type MusicTuningSliders } from '../shared/musicRuntimeTuning';
 import type { MenuLayoutPlan } from './layout';
+
+export type MenuMusicSliders = MusicTuningSliders & {
+  volume: MusicSliderControl;
+};
 
 export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void {
   scene.add.text(plan.centerX, plan.titleY, 'SPACE EXPLORER', {
@@ -64,8 +68,8 @@ export function createMusicLabPanel(
   scene: Phaser.Scene,
   plan: MenuLayoutPlan,
   accentColor: number,
-  getSliders: () => MusicTuningSliders | null
-): MusicTuningSliders {
+  getSliders: () => MenuMusicSliders | null
+): MenuMusicSliders {
   const musicPanel = scene.add.graphics();
   musicPanel.fillStyle(0x050b14, 0.8);
   musicPanel.fillRoundedRect(plan.musicPanelX, plan.musicPanelY, plan.musicPanelWidth, plan.musicPanelHeight, 10);
@@ -80,7 +84,7 @@ export function createMusicLabPanel(
   }).setOrigin(0.5, 0).setDepth(11);
 
   const runtimeTuning = audioManager.getMusicRuntimeTuning();
-  const sliders: MusicTuningSliders = {
+  const sliders: MenuMusicSliders = {
     creativity: createMusicSliderControl(scene, {
       label: 'CREATIVITY',
       value: runtimeTuning.creativity,
@@ -99,14 +103,30 @@ export function createMusicLabPanel(
       width: plan.sliderWidth,
       onChange: (value) => applyMusicRuntimeTuningValue('ambience', value, getSliders()),
     }),
+    volume: createMusicSliderControl(scene, {
+      label: 'MUSIC VOLUME',
+      value: audioManager.getMusicVolume(),
+      width: plan.sliderWidth,
+      onChange: (value) => {
+        const nextVolume = audioManager.setMusicVolume(value);
+        getSliders()?.volume.setValue(nextVolume);
+      },
+    }),
   };
 
   sliders.creativity.setPosition(plan.sliderX, plan.sliderStartY);
   sliders.energy.setPosition(plan.sliderX, plan.sliderStartY + plan.sliderSpacing);
   sliders.ambience.setPosition(plan.sliderX, plan.sliderStartY + plan.sliderSpacing * 2);
+  sliders.volume.setPosition(plan.sliderX, plan.sliderStartY + plan.sliderSpacing * 3);
   sliders.creativity.setDepth(11);
   sliders.energy.setDepth(11);
   sliders.ambience.setDepth(11);
+  sliders.volume.setDepth(11);
 
   return sliders;
+}
+
+export function destroyMenuMusicSliders(sliders: MenuMusicSliders | null): void {
+  sliders?.volume.destroy();
+  destroyMusicRuntimeTuningSliders(sliders);
 }

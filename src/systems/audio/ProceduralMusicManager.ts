@@ -82,6 +82,7 @@ export class ProceduralMusicManager {
   private readonly musicScheduleAheadSeconds = 0.22;
   private readonly minimumMusicIntensity = 0.2;
   private readonly maximumMusicIntensity = 1.2;
+  private readonly musicOutputGainBoost = 1.45;
 
   private readonly contextManager: AudioContextManager;
   private musicGain: GainNode | null = null;
@@ -402,7 +403,7 @@ export class ProceduralMusicManager {
   }
 
   private resolveOutputGain(): number {
-    return Math.max(0, this.musicIntensity * this.musicVolume);
+    return Math.max(0, this.musicIntensity * this.musicVolume * this.musicOutputGainBoost);
   }
 
   private clamp01(value: number): number {

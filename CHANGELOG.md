@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.7] - 2026-04-09
+
+### Added
+- Added **MUSIC VOLUME** control to the Menu (home) Music Lab so volume can be tuned before starting gameplay.
+
+### Changed
+- Calibrated procedural music output gain so `100%` music volume plays noticeably louder than the prior baseline.
+- Updated Menu music panel sizing and slider lifecycle wiring to support all four live controls (`creativity`, `energy`, `ambience`, `music volume`).
+
+### Quality
+- Verified with `bun run build` and `bun test`.
+
 ## [0.7.6] - 2026-04-09
 
 ### Added
