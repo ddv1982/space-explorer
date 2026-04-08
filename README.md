@@ -164,8 +164,7 @@ bun run levels:validate # config validation for level authoring
 
 ## Release notes
 
-- [Latest: `0.7.5`](docs/releases/0.7.5.md)
-- [All releases index](docs/releases/README.md)
+- [Latest](docs/releases/README.md)
 
 ## Acknowledgements
 
