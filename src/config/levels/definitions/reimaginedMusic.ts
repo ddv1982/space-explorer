@@ -62,36 +62,36 @@ interface MusicSeed {
 const DEFAULT_NOISE_PATTERN: Array<0 | 1> = [0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0];
 
 const DEFAULT_STAGE_LAYER_RHYTHM: Record<'bass' | 'pulse' | 'lead' | 'noise', MusicLayerRhythmConfig> = {
-  bass: { division: 4, phase: 0, gate: 0.94, accentAmount: 0.1, accentPattern: [0, 8] },
-  pulse: { division: 8, phase: 0, gate: 0.86, accentAmount: 0.14, accentPattern: [0, 3, 6] },
-  lead: { division: 16, phase: 1, gate: 0.82, accentAmount: 0.08, accentPattern: [4, 12] },
-  noise: { division: 8, phase: 2, gate: 0.58, accentAmount: 0.07, accentPattern: [2, 6] },
+  bass: { division: 4, phase: 0, gate: 0.95, accentAmount: 0.08, accentPattern: [0, 8] },
+  pulse: { division: 8, phase: 0, gate: 0.9, accentAmount: 0.1, accentPattern: [0, 4, 8, 12] },
+  lead: { division: 8, phase: 0, gate: 0.78, accentAmount: 0.06, accentPattern: [4, 12] },
+  noise: { division: 8, phase: 0, gate: 0.62, accentAmount: 0.05, accentPattern: [4, 12] },
 };
 
 const DEFAULT_BOSS_LAYER_RHYTHM: Record<'bass' | 'pulse' | 'lead' | 'noise', MusicLayerRhythmConfig> = {
-  bass: { division: 4, phase: 0, gate: 0.98, accentAmount: 0.16, accentPattern: [0, 4, 8, 12] },
-  pulse: { division: 8, phase: 1, gate: 0.9, accentAmount: 0.2, accentPattern: [1, 5, 9, 13] },
-  lead: { division: 16, phase: 0, gate: 0.86, accentAmount: 0.12, accentPattern: [3, 7, 11, 15] },
-  noise: { division: 8, phase: 0, gate: 0.68, accentAmount: 0.1, accentPattern: [0, 2, 4, 6] },
+  bass: { division: 4, phase: 0, gate: 1, accentAmount: 0.12, accentPattern: [0, 4, 8, 12] },
+  pulse: { division: 8, phase: 0, gate: 0.94, accentAmount: 0.14, accentPattern: [0, 4, 8, 12] },
+  lead: { division: 8, phase: 0, gate: 0.84, accentAmount: 0.1, accentPattern: [2, 6, 10, 14] },
+  noise: { division: 8, phase: 0, gate: 0.72, accentAmount: 0.08, accentPattern: [0, 4, 8, 12] },
 };
 
 const DEFAULT_STAGE_ARRANGEMENT: MusicArrangementConfig = {
   loop: true,
   sections: [
-    { phase: 'intro', barsDuration: 4, density: 0.68, energyLift: 0.14, layerGainMultipliers: { bass: 0.9, pulse: 0.78, lead: 0.72, noise: 0.62 } },
-    { phase: 'build', barsDuration: 8, density: 0.78, energyLift: 0.24, layerGainMultipliers: { bass: 1, pulse: 0.96, lead: 0.9, noise: 0.84 } },
-    { phase: 'peak', barsDuration: 4, density: 0.9, energyLift: 0.36, layerGainMultipliers: { bass: 1.08, pulse: 1.16, lead: 1.1, noise: 0.96 } },
-    { phase: 'release', barsDuration: 4, density: 0.72, energyLift: 0.18, layerGainMultipliers: { bass: 0.96, pulse: 0.84, lead: 0.78, noise: 0.7 } },
+    { phase: 'intro', barsDuration: 4, density: 0.74, energyLift: 0.16, layerGainMultipliers: { bass: 0.94, pulse: 0.86, lead: 0.8, noise: 0.72 } },
+    { phase: 'build', barsDuration: 8, density: 0.82, energyLift: 0.24, layerGainMultipliers: { bass: 1, pulse: 0.98, lead: 0.92, noise: 0.86 } },
+    { phase: 'peak', barsDuration: 4, density: 0.9, energyLift: 0.34, layerGainMultipliers: { bass: 1.06, pulse: 1.12, lead: 1.04, noise: 0.94 } },
+    { phase: 'release', barsDuration: 4, density: 0.78, energyLift: 0.2, layerGainMultipliers: { bass: 0.98, pulse: 0.9, lead: 0.84, noise: 0.76 } },
   ],
 };
 
 const DEFAULT_BOSS_ARRANGEMENT: MusicArrangementConfig = {
   loop: true,
   sections: [
-    { phase: 'intro', barsDuration: 2, density: 0.8, energyLift: 0.24, layerGainMultipliers: { bass: 1.08, pulse: 1.04, lead: 1, noise: 0.9 } },
-    { phase: 'build', barsDuration: 4, density: 0.9, energyLift: 0.34, layerGainMultipliers: { bass: 1.14, pulse: 1.16, lead: 1.1, noise: 0.98 } },
-    { phase: 'peak', barsDuration: 4, density: 0.96, energyLift: 0.46, layerGainMultipliers: { bass: 1.2, pulse: 1.24, lead: 1.18, noise: 1.02 } },
-    { phase: 'release', barsDuration: 2, density: 0.82, energyLift: 0.28, layerGainMultipliers: { bass: 1.12, pulse: 1.04, lead: 0.96, noise: 0.88 } },
+    { phase: 'intro', barsDuration: 2, density: 0.84, energyLift: 0.26, layerGainMultipliers: { bass: 1.1, pulse: 1.06, lead: 1.02, noise: 0.94 } },
+    { phase: 'build', barsDuration: 4, density: 0.92, energyLift: 0.34, layerGainMultipliers: { bass: 1.16, pulse: 1.18, lead: 1.12, noise: 1 } },
+    { phase: 'peak', barsDuration: 4, density: 0.98, energyLift: 0.44, layerGainMultipliers: { bass: 1.22, pulse: 1.24, lead: 1.18, noise: 1.04 } },
+    { phase: 'release', barsDuration: 2, density: 0.86, energyLift: 0.3, layerGainMultipliers: { bass: 1.14, pulse: 1.08, lead: 1, noise: 0.92 } },
   ],
 };
 
