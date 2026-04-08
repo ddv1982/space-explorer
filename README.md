@@ -163,6 +163,7 @@ bun run levels:validate # config validation for level authoring
 - [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
 - [`docs/releases/0.2.1.md`](docs/releases/0.2.1.md) — subtle brightness and color-pop patch notes
 - [`docs/releases/0.2.0.md`](docs/releases/0.2.0.md) — Phaser 4 compatibility-first migration notes
+- [`docs/releases/0.7.4.md`](docs/releases/0.7.4.md) — flow continuity patch reducing rhythmic interruption clusters and scheduler drift hiccups
 - [`docs/releases/0.7.3.md`](docs/releases/0.7.3.md) — music simplification and consistency pass across defaults, Nebula overrides, and guardrails
 - [`docs/releases/0.7.2.md`](docs/releases/0.7.2.md) — targeted level-2 (Nebula) music stability pass with guardrails and cadence regressions
 - [`docs/releases/0.7.1.md`](docs/releases/0.7.1.md) — rhythm stabilization pass for steadier and less sluggish procedural music feel

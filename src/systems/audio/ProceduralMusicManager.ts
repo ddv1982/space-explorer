@@ -78,8 +78,9 @@ export type MusicRuntimeTuning = MusicRuntimeTuningValues;
 export { DEFAULT_MUSIC_RUNTIME_TUNING };
 
 export class ProceduralMusicManager {
-  private readonly musicScheduleLookaheadMs = 50;
-  private readonly musicScheduleAheadSeconds = 0.18;
+  private readonly musicScheduleLookaheadMs = 40;
+  private readonly musicScheduleAheadSeconds = 0.28;
+  private readonly musicScheduleDriftRecoveryThresholdSeconds = 0.18;
   private readonly minimumMusicIntensity = 0.2;
   private readonly maximumMusicIntensity = 1.2;
 
@@ -238,8 +239,10 @@ export class ProceduralMusicManager {
       return;
     }
 
+    const runtimeTuning = resolveMusicRuntimeTuning(this.runtimeTuning);
+    this.recoverMusicSchedulingDrift(this.activeTrack, runtimeTuning.tempoScale, ctx.currentTime);
+
     while (this.musicNextStepTime < ctx.currentTime + this.musicScheduleAheadSeconds) {
-      const runtimeTuning = resolveMusicRuntimeTuning(this.runtimeTuning);
       this.scheduleTrackStep(this.activeTrack, this.musicStepIndex, this.musicNextStepTime);
       this.musicStepIndex += 1;
       this.musicNextStepTime += this.getStepDuration(this.activeTrack, runtimeTuning.tempoScale);
@@ -367,6 +370,22 @@ export class ProceduralMusicManager {
 
   private getStepDuration(track: ProceduralMusicTrackConfig, tempoScale: number): number {
     return 60 / (track.tempo * tempoScale) / track.stepsPerBeat;
+  }
+
+  private recoverMusicSchedulingDrift(track: ProceduralMusicTrackConfig, tempoScale: number, now: number): void {
+    const stepDuration = this.getStepDuration(track, tempoScale);
+    const scheduleDrift = now - this.musicNextStepTime;
+    if (scheduleDrift <= this.musicScheduleDriftRecoveryThresholdSeconds || stepDuration <= 0) {
+      return;
+    }
+
+    const skippedSteps = Math.max(1, Math.floor(scheduleDrift / stepDuration));
+    this.musicStepIndex += skippedSteps;
+    this.musicNextStepTime += skippedSteps * stepDuration;
+
+    if (this.musicNextStepTime < now + 0.01) {
+      this.musicNextStepTime = now + 0.01;
+    }
   }
 
   private applyAmbienceFromRuntimeTuning(): void {

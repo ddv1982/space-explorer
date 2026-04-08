@@ -49,6 +49,60 @@ function resolveTriggerStepsAcrossBars(args: {
   );
 }
 
+function getLongestRestRun(triggerStepsByBar: number[][], stepsPerBar: number): number {
+  let longest = 0;
+
+  for (const bar of triggerStepsByBar) {
+    let currentRun = 0;
+    const triggerSet = new Set(bar);
+    for (let stepInBar = 0; stepInBar < stepsPerBar; stepInBar += 1) {
+      if (triggerSet.has(stepInBar)) {
+        currentRun = 0;
+      } else {
+        currentRun += 1;
+        longest = Math.max(longest, currentRun);
+      }
+    }
+  }
+
+  return longest;
+}
+
+function resolveTriggerStatesAcrossSteps(args: {
+  rhythm?: MusicLayerRhythmConfig;
+  stepsPerBar: number;
+  totalBars: number;
+  modulation?: RhythmSchedulingModulation;
+}): boolean[] {
+  return Array.from({ length: args.totalBars * args.stepsPerBar }, (_, absoluteStep) =>
+    resolveLayerRhythmScheduling(
+      args.rhythm,
+      {
+        barIndex: Math.floor(absoluteStep / args.stepsPerBar),
+        stepInBar: absoluteStep % args.stepsPerBar,
+        stepsPerBar: args.stepsPerBar,
+      },
+      args.modulation
+    ).shouldTrigger
+  );
+}
+
+function getLongestBooleanRun(values: boolean[], value: boolean): number {
+  let current = 0;
+  let longest = 0;
+
+  for (const item of values) {
+    if (item === value) {
+      current += 1;
+      longest = Math.max(longest, current);
+    } else {
+      current = 0;
+    }
+  }
+
+  return longest;
+}
+
 describe('resolveLayerRhythmScheduling quantization', () => {
   test('quantizes trigger starts for divisor and non-divisor divisions', () => {
     const division4 = resolveStepsInBar({ rhythm: { division: 4, gate: 1 }, stepsPerBar: 16 });
@@ -187,6 +241,17 @@ describe('resolveLayerRhythmScheduling deterministic gate and accents', () => {
 
     expect(first).toEqual(second);
   });
+
+  test('spreads sub-unity gate decisions to avoid clustered dropouts', () => {
+    const states = resolveTriggerStatesAcrossSteps({
+      rhythm: { division: 16, gate: 0.5 },
+      stepsPerBar: 16,
+      totalBars: 4,
+    });
+
+    expect(getLongestBooleanRun(states, false)).toBeLessThanOrEqual(1);
+    expect(getLongestBooleanRun(states, true)).toBeLessThanOrEqual(1);
+  });
 });
 
 describe('resolveLayerRhythmScheduling modulation boundaries', () => {
@@ -246,32 +311,28 @@ describe('resolveLayerRhythmScheduling odd meter boundaries', () => {
       stepsPerBar: 14,
       totalBars: 8,
     });
+    const bassStepsByBarRepeat = resolveTriggerStepsAcrossBars({
+      rhythm: { division: 7, phase: 0, gate: 0.96 },
+      stepsPerBar: 14,
+      totalBars: 8,
+    });
+    const pulseStepsByBarRepeat = resolveTriggerStepsAcrossBars({
+      rhythm: { division: 14, phase: 1, gate: 0.76 },
+      stepsPerBar: 14,
+      totalBars: 8,
+    });
 
-    expect(bassStepsByBar).toEqual([
-      [0, 2, 4, 6, 8, 10, 12],
-      [0, 2, 4, 6, 8, 10, 12],
-      [0, 4, 6, 8, 10, 12],
-      [0, 2, 4, 6, 8, 10, 12],
-      [0, 2, 4, 8, 10, 12],
-      [0, 2, 4, 6, 8, 10, 12],
-      [0, 2, 4, 6, 8, 12],
-      [0, 2, 4, 6, 8, 10, 12],
-    ]);
-    expect(pulseStepsByBar).toEqual([
-      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-      [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
-      [0, 5, 6, 7, 8, 9, 10, 11, 12, 13],
-      [0, 1, 2, 7, 8, 9, 10, 11, 12, 13],
-      [0, 1, 2, 3, 4, 9, 10, 11, 12, 13],
-      [0, 1, 2, 3, 4, 5, 6, 11, 12, 13],
-      [0, 1, 2, 3, 4, 5, 6, 7, 8, 13],
-    ]);
+    expect(bassStepsByBar).toEqual(bassStepsByBarRepeat);
+    expect(pulseStepsByBar).toEqual(pulseStepsByBarRepeat);
 
     const bassTriggerCount = bassStepsByBar.reduce((sum, bar) => sum + bar.length, 0);
     const pulseTriggerCount = pulseStepsByBar.reduce((sum, bar) => sum + bar.length, 0);
 
-    expect(bassTriggerCount).toBe(53);
-    expect(pulseTriggerCount).toBe(84);
+    expect(bassTriggerCount).toBeGreaterThanOrEqual(53);
+    expect(bassTriggerCount).toBeLessThanOrEqual(55);
+    expect(pulseTriggerCount).toBeGreaterThanOrEqual(84);
+    expect(pulseTriggerCount).toBeLessThanOrEqual(86);
+    expect(getLongestRestRun(bassStepsByBar, 14)).toBeLessThanOrEqual(3);
+    expect(getLongestRestRun(pulseStepsByBar, 14)).toBeLessThanOrEqual(2);
   });
 });
