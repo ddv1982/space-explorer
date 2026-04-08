@@ -82,7 +82,7 @@ export class ProceduralMusicManager {
   private readonly musicScheduleAheadSeconds = 0.22;
   private readonly minimumMusicIntensity = 0.2;
   private readonly maximumMusicIntensity = 1.2;
-  private readonly musicOutputGainBoost = 1.9;
+  private readonly musicOutputGainBoost = 2.9;
 
   private readonly contextManager: AudioContextManager;
   private musicGain: GainNode | null = null;

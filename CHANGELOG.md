@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-04-09
+
+### Changed
+- Set `musicOutputGainBoost` to `2.9` so the 100% music volume ceiling has substantially more headroom.
+
+### Quality
+- Verified with `bun test` and `bun run build`.
+
 ## [0.7.9] - 2026-04-09
 
 ### Changed
