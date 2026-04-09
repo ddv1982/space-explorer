@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.12] - 2026-04-10
+
+### Fixed
+- Fixed pooled-entity despawn lifecycle so inactive pooled objects now disable Arcade physics body participation instead of leaving bodies enabled.
+
+### Changed
+- Debounced resize/parallax rebuild and restart paths to reduce repeated heavyweight work during noisy viewport changes.
+- Updated boss targeting to use a stable player reference path with safe fallback lookup, reducing repeated scene-child scans in hot paths.
+- Reduced transient allocation churn in flash/effects flows by switching to scoped delayed callbacks and reusing popup/tween config pathways.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.11] - 2026-04-09
 
 ### Fixed

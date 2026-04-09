@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
 import { ensureBomberBombTexture } from '../utils/SpriteFactory';
 
 const BOMBER_BOMB_SPEED = 200;
@@ -12,16 +12,12 @@ export class BomberBomb extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setActive(false);
-    this.setVisible(false);
+    despawnEntity(this);
     this.setDepth(3);
   }
 
   drop(x: number, y: number): void {
-    (this.body as Phaser.Physics.Arcade.Body).reset(x, y);
-    this.setPosition(x, y);
-    this.setActive(true);
-    this.setVisible(true);
+    spawnEntity(this, x, y);
     this.setVelocityY(BOMBER_BOMB_SPEED);
   }
 

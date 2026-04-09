@@ -118,16 +118,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private flashWhite(): void {
     this.setTint(0xffffff);
-    this.scene.time.delayedCall(100, () => {
-      if (this.isAlive) this.clearTint();
-    });
+    this.scene.time.delayedCall(100, this.clearTintIfAlive, undefined, this);
   }
 
   private flashShield(): void {
     this.setTint(0x44aaff);
-    this.scene.time.delayedCall(150, () => {
-      if (this.isAlive) this.clearTint();
-    });
+    this.scene.time.delayedCall(150, this.clearTintIfAlive, undefined, this);
+  }
+
+  private clearTintIfAlive(): void {
+    if (this.isAlive) {
+      this.clearTint();
+    }
   }
 
   private die(): void {

@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`0.8.12`](./0.8.12.md) — runtime performance stability pass across pooling, resize/parallax churn, and boss/effects hot paths
 - [`0.8.11`](./0.8.11.md) — helper resurrection-state fix for spent support slots
 - [`0.8.10`](./0.8.10.md) — persistent helper carryover across levels with slot-stacking support
 - [`0.8.9`](./0.8.9.md) — helper-wing transition crash fix and lifecycle hardening

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ENEMY_BULLET_SPEED } from '../utils/constants';
-import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
 import { ensureEnemyBulletTexture } from '../utils/SpriteFactory';
 
 export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
@@ -11,16 +11,12 @@ export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setActive(false);
-    this.setVisible(false);
+    despawnEntity(this);
     this.setDepth(3);
   }
 
   fire(x: number, y: number): void {
-    (this.body as Phaser.Physics.Arcade.Body).reset(x, y);
-    this.setPosition(x, y);
-    this.setActive(true);
-    this.setVisible(true);
+    spawnEntity(this, x, y);
     this.setVelocityY(ENEMY_BULLET_SPEED);
   }
 

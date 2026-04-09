@@ -8,6 +8,13 @@ import {
 import { generateEffectsParticleTextures } from './effects/particleTextureFactory';
 
 export class EffectsManager {
+  private static readonly SCORE_POPUP_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
+    fontSize: '16px',
+    color: '#ffcc00',
+    fontFamily: 'monospace',
+    fontStyle: 'bold',
+  };
+
   private scene!: Phaser.Scene;
   private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
   private bloom: Phaser.Filters.Glow | null = null;
@@ -21,7 +28,8 @@ export class EffectsManager {
   private ambientSparkleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private powerUpBurstEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private debrisEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private exhaustConfigKey: string | null = null;
+  private exhaustConfigIntensityTenths = -1;
+  private exhaustConfigCount = -1;
   private currentLevelConfig: LevelConfig | null = null;
 
   setup(scene: Phaser.Scene): void {
@@ -37,7 +45,8 @@ export class EffectsManager {
     this.clearCameraFX();
     this.colorMatrix = null;
     this.bloom = null;
-    this.exhaustConfigKey = null;
+    this.exhaustConfigIntensityTenths = -1;
+    this.exhaustConfigCount = -1;
     this.currentLevelConfig = null;
   }
 
@@ -60,7 +69,8 @@ export class EffectsManager {
 
   private createParticleEmitters(): void {
     this.destroyEmitters();
-    this.exhaustConfigKey = null;
+    this.exhaustConfigIntensityTenths = -1;
+    this.exhaustConfigCount = -1;
 
     this.explosionEmitter = this.createPooledEmitter(
       'particle-explosion',
@@ -172,7 +182,8 @@ export class EffectsManager {
     this.ambientSparkleEmitter = null;
     this.powerUpBurstEmitter = null;
     this.debrisEmitter = null;
-    this.exhaustConfigKey = null;
+    this.exhaustConfigIntensityTenths = -1;
+    this.exhaustConfigCount = -1;
   }
 
   // ---------------------------------------------------------------------------
@@ -349,11 +360,12 @@ export class EffectsManager {
     }
 
     const count = Math.ceil(intensity * 2);
-    const configKey = `${intensity.toFixed(1)}-${count}`;
+    const intensityTenths = Math.round(intensity * 10);
 
-    if (this.exhaustConfigKey !== configKey) {
+    if (this.exhaustConfigIntensityTenths !== intensityTenths || this.exhaustConfigCount !== count) {
       this.exhaustEmitter.updateConfig(this.getExhaustConfig(intensity, count));
-      this.exhaustConfigKey = configKey;
+      this.exhaustConfigIntensityTenths = intensityTenths;
+      this.exhaustConfigCount = count;
     }
 
     this.exhaustEmitter.explode(count, x, y);
@@ -377,17 +389,16 @@ export class EffectsManager {
       alpha: { from: 1, to: 0 },
       duration: 600,
       ease: 'Power2',
-      onComplete: () => arrow.destroy(),
+      onComplete: this.destroyTweenTargets,
+      callbackScope: this,
     });
   }
 
   createScorePopup(x: number, y: number, score: number): void {
-    const text = this.scene.add.text(x, y, `+${score}`, {
-      fontSize: '16px',
-      color: '#ffcc00',
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(50);
+    const text = this.scene.add
+      .text(x, y, `+${score}`, EffectsManager.SCORE_POPUP_STYLE)
+      .setOrigin(0.5)
+      .setDepth(50);
 
     this.scene.tweens.add({
       targets: text,
@@ -395,8 +406,17 @@ export class EffectsManager {
       alpha: { from: 1, to: 0 },
       duration: 800,
       ease: 'Power2',
-      onComplete: () => text.destroy(),
+      onComplete: this.destroyTweenTargets,
+      callbackScope: this,
     });
+  }
+
+  private destroyTweenTargets(_tween: Phaser.Tweens.Tween, targets: unknown[]): void {
+    for (const target of targets) {
+      if (target instanceof Phaser.GameObjects.GameObject) {
+        target.destroy();
+      }
+    }
   }
 
   createBulletTrail(x: number, y: number): void {

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
-import { isArcadeSimulationPaused } from '../../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../../utils/entityUtils';
 
 export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   hp: number = 1;
@@ -15,8 +15,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setActive(false);
-    this.setVisible(false);
+    despawnEntity(this);
     this.setDepth(3);
   }
 
@@ -30,9 +29,13 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
 
   private flashHit(): void {
     this.setTint(0xffffff);
-    this.scene.time.delayedCall(80, () => {
-      if (this.active) this.clearTint();
-    });
+    this.scene.time.delayedCall(80, this.clearTintIfActive, undefined, this);
+  }
+
+  private clearTintIfActive(): void {
+    if (this.active) {
+      this.clearTint();
+    }
   }
 
   die(): void {
@@ -41,19 +44,12 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   }
 
   despawn(): void {
-    this.setActive(false);
-    this.setVisible(false);
-    this.setVelocity(0, 0);
-    if (this.body) {
-      (this.body as Phaser.Physics.Arcade.Body).reset(0, 0);
-    }
+    despawnEntity(this);
   }
 
   spawn(x: number, y: number): void {
-    (this.body as Phaser.Physics.Arcade.Body).reset(x, y);
+    spawnEntity(this, x, y);
     this.hp = this.maxHp;
-    this.setActive(true);
-    this.setVisible(true);
   }
 
   protected updateHorizontalSine(

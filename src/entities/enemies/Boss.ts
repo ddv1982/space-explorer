@@ -50,6 +50,7 @@ export class Boss extends EnemyBase {
   private shieldActive = false;
   private summonHandler: BossSummonHandler | null = null;
   private phaseStartedAt = 0;
+  private playerRef: Player | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureBossTexture(scene);
@@ -78,6 +79,10 @@ export class Boss extends EnemyBase {
 
   setSummonHandler(handler: BossSummonHandler): void {
     this.summonHandler = handler;
+  }
+
+  setPlayer(player: Player | null): void {
+    this.playerRef = player;
   }
 
   spawn(x: number, y: number, config: BossConfig = DEFAULT_BOSS_CONFIG): void {
@@ -223,8 +228,14 @@ export class Boss extends EnemyBase {
   }
 
   private getPlayer(): Player | null {
+    const cachedPlayer = this.playerRef;
+    if (cachedPlayer && cachedPlayer.scene === this.scene && cachedPlayer.active) {
+      return cachedPlayer;
+    }
+
     const match = this.scene.children.list.find((child) => child instanceof Player && child.active);
-    return (match as Player | undefined) ?? null;
+    this.playerRef = (match as Player | undefined) ?? null;
+    return this.playerRef;
   }
 
   private getPlayerAimAngle(): number {
@@ -249,27 +260,31 @@ export class Boss extends EnemyBase {
 
   private flashShieldImpact(): void {
     this.setTint(0xddeeff);
-    this.scene.time.delayedCall(70, () => {
-      if (this.active && this.shieldActive) {
-        this.setTint(0x77ccff);
-      }
-    });
+    this.scene.time.delayedCall(70, this.restoreShieldTintAfterImpact, undefined, this);
   }
 
   private flashPhaseChange(): void {
     this.setTint(0xff0000);
     this.scene.cameras.main.shake(300, 0.02);
-    this.scene.time.delayedCall(300, () => {
-      if (!this.active) {
-        return;
-      }
+    this.scene.time.delayedCall(300, this.restoreTintAfterPhaseChangeFlash, undefined, this);
+  }
 
-      if (this.shieldActive) {
-        this.setTint(0x77ccff);
-      } else {
-        this.clearTint();
-      }
-    });
+  private restoreShieldTintAfterImpact(): void {
+    if (this.active && this.shieldActive) {
+      this.setTint(0x77ccff);
+    }
+  }
+
+  private restoreTintAfterPhaseChangeFlash(): void {
+    if (!this.active) {
+      return;
+    }
+
+    if (this.shieldActive) {
+      this.setTint(0x77ccff);
+    } else {
+      this.clearTint();
+    }
   }
 
   override die(): void {

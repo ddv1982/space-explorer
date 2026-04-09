@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ASTEROID_HP } from '../utils/constants';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
-import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
 import { ensureAsteroidTexture } from '../utils/SpriteFactory';
 
 export interface AsteroidSpawnConfig {
@@ -34,13 +34,12 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setActive(false);
-    this.setVisible(false);
+    despawnEntity(this);
     this.setDepth(2);
   }
 
   spawn(x: number, y: number, speed: number = 80, config: AsteroidSpawnConfig = {}): void {
-    (this.body as Phaser.Physics.Arcade.Body).reset(x, y);
+    spawnEntity(this, x, y);
 
     this.maxHp = config.hp ?? ASTEROID_HP;
     this.hp = this.maxHp;
@@ -50,8 +49,6 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     this.scoreValue = config.scoreValue ?? 50;
     this.baseTint = config.tint ?? null;
 
-    this.setActive(true);
-    this.setVisible(true);
     this.setDepth(config.depth ?? 2);
     this.setVelocity(config.velocityX ?? 0, speed);
     this.rotSpeed = Phaser.Math.FloatBetween(
@@ -80,15 +77,19 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.setTint(0xffaa66);
-    this.scene.time.delayedCall(80, () => {
-      if (this.active) {
-        if (this.baseTint !== null) {
-          this.setTint(this.baseTint);
-        } else {
-          this.clearTint();
-        }
-      }
-    });
+    this.scene.time.delayedCall(80, this.restoreTintAfterCollisionFlash, undefined, this);
+  }
+
+  private restoreTintAfterCollisionFlash(): void {
+    if (!this.active) {
+      return;
+    }
+
+    if (this.baseTint !== null) {
+      this.setTint(this.baseTint);
+    } else {
+      this.clearTint();
+    }
   }
 
   takeDamage(amount: number): void {

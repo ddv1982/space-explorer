@@ -32,8 +32,25 @@ const game = new Phaser.Game(config);
 if (typeof window !== 'undefined') {
   let pendingScaleRefresh = false;
   const visualViewport = window.visualViewport;
+  let lastViewportWidth = 0;
+  let lastViewportHeight = 0;
+  let queuedViewportWidth = 0;
+  let queuedViewportHeight = 0;
+
+  const getViewportSize = (): { width: number; height: number } => ({
+    width: Math.max(1, Math.round(visualViewport?.width ?? window.innerWidth)),
+    height: Math.max(1, Math.round(visualViewport?.height ?? window.innerHeight)),
+  });
 
   const scheduleScaleRefresh = (): void => {
+    const nextViewport = getViewportSize();
+    queuedViewportWidth = nextViewport.width;
+    queuedViewportHeight = nextViewport.height;
+
+    if (!pendingScaleRefresh && nextViewport.width === lastViewportWidth && nextViewport.height === lastViewportHeight) {
+      return;
+    }
+
     if (pendingScaleRefresh) {
       return;
     }
@@ -42,6 +59,13 @@ if (typeof window !== 'undefined') {
 
     window.requestAnimationFrame(() => {
       pendingScaleRefresh = false;
+
+      if (queuedViewportWidth === lastViewportWidth && queuedViewportHeight === lastViewportHeight) {
+        return;
+      }
+
+      lastViewportWidth = queuedViewportWidth;
+      lastViewportHeight = queuedViewportHeight;
       game.scale.refresh();
       game.scale.updateBounds();
     });

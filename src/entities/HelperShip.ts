@@ -199,11 +199,13 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
 
   private flashHit(): void {
     this.setTint(0xffffff);
-    this.scene.time.delayedCall(70, () => {
-      if (this.active && !this.depleted) {
-        this.clearTint();
-      }
-    });
+    this.scene.time.delayedCall(70, this.clearTintIfRecoverable, undefined, this);
+  }
+
+  private clearTintIfRecoverable(): void {
+    if (this.active && !this.depleted) {
+      this.clearTint();
+    }
   }
 
   private fireShot(bulletPool: BulletPool, effectsManager: EffectsManager): void {

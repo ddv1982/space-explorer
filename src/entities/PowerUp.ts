@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { despawnEntity, isArcadeSimulationPaused } from '../utils/entityUtils';
+import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
 import { ensurePowerUpTextures } from '../utils/SpriteFactory';
 import { applyGameObjectGlow } from '../utils/renderingCompat';
 
@@ -40,18 +40,14 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setActive(false);
-    this.setVisible(false);
+    despawnEntity(this);
     this.setDepth(4);
   }
 
   spawn(x: number, y: number, type: PowerUpType): void {
     this.powerUpType = type;
     this.setTexture(`powerup-${type}`);
-    (this.body as Phaser.Physics.Arcade.Body).reset(x, y);
-    this.setPosition(x, y);
-    this.setActive(true);
-    this.setVisible(true);
+    spawnEntity(this, x, y);
     this.setVelocityY(60);
     this.bobTime = 0;
 

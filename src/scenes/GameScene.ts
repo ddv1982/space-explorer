@@ -435,6 +435,7 @@ export class GameScene extends Phaser.Scene {
       this.scaledBossConfig ?? this.levelManager.getLevelConfig().boss ?? undefined
     );
     if (boss) {
+      boss.setPlayer(this.player);
       this.boss = boss;
       this.hud.showBossBar(this.levelManager.getLevelConfig().boss?.name ?? 'BOSS');
     }

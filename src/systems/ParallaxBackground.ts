@@ -139,6 +139,7 @@ const MOON_SURFACE_MIN_MOTION_SPEED = 0.00005;
 const MOON_SURFACE_MOTION_SPEED_SCALE = 0.0015;
 const MOON_SURFACE_BASE_AMPLITUDE = 10;
 const MOON_SURFACE_AMPLITUDE_SCALE = 80;
+const RESIZE_REBUILD_DEBOUNCE_MS = 120;
 
 /** Accent colors for colored accent stars (warm/cool variety) */
 const STAR_ACCENT_COLORS = [0xffddaa, 0xaaddff, 0xffaa88, 0xaaffcc, 0xddaaff];
@@ -156,6 +157,7 @@ export class ParallaxBackground {
   private elapsed = 0;
   private currentWidth = 0;
   private currentHeight = 0;
+  private pendingRebuildEvent: Phaser.Time.TimerEvent | null = null;
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
@@ -351,7 +353,7 @@ export class ParallaxBackground {
     }
 
     if (sizeChanged) {
-      this.rebuildLevelVisualLayers(this.scene, this.levelConfig);
+      this.scheduleLevelVisualRebuild();
       return;
     }
 
@@ -361,6 +363,11 @@ export class ParallaxBackground {
   }
 
   destroy(): void {
+    if (this.pendingRebuildEvent) {
+      this.pendingRebuildEvent.remove(false);
+      this.pendingRebuildEvent = null;
+    }
+
     this.destroyLevelVisualLayers();
 
     for (let i = 0; i < this.tileSprites.length; i++) {
@@ -373,6 +380,33 @@ export class ParallaxBackground {
     this.elapsed = 0;
     this.currentWidth = 0;
     this.currentHeight = 0;
+  }
+
+  private scheduleLevelVisualRebuild(): void {
+    if (!this.scene || !this.levelConfig) {
+      return;
+    }
+
+    if (this.pendingRebuildEvent) {
+      this.pendingRebuildEvent.remove(false);
+    }
+
+    const targetWidth = this.currentWidth;
+    const targetHeight = this.currentHeight;
+
+    this.pendingRebuildEvent = this.scene.time.delayedCall(RESIZE_REBUILD_DEBOUNCE_MS, () => {
+      this.pendingRebuildEvent = null;
+
+      if (!this.scene || !this.levelConfig) {
+        return;
+      }
+
+      if (this.currentWidth !== targetWidth || this.currentHeight !== targetHeight) {
+        return;
+      }
+
+      this.rebuildLevelVisualLayers(this.scene, this.levelConfig);
+    });
   }
 
   // ---------------------------------------------------------------------------
