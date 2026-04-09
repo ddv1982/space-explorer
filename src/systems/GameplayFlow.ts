@@ -14,6 +14,7 @@ export const GAME_SCENE_EVENTS = {
   playerExhaust: 'player-exhaust',
   enemySpawnWarning: 'enemy-spawn-warning',
   bossDeath: 'boss-death',
+  bossPhaseChange: 'boss-phase-change',
 } as const;
 
 export const TERMINAL_TRANSITIONS = {

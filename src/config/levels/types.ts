@@ -24,6 +24,7 @@ export interface BossConfig {
   phase1Cooldown: number;
   phase2Cooldown: number;
   phase2MoveSpeed: number;
+  phaseTransitionPauseMs?: number;
   attackStyle: BossAttackStyle;
   phase1SpreadShotCount: number;
   phase1SpreadArcDegrees: number;

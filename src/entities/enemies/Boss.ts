@@ -15,6 +15,7 @@ const DEFAULT_BOSS_CONFIG: BossConfig = {
   phase1Cooldown: 1200,
   phase2Cooldown: 650,
   phase2MoveSpeed: 150,
+  phaseTransitionPauseMs: 320,
   attackStyle: 'barrage',
   phase1SpreadShotCount: 5,
   phase1SpreadArcDegrees: 60,
@@ -35,6 +36,7 @@ export class Boss extends EnemyBase {
   private phase1Cooldown = DEFAULT_BOSS_CONFIG.phase1Cooldown;
   private phase2Cooldown = DEFAULT_BOSS_CONFIG.phase2Cooldown;
   private phase2MoveSpeed = DEFAULT_BOSS_CONFIG.phase2MoveSpeed;
+  private phaseTransitionPauseMs = DEFAULT_BOSS_CONFIG.phaseTransitionPauseMs ?? 320;
   private attackStyle: BossAttackStyle = DEFAULT_BOSS_CONFIG.attackStyle;
   private phase1SpreadShotCount = DEFAULT_BOSS_CONFIG.phase1SpreadShotCount;
   private phase1SpreadArcDegrees = DEFAULT_BOSS_CONFIG.phase1SpreadArcDegrees;
@@ -140,6 +142,8 @@ export class Boss extends EnemyBase {
       this.phase = 2;
       this.moveSpeed = this.phase2MoveSpeed;
       this.phaseStartedAt = time;
+      this.lastFireTime = time + this.phaseTransitionPauseMs;
+      this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
       this.flashPhaseChange();
     }
   }
@@ -233,6 +237,7 @@ export class Boss extends EnemyBase {
     this.phase1Cooldown = config.phase1Cooldown;
     this.phase2Cooldown = config.phase2Cooldown;
     this.phase2MoveSpeed = config.phase2MoveSpeed;
+    this.phaseTransitionPauseMs = config.phaseTransitionPauseMs ?? DEFAULT_BOSS_CONFIG.phaseTransitionPauseMs ?? 320;
     this.attackStyle = config.attackStyle;
     this.phase1SpreadShotCount = config.phase1SpreadShotCount;
     this.phase1SpreadArcDegrees = config.phase1SpreadArcDegrees;

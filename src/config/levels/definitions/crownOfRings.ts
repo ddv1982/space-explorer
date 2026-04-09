@@ -36,6 +36,7 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
     phase1Cooldown: 860,
     phase2Cooldown: 420,
     phase2MoveSpeed: 228,
+    phaseTransitionPauseMs: 340,
     attackStyle: 'bulwark',
     phase1SpreadShotCount: 9,
     phase1SpreadArcDegrees: 82,

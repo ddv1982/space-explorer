@@ -36,6 +36,7 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
     phase1Cooldown: 780,
     phase2Cooldown: 350,
     phase2MoveSpeed: 236,
+    phaseTransitionPauseMs: 240,
     attackStyle: 'pursuit',
     phase1SpreadShotCount: 6,
     phase1SpreadArcDegrees: 52,

@@ -36,6 +36,7 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
     phase1Cooldown: 720,
     phase2Cooldown: 320,
     phase2MoveSpeed: 252,
+    phaseTransitionPauseMs: 220,
     attackStyle: 'pursuit',
     phase1SpreadShotCount: 8,
     phase1SpreadArcDegrees: 44,

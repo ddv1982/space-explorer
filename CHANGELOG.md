@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.7] - 2026-04-09
+
+### Added
+- Added explicit boss phase-change telegraph flow using a new `boss-phase-change` gameplay event and a HUD phase announcement banner.
+- Added optional `phaseTransitionPauseMs` to `BossConfig` so phase-change readability can be tuned per boss.
+
+### Changed
+- Updated boss runtime to pause attacks briefly on phase transition and emit phase-change events before phase-two pressure resumes.
+- Tuned late-campaign boss configurations (Levels 4-10) for clearer cadence identity and phase handoff readability.
+- Updated pursuit and bulwark attack patterns to honor configured spread/shot parameters more directly for stronger authored differentiation.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.6] - 2026-04-09
 
 ### Added

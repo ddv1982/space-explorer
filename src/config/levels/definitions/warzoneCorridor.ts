@@ -36,6 +36,7 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
     phase1Cooldown: 940,
     phase2Cooldown: 470,
     phase2MoveSpeed: 195,
+    phaseTransitionPauseMs: 280,
     attackStyle: 'pressure',
     phase1SpreadShotCount: 7,
     phase1SpreadArcDegrees: 58,

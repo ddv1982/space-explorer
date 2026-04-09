@@ -36,6 +36,7 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     phase1Cooldown: 900,
     phase2Cooldown: 460,
     phase2MoveSpeed: 208,
+    phaseTransitionPauseMs: 320,
     attackStyle: 'carrier',
     phase1SpreadShotCount: 6,
     phase1SpreadArcDegrees: 62,

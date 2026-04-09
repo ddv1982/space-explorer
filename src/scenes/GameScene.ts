@@ -206,6 +206,7 @@ export class GameScene extends Phaser.Scene {
     this.events.on(GAME_SCENE_EVENTS.playerExhaust, this.handlePlayerExhaust, this);
     this.events.on(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
     this.events.on(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
+    this.events.on(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
   }
 
   private registerScaleHandlers(): void {
@@ -223,6 +224,7 @@ export class GameScene extends Phaser.Scene {
     this.events.off(GAME_SCENE_EVENTS.playerExhaust, this.handlePlayerExhaust, this);
     this.events.off(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
     this.events.off(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
+    this.events.off(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
   }
 
   private handleSceneShutdown(): void {
@@ -374,6 +376,15 @@ export class GameScene extends Phaser.Scene {
     this.boss = null;
     this.levelManager.markBossDefeated();
     this.flow.queueLevelComplete(this.getFlowContext());
+  }
+
+  private handleBossPhaseChange(phase: number): void {
+    if (phase < 2) {
+      return;
+    }
+
+    this.hud.showBossPhaseAnnouncement(phase);
+    this.runBestEffort(() => this.cameras.main.flash(120, 255, 196, 96, false));
   }
 
   private spawnBoss(): void {

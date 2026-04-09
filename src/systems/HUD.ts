@@ -380,6 +380,27 @@ export class HUD {
     });
   }
 
+  showBossPhaseAnnouncement(phase: number): void {
+    const layout = this.getLayoutMetrics();
+
+    this.announcementText.setText(`⚠ BOSS PHASE ${phase} ⚠`);
+    this.announcementText.setColor('#ffcc44');
+    this.announcementText.setAlpha(1);
+    this.announcementText.setPosition(layout.centerX, layout.announcementY - 8);
+    this.announcementTween?.stop();
+
+    this.announcementTween = this.scene.tweens.add({
+      targets: this.announcementText,
+      alpha: { from: 1, to: 0 },
+      y: { from: layout.announcementY - 8, to: layout.announcementY - 34 },
+      duration: 1400,
+      ease: 'Power2',
+      onComplete: () => {
+        this.announcementTween = null;
+      },
+    });
+  }
+
   private getLayoutMetrics(): HudLayoutMetrics {
     const viewport = getViewportBounds(this.scene);
     const hpBarWidth = Math.round(Phaser.Math.Clamp(viewport.width * 0.22, 150, this.baseHpBarWidth));

@@ -36,6 +36,7 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
     phase1Cooldown: 960,
     phase2Cooldown: 430,
     phase2MoveSpeed: 214,
+    phaseTransitionPauseMs: 360,
     attackStyle: 'maelstrom',
     phase1SpreadShotCount: 8,
     phase1SpreadArcDegrees: 78,

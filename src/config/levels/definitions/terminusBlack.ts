@@ -36,6 +36,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
     phase1Cooldown: 760,
     phase2Cooldown: 300,
     phase2MoveSpeed: 248,
+    phaseTransitionPauseMs: 420,
     attackStyle: 'bulwark',
     phase1SpreadShotCount: 10,
     phase1SpreadArcDegrees: 86,
