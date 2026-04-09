@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.14] - 2026-04-10
+
+### Added
+- Added an opt-in respawn transition frame probe (`?debugRespawnFrameProbe=1` or `globalThis.__SPACE_EXPLORER_RESPAWN_FRAME_PROBE__ = true`) to log transition frame-time stats for hitch analysis.
+
+### Changed
+- Reduced player-death explosion particle budget by adding a `particleBudgetScale` path in `EffectsManager.createExplosion(...)` and tuning the death cue to use a conservative budget scale.
+- Wired probe sampling through gameplay-locked update windows and respawn begin/finish lifecycle points so respawn telemetry is captured without changing baseline gameplay flow.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.13] - 2026-04-10
 
 ### Fixed

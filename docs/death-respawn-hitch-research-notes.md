@@ -150,3 +150,66 @@ Keep gameplay behavior and visuals mostly intact, but remove timing divergence f
    - Capture frame time from ~200 ms before death to ~1500 ms after, compare p95/p99 before and after timer unification.
 
 This path is minimal-risk because it focuses first on timing-model consistency (highest confidence), then applies small, bounded FX budget trims without changing core gameplay rules.
+
+## Cycle 2 - post-probe hotspot analysis
+
+### Instrumentation approach used in this cycle
+
+Files inspected:
+
+- `src/scenes/gameScene/respawnFrameProbe.ts`
+- `src/scenes/gameScene/GameSceneFlowController.ts`
+- `src/scenes/GameScene.ts`
+- `src/systems/EffectsManager.ts`
+
+Current probe wiring:
+
+- Respawn probe is opt-in via query param `?debugRespawnFrameProbe=1` or global flag `globalThis.__SPACE_EXPLORER_RESPAWN_FRAME_PROBE__ = true`.
+- Probe begins at `GameSceneFlowController.beginRespawnTransition(...)`.
+- Probe samples `delta` each frame from `GameScene.update(...)` while gameplay is locked/paused (`isGameplayLocked()` or pause controller active).
+- Probe finishes at `completeRespawnTransition(...)` and logs transition duration, frame count, avg/min/max frame delta, and over-budget counts (`>16.67 ms`, `>33.33 ms`).
+
+Important interpretation note:
+
+- The probe captures the transition window after death handling starts, but it does not directly isolate the synchronous death-cue burst frame itself (`playPlayerDeathCue(...)`) before the locked-update early return loop dominates sampling.
+
+### Measured / observed evidence available in this environment
+
+Direct runtime sampling is limited in this CLI environment (no interactive gameplay session + no captured in-engine probe logs), so this cycle relies on code-path evidence plus probe design coverage.
+
+Observed code-path evidence:
+
+1. Prior top hotspot (cross-clock respawn watchdog) is removed from respawn flow.
+   - Respawn now uses only Phaser clock timers (`scene.time.delayedCall`) and no respawn `setTimeout` watchdog.
+2. Pause scope is narrower than earlier revisions.
+   - Flow context now pauses/resumes Arcade physics world (`this.physics.world.pause()/resume()`), not full scene systems pause/resume.
+3. A concentrated death FX burst still happens in the critical frame.
+   - `GameScene.playPlayerDeathCue(...)` immediately calls `effectsManager.createExplosion(x, y, 2.2)` and `audioManager.playExplosion(1.4)`.
+   - At intensity `2.2`, explosion emits about 44 explosion particles + about 17 debris particles and triggers camera shake (`~220 ms`, intensity `0.011`).
+   - `EffectsManager.createExplosion(...)` also calls `explosionEmitter.updateConfig(...)` on each explosion event before emit.
+
+### Updated hotspot ranking (most to least likely)
+
+1. Death-cue FX burst frame (`playPlayerDeathCue` -> `createExplosion(2.2)` + camera shake + audio trigger).
+   - Reason: remains a dense synchronous burst exactly where hitch is perceived, and is only partially visible to current respawn probe telemetry.
+2. First frame after respawn unfreeze/complete (`completeRespawnTransition` path).
+   - Reason: combines world resume, hazard clear, spawn/state reset, and normal update re-entry on one boundary frame.
+3. Physics-world pause/resume boundary itself.
+   - Reason: lower risk than full-scene pause, but still a transition seam that can amplify nearby frame spikes.
+4. Per-event emitter config mutation (`updateConfig`) during explosion.
+   - Reason: likely secondary overhead versus raw particle/shake burst, but still avoidable work in peak frames.
+
+### Selected minimal fix target for next feature
+
+Target: reduce player-death explosion budget only, without changing broader respawn flow.
+
+Proposed minimal change scope:
+
+- Tune `GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY` downward (or clamp emitted counts in `EffectsManager.createExplosion` when called from player death path) to cut peak particle + shake load on the hitch-prone frame.
+- Keep boss explosion and other effects unchanged to minimize gameplay/visual regression risk.
+
+Why this target:
+
+- It directly attacks the most likely remaining hotspot.
+- It is small, isolated, and reversible.
+- It does not re-open timing/lifecycle risk after recent single-clock + pause-scope fixes.

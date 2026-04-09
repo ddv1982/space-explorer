@@ -324,19 +324,25 @@ export class EffectsManager {
   // Public effect methods
   // ---------------------------------------------------------------------------
 
-  createExplosion(x: number, y: number, intensity: number = 1): void {
+  createExplosion(
+    x: number,
+    y: number,
+    intensity: number = 1,
+    particleBudgetScale: number = 1
+  ): void {
     if (!this.explosionEmitter) {
       return;
     }
 
-    const particleCount = Math.floor(20 * intensity);
+    const burstScale = Phaser.Math.Clamp(particleBudgetScale, 0.1, 1);
+    const particleCount = Math.max(1, Math.floor(20 * intensity * burstScale));
 
     this.explosionEmitter.updateConfig(this.getExplosionConfig(intensity, particleCount));
     this.explosionEmitter.explode(particleCount, x, y);
 
     // Add debris for larger explosions
     if (intensity >= 1.0 && this.debrisEmitter) {
-      const debrisCount = Math.floor(8 * intensity);
+      const debrisCount = Math.max(1, Math.floor(8 * intensity * burstScale));
       this.debrisEmitter.explode(debrisCount, x, y);
     }
 

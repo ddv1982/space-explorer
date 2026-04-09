@@ -15,6 +15,7 @@ import type { CollisionManager } from '../../systems/CollisionManager';
 import type { LevelManager } from '../../systems/LevelManager';
 import type { ScoreManager } from '../../systems/ScoreManager';
 import type { WarpTransition } from '../../systems/WarpTransition';
+import { RespawnFrameProbe } from './respawnFrameProbe';
 
 const PLAYER_RESPAWN_DELAY_MS = 1000;
 const PLAYER_RESPAWN_FREEZE_DELAY_MS = 240;
@@ -49,6 +50,15 @@ export class GameSceneFlowController {
   private remainingLives = 0;
   private respawnInProgress = false;
   private respawnScenePaused = false;
+  private readonly respawnFrameProbe = new RespawnFrameProbe();
+
+  setRespawnFrameProbeEnabled(enabled: boolean): void {
+    this.respawnFrameProbe.setEnabled(enabled);
+  }
+
+  sampleRespawnTransitionFrame(deltaMs: number): void {
+    this.respawnFrameProbe.sampleFrame(deltaMs);
+  }
 
   reset(remainingLives: number): void {
     this.clearGameOverTransitionTimers();
@@ -62,6 +72,7 @@ export class GameSceneFlowController {
     this.remainingLives = remainingLives;
     this.respawnInProgress = false;
     this.respawnScenePaused = false;
+    this.respawnFrameProbe.abort();
   }
 
   shutdown(collisionManager: CollisionManager): void {
@@ -78,6 +89,7 @@ export class GameSceneFlowController {
     this.remainingLives = 0;
     this.respawnInProgress = false;
     this.respawnScenePaused = false;
+    this.respawnFrameProbe.abort();
   }
 
   getRemainingLives(): number {
@@ -250,6 +262,7 @@ export class GameSceneFlowController {
     }
 
     this.respawnInProgress = true;
+    this.respawnFrameProbe.begin(context.scene.time.now);
     this.clearPendingLevelCompleteTransition();
     context.stopPlayerMotion();
     context.collisionManager.setRespawnInProgress(true);
@@ -288,6 +301,7 @@ export class GameSceneFlowController {
     if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none || context.player.isAlive) {
       this.respawnInProgress = false;
       context.collisionManager.setRespawnInProgress(false);
+      this.respawnFrameProbe.finish('cancelled', context.scene.time.now);
       return;
     }
 
@@ -299,6 +313,7 @@ export class GameSceneFlowController {
     });
     this.respawnInProgress = false;
     context.collisionManager.setRespawnInProgress(false);
+    this.respawnFrameProbe.finish('respawned', context.scene.time.now);
     this.flushQueuedLevelCompleteTransition(context);
   }
 

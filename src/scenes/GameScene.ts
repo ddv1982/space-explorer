@@ -42,12 +42,14 @@ import { getViewportBounds } from '../utils/layout';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { createScaledBossConfig } from '../systems/balance/bossScaling';
 import { resolveSectionMusicIntensity } from '../systems/sectionIdentity';
+import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
   private static readonly BOSS_EXPLOSION_AUDIO_INTENSITY = 2.0;
   private static readonly PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY = 2.2;
   private static readonly PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY = 1.4;
+  private static readonly PLAYER_DEATH_PARTICLE_BUDGET_SCALE = 0.6;
 
   private parallax!: ParallaxBackground;
   private inputManager!: InputManager;
@@ -90,6 +92,7 @@ export class GameScene extends Phaser.Scene {
 
     const state = getPlayerState(this.registry);
     this.flow.reset(state.remainingLives);
+    this.flow.setRespawnFrameProbeEnabled(resolveRespawnFrameProbeEnabled());
 
     this.levelManager = new LevelManager();
     this.levelManager.init(state.level);
@@ -452,7 +455,12 @@ export class GameScene extends Phaser.Scene {
   private playPlayerDeathCue(x: number, y: number): void {
     this.player.playDeathAnimation();
     audioManager.playExplosion(GameScene.PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY);
-    this.effectsManager.createExplosion(x, y, GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY);
+    this.effectsManager.createExplosion(
+      x,
+      y,
+      GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY,
+      GameScene.PLAYER_DEATH_PARTICLE_BUDGET_SCALE
+    );
   }
 
   private stopPlayerMotion(): void {
@@ -536,6 +544,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.pauseStateController?.isGameplayPaused() || this.flow.isGameplayLocked()) {
+      this.flow.sampleRespawnTransitionFrame(delta);
       this.updateHud();
       return;
     }
