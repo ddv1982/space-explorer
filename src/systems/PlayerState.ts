@@ -7,6 +7,16 @@ export interface PlayerStateData {
   currentHp: number;
   remainingLives: number;
   upgrades: PlayerUpgradeLevels;
+  helperWing: PersistentHelperWingState;
+}
+
+export interface PersistentHelperWingSlotState {
+  remainingLives: number;
+  hp: number;
+}
+
+export interface PersistentHelperWingState {
+  slots: PersistentHelperWingSlotState[];
 }
 
 interface RunSummaryData {
@@ -37,6 +47,30 @@ function getDefaultPlayerState(): PlayerStateData {
       fireRate: 0,
       shield: 0,
     },
+    helperWing: {
+      slots: [],
+    },
+  };
+}
+
+function normalizeHelperWingState(state: PersistentHelperWingState | null | undefined): PersistentHelperWingState {
+  const slots = Array.isArray(state?.slots)
+    ? state.slots
+        .map((slot) => ({
+          remainingLives:
+            typeof slot?.remainingLives === 'number'
+              ? Math.max(0, Math.floor(slot.remainingLives))
+              : 0,
+          hp:
+            typeof slot?.hp === 'number'
+              ? Math.max(0, Math.round(slot.hp))
+              : 0,
+        }))
+        .filter((slot) => slot.remainingLives > 0 && slot.hp > 0)
+    : [];
+
+  return {
+    slots,
   };
 }
 
@@ -57,6 +91,7 @@ function normalizePlayerState(state: Partial<PlayerStateData> | null | undefined
       fireRate: state?.upgrades?.fireRate ?? defaultState.upgrades.fireRate,
       shield: state?.upgrades?.shield ?? defaultState.upgrades.shield,
     },
+    helperWing: normalizeHelperWingState(state?.helperWing),
   };
 }
 
@@ -141,5 +176,18 @@ export function saveCurrentHp(registry: Phaser.Data.DataManager, hp: number): vo
 export function saveRemainingLives(registry: Phaser.Data.DataManager, remainingLives: number): void {
   const state = getPlayerState(registry);
   state.remainingLives = Math.max(0, remainingLives);
+  setPlayerState(registry, state);
+}
+
+export function getHelperWingState(registry: Phaser.Data.DataManager): PersistentHelperWingState {
+  return getPlayerState(registry).helperWing;
+}
+
+export function saveHelperWingState(
+  registry: Phaser.Data.DataManager,
+  helperWing: PersistentHelperWingState | null | undefined
+): void {
+  const state = getPlayerState(registry);
+  state.helperWing = normalizeHelperWingState(helperWing);
   setPlayerState(registry, state);
 }

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.10] - 2026-04-09
+
+### Added
+- Added persistent helper-wing run state so helper ships now carry across level transitions until their own HP/lives are depleted.
+
+### Changed
+- Updated helper-wing runtime to restore persisted helpers on level load and allow additional helper grants to fill open support slots over time (e.g. one ship per side).
+- Kept transition safety hardening in place while persisting helper state, so helpers are still safely suspended/cleaned during scene handoff.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.9] - 2026-04-09
 
 ### Fixed

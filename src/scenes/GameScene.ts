@@ -18,7 +18,9 @@ import { HUD } from '../systems/HUD';
 import { LevelManager } from '../systems/LevelManager';
 import { EffectsManager } from '../systems/EffectsManager';
 import {
+  getHelperWingState,
   getPlayerState,
+  saveHelperWingState,
 } from '../systems/PlayerState';
 import { Boss } from '../entities/enemies/Boss';
 import { WarpTransition } from '../systems/WarpTransition';
@@ -142,6 +144,7 @@ export class GameScene extends Phaser.Scene {
       enemyPool: this.enemyPool,
       effectsManager: this.effectsManager,
       config: levelConfig.lastLifeHelperWing,
+      persistentState: getHelperWingState(this.registry),
     });
 
     this.waveManager = new WaveManager();
@@ -265,6 +268,7 @@ export class GameScene extends Phaser.Scene {
     this.pauseStateController = null;
     this.mobileControls?.destroy();
     this.mobileControls = null;
+    this.persistHelperWingState();
     this.lastLifeHelperWing?.destroy();
     this.lastLifeHelperWing = null;
     this.parallax?.destroy();
@@ -343,6 +347,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleLevelComplete(): void {
+    this.persistHelperWingState();
     this.lastLifeHelperWing?.suspendForTransition();
     this.flow.queueLevelComplete(this.getFlowContext());
   }
@@ -397,6 +402,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.boss = null;
     this.levelManager.markBossDefeated();
+    this.persistHelperWingState();
     this.lastLifeHelperWing?.suspendForTransition();
     this.flow.queueLevelComplete(this.getFlowContext());
   }
@@ -501,6 +507,15 @@ export class GameScene extends Phaser.Scene {
 
   private syncLastLifeHelperWingState(): void {
     this.lastLifeHelperWing?.updateLastLifeState(this.flow.getRemainingLives());
+  }
+
+  private persistHelperWingState(): void {
+    if (!this.lastLifeHelperWing) {
+      saveHelperWingState(this.registry, { slots: [] });
+      return;
+    }
+
+    saveHelperWingState(this.registry, this.lastLifeHelperWing.capturePersistentState());
   }
 
   private updateHud(): void {

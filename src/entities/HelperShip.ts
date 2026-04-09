@@ -16,6 +16,11 @@ interface HelperShipLoadout {
   followOffsetY: number;
 }
 
+export interface HelperShipPersistentState {
+  remainingLives: number;
+  hp: number;
+}
+
 export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   hp = 1;
   maxHp = 1;
@@ -131,6 +136,29 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
 
   isDepleted(): boolean {
     return this.depleted;
+  }
+
+  applyPersistentState(player: Player, time: number, state: HelperShipPersistentState): void {
+    if (state.remainingLives <= 0 || state.hp <= 0) {
+      this.deplete();
+      return;
+    }
+
+    this.depleted = false;
+    this.remainingLives = Math.max(1, Math.floor(state.remainingLives));
+    this.spawn(player.x + this.followOffsetX, player.y + this.followOffsetY, time);
+    this.hp = Phaser.Math.Clamp(Math.round(state.hp), 1, this.maxHp);
+  }
+
+  getPersistentState(): HelperShipPersistentState | null {
+    if (this.depleted || this.remainingLives <= 0) {
+      return null;
+    }
+
+    return {
+      remainingLives: this.remainingLives,
+      hp: this.hp > 0 ? this.hp : this.maxHp,
+    };
   }
 
   private spawn(x: number, y: number, time: number): void {

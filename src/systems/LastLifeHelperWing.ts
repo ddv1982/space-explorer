@@ -9,6 +9,17 @@ import { EnemyBullet } from '../entities/EnemyBullet';
 import { BomberBomb } from '../entities/BomberBomb';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
+import type { PersistentHelperWingSlotState, PersistentHelperWingState } from './PlayerState';
+
+const DEFAULT_HELPER_CONFIG: Required<LastLifeHelperWingConfig> = {
+  shipCount: 2,
+  helperLives: 2,
+  hpScaleFromPlayer: 0.5,
+  fireRateMs: 280,
+  respawnDelayMs: 800,
+  spacing: 38,
+  followOffsetY: 18,
+};
 
 interface LastLifeHelperWingContext {
   scene: Phaser.Scene;
@@ -17,6 +28,7 @@ interface LastLifeHelperWingContext {
   enemyPool: EnemyPool;
   effectsManager: EffectsManager;
   config: LastLifeHelperWingConfig | null | undefined;
+  persistentState: PersistentHelperWingState | null | undefined;
 }
 
 export class LastLifeHelperWing {
@@ -26,7 +38,9 @@ export class LastLifeHelperWing {
   private enemyPool!: EnemyPool;
   private effectsManager!: EffectsManager;
 
-  private config: LastLifeHelperWingConfig | null = null;
+  private runtimeConfig: Required<LastLifeHelperWingConfig> = DEFAULT_HELPER_CONFIG;
+  private canAcquireInLevel = false;
+  private maxSlots = 0;
   private helperGroup: Phaser.Physics.Arcade.Group | null = null;
   private overlapColliders: Phaser.Physics.Arcade.Collider[] = [];
   private helpers: HelperShip[] = [];
@@ -39,49 +53,82 @@ export class LastLifeHelperWing {
     this.bulletPool = context.bulletPool;
     this.enemyPool = context.enemyPool;
     this.effectsManager = context.effectsManager;
-    this.config = context.config ?? null;
+    this.runtimeConfig = this.resolveRuntimeConfig(context.config);
 
     this.activated = false;
     this.depletedAnnounced = false;
     this.destroyOverlaps();
     this.helpers = [];
 
-    if (!this.config || this.config.shipCount <= 0) {
+    const persistedSlots = this.normalizePersistedSlots(context.persistentState);
+    this.canAcquireInLevel = Boolean(
+      (context.config && context.config.shipCount > 0) || persistedSlots.length > 0
+    );
+    this.maxSlots = Math.max(this.canAcquireInLevel ? this.runtimeConfig.shipCount : 0, persistedSlots.length);
+
+    if (this.maxSlots <= 0) {
       this.helperGroup = null;
       return;
     }
 
     this.helperGroup = this.scene.physics.add.group({
-      maxSize: Math.max(1, this.config.shipCount),
+      maxSize: this.maxSlots,
       classType: HelperShip,
       runChildUpdate: false,
     });
 
-    this.prewarmHelpers(this.config);
+    this.prewarmHelpers(this.maxSlots);
     this.registerOverlaps();
+
+    if (persistedSlots.length > 0) {
+      this.restorePersistedWing(persistedSlots);
+    }
   }
 
   updateLastLifeState(remainingLives: number): void {
-    if (!this.config || this.activated || remainingLives !== 1) {
+    if (remainingLives !== 1 || !this.canAcquireInLevel || this.helpers.length === 0) {
       return;
     }
 
-    this.activateWing();
+    this.grantHelperIfPossible();
   }
 
   update(time: number): void {
-    if (!this.activated || !this.config || this.helpers.length === 0) {
+    if (!this.activated || this.helpers.length === 0) {
+      return;
+    }
+
+    const liveHelpers = this.getLiveHelperCount();
+    if (liveHelpers <= 0) {
+      this.activated = false;
+      if (!this.depletedAnnounced) {
+        this.depletedAnnounced = true;
+        this.scene.events.emit(GAME_SCENE_EVENTS.helperWingDepleted);
+      }
       return;
     }
 
     for (const helper of this.helpers) {
       helper.updateWithPlayer(this.player, time, this.bulletPool, this.effectsManager);
     }
+  }
 
-    if (!this.depletedAnnounced && this.helpers.every((helper) => helper.isDepleted())) {
-      this.depletedAnnounced = true;
-      this.scene.events.emit(GAME_SCENE_EVENTS.helperWingDepleted);
+  capturePersistentState(): PersistentHelperWingState {
+    const slots: PersistentHelperWingSlotState[] = [];
+
+    for (const helper of this.helpers) {
+      const state = helper.getPersistentState();
+      if (!state) {
+        continue;
+      }
+
+      slots.push({
+        remainingLives: state.remainingLives,
+        hp: state.hp,
+      });
     }
+
+    return { slots };
   }
 
   destroy(): void {
@@ -90,7 +137,9 @@ export class LastLifeHelperWing {
     this.helpers = [];
     this.helperGroup?.clear(true, true);
     this.helperGroup = null;
-    this.config = null;
+    this.maxSlots = 0;
+    this.canAcquireInLevel = false;
+    this.runtimeConfig = DEFAULT_HELPER_CONFIG;
     this.activated = false;
     this.depletedAnnounced = false;
   }
@@ -109,13 +158,12 @@ export class LastLifeHelperWing {
     }
   }
 
-  private prewarmHelpers(config: LastLifeHelperWingConfig): void {
+  private prewarmHelpers(slotCount: number): void {
     if (!this.helperGroup) {
       return;
     }
 
-    const shipCount = Math.max(1, Math.floor(config.shipCount));
-    for (let i = 0; i < shipCount; i++) {
+    for (let i = 0; i < slotCount; i++) {
       const helper = this.helperGroup.get(-200, -200) as HelperShip | null;
       if (!helper) {
         continue;
@@ -126,36 +174,152 @@ export class LastLifeHelperWing {
     }
   }
 
-  private activateWing(): void {
-    if (!this.config || this.helpers.length === 0) {
+  private grantHelperIfPossible(): void {
+    if (this.getLiveHelperCount() >= this.maxSlots) {
       return;
     }
 
-    this.activated = true;
-    this.depletedAnnounced = false;
-
-    const now = this.scene.time.now;
-    const helperHp = Math.max(1, Math.round(this.player.maxHp * this.config.hpScaleFromPlayer));
-    const spacing = this.config.spacing ?? 36;
-    const followOffsetY = this.config.followOffsetY ?? 16;
-
-    for (let i = 0; i < this.helpers.length; i++) {
-      const helper = this.helpers[i];
-      const offsetX = (i - (this.helpers.length - 1) / 2) * spacing;
-
-      helper.configure({
-        maxHp: helperHp,
-        lives: this.config.helperLives,
-        fireRateMs: this.config.fireRateMs,
-        respawnDelayMs: this.config.respawnDelayMs,
-        followOffsetX: offsetX,
-        followOffsetY,
-      });
-
-      helper.deployNearPlayer(this.player, now);
+    const nextSlot = this.findNextEmptySlot();
+    if (nextSlot === -1) {
+      return;
     }
 
-    this.scene.events.emit(GAME_SCENE_EVENTS.helperWingActivated, this.helpers.length);
+    const helper = this.helpers[nextSlot];
+    if (!helper) {
+      return;
+    }
+
+    this.configureHelperForSlot(helper, nextSlot);
+    helper.deployNearPlayer(this.player, this.scene.time.now);
+
+    this.activated = true;
+    this.depletedAnnounced = false;
+    this.scene.events.emit(GAME_SCENE_EVENTS.helperWingActivated, this.getLiveHelperCount());
+  }
+
+  private restorePersistedWing(slots: PersistentHelperWingSlotState[]): void {
+    const now = this.scene.time.now;
+    let restoredCount = 0;
+
+    for (let slotIndex = 0; slotIndex < slots.length; slotIndex++) {
+      const helper = this.helpers[slotIndex];
+      const slotState = slots[slotIndex];
+      if (!helper || !slotState) {
+        continue;
+      }
+
+      this.configureHelperForSlot(helper, slotIndex);
+      helper.applyPersistentState(this.player, now, {
+        remainingLives: slotState.remainingLives,
+        hp: slotState.hp,
+      });
+      if (helper.getPersistentState()) {
+        restoredCount += 1;
+      }
+    }
+
+    if (restoredCount > 0) {
+      this.activated = true;
+      this.depletedAnnounced = false;
+    }
+  }
+
+  private configureHelperForSlot(helper: HelperShip, slotIndex: number): void {
+    const helperHp = Math.max(1, Math.round(this.player.maxHp * this.runtimeConfig.hpScaleFromPlayer));
+
+    helper.configure({
+      maxHp: helperHp,
+      lives: this.runtimeConfig.helperLives,
+      fireRateMs: this.runtimeConfig.fireRateMs,
+      respawnDelayMs: this.runtimeConfig.respawnDelayMs,
+      followOffsetX: this.resolveFollowOffsetX(slotIndex),
+      followOffsetY: this.runtimeConfig.followOffsetY,
+    });
+  }
+
+  private resolveFollowOffsetX(slotIndex: number): number {
+    if (this.maxSlots <= 1) {
+      return 0;
+    }
+
+    const center = (this.maxSlots - 1) / 2;
+    return (slotIndex - center) * this.runtimeConfig.spacing;
+  }
+
+  private findNextEmptySlot(): number {
+    for (let i = 0; i < this.helpers.length; i++) {
+      const helper = this.helpers[i];
+      if (!helper.getPersistentState()) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  private getLiveHelperCount(): number {
+    let count = 0;
+    for (const helper of this.helpers) {
+      if (helper.getPersistentState()) {
+        count += 1;
+      }
+    }
+
+    return count;
+  }
+
+  private resolveRuntimeConfig(config: LastLifeHelperWingConfig | null | undefined): Required<LastLifeHelperWingConfig> {
+    const normalizedShipCount =
+      typeof config?.shipCount === 'number' ? Math.max(1, Math.floor(config.shipCount)) : DEFAULT_HELPER_CONFIG.shipCount;
+
+    return {
+      shipCount: normalizedShipCount,
+      helperLives:
+        typeof config?.helperLives === 'number'
+          ? Math.max(1, Math.floor(config.helperLives))
+          : DEFAULT_HELPER_CONFIG.helperLives,
+      hpScaleFromPlayer:
+        typeof config?.hpScaleFromPlayer === 'number'
+          ? Phaser.Math.Clamp(config.hpScaleFromPlayer, 0.1, 1)
+          : DEFAULT_HELPER_CONFIG.hpScaleFromPlayer,
+      fireRateMs:
+        typeof config?.fireRateMs === 'number'
+          ? Math.max(80, Math.floor(config.fireRateMs))
+          : DEFAULT_HELPER_CONFIG.fireRateMs,
+      respawnDelayMs:
+        typeof config?.respawnDelayMs === 'number'
+          ? Math.max(120, Math.floor(config.respawnDelayMs))
+          : DEFAULT_HELPER_CONFIG.respawnDelayMs,
+      spacing:
+        typeof config?.spacing === 'number'
+          ? Math.max(18, Math.round(config.spacing))
+          : DEFAULT_HELPER_CONFIG.spacing,
+      followOffsetY:
+        typeof config?.followOffsetY === 'number'
+          ? Math.round(config.followOffsetY)
+          : DEFAULT_HELPER_CONFIG.followOffsetY,
+    };
+  }
+
+  private normalizePersistedSlots(
+    persistentState: PersistentHelperWingState | null | undefined
+  ): PersistentHelperWingSlotState[] {
+    if (!persistentState || !Array.isArray(persistentState.slots)) {
+      return [];
+    }
+
+    return persistentState.slots
+      .map((slot) => ({
+        remainingLives:
+          typeof slot?.remainingLives === 'number'
+            ? Math.max(0, Math.floor(slot.remainingLives))
+            : 0,
+        hp:
+          typeof slot?.hp === 'number'
+            ? Math.max(0, Math.round(slot.hp))
+            : 0,
+      }))
+      .filter((slot) => slot.remainingLives > 0 && slot.hp > 0);
   }
 
   private registerOverlaps(): void {
