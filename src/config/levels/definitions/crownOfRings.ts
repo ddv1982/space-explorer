@@ -45,6 +45,15 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
     phase2SpiralTurnRate: 126,
     phase2BulletSpeedScale: 1.13,
   },
+  lastLifeHelperWing: {
+    shipCount: 2,
+    helperLives: 2,
+    hpScaleFromPlayer: 0.5,
+    fireRateMs: 260,
+    respawnDelayMs: 780,
+    spacing: 38,
+    followOffsetY: 18,
+  },
   bossTriggerProgress: 0.63,
   asteroidInterval: 3150,
   sections: [

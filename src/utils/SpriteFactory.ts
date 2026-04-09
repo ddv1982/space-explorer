@@ -124,6 +124,57 @@ export function ensurePlayerTexture(scene: Phaser.Scene): string {
 }
 
 // ---------------------------------------------------------------------------
+// Helper Ship — compact allied support craft
+// ---------------------------------------------------------------------------
+export function ensureHelperShipTexture(scene: Phaser.Scene): string {
+  return ensureTexture(scene, 'helper-ship', 24, 30, (g) => {
+    // Main hull
+    g.fillStyle(0x16283f, 1);
+    g.beginPath();
+    g.moveTo(12, 1);
+    g.lineTo(22, 19);
+    g.lineTo(18, 27);
+    g.lineTo(12, 24);
+    g.lineTo(6, 27);
+    g.lineTo(2, 19);
+    g.closePath();
+    g.fillPath();
+
+    // Inner hull highlight
+    g.fillStyle(0x2d567d, 1);
+    g.beginPath();
+    g.moveTo(12, 3);
+    g.lineTo(18, 17);
+    g.lineTo(12, 16);
+    g.lineTo(6, 17);
+    g.closePath();
+    g.fillPath();
+
+    // Accent stripe
+    g.fillStyle(0x52dcff, 0.95);
+    g.fillRect(11, 5, 2, 12);
+
+    // Cockpit glow
+    g.fillStyle(0x9befff, 0.9);
+    g.fillCircle(12, 10, 2);
+
+    // Wing tips
+    g.fillStyle(0x49b7ff, 0.85);
+    g.fillTriangle(2, 19, 6, 17, 6, 23);
+    g.fillTriangle(22, 19, 18, 17, 18, 23);
+
+    // Engines
+    g.fillStyle(0x334e66, 1);
+    g.fillRect(7, 24, 3, 5);
+    g.fillRect(14, 24, 3, 5);
+
+    g.fillStyle(0x71ecff, 0.8);
+    g.fillCircle(8.5, 28, 1.4);
+    g.fillCircle(15.5, 28, 1.4);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Scout — sleek dart interceptor
 // ---------------------------------------------------------------------------
 export function ensureScoutTexture(scene: Phaser.Scene): string {

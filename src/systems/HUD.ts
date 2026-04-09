@@ -401,6 +401,47 @@ export class HUD {
     });
   }
 
+  showHelperWingAnnouncement(helperCount: number): void {
+    const layout = this.getLayoutMetrics();
+
+    this.announcementText.setText(`ALLY WING ONLINE (${helperCount})`);
+    this.announcementText.setColor('#6af6ff');
+    this.announcementText.setAlpha(1);
+    this.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
+    this.announcementTween?.stop();
+
+    this.announcementTween = this.scene.tweens.add({
+      targets: this.announcementText,
+      alpha: { from: 1, to: 0 },
+      y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
+      duration: 1600,
+      ease: 'Power2',
+      onComplete: () => {
+        this.announcementTween = null;
+      },
+    });
+  }
+
+  showHelperWingDepletedAnnouncement(): void {
+    const layout = this.getLayoutMetrics();
+
+    this.announcementText.setText('ALLY WING LOST');
+    this.announcementText.setColor('#ff8899');
+    this.announcementText.setAlpha(1);
+    this.announcementText.setPosition(layout.centerX, layout.announcementY - 4);
+    this.announcementTween?.stop();
+
+    this.announcementTween = this.scene.tweens.add({
+      targets: this.announcementText,
+      alpha: { from: 1, to: 0 },
+      duration: 1400,
+      ease: 'Power2',
+      onComplete: () => {
+        this.announcementTween = null;
+      },
+    });
+  }
+
   private getLayoutMetrics(): HudLayoutMetrics {
     const viewport = getViewportBounds(this.scene);
     const hpBarWidth = Math.round(Phaser.Math.Clamp(viewport.width * 0.22, 150, this.baseHpBarWidth));

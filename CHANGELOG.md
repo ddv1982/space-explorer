@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.8] - 2026-04-09
+
+### Added
+- Added a new last-life helper-wing assist system for late-game levels: allied mini-ships can activate on final life, follow the player, fire support shots, and persist until their helper lives are exhausted.
+- Added helper-wing research notes (`docs/helper-wing-research-notes.md`) documenting Exa + Ref implementation guidance for Phaser/Arcade integration choices.
+
+### Changed
+- Extended level schema with optional `lastLifeHelperWing` tuning so helper support can be enabled per level without affecting earlier campaign pacing.
+- Integrated helper-wing lifecycle signaling into GameScene/HUD via new gameplay events (`helper-wing-activated`, `helper-wing-depleted`) with announcement feedback.
+- Enabled helper-wing support on late expansion levels (`Graveyard Lattice`, `Mirage Archive`, `Halo Cartography`, `Glass Rift Narrows`, `Eventide Singularity`) with authored per-level cadence tuning.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.7] - 2026-04-09
 
 ### Added

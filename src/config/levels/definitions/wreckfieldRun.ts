@@ -45,6 +45,15 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     phase2SpiralTurnRate: 100,
     phase2BulletSpeedScale: 1.06,
   },
+  lastLifeHelperWing: {
+    shipCount: 2,
+    helperLives: 2,
+    hpScaleFromPlayer: 0.5,
+    fireRateMs: 300,
+    respawnDelayMs: 860,
+    spacing: 40,
+    followOffsetY: 18,
+  },
   bossTriggerProgress: 0.66,
   asteroidInterval: 3350,
   sections: [

@@ -45,6 +45,15 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
     phase2SpiralTurnRate: 120,
     phase2BulletSpeedScale: 1.14,
   },
+  lastLifeHelperWing: {
+    shipCount: 2,
+    helperLives: 2,
+    hpScaleFromPlayer: 0.5,
+    fireRateMs: 280,
+    respawnDelayMs: 820,
+    spacing: 40,
+    followOffsetY: 18,
+  },
   bossTriggerProgress: 0.64,
   asteroidInterval: 3250,
   sections: [

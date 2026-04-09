@@ -45,6 +45,15 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
     phase2SpiralTurnRate: 136,
     phase2BulletSpeedScale: 1.2,
   },
+  lastLifeHelperWing: {
+    shipCount: 2,
+    helperLives: 2,
+    hpScaleFromPlayer: 0.5,
+    fireRateMs: 250,
+    respawnDelayMs: 760,
+    spacing: 36,
+    followOffsetY: 18,
+  },
   bossTriggerProgress: 0.61,
   asteroidInterval: 3000,
   sections: [

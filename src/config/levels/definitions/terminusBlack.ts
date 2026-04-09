@@ -45,6 +45,15 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
     phase2SpiralTurnRate: 146,
     phase2BulletSpeedScale: 1.24,
   },
+  lastLifeHelperWing: {
+    shipCount: 2,
+    helperLives: 2,
+    hpScaleFromPlayer: 0.5,
+    fireRateMs: 240,
+    respawnDelayMs: 720,
+    spacing: 34,
+    followOffsetY: 18,
+  },
   bossTriggerProgress: 0.59,
   asteroidInterval: 2900,
   sections: [

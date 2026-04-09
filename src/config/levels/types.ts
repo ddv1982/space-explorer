@@ -34,6 +34,16 @@ export interface BossConfig {
   phase2BulletSpeedScale: number;
 }
 
+export interface LastLifeHelperWingConfig {
+  shipCount: number;
+  helperLives: number;
+  hpScaleFromPlayer: number;
+  fireRateMs: number;
+  respawnDelayMs: number;
+  spacing?: number;
+  followOffsetY?: number;
+}
+
 export type LevelPacingPhase = 'intro' | 'build' | 'hazard' | 'climax' | 'boss-approach';
 
 export type HazardType =
@@ -292,6 +302,7 @@ export interface LevelConfig extends LevelThemeSummary {
   levelDistance: number;
   hasBoss: boolean;
   boss: BossConfig | null;
+  lastLifeHelperWing?: LastLifeHelperWingConfig | null;
   bossTriggerProgress: number;
   asteroidInterval: number;
   sections: LevelSectionConfig[];

@@ -15,6 +15,8 @@ export const GAME_SCENE_EVENTS = {
   enemySpawnWarning: 'enemy-spawn-warning',
   bossDeath: 'boss-death',
   bossPhaseChange: 'boss-phase-change',
+  helperWingActivated: 'helper-wing-activated',
+  helperWingDepleted: 'helper-wing-depleted',
 } as const;
 
 export const TERMINAL_TRANSITIONS = {

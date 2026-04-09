@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`0.8.8`](./0.8.8.md) — last-life helper-wing assist for selected late-game boss levels
 - [`0.8.7`](./0.8.7.md) — boss readability and phase-telegraphing pass for levels 4-10
 - [`0.8.6`](./0.8.6.md) — phase 4 boss identity differentiation pass for levels 4-10
 - [`0.8.5`](./0.8.5.md) — phase 3 signature encounter identity pass for levels 4-10

@@ -32,6 +32,7 @@ import {
 import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
 import { showControlsHint } from './gameScene/showControlsHint';
 import { PauseStateController } from './gameScene/PauseStateController';
+import { LastLifeHelperWing } from '../systems/LastLifeHelperWing';
 import { MobileViewportGuard } from '../systems/MobileViewportGuard';
 import { MobileControls } from '../systems/MobileControls';
 import { isTouchMobileDevice } from '../utils/device';
@@ -66,6 +67,7 @@ export class GameScene extends Phaser.Scene {
   private readonly flow = new GameSceneFlowController();
   private lastFireTime: number = 0;
   private boss: Boss | null = null;
+  private lastLifeHelperWing: LastLifeHelperWing | null = null;
   private lastHudShieldCount: number | null = null;
   private readonly shotDirection = new Phaser.Math.Vector2();
   private readonly shotOrigin = new Phaser.Math.Vector2();
@@ -78,6 +80,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.lastFireTime = 0;
     this.boss = null;
+    this.lastLifeHelperWing = null;
     this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
 
@@ -130,6 +133,16 @@ export class GameScene extends Phaser.Scene {
 
     this.enemyPool = new EnemyPool();
     this.enemyPool.create(this);
+
+    this.lastLifeHelperWing = new LastLifeHelperWing();
+    this.lastLifeHelperWing.create({
+      scene: this,
+      player: this.player,
+      bulletPool: this.bulletPool,
+      enemyPool: this.enemyPool,
+      effectsManager: this.effectsManager,
+      config: levelConfig.lastLifeHelperWing,
+    });
 
     this.waveManager = new WaveManager();
     const asteroidGroup = this.waveManager.create(this, this.enemyPool);
@@ -184,6 +197,7 @@ export class GameScene extends Phaser.Scene {
     showControlsHint(this, { mobile: isTouchMobileDevice() });
 
     this.registerSceneEventHandlers();
+    this.syncLastLifeHelperWingState();
   }
 
   private registerLifecycleHandlers(): void {
@@ -207,6 +221,8 @@ export class GameScene extends Phaser.Scene {
     this.events.on(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
     this.events.on(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
     this.events.on(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
+    this.events.on(GAME_SCENE_EVENTS.helperWingActivated, this.handleHelperWingActivated, this);
+    this.events.on(GAME_SCENE_EVENTS.helperWingDepleted, this.handleHelperWingDepleted, this);
   }
 
   private registerScaleHandlers(): void {
@@ -225,6 +241,8 @@ export class GameScene extends Phaser.Scene {
     this.events.off(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
     this.events.off(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
     this.events.off(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
+    this.events.off(GAME_SCENE_EVENTS.helperWingActivated, this.handleHelperWingActivated, this);
+    this.events.off(GAME_SCENE_EVENTS.helperWingDepleted, this.handleHelperWingDepleted, this);
   }
 
   private handleSceneShutdown(): void {
@@ -247,6 +265,8 @@ export class GameScene extends Phaser.Scene {
     this.pauseStateController = null;
     this.mobileControls?.destroy();
     this.mobileControls = null;
+    this.lastLifeHelperWing?.destroy();
+    this.lastLifeHelperWing = null;
     this.parallax?.destroy();
     this.effectsManager?.destroy();
     this.flow.shutdown(this.collisionManager);
@@ -311,6 +331,7 @@ export class GameScene extends Phaser.Scene {
 
     this.runBestEffort(() => this.playPlayerDeathCue(deathX, deathY));
     this.flow.handlePlayerDeath(this.getFlowContext());
+    this.syncLastLifeHelperWingState();
   }
 
   private handlePlayerFatalHit(): void {
@@ -385,6 +406,17 @@ export class GameScene extends Phaser.Scene {
 
     this.hud.showBossPhaseAnnouncement(phase);
     this.runBestEffort(() => this.cameras.main.flash(120, 255, 196, 96, false));
+  }
+
+  private handleHelperWingActivated(helperCount: number): void {
+    this.hud.showHelperWingAnnouncement(helperCount);
+    this.runBestEffort(() => this.cameras.main.flash(140, 96, 220, 255, false));
+    this.runBestEffort(() => audioManager.playPowerUpPickup());
+  }
+
+  private handleHelperWingDepleted(): void {
+    this.hud.showHelperWingDepletedAnnouncement();
+    this.runBestEffort(() => this.cameras.main.shake(120, 0.006));
   }
 
   private spawnBoss(): void {
@@ -465,6 +497,10 @@ export class GameScene extends Phaser.Scene {
     this.hud.updateShields(this.player.shields);
   }
 
+  private syncLastLifeHelperWingState(): void {
+    this.lastLifeHelperWing?.updateLastLifeState(this.flow.getRemainingLives());
+  }
+
   private updateHud(): void {
     this.hud.update(
       this.player.hp,
@@ -488,6 +524,7 @@ export class GameScene extends Phaser.Scene {
 
     this.parallax.update(delta);
     this.player.update(this.inputManager);
+    this.lastLifeHelperWing?.update(time);
 
     if (this.inputManager.isFiring() && this.player.isAlive) {
       if (time > this.lastFireTime + this.player.fireRate) {
