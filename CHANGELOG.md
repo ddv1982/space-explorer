@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.13] - 2026-04-10
+
+### Fixed
+- Fixed death/respawn transition hitching by switching respawn freeze control from scene pause/resume to Arcade physics world pause/resume, avoiding broader scene lifecycle churn during life-loss recovery.
+
+### Changed
+- Removed the cross-clock respawn watchdog `setTimeout` path so respawn completion now runs through a single coherent flow without browser-timer divergence.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.12] - 2026-04-10
 
 ### Fixed

@@ -491,8 +491,8 @@ export class GameScene extends Phaser.Scene {
       stopPlayerMotion: () => this.stopPlayerMotion(),
       runBestEffort: (effect) => this.runBestEffort(effect),
       startScene: (key) => this.scene.start(key),
-      pauseScene: () => this.scene.pause(),
-      resumeScene: () => this.scene.resume(),
+      pauseScene: () => this.physics.world.pause(),
+      resumeScene: () => this.physics.world.resume(),
       getPlayerRespawnPosition: () => this.getPlayerSpawnPoint(),
     };
   }

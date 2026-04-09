@@ -19,7 +19,6 @@ import type { WarpTransition } from '../../systems/WarpTransition';
 const PLAYER_RESPAWN_DELAY_MS = 1000;
 const PLAYER_RESPAWN_FREEZE_DELAY_MS = 240;
 const PLAYER_RESPAWN_INVULNERABILITY_MS = 2000;
-const PLAYER_RESPAWN_WATCHDOG_BUFFER_MS = 250;
 
 export interface GameSceneFlowContext {
   scene: Phaser.Scene;
@@ -45,7 +44,6 @@ export class GameSceneFlowController {
   private pendingLevelCompleteTransition: Phaser.Time.TimerEvent | null = null;
   private pendingRespawn: Phaser.Time.TimerEvent | null = null;
   private pendingRespawnFreeze: Phaser.Time.TimerEvent | null = null;
-  private respawnWatchdog: ReturnType<typeof setTimeout> | null = null;
   private terminalTransitionState: TerminalTransitionState = TERMINAL_TRANSITIONS.none;
   private levelCompleteQueued = false;
   private remainingLives = 0;
@@ -231,10 +229,6 @@ export class GameSceneFlowController {
       this.pendingRespawnFreeze = null;
       this.pauseSceneForRespawn(context);
     });
-
-    this.respawnWatchdog = setTimeout(() => {
-      this.completeRespawnTransition(context);
-    }, PLAYER_RESPAWN_DELAY_MS + PLAYER_RESPAWN_WATCHDOG_BUFFER_MS);
   }
 
   private clearPendingRespawn(): void {
@@ -248,10 +242,6 @@ export class GameSceneFlowController {
       this.pendingRespawnFreeze = null;
     }
 
-    if (this.respawnWatchdog !== null) {
-      clearTimeout(this.respawnWatchdog);
-      this.respawnWatchdog = null;
-    }
   }
 
   private beginRespawnTransition(context: GameSceneFlowContext): void {

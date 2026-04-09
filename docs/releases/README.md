@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`0.8.13`](./0.8.13.md) — death/respawn hitch fix by unifying respawn timing and limiting pause scope
 - [`0.8.12`](./0.8.12.md) — runtime performance stability pass across pooling, resize/parallax churn, and boss/effects hot paths
 - [`0.8.11`](./0.8.11.md) — helper resurrection-state fix for spent support slots
 - [`0.8.10`](./0.8.10.md) — persistent helper carryover across levels with slot-stacking support
