@@ -28,6 +28,7 @@ export class LastLifeHelperWing {
 
   private config: LastLifeHelperWingConfig | null = null;
   private helperGroup: Phaser.Physics.Arcade.Group | null = null;
+  private overlapColliders: Phaser.Physics.Arcade.Collider[] = [];
   private helpers: HelperShip[] = [];
   private activated = false;
   private depletedAnnounced = false;
@@ -42,6 +43,7 @@ export class LastLifeHelperWing {
 
     this.activated = false;
     this.depletedAnnounced = false;
+    this.destroyOverlaps();
     this.helpers = [];
 
     if (!this.config || this.config.shipCount <= 0) {
@@ -83,12 +85,28 @@ export class LastLifeHelperWing {
   }
 
   destroy(): void {
+    this.suspendForTransition();
+    this.destroyOverlaps();
     this.helpers = [];
     this.helperGroup?.clear(true, true);
     this.helperGroup = null;
     this.config = null;
     this.activated = false;
     this.depletedAnnounced = false;
+  }
+
+  suspendForTransition(): void {
+    this.activated = false;
+    this.depletedAnnounced = false;
+
+    for (const helper of this.helpers) {
+      if (!helper.active) {
+        continue;
+      }
+
+      helper.disableBody(true, true);
+      helper.clearTint();
+    }
   }
 
   private prewarmHelpers(config: LastLifeHelperWingConfig): void {
@@ -145,25 +163,44 @@ export class LastLifeHelperWing {
       return;
     }
 
-    this.scene.physics.add.overlap(
+    const enemyBulletCollider = this.scene.physics.add.overlap(
       this.enemyPool.getEnemyBulletGroup(),
       this.helperGroup,
       (a, b) => this.handleEnemyBulletOverlap(a, b)
     );
+    this.overlapColliders.push(enemyBulletCollider);
 
-    this.scene.physics.add.overlap(
+    const bombCollider = this.scene.physics.add.overlap(
       this.enemyPool.getBombGroup(),
       this.helperGroup,
       (a, b) => this.handleBombOverlap(a, b)
     );
+    this.overlapColliders.push(bombCollider);
 
     for (const { key, group } of this.enemyPool.getEnemyGroupRegistry()) {
       if (key === 'boss') {
         continue;
       }
 
-      this.scene.physics.add.overlap(group, this.helperGroup, (a, b) => this.handleEnemyContactOverlap(a, b));
+      const enemyContactCollider = this.scene.physics.add.overlap(
+        group,
+        this.helperGroup,
+        (a, b) => this.handleEnemyContactOverlap(a, b)
+      );
+      this.overlapColliders.push(enemyContactCollider);
     }
+  }
+
+  private destroyOverlaps(): void {
+    if (this.overlapColliders.length === 0) {
+      return;
+    }
+
+    for (const collider of this.overlapColliders) {
+      collider.destroy();
+    }
+
+    this.overlapColliders = [];
   }
 
   private handleEnemyBulletOverlap(a: unknown, b: unknown): void {

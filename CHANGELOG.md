@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.9] - 2026-04-09
+
+### Fixed
+- Fixed a level-transition runtime crash (`TypeError: undefined is not an object (evaluating 'n.forEach')`) that could occur when helper-wing support was active during stage handoff.
+
+### Changed
+- Hardened helper-wing lifecycle management by tracking helper overlap colliders and explicitly destroying them during helper system teardown.
+- Added transition-time helper suspension so active helper ships are disabled before level-complete handoff and warp/intermission scene changes.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.8] - 2026-04-09
 
 ### Added

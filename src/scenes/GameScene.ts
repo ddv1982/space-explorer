@@ -343,6 +343,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleLevelComplete(): void {
+    this.lastLifeHelperWing?.suspendForTransition();
     this.flow.queueLevelComplete(this.getFlowContext());
   }
 
@@ -396,6 +397,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.boss = null;
     this.levelManager.markBossDefeated();
+    this.lastLifeHelperWing?.suspendForTransition();
     this.flow.queueLevelComplete(this.getFlowContext());
   }
 
