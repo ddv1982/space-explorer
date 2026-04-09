@@ -511,7 +511,7 @@ export class GameScene extends Phaser.Scene {
 
   private persistHelperWingState(): void {
     if (!this.lastLifeHelperWing) {
-      saveHelperWingState(this.registry, { slots: [] });
+      saveHelperWingState(this.registry, { slots: [], grantedSlots: 0 });
       return;
     }
 

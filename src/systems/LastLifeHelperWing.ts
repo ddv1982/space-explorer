@@ -21,6 +21,8 @@ const DEFAULT_HELPER_CONFIG: Required<LastLifeHelperWingConfig> = {
   followOffsetY: 18,
 };
 
+const HARD_MAX_HELPER_SLOTS = 4;
+
 interface LastLifeHelperWingContext {
   scene: Phaser.Scene;
   player: Player;
@@ -29,6 +31,11 @@ interface LastLifeHelperWingContext {
   effectsManager: EffectsManager;
   config: LastLifeHelperWingConfig | null | undefined;
   persistentState: PersistentHelperWingState | null | undefined;
+}
+
+interface NormalizedPersistedWingState {
+  grantedSlots: number;
+  slots: PersistentHelperWingSlotState[];
 }
 
 export class LastLifeHelperWing {
@@ -41,6 +48,7 @@ export class LastLifeHelperWing {
   private runtimeConfig: Required<LastLifeHelperWingConfig> = DEFAULT_HELPER_CONFIG;
   private canAcquireInLevel = false;
   private maxSlots = 0;
+  private grantedSlots = 0;
   private helperGroup: Phaser.Physics.Arcade.Group | null = null;
   private overlapColliders: Phaser.Physics.Arcade.Collider[] = [];
   private helpers: HelperShip[] = [];
@@ -60,11 +68,14 @@ export class LastLifeHelperWing {
     this.destroyOverlaps();
     this.helpers = [];
 
-    const persistedSlots = this.normalizePersistedSlots(context.persistentState);
+    const persistedState = this.normalizePersistedState(context.persistentState);
+    const persistedSlots = persistedState.slots;
+    this.grantedSlots = persistedState.grantedSlots;
+
     this.canAcquireInLevel = Boolean(
-      (context.config && context.config.shipCount > 0) || persistedSlots.length > 0
+      (context.config && context.config.shipCount > 0) || this.grantedSlots > 0
     );
-    this.maxSlots = Math.max(this.canAcquireInLevel ? this.runtimeConfig.shipCount : 0, persistedSlots.length);
+    this.maxSlots = Math.max(this.canAcquireInLevel ? this.runtimeConfig.shipCount : 0, this.grantedSlots);
 
     if (this.maxSlots <= 0) {
       this.helperGroup = null;
@@ -116,19 +127,28 @@ export class LastLifeHelperWing {
   capturePersistentState(): PersistentHelperWingState {
     const slots: PersistentHelperWingSlotState[] = [];
 
-    for (const helper of this.helpers) {
-      const state = helper.getPersistentState();
-      if (!state) {
-        continue;
-      }
+    const cappedGrantedSlots = Math.min(this.grantedSlots, this.helpers.length);
 
-      slots.push({
-        remainingLives: state.remainingLives,
-        hp: state.hp,
-      });
+    for (let slotIndex = 0; slotIndex < cappedGrantedSlots; slotIndex++) {
+      const helper = this.helpers[slotIndex];
+      const state = helper.getPersistentState();
+      slots.push(
+        state
+          ? {
+              remainingLives: state.remainingLives,
+              hp: state.hp,
+            }
+          : {
+              remainingLives: 0,
+              hp: 0,
+            }
+      );
     }
 
-    return { slots };
+    return {
+      slots,
+      grantedSlots: cappedGrantedSlots,
+    };
   }
 
   destroy(): void {
@@ -138,6 +158,7 @@ export class LastLifeHelperWing {
     this.helperGroup?.clear(true, true);
     this.helperGroup = null;
     this.maxSlots = 0;
+    this.grantedSlots = 0;
     this.canAcquireInLevel = false;
     this.runtimeConfig = DEFAULT_HELPER_CONFIG;
     this.activated = false;
@@ -175,15 +196,11 @@ export class LastLifeHelperWing {
   }
 
   private grantHelperIfPossible(): void {
-    if (this.getLiveHelperCount() >= this.maxSlots) {
+    if (this.grantedSlots >= this.maxSlots) {
       return;
     }
 
-    const nextSlot = this.findNextEmptySlot();
-    if (nextSlot === -1) {
-      return;
-    }
-
+    const nextSlot = this.grantedSlots;
     const helper = this.helpers[nextSlot];
     if (!helper) {
       return;
@@ -191,6 +208,7 @@ export class LastLifeHelperWing {
 
     this.configureHelperForSlot(helper, nextSlot);
     helper.deployNearPlayer(this.player, this.scene.time.now);
+    this.grantedSlots += 1;
 
     this.activated = true;
     this.depletedAnnounced = false;
@@ -201,7 +219,9 @@ export class LastLifeHelperWing {
     const now = this.scene.time.now;
     let restoredCount = 0;
 
-    for (let slotIndex = 0; slotIndex < slots.length; slotIndex++) {
+    const maxRestoredSlots = Math.min(this.grantedSlots, slots.length, this.helpers.length);
+
+    for (let slotIndex = 0; slotIndex < maxRestoredSlots; slotIndex++) {
       const helper = this.helpers[slotIndex];
       const slotState = slots[slotIndex];
       if (!helper || !slotState) {
@@ -244,17 +264,6 @@ export class LastLifeHelperWing {
 
     const center = (this.maxSlots - 1) / 2;
     return (slotIndex - center) * this.runtimeConfig.spacing;
-  }
-
-  private findNextEmptySlot(): number {
-    for (let i = 0; i < this.helpers.length; i++) {
-      const helper = this.helpers[i];
-      if (!helper.getPersistentState()) {
-        return i;
-      }
-    }
-
-    return -1;
   }
 
   private getLiveHelperCount(): number {
@@ -301,15 +310,17 @@ export class LastLifeHelperWing {
     };
   }
 
-  private normalizePersistedSlots(
+  private normalizePersistedState(
     persistentState: PersistentHelperWingState | null | undefined
-  ): PersistentHelperWingSlotState[] {
+  ): NormalizedPersistedWingState {
     if (!persistentState || !Array.isArray(persistentState.slots)) {
-      return [];
+      return {
+        grantedSlots: 0,
+        slots: [],
+      };
     }
 
-    return persistentState.slots
-      .map((slot) => ({
+    const slots = persistentState.slots.map((slot) => ({
         remainingLives:
           typeof slot?.remainingLives === 'number'
             ? Math.max(0, Math.floor(slot.remainingLives))
@@ -318,8 +329,24 @@ export class LastLifeHelperWing {
           typeof slot?.hp === 'number'
             ? Math.max(0, Math.round(slot.hp))
             : 0,
-      }))
-      .filter((slot) => slot.remainingLives > 0 && slot.hp > 0);
+      }));
+
+    const sourceGrantedSlots =
+      typeof persistentState.grantedSlots === 'number'
+        ? Math.max(0, Math.floor(persistentState.grantedSlots))
+        : slots.length;
+
+    const grantedSlots = Math.min(Math.max(sourceGrantedSlots, slots.length), HARD_MAX_HELPER_SLOTS);
+    const normalizedSlots = slots.slice(0, grantedSlots);
+
+    while (normalizedSlots.length < grantedSlots) {
+      normalizedSlots.push({ remainingLives: 0, hp: 0 });
+    }
+
+    return {
+      grantedSlots,
+      slots: normalizedSlots,
+    };
   }
 
   private registerOverlaps(): void {

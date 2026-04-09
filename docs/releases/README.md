@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`0.8.11`](./0.8.11.md) — helper resurrection-state fix for spent support slots
 - [`0.8.10`](./0.8.10.md) — persistent helper carryover across levels with slot-stacking support
 - [`0.8.9`](./0.8.9.md) — helper-wing transition crash fix and lifecycle hardening
 - [`0.8.8`](./0.8.8.md) — last-life helper-wing assist for selected late-game boss levels

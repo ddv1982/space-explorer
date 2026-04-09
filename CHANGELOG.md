@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.11] - 2026-04-09
+
+### Fixed
+- Fixed an invalid helper-wing state where depleted helper support could be re-granted again on last life across later levels.
+
+### Changed
+- Added persistent helper `grantedSlots` tracking so the runtime can distinguish never-granted slots from already-spent slots.
+- Updated helper grant logic to allocate only the next ungranted slot, preventing resurrection of spent helper slots while preserving controlled two-slot progression.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.10] - 2026-04-09
 
 ### Added

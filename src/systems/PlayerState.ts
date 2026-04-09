@@ -17,6 +17,7 @@ export interface PersistentHelperWingSlotState {
 
 export interface PersistentHelperWingState {
   slots: PersistentHelperWingSlotState[];
+  grantedSlots: number;
 }
 
 interface RunSummaryData {
@@ -49,12 +50,13 @@ function getDefaultPlayerState(): PlayerStateData {
     },
     helperWing: {
       slots: [],
+      grantedSlots: 0,
     },
   };
 }
 
 function normalizeHelperWingState(state: PersistentHelperWingState | null | undefined): PersistentHelperWingState {
-  const slots = Array.isArray(state?.slots)
+  const normalizedSlots = Array.isArray(state?.slots)
     ? state.slots
         .map((slot) => ({
           remainingLives:
@@ -66,11 +68,23 @@ function normalizeHelperWingState(state: PersistentHelperWingState | null | unde
               ? Math.max(0, Math.round(slot.hp))
               : 0,
         }))
-        .filter((slot) => slot.remainingLives > 0 && slot.hp > 0)
     : [];
+
+  const backwardCompatibleGrantedSlots =
+    typeof state?.grantedSlots === 'number'
+      ? Math.max(0, Math.floor(state.grantedSlots))
+      : normalizedSlots.length;
+
+  const grantedSlots = Math.max(backwardCompatibleGrantedSlots, normalizedSlots.length);
+  const slots = normalizedSlots.slice(0, grantedSlots);
+
+  while (slots.length < grantedSlots) {
+    slots.push({ remainingLives: 0, hp: 0 });
+  }
 
   return {
     slots,
+    grantedSlots,
   };
 }
 
