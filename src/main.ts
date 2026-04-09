@@ -2,10 +2,6 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
-import { GameScene } from './scenes/GameScene';
-import { PlanetIntermissionScene } from './scenes/PlanetIntermissionScene';
-import { GameOverScene } from './scenes/GameOverScene';
-import { VictoryScene } from './scenes/VictoryScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -21,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, PreloadScene, MenuScene, GameScene, PlanetIntermissionScene, GameOverScene, VictoryScene],
+  scene: [BootScene, PreloadScene, MenuScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
   },

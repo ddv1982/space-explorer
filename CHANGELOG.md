@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.15] - 2026-04-10
+
+### Changed
+- Reduced startup bundle weight by removing gameplay/ending scenes from eager app bootstrap and loading them on demand through a shared scene registry.
+- Added Vite manual chunking to split Phaser engine/runtime dependencies into dedicated `phaser` and `vendor` chunks for leaner entry payloads.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, and `bun run build`.
+
 ## [0.8.14] - 2026-04-10
 
 ### Added

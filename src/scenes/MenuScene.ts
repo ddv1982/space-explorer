@@ -9,6 +9,7 @@ import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { createMenuLayoutPlan } from './menuScene/layout';
+import { startRegisteredScene } from './sceneRegistry';
 import {
   createControlsPanel,
   createMenuTitle,
@@ -54,7 +55,7 @@ export class MenuScene extends Phaser.Scene {
       audioManager.init();
       audioManager.playClick();
       resetPlayerState(this.registry);
-      this.scene.start('Game');
+      startRegisteredScene(this, 'Game');
     });
   }
 

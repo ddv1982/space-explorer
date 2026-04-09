@@ -43,6 +43,7 @@ import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { createScaledBossConfig } from '../systems/balance/bossScaling';
 import { resolveSectionMusicIntensity } from '../systems/sectionIdentity';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
+import { startRegisteredScene } from './sceneRegistry';
 
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
@@ -498,7 +499,7 @@ export class GameScene extends Phaser.Scene {
       warpTransition: this.warpTransition,
       stopPlayerMotion: () => this.stopPlayerMotion(),
       runBestEffort: (effect) => this.runBestEffort(effect),
-      startScene: (key) => this.scene.start(key),
+      startScene: (key) => startRegisteredScene(this, key),
       pauseScene: () => this.physics.world.pause(),
       resumeScene: () => this.physics.world.resume(),
       getPlayerRespawnPosition: () => this.getPlayerSpawnPoint(),

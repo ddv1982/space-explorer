@@ -21,6 +21,7 @@ import {
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
 import { getUpgradeGridLayout, type UpgradeButton, type UpgradeGridLayout } from './planetIntermission/shared';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
+import { startRegisteredScene } from './sceneRegistry';
 
 interface IntermissionLayoutMetrics {
   planetNameY: number;
@@ -494,11 +495,11 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     if (this.isFinalMissionComplete) {
       const runSummary = getRunSummary(this.registry);
       setRunSummary(this.registry, { finalScore: runSummary.finalScore, levelReached: this.state.level });
-      this.scene.start('Victory');
+      startRegisteredScene(this, 'Victory');
     } else {
       this.warpTransition.play(() => {
         advanceToNextLevel(this.registry);
-        this.scene.start('Game');
+        startRegisteredScene(this, 'Game');
       });
     }
   }

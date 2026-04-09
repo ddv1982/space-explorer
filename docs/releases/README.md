@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`0.8.15`](./0.8.15.md) — bundle optimization patch with lazy scene registration and explicit Vite chunk splitting
 - [`0.8.14`](./0.8.14.md) — player-death particle budget tuning and opt-in respawn frame probe telemetry
 - [`0.8.13`](./0.8.13.md) — death/respawn hitch fix by unifying respawn timing and limiting pause scope
 - [`0.8.12`](./0.8.12.md) — runtime performance stability pass across pooling, resize/parallax churn, and boss/effects hot paths
