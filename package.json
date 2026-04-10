@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "0.8.15",
+  "version": "0.8.16",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -10,6 +10,8 @@
     "dev": "vite",
     "test": "bun test",
     "build": "tsc && vite build",
+    "bundle:report": "bun scripts/bundle-report.mjs",
+    "bundle:check": "bun scripts/bundle-report.mjs --check",
     "preview": "vite preview",
     "lint": "eslint .",
     "knip": "knip",

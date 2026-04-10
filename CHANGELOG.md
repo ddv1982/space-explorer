@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.16] - 2026-04-10
+
+### Added
+- Added bundle guardrail tooling via `bun run bundle:report` and `bun run bundle:check` to track output size trends and catch regressions with explicit thresholds.
+- Added a scene-flow smoke checklist (`docs/qa/scene-flow-smoke-checklist.md`) for quick pre-release transition verification.
+
+### Changed
+- Expanded scene registry tests to cover pre-registered scene skip behavior and loader-failure no-start behavior.
+- Documented bundle-check usage and threshold rationale in bundle optimization notes.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, `bun run build`, and `bun run bundle:check`.
+
 ## [0.8.15] - 2026-04-10
 
 ### Changed
