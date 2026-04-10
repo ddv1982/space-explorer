@@ -2,6 +2,10 @@
 
 Latest first.
 
+- [`1.0.0`](./1.0.0.md) — major baseline release with consolidated runtime and bundle optimizations
+
+Legacy `0.x` notes remain in this folder for archive/reference, but active release tracking now starts at `v1.0.0`.
+
 - [`0.8.16`](./0.8.16.md) — low-risk follow-up patch with bundle guardrails and scene-flow confidence checks
 - [`0.8.15`](./0.8.15.md) — bundle optimization patch with lazy scene registration and explicit Vite chunk splitting
 - [`0.8.14`](./0.8.14.md) — player-death particle budget tuning and opt-in respawn frame probe telemetry

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-04-10
+
+### Changed
+- Promoted the project to `1.0.0` as a clean major baseline release.
+- Reset remote release/tag history and published a single major release track starting at `v1.0.0`.
+
+### Included Improvements
+- Runtime smoothness optimizations from recent `0.8.x` work (pool lifecycle hardening, resize/parallax churn reductions, death/respawn smoothing).
+- Bundle startup improvements (lazy scene registration and explicit chunk splitting) plus new bundle guardrail tooling (`bundle:report` / `bundle:check`).
+- Additional scene-flow confidence coverage and a release smoke-check checklist.
+
+### Quality
+- Verified with `bun run levels:validate`, `bun test`, `bun run build`, and `bun run bundle:check`.
+
 ## [0.8.16] - 2026-04-10
 
 ### Added
