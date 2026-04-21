@@ -79,6 +79,14 @@ export interface ScriptedHazardConfig {
   notes?: string;
 }
 
+export interface LevelSectionVisualModifierConfig {
+  atmosphereAlpha?: number;
+  driftScale?: number;
+  twinkleScale?: number;
+  landmarkAlpha?: number;
+  hazardResponseScale?: number;
+}
+
 export interface LevelSectionConfig {
   id: string;
   label: string;
@@ -92,6 +100,7 @@ export interface LevelSectionConfig {
   asteroidInterval?: number;
   hazardEvents?: ScriptedHazardConfig[];
   musicIntensity?: number;
+  visualModifiers?: LevelSectionVisualModifierConfig;
   // VAT emotion targets for this section
   vatTarget?: {
     valence: number;   // -1.0 to 1.0

@@ -7,7 +7,7 @@ import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from './boss/behavior';
 import { getViewportBounds } from '../../utils/layout';
-import { ensureBossTexture } from '../../utils/SpriteFactory';
+import { ensureBossTextureVariant } from '../../utils/SpriteFactory';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -53,9 +53,9 @@ export class Boss extends EnemyBase {
   private playerRef: Player | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureBossTexture(scene);
+    const textureKey = ensureBossTextureVariant(scene, DEFAULT_BOSS_CONFIG.attackStyle, DEFAULT_BOSS_CONFIG.name);
 
-    super(scene, x, y, 'boss-texture');
+    super(scene, x, y, textureKey);
     this.maxHp = DEFAULT_BOSS_CONFIG.maxHp;
     this.hp = DEFAULT_BOSS_CONFIG.maxHp;
     this.speed = 0;
@@ -87,6 +87,7 @@ export class Boss extends EnemyBase {
 
   spawn(x: number, y: number, config: BossConfig = DEFAULT_BOSS_CONFIG): void {
     this.applyConfig(config);
+    this.setTexture(ensureBossTextureVariant(this.scene, config.attackStyle, config.name));
     super.spawn(x, y);
     this.phase = 1;
     this.arrived = false;

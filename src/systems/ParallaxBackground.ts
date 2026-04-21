@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { SCROLL_SPEED } from '../utils/constants';
-import type { LevelConfig } from '../config/LevelsConfig';
+import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../config/LevelsConfig';
 import { mixColor } from '../utils/colorUtils';
 import { generateScenicTexture } from './parallax/scenicTextureGenerator';
 import { generatePlanetTexture } from './parallax/planetTextureGenerator';
@@ -43,6 +43,8 @@ interface TwinkleState {
   speed: number;
   minAlpha: number;
   maxAlpha: number;
+  baseMinAlpha: number;
+  baseMaxAlpha: number;
 }
 
 interface ScenicLayerState {
@@ -50,6 +52,7 @@ interface ScenicLayerState {
   textureKey: string;
   baseX: number;
   baseY: number;
+  baseAlpha: number;
   driftX: number;
   driftY: number;
   speed: number;
@@ -61,12 +64,14 @@ interface PlanetLayerState {
   textureKey: string;
   baseX: number;
   baseY: number;
+  baseAlpha: number;
 }
 
 interface DebrisMote {
   sprite: Phaser.GameObjects.Image;
   baseX: number;
   baseY: number;
+  baseAlpha: number;
   speed: number;
   driftX: number;
   driftY: number;
@@ -78,6 +83,7 @@ interface PassingPlanetState {
   sprite: Phaser.GameObjects.Image;
   scrollSpeed: number;
   baseY: number;
+  baseAlpha: number;
 }
 
 interface MoonSurfaceState {
@@ -85,8 +91,19 @@ interface MoonSurfaceState {
   textureKey: string;
   baseX: number;
   baseY: number;
+  baseAlpha: number;
   motionSpeed: number;
   motionAmplitude: number;
+}
+
+interface ForegroundSilhouetteState {
+  sprite: Phaser.GameObjects.Image;
+  baseX: number;
+  baseY: number;
+  driftX: number;
+  driftY: number;
+  phase: number;
+  alpha: number;
 }
 
 const LAYER_CONFIGS: StarLayerConfig[] = [
@@ -158,6 +175,20 @@ export class ParallaxBackground {
   private currentWidth = 0;
   private currentHeight = 0;
   private pendingRebuildEvent: Phaser.Time.TimerEvent | null = null;
+  private atmosphereAlpha = 1;
+  private targetAtmosphereAlpha = 1;
+  private atmosphereDrift = 1;
+  private targetAtmosphereDrift = 1;
+  private atmosphereTwinkle = 1;
+  private targetAtmosphereTwinkle = 1;
+  private landmarkAlpha = 1;
+  private targetLandmarkAlpha = 1;
+  private hazardOverlayAlpha = 0;
+  private targetHazardOverlayAlpha = 0;
+  private hazardResponseScale = 1;
+  private activeHazards: ScriptedHazardConfig[] = [];
+  private hazardOverlay: Phaser.GameObjects.Graphics | null = null;
+  private foregroundSilhouettes: ForegroundSilhouetteState[] = [];
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
@@ -167,9 +198,22 @@ export class ParallaxBackground {
     this.tileSprites = [];
     this.scenicLayers = [];
     this.debrisMotes = [];
+    this.foregroundSilhouettes = [];
     this.elapsed = 0;
     this.currentWidth = scene.cameras.main.width;
     this.currentHeight = scene.cameras.main.height;
+    this.atmosphereAlpha = 1;
+    this.targetAtmosphereAlpha = 1;
+    this.atmosphereDrift = 1;
+    this.targetAtmosphereDrift = 1;
+    this.atmosphereTwinkle = 1;
+    this.targetAtmosphereTwinkle = 1;
+    this.landmarkAlpha = 1;
+    this.targetLandmarkAlpha = 1;
+    this.hazardOverlayAlpha = 0;
+    this.targetHazardOverlayAlpha = 0;
+    this.hazardResponseScale = 1;
+    this.activeHazards = [];
 
     for (let i = 0; i < LAYER_CONFIGS.length; i++) {
       const config = LAYER_CONFIGS[i];
@@ -250,6 +294,9 @@ export class ParallaxBackground {
       this.createLevelVisualLayers(scene, levelConfig);
     }
 
+    this.hazardOverlay = scene.add.graphics();
+    this.hazardOverlay.setDepth(-5);
+
     this.layoutTileSprites();
   }
 
@@ -275,6 +322,7 @@ export class ParallaxBackground {
       textureKey,
       baseX: centerX,
       baseY: bottomY,
+      baseAlpha: 0.45,
       motionSpeed: Math.max(MOON_SURFACE_MIN_MOTION_SPEED, ms.scrollSpeed * MOON_SURFACE_MOTION_SPEED_SCALE),
       motionAmplitude: MOON_SURFACE_BASE_AMPLITUDE + ms.scrollSpeed * MOON_SURFACE_AMPLITUDE_SCALE,
     };
@@ -287,6 +335,7 @@ export class ParallaxBackground {
     this.createPlanetLayer(scene, config);
     this.createDebrisMotes(scene, config);
     this.createStarTwinkles(scene, config);
+    this.createForegroundSilhouettes(scene, config);
   }
 
   private destroyLevelVisualLayers(): void {
@@ -296,6 +345,74 @@ export class ParallaxBackground {
     this.destroyPlanetLayer();
     this.destroyDebrisMotes();
     this.destroyTwinkles();
+    this.destroyForegroundSilhouettes();
+  }
+
+  private createForegroundSilhouettes(scene: Phaser.Scene, config: LevelConfig): void {
+    const silhouetteColor = mixColor(config.accentColor, 0x000000, 0.82);
+    const height = this.currentHeight;
+    const width = this.currentWidth;
+    const specs = [
+      { edge: 'left' as const, w: 110, h: height * 0.62, y: height * 0.56 },
+      { edge: 'right' as const, w: 128, h: height * 0.68, y: height * 0.54 },
+    ];
+
+    for (const spec of specs) {
+      const textureKey = `foreground-silhouette-${spec.edge}-${Math.round(spec.w)}x${Math.round(spec.h)}-${config.accentColor.toString(16)}`;
+
+      if (!scene.textures.exists(textureKey)) {
+        const g = scene.add.graphics();
+        g.fillStyle(silhouetteColor, 1);
+
+        if (spec.edge === 'left') {
+          g.beginPath();
+          g.moveTo(0, spec.h);
+          g.lineTo(spec.w * 0.22, spec.h * 0.12);
+          g.lineTo(spec.w * 0.48, spec.h * 0.34);
+          g.lineTo(spec.w * 0.65, spec.h * 0.18);
+          g.lineTo(spec.w * 0.82, spec.h * 0.42);
+          g.lineTo(spec.w, spec.h * 0.5);
+          g.lineTo(spec.w, spec.h);
+          g.closePath();
+          g.fillPath();
+        } else {
+          g.beginPath();
+          g.moveTo(0, spec.h * 0.5);
+          g.lineTo(spec.w * 0.18, spec.h * 0.42);
+          g.lineTo(spec.w * 0.35, spec.h * 0.14);
+          g.lineTo(spec.w * 0.58, spec.h * 0.3);
+          g.lineTo(spec.w * 0.82, spec.h * 0.08);
+          g.lineTo(spec.w, spec.h);
+          g.lineTo(0, spec.h);
+          g.closePath();
+          g.fillPath();
+        }
+
+        g.generateTexture(textureKey, Math.ceil(spec.w), Math.ceil(spec.h));
+        g.destroy();
+      }
+
+      const x = spec.edge === 'left' ? spec.w * 0.5 : width - spec.w * 0.5;
+      const sprite = scene.add.image(x, spec.y, textureKey);
+      sprite.setDepth(-1);
+      sprite.setAlpha(0.09);
+      this.foregroundSilhouettes.push({
+        sprite,
+        baseX: x,
+        baseY: spec.y,
+        driftX: spec.edge === 'left' ? 6 : -8,
+        driftY: 4,
+        phase: Phaser.Math.FloatBetween(0, Math.PI * 2),
+        alpha: 0.09,
+      });
+    }
+  }
+
+  private destroyForegroundSilhouettes(): void {
+    for (const silhouette of this.foregroundSilhouettes) {
+      silhouette.sprite.destroy();
+    }
+    this.foregroundSilhouettes = [];
   }
 
   private rebuildLevelVisualLayers(scene: Phaser.Scene, config: LevelConfig): void {
@@ -319,6 +436,7 @@ export class ParallaxBackground {
         sprite,
         scrollSpeed: pp.scrollSpeed,
         baseY: y,
+        baseAlpha: pp.alpha,
       });
 
       this.resetPassingPlanetPosition(this.passingPlanetSprites[this.passingPlanetSprites.length - 1]);
@@ -380,6 +498,215 @@ export class ParallaxBackground {
     this.elapsed = 0;
     this.currentWidth = 0;
     this.currentHeight = 0;
+    this.atmosphereAlpha = 1;
+    this.targetAtmosphereAlpha = 1;
+    this.atmosphereDrift = 1;
+    this.targetAtmosphereDrift = 1;
+    this.atmosphereTwinkle = 1;
+    this.targetAtmosphereTwinkle = 1;
+    this.landmarkAlpha = 1;
+    this.targetLandmarkAlpha = 1;
+    this.hazardOverlayAlpha = 0;
+    this.targetHazardOverlayAlpha = 0;
+    this.hazardResponseScale = 1;
+    this.activeHazards = [];
+    this.hazardOverlay?.destroy();
+    this.hazardOverlay = null;
+  }
+
+  setSectionAtmosphere(section: LevelSectionConfig | null, sectionProgress: number): void {
+    if (!section) {
+      this.targetAtmosphereAlpha = 1;
+      this.targetAtmosphereDrift = 1;
+      this.targetAtmosphereTwinkle = 1;
+      this.targetLandmarkAlpha = 1;
+      this.targetHazardOverlayAlpha = 0;
+      this.hazardResponseScale = 1;
+      this.activeHazards = [];
+      return;
+    }
+
+    const progress = Phaser.Math.Clamp(sectionProgress, 0, 1);
+    const musicIntensity = section.musicIntensity ?? 0.5;
+    const tension = Phaser.Math.Clamp(section.vatTarget?.tension ?? 0.4, 0, 1);
+    const visualModifiers = section.visualModifiers;
+    const atmosphereScale = visualModifiers?.atmosphereAlpha ?? 1;
+    const driftScale = visualModifiers?.driftScale ?? 1;
+    const twinkleScale = visualModifiers?.twinkleScale ?? 1;
+    const landmarkScale = visualModifiers?.landmarkAlpha ?? 1;
+    this.hazardResponseScale = visualModifiers?.hazardResponseScale ?? 1;
+    this.activeHazards = section.hazardEvents ?? [];
+
+    let phaseAlphaBias = 0;
+    let phaseDriftBias = 0;
+    let phaseTwinkleBias = 0;
+
+    switch (section.phase) {
+      case 'build':
+        phaseAlphaBias = 0.04;
+        phaseDriftBias = 0.03;
+        phaseTwinkleBias = 0.03;
+        break;
+      case 'hazard':
+        phaseAlphaBias = 0.07;
+        phaseDriftBias = 0.06;
+        phaseTwinkleBias = 0.04;
+        break;
+      case 'climax':
+        phaseAlphaBias = 0.1;
+        phaseDriftBias = 0.08;
+        phaseTwinkleBias = 0.06;
+        break;
+      case 'boss-approach':
+        phaseAlphaBias = -0.04;
+        phaseDriftBias = -0.03;
+        phaseTwinkleBias = -0.16;
+        break;
+      case 'intro':
+      default:
+        phaseAlphaBias = -0.02;
+        phaseDriftBias = -0.01;
+        phaseTwinkleBias = -0.03;
+        break;
+    }
+
+    this.targetAtmosphereAlpha = Phaser.Math.Clamp(
+      0.94 + musicIntensity * 0.14 + tension * 0.08 + progress * 0.04 + phaseAlphaBias,
+      0.82,
+      1.14
+    ) * atmosphereScale;
+    this.targetAtmosphereAlpha = Phaser.Math.Clamp(this.targetAtmosphereAlpha, 0.8, 1.18);
+
+    this.targetAtmosphereDrift = Phaser.Math.Clamp(
+      0.95 + musicIntensity * 0.08 + tension * 0.08 + phaseDriftBias,
+      0.9,
+      1.16
+    ) * driftScale;
+    this.targetAtmosphereDrift = Phaser.Math.Clamp(this.targetAtmosphereDrift, 0.88, 1.2);
+
+    this.targetAtmosphereTwinkle = Phaser.Math.Clamp(
+      0.92 + musicIntensity * 0.1 + tension * 0.06 + phaseTwinkleBias,
+      0.72,
+      1.18
+    ) * twinkleScale;
+    this.targetAtmosphereTwinkle = Phaser.Math.Clamp(this.targetAtmosphereTwinkle, 0.65, 1.22);
+
+    this.targetLandmarkAlpha = Phaser.Math.Clamp(
+      (0.94 + tension * 0.12 + progress * 0.05) * landmarkScale,
+      0.78,
+      1.22
+    );
+
+    const hazardIntensity = this.getHazardVisualIntensity(section.hazardEvents ?? []);
+    this.targetHazardOverlayAlpha = Phaser.Math.Clamp(hazardIntensity * 0.18 * this.hazardResponseScale, 0, 0.22);
+  }
+
+  private getHazardVisualIntensity(hazards: ScriptedHazardConfig[]): number {
+    if (hazards.length === 0) {
+      return 0;
+    }
+
+    const total = hazards.reduce((sum, hazard) => sum + (hazard.intensity ?? 0.5), 0);
+    return Phaser.Math.Clamp(total / hazards.length, 0, 1.2);
+  }
+
+  private getHazardIntensity(type: ScriptedHazardConfig['type']): number {
+    return Phaser.Math.Clamp(
+      this.activeHazards
+        .filter((hazard) => hazard.type === type)
+        .reduce((sum, hazard) => sum + (hazard.intensity ?? 0.5), 0),
+      0,
+      1.8
+    );
+  }
+
+  private updateHazardOverlay(): void {
+    const overlay = this.hazardOverlay;
+    if (!overlay) {
+      return;
+    }
+
+    overlay.clear();
+    this.hazardOverlayAlpha = Phaser.Math.Linear(this.hazardOverlayAlpha, this.targetHazardOverlayAlpha, 0.12);
+
+    if (this.hazardOverlayAlpha <= 0.005 || !this.scene) {
+      return;
+    }
+
+    const width = this.currentWidth;
+    const height = this.currentHeight;
+    const time = this.elapsed;
+    const accentColor = this.levelConfig?.accentColor ?? 0xffffff;
+
+    const energyStorm = this.getHazardIntensity('energy-storm');
+    if (energyStorm > 0) {
+      const stormAlpha = this.hazardOverlayAlpha * 0.45 * energyStorm;
+      for (const ratio of [0.18, 0.48, 0.78]) {
+        const x = width * ratio;
+        const pulse = (Math.sin(time * 0.01 + ratio * 10) + 1) / 2;
+        overlay.lineStyle(2, mixColor(accentColor, 0xffffff, 0.35), stormAlpha * (0.35 + pulse * 0.45));
+        overlay.lineBetween(x, 0, x + Math.sin(time * 0.004 + ratio) * 12, height * 0.34);
+      }
+    }
+
+    const gravityWell = this.getHazardIntensity('gravity-well');
+    if (gravityWell > 0) {
+      const ringAlpha = this.hazardOverlayAlpha * 0.32 * gravityWell;
+      const cx = width * 0.5 + Math.sin(time * 0.001) * 24;
+      const cy = height * 0.24;
+      overlay.lineStyle(2, mixColor(accentColor, 0xffffff, 0.25), ringAlpha);
+      overlay.strokeEllipse(cx, cy, width * 0.18, height * 0.11);
+      overlay.lineStyle(1, mixColor(accentColor, 0xffffff, 0.45), ringAlpha * 0.7);
+      overlay.strokeEllipse(cx, cy, width * 0.26, height * 0.15);
+    }
+
+    const nebulaAmbush = this.getHazardIntensity('nebula-ambush');
+    if (nebulaAmbush > 0) {
+      const fogAlpha = this.hazardOverlayAlpha * 0.2 * nebulaAmbush;
+      overlay.fillStyle(mixColor(accentColor, 0xffffff, 0.18), fogAlpha);
+      overlay.fillEllipse(width * 0.08, height * 0.45, width * 0.18, height * 0.52);
+      overlay.fillEllipse(width * 0.92, height * 0.42, width * 0.2, height * 0.46);
+    }
+
+    const ringCrossfire = this.getHazardIntensity('ring-crossfire');
+    if (ringCrossfire > 0) {
+      const arcAlpha = this.hazardOverlayAlpha * 0.26 * ringCrossfire;
+      overlay.lineStyle(2, mixColor(accentColor, 0xffffff, 0.28), arcAlpha);
+      overlay.beginPath();
+      overlay.arc(width * 0.16, height * 0.26, width * 0.16, -0.35, 0.55);
+      overlay.strokePath();
+      overlay.beginPath();
+      overlay.arc(width * 0.84, height * 0.26, width * 0.16, 2.59, 3.49);
+      overlay.strokePath();
+    }
+
+    const debrisSurge = this.getHazardIntensity('debris-surge');
+    if (debrisSurge > 0) {
+      const streakAlpha = this.hazardOverlayAlpha * 0.18 * debrisSurge;
+      overlay.lineStyle(1.5, mixColor(0x8899aa, accentColor, 0.2), streakAlpha);
+      for (const ratio of [0.12, 0.28, 0.72, 0.88]) {
+        const x = width * ratio;
+        overlay.lineBetween(x - 20, height * 0.18, x + 18, height * 0.34);
+      }
+    }
+
+    const minefield = this.getHazardIntensity('minefield');
+    if (minefield > 0) {
+      const mineAlpha = this.hazardOverlayAlpha * 0.16 * minefield;
+      overlay.fillStyle(mixColor(accentColor, 0xffcc88, 0.35), mineAlpha);
+      for (const ratio of [0.15, 0.24, 0.76, 0.85]) {
+        overlay.fillCircle(width * ratio, height * 0.62, 2);
+        overlay.fillCircle(width * (ratio + 0.02), height * 0.68, 1.6);
+      }
+    }
+
+    const rockCorridor = this.getHazardIntensity('rock-corridor');
+    if (rockCorridor > 0) {
+      const edgeAlpha = this.hazardOverlayAlpha * 0.18 * rockCorridor;
+      overlay.fillStyle(0x0b0d12, edgeAlpha);
+      overlay.fillTriangle(0, height * 0.18, width * 0.11, height * 0.42, 0, height * 0.76);
+      overlay.fillTriangle(width, height * 0.18, width * 0.89, height * 0.42, width, height * 0.76);
+    }
   }
 
   private scheduleLevelVisualRebuild(): void {
@@ -437,6 +764,7 @@ export class ParallaxBackground {
         textureKey,
         baseX: centerX,
         baseY: centerY,
+        baseAlpha: layer.alpha,
         driftX: layer.drift.x,
         driftY: layer.drift.y,
         speed: layer.speed,
@@ -471,6 +799,7 @@ export class ParallaxBackground {
       textureKey,
       baseX: centerX,
       baseY: centerY,
+      baseAlpha: 0.25,
     };
   }
 
@@ -511,6 +840,7 @@ export class ParallaxBackground {
         sprite,
         baseX: x,
         baseY: y,
+        baseAlpha: sprite.alpha,
         speed: Phaser.Math.FloatBetween(0.0003, 0.001),
         driftX: Phaser.Math.FloatBetween(10, 40),
         driftY: Phaser.Math.FloatBetween(5, 20),
@@ -571,7 +901,13 @@ export class ParallaxBackground {
         speed: Phaser.Math.FloatBetween(0.0008, 0.003),
         minAlpha: Phaser.Math.FloatBetween(0, 0.15),
         maxAlpha: Phaser.Math.FloatBetween(0.3, 0.8),
+        baseMinAlpha: 0,
+        baseMaxAlpha: 0,
       });
+
+      const state = this.twinkles[this.twinkles.length - 1];
+      state.baseMinAlpha = state.minAlpha;
+      state.baseMaxAlpha = state.maxAlpha;
     }
   }
 
@@ -581,6 +917,10 @@ export class ParallaxBackground {
 
   update(delta: number): void {
     this.elapsed += delta;
+    this.atmosphereAlpha = Phaser.Math.Linear(this.atmosphereAlpha, this.targetAtmosphereAlpha, 0.08);
+    this.atmosphereDrift = Phaser.Math.Linear(this.atmosphereDrift, this.targetAtmosphereDrift, 0.08);
+    this.atmosphereTwinkle = Phaser.Math.Linear(this.atmosphereTwinkle, this.targetAtmosphereTwinkle, 0.08);
+    this.landmarkAlpha = Phaser.Math.Linear(this.landmarkAlpha, this.targetLandmarkAlpha, 0.08);
 
     // Star layers scroll
     for (let i = 0; i < this.tileSprites.length; i++) {
@@ -591,9 +931,10 @@ export class ParallaxBackground {
     // Nebula drift
     for (let i = 0; i < this.scenicLayers.length; i++) {
       const layer = this.scenicLayers[i];
-      const phase = this.elapsed * layer.speed + layer.phase;
-      layer.sprite.x = layer.baseX + Math.sin(phase) * layer.driftX;
-      layer.sprite.y = layer.baseY + Math.cos(phase * 0.85) * layer.driftY;
+      const phase = this.elapsed * layer.speed * this.atmosphereDrift + layer.phase;
+      layer.sprite.x = layer.baseX + Math.sin(phase) * layer.driftX * this.atmosphereDrift;
+      layer.sprite.y = layer.baseY + Math.cos(phase * 0.85) * layer.driftY * this.atmosphereDrift;
+      layer.sprite.setAlpha(Phaser.Math.Clamp(layer.baseAlpha * this.atmosphereAlpha, 0.16, 0.95));
     }
 
     // Planet parallax drift (very slow)
@@ -601,6 +942,9 @@ export class ParallaxBackground {
       const phase = this.elapsed * 0.00004;
       this.planetLayer.sprite.x = this.planetLayer.baseX + Math.sin(phase) * 30;
       this.planetLayer.sprite.y = this.planetLayer.baseY + Math.cos(phase * 0.6) * 15;
+      this.planetLayer.sprite.setAlpha(
+        Phaser.Math.Clamp(this.planetLayer.baseAlpha * (0.92 + (this.atmosphereAlpha - 1) * 0.6) * this.landmarkAlpha, 0.12, 0.4)
+      );
     }
 
     // Debris mote floating
@@ -610,6 +954,7 @@ export class ParallaxBackground {
       mote.sprite.x = mote.baseX + Math.sin(phase) * mote.driftX;
       mote.sprite.y = mote.baseY + Math.cos(phase * 0.7) * mote.driftY;
       mote.sprite.angle += mote.rotSpeed * delta / 16;
+      mote.sprite.setAlpha(Phaser.Math.Clamp(mote.baseAlpha * this.atmosphereAlpha, 0.08, 0.45));
     }
 
     // Star twinkle shimmer
@@ -617,7 +962,9 @@ export class ParallaxBackground {
       const twinkle = this.twinkles[i];
       const t = Math.sin(this.elapsed * twinkle.speed + twinkle.phase);
       const normalizedT = (t + 1) / 2;
-      twinkle.sprite.setAlpha(twinkle.minAlpha + normalizedT * (twinkle.maxAlpha - twinkle.minAlpha));
+      const minAlpha = twinkle.baseMinAlpha * this.atmosphereTwinkle;
+      const maxAlpha = twinkle.baseMaxAlpha * this.atmosphereTwinkle;
+      twinkle.sprite.setAlpha(minAlpha + normalizedT * (maxAlpha - minAlpha));
     }
 
     // Moon surface scroll
@@ -626,16 +973,31 @@ export class ParallaxBackground {
       const scrollOffset = Math.sin(phase) * this.moonSurface.motionAmplitude;
       this.moonSurface.sprite.x = this.moonSurface.baseX + scrollOffset;
       this.moonSurface.sprite.y = this.moonSurface.baseY;
+      this.moonSurface.sprite.setAlpha(
+        Phaser.Math.Clamp(this.moonSurface.baseAlpha * (0.94 + (this.atmosphereAlpha - 1) * 0.5) * this.landmarkAlpha, 0.24, 0.62)
+      );
     }
 
     // Passing planets drift
     for (let i = 0; i < this.passingPlanetSprites.length; i++) {
       const pp = this.passingPlanetSprites[i];
       pp.sprite.x -= pp.scrollSpeed * SCROLL_SPEED * delta / 16;
+      pp.sprite.setAlpha(Phaser.Math.Clamp(pp.baseAlpha * this.atmosphereAlpha * this.landmarkAlpha, 0.05, 0.28));
       if (pp.sprite.x < this.getPassingPlanetOffscreenThreshold(pp.sprite)) {
         this.resetPassingPlanetPosition(pp);
       }
     }
+
+    // Edge-only foreground silhouettes
+    for (let i = 0; i < this.foregroundSilhouettes.length; i++) {
+      const silhouette = this.foregroundSilhouettes[i];
+      const phase = this.elapsed * 0.00022 + silhouette.phase;
+      silhouette.sprite.x = silhouette.baseX + Math.sin(phase) * silhouette.driftX;
+      silhouette.sprite.y = silhouette.baseY + Math.cos(phase * 0.7) * silhouette.driftY;
+      silhouette.sprite.setAlpha(Phaser.Math.Clamp(silhouette.alpha * this.landmarkAlpha, 0.04, 0.14));
+    }
+
+    this.updateHazardOverlay();
   }
 
   // ---------------------------------------------------------------------------

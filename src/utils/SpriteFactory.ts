@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { BossAttackStyle } from '../config/levels/types';
 
 /**
  * Centralized procedural sprite generation for Space Explorer.
@@ -27,99 +28,97 @@ function ensureTexture(
 // ---------------------------------------------------------------------------
 export function ensurePlayerTexture(scene: Phaser.Scene): string {
   return ensureTexture(scene, 'player-ship', 36, 44, (g) => {
-    // Main hull body (dark blue-gray base)
-    g.fillStyle(0x1a2a44, 1);
+    // Main guardian-lancer hull
+    g.fillStyle(0x16243b, 1);
     g.beginPath();
-    g.moveTo(18, 0);   // nose
-    g.lineTo(34, 32);
-    g.lineTo(28, 40);
-    g.lineTo(18, 36);
-    g.lineTo(8, 40);
-    g.lineTo(2, 32);
+    g.moveTo(18, 1);
+    g.lineTo(28, 10);
+    g.lineTo(35, 30);
+    g.lineTo(29, 37);
+    g.lineTo(25, 43);
+    g.lineTo(18, 39);
+    g.lineTo(11, 43);
+    g.lineTo(7, 37);
+    g.lineTo(1, 30);
+    g.lineTo(8, 10);
     g.closePath();
     g.fillPath();
 
-    // Upper hull highlight
-    g.fillStyle(0x2a4a6a, 1);
+    // Shoulder wings for clearer silhouette
+    g.fillStyle(0x24466e, 1);
     g.beginPath();
-    g.moveTo(18, 2);
-    g.lineTo(30, 28);
-    g.lineTo(18, 24);
-    g.lineTo(6, 28);
+    g.moveTo(8, 12);
+    g.lineTo(2, 28);
+    g.lineTo(7, 28);
+    g.lineTo(13, 19);
+    g.lineTo(12, 14);
+    g.closePath();
+    g.fillPath();
+    g.beginPath();
+    g.moveTo(28, 12);
+    g.lineTo(34, 28);
+    g.lineTo(29, 28);
+    g.lineTo(23, 19);
+    g.lineTo(24, 14);
     g.closePath();
     g.fillPath();
 
-    // Center hull accent (brighter stripe)
-    g.fillStyle(0x00ccff, 1);
+    // Dorsal spine and inner fuselage
+    g.fillStyle(0x2f5b8c, 1);
+    g.beginPath();
+    g.moveTo(18, 3);
+    g.lineTo(23, 14);
+    g.lineTo(22, 31);
+    g.lineTo(18, 35);
+    g.lineTo(14, 31);
+    g.lineTo(13, 14);
+    g.closePath();
+    g.fillPath();
+
+    // Split nose notch / forward accent
+    g.fillStyle(0x00d4ff, 0.95);
     g.beginPath();
     g.moveTo(18, 4);
-    g.lineTo(24, 26);
-    g.lineTo(18, 22);
-    g.lineTo(12, 26);
+    g.lineTo(20, 11);
+    g.lineTo(18, 13);
+    g.lineTo(16, 11);
     g.closePath();
     g.fillPath();
+    g.fillRect(17, 12, 2, 12);
 
     // Cockpit canopy
-    g.fillStyle(0x44eeff, 0.9);
+    g.fillStyle(0x76efff, 0.9);
     g.beginPath();
-    g.moveTo(18, 8);
+    g.moveTo(18, 10);
     g.lineTo(21, 16);
-    g.lineTo(18, 18);
+    g.lineTo(18, 19);
     g.lineTo(15, 16);
     g.closePath();
     g.fillPath();
+    g.fillStyle(0xd6ffff, 0.45);
+    g.fillCircle(17.4, 12.6, 1.2);
 
-    // Cockpit reflection
-    g.fillStyle(0xaafaff, 0.5);
-    g.beginPath();
-    g.moveTo(18, 9);
-    g.lineTo(19, 13);
-    g.lineTo(18, 14);
-    g.lineTo(17, 13);
-    g.closePath();
-    g.fillPath();
+    // Wing tip accents
+    g.fillStyle(0x2cc4ff, 0.8);
+    g.fillTriangle(2, 28, 7, 28, 8, 35);
+    g.fillTriangle(34, 28, 29, 28, 28, 35);
 
-    // Wing tip accents (port)
-    g.fillStyle(0x00aaff, 0.8);
-    g.beginPath();
-    g.moveTo(2, 32);
-    g.lineTo(6, 28);
-    g.lineTo(8, 36);
-    g.closePath();
-    g.fillPath();
+    // Engine nacelles and glow
+    g.fillStyle(0x2f4052, 1);
+    g.fillRect(9, 36, 5, 7);
+    g.fillRect(22, 36, 5, 7);
+    g.fillStyle(0x00e5ff, 0.75);
+    g.fillCircle(11.5, 41.5, 2.2);
+    g.fillCircle(24.5, 41.5, 2.2);
+    g.fillStyle(0xffffff, 0.7);
+    g.fillCircle(11.5, 41.2, 0.8);
+    g.fillCircle(24.5, 41.2, 0.8);
 
-    // Wing tip accents (starboard)
-    g.beginPath();
-    g.moveTo(34, 32);
-    g.lineTo(30, 28);
-    g.lineTo(28, 36);
-    g.closePath();
-    g.fillPath();
-
-    // Engine nozzle (port)
-    g.fillStyle(0x334455, 1);
-    g.fillRect(10, 38, 5, 6);
-
-    // Engine nozzle (starboard)
-    g.fillRect(21, 38, 5, 6);
-
-    // Engine glow (port)
-    g.fillStyle(0x00ddff, 0.7);
-    g.fillCircle(12, 42, 2);
-
-    // Engine glow (starboard)
-    g.fillCircle(24, 42, 2);
-
-    // Panel lines
-    g.lineStyle(1, 0x3366aa, 0.3);
-    g.beginPath();
-    g.moveTo(18, 6);
-    g.lineTo(18, 36);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(10, 30);
-    g.lineTo(26, 30);
-    g.strokePath();
+    // Panel rhythm
+    g.lineStyle(1, 0x4c87bf, 0.28);
+    g.lineBetween(18, 6, 18, 34);
+    g.lineBetween(10, 30, 15, 27);
+    g.lineBetween(26, 30, 21, 27);
   });
 }
 
@@ -128,49 +127,43 @@ export function ensurePlayerTexture(scene: Phaser.Scene): string {
 // ---------------------------------------------------------------------------
 export function ensureHelperShipTexture(scene: Phaser.Scene): string {
   return ensureTexture(scene, 'helper-ship', 24, 30, (g) => {
-    // Main hull
-    g.fillStyle(0x16283f, 1);
+    // Escort drone body
+    g.fillStyle(0x17283f, 1);
+    g.fillRoundedRect(7, 5, 10, 16, 4);
+
+    // Forward lancer nose
     g.beginPath();
-    g.moveTo(12, 1);
-    g.lineTo(22, 19);
-    g.lineTo(18, 27);
-    g.lineTo(12, 24);
-    g.lineTo(6, 27);
-    g.lineTo(2, 19);
+    g.moveTo(12, 0);
+    g.lineTo(17, 7);
+    g.lineTo(12, 8);
+    g.lineTo(7, 7);
     g.closePath();
     g.fillPath();
 
-    // Inner hull highlight
-    g.fillStyle(0x2d567d, 1);
-    g.beginPath();
-    g.moveTo(12, 3);
-    g.lineTo(18, 17);
-    g.lineTo(12, 16);
-    g.lineTo(6, 17);
-    g.closePath();
-    g.fillPath();
+    // Outriggers / stabilizers
+    g.fillStyle(0x274a73, 1);
+    g.fillRoundedRect(1, 12, 7, 7, 2);
+    g.fillRoundedRect(16, 12, 7, 7, 2);
+    g.fillTriangle(1, 19, 6, 17, 6, 23);
+    g.fillTriangle(23, 19, 18, 17, 18, 23);
 
-    // Accent stripe
-    g.fillStyle(0x52dcff, 0.95);
-    g.fillRect(11, 5, 2, 12);
-
-    // Cockpit glow
-    g.fillStyle(0x9befff, 0.9);
+    // Inner accent band
+    g.fillStyle(0x4fd9ff, 0.95);
+    g.fillRect(11, 5, 2, 13);
+    g.fillStyle(0x9bf2ff, 0.9);
     g.fillCircle(12, 10, 2);
 
-    // Wing tips
-    g.fillStyle(0x49b7ff, 0.85);
-    g.fillTriangle(2, 19, 6, 17, 6, 23);
-    g.fillTriangle(22, 19, 18, 17, 18, 23);
+    // Twin thrusters
+    g.fillStyle(0x31485e, 1);
+    g.fillRect(5, 22, 4, 6);
+    g.fillRect(15, 22, 4, 6);
+    g.fillStyle(0x74efff, 0.82);
+    g.fillCircle(7, 28, 1.7);
+    g.fillCircle(17, 28, 1.7);
 
-    // Engines
-    g.fillStyle(0x334e66, 1);
-    g.fillRect(7, 24, 3, 5);
-    g.fillRect(14, 24, 3, 5);
-
-    g.fillStyle(0x71ecff, 0.8);
-    g.fillCircle(8.5, 28, 1.4);
-    g.fillCircle(15.5, 28, 1.4);
+    // Visual rest / panel hints
+    g.lineStyle(1, 0x3e78a8, 0.25);
+    g.lineBetween(12, 4, 12, 21);
   });
 }
 
@@ -179,55 +172,39 @@ export function ensureHelperShipTexture(scene: Phaser.Scene): string {
 // ---------------------------------------------------------------------------
 export function ensureScoutTexture(scene: Phaser.Scene): string {
   return ensureTexture(scene, 'scout-texture', 26, 28, (g) => {
-    // Main body (dark red)
-    g.fillStyle(0x881122, 1);
+    // Stiletto body
+    g.fillStyle(0x6d0d1d, 1);
     g.beginPath();
     g.moveTo(13, 0);
-    g.lineTo(24, 20);
-    g.lineTo(20, 28);
-    g.lineTo(6, 28);
-    g.lineTo(2, 20);
+    g.lineTo(18, 10);
+    g.lineTo(17, 22);
+    g.lineTo(13, 28);
+    g.lineTo(9, 22);
+    g.lineTo(8, 10);
     g.closePath();
     g.fillPath();
 
-    // Upper hull highlight
-    g.fillStyle(0xcc2244, 1);
-    g.beginPath();
-    g.moveTo(13, 2);
-    g.lineTo(20, 18);
-    g.lineTo(13, 16);
-    g.lineTo(6, 18);
-    g.closePath();
-    g.fillPath();
+    // Needle fins
+    g.fillStyle(0xb81d32, 1);
+    g.fillTriangle(8, 10, 2, 20, 8, 19);
+    g.fillTriangle(18, 10, 24, 20, 18, 19);
 
-    // Nose accent
-    g.fillStyle(0xff4466, 1);
-    g.beginPath();
-    g.moveTo(13, 0);
-    g.lineTo(16, 8);
-    g.lineTo(13, 10);
-    g.lineTo(10, 8);
-    g.closePath();
-    g.fillPath();
+    // Forward hot blade
+    g.fillStyle(0xff4665, 1);
+    g.fillTriangle(13, 1, 15, 8, 11, 8);
 
-    // Eye/sensor glow
-    g.fillStyle(0xff6688, 0.8);
-    g.fillCircle(13, 12, 2);
+    // Single sensor eye
+    g.fillStyle(0xff8fa0, 0.9);
+    g.fillCircle(13, 11.5, 1.8);
+    g.fillStyle(0xffffff, 0.6);
+    g.fillCircle(12.5, 11, 0.6);
 
-    // Wing edge highlights
-    g.lineStyle(1, 0xff5566, 0.5);
-    g.beginPath();
-    g.moveTo(2, 20);
-    g.lineTo(13, 4);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(24, 20);
-    g.lineTo(13, 4);
-    g.strokePath();
+    // Tail flare
+    g.fillStyle(0xff4a3d, 0.7);
+    g.fillEllipse(13, 25, 3.2, 5.5);
 
-    // Engine glow
-    g.fillStyle(0xff4444, 0.6);
-    g.fillCircle(13, 26, 2);
+    g.lineStyle(1, 0xff6b7f, 0.35);
+    g.lineBetween(13, 4, 13, 22);
   });
 }
 
@@ -236,78 +213,69 @@ export function ensureScoutTexture(scene: Phaser.Scene): string {
 // ---------------------------------------------------------------------------
 export function ensureFighterTexture(scene: Phaser.Scene): string {
   return ensureTexture(scene, 'fighter-texture', 36, 36, (g) => {
-    // Main fuselage
-    g.fillStyle(0x115533, 1);
+    // Attack-bird body
+    g.fillStyle(0x123e29, 1);
     g.beginPath();
     g.moveTo(18, 0);
-    g.lineTo(28, 12);
-    g.lineTo(32, 28);
-    g.lineTo(28, 36);
-    g.lineTo(8, 36);
-    g.lineTo(4, 28);
-    g.lineTo(8, 12);
-    g.closePath();
-    g.fillPath();
-
-    // Wings
-    g.fillStyle(0x22aa55, 1);
-    g.beginPath();
-    g.moveTo(8, 12);
-    g.lineTo(0, 28);
-    g.lineTo(4, 28);
-    g.lineTo(12, 18);
-    g.closePath();
-    g.fillPath();
-    g.beginPath();
-    g.moveTo(28, 12);
-    g.lineTo(36, 28);
-    g.lineTo(32, 28);
-    g.lineTo(24, 18);
-    g.closePath();
-    g.fillPath();
-
-    // Center body highlight
-    g.fillStyle(0x33cc66, 1);
-    g.beginPath();
-    g.moveTo(18, 2);
-    g.lineTo(24, 14);
-    g.lineTo(22, 28);
-    g.lineTo(14, 28);
-    g.lineTo(12, 14);
-    g.closePath();
-    g.fillPath();
-
-    // Nose accent
-    g.fillStyle(0x44ff88, 1);
-    g.beginPath();
-    g.moveTo(18, 0);
-    g.lineTo(21, 8);
-    g.lineTo(18, 10);
-    g.lineTo(15, 8);
-    g.closePath();
-    g.fillPath();
-
-    // Cockpit
-    g.fillStyle(0x88ffbb, 0.8);
-    g.beginPath();
-    g.moveTo(18, 10);
-    g.lineTo(20, 16);
-    g.lineTo(18, 18);
-    g.lineTo(16, 16);
-    g.closePath();
-    g.fillPath();
-
-    // Engine glows
-    g.fillStyle(0x44ff88, 0.6);
-    g.fillCircle(14, 34, 2);
-    g.fillCircle(22, 34, 2);
-
-    // Panel lines
-    g.lineStyle(1, 0x228844, 0.3);
-    g.beginPath();
-    g.moveTo(18, 4);
+    g.lineTo(25, 9);
+    g.lineTo(31, 28);
+    g.lineTo(25, 35);
     g.lineTo(18, 32);
-    g.strokePath();
+    g.lineTo(11, 35);
+    g.lineTo(5, 28);
+    g.lineTo(11, 9);
+    g.closePath();
+    g.fillPath();
+
+    // Scythe wings
+    g.fillStyle(0x1fa253, 1);
+    g.beginPath();
+    g.moveTo(11, 10);
+    g.lineTo(0, 26);
+    g.lineTo(4, 30);
+    g.lineTo(13, 18);
+    g.lineTo(16, 14);
+    g.closePath();
+    g.fillPath();
+    g.beginPath();
+    g.moveTo(25, 10);
+    g.lineTo(36, 26);
+    g.lineTo(32, 30);
+    g.lineTo(23, 18);
+    g.lineTo(20, 14);
+    g.closePath();
+    g.fillPath();
+
+    // Inner fuselage
+    g.fillStyle(0x35cf70, 1);
+    g.beginPath();
+    g.moveTo(18, 3);
+    g.lineTo(22, 13);
+    g.lineTo(21, 28);
+    g.lineTo(18, 30);
+    g.lineTo(15, 28);
+    g.lineTo(14, 13);
+    g.closePath();
+    g.fillPath();
+
+    // Weapon roots
+    g.fillStyle(0x52f28e, 0.85);
+    g.fillRect(8, 18, 5, 2);
+    g.fillRect(23, 18, 5, 2);
+
+    // Cockpit + nose
+    g.fillStyle(0x9affc3, 0.8);
+    g.fillEllipse(18, 12, 4.5, 6.5);
+    g.fillStyle(0x4aff87, 1);
+    g.fillTriangle(18, 1, 20, 7, 16, 7);
+
+    // Split chevron exhaust
+    g.fillStyle(0x67ff9f, 0.72);
+    g.fillCircle(14, 33, 1.9);
+    g.fillCircle(22, 33, 1.9);
+
+    g.lineStyle(1, 0x58d38b, 0.3);
+    g.lineBetween(18, 4, 18, 30);
   });
 }
 
@@ -316,79 +284,49 @@ export function ensureFighterTexture(scene: Phaser.Scene): string {
 // ---------------------------------------------------------------------------
 export function ensureBomberTexture(scene: Phaser.Scene): string {
   return ensureTexture(scene, 'bomber-texture', 44, 38, (g) => {
-    // Main hull (heavy body)
-    g.fillStyle(0x884411, 1);
+    // Coffin-beetle hull
+    g.fillStyle(0x713513, 1);
     g.beginPath();
-    g.moveTo(22, 0);
-    g.lineTo(36, 8);
-    g.lineTo(40, 20);
-    g.lineTo(38, 32);
-    g.lineTo(30, 38);
-    g.lineTo(14, 38);
-    g.lineTo(6, 32);
-    g.lineTo(4, 20);
-    g.lineTo(8, 8);
+    g.moveTo(22, 1);
+    g.lineTo(33, 6);
+    g.lineTo(39, 16);
+    g.lineTo(40, 28);
+    g.lineTo(34, 36);
+    g.lineTo(10, 36);
+    g.lineTo(4, 28);
+    g.lineTo(5, 16);
+    g.lineTo(11, 6);
     g.closePath();
     g.fillPath();
 
-    // Armor plating (upper)
-    g.fillStyle(0xcc6622, 1);
-    g.beginPath();
-    g.moveTo(22, 2);
-    g.lineTo(32, 10);
-    g.lineTo(34, 22);
-    g.lineTo(22, 20);
-    g.lineTo(10, 22);
-    g.lineTo(12, 10);
-    g.closePath();
-    g.fillPath();
+    // Heavy belly / bomb bay mass
+    g.fillStyle(0xa85320, 1);
+    g.fillRoundedRect(11, 12, 22, 20, 6);
+    g.fillStyle(0xe77e3a, 0.95);
+    g.fillRoundedRect(17, 5, 10, 18, 4);
 
-    // Center ridge
-    g.fillStyle(0xff8844, 1);
-    g.beginPath();
-    g.moveTo(22, 2);
-    g.lineTo(26, 14);
-    g.lineTo(24, 26);
-    g.lineTo(20, 26);
-    g.lineTo(18, 14);
-    g.closePath();
-    g.fillPath();
+    // Furnace nacelles
+    g.fillStyle(0x8f461f, 1);
+    g.fillRoundedRect(1, 16, 8, 13, 3);
+    g.fillRoundedRect(35, 16, 8, 13, 3);
+    g.fillStyle(0xffb14b, 0.78);
+    g.fillCircle(5, 25, 3);
+    g.fillCircle(39, 25, 3);
 
-    // Bomb bay door line
-    g.lineStyle(2, 0x663311, 0.6);
-    g.beginPath();
-    g.moveTo(14, 24);
-    g.lineTo(30, 24);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(14, 24);
-    g.lineTo(14, 34);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(30, 24);
-    g.lineTo(30, 34);
-    g.strokePath();
+    // Cockpit visor
+    g.fillStyle(0xffd27b, 0.82);
+    g.fillRoundedRect(17, 8, 10, 4, 2);
 
-    // Side engine pods
-    g.fillStyle(0xaa5522, 1);
-    g.fillRect(2, 18, 6, 12);
-    g.fillRect(36, 18, 6, 12);
+    // Bomb bay seams
+    g.lineStyle(2, 0x5e2a0e, 0.55);
+    g.lineBetween(14, 24, 30, 24);
+    g.lineBetween(14, 24, 14, 33);
+    g.lineBetween(30, 24, 30, 33);
 
-    // Engine glows
-    g.fillStyle(0xffaa44, 0.7);
-    g.fillCircle(5, 26, 3);
-    g.fillCircle(39, 26, 3);
-
-    // Cockpit windows
-    g.fillStyle(0xffcc66, 0.8);
-    g.fillRect(18, 8, 8, 4);
-    g.fillStyle(0xffdd88, 0.5);
-    g.fillRect(19, 9, 6, 2);
-
-    // Warning markings
-    g.fillStyle(0xffcc00, 0.4);
-    g.fillRect(16, 30, 4, 2);
-    g.fillRect(24, 30, 4, 2);
+    // Warning blocks
+    g.fillStyle(0xffc500, 0.42);
+    g.fillRect(15, 30, 5, 2);
+    g.fillRect(24, 30, 5, 2);
   });
 }
 
@@ -397,79 +335,47 @@ export function ensureBomberTexture(scene: Phaser.Scene): string {
 // ---------------------------------------------------------------------------
 export function ensureGunshipTexture(scene: Phaser.Scene): string {
   return ensureTexture(scene, 'gunship-texture', 40, 40, (g) => {
-    // Main hull
-    g.fillStyle(0x113366, 1);
-    g.beginPath();
-    g.moveTo(20, 0);
-    g.lineTo(34, 12);
-    g.lineTo(36, 30);
-    g.lineTo(30, 40);
-    g.lineTo(10, 40);
-    g.lineTo(4, 30);
-    g.lineTo(6, 12);
-    g.closePath();
-    g.fillPath();
+    // Hammerhead hull
+    g.fillStyle(0x132b56, 1);
+    g.fillRoundedRect(10, 6, 20, 28, 4);
+    g.fillRect(2, 11, 36, 10);
 
-    // Upper hull
-    g.fillStyle(0x2255aa, 1);
-    g.beginPath();
-    g.moveTo(20, 2);
-    g.lineTo(30, 12);
-    g.lineTo(30, 26);
-    g.lineTo(20, 24);
-    g.lineTo(10, 26);
-    g.lineTo(10, 12);
-    g.closePath();
-    g.fillPath();
+    // Center chassis
+    g.fillStyle(0x24519e, 1);
+    g.fillRoundedRect(14, 4, 12, 26, 3);
+    g.fillStyle(0x3f7fda, 1);
+    g.fillRoundedRect(16, 7, 8, 18, 3);
 
-    // Center accent
-    g.fillStyle(0x3377cc, 1);
-    g.beginPath();
-    g.moveTo(20, 4);
-    g.lineTo(26, 16);
-    g.lineTo(24, 28);
-    g.lineTo(16, 28);
-    g.lineTo(14, 16);
-    g.closePath();
-    g.fillPath();
+    // Battery pods / broadside edges
+    g.fillStyle(0x1d3f84, 1);
+    g.fillRect(0, 14, 9, 7);
+    g.fillRect(31, 14, 9, 7);
+    g.fillStyle(0x63a4ff, 0.75);
+    g.fillCircle(4, 17.5, 2);
+    g.fillCircle(36, 17.5, 2);
 
-    // Gun turret (top)
-    g.fillStyle(0x4488ff, 1);
+    // Forward turret block
+    g.fillStyle(0x4e90ff, 1);
     g.fillRect(16, 0, 8, 6);
-    g.fillStyle(0x66aaff, 0.8);
-    g.fillRect(18, 0, 4, 4);
+    g.fillRect(18, 0, 4, 3);
 
-    // Side gun pods
-    g.fillStyle(0x2244aa, 1);
-    g.fillRect(0, 16, 8, 8);
-    g.fillRect(32, 16, 8, 8);
+    // Cockpit slit
+    g.fillStyle(0x8ed6ff, 0.8);
+    g.fillRoundedRect(17, 10, 6, 5, 2);
 
-    // Gun pod muzzles
-    g.fillStyle(0x4488ff, 0.7);
-    g.fillCircle(4, 20, 2);
-    g.fillCircle(36, 20, 2);
+    // Rear engine bank
+    g.fillStyle(0x304364, 1);
+    g.fillRect(12, 34, 5, 5);
+    g.fillRect(18, 35, 4, 5);
+    g.fillRect(23, 34, 5, 5);
+    g.fillStyle(0x67a3ff, 0.72);
+    g.fillCircle(14.5, 38, 1.8);
+    g.fillCircle(20, 39, 1.6);
+    g.fillCircle(25.5, 38, 1.8);
 
-    // Cockpit
-    g.fillStyle(0x66bbff, 0.7);
-    g.fillRect(17, 10, 6, 6);
-    g.fillStyle(0x88ddff, 0.4);
-    g.fillRect(18, 11, 4, 4);
-
-    // Engine glows
-    g.fillStyle(0x4488ff, 0.6);
-    g.fillCircle(14, 38, 2);
-    g.fillCircle(26, 38, 2);
-
-    // Armor panel lines
-    g.lineStyle(1, 0x2255aa, 0.3);
-    g.beginPath();
-    g.moveTo(10, 20);
-    g.lineTo(30, 20);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(20, 4);
-    g.lineTo(20, 36);
-    g.strokePath();
+    g.lineStyle(1, 0x4e79b9, 0.28);
+    g.lineBetween(10, 21, 30, 21);
+    g.lineBetween(20, 5, 20, 34);
   });
 }
 
@@ -478,56 +384,39 @@ export function ensureGunshipTexture(scene: Phaser.Scene): string {
 // ---------------------------------------------------------------------------
 export function ensureSwarmTexture(scene: Phaser.Scene): string {
   return ensureTexture(scene, 'swarm-texture', 20, 20, (g) => {
-    // Body core
-    g.fillStyle(0x998800, 1);
+    // Organic crescent body
+    g.fillStyle(0x847600, 1);
     g.beginPath();
-    g.moveTo(10, 0);
+    g.moveTo(10, 1);
     g.lineTo(16, 6);
-    g.lineTo(18, 14);
-    g.lineTo(14, 20);
-    g.lineTo(6, 20);
-    g.lineTo(2, 14);
-    g.lineTo(4, 6);
+    g.lineTo(18, 12);
+    g.lineTo(15, 18);
+    g.lineTo(11, 20);
+    g.lineTo(6, 18);
+    g.lineTo(4, 12);
+    g.lineTo(6, 5);
     g.closePath();
     g.fillPath();
 
-    // Wings (port)
-    g.fillStyle(0xddcc22, 0.6);
-    g.beginPath();
-    g.moveTo(4, 6);
-    g.lineTo(0, 2);
-    g.lineTo(0, 12);
-    g.lineTo(4, 10);
-    g.closePath();
-    g.fillPath();
+    // Wide translucent wing flare
+    g.fillStyle(0xe3d63a, 0.45);
+    g.fillEllipse(4.5, 9, 8, 12);
+    g.fillEllipse(15.5, 9, 8, 12);
 
-    // Wings (starboard)
-    g.beginPath();
-    g.moveTo(16, 6);
-    g.lineTo(20, 2);
-    g.lineTo(20, 12);
-    g.lineTo(16, 10);
-    g.closePath();
-    g.fillPath();
+    // Core abdomen and forked tail
+    g.fillStyle(0xb9a400, 0.95);
+    g.fillEllipse(10, 10, 8, 11);
+    g.fillStyle(0xffb000, 0.8);
+    g.fillTriangle(8, 17, 10, 20, 9, 16);
+    g.fillTriangle(12, 17, 10, 20, 11, 16);
 
-    // Eye glow (twin)
-    g.fillStyle(0xffff44, 0.9);
-    g.fillCircle(7, 6, 2);
-    g.fillCircle(13, 6, 2);
-
-    // Eye highlight
-    g.fillStyle(0xffffff, 0.5);
-    g.fillCircle(7, 5, 1);
-    g.fillCircle(13, 5, 1);
-
-    // Stinger/tail
-    g.fillStyle(0xffaa00, 0.8);
-    g.beginPath();
-    g.moveTo(8, 18);
-    g.lineTo(10, 20);
-    g.lineTo(12, 18);
-    g.closePath();
-    g.fillPath();
+    // Eyes
+    g.fillStyle(0xffff5d, 0.9);
+    g.fillCircle(7.2, 7, 1.6);
+    g.fillCircle(12.8, 7, 1.6);
+    g.fillStyle(0xffffff, 0.55);
+    g.fillCircle(7, 6.4, 0.6);
+    g.fillCircle(12.6, 6.4, 0.6);
   });
 }
 
@@ -535,112 +424,190 @@ export function ensureSwarmTexture(scene: Phaser.Scene): string {
 // Boss — imposing capital warship
 // ---------------------------------------------------------------------------
 export function ensureBossTexture(scene: Phaser.Scene): string {
-  return ensureTexture(scene, 'boss-texture', 88, 56, (g) => {
-    // Main hull
-    g.fillStyle(0x661122, 1);
-    g.beginPath();
-    g.moveTo(44, 0);
-    g.lineTo(68, 12);
-    g.lineTo(76, 28);
-    g.lineTo(80, 44);
-    g.lineTo(72, 56);
-    g.lineTo(16, 56);
-    g.lineTo(8, 44);
-    g.lineTo(12, 28);
-    g.lineTo(20, 12);
-    g.closePath();
-    g.fillPath();
+  return ensureBossTextureVariant(scene, 'barrage', 'boss');
+}
 
-    // Upper hull plating
-    g.fillStyle(0x991833, 1);
-    g.beginPath();
-    g.moveTo(44, 2);
-    g.lineTo(62, 12);
-    g.lineTo(66, 30);
-    g.lineTo(44, 28);
-    g.lineTo(22, 30);
-    g.lineTo(26, 12);
-    g.closePath();
-    g.fillPath();
+export function ensureBossTextureVariant(
+  scene: Phaser.Scene,
+  attackStyle: BossAttackStyle = 'barrage',
+  bossName: string = 'boss'
+): string {
+  const motifVariant = Array.from(bossName).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 3;
+  const textureKey = `boss-texture-${attackStyle}-${motifVariant}`;
 
-    // Center spine
-    g.fillStyle(0xcc2244, 1);
-    g.beginPath();
-    g.moveTo(44, 2);
-    g.lineTo(52, 20);
-    g.lineTo(48, 38);
-    g.lineTo(40, 38);
-    g.lineTo(36, 20);
-    g.closePath();
-    g.fillPath();
+  return ensureTexture(scene, textureKey, 88, 56, (g) => {
+    const palette = {
+      base: attackStyle === 'bulwark' ? 0x2a1e56 : attackStyle === 'carrier' ? 0x4e2a16 : attackStyle === 'pursuit' ? 0x53171d : attackStyle === 'maelstrom' ? 0x203b5a : attackStyle === 'pressure' ? 0x5a2418 : 0x661122,
+      mid: attackStyle === 'bulwark' ? 0x5740a6 : attackStyle === 'carrier' ? 0x8d4f22 : attackStyle === 'pursuit' ? 0x9c2338 : attackStyle === 'maelstrom' ? 0x2b6ca3 : attackStyle === 'pressure' ? 0xb64d29 : 0x991833,
+      accent: attackStyle === 'bulwark' ? 0xb49cff : attackStyle === 'carrier' ? 0xffb066 : attackStyle === 'pursuit' ? 0xff7892 : attackStyle === 'maelstrom' ? 0x8fd3ff : attackStyle === 'pressure' ? 0xff9a66 : 0xff6688,
+      panel: attackStyle === 'bulwark' ? 0x3b2a77 : attackStyle === 'carrier' ? 0x6b3918 : attackStyle === 'pursuit' ? 0x781b2d : attackStyle === 'maelstrom' ? 0x22507a : attackStyle === 'pressure' ? 0x7d311d : 0x771122,
+    };
 
-    // Bridge section
-    g.fillStyle(0xff4466, 1);
-    g.fillRect(38, 6, 12, 10);
+    switch (attackStyle) {
+      case 'pursuit':
+        g.fillStyle(palette.base, 1);
+        g.beginPath();
+        g.moveTo(44, 0);
+        g.lineTo(58, 12);
+        g.lineTo(64, 30);
+        g.lineTo(52, 56);
+        g.lineTo(36, 56);
+        g.lineTo(24, 30);
+        g.lineTo(30, 12);
+        g.closePath();
+        g.fillPath();
+        g.fillStyle(palette.mid, 1);
+        g.beginPath();
+        g.moveTo(44, 3);
+        g.lineTo(54, 16);
+        g.lineTo(50, 40);
+        g.lineTo(44, 46);
+        g.lineTo(38, 40);
+        g.lineTo(34, 16);
+        g.closePath();
+        g.fillPath();
+        g.fillStyle(palette.mid, 0.92);
+        g.fillTriangle(30, 16, 10, 36, 28, 28);
+        g.fillTriangle(58, 16, 78, 36, 60, 28);
+        break;
+      case 'bulwark':
+        g.fillStyle(palette.base, 1);
+        g.fillRoundedRect(18, 6, 52, 42, 8);
+        g.fillStyle(palette.mid, 0.95);
+        g.fillRoundedRect(26, 10, 36, 28, 6);
+        g.fillStyle(palette.mid, 0.9);
+        g.fillCircle(14, 28, 10);
+        g.fillCircle(74, 28, 10);
+        g.lineStyle(3, palette.accent, 0.35);
+        g.strokeCircle(14, 28, 12);
+        g.strokeCircle(74, 28, 12);
+        break;
+      case 'carrier':
+        g.fillStyle(palette.base, 1);
+        g.fillRoundedRect(18, 4, 52, 44, 6);
+        g.fillStyle(palette.mid, 0.95);
+        g.fillRoundedRect(10, 10, 18, 22, 4);
+        g.fillRoundedRect(60, 10, 18, 22, 4);
+        g.fillStyle(0x150b06, 0.75);
+        g.fillRect(12, 16, 12, 8);
+        g.fillRect(64, 16, 12, 8);
+        g.fillStyle(palette.mid, 0.9);
+        g.fillRoundedRect(34, 8, 20, 32, 4);
+        break;
+      case 'maelstrom':
+        g.fillStyle(palette.base, 1);
+        g.beginPath();
+        g.moveTo(44, 2);
+        g.lineTo(66, 10);
+        g.lineTo(78, 24);
+        g.lineTo(68, 50);
+        g.lineTo(20, 54);
+        g.lineTo(8, 34);
+        g.lineTo(14, 14);
+        g.closePath();
+        g.fillPath();
+        g.fillStyle(palette.mid, 0.95);
+        g.beginPath();
+        g.moveTo(44, 4);
+        g.lineTo(56, 18);
+        g.lineTo(50, 40);
+        g.lineTo(38, 44);
+        g.lineTo(28, 28);
+        g.lineTo(32, 14);
+        g.closePath();
+        g.fillPath();
+        g.lineStyle(3, palette.accent, 0.35);
+        g.beginPath();
+        g.arc(44, 28, 18, -0.5, 3.6);
+        g.strokePath();
+        break;
+      case 'pressure':
+        g.fillStyle(palette.base, 1);
+        g.beginPath();
+        g.moveTo(44, 0);
+        g.lineTo(70, 14);
+        g.lineTo(74, 30);
+        g.lineTo(60, 52);
+        g.lineTo(28, 52);
+        g.lineTo(14, 30);
+        g.lineTo(18, 14);
+        g.closePath();
+        g.fillPath();
+        g.fillStyle(palette.mid, 0.95);
+        g.fillTriangle(44, 4, 56, 24, 32, 24);
+        g.fillStyle(palette.mid, 0.88);
+        g.fillRect(8, 26, 14, 10);
+        g.fillRect(66, 26, 14, 10);
+        break;
+      case 'barrage':
+      default:
+        g.fillStyle(palette.base, 1);
+        g.beginPath();
+        g.moveTo(44, 0);
+        g.lineTo(68, 12);
+        g.lineTo(76, 28);
+        g.lineTo(80, 44);
+        g.lineTo(72, 56);
+        g.lineTo(16, 56);
+        g.lineTo(8, 44);
+        g.lineTo(12, 28);
+        g.lineTo(20, 12);
+        g.closePath();
+        g.fillPath();
+        g.fillStyle(palette.mid, 1);
+        g.beginPath();
+        g.moveTo(44, 2);
+        g.lineTo(62, 12);
+        g.lineTo(66, 30);
+        g.lineTo(44, 28);
+        g.lineTo(22, 30);
+        g.lineTo(26, 12);
+        g.closePath();
+        g.fillPath();
+        g.fillStyle(palette.mid, 0.9);
+        g.fillTriangle(20, 12, 4, 36, 24, 20);
+        g.fillTriangle(68, 12, 84, 36, 64, 20);
+        break;
+    }
 
-    // Bridge windows
-    g.fillStyle(0xff8888, 0.8);
+    // Shared spine / bridge
+    g.fillStyle(palette.accent, 0.92);
+    g.fillRoundedRect(38, 6, 12, 10, 3);
+    g.fillStyle(0xffffff, 0.7);
     g.fillRect(40, 8, 3, 3);
     g.fillRect(45, 8, 3, 3);
-    g.fillStyle(0xffaaaa, 0.5);
-    g.fillRect(41, 9, 1, 1);
-    g.fillRect(46, 9, 1, 1);
 
-    // Weapon hardpoints (port wing)
-    g.fillStyle(0x881122, 1);
-    g.beginPath();
-    g.moveTo(20, 12);
-    g.lineTo(4, 36);
-    g.lineTo(8, 38);
-    g.lineTo(24, 18);
-    g.closePath();
-    g.fillPath();
+    // Name-hash crest accents
+    if (motifVariant === 0) {
+      g.lineStyle(2, palette.accent, 0.28);
+      g.lineBetween(24, 22, 64, 22);
+      g.lineBetween(30, 36, 58, 36);
+    } else if (motifVariant === 1) {
+      g.lineStyle(2, palette.accent, 0.28);
+      g.strokeCircle(44, 28, 10);
+      g.strokeCircle(44, 28, 17);
+    } else {
+      g.lineStyle(2, palette.accent, 0.28);
+      g.lineBetween(44, 6, 44, 48);
+      g.lineBetween(34, 18, 54, 30);
+      g.lineBetween(54, 18, 34, 30);
+    }
 
-    // Weapon hardpoints (starboard wing)
-    g.beginPath();
-    g.moveTo(68, 12);
-    g.lineTo(84, 36);
-    g.lineTo(80, 38);
-    g.lineTo(64, 18);
-    g.closePath();
-    g.fillPath();
-
-    // Gun turrets on wings
-    g.fillStyle(0xdd3355, 1);
-    g.fillRect(6, 34, 8, 4);
-    g.fillRect(74, 34, 8, 4);
-
-    // Turret muzzles
-    g.fillStyle(0xff6688, 0.7);
-    g.fillCircle(10, 36, 2);
-    g.fillCircle(78, 36, 2);
-
-    // Engine bank (3 engines)
-    g.fillStyle(0x550011, 1);
+    // Engine bank
+    g.fillStyle(motifVariant === 1 ? palette.panel : 0x1b1028, 0.9);
     g.fillRect(28, 50, 8, 6);
     g.fillRect(40, 50, 8, 6);
     g.fillRect(52, 50, 8, 6);
-
-    // Engine glow
-    g.fillStyle(0xff4466, 0.7);
+    g.fillStyle(palette.accent, 0.72);
     g.fillCircle(32, 54, 3);
     g.fillCircle(44, 54, 3);
     g.fillCircle(56, 54, 3);
 
-    // Armor panel lines
-    g.lineStyle(1, 0x771122, 0.4);
-    g.beginPath();
-    g.moveTo(44, 4);
-    g.lineTo(44, 52);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(24, 24);
-    g.lineTo(64, 24);
-    g.strokePath();
-    g.beginPath();
-    g.moveTo(28, 38);
-    g.lineTo(60, 38);
-    g.strokePath();
+    // Panel lines
+    g.lineStyle(1, palette.panel, 0.4);
+    g.lineBetween(44, 4, 44, 52);
+    g.lineBetween(24, 24, 64, 24);
+    g.lineBetween(28, 38, 60, 38);
   });
 }
 

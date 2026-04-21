@@ -11,6 +11,12 @@ interface ColorGradeValues {
   saturation: number;
 }
 
+export interface CameraPulseValues {
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+}
+
 export function applyGameObjectGlow(
   gameObject: FilterableGameObject,
   color: number,
@@ -77,6 +83,21 @@ export function applyCameraColorGrade(
   matrix.brightness(mappedBrightness);
   matrix.contrast(mappedContrast, true);
   matrix.saturate(mappedSaturation, true);
+
+  return filter;
+}
+
+export function applyCameraColorPulse(
+  camera: Phaser.Cameras.Scene2D.Camera,
+  currentFilter: Phaser.Filters.ColorMatrix | null,
+  pulse: CameraPulseValues
+): Phaser.Filters.ColorMatrix {
+  const filter = currentFilter ?? camera.filters.internal.addColorMatrix();
+  const matrix = filter.colorMatrix;
+
+  matrix.brightness(pulse.brightness ?? 1, true);
+  matrix.contrast(pulse.contrast ?? 0, true);
+  matrix.saturate(pulse.saturation ?? 0, true);
 
   return filter;
 }

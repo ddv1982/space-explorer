@@ -3,6 +3,7 @@ import type { LevelConfig } from '../config/LevelsConfig';
 import {
   applyBaselineCameraFilters,
   applyCameraColorGrade,
+  applyCameraColorPulse,
   clearCameraFilters,
 } from '../utils/renderingCompat';
 import { generateEffectsParticleTextures } from './effects/particleTextureFactory';
@@ -56,6 +57,27 @@ export class EffectsManager {
 
     const camera = this.scene.cameras.main;
     this.colorMatrix = applyCameraColorGrade(camera, this.colorMatrix, config.colorGrade);
+  }
+
+  pulseCameraColor(
+    pulse: { brightness?: number; contrast?: number; saturation?: number },
+    durationMs: number = 180
+  ): void {
+    const camera = this.scene?.cameras?.main;
+    if (!camera) {
+      return;
+    }
+
+    const existingGrade = this.currentLevelConfig?.colorGrade ?? { brightness: 0, contrast: 1, saturation: 1 };
+    this.colorMatrix = applyCameraColorPulse(camera, this.colorMatrix, pulse);
+
+    this.scene.time.delayedCall(durationMs, () => {
+      if (!this.scene?.cameras?.main) {
+        return;
+      }
+
+      this.colorMatrix = applyCameraColorGrade(this.scene.cameras.main, this.colorMatrix, existingGrade);
+    });
   }
 
   private setupCameraFX(): void {

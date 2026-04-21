@@ -119,6 +119,7 @@ export class GameScene extends Phaser.Scene {
 
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, levelConfig);
+    this.parallax.setSectionAtmosphere(initialSection, initialSectionProgress);
     this.registerScaleHandlers();
 
     this.effectsManager = new EffectsManager();
@@ -230,6 +231,8 @@ export class GameScene extends Phaser.Scene {
     this.events.on(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
     this.events.on(GAME_SCENE_EVENTS.helperWingActivated, this.handleHelperWingActivated, this);
     this.events.on(GAME_SCENE_EVENTS.helperWingDepleted, this.handleHelperWingDepleted, this);
+    this.events.on(GAME_SCENE_EVENTS.playerBulletTrail, this.handlePlayerBulletTrail, this);
+    this.events.on(GAME_SCENE_EVENTS.enemyBulletTrail, this.handleEnemyBulletTrail, this);
   }
 
   private registerScaleHandlers(): void {
@@ -250,6 +253,8 @@ export class GameScene extends Phaser.Scene {
     this.events.off(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
     this.events.off(GAME_SCENE_EVENTS.helperWingActivated, this.handleHelperWingActivated, this);
     this.events.off(GAME_SCENE_EVENTS.helperWingDepleted, this.handleHelperWingDepleted, this);
+    this.events.off(GAME_SCENE_EVENTS.playerBulletTrail, this.handlePlayerBulletTrail, this);
+    this.events.off(GAME_SCENE_EVENTS.enemyBulletTrail, this.handleEnemyBulletTrail, this);
   }
 
   private handleSceneShutdown(): void {
@@ -390,6 +395,14 @@ export class GameScene extends Phaser.Scene {
     this.effectsManager.createEngineExhaust(x, y, intensity);
   }
 
+  private handlePlayerBulletTrail(x: number, y: number): void {
+    this.effectsManager.createBulletTrail(x, y);
+  }
+
+  private handleEnemyBulletTrail(x: number, y: number): void {
+    this.effectsManager.createEnemyBulletTrail(x, y);
+  }
+
   private handleEnemySpawnWarning(x: number): void {
     this.effectsManager.createSpawnWarning(x);
   }
@@ -418,11 +431,14 @@ export class GameScene extends Phaser.Scene {
 
     this.hud.showBossPhaseAnnouncement(phase);
     this.runBestEffort(() => this.cameras.main.flash(120, 255, 196, 96, false));
+    this.runBestEffort(() => this.effectsManager.pulseCameraColor({ brightness: 1.08, contrast: 0.1, saturation: 0.12 }, 220));
+    this.runBestEffort(() => this.effectsManager.pulseCameraColor({ brightness: 1.12, contrast: 0.14, saturation: 0.18 }, 320));
   }
 
   private handleHelperWingActivated(helperCount: number): void {
     this.hud.showHelperWingAnnouncement(helperCount);
     this.runBestEffort(() => this.cameras.main.flash(140, 96, 220, 255, false));
+    this.runBestEffort(() => this.effectsManager.pulseCameraColor({ brightness: 1.05, contrast: 0.06, saturation: 0.14 }, 180));
     this.runBestEffort(() => audioManager.playPowerUpPickup());
   }
 
@@ -587,6 +603,7 @@ export class GameScene extends Phaser.Scene {
       : 0;
     const sectionMusicIntensity = resolveSectionMusicIntensity(activeSection, sectionProgress);
     audioManager.setMusicIntensity(this.levelManager.hasBossSpawned() ? 1.1 : sectionMusicIntensity);
+    this.parallax.setSectionAtmosphere(activeSection, sectionProgress);
 
     if (this.levelManager.shouldSpawnBoss()) {
       this.events.emit(GAME_SCENE_EVENTS.bossSpawn);

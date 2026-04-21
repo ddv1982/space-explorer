@@ -17,6 +17,8 @@ export const GAME_SCENE_EVENTS = {
   bossPhaseChange: 'boss-phase-change',
   helperWingActivated: 'helper-wing-activated',
   helperWingDepleted: 'helper-wing-depleted',
+  playerBulletTrail: 'player-bullet-trail',
+  enemyBulletTrail: 'enemy-bullet-trail',
 } as const;
 
 export const TERMINAL_TRANSITIONS = {

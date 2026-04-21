@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-04-21
+
+### Added
+- Added active player and enemy bullet trails routed through shared gameplay presentation events.
+- Added config-driven `visualModifiers` support on level sections so atmosphere and scenic emphasis can be authored per pacing beat.
+- Added shared hazard-linked scenic response overlays for storms, gravity wells, ambush fog, crossfire arcs, debris surges, minefields, and corridor pressure.
+- Added attack-style-based procedural boss visual variants with deterministic accent motifs.
+- Added reusable transient camera color pulses for dramatic gameplay beats.
+- Added edge-only foreground silhouette treatment for extra depth without entering the main dodge lane.
+
+### Changed
+- Overhauled the procedural ship silhouette language for the player, helper, scout, fighter, bomber, gunship, and swarm roster to improve small-scale readability and role identity.
+- Added lightweight section-reactive atmosphere modulation so background drift, twinkle, and landmark emphasis now breathe with pacing.
+- Upgraded Prism Reef and Magnetar Foundry with stronger landmark identity using shared moon-surface horizon treatment.
+- Concentrated extra spectacle in `Eventide Singularity` with stronger authored section visual escalation and finale-phase presentation.
+
+### Quality
+- Verified with `bun run levels:validate` and `bun run build`.
+
 ## [1.0.0] - 2026-04-10
 
 ### Changed

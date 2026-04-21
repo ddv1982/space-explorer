@@ -120,6 +120,35 @@ export function generateMoonSurfaceTexture(
     }
   }
 
+  // Accent spires / crystalline silhouettes
+  const spireCount = Math.max(2, Math.ceil(config.buildingCount * 0.5));
+  for (let i = 0; i < spireCount; i++) {
+    const sx = Phaser.Math.Between(Math.floor(width * 0.08), Math.floor(width * 0.92));
+    const sy = Phaser.Math.Between(Math.floor(height * 0.22), Math.floor(height * 0.56));
+    const spireWidth = Phaser.Math.Between(10, 26);
+    const spireHeight = Phaser.Math.Between(24, 70);
+    const spireColor = mixColor(surfaceColor, accent, 0.42);
+
+    g.fillStyle(spireColor, 0.5);
+    g.beginPath();
+    g.moveTo(sx, sy - spireHeight);
+    g.lineTo(sx + spireWidth * 0.5, sy);
+    g.lineTo(sx - spireWidth * 0.5, sy);
+    g.closePath();
+    g.fillPath();
+
+    g.fillStyle(mixColor(accent, 0xffffff, 0.28), 0.16);
+    g.beginPath();
+    g.moveTo(sx, sy - spireHeight + 6);
+    g.lineTo(sx + spireWidth * 0.22, sy - 2);
+    g.lineTo(sx, sy - 4);
+    g.closePath();
+    g.fillPath();
+
+    g.fillStyle(mixColor(accent, 0xffffff, 0.4), 0.08);
+    g.fillCircle(sx, sy - spireHeight + 4, Phaser.Math.Between(4, 8));
+  }
+
   // Surface light strips (runways / landing pads)
   const stripCount = Phaser.Math.Between(1, 3);
   for (let s = 0; s < stripCount; s++) {
