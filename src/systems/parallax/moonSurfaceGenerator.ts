@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { MoonSurfaceConfig } from '../../config/levels/types';
 import { mixColor } from '../../utils/colorUtils';
+import { withGeneratedTexture } from '../../utils/generatedTexture';
 
 export function generateMoonSurfaceTexture(
   scene: Phaser.Scene,
@@ -9,13 +10,13 @@ export function generateMoonSurfaceTexture(
   height: number,
   config: MoonSurfaceConfig
 ): void {
-  const g = scene.add.graphics();
-  const surfaceColor = config.surfaceColor;
-  const accent = config.accentColor;
-  const horizonY = height * 0.12;
+  withGeneratedTexture(scene, textureKey, width, height, (g) => {
+    const surfaceColor = config.surfaceColor;
+    const accent = config.accentColor;
+    const horizonY = height * 0.12;
 
   // Horizon glow band
-  for (let y = 0; y < horizonY; y++) {
+    for (let y = 0; y < horizonY; y++) {
     const t = 1 - y / horizonY;
     const alpha = t * t * config.horizonGlow * 0.45;
     g.fillStyle(surfaceColor, alpha);
@@ -23,11 +24,11 @@ export function generateMoonSurfaceTexture(
   }
 
   // Base surface fill
-  g.fillStyle(surfaceColor, 0.7);
-  g.fillRect(0, horizonY, width, height - horizonY);
+    g.fillStyle(surfaceColor, 0.7);
+    g.fillRect(0, horizonY, width, height - horizonY);
 
   // Terrain gradient
-  for (let y = Math.ceil(horizonY); y < height; y++) {
+    for (let y = Math.ceil(horizonY); y < height; y++) {
     const t = (y - horizonY) / (height - horizonY);
     const darkColor = mixColor(surfaceColor, 0x000000, t * 0.35);
     g.fillStyle(darkColor, 0.6 + t * 0.3);
@@ -35,8 +36,8 @@ export function generateMoonSurfaceTexture(
   }
 
   // Surface terrain bumps
-  const bumpCount = Math.floor(width / 40);
-  for (let i = 0; i < bumpCount; i++) {
+    const bumpCount = Math.floor(width / 40);
+    for (let i = 0; i < bumpCount; i++) {
     const bx = Phaser.Math.Between(0, width);
     const by = Phaser.Math.Between(Math.floor(horizonY), height);
     const bw = Phaser.Math.Between(20, 60);
@@ -47,7 +48,7 @@ export function generateMoonSurfaceTexture(
   }
 
   // Craters
-  for (let i = 0; i < config.craterCount; i++) {
+    for (let i = 0; i < config.craterCount; i++) {
     const cx = Phaser.Math.Between(Math.floor(width * 0.05), Math.floor(width * 0.95));
     const cy = Phaser.Math.Between(Math.floor(horizonY + 15), height - 5);
     const cr = Phaser.Math.Between(6, 20);
@@ -66,9 +67,9 @@ export function generateMoonSurfaceTexture(
   }
 
   // Base structures (buildings)
-  const buildingWidth = Phaser.Math.Between(25, 60);
-  const buildingSpacing = Math.floor(width / (config.buildingCount + 1));
-  for (let i = 0; i < config.buildingCount; i++) {
+    const buildingWidth = Phaser.Math.Between(25, 60);
+    const buildingSpacing = Math.floor(width / (config.buildingCount + 1));
+    for (let i = 0; i < config.buildingCount; i++) {
     const bx = buildingSpacing * (i + 1) + Phaser.Math.Between(-buildingSpacing / 3, buildingSpacing / 3);
     const bw = Phaser.Math.Between(18, buildingWidth);
     const bh = Phaser.Math.Between(12, 35);
@@ -121,8 +122,8 @@ export function generateMoonSurfaceTexture(
   }
 
   // Accent spires / crystalline silhouettes
-  const spireCount = Math.max(2, Math.ceil(config.buildingCount * 0.5));
-  for (let i = 0; i < spireCount; i++) {
+    const spireCount = Math.max(2, Math.ceil(config.buildingCount * 0.5));
+    for (let i = 0; i < spireCount; i++) {
     const sx = Phaser.Math.Between(Math.floor(width * 0.08), Math.floor(width * 0.92));
     const sy = Phaser.Math.Between(Math.floor(height * 0.22), Math.floor(height * 0.56));
     const spireWidth = Phaser.Math.Between(10, 26);
@@ -150,8 +151,8 @@ export function generateMoonSurfaceTexture(
   }
 
   // Surface light strips (runways / landing pads)
-  const stripCount = Phaser.Math.Between(1, 3);
-  for (let s = 0; s < stripCount; s++) {
+    const stripCount = Phaser.Math.Between(1, 3);
+    for (let s = 0; s < stripCount; s++) {
     const sx = Phaser.Math.Between(Math.floor(width * 0.1), Math.floor(width * 0.9));
     const sy = Phaser.Math.Between(Math.floor(height * 0.5), height - 10);
     const sw = Phaser.Math.Between(30, 80);
@@ -164,13 +165,12 @@ export function generateMoonSurfaceTexture(
   }
 
   // Atmospheric scatter (faint dots above horizon)
-  for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 20; i++) {
     const sx = Phaser.Math.Between(0, width);
     const sy = Phaser.Math.Between(0, Math.floor(horizonY + 30));
     g.fillStyle(mixColor(accent, 0xffffff, 0.3), Phaser.Math.FloatBetween(0.03, 0.1));
     g.fillCircle(sx, sy, Phaser.Math.FloatBetween(0.5, 1.5));
   }
 
-  g.generateTexture(textureKey, width, height);
-  g.destroy();
+  });
 }

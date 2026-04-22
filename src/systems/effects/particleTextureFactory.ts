@@ -1,23 +1,7 @@
 import Phaser from 'phaser';
+import { withGeneratedTexture } from '../../utils/generatedTexture';
 
 type Point = { x: number; y: number };
-
-function withGeneratedTexture(
-  scene: Phaser.Scene,
-  key: string,
-  width: number,
-  height: number,
-  draw: (g: Phaser.GameObjects.Graphics) => void
-): void {
-  if (scene.textures.exists(key)) {
-    return;
-  }
-
-  const g = scene.add.graphics();
-  draw(g);
-  g.generateTexture(key, width, height);
-  g.destroy();
-}
 
 function fillPolygonFromCenter(
   g: Phaser.GameObjects.Graphics,

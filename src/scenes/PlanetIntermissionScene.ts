@@ -2,12 +2,11 @@ import Phaser from 'phaser';
 import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, getRunSummary, setRunSummary } from '../systems/PlayerState';
 import { getLevelConfig, isLastLevel } from '../config/LevelsConfig';
 import { UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUpgradeByKey } from '../config/UpgradesConfig';
-import { centerHorizontally, getViewportLayout } from '../utils/layout';
+import { getViewportLayout } from '../utils/layout';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
-import { createPromptText } from './shared/createPromptText';
 import {
   drawFocusIndicator,
   drawHoverIndicator,
@@ -18,24 +17,17 @@ import {
   findNextPurchasableAfter,
   findRowFocusIndex,
 } from './planetIntermission/navigation';
+import {
+  createIntermissionHeader,
+  createIntermissionPrompt,
+  getIntermissionLayout,
+  getUpgradeGridStartX,
+  type IntermissionLayoutMetrics,
+} from './planetIntermission/presentation';
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
-import { getUpgradeGridLayout, type UpgradeButton, type UpgradeGridLayout } from './planetIntermission/shared';
+import { type UpgradeButton } from './planetIntermission/shared';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { startRegisteredScene } from './sceneRegistry';
-
-interface IntermissionLayoutMetrics {
-  planetNameY: number;
-  titleY: number;
-  levelCompleteY: number;
-  scoreY: number;
-  planetY: number;
-  planetScale: number;
-  promptY: number;
-  gridTop: number;
-  gridLayout: UpgradeGridLayout;
-  compact: boolean;
-  tight: boolean;
-}
 
 export class PlanetIntermissionScene extends Phaser.Scene {
   private state!: PlayerStateData;
@@ -73,40 +65,19 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.showKeyboardFocus = false;
     this.transitioning = false;
     this.cameras.main.setBackgroundColor('#000011');
-    const layout = getViewportLayout(this);
     const upgradeCount = this.isFinalMissionComplete
       ? 0
       : evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades).length;
-    const intermissionLayout = this.getIntermissionLayout(upgradeCount);
+    const intermissionLayout = getIntermissionLayout(this, upgradeCount);
 
     const completedLevelConfig = getLevelConfig(this.state.level);
 
     this.generatePlanetTexture(completedLevelConfig.planetPalette, intermissionLayout.planetY, intermissionLayout.planetScale);
-
-    this.add.text(layout.centerX, intermissionLayout.planetNameY, completedLevelConfig.planetName, {
-      fontSize: intermissionLayout.compact ? '16px' : intermissionLayout.tight ? '18px' : '20px',
-      color: '#888888',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
-
-    this.add.text(layout.centerX, intermissionLayout.titleY, 'PLANET APPROACHED', {
-      fontSize: intermissionLayout.compact ? '28px' : intermissionLayout.tight ? '32px' : '36px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
-
-    this.add.text(layout.centerX, intermissionLayout.levelCompleteY, `LEVEL ${this.state.level} COMPLETE`, {
-      fontSize: intermissionLayout.compact ? '14px' : intermissionLayout.tight ? '16px' : '18px',
-      color: '#44ff88',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
-
-    this.scoreText = this.add.text(layout.centerX, intermissionLayout.scoreY, `CREDITS: ${this.state.score}`, {
-      fontSize: intermissionLayout.compact ? '18px' : intermissionLayout.tight ? '20px' : '24px',
-      color: '#ffcc00',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
+    this.scoreText = createIntermissionHeader(this, intermissionLayout, {
+      planetName: completedLevelConfig.planetName,
+      level: this.state.level,
+      score: this.state.score,
+    });
 
     // Initialize focus graphics for keyboard navigation
     this.focusGraphics = this.add.graphics();
@@ -135,10 +106,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       ? 'CAMPAIGN COMPLETE - Click, Tap, or Press Any Key'
       : `NEXT: ${nextLevelLabel} - Click, Tap, or Press a Key`;
 
-    createPromptText(this, layout.centerX, intermissionLayout.promptY, continueLabel, {
-      color: '#b8c8dd',
-      fontSize: intermissionLayout.compact ? '16px' : intermissionLayout.tight ? '18px' : '20px',
-    });
+    createIntermissionPrompt(this, intermissionLayout, continueLabel);
 
     if (this.isFinalMissionComplete) {
       bindProceedOnInput(this, () => this.continueToNextLevel());
@@ -224,13 +192,9 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private createUpgradeButtons(intermissionLayout: IntermissionLayoutMetrics): void {
-    const layout = getViewportLayout(this);
     const evaluations = evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades);
     const gridLayout = intermissionLayout.gridLayout;
-    const gridWidth =
-      gridLayout.buttonWidth * gridLayout.columns +
-      gridLayout.spacingX * (gridLayout.columns - 1);
-    const startX = centerHorizontally(layout, gridWidth);
+    const startX = getUpgradeGridStartX(this, gridLayout);
 
     for (let i = 0; i < evaluations.length; i++) {
       const evaluation = evaluations[i];
@@ -242,43 +206,6 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
       this.buttons.push(createUpgradeButton(this, bx, by, evaluation, gridLayout));
     }
-  }
-
-  private getIntermissionLayout(buttonCount: number): IntermissionLayoutMetrics {
-    const layout = getViewportLayout(this);
-    const compact = layout.height < 430;
-    const tight = layout.height < 520;
-    const gridLayout = getUpgradeGridLayout(layout.height);
-    const promptY = layout.bottom - (compact ? 22 : tight ? 32 : 60);
-    const planetNameY = layout.top + (compact ? 18 : tight ? 28 : 50);
-    const titleY = planetNameY + (compact ? 22 : tight ? 28 : 35);
-    const levelCompleteY = titleY + (compact ? 24 : tight ? 30 : 45);
-    const scoreY = levelCompleteY + (compact ? 22 : tight ? 28 : 40);
-    const planetY = scoreY + (compact ? 28 : tight ? 46 : 100);
-    const planetScale = compact ? 0.65 : tight ? 0.95 : 1.5;
-    const rows = buttonCount > 0 ? Math.ceil(buttonCount / gridLayout.columns) : 0;
-    const gridHeight = rows > 0
-      ? rows * gridLayout.buttonHeight + (rows - 1) * gridLayout.spacingY
-      : 0;
-    const minGridTop = planetY + (compact ? 46 : tight ? 72 : 110);
-    const desiredGridTop = compact ? 168 : tight ? 244 : gridLayout.top;
-    const gridTop = rows > 0
-      ? Math.max(minGridTop, Math.min(desiredGridTop, promptY - (compact ? 18 : 24) - gridHeight))
-      : desiredGridTop;
-
-    return {
-      planetNameY,
-      titleY,
-      levelCompleteY,
-      scoreY,
-      planetY,
-      planetScale,
-      promptY,
-      gridTop,
-      gridLayout,
-      compact,
-      tight,
-    };
   }
 
   private handleUpgradeClick(pointer: Phaser.Input.Pointer): boolean {

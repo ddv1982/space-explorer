@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.1`](./1.1.1.md) — behavior-preserving refactor follow-up that packages the 1.1 line for release validation
 - [`1.1.0`](./1.1.0.md) — visual overhaul release with phased ship, atmosphere, hazard, and boss presentation upgrades
 
 - [`1.0.0`](./1.0.0.md) — major baseline release with consolidated runtime and bundle optimizations

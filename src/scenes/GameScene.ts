@@ -38,11 +38,21 @@ import { LastLifeHelperWing } from '../systems/LastLifeHelperWing';
 import { MobileViewportGuard } from '../systems/MobileViewportGuard';
 import { MobileControls } from '../systems/MobileControls';
 import { isTouchMobileDevice } from '../utils/device';
-import { getViewportBounds } from '../utils/layout';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { createScaledBossConfig } from '../systems/balance/bossScaling';
 import { resolveSectionMusicIntensity } from '../systems/sectionIdentity';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
+import {
+  rebindSceneEventHandlers,
+  unbindSceneEventHandlers,
+  type SceneEventBinding,
+} from './gameScene/sceneEvents';
+import {
+  clampPlayerToViewport,
+  getSceneViewportBounds,
+  getPlayerSpawnPoint,
+  syncSceneViewport,
+} from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
 export class GameScene extends Phaser.Scene {
@@ -77,6 +87,22 @@ export class GameScene extends Phaser.Scene {
   private readonly shotDirection = new Phaser.Math.Vector2();
   private readonly shotOrigin = new Phaser.Math.Vector2();
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
+  private readonly sceneEventBindings: SceneEventBinding[] = [
+    { event: GAME_SCENE_EVENTS.enemyDeath, handler: this.handleEnemyDeath },
+    { event: GAME_SCENE_EVENTS.playerDeath, handler: this.handlePlayerDeath },
+    { event: GAME_SCENE_EVENTS.playerFatalHit, handler: this.handlePlayerFatalHit },
+    { event: GAME_SCENE_EVENTS.levelComplete, handler: this.handleLevelComplete },
+    { event: GAME_SCENE_EVENTS.bossSpawn, handler: this.handleBossSpawn },
+    { event: GAME_SCENE_EVENTS.playerHit, handler: this.handlePlayerHit },
+    { event: GAME_SCENE_EVENTS.playerExhaust, handler: this.handlePlayerExhaust },
+    { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: this.handleEnemySpawnWarning },
+    { event: GAME_SCENE_EVENTS.bossDeath, handler: this.handleBossDeath },
+    { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.handleBossPhaseChange },
+    { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.handleHelperWingActivated },
+    { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: this.handleHelperWingDepleted },
+    { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: this.handlePlayerBulletTrail },
+    { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: this.handleEnemyBulletTrail },
+  ];
 
   constructor() {
     super({ key: 'Game' });
@@ -217,22 +243,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private registerSceneEventHandlers(): void {
-    this.removeSceneEventHandlers();
-
-    this.events.on(GAME_SCENE_EVENTS.enemyDeath, this.handleEnemyDeath, this);
-    this.events.on(GAME_SCENE_EVENTS.playerDeath, this.handlePlayerDeath, this);
-    this.events.on(GAME_SCENE_EVENTS.playerFatalHit, this.handlePlayerFatalHit, this);
-    this.events.on(GAME_SCENE_EVENTS.levelComplete, this.handleLevelComplete, this);
-    this.events.on(GAME_SCENE_EVENTS.bossSpawn, this.handleBossSpawn, this);
-    this.events.on(GAME_SCENE_EVENTS.playerHit, this.handlePlayerHit, this);
-    this.events.on(GAME_SCENE_EVENTS.playerExhaust, this.handlePlayerExhaust, this);
-    this.events.on(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
-    this.events.on(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
-    this.events.on(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
-    this.events.on(GAME_SCENE_EVENTS.helperWingActivated, this.handleHelperWingActivated, this);
-    this.events.on(GAME_SCENE_EVENTS.helperWingDepleted, this.handleHelperWingDepleted, this);
-    this.events.on(GAME_SCENE_EVENTS.playerBulletTrail, this.handlePlayerBulletTrail, this);
-    this.events.on(GAME_SCENE_EVENTS.enemyBulletTrail, this.handleEnemyBulletTrail, this);
+    rebindSceneEventHandlers({
+      events: this.events,
+      bindings: this.sceneEventBindings,
+      context: this,
+    });
   }
 
   private registerScaleHandlers(): void {
@@ -241,20 +256,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private removeSceneEventHandlers(): void {
-    this.events.off(GAME_SCENE_EVENTS.enemyDeath, this.handleEnemyDeath, this);
-    this.events.off(GAME_SCENE_EVENTS.playerDeath, this.handlePlayerDeath, this);
-    this.events.off(GAME_SCENE_EVENTS.playerFatalHit, this.handlePlayerFatalHit, this);
-    this.events.off(GAME_SCENE_EVENTS.levelComplete, this.handleLevelComplete, this);
-    this.events.off(GAME_SCENE_EVENTS.bossSpawn, this.handleBossSpawn, this);
-    this.events.off(GAME_SCENE_EVENTS.playerHit, this.handlePlayerHit, this);
-    this.events.off(GAME_SCENE_EVENTS.playerExhaust, this.handlePlayerExhaust, this);
-    this.events.off(GAME_SCENE_EVENTS.enemySpawnWarning, this.handleEnemySpawnWarning, this);
-    this.events.off(GAME_SCENE_EVENTS.bossDeath, this.handleBossDeath, this);
-    this.events.off(GAME_SCENE_EVENTS.bossPhaseChange, this.handleBossPhaseChange, this);
-    this.events.off(GAME_SCENE_EVENTS.helperWingActivated, this.handleHelperWingActivated, this);
-    this.events.off(GAME_SCENE_EVENTS.helperWingDepleted, this.handleHelperWingDepleted, this);
-    this.events.off(GAME_SCENE_EVENTS.playerBulletTrail, this.handlePlayerBulletTrail, this);
-    this.events.off(GAME_SCENE_EVENTS.enemyBulletTrail, this.handleEnemyBulletTrail, this);
+    unbindSceneEventHandlers({
+      events: this.events,
+      bindings: this.sceneEventBindings,
+      context: this,
+    });
   }
 
   private handleSceneShutdown(): void {
@@ -297,38 +303,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   private getPlayerSpawnPoint(): { x: number; y: number } {
-    const viewport = getViewportBounds(this);
-
-    return {
-      x: viewport.centerX,
-      y: viewport.bottom - 80,
-    };
+    return getPlayerSpawnPoint(this);
   }
 
-  private syncViewportBounds(): ReturnType<typeof getViewportBounds> {
-    const viewport = getViewportBounds(this);
-
-    this.cameras.main.setViewport(0, 0, viewport.width, viewport.height);
-    this.cameras.main.setSize(viewport.width, viewport.height);
-    this.cameras.main.setBounds(0, 0, viewport.width, viewport.height);
-    this.physics.world.setBounds(0, 0, viewport.width, viewport.height);
-
-    return viewport;
+  private syncViewportBounds(): ReturnType<typeof getSceneViewportBounds> {
+    return syncSceneViewport(this);
   }
 
   private clampPlayerToViewport(): void {
-    if (!this.player?.body) {
-      return;
-    }
-
-    const viewport = getViewportBounds(this);
-    const halfWidth = this.player.displayWidth / 2;
-    const halfHeight = this.player.displayHeight / 2;
-    const clampedX = Phaser.Math.Clamp(this.player.x, viewport.left + halfWidth, viewport.right - halfWidth);
-    const clampedY = Phaser.Math.Clamp(this.player.y, viewport.top + halfHeight, viewport.bottom - halfHeight);
-
-    this.player.setPosition(clampedX, clampedY);
-    (this.player.body as Phaser.Physics.Arcade.Body).updateFromGameObject();
+    clampPlayerToViewport(this, this.player);
   }
 
   private handleEnemyDeath(score: number, x: number, y: number): void {
@@ -448,7 +431,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnBoss(): void {
-    const viewport = getViewportBounds(this);
+    const viewport = getSceneViewportBounds(this);
     const boss = this.enemyPool.spawnBoss(
       viewport.centerX,
       -60,

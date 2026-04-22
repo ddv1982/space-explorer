@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-04-22
+
+### Changed
+- Split large gameplay, intermission, parallax, and sprite-generation modules into focused helpers while keeping existing runtime behavior and visual output aligned with the `1.1.0` release line.
+- Centralized generated-texture creation and parallax motion helpers so shared rendering paths are easier to maintain without changing authored level content or release-facing features.
+
+### Quality
+- Verified with `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, and `bun run bundle:check`.
+
 ## [1.1.0] - 2026-04-21
 
 ### Added
