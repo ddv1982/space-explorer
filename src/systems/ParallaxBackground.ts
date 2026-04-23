@@ -17,6 +17,7 @@ import { generatePlanetTexture } from './parallax/planetTextureGenerator';
 import { generateMoonSurfaceTexture } from './parallax/moonSurfaceGenerator';
 import { generatePassingPlanetTextures } from './parallax/passingPlanetGenerator';
 import { ensureStarfieldTexture } from './parallax/starfieldTextureGenerator';
+import { getPremiumBackgroundManifest, type PremiumBackgroundLayerConfig } from './parallax/premiumBackgroundManifest';
 
 interface StarLayerConfig {
   name: string;
@@ -117,6 +118,12 @@ interface ForegroundSilhouetteState {
   alpha: number;
 }
 
+interface PremiumBackgroundLayerState {
+  sprite: Phaser.GameObjects.TileSprite;
+  config: PremiumBackgroundLayerConfig;
+  baseAlpha: number;
+}
+
 const LAYER_CONFIGS: StarLayerConfig[] = [
   { name: 'far-stars', scrollSpeed: 0.15, starCount: 100, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.15, max: 0.5 }, baseColor: 0x8888aa, accentMix: 0.08, sparkleFraction: 0.03, colorStarCount: 3 },
   { name: 'mid-stars', scrollSpeed: 0.35, starCount: 65, starSize: { min: 0.8, max: 1.8 }, starAlpha: { min: 0.3, max: 0.75 }, baseColor: 0xaaaacc, accentMix: 0.14, sparkleFraction: 0.06, colorStarCount: 5 },
@@ -197,6 +204,7 @@ export class ParallaxBackground {
   private activeHazards: ScriptedHazardConfig[] = [];
   private hazardOverlay: Phaser.GameObjects.Graphics | null = null;
   private foregroundSilhouettes: ForegroundSilhouetteState[] = [];
+  private premiumBackgroundLayers: PremiumBackgroundLayerState[] = [];
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
@@ -223,28 +231,32 @@ export class ParallaxBackground {
     this.hazardResponseScale = 1;
     this.activeHazards = [];
 
-    for (let i = 0; i < LAYER_CONFIGS.length; i++) {
-      const config = LAYER_CONFIGS[i];
-      const starColor = levelConfig
-        ? mixColor(config.baseColor, levelConfig.accentColor, config.accentMix)
-        : config.baseColor;
-      const textureKey = `${config.name}-${starColor.toString(16)}-v2`;
+    const hasPremiumBackground = levelConfig ? this.createPremiumBackgroundLayers(scene, levelConfig) : false;
 
-      ensureStarfieldTexture(scene, textureKey, config, TILE_WIDTH, TILE_HEIGHT, levelConfig?.accentColor);
+    if (!hasPremiumBackground) {
+      for (let i = 0; i < LAYER_CONFIGS.length; i++) {
+        const config = LAYER_CONFIGS[i];
+        const starColor = levelConfig
+          ? mixColor(config.baseColor, levelConfig.accentColor, config.accentMix)
+          : config.baseColor;
+        const textureKey = `${config.name}-${starColor.toString(16)}-v2`;
 
-      const tile = scene.add.tileSprite(
-        this.currentWidth / 2,
-        this.currentHeight / 2,
-        this.currentWidth,
-        this.currentHeight,
-        textureKey
-      );
-      tile.setOrigin(0.5);
-      tile.setDepth(DEPTHS[i]);
-      this.tileSprites.push(tile);
+        ensureStarfieldTexture(scene, textureKey, config, TILE_WIDTH, TILE_HEIGHT, levelConfig?.accentColor);
+
+        const tile = scene.add.tileSprite(
+          this.currentWidth / 2,
+          this.currentHeight / 2,
+          this.currentWidth,
+          this.currentHeight,
+          textureKey
+        );
+        tile.setOrigin(0.5);
+        tile.setDepth(DEPTHS[i]);
+        this.tileSprites.push(tile);
+      }
     }
 
-    if (levelConfig) {
+    if (levelConfig && !hasPremiumBackground) {
       this.createLevelVisualLayers(scene, levelConfig);
     }
 
@@ -252,6 +264,49 @@ export class ParallaxBackground {
     this.hazardOverlay.setDepth(-5);
 
     this.layoutTileSprites();
+  }
+
+  private createPremiumBackgroundLayers(scene: Phaser.Scene, config: LevelConfig): boolean {
+    const manifest = getPremiumBackgroundManifest(config.name);
+
+    if (!manifest || !manifest.layers.every((layer) => scene.textures.exists(layer.key))) {
+      return false;
+    }
+
+    for (const layer of manifest.layers) {
+      const sprite = scene.add.tileSprite(
+        this.currentWidth / 2,
+        this.currentHeight / 2,
+        this.currentWidth,
+        this.currentHeight,
+        layer.key
+      );
+      sprite.setOrigin(0.5);
+      sprite.setDepth(layer.depth);
+      sprite.setAlpha(layer.alpha);
+
+      if (layer.blendMode) {
+        sprite.setBlendMode(layer.blendMode);
+      }
+
+      this.premiumBackgroundLayers.push({
+        sprite,
+        config: layer,
+        baseAlpha: layer.alpha,
+      });
+    }
+
+    // Premium generated layers are authored as complete level backgrounds, so the
+    // old procedural stars/nebulae/planets/silhouettes must not be created here.
+    return true;
+  }
+
+  private destroyPremiumBackgroundLayers(): void {
+    for (const layer of this.premiumBackgroundLayers) {
+      layer.sprite.destroy();
+    }
+
+    this.premiumBackgroundLayers = [];
   }
 
   private createMoonSurfaceLayer(scene: Phaser.Scene, config: LevelConfig): void {
@@ -419,8 +474,13 @@ export class ParallaxBackground {
     this.currentHeight = height;
 
     this.layoutTileSprites();
+    this.layoutPremiumBackgroundLayers();
 
     if (!this.levelConfig) {
+      return;
+    }
+
+    if (this.premiumBackgroundLayers.length > 0) {
       return;
     }
 
@@ -441,6 +501,7 @@ export class ParallaxBackground {
     }
 
     this.destroyLevelVisualLayers();
+    this.destroyPremiumBackgroundLayers();
 
     for (let i = 0; i < this.tileSprites.length; i++) {
       this.tileSprites[i].destroy();
@@ -837,6 +898,7 @@ export class ParallaxBackground {
     this.landmarkAlpha = Phaser.Math.Linear(this.landmarkAlpha, this.targetLandmarkAlpha, 0.08);
 
     scrollStarLayers(this.tileSprites, LAYER_CONFIGS, delta);
+    this.scrollPremiumBackgroundLayers(delta);
     updateScenicLayerMotion(this.scenicLayers, this.elapsed, this.atmosphereDrift, this.atmosphereAlpha);
     updatePlanetLayerMotion(this.planetLayer, this.elapsed, this.atmosphereAlpha, this.landmarkAlpha);
     updateDebrisMoteMotion(this.debrisMotes, this.elapsed, delta, this.atmosphereAlpha);
@@ -866,6 +928,39 @@ export class ParallaxBackground {
     for (let i = 0; i < this.tileSprites.length; i++) {
       this.tileSprites[i].setPosition(centerX, centerY);
       this.tileSprites[i].setSize(this.currentWidth, this.currentHeight);
+    }
+  }
+
+  private layoutPremiumBackgroundLayers(): void {
+    const centerX = this.currentWidth / 2;
+    const centerY = this.currentHeight / 2;
+
+    for (const layer of this.premiumBackgroundLayers) {
+      layer.sprite.setPosition(centerX, centerY);
+      layer.sprite.setSize(this.currentWidth, this.currentHeight);
+    }
+  }
+
+  private scrollPremiumBackgroundLayers(delta: number): void {
+    if (this.premiumBackgroundLayers.length === 0) {
+      return;
+    }
+
+    for (const layer of this.premiumBackgroundLayers) {
+      layer.sprite.tilePositionY -= delta * layer.config.scrollSpeed * this.atmosphereDrift;
+
+      if (layer.config.pulse) {
+        const pulse = Math.sin(this.elapsed * layer.config.pulse.speed);
+        layer.sprite.setAlpha(
+          Phaser.Math.Clamp(
+            layer.baseAlpha * this.atmosphereAlpha + pulse * layer.config.pulse.amplitude,
+            0,
+            1
+          )
+        );
+      } else {
+        layer.sprite.setAlpha(Phaser.Math.Clamp(layer.baseAlpha * this.atmosphereAlpha, 0, 1));
+      }
     }
   }
 
