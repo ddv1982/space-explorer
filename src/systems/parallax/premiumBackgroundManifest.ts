@@ -19,12 +19,14 @@ export interface PremiumBackgroundManifest {
   levelName: string;
   assetPrefix: string;
   baseSize: { width: number; height: number };
-  premiumAssetsReplaceProcedural: true;
+  premiumAssetsReplaceProcedural: boolean;
   layers: PremiumBackgroundLayerConfig[];
 }
 
 const BACKGROUND_BASE_URL = '/assets/backgrounds';
-const BASE_SIZE = { width: 1024, height: 2048 } as const;
+const BASE_SIZE = { width: 1254, height: 1254 } as const;
+const BACKGROUND_ALPHA = 0.78;
+const BACKGROUND_SCROLL_SPEED = 0.09;
 
 const LEVELS = [
   { index: 1, name: 'Solar Slipstream' },
@@ -39,28 +41,15 @@ const LEVELS = [
   { index: 10, name: 'Eventide Singularity' },
 ] as const;
 
-const ROLE_DEFAULTS: Record<PremiumBackgroundLayerRole, Omit<PremiumBackgroundLayerConfig, 'role' | 'key' | 'url'>> = {
-  far: { alpha: 1, depth: -14, scrollSpeed: 0.08 },
-  nebula: { alpha: 0.72, depth: -12, scrollSpeed: 0.16 },
-  mid: { alpha: 0.58, depth: -9, scrollSpeed: 0.28, transparent: true },
-  near: { alpha: 0.38, depth: -6, scrollSpeed: 0.44, transparent: true },
-  overlay: {
-    alpha: 0.22,
-    depth: -4,
-    scrollSpeed: 0.62,
-    blendMode: 'ADD',
-    transparent: true,
-    pulse: { amplitude: 0.08, speed: 0.0014 },
-  },
-};
-
-function createLayer(levelIndex: number, role: PremiumBackgroundLayerRole): PremiumBackgroundLayerConfig {
-  const key = `bg_level${String(levelIndex).padStart(2, '0')}_${role}`;
+function createLayer(levelIndex: number): PremiumBackgroundLayerConfig {
+  const key = `bg_level${String(levelIndex).padStart(2, '0')}`;
   return {
-    role,
+    role: 'far',
     key,
     url: `${BACKGROUND_BASE_URL}/${key}.png`,
-    ...ROLE_DEFAULTS[role],
+    alpha: BACKGROUND_ALPHA,
+    depth: -20,
+    scrollSpeed: BACKGROUND_SCROLL_SPEED,
   };
 }
 
@@ -71,8 +60,8 @@ function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManife
     levelName: level.name,
     assetPrefix,
     baseSize: { ...BASE_SIZE },
-    premiumAssetsReplaceProcedural: true,
-    layers: (['far', 'nebula', 'mid', 'near', 'overlay'] as const).map((role) => createLayer(level.index, role)),
+    premiumAssetsReplaceProcedural: false,
+    layers: [createLayer(level.index)],
   };
 }
 
@@ -96,4 +85,16 @@ export function getPremiumBackgroundPreloadQueue(levelName: string | undefined):
   }
 
   return manifest.layers.map((layer) => ({ key: layer.key, url: layer.url }));
+}
+
+export function getAllPremiumBackgroundPreloadQueue(): Array<{ key: string; url: string }> {
+  const queued = new Map<string, { key: string; url: string }>();
+
+  for (const manifest of Object.values(PREMIUM_BACKGROUND_MANIFESTS)) {
+    for (const layer of manifest.layers) {
+      queued.set(layer.key, { key: layer.key, url: layer.url });
+    }
+  }
+
+  return [...queued.values()];
 }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getAllPremiumBackgroundPreloadQueue } from '../systems/parallax/premiumBackgroundManifest';
 import { getViewportLayout } from '../utils/layout';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
@@ -8,6 +9,11 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
+    for (const asset of getAllPremiumBackgroundPreloadQueue()) {
+      if (!this.textures.exists(asset.key)) {
+        this.load.image(asset.key, asset.url);
+      }
+    }
   }
 
   create(): void {

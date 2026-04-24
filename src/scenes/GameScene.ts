@@ -302,6 +302,20 @@ export class GameScene extends Phaser.Scene {
     this.clampPlayerToViewport();
   }
 
+  private syncViewportIfNeeded(): void {
+    const viewport = getSceneViewportBounds(this);
+    const camera = this.cameras.main;
+
+    if (
+      Math.abs(camera.width - viewport.width) <= 1 &&
+      Math.abs(camera.height - viewport.height) <= 1
+    ) {
+      return;
+    }
+
+    this.handleScaleResize();
+  }
+
   private getPlayerSpawnPoint(): { x: number; y: number } {
     return getPlayerSpawnPoint(this);
   }
@@ -539,6 +553,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    this.syncViewportIfNeeded();
+
     if (this.inputManager.consumePauseToggleRequest()) {
       this.pauseStateController?.togglePauseRequest(this.flow.isGameplayLocked());
     }

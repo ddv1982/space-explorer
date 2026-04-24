@@ -3,8 +3,10 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const DIST_DIR = path.resolve(process.cwd(), 'dist');
-const DEFAULT_MAX_ASSET_KB = 1500;
-const DEFAULT_MAX_TOTAL_KB = 1800;
+const DEFAULT_MAX_ASSET_KB = 3500;
+const DEFAULT_MAX_TOTAL_KB = 30000;
+const DEFAULT_MAX_JS_ASSET_KB = 1500;
+const DEFAULT_MAX_TOTAL_JS_KB = 1800;
 
 async function walkFiles(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -38,6 +40,8 @@ function parseArgs(argv) {
     check: false,
     maxAssetKb: undefined,
     maxTotalKb: undefined,
+    maxJsAssetKb: undefined,
+    maxTotalJsKb: undefined,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -72,6 +76,30 @@ function parseArgs(argv) {
       continue;
     }
 
+    if (arg.startsWith('--max-js-asset-kb=')) {
+      result.maxJsAssetKb = parseNumber(arg.split('=')[1], '--max-js-asset-kb');
+      continue;
+    }
+
+    if (arg === '--max-js-asset-kb') {
+      const value = argv[i + 1];
+      result.maxJsAssetKb = parseNumber(value, '--max-js-asset-kb');
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--max-total-js-kb=')) {
+      result.maxTotalJsKb = parseNumber(arg.split('=')[1], '--max-total-js-kb');
+      continue;
+    }
+
+    if (arg === '--max-total-js-kb') {
+      const value = argv[i + 1];
+      result.maxTotalJsKb = parseNumber(value, '--max-total-js-kb');
+      i += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -94,6 +122,16 @@ async function main() {
     (process.env.BUNDLE_MAX_TOTAL_KB
       ? parseNumber(process.env.BUNDLE_MAX_TOTAL_KB, 'BUNDLE_MAX_TOTAL_KB')
       : DEFAULT_MAX_TOTAL_KB);
+  const maxJsAssetKb =
+    args.maxJsAssetKb ??
+    (process.env.BUNDLE_MAX_JS_ASSET_KB
+      ? parseNumber(process.env.BUNDLE_MAX_JS_ASSET_KB, 'BUNDLE_MAX_JS_ASSET_KB')
+      : DEFAULT_MAX_JS_ASSET_KB);
+  const maxTotalJsKb =
+    args.maxTotalJsKb ??
+    (process.env.BUNDLE_MAX_TOTAL_JS_KB
+      ? parseNumber(process.env.BUNDLE_MAX_TOTAL_JS_KB, 'BUNDLE_MAX_TOTAL_JS_KB')
+      : DEFAULT_MAX_TOTAL_JS_KB);
 
   let files;
 
@@ -129,9 +167,13 @@ async function main() {
 
   const totalRawBytes = report.reduce((sum, item) => sum + item.rawBytes, 0);
   const totalGzipBytes = report.reduce((sum, item) => sum + item.gzipBytes, 0);
+  const jsReport = report.filter((item) => item.file.endsWith('.js'));
+  const totalJsRawBytes = jsReport.reduce((sum, item) => sum + item.rawBytes, 0);
+  const largestJs = jsReport[0];
 
   console.log(`Bundle report (${report.length} files in dist)`);
   console.log(`Total: ${formatKb(totalRawBytes)} raw / ${formatKb(totalGzipBytes)} gzip`);
+  console.log(`JavaScript total: ${formatKb(totalJsRawBytes)} raw`);
 
   for (const item of report.slice(0, 8)) {
     console.log(`- ${item.file}: ${formatKb(item.rawBytes)} raw / ${formatKb(item.gzipBytes)} gzip`);
@@ -156,9 +198,21 @@ async function main() {
     );
   }
 
+  if ((largestJs?.rawBytes ?? 0) > maxJsAssetKb * 1024) {
+    violations.push(
+      `Largest JS asset ${largestJs.file} is ${formatKb(largestJs.rawBytes)} (max ${maxJsAssetKb.toFixed(2)} kB)`,
+    );
+  }
+
+  if (totalJsRawBytes > maxTotalJsKb * 1024) {
+    violations.push(
+      `Total JS size is ${formatKb(totalJsRawBytes)} (max ${maxTotalJsKb.toFixed(2)} kB)`,
+    );
+  }
+
   if (violations.length === 0) {
     console.log(
-      `CHECK PASSED (largest <= ${maxAssetKb.toFixed(2)} kB, total <= ${maxTotalKb.toFixed(2)} kB)`,
+      `CHECK PASSED (largest <= ${maxAssetKb.toFixed(2)} kB, total <= ${maxTotalKb.toFixed(2)} kB, largest JS <= ${maxJsAssetKb.toFixed(2)} kB, total JS <= ${maxTotalJsKb.toFixed(2)} kB)`,
     );
     return;
   }
