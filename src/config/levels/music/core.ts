@@ -1,5 +1,6 @@
 import type {
   LevelMusicConfig,
+  MusicArrangementConfig,
   ProceduralMusicLayerConfig,
   ProceduralMusicLayerExpressionConfig,
   ProceduralMusicTrackConfig,
@@ -23,6 +24,34 @@ type TrackVariation = Partial<Omit<ProceduralMusicTrackConfig, 'bass' | 'pulse' 
   lead?: LayerVariation;
   noise?: NoiseVariation;
 };
+
+export function cloneMusicArrangement(config: MusicArrangementConfig): MusicArrangementConfig {
+  return {
+    loop: config.loop,
+    sections: config.sections.map((section) => ({
+      ...section,
+      layerGainMultipliers: section.layerGainMultipliers ? { ...section.layerGainMultipliers } : undefined,
+    })),
+  };
+}
+
+export function mergeMusicArrangement(
+  defaults: MusicArrangementConfig,
+  override?: MusicArrangementConfig
+): MusicArrangementConfig {
+  if (!override) {
+    return cloneMusicArrangement(defaults);
+  }
+
+  return {
+    ...cloneMusicArrangement(defaults),
+    ...override,
+    sections: (override.sections ?? defaults.sections).map((section) => ({
+      ...section,
+      layerGainMultipliers: section.layerGainMultipliers ? { ...section.layerGainMultipliers } : undefined,
+    })),
+  };
+}
 
 function mergeLayerExpression(
   base?: ProceduralMusicLayerExpressionConfig,

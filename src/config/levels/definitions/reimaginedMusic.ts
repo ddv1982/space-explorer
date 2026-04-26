@@ -1,6 +1,7 @@
 import {
   createMusicProfile,
   layerExpressionPresets,
+  mergeMusicArrangement,
   noiseExpressionPresets,
   trackExpressionPresets,
 } from '../musicHelpers';
@@ -95,43 +96,15 @@ const DEFAULT_BOSS_ARRANGEMENT: MusicArrangementConfig = {
   ],
 };
 
-function cloneArrangement(config: MusicArrangementConfig): MusicArrangementConfig {
-  return {
-    loop: config.loop,
-    sections: config.sections.map((section) => ({
-      ...section,
-      layerGainMultipliers: section.layerGainMultipliers ? { ...section.layerGainMultipliers } : undefined,
-    })),
-  };
-}
-
-function mergeArrangement(
-  defaults: MusicArrangementConfig,
-  override?: MusicArrangementConfig
-): MusicArrangementConfig {
-  if (!override) {
-    return cloneArrangement(defaults);
-  }
-
-  return {
-    ...cloneArrangement(defaults),
-    ...override,
-    sections: (override.sections ?? defaults.sections).map((section) => ({
-      ...section,
-      layerGainMultipliers: section.layerGainMultipliers ? { ...section.layerGainMultipliers } : undefined,
-    })),
-  };
-}
-
 export function createSignatureMusic(seed: MusicSeed) {
   const stageDescriptors: MusicCompositionalDescriptorsConfig = {
     ...seed.intent.stage,
-    arrangement: mergeArrangement(DEFAULT_STAGE_ARRANGEMENT, seed.arrangement?.stage),
+    arrangement: mergeMusicArrangement(DEFAULT_STAGE_ARRANGEMENT, seed.arrangement?.stage),
   };
 
   const bossDescriptors: MusicCompositionalDescriptorsConfig = {
     ...seed.intent.boss,
-    arrangement: mergeArrangement(DEFAULT_BOSS_ARRANGEMENT, seed.arrangement?.boss),
+    arrangement: mergeMusicArrangement(DEFAULT_BOSS_ARRANGEMENT, seed.arrangement?.boss),
   };
 
   return createMusicProfile(

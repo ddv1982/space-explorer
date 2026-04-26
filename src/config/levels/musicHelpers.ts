@@ -4,6 +4,8 @@
 
 export {
   createMusicProfile,
+  cloneMusicArrangement,
+  mergeMusicArrangement,
   layerExpressionPresets,
   trackExpressionPresets,
   noiseExpressionPresets,

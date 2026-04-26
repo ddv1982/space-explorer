@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2026-04-27
+
+### Changed
+- Simplified `PauseStateController` pause-state publishing so overlay/mobile-control updates flow through one shared path while preserving existing pause and orientation-block behavior.
+- Centralized non-empty campaign validation in `src/config/levels/campaigns.ts` and extracted shared arrangement clone/merge helpers for level music configuration.
+
+### Quality
+- Added regression coverage for pause-state semantics, campaign validation, and `createSignatureMusic()` arrangement immutability.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, and `bun run bundle:check`.
+
+
 ## [1.1.1] - 2026-04-22
 
 ### Changed

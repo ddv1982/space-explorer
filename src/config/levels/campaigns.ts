@@ -7,10 +7,14 @@ interface CampaignConfig {
   levels: readonly LevelConfig[];
 }
 
-export function defineCampaign(config: CampaignConfig): CampaignConfig {
-  if (config.levels.length === 0) {
-    throw new Error(`[levels] Campaign "${config.id}" must include at least one level.`);
+function assertCampaignHasLevels(campaign: Pick<CampaignConfig, 'id' | 'levels'>): void {
+  if (campaign.levels.length === 0) {
+    throw new Error(`[levels] Campaign "${campaign.id}" must include at least one level.`);
   }
+}
+
+export function defineCampaign(config: CampaignConfig): CampaignConfig {
+  assertCampaignHasLevels(config);
 
   return Object.freeze({
     ...config,
@@ -23,9 +27,7 @@ export function flattenCampaignLevels(campaigns: readonly CampaignConfig[]): Lev
   const seenLevelKeys = new Set<string>();
 
   for (const campaign of campaigns) {
-    if (campaign.levels.length === 0) {
-      throw new Error(`[levels] Campaign "${campaign.id}" must include at least one level.`);
-    }
+    assertCampaignHasLevels(campaign);
 
     for (const level of campaign.levels) {
       const levelKey = `${level.name}::${level.planetName}`;
