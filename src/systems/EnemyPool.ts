@@ -10,8 +10,16 @@ import { BomberBomb } from '../entities/BomberBomb';
 import type { BossConfig, EnemyType } from '../config/LevelsConfig';
 
 type EnemyPoolGroupKey = EnemyType | 'boss';
+type PoolGroupKey = EnemyPoolGroupKey | 'bomb' | 'enemyBullet';
 type EnemyPlayerCollisionBehavior = 'kamikaze' | 'impact' | 'none';
 
+type GroupClass = abstract new (...args: never[]) => unknown;
+
+type GroupDescriptor = {
+  maxSize: number;
+  classType: GroupClass;
+  runChildUpdate: boolean;
+};
 interface EnemyGroupRegistration {
   key: EnemyPoolGroupKey;
   group: Phaser.Physics.Arcade.Group;
@@ -20,14 +28,50 @@ interface EnemyGroupRegistration {
 
 export class EnemyPool {
   private scene!: Phaser.Scene;
-  private scoutGroup!: Phaser.Physics.Arcade.Group;
-  private fighterGroup!: Phaser.Physics.Arcade.Group;
-  private bomberGroup: Phaser.Physics.Arcade.Group | null = null;
-  private swarmGroup: Phaser.Physics.Arcade.Group | null = null;
-  private gunshipGroup: Phaser.Physics.Arcade.Group | null = null;
-  private bossGroup: Phaser.Physics.Arcade.Group | null = null;
-  private bombGroup: Phaser.Physics.Arcade.Group | null = null;
-  private enemyBulletGroup!: Phaser.Physics.Arcade.Group;
+  private groups: Partial<Record<PoolGroupKey, Phaser.Physics.Arcade.Group>> = {};
+
+  private readonly groupDescriptors: Record<PoolGroupKey, GroupDescriptor> = {
+    scout: {
+      maxSize: 50,
+      classType: Scout,
+      runChildUpdate: true,
+    },
+    fighter: {
+      maxSize: 30,
+      classType: Fighter,
+      runChildUpdate: true,
+    },
+    bomber: {
+      maxSize: 20,
+      classType: Bomber,
+      runChildUpdate: true,
+    },
+    swarm: {
+      maxSize: 40,
+      classType: Swarm,
+      runChildUpdate: true,
+    },
+    gunship: {
+      maxSize: 15,
+      classType: Gunship,
+      runChildUpdate: true,
+    },
+    boss: {
+      maxSize: 1,
+      classType: Boss,
+      runChildUpdate: true,
+    },
+    bomb: {
+      maxSize: 30,
+      classType: BomberBomb,
+      runChildUpdate: true,
+    },
+    enemyBullet: {
+      maxSize: 80,
+      classType: EnemyBullet,
+      runChildUpdate: true,
+    },
+  };
 
   private acquireFromGroup<T>(group: Phaser.Physics.Arcade.Group, x: number, y: number): T | null {
     const existing = group.getFirstDead(false) as T | null;
@@ -40,69 +84,37 @@ export class EnemyPool {
 
   create(scene: Phaser.Scene): void {
     this.scene = scene;
+    this.groups = {};
 
-    this.scoutGroup = scene.physics.add.group({
-      maxSize: 50,
-      classType: Scout,
-      runChildUpdate: true,
+    this.ensureGroup('scout');
+    this.ensureGroup('fighter');
+    this.ensureGroup('enemyBullet');
+  }
+
+  private ensureGroup(key: PoolGroupKey): Phaser.Physics.Arcade.Group {
+    const existing = this.groups[key];
+    if (existing) {
+      return existing;
+    }
+
+    const descriptor = this.groupDescriptors[key];
+    const group = this.scene.physics.add.group({
+      maxSize: descriptor.maxSize,
+      classType: descriptor.classType,
+      runChildUpdate: descriptor.runChildUpdate,
     });
 
-    this.fighterGroup = scene.physics.add.group({
-      maxSize: 30,
-      classType: Fighter,
-      runChildUpdate: true,
-    });
-
-    this.enemyBulletGroup = scene.physics.add.group({
-      maxSize: 80,
-      classType: EnemyBullet,
-      runChildUpdate: true,
-    });
+    this.groups[key] = group;
+    return group;
   }
 
-  private ensureBomberGroup(): void {
-    if (!this.bomberGroup) {
-      this.bomberGroup = this.scene.physics.add.group({
-        maxSize: 20,
-        classType: Bomber,
-        runChildUpdate: true,
-      });
-      this.ensureBombGroup();
-    }
-  }
-
-  private ensureSwarmGroup(): void {
-    if (!this.swarmGroup) {
-      this.swarmGroup = this.scene.physics.add.group({
-        maxSize: 40,
-        classType: Swarm,
-        runChildUpdate: true,
-      });
-    }
-  }
-
-  private ensureGunshipGroup(): void {
-    if (!this.gunshipGroup) {
-      this.gunshipGroup = this.scene.physics.add.group({
-        maxSize: 15,
-        classType: Gunship,
-        runChildUpdate: true,
-      });
-    }
-  }
-
-  private ensureBombGroup(): void {
-    if (!this.bombGroup) {
-      this.bombGroup = this.scene.physics.add.group({
-        maxSize: 30,
-        classType: BomberBomb,
-        runChildUpdate: true,
-      });
-    }
+  private ensureBomberSupport(): void {
+    this.ensureGroup('bomber');
+    this.ensureGroup('bomb');
   }
 
   spawnScout(x: number, y: number): Scout | null {
-    const scout = this.acquireFromGroup<Scout>(this.scoutGroup, x, y);
+    const scout = this.acquireFromGroup<Scout>(this.ensureGroup('scout'), x, y);
     if (scout) {
       scout.spawn(x, y);
     }
@@ -110,27 +122,32 @@ export class EnemyPool {
   }
 
   spawnFighter(x: number, y: number): Fighter | null {
-    const fighter = this.acquireFromGroup<Fighter>(this.fighterGroup, x, y);
+    const fighterGroup = this.ensureGroup('fighter');
+    const enemyBulletGroup = this.ensureGroup('enemyBullet');
+    const fighter = this.acquireFromGroup<Fighter>(fighterGroup, x, y);
     if (fighter) {
       fighter.spawn(x, y);
-      fighter.setEnemyBulletGroup(this.enemyBulletGroup);
+      fighter.setEnemyBulletGroup(enemyBulletGroup);
     }
     return fighter;
   }
 
   spawnBomber(x: number, y: number): Bomber | null {
-    this.ensureBomberGroup();
-    const bomber = this.acquireFromGroup<Bomber>(this.bomberGroup!, x, y);
+    this.ensureBomberSupport();
+
+    const bomberGroup = this.ensureGroup('bomber');
+    const bombGroup = this.ensureGroup('bomb');
+    const bomber = this.acquireFromGroup<Bomber>(bomberGroup, x, y);
     if (bomber) {
       bomber.spawn(x, y);
-      if (this.bombGroup) bomber.setBombGroup(this.bombGroup);
+      bomber.setBombGroup(bombGroup);
     }
     return bomber;
   }
 
   spawnSwarm(x: number, y: number): Swarm | null {
-    this.ensureSwarmGroup();
-    const swarm = this.acquireFromGroup<Swarm>(this.swarmGroup!, x, y);
+    const swarmGroup = this.ensureGroup('swarm');
+    const swarm = this.acquireFromGroup<Swarm>(swarmGroup, x, y);
     if (swarm) {
       swarm.spawn(x, y);
     }
@@ -138,11 +155,12 @@ export class EnemyPool {
   }
 
   spawnGunship(x: number, y: number): Gunship | null {
-    this.ensureGunshipGroup();
-    const gunship = this.acquireFromGroup<Gunship>(this.gunshipGroup!, x, y);
+    const gunshipGroup = this.ensureGroup('gunship');
+    const enemyBulletGroup = this.ensureGroup('enemyBullet');
+    const gunship = this.acquireFromGroup<Gunship>(gunshipGroup, x, y);
     if (gunship) {
       gunship.spawn(x, y);
-      gunship.setEnemyBulletGroup(this.enemyBulletGroup);
+      gunship.setEnemyBulletGroup(enemyBulletGroup);
     }
     return gunship;
   }
@@ -163,20 +181,14 @@ export class EnemyPool {
   }
 
   spawnBoss(x: number, y: number, config?: BossConfig): Boss | null {
-    if (!this.bossGroup) {
-      this.bossGroup = this.scene.physics.add.group({
-        maxSize: 1,
-        classType: Boss,
-        runChildUpdate: true,
-      });
-    }
-    const activeBoss = this.bossGroup.getChildren().find(c => c.active) as Boss | undefined;
+    const bossGroup = this.ensureGroup('boss');
+    const activeBoss = bossGroup.getChildren().find(c => c.active) as Boss | undefined;
     if (activeBoss) return null;
 
-    const boss = this.acquireFromGroup<Boss>(this.bossGroup, x, y);
+    const boss = this.acquireFromGroup<Boss>(bossGroup, x, y);
     if (boss) {
       boss.spawn(x, y, config);
-      boss.setEnemyBulletGroup(this.enemyBulletGroup);
+      boss.setEnemyBulletGroup(this.ensureGroup('enemyBullet'));
       boss.setSummonHandler((type, spawnX, spawnY) => {
         this.spawnEnemy(type, spawnX, spawnY);
       });
@@ -185,7 +197,7 @@ export class EnemyPool {
   }
 
   fireEnemyBullet(x: number, y: number): EnemyBullet | null {
-    const bullet = this.acquireFromGroup<EnemyBullet>(this.enemyBulletGroup, x, y);
+    const bullet = this.acquireFromGroup<EnemyBullet>(this.ensureGroup('enemyBullet'), x, y);
     if (bullet) {
       bullet.fire(x, y);
     }
@@ -193,46 +205,36 @@ export class EnemyPool {
   }
 
   getScoutGroup(): Phaser.Physics.Arcade.Group {
-    return this.scoutGroup;
+    return this.ensureGroup('scout');
   }
 
   getFighterGroup(): Phaser.Physics.Arcade.Group {
-    return this.fighterGroup;
+    return this.ensureGroup('fighter');
   }
 
   getBomberGroup(): Phaser.Physics.Arcade.Group {
-    this.ensureBomberGroup();
-    return this.bomberGroup!;
+    this.ensureBomberSupport();
+    return this.ensureGroup('bomber');
   }
 
   getSwarmGroup(): Phaser.Physics.Arcade.Group {
-    this.ensureSwarmGroup();
-    return this.swarmGroup!;
+    return this.ensureGroup('swarm');
   }
 
   getGunshipGroup(): Phaser.Physics.Arcade.Group {
-    this.ensureGunshipGroup();
-    return this.gunshipGroup!;
+    return this.ensureGroup('gunship');
   }
 
   getBossGroup(): Phaser.Physics.Arcade.Group {
-    if (!this.bossGroup) {
-      this.bossGroup = this.scene.physics.add.group({
-        maxSize: 1,
-        classType: Boss,
-        runChildUpdate: true,
-      });
-    }
-    return this.bossGroup;
+    return this.ensureGroup('boss');
   }
 
   getBombGroup(): Phaser.Physics.Arcade.Group {
-    this.ensureBombGroup();
-    return this.bombGroup!;
+    return this.ensureGroup('bomb');
   }
 
   getEnemyBulletGroup(): Phaser.Physics.Arcade.Group {
-    return this.enemyBulletGroup;
+    return this.ensureGroup('enemyBullet');
   }
 
   getEnemyGroupRegistry(): EnemyGroupRegistration[] {
@@ -272,11 +274,16 @@ export class EnemyPool {
 
   getAllEnemies(): Phaser.Physics.Arcade.Sprite[] {
     const enemies: Phaser.Physics.Arcade.Sprite[] = [];
-    this.scoutGroup.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
-    this.fighterGroup.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
-    if (this.bomberGroup) this.bomberGroup.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
-    if (this.swarmGroup) this.swarmGroup.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
-    if (this.gunshipGroup) this.gunshipGroup.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+
+    this.ensureGroup('scout').getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+    this.ensureGroup('fighter').getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+
+    const optionalGroups: PoolGroupKey[] = ['bomber', 'swarm', 'gunship'];
+    optionalGroups.forEach((key) => {
+      const group = this.groups[key];
+      group?.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+    });
+
     return enemies;
   }
 }

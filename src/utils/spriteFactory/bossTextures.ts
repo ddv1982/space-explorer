@@ -2,10 +2,6 @@ import Phaser from 'phaser';
 import type { BossAttackStyle } from '../../config/levels/types';
 import { withGeneratedTexture } from '../generatedTexture';
 
-export function ensureBossTexture(scene: Phaser.Scene): string {
-  return ensureBossTextureVariant(scene, 'barrage', 'boss');
-}
-
 export function ensureBossTextureVariant(
   scene: Phaser.Scene,
   attackStyle: BossAttackStyle = 'barrage',

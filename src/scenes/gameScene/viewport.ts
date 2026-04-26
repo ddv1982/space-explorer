@@ -2,13 +2,8 @@ import Phaser from 'phaser';
 import type { Player } from '../../entities/Player';
 import { getViewportBounds } from '../../utils/layout';
 
-export function getSceneViewportBounds(scene: Phaser.Scene): ReturnType<typeof getViewportBounds> {
-  return getViewportBounds(scene);
-}
-
 export function getPlayerSpawnPoint(scene: Phaser.Scene): { x: number; y: number } {
-  const viewport = getSceneViewportBounds(scene);
-
+  const viewport = getViewportBounds(scene);
   return {
     x: viewport.centerX,
     y: viewport.bottom - 80,
@@ -16,8 +11,7 @@ export function getPlayerSpawnPoint(scene: Phaser.Scene): { x: number; y: number
 }
 
 export function syncSceneViewport(scene: Phaser.Scene): ReturnType<typeof getViewportBounds> {
-  const viewport = getSceneViewportBounds(scene);
-
+  const viewport = getViewportBounds(scene);
   scene.cameras.main.setViewport(0, 0, viewport.width, viewport.height);
   scene.cameras.main.setSize(viewport.width, viewport.height);
   scene.cameras.main.setBounds(0, 0, viewport.width, viewport.height);
@@ -31,7 +25,7 @@ export function clampPlayerToViewport(scene: Phaser.Scene, player: Player | null
     return;
   }
 
-  const viewport = getSceneViewportBounds(scene);
+  const viewport = getViewportBounds(scene);
   const halfWidth = player.displayWidth / 2;
   const halfHeight = player.displayHeight / 2;
   const clampedX = Phaser.Math.Clamp(player.x, viewport.left + halfWidth, viewport.right - halfWidth);

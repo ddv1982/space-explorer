@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 import { SCROLL_SPEED } from '../../utils/constants';
 
-export interface TileSpriteScrollConfig {
+interface TileSpriteScrollConfig {
   scrollSpeed: number;
 }
 
-export interface ScenicMotionState {
+interface ScenicMotionState {
   sprite: Phaser.GameObjects.Image;
   baseX: number;
   baseY: number;
@@ -16,14 +16,14 @@ export interface ScenicMotionState {
   phase: number;
 }
 
-export interface PlanetMotionState {
+interface PlanetMotionState {
   sprite: Phaser.GameObjects.Image;
   baseX: number;
   baseY: number;
   baseAlpha: number;
 }
 
-export interface DebrisMotionState {
+interface DebrisMotionState {
   sprite: Phaser.GameObjects.Image;
   baseX: number;
   baseY: number;
@@ -35,7 +35,7 @@ export interface DebrisMotionState {
   rotSpeed: number;
 }
 
-export interface TwinkleMotionState {
+interface TwinkleMotionState {
   sprite: Phaser.GameObjects.Image;
   phase: number;
   speed: number;
@@ -43,7 +43,7 @@ export interface TwinkleMotionState {
   baseMaxAlpha: number;
 }
 
-export interface MoonSurfaceMotionState {
+interface MoonSurfaceMotionState {
   sprite: Phaser.GameObjects.Image;
   baseX: number;
   baseY: number;
@@ -52,14 +52,14 @@ export interface MoonSurfaceMotionState {
   motionAmplitude: number;
 }
 
-export interface PassingPlanetMotionState {
+interface PassingPlanetMotionState {
   sprite: Phaser.GameObjects.Image;
   scrollSpeed: number;
   baseY: number;
   baseAlpha: number;
 }
 
-export interface ForegroundSilhouetteMotionState {
+interface ForegroundSilhouetteMotionState {
   sprite: Phaser.GameObjects.Image;
   baseX: number;
   baseY: number;

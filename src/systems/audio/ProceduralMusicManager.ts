@@ -75,7 +75,6 @@ export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
 };
 
 export type MusicRuntimeTuning = MusicRuntimeTuningValues;
-export { DEFAULT_MUSIC_RUNTIME_TUNING };
 
 export class ProceduralMusicManager {
   private readonly musicScheduleLookaheadMs = 45;

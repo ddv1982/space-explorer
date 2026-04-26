@@ -5,7 +5,7 @@ import { EffectsManager } from '../systems/EffectsManager';
 import { Player } from './Player';
 import { ensureHelperShipTexture } from '../utils/SpriteFactory';
 
-export type HelperShipDamageResult = 'ignored' | 'active' | 'respawning' | 'depleted';
+type HelperShipDamageResult = 'ignored' | 'active' | 'respawning' | 'depleted';
 
 interface HelperShipLoadout {
   maxHp: number;
@@ -16,7 +16,7 @@ interface HelperShipLoadout {
   followOffsetY: number;
 }
 
-export interface HelperShipPersistentState {
+interface HelperShipPersistentState {
   remainingLives: number;
   hp: number;
 }

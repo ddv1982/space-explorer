@@ -25,7 +25,7 @@ type TrackVariation = Partial<Omit<ProceduralMusicTrackConfig, 'bass' | 'pulse' 
   noise?: NoiseVariation;
 };
 
-export function cloneMusicArrangement(config: MusicArrangementConfig): MusicArrangementConfig {
+function cloneMusicArrangement(config: MusicArrangementConfig): MusicArrangementConfig {
   return {
     loop: config.loop,
     sections: config.sections.map((section) => ({

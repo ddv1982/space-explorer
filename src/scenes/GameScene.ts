@@ -49,10 +49,10 @@ import {
 } from './gameScene/sceneEvents';
 import {
   clampPlayerToViewport,
-  getSceneViewportBounds,
   getPlayerSpawnPoint,
   syncSceneViewport,
 } from './gameScene/viewport';
+import { getViewportBounds } from '../utils/layout';
 import { startRegisteredScene } from './sceneRegistry';
 
 export class GameScene extends Phaser.Scene {
@@ -109,18 +109,39 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.resetRuntimeState();
+    this.registerLifecycleHandlers();
+
+    const state = this.initializePlayerRunState();
+    const levelConfig = this.initializeLevelRuntime(state);
+    const { initialSection, initialSectionProgress } = this.initializeAudioForLevel(levelConfig);
+    const playerSpawnPoint = this.createWorldPresentation(levelConfig, initialSection, initialSectionProgress);
+
+    this.createInputAndPlayer(state, playerSpawnPoint);
+    this.createPoolsAndGameplaySystems(levelConfig, state);
+    this.createHudAndTransitions(levelConfig, state);
+    this.createPauseAndViewportGuards();
+
+    showControlsHint(this, { mobile: isTouchMobileDevice() });
+    this.registerRuntimeHandlers();
+  }
+
+  private resetRuntimeState(): void {
     this.lastFireTime = 0;
     this.boss = null;
     this.lastLifeHelperWing = null;
     this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
+  }
 
-    this.registerLifecycleHandlers();
-
+  private initializePlayerRunState(): ReturnType<typeof getPlayerState> {
     const state = getPlayerState(this.registry);
     this.flow.reset(state.remainingLives);
     this.flow.setRespawnFrameProbeEnabled(resolveRespawnFrameProbeEnabled());
+    return state;
+  }
 
+  private initializeLevelRuntime(state: ReturnType<typeof getPlayerState>): ReturnType<LevelManager['getLevelConfig']> {
     this.levelManager = new LevelManager();
     this.levelManager.init(state.level);
 
@@ -133,12 +154,28 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
+    return levelConfig;
+  }
+
+  private initializeAudioForLevel(levelConfig: ReturnType<LevelManager['getLevelConfig']>): {
+    initialSection: ReturnType<typeof getActiveSection>;
+    initialSectionProgress: number;
+  } {
     audioManager.init();
     audioManager.startMusic(levelConfig.music.stage);
+
     const initialSection = getActiveSection(levelConfig, 0);
     const initialSectionProgress = initialSection ? getSectionProgress(initialSection, 0) : 0;
     audioManager.setMusicIntensity(resolveSectionMusicIntensity(initialSection, initialSectionProgress));
 
+    return { initialSection, initialSectionProgress };
+  }
+
+  private createWorldPresentation(
+    levelConfig: ReturnType<LevelManager['getLevelConfig']>,
+    initialSection: ReturnType<typeof getActiveSection>,
+    initialSectionProgress: number
+  ): ReturnType<typeof getPlayerSpawnPoint> {
     this.cameras.main.setBackgroundColor(levelConfig.bgColor);
     this.syncViewportBounds();
     const playerSpawnPoint = this.getPlayerSpawnPoint();
@@ -152,6 +189,13 @@ export class GameScene extends Phaser.Scene {
     this.effectsManager.setup(this);
     this.effectsManager.applyLevelColorGrade(levelConfig);
 
+    return playerSpawnPoint;
+  }
+
+  private createInputAndPlayer(
+    state: ReturnType<typeof getPlayerState>,
+    playerSpawnPoint: ReturnType<typeof getPlayerSpawnPoint>
+  ): void {
     this.mobileControls = new MobileControls();
     this.mobileControls.create(this);
 
@@ -160,7 +204,12 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, playerSpawnPoint.x, playerSpawnPoint.y);
     this.player.applyState(state);
+  }
 
+  private createPoolsAndGameplaySystems(
+    levelConfig: ReturnType<LevelManager['getLevelConfig']>,
+    state: ReturnType<typeof getPlayerState>
+  ): void {
     this.bulletPool = new BulletPool();
     this.bulletPool.create(this);
 
@@ -190,25 +239,31 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = new ScoreManager();
     this.scoreManager.addScore(state.score);
 
-    // Power-up group
     this.powerUpGroup = this.physics.add.group({
       maxSize: 20,
       classType: PowerUp,
       runChildUpdate: true,
     });
 
-    // Power-ups vs Player
     this.physics.add.overlap(
-      this.powerUpGroup, this.player,
+      this.powerUpGroup,
+      this.player,
       (_obj1, _obj2) => {
         const powerUp = resolvePowerUpOverlap(_obj1, _obj2);
-        if (!powerUp || !powerUp.active || !this.player.isAlive || this.flow.isTerminalTransitionActive()) return;
+        if (!powerUp || !powerUp.active || !this.player.isAlive || this.flow.isTerminalTransitionActive()) {
+          return;
+        }
 
         this.applyPowerUp(powerUp.powerUpType);
         powerUp.kill();
       }
     );
+  }
 
+  private createHudAndTransitions(
+    levelConfig: ReturnType<LevelManager['getLevelConfig']>,
+    state: ReturnType<typeof getPlayerState>
+  ): void {
     this.hud = new HUD();
     this.hud.create(this, levelConfig);
     this.hud.showLevelAnnouncement(levelConfig.name, state.level);
@@ -217,7 +272,9 @@ export class GameScene extends Phaser.Scene {
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
     this.warpTransition.setAccentColor(levelConfig.accentColor);
+  }
 
+  private createPauseAndViewportGuards(): void {
     this.pauseStateController = PauseStateController.create({
       scene: this,
       stopPlayerMotion: () => this.stopPlayerMotion(),
@@ -227,9 +284,9 @@ export class GameScene extends Phaser.Scene {
 
     this.mobileViewportGuard = MobileViewportGuard.create(this, (blocked) => this.pauseStateController?.setOrientationBlocked(blocked));
     this.pauseStateController.setOrientationBlocked(this.mobileViewportGuard.isBlocked());
+  }
 
-    showControlsHint(this, { mobile: isTouchMobileDevice() });
-
+  private registerRuntimeHandlers(): void {
     this.registerSceneEventHandlers();
     this.syncLastLifeHelperWingState();
   }
@@ -303,7 +360,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private syncViewportIfNeeded(): void {
-    const viewport = getSceneViewportBounds(this);
+    const viewport = getViewportBounds(this);
     const camera = this.cameras.main;
 
     if (
@@ -320,7 +377,7 @@ export class GameScene extends Phaser.Scene {
     return getPlayerSpawnPoint(this);
   }
 
-  private syncViewportBounds(): ReturnType<typeof getSceneViewportBounds> {
+  private syncViewportBounds(): ReturnType<typeof getViewportBounds> {
     return syncSceneViewport(this);
   }
 
@@ -445,7 +502,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnBoss(): void {
-    const viewport = getSceneViewportBounds(this);
+    const viewport = getViewportBounds(this);
     const boss = this.enemyPool.spawnBoss(
       viewport.centerX,
       -60,
@@ -552,43 +609,58 @@ export class GameScene extends Phaser.Scene {
     this.syncHudShields();
   }
 
-  update(time: number, delta: number): void {
-    this.syncViewportIfNeeded();
-
+  private handlePauseInput(): void {
     if (this.inputManager.consumePauseToggleRequest()) {
       this.pauseStateController?.togglePauseRequest(this.flow.isGameplayLocked());
     }
+  }
 
-    if (this.pauseStateController?.isGameplayPaused() || this.flow.isGameplayLocked()) {
-      this.flow.sampleRespawnTransitionFrame(delta);
-      this.updateHud();
-      return;
-    }
+  private isPausedOrLockedFrame(): boolean {
+    return !!this.pauseStateController?.isGameplayPaused() || this.flow.isGameplayLocked();
+  }
 
+  private updatePausedFrame(delta: number): void {
+    this.flow.sampleRespawnTransitionFrame(delta);
+    this.updateHud();
+  }
+
+  private updateGameplayFrame(time: number, delta: number): void {
     this.parallax.update(delta);
     this.player.update(this.inputManager);
     this.lastLifeHelperWing?.update(time);
 
-    if (this.inputManager.isFiring() && this.player.isAlive) {
-      if (time > this.lastFireTime + this.player.fireRate) {
-        this.lastFireTime = time;
+    this.updatePlayerFiring(time);
+    this.updateEncounterAndLevelProgress(time, delta);
+    this.updateBossHudIfNeeded();
+  }
 
-        const shotSpeed = Math.abs(BULLET_SPEED);
-        const shotDirection = this.player.getFireDirection(this.shotDirection);
-        const shotOrigin = this.player.getMuzzlePosition(20, this.shotOrigin);
-        const muzzleFlashOrigin = this.player.getMuzzlePosition(24, this.muzzleFlashOrigin);
-
-        this.bulletPool.fire(
-          shotOrigin.x,
-          shotOrigin.y,
-          shotDirection.x * shotSpeed,
-          shotDirection.y * shotSpeed
-        );
-        this.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
-        audioManager.playLaser();
-      }
+  private updatePlayerFiring(time: number): void {
+    if (!this.inputManager.isFiring() || !this.player.isAlive) {
+      return;
     }
 
+    if (time <= this.lastFireTime + this.player.fireRate) {
+      return;
+    }
+
+    this.lastFireTime = time;
+
+    const shotSpeed = Math.abs(BULLET_SPEED);
+    const shotDirection = this.player.getFireDirection(this.shotDirection);
+    const shotOrigin = this.player.getMuzzlePosition(20, this.shotOrigin);
+    const muzzleFlashOrigin = this.player.getMuzzlePosition(24, this.muzzleFlashOrigin);
+
+    this.bulletPool.fire(
+      shotOrigin.x,
+      shotOrigin.y,
+      shotDirection.x * shotSpeed,
+      shotDirection.y * shotSpeed
+    );
+    this.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
+    audioManager.playLaser();
+  }
+
+  private updateEncounterAndLevelProgress(time: number, delta: number): void {
     if (!this.levelManager.hasBossSpawned()) {
       this.waveManager.update(time, delta, this.levelManager.progress);
     }
@@ -596,14 +668,22 @@ export class GameScene extends Phaser.Scene {
     const prevComplete = this.levelManager.isComplete();
     this.levelManager.update(delta);
 
+    this.syncSectionPresentation();
+    this.emitProgressionEvents(prevComplete);
+  }
+
+  private syncSectionPresentation(): void {
     const activeSection = getActiveSection(this.levelManager.getLevelConfig(), this.levelManager.progress);
     const sectionProgress = activeSection
       ? getSectionProgress(activeSection, this.levelManager.progress)
       : 0;
     const sectionMusicIntensity = resolveSectionMusicIntensity(activeSection, sectionProgress);
+
     audioManager.setMusicIntensity(this.levelManager.hasBossSpawned() ? 1.1 : sectionMusicIntensity);
     this.parallax.setSectionAtmosphere(activeSection, sectionProgress);
+  }
 
+  private emitProgressionEvents(prevComplete: boolean): void {
     if (this.levelManager.shouldSpawnBoss()) {
       this.events.emit(GAME_SCENE_EVENTS.bossSpawn);
     }
@@ -615,12 +695,25 @@ export class GameScene extends Phaser.Scene {
     ) {
       this.events.emit(GAME_SCENE_EVENTS.levelComplete);
     }
+  }
 
-    // Update boss HUD
+  private updateBossHudIfNeeded(): void {
     if (this.boss && this.boss.active) {
       this.hud.updateBossHp(this.boss.hp, this.boss.maxHp);
     }
+  }
 
+  update(time: number, delta: number): void {
+    this.syncViewportIfNeeded();
+    this.handlePauseInput();
+
+    if (this.isPausedOrLockedFrame()) {
+      this.updatePausedFrame(delta);
+      return;
+    }
+
+    this.updateGameplayFrame(time, delta);
     this.updateHud();
   }
 }
+

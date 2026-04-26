@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.5`](./1.1.5.md) — runtime refactor and export cleanup with full knip green
 - [`1.1.4`](./1.1.4.md) — refactor quality patch with pause-flow cleanup, shared level-config helpers, and regression coverage
 - [`1.1.1`](./1.1.1.md) — behavior-preserving refactor follow-up that packages the 1.1 line for release validation
 - [`1.1.0`](./1.1.0.md) — visual overhaul release with phased ship, atmosphere, hazard, and boss presentation upgrades

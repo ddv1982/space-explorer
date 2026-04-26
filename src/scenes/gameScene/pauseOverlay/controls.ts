@@ -81,7 +81,7 @@ export function createPauseButton(
   return button;
 }
 
-export function redrawPauseButton(button: PauseButton, width: number, height: number): void {
+function redrawPauseButton(button: PauseButton, width: number, height: number): void {
   drawPauseButtonBackground(button.background, width, height, button);
   button.label.setColor(button.enabled ? '#f6fbff' : '#9aa1a8');
 }

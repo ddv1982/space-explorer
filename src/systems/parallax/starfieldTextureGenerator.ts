@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { mixColor } from '../../utils/colorUtils';
 import { withGeneratedTexture } from '../../utils/generatedTexture';
 
-export interface StarLayerTextureConfig {
+interface StarLayerTextureConfig {
   starCount: number;
   starSize: { min: number; max: number };
   starAlpha: { min: number; max: number };

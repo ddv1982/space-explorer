@@ -19,7 +19,7 @@ export function applyMusicRuntimeTuningValue(
   return tuning;
 }
 
-export function syncMusicRuntimeTuningSliders(
+function syncMusicRuntimeTuningSliders(
   sliders: MusicTuningSliders | null,
   tuning: MusicRuntimeTuning
 ): void {

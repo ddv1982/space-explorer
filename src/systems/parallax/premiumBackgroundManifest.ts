@@ -15,7 +15,7 @@ export interface PremiumBackgroundLayerConfig {
   };
 }
 
-export interface PremiumBackgroundManifest {
+interface PremiumBackgroundManifest {
   levelName: string;
   assetPrefix: string;
   baseSize: { width: number; height: number };
@@ -65,7 +65,7 @@ function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManife
   };
 }
 
-export const PREMIUM_BACKGROUND_MANIFESTS: Record<string, PremiumBackgroundManifest> = Object.fromEntries(
+const PREMIUM_BACKGROUND_MANIFESTS: Record<string, PremiumBackgroundManifest> = Object.fromEntries(
   LEVELS.map((level) => [level.name, createManifest(level)])
 ) as Record<string, PremiumBackgroundManifest>;
 
@@ -77,15 +77,6 @@ export function getPremiumBackgroundManifest(levelName: string | undefined): Pre
   return PREMIUM_BACKGROUND_MANIFESTS[levelName];
 }
 
-export function getPremiumBackgroundPreloadQueue(levelName: string | undefined): Array<{ key: string; url: string }> {
-  const manifest = getPremiumBackgroundManifest(levelName);
-
-  if (!manifest) {
-    return [];
-  }
-
-  return manifest.layers.map((layer) => ({ key: layer.key, url: layer.url }));
-}
 
 export function getAllPremiumBackgroundPreloadQueue(): Array<{ key: string; url: string }> {
   const queued = new Map<string, { key: string; url: string }>();

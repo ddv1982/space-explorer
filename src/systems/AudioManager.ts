@@ -2,7 +2,6 @@ import type { ProceduralMusicTrackConfig } from '../config/LevelsConfig';
 import { AudioContextManager } from './audio/AudioContextManager';
 import { SFXManager } from './audio/SFXManager';
 import {
-  DEFAULT_MUSIC_RUNTIME_TUNING,
   ProceduralMusicManager,
   DEFAULT_TRACK,
   type MusicRuntimeTuning,
@@ -108,5 +107,4 @@ class AudioManager {
 }
 
 export type { MusicRuntimeTuning };
-export { DEFAULT_MUSIC_RUNTIME_TUNING };
 export const audioManager = new AudioManager();

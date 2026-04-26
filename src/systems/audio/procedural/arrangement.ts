@@ -5,7 +5,7 @@ import type {
   MusicArrangementSectionConfig,
 } from '../../../config/LevelsConfig';
 
-export interface MusicArrangementResolution {
+interface MusicArrangementResolution {
   phase: MusicArrangementPhase;
   density: number;
   energyLift: number;

@@ -1,4 +1,4 @@
-export { ensureBossTexture, ensureBossTextureVariant } from './spriteFactory/bossTextures';
+export { ensureBossTextureVariant } from './spriteFactory/bossTextures';
 export {
   ensureBomberTexture,
   ensureFighterTexture,

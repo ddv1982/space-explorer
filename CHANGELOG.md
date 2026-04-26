@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.5] - 2026-04-27
+
+### Changed
+- Reduced orchestration and duplication across `GameScene`, `CollisionManager`, `EnemyPool`, and viewport helpers while preserving gameplay flow, collision semantics, pooling behavior, and scene progression.
+- Tightened the codebase export surface by removing unused helper/barrel/facade exports and de-exporting local-only procedural, parallax, helper-ship, and rendering types.
+
+### Quality
+- Added regression coverage for collision damage routing, enemy-pool wiring/order, and `GameScene` update-gate behavior.
+- Verified with `bun run knip`, `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, and `bun run bundle:check`.
+
+
 ## [1.1.4] - 2026-04-27
 
 ### Changed

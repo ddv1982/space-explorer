@@ -4,7 +4,7 @@ import type {
   ProceduralMusicTrackConfig,
 } from '../../../config/LevelsConfig';
 
-export interface MusicMeterStepContext {
+interface MusicMeterStepContext {
   stepsPerBar: number;
   barIndex: number;
   stepInBar: number;

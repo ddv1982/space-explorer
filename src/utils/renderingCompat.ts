@@ -11,7 +11,7 @@ interface ColorGradeValues {
   saturation: number;
 }
 
-export interface CameraPulseValues {
+interface CameraPulseValues {
   brightness?: number;
   contrast?: number;
   saturation?: number;

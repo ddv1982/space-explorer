@@ -19,7 +19,7 @@ const FALLBACK_STEP: MusicHarmonicChordStepConfig = {
   quality: 'minor',
 };
 
-export interface HarmonicContext {
+interface HarmonicContext {
   chordIndex: number;
   cycleBarIndex: number;
   rootSemitoneOffset: number;

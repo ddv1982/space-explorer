@@ -4,7 +4,7 @@ export interface MusicRuntimeTuningValues {
   ambience: number;
 }
 
-export interface ResolvedMusicRuntimeTuning {
+interface ResolvedMusicRuntimeTuning {
   creativityDrive: number;
   tempoScale: number;
   reverbGain: number;

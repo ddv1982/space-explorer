@@ -72,13 +72,10 @@ export class CollisionManager {
       (_obj1, _obj2) => {
         const eBullet = this.resolveCollisionTarget(EnemyBullet, _obj1, _obj2);
         if (eBullet?.active && this.canProcessPlayerCollision()) {
-          eBullet.kill();
-          const damageOutcome = player.takeDamage(1);
-          if (damageOutcome === 'fatal') {
-            this.onPlayerFatalHit();
-          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
-            this.onPlayerHit();
-          }
+          this.processAcceptedPlayerDamage({
+            amount: 1,
+            beforeDamage: () => eBullet.kill(),
+          });
         }
       }
     );
@@ -91,14 +88,12 @@ export class CollisionManager {
         if (bomb?.active && this.canProcessPlayerCollision()) {
           const impactX = bomb.x;
           const impactY = bomb.y;
-          bomb.kill();
-          const damageOutcome = player.takeDamage(2);
-          this.effectsManager.createExplosion(impactX, impactY, 1.5);
-          if (damageOutcome === 'fatal') {
-            this.onPlayerFatalHit();
-          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
-            this.onPlayerHit();
-          }
+
+          this.processAcceptedPlayerDamage({
+            amount: 2,
+            beforeDamage: () => bomb.kill(),
+            afterDamage: () => this.effectsManager.createExplosion(impactX, impactY, 1.5),
+          });
         }
       }
     );
@@ -118,13 +113,10 @@ export class CollisionManager {
       (_obj1, _obj2) => {
         const asteroid = this.resolveCollisionTarget(Asteroid, _obj1, _obj2);
         if (asteroid?.active && this.canProcessPlayerCollision()) {
-          const damageOutcome = player.takeDamage(asteroid.getCollisionDamage());
-          asteroid.onPlayerCollision();
-          if (damageOutcome === 'fatal') {
-            this.onPlayerFatalHit();
-          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
-            this.onPlayerHit();
-          }
+          this.processAcceptedPlayerDamage({
+            amount: asteroid.getCollisionDamage(),
+            afterDamage: () => asteroid.onPlayerCollision(),
+          });
         }
       }
     );
@@ -139,17 +131,16 @@ export class CollisionManager {
       (_obj1, _obj2) => {
         const enemy = this.resolveCollisionTarget(EnemyBase, _obj1, _obj2);
         if (enemy?.active && this.canProcessPlayerCollision()) {
-          const damageOutcome = this.player.takeDamage(1);
-          if (playerCollisionBehavior === 'kamikaze') {
-            enemy.die();
-          } else {
-            enemy.takeDamage(1);
-          }
-          if (damageOutcome === 'fatal') {
-            this.onPlayerFatalHit();
-          } else if (this.shouldEmitPlayerHit(damageOutcome)) {
-            this.onPlayerHit();
-          }
+          this.processAcceptedPlayerDamage({
+            amount: 1,
+            afterDamage: () => {
+              if (playerCollisionBehavior === 'kamikaze') {
+                enemy.die();
+              } else {
+                enemy.takeDamage(1);
+              }
+            },
+          });
         }
       }
     );
@@ -204,6 +195,27 @@ export class CollisionManager {
 
   private shouldEmitPlayerHit(damageOutcome: PlayerDamageOutcome): boolean {
     return damageOutcome === 'absorbed' || damageOutcome === 'damaged';
+  }
+
+  private processAcceptedPlayerDamage(options: {
+    amount: number;
+    beforeDamage?: () => void;
+    afterDamage?: () => void;
+  }): void {
+    options.beforeDamage?.();
+
+    const damageOutcome = this.player.takeDamage(options.amount);
+
+    options.afterDamage?.();
+
+    if (damageOutcome === 'fatal') {
+      this.onPlayerFatalHit();
+      return;
+    }
+
+    if (this.shouldEmitPlayerHit(damageOutcome)) {
+      this.onPlayerHit();
+    }
   }
 
   private onPlayerHit(): void {

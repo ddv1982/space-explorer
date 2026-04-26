@@ -6,7 +6,7 @@ export interface RhythmMeterContext {
   stepsPerBar: number;
 }
 
-export interface RhythmScheduleResolution {
+interface RhythmScheduleResolution {
   shouldTrigger: boolean;
   patternStepIndex: number;
   gainScale: number;
