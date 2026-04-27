@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyPool } from './EnemyPool';
-import { Asteroid, type AsteroidSpawnConfig } from '../entities/Asteroid';
+import { Asteroid } from '../entities/Asteroid';
 import {
   type EnemySpawnConfig,
   type EnemyType,
@@ -14,32 +14,26 @@ import {
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
 import { getViewportBounds } from '../utils/layout';
 import { resolveSectionSpawnRateScale } from './sectionIdentity';
+import { WaveAsteroidSpawner } from './wave/WaveAsteroidSpawner';
+import {
+  canTriggerHazard,
+  consumeHazardPressure,
+  decayHazardPressure,
+  getEncounterCountPressureScale,
+  getEncounterIntervalPressureScale,
+  isHazardWithinDuration,
+} from './wave/hazardPressurePolicy';
 
 interface SpawnEntry {
   type: EnemyType;
   cumulativeWeight: number;
 }
 
-const ASTEROID_SPAWN_Y = -50;
-const HAZARD_PRESSURE_DECAY_PER_MS = 1 / 1800;
-const HAZARD_PRESSURE_SPAWN_REDUCTION = 0.28;
-const HAZARD_PRESSURE_MAX = 2.4;
-
-const HAZARD_BASE_PRESSURE_COST: Record<ScriptedHazardConfig['type'], number> = {
-  'ambient-asteroids': 0.35,
-  'debris-surge': 0.55,
-  minefield: 0.7,
-  'nebula-ambush': 0.78,
-  'ring-crossfire': 0.85,
-  'rock-corridor': 1.05,
-  'energy-storm': 0.95,
-  'gravity-well': 1.1,
-};
-
 export class WaveManager {
   private scene!: Phaser.Scene;
   private enemyPool!: EnemyPool;
   private asteroidGroup!: Phaser.Physics.Arcade.Group;
+  private asteroidSpawner!: WaveAsteroidSpawner;
   private spawnEntries: SpawnEntry[] = [];
   private totalEnemyWeight = 0;
   private lastEncounterSpawn = 0;
@@ -47,7 +41,6 @@ export class WaveManager {
   private levelConfig!: LevelConfig;
   private activeSection: LevelSectionConfig | null = null;
   private activeSectionStartedAt = 0;
-  private corridorGapCenter = 0;
   private hazardPressure = 0;
   private readonly hazardLastTriggered = new Map<string, number>();
   private readonly enemySpawnHandlers: Record<EnemyType, (anchorX: number) => boolean> = {
@@ -75,7 +68,7 @@ export class WaveManager {
       return this.spawnRepeatedEnemies(
         'swarm',
         Phaser.Math.Between(3, 5),
-        () => this.clampX(baseX + Phaser.Math.Between(-60, 60), 50),
+        () => this.clampEncounterX(baseX + Phaser.Math.Between(-60, 60), 50),
         () => Phaser.Math.Between(-120, -30)
       );
     },
@@ -90,13 +83,14 @@ export class WaveManager {
   create(scene: Phaser.Scene, enemyPool: EnemyPool): Phaser.Physics.Arcade.Group {
     this.scene = scene;
     this.enemyPool = enemyPool;
-    this.corridorGapCenter = this.getViewportCenterX();
 
     this.asteroidGroup = scene.physics.add.group({
       maxSize: 40,
       classType: Asteroid,
       runChildUpdate: true,
     });
+
+    this.asteroidSpawner = new WaveAsteroidSpawner(scene, this.asteroidGroup);
 
     return this.asteroidGroup;
   }
@@ -106,9 +100,9 @@ export class WaveManager {
     this.lastEncounterSpawn = 0;
     this.lastAsteroidSpawn = 0;
     this.activeSection = null;
-    this.corridorGapCenter = this.getViewportCenterX();
     this.hazardPressure = 0;
     this.hazardLastTriggered.clear();
+    this.asteroidSpawner.resetCorridorGapCenter();
     this.buildSpawnTable(this.levelConfig.enemies);
   }
 
@@ -124,7 +118,12 @@ export class WaveManager {
 
     this.spawnSectionHazards(time, activeSection);
     this.spawnEnemiesByConfig(time, rateMultiplier, activeSection);
-    this.spawnAsteroids(time, activeSection);
+    this.lastAsteroidSpawn = this.asteroidSpawner.spawnAsteroids(
+      time,
+      activeSection,
+      this.levelConfig,
+      this.lastAsteroidSpawn
+    );
   }
 
   getAsteroidGroup(): Phaser.Physics.Arcade.Group {
@@ -174,7 +173,7 @@ export class WaveManager {
   }
 
   private getEncounterSpawnX(anchorX: number, padding: number): number {
-    return this.clampX(anchorX + Phaser.Math.Between(-70, 70), padding);
+    return this.clampEncounterX(anchorX + Phaser.Math.Between(-70, 70), padding);
   }
 
   private getEncounterRateMultiplier(
@@ -237,7 +236,7 @@ export class WaveManager {
     rateMultiplier: number,
     activeSection: LevelSectionConfig | null
   ): void {
-    const encounterInterval = (2000 / rateMultiplier) * this.getEncounterIntervalPressureScale();
+    const encounterInterval = (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardPressure);
     if (time <= this.lastEncounterSpawn + encounterInterval) {
       return;
     }
@@ -245,23 +244,13 @@ export class WaveManager {
     this.lastEncounterSpawn = time;
 
     const encounterSize = activeSection?.encounterSizeOverride ?? this.levelConfig.encounterSize;
-    const anchorX = this.getRandomX(120);
-    const pressureScale = this.getEncounterCountPressureScale();
+    const anchorX = this.getEncounterRandomX(120);
+    const pressureScale = getEncounterCountPressureScale(this.hazardPressure);
     const minCount = Math.max(1, Math.round(encounterSize.min * pressureScale));
     const maxCount = Math.max(minCount, Math.round(encounterSize.max * pressureScale));
     const encounterCount = Phaser.Math.Between(minCount, maxCount);
 
     this.spawnEncounterBatch(anchorX, encounterCount, () => this.pickEnemyType());
-  }
-
-  private spawnAsteroids(time: number, activeSection: LevelSectionConfig | null): void {
-    const interval = activeSection?.asteroidInterval ?? this.levelConfig.asteroidInterval;
-    if (time <= this.lastAsteroidSpawn + interval) {
-      return;
-    }
-
-    this.lastAsteroidSpawn = time;
-    this.spawnSingleAsteroid(this.getRandomX(50), Phaser.Math.Between(60, 120));
   }
 
   private spawnSectionHazards(time: number, activeSection: LevelSectionConfig | null): void {
@@ -276,7 +265,7 @@ export class WaveManager {
       const lastTriggered = this.hazardLastTriggered.get(key) ?? this.activeSectionStartedAt;
       const sectionElapsedMs = Math.max(0, time - this.activeSectionStartedAt);
 
-      if (!this.isHazardWithinDuration(hazard, sectionElapsedMs)) {
+      if (!isHazardWithinDuration(hazard, sectionElapsedMs)) {
         continue;
       }
 
@@ -284,67 +273,37 @@ export class WaveManager {
         continue;
       }
 
-      if (!this.canTriggerHazard(hazard)) {
+      if (!canTriggerHazard(this.hazardPressure, hazard)) {
         continue;
       }
 
       this.hazardLastTriggered.set(key, time);
       this.triggerHazardEvent(hazard);
-      this.consumeHazardPressure(hazard);
+      this.hazardPressure = consumeHazardPressure(this.hazardPressure, hazard);
     }
-  }
-
-  private isHazardWithinDuration(hazard: ScriptedHazardConfig, sectionElapsedMs: number): boolean {
-    if (hazard.durationMs === undefined) {
-      return true;
-    }
-
-    return sectionElapsedMs <= Math.max(0, hazard.durationMs);
   }
 
   private decayHazardPressure(delta: number): void {
-    this.hazardPressure = Math.max(0, this.hazardPressure - delta * HAZARD_PRESSURE_DECAY_PER_MS);
-  }
-
-  private getHazardPressureCost(hazard: ScriptedHazardConfig): number {
-    const baseCost = HAZARD_BASE_PRESSURE_COST[hazard.type];
-    const intensity = Phaser.Math.Clamp(hazard.intensity ?? 0.5, 0, 1.25);
-    return baseCost * Phaser.Math.Linear(0.8, 1.35, intensity);
-  }
-
-  private canTriggerHazard(hazard: ScriptedHazardConfig): boolean {
-    return this.hazardPressure + this.getHazardPressureCost(hazard) <= HAZARD_PRESSURE_MAX;
-  }
-
-  private consumeHazardPressure(hazard: ScriptedHazardConfig): void {
-    this.hazardPressure = Math.min(
-      HAZARD_PRESSURE_MAX,
-      this.hazardPressure + this.getHazardPressureCost(hazard)
-    );
-  }
-
-  private getEncounterCountPressureScale(): number {
-    return Phaser.Math.Clamp(1 - this.hazardPressure * HAZARD_PRESSURE_SPAWN_REDUCTION, 0.6, 1);
-  }
-
-  private getEncounterIntervalPressureScale(): number {
-    return Phaser.Math.Linear(1, 1.45, Phaser.Math.Clamp(this.hazardPressure / HAZARD_PRESSURE_MAX, 0, 1));
+    this.hazardPressure = decayHazardPressure(this.hazardPressure, delta);
   }
 
   private triggerHazardEvent(hazard: ScriptedHazardConfig): void {
     switch (hazard.type) {
       case 'ambient-asteroids':
       case 'debris-surge':
-        this.spawnAsteroidBurst(2 + Math.round((hazard.intensity ?? 0.5) * 2), 65, 130);
+        this.asteroidSpawner.spawnAsteroidBurst(2 + Math.round((hazard.intensity ?? 0.5) * 2), 65, 130);
         return;
       case 'minefield':
-        this.spawnAsteroidBurst(2, 40, 70, 80);
+        this.asteroidSpawner.spawnAsteroidBurst(2, 40, 70, 80);
         return;
       case 'ring-crossfire':
-        this.spawnMirroredAsteroids(Phaser.Math.Between(90, 150), Phaser.Math.Between(90, 150));
+        this.asteroidSpawner.spawnMirroredAsteroids(
+          Phaser.Math.Between(90, 150),
+          Phaser.Math.Between(90, 150)
+        );
         return;
       case 'rock-corridor':
-        this.spawnEdgeAsteroids(hazard);
+        this.asteroidSpawner.spawnEdgeAsteroids(hazard);
         return;
       case 'energy-storm':
         this.spawnHazardEncounter(['fighter', 'gunship', 'swarm'], hazard.intensity ?? 0.6);
@@ -353,7 +312,10 @@ export class WaveManager {
         this.spawnHazardEncounter(['fighter', 'bomber', 'swarm'], hazard.intensity ?? 0.6);
         return;
       case 'gravity-well':
-        this.spawnMirroredAsteroids(Phaser.Math.Between(110, 160), Phaser.Math.Between(110, 160));
+        this.asteroidSpawner.spawnMirroredAsteroids(
+          Phaser.Math.Between(110, 160),
+          Phaser.Math.Between(110, 160)
+        );
         this.spawnHazardEncounter(['fighter', 'gunship'], hazard.intensity ?? 0.75);
         return;
     }
@@ -361,7 +323,7 @@ export class WaveManager {
 
   private spawnHazardEncounter(preferredTypes: EnemyType[], intensity: number): void {
     const allowedTypes = preferredTypes.filter((type) => this.spawnEntries.some((entry) => entry.type === type));
-    const anchorX = this.getRandomX(120);
+    const anchorX = this.getEncounterRandomX(120);
     const spawnCount = Phaser.Math.Clamp(Math.round(1 + intensity * 2), 1, 3);
 
     this.spawnEncounterBatch(anchorX, spawnCount, () => {
@@ -369,107 +331,18 @@ export class WaveManager {
     });
   }
 
-  private spawnAsteroidBurst(count: number, minSpeed: number, maxSpeed: number, edgePadding: number = 50): void {
-    for (let i = 0; i < count; i++) {
-      this.spawnSingleAsteroid(
-        this.getRandomX(edgePadding),
-        Phaser.Math.Between(minSpeed, maxSpeed)
-      );
-    }
-  }
-
-  private spawnMirroredAsteroids(leftSpeed: number, rightSpeed: number): void {
-    const { min, max } = this.getHorizontalRange(70);
-    const leftX = Phaser.Math.Between(min, Math.min(max, min + 80));
-    const rightX = this.clampX(this.getViewportWidth() - leftX, 70);
-    this.spawnSingleAsteroid(leftX, leftSpeed);
-    this.spawnSingleAsteroid(rightX, rightSpeed);
-  }
-
-  private spawnEdgeAsteroids(hazard: ScriptedHazardConfig): void {
-    const corridorWidth = Phaser.Math.Clamp(hazard.corridorWidth ?? 190, 150, 240);
-    const laneCount = Phaser.Math.Clamp(hazard.laneCount ?? 2, 1, 3);
-    const viewportWidth = this.getViewportWidth();
-    const viewportCenterX = this.getViewportCenterX();
-    const sidePadding = Math.min(170, viewportWidth / 2);
-    this.corridorGapCenter = Phaser.Math.Clamp(
-      this.corridorGapCenter + Phaser.Math.Between(-28, 28),
-      sidePadding,
-      Math.max(sidePadding, viewportWidth - sidePadding)
-    );
-
-    const gapCenter = this.corridorGapCenter;
-    const leftEdge = Phaser.Math.Clamp(gapCenter - corridorWidth / 2, 70, viewportCenterX - 40);
-    const rightEdge = Phaser.Math.Clamp(gapCenter + corridorWidth / 2, viewportCenterX + 40, viewportWidth - 70);
-    const collisionDamage = hazard.damage ?? 1;
-    const baseConfig: AsteroidSpawnConfig = {
-      collisionDamage,
-      destroyOnPlayerImpact: false,
-      indestructible: true,
-      scoreValue: 0,
-      tint: 0x7a4a2e,
-      depth: 3,
-      scaleRange: { min: 1.7, max: 2.3 },
-      angularVelocityRange: { min: -0.9, max: 0.9 },
-    };
-
-    for (let lane = 0; lane < laneCount; lane++) {
-      const laneOffset = lane * 34;
-
-      this.spawnSingleAsteroid(
-        leftEdge - Phaser.Math.Between(18, 42) - laneOffset,
-        Phaser.Math.Between(110, 155),
-        {
-          ...baseConfig,
-          velocityX: Phaser.Math.Between(-12, 6),
-        }
-      );
-
-      this.spawnSingleAsteroid(
-        rightEdge + Phaser.Math.Between(18, 42) + laneOffset,
-        Phaser.Math.Between(115, 160),
-        {
-          ...baseConfig,
-          velocityX: Phaser.Math.Between(-6, 12),
-        }
-      );
-    }
-  }
-
-  private spawnSingleAsteroid(spawnX: number, speed: number, config: AsteroidSpawnConfig = {}): void {
-    const asteroid = this.acquireAsteroid(spawnX, ASTEROID_SPAWN_Y);
-    asteroid?.spawn(spawnX, ASTEROID_SPAWN_Y, speed, config);
-  }
-
-  private acquireAsteroid(x: number, y: number): Asteroid | null {
-    const existing = this.asteroidGroup.getFirstDead(false) as Asteroid | null;
-    if (existing) {
-      return existing;
-    }
-
-    return this.asteroidGroup.get(x, y) as Asteroid | null;
-  }
-
-  private getViewportWidth(): number {
-    return getViewportBounds(this.scene).width;
-  }
-
-  private getViewportCenterX(): number {
-    return getViewportBounds(this.scene).centerX;
-  }
-
-  private getRandomX(padding: number): number {
-    const { min, max } = this.getHorizontalRange(padding);
+  private getEncounterRandomX(padding: number): number {
+    const { min, max } = this.getEncounterHorizontalRange(padding);
     return Phaser.Math.Between(min, max);
   }
 
-  private clampX(x: number, padding: number): number {
-    const { min, max } = this.getHorizontalRange(padding);
+  private clampEncounterX(x: number, padding: number): number {
+    const { min, max } = this.getEncounterHorizontalRange(padding);
     return Phaser.Math.Clamp(x, min, max);
   }
 
-  private getHorizontalRange(padding: number): { min: number; max: number } {
-    const viewportWidth = this.getViewportWidth();
+  private getEncounterHorizontalRange(padding: number): { min: number; max: number } {
+    const viewportWidth = getViewportBounds(this.scene).width;
     const effectivePadding = Math.min(padding, viewportWidth / 2);
 
     return {

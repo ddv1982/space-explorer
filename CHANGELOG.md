@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.6] - 2026-04-27
+
+### Changed
+- Split `GameScene`, planet intermission input handling, and multiple runtime/system helpers into smaller focused modules while preserving scene flow, gameplay timing, and authored level behavior.
+- Reorganized level-music configuration into dedicated `music/` pattern and type modules, replacing older local helper structure with clearer internal boundaries.
+- Hardened teardown ownership for runtime lifecycle, intermission listeners, and generated parallax silhouettes so repeated cleanup paths stay safe and explicit.
+- Updated the README project structure section so the documented module layout matches the current codebase.
+
+### Quality
+- Added regression coverage for runtime teardown idempotency, intermission listener cleanup/re-init, and foreground silhouette texture ownership.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, and `bun run bundle:check`.
+
+
 ## [1.1.5] - 2026-04-27
 
 ### Changed

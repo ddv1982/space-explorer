@@ -1,18 +1,13 @@
 import type {
-  MusicModulationConfig,
   MusicNoiseCharacterConfig,
   ProceduralMusicLayerConfig,
-  ProceduralMusicLayerExpressionConfig,
   ProceduralMusicTrackConfig,
   ProceduralNoiseLayerConfig,
 } from '../../../config/LevelsConfig';
-import {
-  clamp,
-  getAccentScale,
-  getEnvelopeShape,
-  resolveLayerExpression,
-  resolveNoiseExpression,
-} from './expression';
+import { createPanner } from './createPanner';
+import { applyModulation } from './modulationLfo';
+import { deriveNoisePlan } from './noisePlan';
+import { deriveToneVoicePlan } from './toneVoicePlan';
 
 interface ToneLayerArgs {
   ctx: AudioContext;
@@ -43,67 +38,39 @@ interface NoiseLayerArgs {
   getExplosionBuffer: () => AudioBuffer | null;
 }
 
-function createPanner(
-  ctx: AudioContext,
-  basePan: number,
-  stereo: ProceduralMusicLayerExpressionConfig['stereo'],
-  time: number,
-  duration: number,
-  intensityBlend: number,
-  creativityDrive: number
-): StereoPannerNode | null {
-  if (!stereo || (Math.abs(basePan) < 0.001 && (stereo.width ?? 0) <= 0)) {
-    return null;
-  }
-
-  const panner = ctx.createStereoPanner();
-  const width = clamp((stereo.width ?? 0) * (0.62 + creativityDrive * 0.56), 0, 1);
-  const phaseOffset = stereo.phaseOffset ?? 0;
-  const startingPan = clamp(basePan + Math.sin(phaseOffset * Math.PI * 2) * width * 0.35, -1, 1);
-  panner.pan.setValueAtTime(startingPan, time);
-
-  if (width > 0 && (stereo.rateHz ?? 0) > 0) {
-    const panLfo = ctx.createOscillator();
-    const panDepth = ctx.createGain();
-    panLfo.type = 'sine';
-    panLfo.frequency.setValueAtTime((stereo.rateHz ?? 0) * (0.72 + intensityBlend * 0.42 + creativityDrive * 0.3), time);
-    panDepth.gain.setValueAtTime(width * (0.3 + intensityBlend * 0.45), time);
-    panLfo.connect(panDepth);
-    panDepth.connect(panner.pan);
-    panLfo.start(time);
-    panLfo.stop(time + duration + 0.08);
-  }
-
-  return panner;
+interface LegacyFadedSourceArgs {
+  ctx: AudioContext;
+  musicGain: GainNode;
+  source: AudioScheduledSourceNode;
+  inputNode: AudioNode;
+  time: number;
+  attackEndTime: number;
+  releaseEndTime: number;
+  peakGain: number;
+  stopTime: number;
 }
 
-function applyModulation(
-  ctx: AudioContext,
-  modulation: MusicModulationConfig | undefined,
-  target: AudioParam,
-  baseValue: number,
-  time: number,
-  duration: number,
-  depthScale = 1
-): void {
-  if (!modulation?.target || !modulation.depth || !modulation.rateHz) {
-    return;
-  }
+function scheduleLegacyFadedSource({
+  ctx,
+  musicGain,
+  source,
+  inputNode,
+  time,
+  attackEndTime,
+  releaseEndTime,
+  peakGain,
+  stopTime,
+}: LegacyFadedSourceArgs): void {
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.001, time);
+  gain.gain.linearRampToValueAtTime(peakGain, attackEndTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, releaseEndTime);
 
-  const waveform = modulation.waveform === 'random' ? 'triangle' : modulation.waveform ?? 'sine';
-  const lfo = ctx.createOscillator();
-  const lfoGain = ctx.createGain();
+  inputNode.connect(gain);
+  gain.connect(musicGain);
 
-  lfo.type = waveform;
-  lfo.frequency.setValueAtTime(modulation.rateHz, time);
-  lfoGain.gain.setValueAtTime(modulation.depth * depthScale, time);
-
-  target.setValueAtTime(baseValue, time);
-  lfo.connect(lfoGain);
-  lfoGain.connect(target);
-
-  lfo.start(time);
-  lfo.stop(time + duration + 0.08);
+  source.start(time);
+  source.stop(stopTime);
 }
 
 function scheduleLegacyTone(
@@ -117,7 +84,6 @@ function scheduleLegacyTone(
   gainScale = 1
 ): void {
   const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
   const attackTime = Math.min(0.02, duration * 0.35);
   const releaseTime = Math.max(duration * 0.85, attackTime + 0.01);
   const peakGain = layer.gain * trackMasterGain * gainScale;
@@ -129,23 +95,26 @@ function scheduleLegacyTone(
     osc.detune.setValueAtTime(layer.detune, time);
   }
 
-  gain.gain.setValueAtTime(0.001, time);
-  gain.gain.linearRampToValueAtTime(peakGain, time + attackTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + releaseTime);
-
+  let inputNode: AudioNode = osc;
   if (layer.filterHz) {
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(layer.filterHz, time);
     osc.connect(filter);
-    filter.connect(gain);
-  } else {
-    osc.connect(gain);
+    inputNode = filter;
   }
 
-  gain.connect(musicGain);
-  osc.start(time);
-  osc.stop(time + duration + 0.02);
+  scheduleLegacyFadedSource({
+    ctx,
+    musicGain,
+    source: osc,
+    inputNode,
+    time,
+    attackEndTime: time + attackTime,
+    releaseEndTime: time + releaseTime,
+    peakGain,
+    stopTime: time + duration + 0.02,
+  });
 }
 
 function scheduleTone({
@@ -166,43 +135,36 @@ function scheduleTone({
     return;
   }
 
-  const expression = resolveLayerExpression(track.expression, layer.expression);
-  const envelope = getEnvelopeShape(duration, layer.waveform, expression?.envelope);
-  const accentScale = getAccentScale(stepIndex, expression?.accent) * (0.72 + creativityDrive * 0.38);
+  const tonePlan = deriveToneVoicePlan({ track, layer, frequency, stepIndex, time, duration, intensityBlend, creativityDrive, gainScale });
   const noteGain = ctx.createGain();
   const voiceMix = ctx.createGain();
-  const stereo = expression?.stereo;
-  const basePan = clamp(stereo?.pan ?? 0, -1, 1);
-  const panner = createPanner(ctx, basePan, stereo, time, duration + envelope.release, intensityBlend, creativityDrive);
-  const attackPeak = layer.gain * track.masterGain * gainScale * accentScale * (0.9 + intensityBlend * 0.18);
-  const sustainGain = Math.max(attackPeak * envelope.sustain, 0.001);
-  const attackEnd = time + envelope.attack;
-  const decayEnd = attackEnd + envelope.decay;
-  const releaseStart = Math.max(decayEnd, time + Math.max(duration - envelope.release, duration * 0.45));
-  const stopTime = releaseStart + envelope.release + 0.04;
-  const voiceCount = frequency > 180 && intensityBlend + creativityDrive * 0.26 > 0.45 ? 2 : 1;
-  const voiceSpread = (voiceCount - 1) * (5 + intensityBlend * 5);
+  const panner = createPanner(
+    ctx,
+    tonePlan.basePan,
+    tonePlan.expression?.stereo,
+    time,
+    tonePlan.modulationDuration,
+    intensityBlend,
+    creativityDrive
+  );
 
   noteGain.gain.setValueAtTime(0.001, time);
-  if (envelope.curve === 'hard') {
-    noteGain.gain.linearRampToValueAtTime(attackPeak, attackEnd);
+  if (tonePlan.envelope.curve === 'hard') {
+    noteGain.gain.linearRampToValueAtTime(tonePlan.attackPeak, tonePlan.attackEnd);
   } else {
-    noteGain.gain.exponentialRampToValueAtTime(Math.max(attackPeak, 0.001), attackEnd);
+    noteGain.gain.exponentialRampToValueAtTime(Math.max(tonePlan.attackPeak, 0.001), tonePlan.attackEnd);
   }
-  noteGain.gain.linearRampToValueAtTime(sustainGain, decayEnd);
-  noteGain.gain.setValueAtTime(sustainGain, releaseStart);
-  noteGain.gain.exponentialRampToValueAtTime(0.001, releaseStart + envelope.release);
+  noteGain.gain.linearRampToValueAtTime(tonePlan.sustainGain, tonePlan.decayEnd);
+  noteGain.gain.setValueAtTime(tonePlan.sustainGain, tonePlan.releaseStart);
+  noteGain.gain.exponentialRampToValueAtTime(0.001, tonePlan.releaseStart + tonePlan.envelope.release);
 
   let targetNode: AudioNode = voiceMix;
   let filter: BiquadFilterNode | null = null;
-  const needsFilter = Boolean(layer.filterHz) || expression?.modulation?.target === 'filter';
-  if (needsFilter) {
+  if (tonePlan.needsFilter) {
     filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    const baseFilterHz = layer.filterHz ?? Math.max(frequency * 4, 900);
-    const filterHz = baseFilterHz * (0.88 + intensityBlend * 0.35);
-    filter.frequency.setValueAtTime(filterHz, time);
-    filter.Q.setValueAtTime(0.7 + intensityBlend * 1.4, time);
+    filter.frequency.setValueAtTime(tonePlan.filterHz, time);
+    filter.Q.setValueAtTime(tonePlan.filterQ, time);
     targetNode.connect(filter);
     targetNode = filter;
   }
@@ -215,61 +177,61 @@ function scheduleTone({
     noteGain.connect(musicGain);
   }
 
-  for (let voiceIndex = 0; voiceIndex < voiceCount; voiceIndex++) {
+  for (let voiceIndex = 0; voiceIndex < tonePlan.voiceCount; voiceIndex++) {
     const osc = ctx.createOscillator();
     osc.type = layer.waveform;
     osc.frequency.setValueAtTime(frequency, time);
 
-    const centeredIndex = voiceIndex - (voiceCount - 1) / 2;
-    const detune = (layer.detune ?? 0) + centeredIndex * voiceSpread;
+    const centeredIndex = voiceIndex - (tonePlan.voiceCount - 1) / 2;
+    const detune = (layer.detune ?? 0) + centeredIndex * tonePlan.voiceSpread;
     if (detune !== 0) {
       osc.detune.setValueAtTime(detune, time);
     }
 
     osc.connect(voiceMix);
 
-    if (expression?.modulation?.target === 'pitch') {
+    if (tonePlan.expression?.modulation?.target === 'pitch') {
       applyModulation(
         ctx,
-        expression.modulation,
+        tonePlan.expression.modulation,
         osc.detune,
         detune,
         time,
-        duration + envelope.release,
+        tonePlan.modulationDuration,
         1 + intensityBlend * 0.15 + creativityDrive * 0.3
       );
     }
 
     osc.start(time);
-    osc.stop(stopTime);
+    osc.stop(tonePlan.stopTime);
   }
 
-  if (expression?.modulation?.target === 'gain') {
+  if (tonePlan.expression?.modulation?.target === 'gain') {
     applyModulation(
       ctx,
-      expression.modulation,
+      tonePlan.expression.modulation,
       noteGain.gain,
-      sustainGain,
-      Math.max(decayEnd, time + 0.01),
-      Math.max(stopTime - decayEnd, 0.05),
-      attackPeak * 0.45 * (0.52 + intensityBlend * 0.46 + creativityDrive * 0.3)
+      tonePlan.sustainGain,
+      Math.max(tonePlan.decayEnd, time + 0.01),
+      Math.max(tonePlan.stopTime - tonePlan.decayEnd, 0.05),
+      tonePlan.attackPeak * 0.45 * (0.52 + intensityBlend * 0.46 + creativityDrive * 0.3)
     );
   }
 
-  if (filter && expression?.modulation?.target === 'filter') {
+  if (filter && tonePlan.expression?.modulation?.target === 'filter') {
     applyModulation(
       ctx,
-      expression.modulation,
+      tonePlan.expression.modulation,
       filter.frequency,
       filter.frequency.value,
       time,
-      duration + envelope.release,
+      tonePlan.modulationDuration,
       1 + intensityBlend * 0.35 + creativityDrive * 0.32
     );
   }
 
-  if (panner && expression?.modulation?.target === 'pan') {
-    applyModulation(ctx, expression.modulation, panner.pan, panner.pan.value, time, duration + envelope.release, 1);
+  if (panner && tonePlan.expression?.modulation?.target === 'pan') {
+    applyModulation(ctx, tonePlan.expression.modulation, panner.pan, panner.pan.value, time, tonePlan.modulationDuration, 1);
   }
 }
 
@@ -295,20 +257,22 @@ function scheduleLegacyNoise(
   filter.type = 'bandpass';
   filter.frequency.setValueAtTime(noiseLayer.filterHz, time);
 
-  const gain = ctx.createGain();
   const duration = Math.max(stepDuration * noiseLayer.durationSteps * 0.75, 0.04);
   const peakGain = noiseLayer.gain * track.masterGain * gainScale;
 
-  gain.gain.setValueAtTime(0.001, time);
-  gain.gain.linearRampToValueAtTime(peakGain, time + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
   source.connect(filter);
-  filter.connect(gain);
-  gain.connect(musicGain);
 
-  source.start(time);
-  source.stop(time + duration + 0.02);
+  scheduleLegacyFadedSource({
+    ctx,
+    musicGain,
+    source,
+    inputNode: filter,
+    time,
+    attackEndTime: time + 0.01,
+    releaseEndTime: time + duration,
+    peakGain,
+    stopTime: time + duration + 0.02,
+  });
 }
 
 export function scheduleLayer(args: ToneLayerArgs): void {
@@ -350,9 +314,17 @@ export function scheduleNoise({
     return;
   }
 
-  const expression = resolveNoiseExpression(track.expression, noiseLayer.expression);
-  const noiseCharacter = expression?.noiseCharacter;
-  const buffer = getNoiseBuffer(noiseCharacter?.color);
+  const noisePlan = deriveNoisePlan({
+    track,
+    noiseLayer,
+    stepIndex,
+    stepDuration,
+    intensityBlend,
+    creativityDrive,
+    gainScale,
+  });
+  const expression = noisePlan.expression;
+  const buffer = getNoiseBuffer(noisePlan.noiseColor);
   if (!buffer) {
     return;
   }
@@ -371,32 +343,22 @@ export function scheduleNoise({
   const gain = ctx.createGain();
   const panner = createPanner(
     ctx,
-    clamp(expression?.stereo?.pan ?? 0, -1, 1),
+    noisePlan.pannerBasePan,
     expression?.stereo,
     time,
-    stepDuration * noiseLayer.durationSteps,
+    noisePlan.modulationDuration,
     intensityBlend,
     creativityDrive
   );
-  const accentScale = getAccentScale(stepIndex, expression?.accent) * (0.78 + creativityDrive * 0.34);
-  const texture = noiseCharacter?.texture ?? 'smooth';
-  const burst = (noiseCharacter?.burst ?? 0) + creativityDrive * 0.12;
-  const drift = noiseCharacter?.drift ?? 0;
-  const durationMultiplier = texture === 'shimmer' ? 0.55 : texture === 'grainy' ? 0.68 : 0.9;
-  const duration = Math.max(stepDuration * noiseLayer.durationSteps * durationMultiplier, 0.04);
-  const peakGain =
-    noiseLayer.gain * track.masterGain * gainScale * accentScale * (0.8 + intensityBlend * 0.45 + burst * 0.8);
-  const highpassHz = texture === 'shimmer' ? 1800 : texture === 'grainy' ? 900 : 250;
-  const bandpassHz = noiseLayer.filterHz * (1 + drift * Math.sin(stepIndex * 0.65) + intensityBlend * 0.18 + creativityDrive * 0.12);
 
-  source.playbackRate.setValueAtTime(1 + burst * 0.06 + intensityBlend * 0.03, time);
-  highpass.frequency.setValueAtTime(highpassHz, time);
-  filter.frequency.setValueAtTime(Math.max(bandpassHz, highpassHz + 40), time);
-  filter.Q.setValueAtTime(texture === 'shimmer' ? 1.8 : texture === 'grainy' ? 1.2 : 0.8, time);
+  source.playbackRate.setValueAtTime(noisePlan.playbackRate, time);
+  highpass.frequency.setValueAtTime(noisePlan.highpassHz, time);
+  filter.frequency.setValueAtTime(Math.max(noisePlan.bandpassHz, noisePlan.highpassHz + 40), time);
+  filter.Q.setValueAtTime(noisePlan.filterQ, time);
 
   gain.gain.setValueAtTime(0.001, time);
-  gain.gain.linearRampToValueAtTime(peakGain, time + Math.min(0.02, duration * 0.35));
-  gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+  gain.gain.linearRampToValueAtTime(noisePlan.peakGain, time + Math.min(0.02, noisePlan.duration * 0.35));
+  gain.gain.exponentialRampToValueAtTime(0.001, time + noisePlan.duration);
 
   source.connect(highpass);
   highpass.connect(filter);
@@ -415,15 +377,15 @@ export function scheduleNoise({
       filter.frequency,
       filter.frequency.value,
       time,
-      duration,
+      noisePlan.duration,
       1 + intensityBlend * 0.35 + creativityDrive * 0.32
     );
   }
 
   if (panner && expression?.modulation?.target === 'pan') {
-    applyModulation(ctx, expression.modulation, panner.pan, panner.pan.value, time, duration, 1);
+    applyModulation(ctx, expression.modulation, panner.pan, panner.pan.value, time, noisePlan.duration, 1);
   }
 
   source.start(time);
-  source.stop(time + duration + 0.02);
+  source.stop(time + noisePlan.duration + 0.02);
 }

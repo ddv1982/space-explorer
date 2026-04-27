@@ -103,11 +103,11 @@ src/
 │   ├── UpgradesConfig.ts        # upgrade definitions and progression rules
 │   ├── playerConfig.ts          # player stat scaling
 │   └── levels/
-│       ├── types.ts            # level config types
-│       ├── selectors.ts        # getLevelConfig / campaign selectors
-│       ├── registry.ts         # ordered campaign registry
-│       ├── musicHelpers.ts     # procedural music config helpers
-│       └── definitions/        # one file per level
+│       ├── types.ts             # level config types
+│       ├── selectors.ts         # getLevelConfig / campaign selectors
+│       ├── registry.ts          # ordered campaign registry
+│       ├── definitions/         # one file per level
+│       └── music/               # level music configuration and patterns
 ├── entities/
 │   ├── Player.ts
 │   ├── PowerUp.ts
@@ -116,7 +116,12 @@ src/
 │   ├── Bullet.ts
 │   ├── EnemyBullet.ts
 │   └── enemies/
+│       └── boss/
 ├── scenes/
+│   ├── gameScene/               # runtime lifecycle + flow helpers
+│   ├── planetIntermission/      # upgrade-screen interaction/presentation
+│   ├── menuScene/
+│   ├── shared/
 │   ├── BootScene.ts
 │   ├── PreloadScene.ts
 │   ├── MenuScene.ts
@@ -125,15 +130,22 @@ src/
 │   ├── GameOverScene.ts
 │   └── VictoryScene.ts
 ├── systems/
-│   ├── AudioManager.ts         # procedural audio and music
+│   ├── audio/
+│   │   └── procedural/          # procedural music internals
+│   ├── parallax/                # layered background lifecycle helpers
+│   ├── balance/
+│   ├── effects/
+│   ├── hud/
+│   ├── wave/
+│   ├── AudioManager.ts          # procedural audio and music orchestration
 │   ├── CollisionManager.ts
 │   ├── EnemyPool.ts
 │   ├── HUD.ts
 │   ├── LevelManager.ts
 │   ├── PlayerState.ts
-│   ├── WaveManager.ts          # config-driven enemy + hazard spawning
-│   └── ...
+│   └── WaveManager.ts           # config-driven enemy + hazard spawning
 └── utils/
+    ├── spriteFactory/
     ├── constants.ts
     └── layout.ts
 ```

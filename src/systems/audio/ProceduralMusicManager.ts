@@ -1,21 +1,14 @@
-import type { ProceduralMusicTrackConfig } from '../../config/LevelsConfig';
+import type {
+  ProceduralMusicLayerConfig,
+  ProceduralMusicTrackConfig,
+  ProceduralNoiseLayerConfig,
+} from '../../config/LevelsConfig';
 import { AudioContextManager } from './AudioContextManager';
-import {
-  disconnectMusicBus,
-  recreateMusicBus,
-  setMusicBusReverbGain,
-  type MusicFXChain,
-} from './procedural/bus';
-import { getIntensityBlend } from './procedural/expression';
-import {
-  DEFAULT_MUSIC_RUNTIME_TUNING,
-  resolveMusicRuntimeTuning,
-  type MusicRuntimeTuningValues,
-} from './procedural/musicRuntimeTuningProfile';
-import { getMeterStepContext, resolveIntentEnergy } from './procedural/musicIntent';
-import { resolveHarmonicContext } from './procedural/harmony';
+import { disconnectMusicBus, recreateMusicBus, type MusicFXChain } from './procedural/bus';
+import { type MusicRuntimeTuningValues } from './procedural/musicRuntimeTuningProfile';
+import { MusicRuntimeControl } from './procedural/runtimeControl';
 import { resolveLayerRhythmScheduling } from './procedural/rhythm';
-import { resolveArrangementForBar } from './procedural/arrangement';
+import { buildSchedulingStepPlan, type SchedulingStepPlan } from './procedural/stepSchedulingPlan';
 import { scheduleLayer, scheduleNoise } from './procedural/synthesis';
 
 export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
@@ -76,12 +69,13 @@ export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
 
 export type MusicRuntimeTuning = MusicRuntimeTuningValues;
 
+const MINIMUM_MUSIC_INTENSITY = 0.2;
+const MAXIMUM_MUSIC_INTENSITY = 1.2;
+const MUSIC_OUTPUT_GAIN_BOOST = 2.9;
+
 export class ProceduralMusicManager {
   private readonly musicScheduleLookaheadMs = 45;
   private readonly musicScheduleAheadSeconds = 0.22;
-  private readonly minimumMusicIntensity = 0.2;
-  private readonly maximumMusicIntensity = 1.2;
-  private readonly musicOutputGainBoost = 2.9;
 
   private readonly contextManager: AudioContextManager;
   private musicGain: GainNode | null = null;
@@ -91,12 +85,18 @@ export class ProceduralMusicManager {
   private activeTrack: ProceduralMusicTrackConfig | null = null;
   private musicStepIndex = 0;
   private musicNextStepTime = 0;
-  private musicIntensity = 1;
-  private musicVolume = 1;
-  private runtimeTuning: MusicRuntimeTuning = { ...DEFAULT_MUSIC_RUNTIME_TUNING };
+  private readonly runtimeControl: MusicRuntimeControl;
 
   constructor(contextManager: AudioContextManager) {
     this.contextManager = contextManager;
+    this.runtimeControl = new MusicRuntimeControl({
+      minimumMusicIntensity: MINIMUM_MUSIC_INTENSITY,
+      maximumMusicIntensity: MAXIMUM_MUSIC_INTENSITY,
+      musicOutputGainBoost: MUSIC_OUTPUT_GAIN_BOOST,
+      getCtx: () => this.contextManager.getCtx(),
+      getMusicGain: () => this.musicGain,
+      getMusicFX: () => this.musicFX,
+    });
   }
 
   ensureGains(): void {
@@ -136,11 +136,11 @@ export class ProceduralMusicManager {
     this.musicPlaying = true;
     this.musicStepIndex = 0;
     this.musicNextStepTime = ctx.currentTime + 0.02;
-    this.musicIntensity = 1;
+    this.runtimeControl.resetPlaybackState();
 
     this.musicGain.gain.cancelScheduledValues(ctx.currentTime);
     this.musicGain.gain.setValueAtTime(0.001, ctx.currentTime);
-    this.musicGain.gain.linearRampToValueAtTime(this.resolveOutputGain(), ctx.currentTime + 0.08);
+    this.musicGain.gain.linearRampToValueAtTime(this.runtimeControl.resolveOutputGain(), ctx.currentTime + 0.08);
 
     this.scheduleMusic();
   }
@@ -159,45 +159,27 @@ export class ProceduralMusicManager {
   }
 
   setMusicIntensity(intensity: number): void {
-    const clampedIntensity = Math.min(this.maximumMusicIntensity, Math.max(this.minimumMusicIntensity, intensity));
-    if (Math.abs(clampedIntensity - this.musicIntensity) < 0.01) {
-      return;
-    }
-
-    this.musicIntensity = clampedIntensity;
-    this.applyMusicGainFromState();
+    this.runtimeControl.setMusicIntensity(intensity);
   }
 
   getMusicVolume(): number {
-    return this.musicVolume;
+    return this.runtimeControl.getMusicVolume();
   }
 
   setMusicVolume(volume: number): number {
-    this.musicVolume = this.clamp01(volume);
-    this.applyMusicGainFromState();
-    return this.musicVolume;
+    return this.runtimeControl.setMusicVolume(volume);
   }
 
   getMusicRuntimeTuning(): MusicRuntimeTuning {
-    return { ...this.runtimeTuning };
+    return this.runtimeControl.getMusicRuntimeTuning();
   }
 
   setMusicRuntimeTuning(nextTuning: Partial<MusicRuntimeTuning>): MusicRuntimeTuning {
-    this.runtimeTuning = {
-      creativity: this.clamp01(nextTuning.creativity ?? this.runtimeTuning.creativity),
-      energy: this.clamp01(nextTuning.energy ?? this.runtimeTuning.energy),
-      ambience: this.clamp01(nextTuning.ambience ?? this.runtimeTuning.ambience),
-    };
-
-    this.applyAmbienceFromRuntimeTuning();
-
-    return this.getMusicRuntimeTuning();
+    return this.runtimeControl.setMusicRuntimeTuning(nextTuning);
   }
 
   resetMusicRuntimeTuning(): MusicRuntimeTuning {
-    this.runtimeTuning = { ...DEFAULT_MUSIC_RUNTIME_TUNING };
-    this.applyAmbienceFromRuntimeTuning();
-    return this.getMusicRuntimeTuning();
+    return this.runtimeControl.resetMusicRuntimeTuning();
   }
 
   private recreateMusicBus(): void {
@@ -210,8 +192,8 @@ export class ProceduralMusicManager {
     const bus = recreateMusicBus(ctx, masterGain, this.musicGain, this.musicFX);
     this.musicGain = bus.musicGain;
     this.musicFX = bus.musicFX;
-    this.applyAmbienceFromRuntimeTuning();
-    this.applyMusicGainFromState(0);
+    this.runtimeControl.applyAmbienceFromRuntimeTuning();
+    this.runtimeControl.applyMusicGainFromState(0);
   }
 
   private disconnectMusicBus(): void {
@@ -226,7 +208,7 @@ export class ProceduralMusicManager {
     this.activeTrack = null;
     this.musicStepIndex = 0;
     this.musicNextStepTime = 0;
-    this.musicIntensity = 1;
+    this.runtimeControl.resetPlaybackState();
   }
 
   private ensureContext(): boolean {
@@ -244,7 +226,7 @@ export class ProceduralMusicManager {
     }
 
     while (this.musicNextStepTime < ctx.currentTime + this.musicScheduleAheadSeconds) {
-      const runtimeTuning = resolveMusicRuntimeTuning(this.runtimeTuning);
+      const runtimeTuning = this.runtimeControl.getResolvedRuntimeTuning();
       this.scheduleTrackStep(this.activeTrack, this.musicStepIndex, this.musicNextStepTime);
       this.musicStepIndex += 1;
       this.musicNextStepTime += this.getStepDuration(this.activeTrack, runtimeTuning.tempoScale);
@@ -261,151 +243,137 @@ export class ProceduralMusicManager {
       return;
     }
 
-    const runtimeTuning = resolveMusicRuntimeTuning(this.runtimeTuning);
-    const meterStepContext = getMeterStepContext(track, stepIndex);
-    const harmonicContext = resolveHarmonicContext(track, meterStepContext.barIndex);
-    const arrangement = resolveArrangementForBar(track.intent.descriptors.arrangement, meterStepContext.barIndex);
-    const stepDuration = this.getStepDuration(track, runtimeTuning.tempoScale);
-    const intentEnergy = resolveIntentEnergy(
-      track.intent.descriptors.energyProfile,
-      meterStepContext.barProgress,
-      meterStepContext.deterministicPulse
-    );
-    const arrangementEnergy = this.clamp01(intentEnergy * (1 + (arrangement.density - 1) * 0.35) + arrangement.energyLift);
-    const shapedIntensity = Math.min(
-      this.maximumMusicIntensity,
-      Math.max(this.minimumMusicIntensity, this.musicIntensity * (0.78 + arrangementEnergy * 0.44))
-    );
-    const intensityBlend = getIntensityBlend(shapedIntensity, this.minimumMusicIntensity, this.maximumMusicIntensity);
-    const creativityDrive = runtimeTuning.creativityDrive * (0.9 + meterStepContext.deterministicPulse * 0.2);
-    const bassGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.bass ?? 1);
-    const bassRhythm = resolveLayerRhythmScheduling(track.bass.rhythm, meterStepContext, {
-      density: this.clamp01(arrangement.density),
-      gainMultiplier: bassGainMultiplier,
+    const runtimeTuning = this.runtimeControl.getResolvedRuntimeTuning();
+    const stepPlan = buildSchedulingStepPlan({
+      track,
+      stepIndex,
+      tempoScale: runtimeTuning.tempoScale,
+      creativityDrive: runtimeTuning.creativityDrive,
+      musicIntensity: this.runtimeControl.getMusicIntensity(),
+      minimumMusicIntensity: MINIMUM_MUSIC_INTENSITY,
+      maximumMusicIntensity: MAXIMUM_MUSIC_INTENSITY,
     });
-    if (bassRhythm.shouldTrigger) {
-      scheduleLayer({
+
+    const toneLayerPasses: Array<{ layer?: ProceduralMusicLayerConfig; gainMultiplier: number }> = [
+      { layer: track.bass, gainMultiplier: stepPlan.gainMultipliers.bass },
+      { layer: track.pulse, gainMultiplier: stepPlan.gainMultipliers.pulse },
+      { layer: track.lead, gainMultiplier: stepPlan.gainMultipliers.lead },
+    ];
+
+    for (const toneLayerPass of toneLayerPasses) {
+      this.scheduleToneLayerIfTriggered({
         ctx,
-        musicGain: this.musicGain,
         track,
-        layer: track.bass,
-        stepIndex: bassRhythm.patternStepIndex,
-        harmonicRootHz: harmonicContext.harmonicRootHz,
+        layer: toneLayerPass.layer,
+        meterStepContext: stepPlan.meterStepContext,
+        density: stepPlan.density,
+        gainMultiplier: toneLayerPass.gainMultiplier,
+        harmonicRootHz: stepPlan.harmonicRootHz,
         time,
-        stepDuration,
-        intensityBlend,
-        creativityDrive,
-        gainScale: bassRhythm.gainScale,
+        stepDuration: stepPlan.stepDuration,
+        intensityBlend: stepPlan.intensityBlend,
+        creativityDrive: stepPlan.creativityDrive,
       });
     }
 
-    if (track.pulse) {
-      const pulseGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.pulse ?? 1);
-      const pulseRhythm = resolveLayerRhythmScheduling(track.pulse.rhythm, meterStepContext, {
-        density: this.clamp01(arrangement.density),
-        gainMultiplier: pulseGainMultiplier,
-      });
-      if (pulseRhythm.shouldTrigger) {
-        scheduleLayer({
-          ctx,
-          musicGain: this.musicGain,
-          track,
-          layer: track.pulse,
-          stepIndex: pulseRhythm.patternStepIndex,
-          harmonicRootHz: harmonicContext.harmonicRootHz,
-          time,
-          stepDuration,
-          intensityBlend,
-          creativityDrive,
-          gainScale: pulseRhythm.gainScale,
-        });
-      }
+    this.scheduleNoiseLayerIfTriggered({
+      ctx,
+      track,
+      noiseLayer: track.noise,
+      meterStepContext: stepPlan.meterStepContext,
+      density: stepPlan.density,
+      gainMultiplier: stepPlan.gainMultipliers.noise,
+      time,
+      stepDuration: stepPlan.stepDuration,
+      intensityBlend: stepPlan.intensityBlend,
+      creativityDrive: stepPlan.creativityDrive,
+    });
+  }
+
+  private scheduleToneLayerIfTriggered(params: {
+    ctx: AudioContext;
+    track: ProceduralMusicTrackConfig;
+    layer?: ProceduralMusicLayerConfig;
+    meterStepContext: SchedulingStepPlan['meterStepContext'];
+    density: number;
+    gainMultiplier: number;
+    harmonicRootHz: number;
+    time: number;
+    stepDuration: number;
+    intensityBlend: number;
+    creativityDrive: number;
+  }): void {
+    if (!params.layer || !this.musicGain) {
+      return;
     }
 
-    if (track.lead) {
-      const leadGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.lead ?? 1);
-      const leadRhythm = resolveLayerRhythmScheduling(track.lead.rhythm, meterStepContext, {
-        density: this.clamp01(arrangement.density),
-        gainMultiplier: leadGainMultiplier,
-      });
-      if (leadRhythm.shouldTrigger) {
-        scheduleLayer({
-          ctx,
-          musicGain: this.musicGain,
-          track,
-          layer: track.lead,
-          stepIndex: leadRhythm.patternStepIndex,
-          harmonicRootHz: harmonicContext.harmonicRootHz,
-          time,
-          stepDuration,
-          intensityBlend,
-          creativityDrive,
-          gainScale: leadRhythm.gainScale,
-        });
-      }
+    const layerRhythm = resolveLayerRhythmScheduling(params.layer.rhythm, params.meterStepContext, {
+      density: params.density,
+      gainMultiplier: Math.max(0, params.gainMultiplier),
+    });
+
+    if (!layerRhythm.shouldTrigger) {
+      return;
     }
 
-    if (track.noise) {
-      const noiseGainMultiplier = Math.max(0, arrangement.layerGainMultipliers?.noise ?? 1);
-      const noiseRhythm = resolveLayerRhythmScheduling(track.noise.rhythm, meterStepContext, {
-        density: this.clamp01(arrangement.density),
-        gainMultiplier: noiseGainMultiplier,
-      });
-      if (noiseRhythm.shouldTrigger) {
-        scheduleNoise({
-          ctx,
-          musicGain: this.musicGain,
-          track,
-          noiseLayer: track.noise,
-          stepIndex: noiseRhythm.patternStepIndex,
-          time,
-          stepDuration,
-          intensityBlend,
-          creativityDrive,
-          gainScale: noiseRhythm.gainScale,
-          getNoiseBuffer: (color) => this.contextManager.getNoiseBuffer(color),
-          getExplosionBuffer: () => this.contextManager.getExplosionBuffer(),
-        });
-      }
+    scheduleLayer({
+      ctx: params.ctx,
+      musicGain: this.musicGain,
+      track: params.track,
+      layer: params.layer,
+      stepIndex: layerRhythm.patternStepIndex,
+      harmonicRootHz: params.harmonicRootHz,
+      time: params.time,
+      stepDuration: params.stepDuration,
+      intensityBlend: params.intensityBlend,
+      creativityDrive: params.creativityDrive,
+      gainScale: layerRhythm.gainScale,
+    });
+  }
+
+  private scheduleNoiseLayerIfTriggered(params: {
+    ctx: AudioContext;
+    track: ProceduralMusicTrackConfig;
+    noiseLayer?: ProceduralNoiseLayerConfig;
+    meterStepContext: SchedulingStepPlan['meterStepContext'];
+    density: number;
+    gainMultiplier: number;
+    time: number;
+    stepDuration: number;
+    intensityBlend: number;
+    creativityDrive: number;
+  }): void {
+    if (!params.noiseLayer || !this.musicGain) {
+      return;
     }
+
+    const noiseRhythm = resolveLayerRhythmScheduling(params.noiseLayer.rhythm, params.meterStepContext, {
+      density: params.density,
+      gainMultiplier: Math.max(0, params.gainMultiplier),
+    });
+
+    if (!noiseRhythm.shouldTrigger) {
+      return;
+    }
+
+    scheduleNoise({
+      ctx: params.ctx,
+      musicGain: this.musicGain,
+      track: params.track,
+      noiseLayer: params.noiseLayer,
+      stepIndex: noiseRhythm.patternStepIndex,
+      time: params.time,
+      stepDuration: params.stepDuration,
+      intensityBlend: params.intensityBlend,
+      creativityDrive: params.creativityDrive,
+      gainScale: noiseRhythm.gainScale,
+      getNoiseBuffer: (color) => this.contextManager.getNoiseBuffer(color),
+      getExplosionBuffer: () => this.contextManager.getExplosionBuffer(),
+    });
   }
 
   private getStepDuration(track: ProceduralMusicTrackConfig, tempoScale: number): number {
     return 60 / (track.tempo * tempoScale) / track.stepsPerBeat;
   }
 
-  private applyAmbienceFromRuntimeTuning(): void {
-    const ctx = this.contextManager.getCtx();
-    if (!ctx || !this.musicFX) {
-      return;
-    }
-
-    setMusicBusReverbGain(ctx, this.musicFX, resolveMusicRuntimeTuning(this.runtimeTuning).reverbGain);
-  }
-
-  private applyMusicGainFromState(rampSeconds = 0.08): void {
-    const ctx = this.contextManager.getCtx();
-    if (!ctx || !this.musicGain) {
-      return;
-    }
-
-    const targetGain = this.resolveOutputGain();
-    this.musicGain.gain.cancelScheduledValues(ctx.currentTime);
-    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value, ctx.currentTime);
-
-    if (rampSeconds <= 0) {
-      this.musicGain.gain.setValueAtTime(targetGain, ctx.currentTime);
-      return;
-    }
-
-    this.musicGain.gain.linearRampToValueAtTime(targetGain, ctx.currentTime + rampSeconds);
-  }
-
-  private resolveOutputGain(): number {
-    return Math.max(0, this.musicIntensity * this.musicVolume * this.musicOutputGainBoost);
-  }
-
-  private clamp01(value: number): number {
-    return Math.min(1, Math.max(0, value));
-  }
 }

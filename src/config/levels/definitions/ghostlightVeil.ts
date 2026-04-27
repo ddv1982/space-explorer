@@ -1,5 +1,5 @@
 import type { LevelConfig } from '../types';
-import { arpeggiatorPatterns, bassPatterns } from '../musicHelpers';
+import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
 
 export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {

@@ -4,7 +4,7 @@ import {
   mergeMusicArrangement,
   noiseExpressionPresets,
   trackExpressionPresets,
-} from '../musicHelpers';
+} from '../music';
 import type {
   MusicArrangementConfig,
   MusicCompositionalDescriptorsConfig,

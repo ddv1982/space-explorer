@@ -1,59 +1,50 @@
 import Phaser from 'phaser';
-import { BULLET_SPEED } from '../utils/constants';
 import {
   getActiveSection,
   getSectionProgress,
-  getTotalLevels,
   type BossConfig,
 } from '../config/LevelsConfig';
-import { ParallaxBackground } from '../systems/ParallaxBackground';
-import { InputManager } from '../systems/InputManager';
-import { Player } from '../entities/Player';
+import { type ParallaxBackground } from '../systems/ParallaxBackground';
+import type { InputManager } from '../systems/InputManager';
+import type { Player } from '../entities/Player';
 import { BulletPool } from '../systems/BulletPool';
 import { EnemyPool } from '../systems/EnemyPool';
 import { CollisionManager } from '../systems/CollisionManager';
 import { WaveManager } from '../systems/WaveManager';
 import { ScoreManager } from '../systems/ScoreManager';
-import { HUD } from '../systems/HUD';
+import type { HUD } from '../systems/HUD';
 import { LevelManager } from '../systems/LevelManager';
-import { EffectsManager } from '../systems/EffectsManager';
-import {
-  getHelperWingState,
-  getPlayerState,
-  saveHelperWingState,
-} from '../systems/PlayerState';
+import { type EffectsManager } from '../systems/EffectsManager';
+import { getPlayerState } from '../systems/PlayerState';
 import { Boss } from '../entities/enemies/Boss';
-import { WarpTransition } from '../systems/WarpTransition';
+import type { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
-import { PowerUp, PowerUpType, resolvePowerUpOverlap } from '../entities/PowerUp';
-import {
-  applyPowerUpPickup,
-  GAME_SCENE_EVENTS,
-  trySpawnRandomPowerUp,
-} from '../systems/GameplayFlow';
+import { PowerUpType } from '../entities/PowerUp';
+import { applyPowerUpPickup, GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
-import { showControlsHint } from './gameScene/showControlsHint';
 import { PauseStateController } from './gameScene/PauseStateController';
 import { LastLifeHelperWing } from '../systems/LastLifeHelperWing';
 import { MobileViewportGuard } from '../systems/MobileViewportGuard';
-import { MobileControls } from '../systems/MobileControls';
-import { isTouchMobileDevice } from '../utils/device';
-import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
-import { createScaledBossConfig } from '../systems/balance/bossScaling';
+import { runGameSceneCreateBootstrap } from './gameScene/runGameSceneCreateBootstrap';
+import type { MobileControls } from '../systems/MobileControls';
 import { resolveSectionMusicIntensity } from '../systems/sectionIdentity';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
-import {
-  rebindSceneEventHandlers,
-  unbindSceneEventHandlers,
-  type SceneEventBinding,
-} from './gameScene/sceneEvents';
+import { type SceneEventBinding } from './gameScene/sceneEvents';
 import {
   clampPlayerToViewport,
   getPlayerSpawnPoint,
   syncSceneViewport,
 } from './gameScene/viewport';
-import { getViewportBounds } from '../utils/layout';
-import { startRegisteredScene } from './sceneRegistry';
+import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
+import { runGameSceneUpdateFrame } from './gameScene/updateFrame';
+import { createGameSceneGameplayFrameBehavior } from './gameScene/gameplayFrameBehavior';
+import { createGameSceneCombatFeedbackHandlers, runBestEffort } from './gameScene/combatFeedbackHandlers';
+import {
+  persistHelperWingState,
+  syncLastLifeHelperWingState,
+} from './gameScene/helperWingStateBridge';
+import { createGameSceneFlowContext } from './gameScene/flowContextBridge';
+import { updateHud as updateHudOrchestration } from './gameScene/hudSyncOrchestration';
 
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
@@ -87,43 +78,104 @@ export class GameScene extends Phaser.Scene {
   private readonly shotDirection = new Phaser.Math.Vector2();
   private readonly shotOrigin = new Phaser.Math.Vector2();
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
+  private readonly combatFeedbackHandlers = createGameSceneCombatFeedbackHandlers({
+    scene: this,
+    player: () => this.player,
+    scoreManager: () => this.scoreManager,
+    effectsManager: () => this.effectsManager,
+    flow: () => this.flow,
+    getFlowContext: () => this.getFlowContext(),
+    levelManager: () => this.levelManager,
+    collisionManager: () => this.collisionManager,
+    enemyPool: () => this.enemyPool,
+    hud: () => this.hud,
+    getBoss: () => this.boss,
+    setBoss: (boss) => {
+      this.boss = boss;
+    },
+    getScaledBossConfig: () => this.scaledBossConfig,
+    getLastLifeHelperWing: () => this.lastLifeHelperWing,
+    powerUpGroup: () => this.powerUpGroup,
+    persistHelperWingState: () => persistHelperWingState(this.registry, this.lastLifeHelperWing),
+    syncLastLifeHelperWingState: () =>
+      syncLastLifeHelperWingState(this.lastLifeHelperWing, this.flow.getRemainingLives()),
+    constants: {
+      bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
+      bossExplosionAudioIntensity: GameScene.BOSS_EXPLOSION_AUDIO_INTENSITY,
+      playerDeathExplosionVisualIntensity: GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY,
+      playerDeathExplosionAudioIntensity: GameScene.PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY,
+      playerDeathParticleBudgetScale: GameScene.PLAYER_DEATH_PARTICLE_BUDGET_SCALE,
+    },
+  });
   private readonly sceneEventBindings: SceneEventBinding[] = [
-    { event: GAME_SCENE_EVENTS.enemyDeath, handler: this.handleEnemyDeath },
-    { event: GAME_SCENE_EVENTS.playerDeath, handler: this.handlePlayerDeath },
-    { event: GAME_SCENE_EVENTS.playerFatalHit, handler: this.handlePlayerFatalHit },
-    { event: GAME_SCENE_EVENTS.levelComplete, handler: this.handleLevelComplete },
-    { event: GAME_SCENE_EVENTS.bossSpawn, handler: this.handleBossSpawn },
-    { event: GAME_SCENE_EVENTS.playerHit, handler: this.handlePlayerHit },
-    { event: GAME_SCENE_EVENTS.playerExhaust, handler: this.handlePlayerExhaust },
-    { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: this.handleEnemySpawnWarning },
-    { event: GAME_SCENE_EVENTS.bossDeath, handler: this.handleBossDeath },
-    { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.handleBossPhaseChange },
-    { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.handleHelperWingActivated },
-    { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: this.handleHelperWingDepleted },
-    { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: this.handlePlayerBulletTrail },
-    { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: this.handleEnemyBulletTrail },
+    { event: GAME_SCENE_EVENTS.enemyDeath, handler: this.combatFeedbackHandlers.handleEnemyDeath },
+    { event: GAME_SCENE_EVENTS.playerDeath, handler: this.combatFeedbackHandlers.handlePlayerDeath },
+    { event: GAME_SCENE_EVENTS.playerFatalHit, handler: this.combatFeedbackHandlers.handlePlayerFatalHit },
+    { event: GAME_SCENE_EVENTS.levelComplete, handler: this.combatFeedbackHandlers.handleLevelComplete },
+    { event: GAME_SCENE_EVENTS.bossSpawn, handler: this.combatFeedbackHandlers.handleBossSpawn },
+    { event: GAME_SCENE_EVENTS.playerHit, handler: this.combatFeedbackHandlers.handlePlayerHit },
+    { event: GAME_SCENE_EVENTS.playerExhaust, handler: this.combatFeedbackHandlers.handlePlayerExhaust },
+    { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: this.combatFeedbackHandlers.handleEnemySpawnWarning },
+    { event: GAME_SCENE_EVENTS.bossDeath, handler: this.combatFeedbackHandlers.handleBossDeath },
+    { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.combatFeedbackHandlers.handleBossPhaseChange },
+    { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.combatFeedbackHandlers.handleHelperWingActivated },
+    { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: this.combatFeedbackHandlers.handleHelperWingDepleted },
+    { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: this.combatFeedbackHandlers.handlePlayerBulletTrail },
+    { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: this.combatFeedbackHandlers.handleEnemyBulletTrail },
   ];
+  private readonly runtimeLifecycle = createGameSceneRuntimeLifecycle({
+    scene: this,
+    sceneEventBindings: this.sceneEventBindings,
+    syncLastLifeHelperWingState: () =>
+      syncLastLifeHelperWingState(this.lastLifeHelperWing, this.flow.getRemainingLives()),
+    getScaleResizeContext: () => ({
+      scene: this,
+      parallax: this.parallax,
+      mobileControls: this.mobileControls,
+      hud: this.hud,
+      warpTransition: this.warpTransition,
+      pauseStateController: this.pauseStateController,
+      clampPlayerToViewport: () => this.clampPlayerToViewport(),
+    }),
+    destroyMobileViewportGuard: () => {
+      this.mobileViewportGuard?.destroy();
+      this.mobileViewportGuard = null;
+    },
+    destroyPauseStateController: () => {
+      this.pauseStateController?.destroy();
+      this.pauseStateController = null;
+    },
+    destroyMobileControls: () => {
+      this.mobileControls?.destroy();
+      this.mobileControls = null;
+    },
+    persistHelperWingState: () => persistHelperWingState(this.registry, this.lastLifeHelperWing),
+    destroyLastLifeHelperWing: () => {
+      this.lastLifeHelperWing?.destroy();
+      this.lastLifeHelperWing = null;
+    },
+    destroyParallax: () => {
+      this.parallax?.destroy();
+    },
+    destroyEffectsManager: () => {
+      this.effectsManager?.destroy();
+    },
+    shutdownFlow: () => {
+      this.flow.shutdown(this.collisionManager);
+    },
+    resetRuntimeStateAfterShutdown: () => {
+      this.lastFireTime = 0;
+      this.boss = null;
+      this.lastHudShieldCount = null;
+    },
+  });
 
   constructor() {
     super({ key: 'Game' });
   }
 
   create(): void {
-    this.resetRuntimeState();
-    this.registerLifecycleHandlers();
-
-    const state = this.initializePlayerRunState();
-    const levelConfig = this.initializeLevelRuntime(state);
-    const { initialSection, initialSectionProgress } = this.initializeAudioForLevel(levelConfig);
-    const playerSpawnPoint = this.createWorldPresentation(levelConfig, initialSection, initialSectionProgress);
-
-    this.createInputAndPlayer(state, playerSpawnPoint);
-    this.createPoolsAndGameplaySystems(levelConfig, state);
-    this.createHudAndTransitions(levelConfig, state);
-    this.createPauseAndViewportGuards();
-
-    showControlsHint(this, { mobile: isTouchMobileDevice() });
-    this.registerRuntimeHandlers();
+    runGameSceneCreateBootstrap(this);
   }
 
   private resetRuntimeState(): void {
@@ -141,22 +193,6 @@ export class GameScene extends Phaser.Scene {
     return state;
   }
 
-  private initializeLevelRuntime(state: ReturnType<typeof getPlayerState>): ReturnType<LevelManager['getLevelConfig']> {
-    this.levelManager = new LevelManager();
-    this.levelManager.init(state.level);
-
-    const levelConfig = this.levelManager.getLevelConfig();
-    if (levelConfig.boss) {
-      this.scaledBossConfig = createScaledBossConfig(levelConfig.boss, {
-        levelNumber: state.level,
-        totalLevels: getTotalLevels(),
-        upgrades: state.upgrades,
-      });
-    }
-
-    return levelConfig;
-  }
-
   private initializeAudioForLevel(levelConfig: ReturnType<LevelManager['getLevelConfig']>): {
     initialSection: ReturnType<typeof getActiveSection>;
     initialSectionProgress: number;
@@ -171,213 +207,11 @@ export class GameScene extends Phaser.Scene {
     return { initialSection, initialSectionProgress };
   }
 
-  private createWorldPresentation(
-    levelConfig: ReturnType<LevelManager['getLevelConfig']>,
-    initialSection: ReturnType<typeof getActiveSection>,
-    initialSectionProgress: number
-  ): ReturnType<typeof getPlayerSpawnPoint> {
-    this.cameras.main.setBackgroundColor(levelConfig.bgColor);
-    this.syncViewportBounds();
-    const playerSpawnPoint = this.getPlayerSpawnPoint();
-
-    this.parallax = new ParallaxBackground();
-    this.parallax.create(this, levelConfig);
-    this.parallax.setSectionAtmosphere(initialSection, initialSectionProgress);
-    this.registerScaleHandlers();
-
-    this.effectsManager = new EffectsManager();
-    this.effectsManager.setup(this);
-    this.effectsManager.applyLevelColorGrade(levelConfig);
-
-    return playerSpawnPoint;
-  }
-
-  private createInputAndPlayer(
-    state: ReturnType<typeof getPlayerState>,
-    playerSpawnPoint: ReturnType<typeof getPlayerSpawnPoint>
-  ): void {
-    this.mobileControls = new MobileControls();
-    this.mobileControls.create(this);
-
-    this.inputManager = new InputManager();
-    this.inputManager.create(this, this.mobileControls);
-
-    this.player = new Player(this, playerSpawnPoint.x, playerSpawnPoint.y);
-    this.player.applyState(state);
-  }
-
-  private createPoolsAndGameplaySystems(
-    levelConfig: ReturnType<LevelManager['getLevelConfig']>,
-    state: ReturnType<typeof getPlayerState>
-  ): void {
-    this.bulletPool = new BulletPool();
-    this.bulletPool.create(this);
-
-    this.enemyPool = new EnemyPool();
-    this.enemyPool.create(this);
-
-    this.lastLifeHelperWing = new LastLifeHelperWing();
-    this.lastLifeHelperWing.create({
-      scene: this,
-      player: this.player,
-      bulletPool: this.bulletPool,
-      enemyPool: this.enemyPool,
-      effectsManager: this.effectsManager,
-      config: levelConfig.lastLifeHelperWing,
-      persistentState: getHelperWingState(this.registry),
-    });
-
-    this.waveManager = new WaveManager();
-    const asteroidGroup = this.waveManager.create(this, this.enemyPool);
-    this.waveManager.setLevelConfig(state.level);
-
-    this.collisionManager = new CollisionManager();
-    this.collisionManager.setup(this, this.player, this.bulletPool, this.enemyPool, asteroidGroup);
-    this.collisionManager.setEffectsManager(this.effectsManager);
-    this.collisionManager.setBulletDamage(this.player.damage);
-
-    this.scoreManager = new ScoreManager();
-    this.scoreManager.addScore(state.score);
-
-    this.powerUpGroup = this.physics.add.group({
-      maxSize: 20,
-      classType: PowerUp,
-      runChildUpdate: true,
-    });
-
-    this.physics.add.overlap(
-      this.powerUpGroup,
-      this.player,
-      (_obj1, _obj2) => {
-        const powerUp = resolvePowerUpOverlap(_obj1, _obj2);
-        if (!powerUp || !powerUp.active || !this.player.isAlive || this.flow.isTerminalTransitionActive()) {
-          return;
-        }
-
-        this.applyPowerUp(powerUp.powerUpType);
-        powerUp.kill();
-      }
-    );
-  }
-
-  private createHudAndTransitions(
-    levelConfig: ReturnType<LevelManager['getLevelConfig']>,
-    state: ReturnType<typeof getPlayerState>
-  ): void {
-    this.hud = new HUD();
-    this.hud.create(this, levelConfig);
-    this.hud.showLevelAnnouncement(levelConfig.name, state.level);
-    this.syncHudShields();
-
-    this.warpTransition = new WarpTransition();
-    this.warpTransition.create(this);
-    this.warpTransition.setAccentColor(levelConfig.accentColor);
-  }
-
-  private createPauseAndViewportGuards(): void {
-    this.pauseStateController = PauseStateController.create({
-      scene: this,
-      stopPlayerMotion: () => this.stopPlayerMotion(),
-      setMobileControlsBlocked: (blocked) => this.mobileControls?.setBlocked(blocked),
-      onReturnToMenu: () => this.returnToMenuFromPause(),
-    });
-
-    this.mobileViewportGuard = MobileViewportGuard.create(this, (blocked) => this.pauseStateController?.setOrientationBlocked(blocked));
-    this.pauseStateController.setOrientationBlocked(this.mobileViewportGuard.isBlocked());
-  }
-
-  private registerRuntimeHandlers(): void {
-    this.registerSceneEventHandlers();
-    this.syncLastLifeHelperWingState();
-  }
-
-  private registerLifecycleHandlers(): void {
-    rebindSceneLifecycleHandlers(this, {
-      onShutdown: this.handleSceneShutdown,
-      onDestroy: this.handleSceneDestroy,
-      context: this,
-    });
-  }
-
-  private registerSceneEventHandlers(): void {
-    rebindSceneEventHandlers({
-      events: this.events,
-      bindings: this.sceneEventBindings,
-      context: this,
-    });
-  }
-
-  private registerScaleHandlers(): void {
-    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
-    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
-  }
-
-  private removeSceneEventHandlers(): void {
-    unbindSceneEventHandlers({
-      events: this.events,
-      bindings: this.sceneEventBindings,
-      context: this,
-    });
-  }
-
-  private handleSceneShutdown(): void {
-    this.teardownSceneResources();
-    this.lastFireTime = 0;
-    this.boss = null;
-    this.lastHudShieldCount = null;
-  }
-
-  private handleSceneDestroy(): void {
-    this.teardownSceneResources();
-  }
-
-  private teardownSceneResources(): void {
-    this.removeSceneEventHandlers();
-    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize, this);
-    this.mobileViewportGuard?.destroy();
-    this.mobileViewportGuard = null;
-    this.pauseStateController?.destroy();
-    this.pauseStateController = null;
-    this.mobileControls?.destroy();
-    this.mobileControls = null;
-    this.persistHelperWingState();
-    this.lastLifeHelperWing?.destroy();
-    this.lastLifeHelperWing = null;
-    this.parallax?.destroy();
-    this.effectsManager?.destroy();
-    this.flow.shutdown(this.collisionManager);
-  }
-
-  private handleScaleResize(): void {
-    const viewport = this.syncViewportBounds();
-
-    this.parallax?.resize(viewport.width, viewport.height);
-    this.mobileControls?.relayout();
-    this.hud?.relayout();
-    this.warpTransition?.resize();
-    this.pauseStateController?.relayout();
-    this.clampPlayerToViewport();
-  }
-
-  private syncViewportIfNeeded(): void {
-    const viewport = getViewportBounds(this);
-    const camera = this.cameras.main;
-
-    if (
-      Math.abs(camera.width - viewport.width) <= 1 &&
-      Math.abs(camera.height - viewport.height) <= 1
-    ) {
-      return;
-    }
-
-    this.handleScaleResize();
-  }
-
   private getPlayerSpawnPoint(): { x: number; y: number } {
     return getPlayerSpawnPoint(this);
   }
 
-  private syncViewportBounds(): ReturnType<typeof getViewportBounds> {
+  private syncViewportBounds(): ReturnType<typeof syncSceneViewport> {
     return syncSceneViewport(this);
   }
 
@@ -385,153 +219,8 @@ export class GameScene extends Phaser.Scene {
     clampPlayerToViewport(this, this.player);
   }
 
-  private handleEnemyDeath(score: number, x: number, y: number): void {
-    this.scoreManager.addScore(score);
-    this.effectsManager.createScorePopup(x, y, score);
-    audioManager.playExplosion(0.5);
-    this.tryDropPowerUp(x, y);
-  }
-
-  private handlePlayerDeath(): void {
-    const deathX = this.player.x;
-    const deathY = this.player.y;
-
-    this.runBestEffort(() => this.playPlayerDeathCue(deathX, deathY));
-    this.flow.handlePlayerDeath(this.getFlowContext());
-    this.syncLastLifeHelperWingState();
-  }
-
-  private handlePlayerFatalHit(): void {
-    if (!this.flow.isPlayerDeathTransitionActive()) {
-      return;
-    }
-
-    this.runBestEffort(() => this.cameras.main.flash(120, 255, 96, 96, false));
-  }
-
-  private handleLevelComplete(): void {
-    this.persistHelperWingState();
-    this.lastLifeHelperWing?.suspendForTransition();
-    this.flow.queueLevelComplete(this.getFlowContext());
-  }
-
-  private handleBossSpawn(): void {
-    this.levelManager.markBossSpawned();
-    this.clearFieldForBossIntro();
-    this.hud.showBossWarning();
-    audioManager.startMusic(this.levelManager.getLevelConfig().music.boss);
-    this.spawnBoss();
-  }
-
-  private clearFieldForBossIntro(): void {
-    this.collisionManager.clearPlayerHazards();
-
-    for (const enemy of this.enemyPool.getAllEnemies()) {
-      if (!enemy.active) {
-        continue;
-      }
-
-      enemy.setActive(false);
-      enemy.setVisible(false);
-      enemy.clearTint();
-      enemy.setVelocity(0, 0);
-
-      const body = enemy.body as Phaser.Physics.Arcade.Body | null;
-      body?.reset(0, 0);
-    }
-  }
-
-  private handlePlayerHit(): void {
-    this.runBestEffort(() => audioManager.playPlayerHit());
-  }
-
-  private handlePlayerExhaust(x: number, y: number, intensity: number): void {
-    this.effectsManager.createEngineExhaust(x, y, intensity);
-  }
-
-  private handlePlayerBulletTrail(x: number, y: number): void {
-    this.effectsManager.createBulletTrail(x, y);
-  }
-
-  private handleEnemyBulletTrail(x: number, y: number): void {
-    this.effectsManager.createEnemyBulletTrail(x, y);
-  }
-
-  private handleEnemySpawnWarning(x: number): void {
-    this.effectsManager.createSpawnWarning(x);
-  }
-
-  private handleBossDeath(): void {
-    if (this.boss) {
-      this.effectsManager.createExplosion(
-        this.boss.x,
-        this.boss.y,
-        GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY
-      );
-      audioManager.playExplosion(GameScene.BOSS_EXPLOSION_AUDIO_INTENSITY);
-      this.hud.hideBossBar();
-    }
-    this.boss = null;
-    this.levelManager.markBossDefeated();
-    this.persistHelperWingState();
-    this.lastLifeHelperWing?.suspendForTransition();
-    this.flow.queueLevelComplete(this.getFlowContext());
-  }
-
-  private handleBossPhaseChange(phase: number): void {
-    if (phase < 2) {
-      return;
-    }
-
-    this.hud.showBossPhaseAnnouncement(phase);
-    this.runBestEffort(() => this.cameras.main.flash(120, 255, 196, 96, false));
-    this.runBestEffort(() => this.effectsManager.pulseCameraColor({ brightness: 1.08, contrast: 0.1, saturation: 0.12 }, 220));
-    this.runBestEffort(() => this.effectsManager.pulseCameraColor({ brightness: 1.12, contrast: 0.14, saturation: 0.18 }, 320));
-  }
-
-  private handleHelperWingActivated(helperCount: number): void {
-    this.hud.showHelperWingAnnouncement(helperCount);
-    this.runBestEffort(() => this.cameras.main.flash(140, 96, 220, 255, false));
-    this.runBestEffort(() => this.effectsManager.pulseCameraColor({ brightness: 1.05, contrast: 0.06, saturation: 0.14 }, 180));
-    this.runBestEffort(() => audioManager.playPowerUpPickup());
-  }
-
-  private handleHelperWingDepleted(): void {
-    this.hud.showHelperWingDepletedAnnouncement();
-    this.runBestEffort(() => this.cameras.main.shake(120, 0.006));
-  }
-
-  private spawnBoss(): void {
-    const viewport = getViewportBounds(this);
-    const boss = this.enemyPool.spawnBoss(
-      viewport.centerX,
-      -60,
-      this.scaledBossConfig ?? this.levelManager.getLevelConfig().boss ?? undefined
-    );
-    if (boss) {
-      boss.setPlayer(this.player);
-      this.boss = boss;
-      this.hud.showBossBar(this.levelManager.getLevelConfig().boss?.name ?? 'BOSS');
-    }
-  }
-
-  private runBestEffort(effect: () => void): void {
-    try {
-      effect();
-    } catch {
-      // Keep the GameOver transition alive even if optional cleanup/effects fail.
-    }
-  }
-
-  private playPlayerDeathCue(x: number, y: number): void {
-    this.player.playDeathAnimation();
-    audioManager.playExplosion(GameScene.PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY);
-    this.effectsManager.createExplosion(
-      x,
-      y,
-      GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY,
-      GameScene.PLAYER_DEATH_PARTICLE_BUDGET_SCALE
-    );
+  private syncViewportIfNeeded(): void {
+    this.runtimeLifecycle.syncViewportIfNeeded();
   }
 
   private stopPlayerMotion(): void {
@@ -545,21 +234,12 @@ export class GameScene extends Phaser.Scene {
     body.stop();
   }
 
-  private tryDropPowerUp(x: number, y: number): void {
-    trySpawnRandomPowerUp(this.powerUpGroup, x, y);
-  }
-
-  private returnToMenuFromPause(): void {
-    audioManager.stopMusic();
-    this.scene.start('Menu');
-  }
-
   private applyPowerUp(type: PowerUpType): void {
     applyPowerUpPickup(this, this.player, this.effectsManager, type);
   }
 
   private getFlowContext(): GameSceneFlowContext {
-    return {
+    return createGameSceneFlowContext({
       scene: this,
       registry: this.registry,
       player: this.player,
@@ -568,152 +248,62 @@ export class GameScene extends Phaser.Scene {
       scoreManager: this.scoreManager,
       warpTransition: this.warpTransition,
       stopPlayerMotion: () => this.stopPlayerMotion(),
-      runBestEffort: (effect) => this.runBestEffort(effect),
-      startScene: (key) => startRegisteredScene(this, key),
-      pauseScene: () => this.physics.world.pause(),
-      resumeScene: () => this.physics.world.resume(),
+      runBestEffort,
       getPlayerRespawnPosition: () => this.getPlayerSpawnPoint(),
-    };
-  }
-
-  private syncHudShields(): void {
-    if (this.lastHudShieldCount === this.player.shields) {
-      return;
-    }
-
-    this.lastHudShieldCount = this.player.shields;
-    this.hud.updateShields(this.player.shields);
-  }
-
-  private syncLastLifeHelperWingState(): void {
-    this.lastLifeHelperWing?.updateLastLifeState(this.flow.getRemainingLives());
-  }
-
-  private persistHelperWingState(): void {
-    if (!this.lastLifeHelperWing) {
-      saveHelperWingState(this.registry, { slots: [], grantedSlots: 0 });
-      return;
-    }
-
-    saveHelperWingState(this.registry, this.lastLifeHelperWing.capturePersistentState());
+    });
   }
 
   private updateHud(): void {
-    this.hud.update(
-      this.player.hp,
-      this.player.maxHp,
-      this.scoreManager.getScore(),
-      this.levelManager.progress,
-      this.flow.getRemainingLives()
-    );
-    this.syncHudShields();
+    this.lastHudShieldCount = updateHudOrchestration({
+      hud: this.hud,
+      player: this.player,
+      scoreManager: this.scoreManager,
+      levelManager: this.levelManager,
+      flow: this.flow,
+      lastHudShieldCount: this.lastHudShieldCount,
+    });
   }
 
-  private handlePauseInput(): void {
-    if (this.inputManager.consumePauseToggleRequest()) {
-      this.pauseStateController?.togglePauseRequest(this.flow.isGameplayLocked());
-    }
-  }
-
-  private isPausedOrLockedFrame(): boolean {
-    return !!this.pauseStateController?.isGameplayPaused() || this.flow.isGameplayLocked();
-  }
-
-  private updatePausedFrame(delta: number): void {
-    this.flow.sampleRespawnTransitionFrame(delta);
-    this.updateHud();
-  }
-
-  private updateGameplayFrame(time: number, delta: number): void {
-    this.parallax.update(delta);
-    this.player.update(this.inputManager);
-    this.lastLifeHelperWing?.update(time);
-
-    this.updatePlayerFiring(time);
-    this.updateEncounterAndLevelProgress(time, delta);
-    this.updateBossHudIfNeeded();
-  }
-
-  private updatePlayerFiring(time: number): void {
-    if (!this.inputManager.isFiring() || !this.player.isAlive) {
-      return;
-    }
-
-    if (time <= this.lastFireTime + this.player.fireRate) {
-      return;
-    }
-
-    this.lastFireTime = time;
-
-    const shotSpeed = Math.abs(BULLET_SPEED);
-    const shotDirection = this.player.getFireDirection(this.shotDirection);
-    const shotOrigin = this.player.getMuzzlePosition(20, this.shotOrigin);
-    const muzzleFlashOrigin = this.player.getMuzzlePosition(24, this.muzzleFlashOrigin);
-
-    this.bulletPool.fire(
-      shotOrigin.x,
-      shotOrigin.y,
-      shotDirection.x * shotSpeed,
-      shotDirection.y * shotSpeed
-    );
-    this.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
-    audioManager.playLaser();
-  }
-
-  private updateEncounterAndLevelProgress(time: number, delta: number): void {
-    if (!this.levelManager.hasBossSpawned()) {
-      this.waveManager.update(time, delta, this.levelManager.progress);
-    }
-
-    const prevComplete = this.levelManager.isComplete();
-    this.levelManager.update(delta);
-
-    this.syncSectionPresentation();
-    this.emitProgressionEvents(prevComplete);
-  }
-
-  private syncSectionPresentation(): void {
-    const activeSection = getActiveSection(this.levelManager.getLevelConfig(), this.levelManager.progress);
-    const sectionProgress = activeSection
-      ? getSectionProgress(activeSection, this.levelManager.progress)
-      : 0;
-    const sectionMusicIntensity = resolveSectionMusicIntensity(activeSection, sectionProgress);
-
-    audioManager.setMusicIntensity(this.levelManager.hasBossSpawned() ? 1.1 : sectionMusicIntensity);
-    this.parallax.setSectionAtmosphere(activeSection, sectionProgress);
-  }
-
-  private emitProgressionEvents(prevComplete: boolean): void {
-    if (this.levelManager.shouldSpawnBoss()) {
-      this.events.emit(GAME_SCENE_EVENTS.bossSpawn);
-    }
-
-    if (
-      !this.flow.isTerminalTransitionActive() &&
-      this.levelManager.isComplete() &&
-      !prevComplete
-    ) {
-      this.events.emit(GAME_SCENE_EVENTS.levelComplete);
-    }
-  }
-
-  private updateBossHudIfNeeded(): void {
-    if (this.boss && this.boss.active) {
-      this.hud.updateBossHp(this.boss.hp, this.boss.maxHp);
-    }
+  private createGameplayFrameBehavior() {
+    return createGameSceneGameplayFrameBehavior({
+      inputManager: this.inputManager,
+      pauseStateController: this.pauseStateController,
+      flow: this.flow,
+      parallax: this.parallax,
+      player: this.player,
+      lastLifeHelperWing: this.lastLifeHelperWing,
+      waveManager: this.waveManager,
+      levelManager: this.levelManager,
+      events: this.events,
+      hud: this.hud,
+      bulletPool: this.bulletPool,
+      effectsManager: this.effectsManager,
+      boss: this.boss,
+      getLastFireTime: () => this.lastFireTime,
+      setLastFireTime: (nextTime: number) => {
+        this.lastFireTime = nextTime;
+      },
+      shotDirection: this.shotDirection,
+      shotOrigin: this.shotOrigin,
+      muzzleFlashOrigin: this.muzzleFlashOrigin,
+    });
   }
 
   update(time: number, delta: number): void {
-    this.syncViewportIfNeeded();
-    this.handlePauseInput();
+    const frameBehavior = this.createGameplayFrameBehavior();
 
-    if (this.isPausedOrLockedFrame()) {
-      this.updatePausedFrame(delta);
-      return;
-    }
-
-    this.updateGameplayFrame(time, delta);
-    this.updateHud();
+    runGameSceneUpdateFrame(
+      {
+        syncViewportIfNeeded: () => this.syncViewportIfNeeded(),
+        handlePauseInput: () => frameBehavior.handlePauseInput(),
+        isPausedOrLockedFrame: () => frameBehavior.isPausedOrLockedFrame(),
+        updatePausedFrame: (pausedDelta) => frameBehavior.updatePausedFrame(pausedDelta, () => this.updateHud()),
+        updateGameplayFrame: (gameTime, gameDelta) => frameBehavior.updateGameplayFrame(gameTime, gameDelta),
+        updateHud: () => this.updateHud(),
+      },
+      time,
+      delta
+    );
   }
 }
 
