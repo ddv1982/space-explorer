@@ -10,7 +10,6 @@ interface HazardOverlayGraphics {
   arc(x: number, y: number, radius: number, startAngle: number, endAngle: number): void;
   strokePath(): void;
   fillCircle(x: number, y: number, radius: number): void;
-  fillTriangle(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number): void;
 }
 
 interface HazardOverlayDrawPrimitivesInput {
@@ -103,10 +102,5 @@ export function drawHazardOverlayPrimitives(
     }
   }
 
-  if (rockCorridor > 0) {
-    const edgeAlpha = overlayAlpha * 0.18 * rockCorridor;
-    overlay.fillStyle(0x0b0d12, edgeAlpha);
-    overlay.fillTriangle(0, height * 0.18, width * 0.11, height * 0.42, 0, height * 0.76);
-    overlay.fillTriangle(width, height * 0.18, width * 0.89, height * 0.42, width, height * 0.76);
-  }
+  void rockCorridor;
 }

@@ -87,7 +87,7 @@ describe('hazardOverlayRenderer', () => {
     expect(calls).toHaveLength(0);
   });
 
-  test('issues the same primitive counts across all hazard draw branches', () => {
+  test('issues the expected primitive counts across all visible hazard draw branches', () => {
     const { recorder, calls } = createGraphicsRecorder();
 
     drawHazardOverlayPrimitives(recorder as never, {
@@ -108,12 +108,33 @@ describe('hazardOverlayRenderer', () => {
     expect(countByMethod(calls, 'lineStyle')).toBe(7);
     expect(countByMethod(calls, 'lineBetween')).toBe(7);
     expect(countByMethod(calls, 'strokeEllipse')).toBe(2);
-    expect(countByMethod(calls, 'fillStyle')).toBe(3);
+    expect(countByMethod(calls, 'fillStyle')).toBe(2);
     expect(countByMethod(calls, 'fillEllipse')).toBe(2);
     expect(countByMethod(calls, 'beginPath')).toBe(2);
     expect(countByMethod(calls, 'arc')).toBe(2);
     expect(countByMethod(calls, 'strokePath')).toBe(2);
     expect(countByMethod(calls, 'fillCircle')).toBe(8);
-    expect(countByMethod(calls, 'fillTriangle')).toBe(2);
+    expect(countByMethod(calls, 'fillTriangle')).toBe(0);
+  });
+
+  test('does not render additional overlay primitives for rock corridors', () => {
+    const { recorder, calls } = createGraphicsRecorder();
+
+    drawHazardOverlayPrimitives(recorder as never, {
+      width: 800,
+      height: 600,
+      time: 1000,
+      accentColor: 0x335577,
+      overlayAlpha: 0.8,
+      energyStorm: 0,
+      gravityWell: 0,
+      nebulaAmbush: 0,
+      ringCrossfire: 0,
+      debrisSurge: 0,
+      minefield: 0,
+      rockCorridor: 1,
+    });
+
+    expect(calls).toHaveLength(0);
   });
 });

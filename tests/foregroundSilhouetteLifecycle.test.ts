@@ -47,16 +47,77 @@ function createSpriteStub(textureKey: string): SpriteStub {
 }
 
 describe('foregroundSilhouetteLifecycle', () => {
-  test('create records texture ownership and destroy removes only owned/generated textures', async () => {
+  test('createForegroundSilhouettes is a no-op', async () => {
     const silhouettes: Array<{
       sprite: SpriteStub;
       textureKey: string;
       ownsTexture: boolean;
     }> = [];
     const generated: string[] = [];
+    let graphicsCalls = 0;
+    let imageCalls = 0;
+
+    const scene = {
+      textures: {
+        exists: () => false,
+        remove: () => undefined,
+      },
+      add: {
+        graphics: () => {
+          graphicsCalls += 1;
+          return {
+            fillStyle: () => undefined,
+            beginPath: () => undefined,
+            moveTo: () => undefined,
+            lineTo: () => undefined,
+            closePath: () => undefined,
+            fillPath: () => undefined,
+            fillEllipse: () => undefined,
+            generateTexture: (key: string) => {
+              generated.push(key);
+            },
+            destroy: () => undefined,
+          };
+        },
+        image: (_x: number, _y: number, key: string) => {
+          imageCalls += 1;
+          return createSpriteStub(key);
+        },
+      },
+    } as unknown as Phaser.Scene;
+
+    const { createForegroundSilhouettes } = await loadForegroundSilhouetteLifecycle();
+
+    createForegroundSilhouettes(
+      scene,
+      { accentColor: 0x55aaff } as never,
+      { width: 800, height: 600 },
+      silhouettes as never
+    );
+
+    expect(silhouettes).toHaveLength(0);
+    expect(generated).toHaveLength(0);
+    expect(graphicsCalls).toBe(0);
+    expect(imageCalls).toBe(0);
+  });
+
+  test('destroyForegroundSilhouettes removes only owned/generated textures', async () => {
+    const borrowedSprite = createSpriteStub('borrowed');
+    const ownedSprite = createSpriteStub('owned');
+    const silhouettes = [
+      {
+        sprite: borrowedSprite,
+        textureKey: 'borrowed',
+        ownsTexture: false,
+      },
+      {
+        sprite: ownedSprite,
+        textureKey: 'owned',
+        ownsTexture: true,
+      },
+    ];
     const removed: string[] = [];
-    const existingAtCreate = new Set<string>();
-    const existingNow = new Set<string>();
+    const existingNow = new Set(['borrowed', 'owned']);
 
     const scene = {
       textures: {
@@ -74,42 +135,23 @@ describe('foregroundSilhouetteLifecycle', () => {
           lineTo: () => undefined,
           closePath: () => undefined,
           fillPath: () => undefined,
-          generateTexture: (key: string) => {
-            generated.push(key);
-            existingNow.add(key);
-          },
+          fillEllipse: () => undefined,
+          generateTexture: () => undefined,
           destroy: () => undefined,
         }),
         image: (_x: number, _y: number, key: string) => createSpriteStub(key),
       },
     } as unknown as Phaser.Scene;
 
-    const leftKey = 'foreground-silhouette-left-110x372-55aaff';
-    existingAtCreate.add(leftKey);
-    existingNow.add(leftKey);
-
-    const { createForegroundSilhouettes, destroyForegroundSilhouettes } =
-      await loadForegroundSilhouetteLifecycle();
-
-    createForegroundSilhouettes(
-      scene,
-      { accentColor: 0x55aaff } as never,
-      { width: 800, height: 600 },
-      silhouettes as never
-    );
-
-    expect(silhouettes).toHaveLength(2);
-    expect(silhouettes[0].textureKey).toBe(leftKey);
-    expect(silhouettes[0].ownsTexture).toBe(false);
-    expect(silhouettes[1].textureKey).toBe('foreground-silhouette-right-128x408-55aaff');
-    expect(silhouettes[1].ownsTexture).toBe(true);
-    expect(generated).toEqual(['foreground-silhouette-right-128x408-55aaff']);
+    const { destroyForegroundSilhouettes } = await loadForegroundSilhouetteLifecycle();
 
     destroyForegroundSilhouettes(scene, silhouettes as never);
 
-    expect(removed).toEqual(['foreground-silhouette-right-128x408-55aaff']);
-    expect(existingNow.has(leftKey)).toBe(true);
-    expect(existingNow.has('foreground-silhouette-right-128x408-55aaff')).toBe(false);
+    expect(borrowedSprite.destroyed).toBe(true);
+    expect(ownedSprite.destroyed).toBe(true);
+    expect(removed).toEqual(['owned']);
+    expect(existingNow.has('borrowed')).toBe(true);
+    expect(existingNow.has('owned')).toBe(false);
     expect(silhouettes).toHaveLength(0);
   });
 });

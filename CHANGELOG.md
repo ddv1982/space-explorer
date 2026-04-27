@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.7] - 2026-04-27
+
+### Changed
+- Removed the shared edge-only foreground silhouette treatment so authored levels no longer draw the Phaser-generated cone-like side framing shapes.
+- Removed the `rock-corridor` hazard overlay primitives so corridor sections keep their gameplay logic without adding extra edge-shadow framing.
+
+### Quality
+- Added regression coverage that locks both shared presentation paths as no-ops.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
+
 ## [1.1.6] - 2026-04-27
 
 ### Changed
