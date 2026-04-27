@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.9] - 2026-04-27
+
+### Added
+- Added a touch-only pause button anchored to the top-right gameplay HUD area so mobile players can enter the pause menu without a keyboard.
+
+### Changed
+- Tightened the compact/very-short main-menu title band so the session subtitle no longer cuts through the `SPACE EXPLORER` logo on small mobile viewports.
+- Reduced compact-menu title ornament span, lowered subtitle sizing on very short screens, and enabled centered subtitle wrapping to preserve hierarchy on devices like the iPhone 13 mini.
+- Updated mobile input filtering so taps on the new pause control are excluded from right-side fire-touch detection.
+- Wired the mobile pause control through the existing pause-state controller so touch pause behavior stays consistent with keyboard pause handling and mobile-control blocking.
+
+### Quality
+- Added regression coverage for mobile control-pointer filtering and compact-menu title/subtitle band separation.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.8] - 2026-04-27
 
 ### Added

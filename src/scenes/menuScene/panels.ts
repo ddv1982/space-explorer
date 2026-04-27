@@ -53,13 +53,13 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
 }
 
 export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void {
-  const titleSize = plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
+  const titleSize = plan.veryShortCompact ? 48 : plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
 
   const wings = scene.add.graphics();
   const halfTitleWidth = titleText.width / 2;
-  const wingGap = 20;
-  const wingSpan = plan.compact ? 40 : 60;
+  const wingGap = plan.veryShortCompact ? 12 : 20;
+  const wingSpan = plan.veryShortCompact ? 20 : plan.compact ? 40 : 60;
   wings.lineStyle(1, NEON.cyan, 0.5);
   wings.lineBetween(plan.centerX - halfTitleWidth - wingGap - wingSpan, plan.titleY, plan.centerX - halfTitleWidth - wingGap, plan.titleY);
   wings.lineBetween(plan.centerX + halfTitleWidth + wingGap, plan.titleY, plan.centerX + halfTitleWidth + wingGap + wingSpan, plan.titleY);
@@ -70,9 +70,11 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
 
   scene.add
     .text(plan.centerX, plan.subtitleY, 'Select a session to begin your mission.', {
-      fontSize: plan.compact ? '14px' : '16px',
+      fontSize: plan.veryShortCompact ? '12px' : plan.compact ? '14px' : '16px',
       color: NEON_TEXT.secondary,
       fontFamily: NEON_FONT.mono,
+      wordWrap: { width: Math.max(220, plan.outerFrameWidth - 96) },
+      align: 'center',
     })
     .setOrigin(0.5)
     .setDepth(12);

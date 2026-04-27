@@ -78,7 +78,7 @@ export class InputManager {
       return (
         pointer.isDown &&
         pointer.downX >= viewport.centerX &&
-        this.mobileControls?.isJoystickPointer(pointer) !== true
+        this.mobileControls?.isControlPointer(pointer) !== true
       );
     });
   }

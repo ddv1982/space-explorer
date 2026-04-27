@@ -10,6 +10,7 @@ const MENU_COMPACT_VERY_SHORT_HEIGHT = 420;
 
 export interface MenuLayoutPlan {
   compact: boolean;
+  veryShortCompact: boolean;
   centerX: number;
   outerFrameX: number;
   outerFrameY: number;
@@ -65,8 +66,8 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const sliderSpacing = ROW_HEIGHT + (compact ? 8 : 16);
   const musicPanelHeight = musicVisible ? (ROW_HEIGHT + sliderSpacing * 3) : 0;
 
-  const titleY = outerFrameY + (compact ? (veryShortCompact ? 32 : 45) : 100);
-  const subtitleY = outerFrameY + (compact ? (veryShortCompact ? 60 : 95) : 170);
+  const titleY = outerFrameY + (compact ? (veryShortCompact ? 42 : 52) : 100);
+  const subtitleY = outerFrameY + (compact ? (veryShortCompact ? 96 : 112) : 170);
   const sliderStartY = subtitleY + (compact ? (veryShortCompact ? 18 : 30) : 50);
 
   const tileRows = Math.ceil(4 / tileColumns);
@@ -113,6 +114,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
 
   return {
     compact,
+    veryShortCompact,
     centerX: layout.centerX,
     outerFrameX,
     outerFrameY,

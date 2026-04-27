@@ -52,6 +52,7 @@ type GameSceneCreateBootstrapBridge = Phaser.Scene & {
   canSaveCurrentRun: () => boolean;
   flow: {
     isTerminalTransitionActive: () => boolean;
+    isGameplayLocked: () => boolean;
   };
   levelManager: LevelManager;
   scaledBossConfig: BossConfig | null;
@@ -148,6 +149,9 @@ export function runGameSceneCreateBootstrap(scene: unknown): void {
   });
   gameScene.pauseStateController = pauseStateController;
   gameScene.mobileViewportGuard = mobileViewportGuard;
+  gameScene.mobileControls?.setPauseButtonHandler(() => {
+    pauseStateController.togglePauseRequest(gameScene.flow.isGameplayLocked());
+  });
 
   showControlsHint(gameScene, { mobile: isTouchMobileDevice() });
   gameScene.runtimeLifecycle.registerRuntimeHandlers();

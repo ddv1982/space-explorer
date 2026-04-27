@@ -140,6 +140,12 @@ function assertPauseRequiredControlsDoNotOverlap(viewport: { width: number; heig
 
 function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }): void {
   const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
+  const titleRect = {
+    x: 0,
+    y: plan.titleY - (plan.veryShortCompact ? 28 : plan.compact ? 34 : 44),
+    width: viewport.width,
+    height: plan.veryShortCompact ? 56 : plan.compact ? 68 : 88,
+  };
   const subtitleRect = {
     x: 0,
     y: plan.subtitleY - 10,
@@ -159,6 +165,7 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
     height: plan.statusHeight,
   };
 
+  expectNoOverlap(titleRect, subtitleRect);
   expectNoOverlap(subtitleRect, tileRect);
   expectNoOverlap(tileRect, statusRect);
 
@@ -344,6 +351,7 @@ describe('responsive save-slot layouts', () => {
   });
 
   test.each([
+    { width: 812, height: 375 },
     { width: 360, height: 640 },
     { width: 360, height: 360 },
     { width: 480, height: 320 },
