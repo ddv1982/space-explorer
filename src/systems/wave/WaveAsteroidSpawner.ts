@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Asteroid, AsteroidSpawnConfig } from '../../entities/Asteroid';
 import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../../config/LevelsConfig';
-import { getViewportBounds } from '../../utils/layout';
+import { getActiveGameplayBounds } from '../../utils/layout';
 
 const ASTEROID_SPAWN_Y = -50;
 
@@ -115,11 +115,11 @@ export class WaveAsteroidSpawner {
   }
 
   private getViewportWidth(): number {
-    return getViewportBounds(this.scene).width;
+    return getActiveGameplayBounds(this.scene).width;
   }
 
   private getViewportCenterX(): number {
-    return getViewportBounds(this.scene).centerX;
+    return getActiveGameplayBounds(this.scene).centerX;
   }
 
   private getRandomX(padding: number): number {

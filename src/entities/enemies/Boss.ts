@@ -6,7 +6,7 @@ import type { BossAttackStyle, BossConfig, EnemyType } from '../../config/Levels
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from './boss/behavior';
-import { getViewportBounds } from '../../utils/layout';
+import { getActiveGameplayBounds } from '../../utils/layout';
 import { ensureBossTextureVariant } from '../../utils/SpriteFactory';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
@@ -124,7 +124,7 @@ export class Boss extends EnemyBase {
   }
 
   private updateMovement(time: number, delta: number): void {
-    const viewport = getViewportBounds(this.scene);
+    const viewport = getActiveGameplayBounds(this.scene);
     const movement = updateBossMovement({
       attackStyle: this.attackStyle,
       x: this.x,
@@ -200,7 +200,7 @@ export class Boss extends EnemyBase {
       return;
     }
 
-    const viewport = getViewportBounds(this.scene);
+    const viewport = getActiveGameplayBounds(this.scene);
     const effectivePadding = Math.min(50, viewport.width / 2);
     const minX = viewport.left + effectivePadding;
     const maxX = Math.max(minX, viewport.right - effectivePadding);

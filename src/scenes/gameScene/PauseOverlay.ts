@@ -237,6 +237,7 @@ export class PauseOverlay {
     this.saveButton.setPosition(layout.saveButtonX, layout.saveButtonY);
     this.loadButton.setPosition(layout.loadButtonX, layout.loadButtonY);
     this.menuButton.setPosition(layout.menuButtonX, layout.menuButtonY);
+    this.applyState();
   }
 
   destroy(): void {

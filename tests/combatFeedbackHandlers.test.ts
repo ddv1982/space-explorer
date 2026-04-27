@@ -36,6 +36,8 @@ mock.module('../src/systems/GameplayFlow', () => ({
 mock.module('../src/utils/layout', () => ({
   getViewportBounds: () => ({ centerX: 400 }),
   getViewportLayout: () => ({ left: 0, width: 800, centerX: 400 }),
+  getGameplayBounds: () => ({ left: 0, top: 0, width: 1280, height: 720, right: 1280, bottom: 720, centerX: 640, centerY: 360 }),
+  getActiveGameplayBounds: () => ({ left: 0, top: 0, width: 1280, height: 720, right: 1280, bottom: 720, centerX: 640, centerY: 360 }),
   centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
 }));
 mock.module('phaser', () => ({

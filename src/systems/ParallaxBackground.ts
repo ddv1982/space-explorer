@@ -71,6 +71,7 @@ import {
   type LevelVisualLayerLifecycleContext,
 } from './parallax/levelVisualLayerLifecycle';
 import { getLevelVisualLayerLifecycleContext as getLevelVisualLayerLifecycleContextHelper } from './parallax/levelVisualLayerLifecycleContext';
+import { getActiveGameplayBounds } from '../utils/layout';
 
 const PASSING_PLANET_RESPAWN_MIN_X = 100;
 const PASSING_PLANET_RESPAWN_MAX_X = 400;
@@ -115,7 +116,8 @@ export class ParallaxBackground {
     this.scenicLayers = [];
     this.debrisMotes = [];
     this.foregroundSilhouettes = [];
-    this.resetRuntimeFieldState(scene.cameras.main.width, scene.cameras.main.height);
+    const viewport = getActiveGameplayBounds(scene);
+    this.resetRuntimeFieldState(viewport.width, viewport.height);
 
     if (levelConfig) {
       this.createPremiumBackgroundLayers(scene, levelConfig);

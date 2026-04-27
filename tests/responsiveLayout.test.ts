@@ -19,6 +19,16 @@ mock.module('../src/utils/layout', () => {
   return {
     getViewportBounds,
     getViewportLayout: getViewportBounds,
+    getGameplayBounds: () => ({
+      left: 0,
+      top: 0,
+      width: 1280,
+      height: 720,
+      right: 1280,
+      bottom: 720,
+      centerX: 640,
+      centerY: 360,
+    }),
     centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
   };
 });

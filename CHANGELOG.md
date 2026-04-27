@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.13] - 2026-04-28
+
+### Fixed
+- Fixed the desktop maximize/resizing regression where pause save-slot text could remain visible in gameplay after a relayout while the pause overlay was hidden.
+
+### Changed
+- Restricted the gameplay-consistency viewport override to phone-sized touch screens only, so desktop and larger resolutions keep the original full-screen gameplay behavior.
+- Centralized the phone viewport cutoff in `src/config/deviceConfig.ts` so the short-side and long-side thresholds are tunable without editing detection logic.
+
+### Quality
+- Added regression coverage for phone-sized viewport gating and hidden pause-overlay relayout behavior.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.12] - 2026-04-27
 
 ### Changed
