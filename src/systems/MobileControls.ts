@@ -104,6 +104,7 @@ export class MobileControls {
 
     this.refreshVisibility();
     this.updateJoystickVisual();
+    this.updatePauseButtonVisual();
 
     return this;
   }
@@ -163,6 +164,7 @@ export class MobileControls {
     }
 
     this.refreshVisibility();
+    this.updatePauseButtonVisual();
   }
 
   isEnabled(): boolean {
@@ -260,19 +262,20 @@ export class MobileControls {
 
   private refreshVisibility(): void {
     const visible = this.isEnabled();
+    const pauseVisible = this.enabledForTouchDevice && this.scene !== null;
 
     this.joystickBase?.setVisible(visible);
     this.joystickCenter?.setVisible(visible);
     this.joystickThumb?.setVisible(visible);
-    this.pauseButtonBg?.setVisible(visible);
-    this.pauseButtonIcon?.setVisible(visible);
-    this.pauseButtonHitArea?.setVisible(visible);
+    this.pauseButtonBg?.setVisible(pauseVisible);
+    this.pauseButtonIcon?.setVisible(pauseVisible);
+    this.pauseButtonHitArea?.setVisible(pauseVisible);
 
     if (this.joystickBase?.input) {
       this.joystickBase.input.enabled = visible;
     }
     if (this.pauseButtonHitArea?.input) {
-      this.pauseButtonHitArea.input.enabled = visible;
+      this.pauseButtonHitArea.input.enabled = pauseVisible && !this.blocked;
     }
   }
 

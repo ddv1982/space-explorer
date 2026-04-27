@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.11] - 2026-04-27
+
+### Fixed
+- Fixed the mobile pause button so it renders immediately on first mobile load instead of only appearing after a rotate/reflow cycle.
+- Fixed mobile pause-button visibility across portrait/landscape reorientation so the touch pause affordance remains available after rotating back into gameplay.
+
+### Changed
+- Tightened the ultra-short mobile pause overlay by reducing the oversized `PAUSED` title and dropping subtitle/hint bands on constrained landscape phone screens, giving the checkpoint grid and footer controls more breathing room.
+
+### Quality
+- Added regression coverage for ultra-short phone pause layout behavior.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.10] - 2026-04-27
 
 ### Changed

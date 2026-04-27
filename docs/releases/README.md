@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.11`](./1.1.11.md) — fixes mobile pause-button first-render/rotate visibility and relaxes the ultra-short phone pause layout
 - [`1.1.10`](./1.1.10.md) — lowers the mobile pause button beneath the HUD for cleaner touch spacing
 - [`1.1.9`](./1.1.9.md) — mobile menu title-band fix plus top-right touch pause control and fire-touch filtering cleanup
 - [`1.1.8`](./1.1.8.md) — pause controls, persistent checkpoints, shared neon UI controls, and music-volume parity polish

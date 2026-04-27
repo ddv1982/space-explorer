@@ -19,7 +19,7 @@ export const PAUSE_OVERLAY_SLIDER_SPACING = 68;
 
 const PAUSE_BREAKPOINT_NARROW_WIDTH = 720;
 const PAUSE_BREAKPOINT_SHORT_HEIGHT = 520;
-const PAUSE_BREAKPOINT_VERY_SHORT_HEIGHT = 360;
+const PAUSE_BREAKPOINT_VERY_SHORT_HEIGHT = 400;
 const PAUSE_BREAKPOINT_ULTRA_COMPACT_WIDTH = 340;
 const PAUSE_BREAKPOINT_ULTRA_COMPACT_HEIGHT = 380;
 
@@ -131,9 +131,12 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     ? panelWidth - contentInset * 2
     : Math.min(310, panelX + panelWidth - contentRight - 42);
   const slotBlockHeight = slotRowHeight * 3 + slotRowGap * 2;
-  const titleY = panelY + (shortViewport ? 38 : 96);
-  const baseSubtitleY = panelY + (shortViewport ? 72 : 176);
-  const baseHintY = panelY + (shortViewport ? 96 : 216);
+  const titleFontSize = veryShortViewport ? 64 : shortViewport ? 72 : 86;
+  const subtitleFontSize = veryShortViewport ? 14 : 16;
+  const hintFontSize = veryShortViewport ? 12 : 14;
+  const titleY = panelY + (veryShortViewport ? 60 : shortViewport ? 38 : 96);
+  const baseSubtitleY = panelY + (veryShortViewport ? 94 : shortViewport ? 72 : 176);
+  const baseHintY = panelY + (veryShortViewport ? 118 : shortViewport ? 96 : 216);
   let musicHeaderY = panelY + (shortViewport ? 96 : compact ? 148 : 252);
   let sliderStartY = panelY + (shortViewport ? 126 : compact ? 176 : 284);
   const desiredSlotStartY = stackedLayout
@@ -144,7 +147,7 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const earliestSlotStartY = panelY + (ultraCompactViewport ? 34 : veryShortViewport ? 36 : shortViewport ? 24 : stackedLayout ? 130 : 150);
   const latestSlotStartY = statusY - statusTextHeight / 2 - 8 - slotBlockHeight;
 
-  let subtitleVisible = !ultraCompactViewport;
+  let subtitleVisible = !ultraCompactViewport && !veryShortViewport;
   let hintVisible = !ultraCompactViewport && !veryShortViewport;
   let subtitleY = baseSubtitleY;
   let hintY = baseHintY;
@@ -225,6 +228,9 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     panelY,
     panelWidth,
     panelHeight,
+    titleFontSize,
+    subtitleFontSize,
+    hintFontSize,
     titleY,
     subtitleY,
     subtitleVisible,
@@ -284,7 +290,7 @@ export function drawPauseOverlayBackdrop(
     glow: true,
   });
 
-  drawNeonDivider(panel, layout.centerX, layout.titleY - 48, Math.min(620, layout.panelWidth - 160));
+  drawNeonDivider(panel, layout.centerX, Math.max(layout.panelY + 24, layout.titleY - 48), Math.min(620, layout.panelWidth - 160));
   if (layout.hintVisible) {
     drawNeonDivider(
       panel,

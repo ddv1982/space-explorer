@@ -43,6 +43,9 @@ export interface PauseOverlayLayout {
   panelY: number;
   panelWidth: number;
   panelHeight: number;
+  titleFontSize: number;
+  subtitleFontSize: number;
+  hintFontSize: number;
   titleY: number;
   subtitleY: number;
   subtitleVisible: boolean;

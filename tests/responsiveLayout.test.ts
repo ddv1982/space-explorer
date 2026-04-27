@@ -324,6 +324,15 @@ describe('responsive save-slot layouts', () => {
     expect(layout.slotRows[0]?.width).toBeGreaterThan(400);
   });
 
+  test('pause overlay drops subtitle and hint bands on ultra-short phone landscape viewports', () => {
+    const layout = getPauseOverlayLayout(createScene(812, 375) as never);
+
+    expect(layout.subtitleVisible).toBe(false);
+    expect(layout.hintVisible).toBe(false);
+    expect(layout.titleFontSize).toBeLessThan(86);
+    assertPauseRequiredControlsDoNotOverlap({ width: 812, height: 375 });
+  });
+
   test.each([
     { width: 1024, height: 768 },
     { width: 1280, height: 800 },

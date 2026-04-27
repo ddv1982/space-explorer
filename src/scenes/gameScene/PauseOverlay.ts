@@ -214,6 +214,9 @@ export class PauseOverlay {
     this.blocker.setSize(layout.width, layout.height);
     drawPauseOverlayBackdrop(this.dimmer, this.panel, layout);
 
+    this.titleText.setFontSize(layout.titleFontSize);
+    this.subtitleText.setFontSize(layout.subtitleFontSize);
+    this.hintText.setFontSize(layout.hintFontSize);
     this.titleText.setPosition(layout.centerX, layout.titleY);
     this.subtitleText.setPosition(layout.centerX, layout.subtitleY);
     this.hintText.setPosition(layout.centerX, layout.hintY);
