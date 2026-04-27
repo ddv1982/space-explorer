@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.10] - 2026-04-27
+
+### Changed
+- Lowered the mobile pause button so it sits beneath the gameplay HUD band instead of crowding the top-right HUD readout, improving touch affordance and visual separation on mobile screens.
+
+### Quality
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.9] - 2026-04-27
 
 ### Added

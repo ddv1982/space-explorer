@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.10`](./1.1.10.md) — lowers the mobile pause button beneath the HUD for cleaner touch spacing
 - [`1.1.9`](./1.1.9.md) — mobile menu title-band fix plus top-right touch pause control and fire-touch filtering cleanup
 - [`1.1.8`](./1.1.8.md) — pause controls, persistent checkpoints, shared neon UI controls, and music-volume parity polish
 - [`1.1.7`](./1.1.7.md) — visual framing cleanup removing shared edge silhouettes and corridor overlay dressing
