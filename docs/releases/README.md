@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.12`](./1.1.12.md) — tunes the mobile joystick with a deadzone, steadier direction gating, and better diagonal control
 - [`1.1.11`](./1.1.11.md) — fixes mobile pause-button first-render/rotate visibility and relaxes the ultra-short phone pause layout
 - [`1.1.10`](./1.1.10.md) — lowers the mobile pause button beneath the HUD for cleaner touch spacing
 - [`1.1.9`](./1.1.9.md) — mobile menu title-band fix plus top-right touch pause control and fire-touch filtering cleanup

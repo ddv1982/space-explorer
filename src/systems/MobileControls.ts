@@ -12,6 +12,7 @@ const JOYSTICK_HIT_RADIUS = 96;
 const JOYSTICK_THUMB_RADIUS = 25;
 const JOYSTICK_MAX_DISTANCE = 44;
 const JOYSTICK_INPUT_DISTANCE = 52;
+const JOYSTICK_DEADZONE_DISTANCE = 12;
 const PAUSE_BUTTON_SIZE = 44;
 const PAUSE_BUTTON_TOP_INSET = 84;
 const PAUSE_BUTTON_RIGHT_INSET = 22;
@@ -230,14 +231,21 @@ export class MobileControls {
       return;
     }
 
-    const limitedDistance = Math.min(distance, JOYSTICK_MAX_DISTANCE);
-    const scale = limitedDistance / distance;
+    const limitedThumbDistance = Math.min(distance, JOYSTICK_MAX_DISTANCE);
+    const thumbScale = limitedThumbDistance / distance;
+    const limitedInputDistance = Math.min(distance, JOYSTICK_INPUT_DISTANCE);
+    // Remap the usable throw after a small deadzone so movement starts farther from center.
+    const magnitude = Phaser.Math.Clamp(
+      (limitedInputDistance - JOYSTICK_DEADZONE_DISTANCE) / (JOYSTICK_INPUT_DISTANCE - JOYSTICK_DEADZONE_DISTANCE),
+      0,
+      1
+    );
 
-    this.movementVector.set(dx / JOYSTICK_INPUT_DISTANCE, dy / JOYSTICK_INPUT_DISTANCE).limit(1);
+    this.movementVector.set((dx / distance) * magnitude, (dy / distance) * magnitude);
 
     this.joystickThumb?.setPosition(
-      this.joystickX + dx * scale,
-      this.joystickY + dy * scale
+      this.joystickX + dx * thumbScale,
+      this.joystickY + dy * thumbScale
     );
   }
 

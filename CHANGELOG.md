@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.12] - 2026-04-27
+
+### Changed
+- Tuned the mobile joystick with a small deadzone and remapped stick throw so tiny thumb drift no longer triggers movement as eagerly near center.
+- Replaced the simple mobile direction threshold with engage/release hysteresis, stronger reverse-direction commitment, and weak-secondary-axis suppression so mobile movement feels steadier and more intentional.
+
+### Quality
+- Added regression coverage for deliberate direction engagement, held-direction hysteresis, reverse-direction gating, and weak-diagonal suppression.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.11] - 2026-04-27
 
 ### Fixed
