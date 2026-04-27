@@ -1,36 +1,49 @@
 import Phaser from 'phaser';
+import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
 import {
-  createPauseButton,
-  type PauseMusicSliders,
-  createPauseMusicSliders,
-  destroyPauseButton,
-  destroyPauseMusicSliders,
-  setPauseButtonDepth,
-  setPauseButtonEnabled,
-  setPauseButtonPosition,
-  setPauseButtonVisible,
-  setPauseMusicSlidersDepth,
-  setPauseMusicSlidersPosition,
-  setPauseMusicSlidersVisible,
+  createMusicSliderCluster,
+  destroyMusicSliderCluster,
+  setMusicSliderClusterDepth,
+  setMusicSliderClusterPosition,
+  setMusicSliderClusterVisible,
+  type MusicSliderCluster,
+} from '../shared/musicSliderCluster';
+import {
+  createPauseSaveSlotRows,
+  destroyPauseSaveSlotRows,
+  setPauseSaveSlotRowsDepth,
+  setPauseSaveSlotRowsPosition,
+  setPauseSaveSlotRowsState,
+  setPauseSaveSlotRowsVisible,
+  type PauseSaveSlotRows,
 } from './pauseOverlay/controls';
-import type { PauseButton, PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
+import type { PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
 import {
   drawPauseOverlayBackdrop,
   getPauseOverlayLayout,
   getPauseOverlayMessage,
-  PAUSE_OVERLAY_BUTTON_GAP,
   PAUSE_OVERLAY_BUTTON_HEIGHT,
   PAUSE_OVERLAY_BUTTON_WIDTH,
+  PAUSE_OVERLAY_SLIDER_SPACING,
+  PAUSE_OVERLAY_SLIDER_WIDTH,
 } from './pauseOverlay/view';
+
+function createDefaultPauseOverlayState(): PauseOverlayState {
+  return {
+    visible: false,
+    orientationBlocked: false,
+    canResume: true,
+    canSave: false,
+    storageAvailable: false,
+    saveSlots: [],
+    statusMessage: '',
+  };
+}
 
 export class PauseOverlay {
   private scene: Phaser.Scene | null = null;
   private handlers: PauseOverlayHandlers | null = null;
-  private readonly state: PauseOverlayState = {
-    visible: false,
-    orientationBlocked: false,
-    canResume: true,
-  };
+  private readonly state: PauseOverlayState = createDefaultPauseOverlayState();
 
   private blocker: Phaser.GameObjects.Zone | null = null;
   private dimmer: Phaser.GameObjects.Graphics | null = null;
@@ -38,9 +51,20 @@ export class PauseOverlay {
   private titleText: Phaser.GameObjects.Text | null = null;
   private subtitleText: Phaser.GameObjects.Text | null = null;
   private hintText: Phaser.GameObjects.Text | null = null;
-  private resumeButton: PauseButton | null = null;
-  private menuButton: PauseButton | null = null;
-  private musicSliders: PauseMusicSliders | null = null;
+  private musicHeaderText: Phaser.GameObjects.Text | null = null;
+  private savesHeaderText: Phaser.GameObjects.Text | null = null;
+  private statusText: Phaser.GameObjects.Text | null = null;
+  private resumeButton: ActionButtonControl | null = null;
+  private saveButton: ActionButtonControl | null = null;
+  private loadButton: ActionButtonControl | null = null;
+  private menuButton: ActionButtonControl | null = null;
+  private musicSliders: MusicSliderCluster | null = null;
+  private saveSlotRows: PauseSaveSlotRows | null = null;
+  private musicVisible = true;
+  private saveSlotsVisible = true;
+  private actionButtonsVisible = false;
+  private subtitleVisible = true;
+  private hintVisible = true;
 
   static create(scene: Phaser.Scene, handlers: PauseOverlayHandlers): PauseOverlay {
     return new PauseOverlay().create(scene, handlers);
@@ -60,41 +84,83 @@ export class PauseOverlay {
     this.dimmer = scene.add.graphics();
     this.panel = scene.add.graphics();
     this.titleText = scene.add.text(0, 0, 'PAUSED', {
-      fontSize: '44px',
-      color: '#eef7ff',
+      fontSize: '86px',
+      color: '#eefbff',
       fontStyle: 'bold',
-      fontFamily: 'monospace',
-      stroke: '#091624',
-      strokeThickness: 4,
+      fontFamily: '"Arial Black", "Impact", "Helvetica Neue", Arial, sans-serif',
+      stroke: '#42c9ff',
+      strokeThickness: 2,
     }).setOrigin(0.5);
     this.subtitleText = scene.add.text(0, 0, '', {
-      fontSize: '18px',
-      color: '#bed5f5',
+      fontSize: '16px',
+      color: '#d5e6f6',
       fontFamily: 'monospace',
       align: 'center',
     }).setOrigin(0.5);
     this.hintText = scene.add.text(0, 0, '', {
       fontSize: '14px',
-      color: '#8fb3d8',
+      color: '#7fa8df',
       fontFamily: 'monospace',
       align: 'center',
+      wordWrap: { width: 650 },
+    }).setOrigin(0.5);
+    this.musicHeaderText = scene.add.text(0, 0, 'TUNE MUSIC + VOLUME', {
+      fontSize: '14px',
+      color: '#7fa8df',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+    });
+    this.savesHeaderText = scene.add.text(0, 0, 'CHECKPOINT GRID', {
+      fontSize: '14px',
+      color: '#ffbf6b',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+    });
+    this.statusText = scene.add.text(0, 0, '', {
+      fontSize: '13px',
+      color: '#72ecff',
+      fontFamily: 'monospace',
+      align: 'center',
+      wordWrap: { width: 620 },
     }).setOrigin(0.5);
 
-    this.musicSliders = createPauseMusicSliders(scene, () => this.musicSliders);
-    this.resumeButton = createPauseButton(
-      scene,
-      'RESUME',
-      () => this.handlers?.onResume(),
-      PAUSE_OVERLAY_BUTTON_WIDTH,
-      PAUSE_OVERLAY_BUTTON_HEIGHT
-    );
-    this.menuButton = createPauseButton(
-      scene,
-      'MAIN MENU',
-      () => this.handlers?.onMainMenu(),
-      PAUSE_OVERLAY_BUTTON_WIDTH,
-      PAUSE_OVERLAY_BUTTON_HEIGHT
-    );
+    this.musicSliders = createMusicSliderCluster(scene, {
+      width: PAUSE_OVERLAY_SLIDER_WIDTH,
+      getSliders: () => this.musicSliders,
+    });
+    this.saveSlotRows = createPauseSaveSlotRows(scene, {
+      onSaveSlot: (slotId) => this.handlers?.onSaveSlot(slotId),
+      onLoadSlot: (slotId) => this.handlers?.onLoadSlot(slotId),
+      onDeleteSlot: (slotId) => this.handlers?.onDeleteSlot(slotId),
+    });
+    this.resumeButton = createActionButtonControl(scene, {
+      label: '▶\nRESUME',
+      width: PAUSE_OVERLAY_BUTTON_WIDTH,
+      height: PAUSE_OVERLAY_BUTTON_HEIGHT,
+      onClick: () => this.handlers?.onResume(),
+      variant: 'primary',
+    });
+    this.saveButton = createActionButtonControl(scene, {
+      label: '▣\nSAVE GAME',
+      width: PAUSE_OVERLAY_BUTTON_WIDTH,
+      height: PAUSE_OVERLAY_BUTTON_HEIGHT,
+      onClick: () => this.handlers?.onSaveSlot('slot-1'),
+      variant: 'secondary',
+    });
+    this.loadButton = createActionButtonControl(scene, {
+      label: '▰\nLOAD GAME',
+      width: PAUSE_OVERLAY_BUTTON_WIDTH,
+      height: PAUSE_OVERLAY_BUTTON_HEIGHT,
+      onClick: () => this.handlers?.onLoadSlot(this.getPreferredLoadSlotId()),
+      variant: 'secondary',
+    });
+    this.menuButton = createActionButtonControl(scene, {
+      label: '⌂\nMAIN MENU',
+      width: PAUSE_OVERLAY_BUTTON_WIDTH,
+      height: PAUSE_OVERLAY_BUTTON_HEIGHT,
+      onClick: () => this.handlers?.onMainMenu(),
+      variant: 'secondary',
+    });
 
     this.setDepth(900);
 
@@ -111,6 +177,12 @@ export class PauseOverlay {
     this.state.visible = nextState.visible ?? this.state.visible;
     this.state.orientationBlocked = nextState.orientationBlocked ?? this.state.orientationBlocked;
     this.state.canResume = nextState.canResume ?? this.state.canResume;
+    this.state.canSave = nextState.canSave ?? this.state.canSave;
+    this.state.storageAvailable = nextState.storageAvailable ?? this.state.storageAvailable;
+    this.state.saveSlots = nextState.saveSlots ?? this.state.saveSlots;
+    const statusMessageChanged = nextState.statusMessage !== undefined && nextState.statusMessage !== this.state.statusMessage;
+    this.state.statusMessage = nextState.statusMessage ?? this.state.statusMessage;
+    this.state.statusOk = nextState.statusOk ?? (nextState.statusMessage === '' || statusMessageChanged ? true : this.state.statusOk);
     this.applyState();
   }
 
@@ -123,9 +195,15 @@ export class PauseOverlay {
       !this.titleText ||
       !this.subtitleText ||
       !this.hintText ||
+      !this.musicHeaderText ||
+      !this.savesHeaderText ||
+      !this.statusText ||
       !this.resumeButton ||
+      !this.saveButton ||
+      !this.loadButton ||
       !this.menuButton ||
-      !this.musicSliders
+      !this.musicSliders ||
+      !this.saveSlotRows
     ) {
       return;
     }
@@ -136,25 +214,26 @@ export class PauseOverlay {
     this.blocker.setSize(layout.width, layout.height);
     drawPauseOverlayBackdrop(this.dimmer, this.panel, layout);
 
-    this.titleText.setPosition(layout.centerX, layout.panelY + 58);
-    this.subtitleText.setPosition(layout.centerX, layout.panelY + 116);
-    this.hintText.setPosition(layout.centerX, layout.panelY + 160);
+    this.titleText.setPosition(layout.centerX, layout.titleY);
+    this.subtitleText.setPosition(layout.centerX, layout.subtitleY);
+    this.hintText.setPosition(layout.centerX, layout.hintY);
+    this.hintText.setWordWrapWidth(Math.max(280, layout.panelWidth - 88));
+    this.musicVisible = layout.musicVisible;
+    this.saveSlotsVisible = layout.saveSlotsVisible;
+    this.actionButtonsVisible = layout.actionButtonsVisible;
+    this.subtitleVisible = layout.subtitleVisible;
+    this.hintVisible = layout.hintVisible;
+    this.musicHeaderText.setPosition(layout.musicHeaderX, layout.musicHeaderY);
+    this.savesHeaderText.setPosition(layout.saveHeaderX, layout.saveHeaderY);
+    this.statusText.setPosition(layout.statusX, layout.statusY);
+    this.statusText.setWordWrapWidth(Math.max(280, layout.panelWidth - 96));
 
-    setPauseMusicSlidersPosition(this.musicSliders, layout.sliderX, layout.sliderStartY);
-    setPauseButtonPosition(
-      this.resumeButton,
-      PAUSE_OVERLAY_BUTTON_WIDTH,
-      PAUSE_OVERLAY_BUTTON_HEIGHT,
-      layout.buttonsX,
-      layout.buttonY
-    );
-    setPauseButtonPosition(
-      this.menuButton,
-      PAUSE_OVERLAY_BUTTON_WIDTH,
-      PAUSE_OVERLAY_BUTTON_HEIGHT,
-      layout.buttonsX + PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP,
-      layout.buttonY
-    );
+    setMusicSliderClusterPosition(this.musicSliders, layout.sliderX, layout.sliderStartY, PAUSE_OVERLAY_SLIDER_SPACING);
+    setPauseSaveSlotRowsPosition(this.saveSlotRows, layout.slotRows);
+    this.resumeButton.setPosition(layout.resumeButtonX, layout.resumeButtonY);
+    this.saveButton.setPosition(layout.saveButtonX, layout.saveButtonY);
+    this.loadButton.setPosition(layout.loadButtonX, layout.loadButtonY);
+    this.menuButton.setPosition(layout.menuButtonX, layout.menuButtonY);
   }
 
   destroy(): void {
@@ -164,9 +243,12 @@ export class PauseOverlay {
 
     this.scene.scale.off(Phaser.Scale.Events.RESIZE, this.relayout, this);
 
-    destroyPauseButton(this.resumeButton);
-    destroyPauseButton(this.menuButton);
-    destroyPauseMusicSliders(this.musicSliders);
+    this.resumeButton?.destroy();
+    this.saveButton?.destroy();
+    this.loadButton?.destroy();
+    this.menuButton?.destroy();
+    destroyMusicSliderCluster(this.musicSliders);
+    destroyPauseSaveSlotRows(this.saveSlotRows);
 
     this.blocker?.destroy();
     this.dimmer?.destroy();
@@ -174,6 +256,9 @@ export class PauseOverlay {
     this.titleText?.destroy();
     this.subtitleText?.destroy();
     this.hintText?.destroy();
+    this.musicHeaderText?.destroy();
+    this.savesHeaderText?.destroy();
+    this.statusText?.destroy();
 
     this.blocker = null;
     this.dimmer = null;
@@ -181,9 +266,15 @@ export class PauseOverlay {
     this.titleText = null;
     this.subtitleText = null;
     this.hintText = null;
+    this.musicHeaderText = null;
+    this.savesHeaderText = null;
+    this.statusText = null;
     this.resumeButton = null;
+    this.saveButton = null;
+    this.loadButton = null;
     this.menuButton = null;
     this.musicSliders = null;
+    this.saveSlotRows = null;
     this.handlers = null;
     this.scene = null;
   }
@@ -195,14 +286,26 @@ export class PauseOverlay {
     this.titleText?.setDepth(depth + 3);
     this.subtitleText?.setDepth(depth + 3);
     this.hintText?.setDepth(depth + 3);
+    this.musicHeaderText?.setDepth(depth + 3);
+    this.savesHeaderText?.setDepth(depth + 3);
+    this.statusText?.setDepth(depth + 3);
     if (this.resumeButton) {
-      setPauseButtonDepth(this.resumeButton, depth + 3);
+      this.resumeButton.setDepth(depth + 3);
+    }
+    if (this.saveButton) {
+      this.saveButton.setDepth(depth + 3);
+    }
+    if (this.loadButton) {
+      this.loadButton.setDepth(depth + 3);
     }
     if (this.menuButton) {
-      setPauseButtonDepth(this.menuButton, depth + 3);
+      this.menuButton.setDepth(depth + 3);
     }
     if (this.musicSliders) {
-      setPauseMusicSlidersDepth(this.musicSliders, depth + 3);
+      setMusicSliderClusterDepth(this.musicSliders, depth + 3);
+    }
+    if (this.saveSlotRows) {
+      setPauseSaveSlotRowsDepth(this.saveSlotRows, depth + 3);
     }
   }
 
@@ -211,12 +314,18 @@ export class PauseOverlay {
       !this.titleText ||
       !this.subtitleText ||
       !this.hintText ||
+      !this.musicHeaderText ||
+      !this.savesHeaderText ||
+      !this.statusText ||
       !this.resumeButton ||
+      !this.saveButton ||
+      !this.loadButton ||
       !this.menuButton ||
       !this.blocker ||
       !this.dimmer ||
       !this.panel ||
-      !this.musicSliders
+      !this.musicSliders ||
+      !this.saveSlotRows
     ) {
       return;
     }
@@ -224,23 +333,40 @@ export class PauseOverlay {
     const shouldShow = this.state.visible;
     const canResume = this.state.canResume && !this.state.orientationBlocked;
     const message = getPauseOverlayMessage(this.state);
+    const statusMessage = this.state.statusMessage ||
+      (this.state.storageAvailable ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.' : 'Checkpoint storage unavailable in this browser.');
 
     this.titleText.setText(message.title);
     this.subtitleText.setText(message.subtitle);
     this.hintText.setText(message.hint);
-    this.resumeButton.label.setText(message.resumeLabel);
+    this.resumeButton.setLabel(message.resumeLabel);
+    this.statusText.setText(statusMessage);
+    this.statusText.setColor(this.state.statusOk === false || !this.state.storageAvailable ? '#ff9c7f' : '#72ecff');
 
-    setPauseButtonEnabled(this.resumeButton, PAUSE_OVERLAY_BUTTON_WIDTH, PAUSE_OVERLAY_BUTTON_HEIGHT, canResume);
-    setPauseButtonEnabled(this.menuButton, PAUSE_OVERLAY_BUTTON_WIDTH, PAUSE_OVERLAY_BUTTON_HEIGHT, true);
+    this.resumeButton.setEnabled(canResume);
+    this.saveButton.setEnabled(this.state.storageAvailable && this.state.canSave);
+    this.loadButton.setEnabled(this.state.storageAvailable && this.state.saveSlots.some((slot) => slot.occupied));
+    this.menuButton.setEnabled(true);
+    setPauseSaveSlotRowsState(this.saveSlotRows, this.state);
 
     this.blocker.setVisible(shouldShow);
     this.dimmer.setVisible(shouldShow);
     this.panel.setVisible(shouldShow);
     this.titleText.setVisible(shouldShow);
-    this.subtitleText.setVisible(shouldShow);
-    this.hintText.setVisible(shouldShow);
-    setPauseButtonVisible(this.resumeButton, shouldShow);
-    setPauseButtonVisible(this.menuButton, shouldShow);
-    setPauseMusicSlidersVisible(this.musicSliders, shouldShow);
+    this.subtitleText.setVisible(shouldShow && this.subtitleVisible);
+    this.hintText.setVisible(shouldShow && this.hintVisible);
+    this.musicHeaderText.setVisible(shouldShow && this.musicVisible);
+    this.savesHeaderText.setVisible(shouldShow && this.saveSlotsVisible);
+    this.statusText.setVisible(shouldShow);
+    this.resumeButton.setVisible(shouldShow);
+    this.saveButton.setVisible(shouldShow && this.actionButtonsVisible);
+    this.loadButton.setVisible(shouldShow && this.actionButtonsVisible);
+    this.menuButton.setVisible(shouldShow);
+    setMusicSliderClusterVisible(this.musicSliders, shouldShow && this.musicVisible);
+    setPauseSaveSlotRowsVisible(this.saveSlotRows, shouldShow && this.saveSlotsVisible);
+  }
+
+  private getPreferredLoadSlotId(): 'slot-1' | 'slot-2' | 'slot-3' {
+    return this.state.saveSlots.find((slot) => slot.occupied)?.id ?? 'slot-1';
   }
 }

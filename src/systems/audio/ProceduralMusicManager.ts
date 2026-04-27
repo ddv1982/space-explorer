@@ -71,6 +71,7 @@ export type MusicRuntimeTuning = MusicRuntimeTuningValues;
 
 const MINIMUM_MUSIC_INTENSITY = 0.2;
 const MAXIMUM_MUSIC_INTENSITY = 1.2;
+const MINIMUM_OUTPUT_INTENSITY = 0.9;
 const MUSIC_OUTPUT_GAIN_BOOST = 2.9;
 
 export class ProceduralMusicManager {
@@ -93,6 +94,7 @@ export class ProceduralMusicManager {
       minimumMusicIntensity: MINIMUM_MUSIC_INTENSITY,
       maximumMusicIntensity: MAXIMUM_MUSIC_INTENSITY,
       musicOutputGainBoost: MUSIC_OUTPUT_GAIN_BOOST,
+      minimumOutputIntensity: MINIMUM_OUTPUT_INTENSITY,
       getCtx: () => this.contextManager.getCtx(),
       getMusicGain: () => this.musicGain,
       getMusicFX: () => this.musicFX,

@@ -11,9 +11,12 @@ mock.module('phaser', () => ({
   },
 }));
 
+const actualPlayerState = await import('../src/systems/PlayerState');
 const getHelperWingState = mock(() => ({ grantedSlots: 0, slots: [] }));
 mock.module('../src/systems/PlayerState', () => ({
+  ...actualPlayerState,
   getHelperWingState,
+  saveHelperWingState: () => undefined,
 }));
 
 mock.module('../src/entities/PowerUp', () => ({

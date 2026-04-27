@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.8] - 2026-04-27
+
+### Added
+- Added a full in-run pause control surface with checkpoint slot management (`SAVE`, `LOAD`, `DEL`, and `MAIN MENU`) plus embedded music tuning controls for creativity, energy, ambience, and music volume.
+- Added local save-slot persistence and normalization helpers so pause/menu checkpoint actions can recover canonical player/run state safely across browser sessions.
+- Added shared neon UI building blocks for action buttons, slider clusters, slider icons, and single-line text fitting to support the new menu/pause presentation layer.
+
+### Changed
+- Reworked pause-state flow so manual pause, orientation lock, physics pause/resume, mobile-control blocking, save-slot availability, and status messaging all publish through one coordinated controller path.
+- Upgraded the main menu layout with loadable save-slot tiles, delete actions, and the same runtime music-control surface used in-game.
+- Tuned procedural music runtime gain so in-game and pause-menu music no longer fall quieter than the main-menu baseline at equivalent volume settings.
+- Polished the desktop pause overlay layout and compact responsive behavior so sliders, headers, dividers, slot rows, and footer actions stay visually separated without text collisions.
+- Hardened player-state normalization so legacy or corrupt checkpoint payloads recover valid shields, level bounds, helper-wing slots, and run-summary metadata.
+
+### Quality
+- Added regression coverage for pause-state transitions, pause overlay responsive spacing, checkpoint persistence/normalization, shared action-button and slider-cluster wiring, player-state schema clamping, and procedural music runtime control behavior.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.7] - 2026-04-27
 
 ### Changed

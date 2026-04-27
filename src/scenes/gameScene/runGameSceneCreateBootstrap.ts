@@ -13,7 +13,7 @@ import { type LevelManager } from '../../systems/LevelManager';
 import { type MobileControls } from '../../systems/MobileControls';
 import { type MobileViewportGuard } from '../../systems/MobileViewportGuard';
 import { type ParallaxBackground } from '../../systems/ParallaxBackground';
-import { type getPlayerState } from '../../systems/PlayerState';
+import { type getPlayerState, type PlayerStateData } from '../../systems/PlayerState';
 import { type ScoreManager } from '../../systems/ScoreManager';
 import { type WarpTransition } from '../../systems/WarpTransition';
 import { type WaveManager } from '../../systems/WaveManager';
@@ -48,6 +48,8 @@ type GameSceneCreateBootstrapBridge = Phaser.Scene & {
   stopPlayerMotion: () => void;
   applyPowerUp: (type: PowerUpType) => void;
   runtimeLifecycle: RuntimeLifecycle;
+  captureCurrentRunStateForSave: () => PlayerStateData;
+  canSaveCurrentRun: () => boolean;
   flow: {
     isTerminalTransitionActive: () => boolean;
   };
@@ -141,6 +143,8 @@ export function runGameSceneCreateBootstrap(scene: unknown): void {
     scene: gameScene,
     stopPlayerMotion: () => gameScene.stopPlayerMotion(),
     getMobileControls: () => gameScene.mobileControls,
+    captureCurrentRunStateForSave: () => gameScene.captureCurrentRunStateForSave(),
+    canSaveCurrentRun: () => gameScene.canSaveCurrentRun(),
   });
   gameScene.pauseStateController = pauseStateController;
   gameScene.mobileViewportGuard = mobileViewportGuard;

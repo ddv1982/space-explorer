@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import { InputManager } from '../systems/InputManager';
-import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerShieldCount, getPlayerDamage } from '../systems/PlayerState';
+import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { ensurePlayerTexture } from '../utils/SpriteFactory';
 import { applyGameObjectGlow } from '../utils/renderingCompat';
@@ -43,7 +43,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.hp = state.currentHp > 0 ? Math.min(state.currentHp, this.maxHp) : this.maxHp;
     this.damage = getPlayerDamage(state);
     this.fireRate = getPlayerFireRate(state);
-    this.shields = getPlayerShieldCount(state);
+    this.shields = state.currentShields;
   }
 
   takeDamage(amount: number): PlayerDamageOutcome {

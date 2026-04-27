@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.8`](./1.1.8.md) — pause controls, persistent checkpoints, shared neon UI controls, and music-volume parity polish
 - [`1.1.7`](./1.1.7.md) — visual framing cleanup removing shared edge silhouettes and corridor overlay dressing
 - [`1.1.6`](./1.1.6.md) — runtime decomposition follow-up with lifecycle hardening, music module cleanup, and docs sync
 - [`1.1.5`](./1.1.5.md) — runtime refactor and export cleanup with full knip green

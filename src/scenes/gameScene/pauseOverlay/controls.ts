@@ -1,198 +1,202 @@
 import Phaser from 'phaser';
-import { audioManager } from '../../../systems/AudioManager';
-import { createMusicSliderControl, type MusicSliderControl } from '../../shared/musicSliderControl';
+import type { SaveSlotId, SaveSlotViewModel } from '../../../systems/SaveSlotStorage';
+import { createActionButtonControl, type ActionButtonControl } from '../../shared/actionButtonControl';
+import { setSingleLineTextWithEllipsis } from '../../shared/textFit';
 import {
-  applyMusicRuntimeTuningValue,
-  destroyMusicRuntimeTuningSliders,
-  type MusicTuningSliders,
-} from '../../shared/musicRuntimeTuning';
-import {
-  PAUSE_OVERLAY_SLIDER_SPACING,
-  PAUSE_OVERLAY_PANEL_WIDTH,
+  PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+  PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+  PAUSE_OVERLAY_SLOT_ROW_HEIGHT,
+  getPauseSaveSlotRowControlLayout,
 } from './view';
-import type { PauseButton } from './types';
+import type { PauseOverlayState, PauseSaveSlotRowLayout } from './types';
 
-export type PauseMusicSliders = MusicTuningSliders & {
-  volume: MusicSliderControl;
-};
-
-function drawPauseButtonBackground(
-  graphic: Phaser.GameObjects.Graphics,
-  width: number,
-  height: number,
-  state: Pick<PauseButton, 'enabled' | 'hovered'>
-): void {
-  graphic.clear();
-
-  const bgColor = state.enabled ? (state.hovered ? 0x274b77 : 0x1b3555) : 0x2a2a2a;
-  const borderColor = state.enabled ? (state.hovered ? 0x86b9ff : 0x5f8fda) : 0x5a5a5a;
-
-  graphic.fillStyle(bgColor, state.enabled ? 0.95 : 0.7);
-  graphic.fillRoundedRect(0, 0, width, height, 8);
-  graphic.lineStyle(2, borderColor, 1);
-  graphic.strokeRoundedRect(0, 0, width, height, 8);
+interface PauseSaveSlotRow {
+  chrome: Phaser.GameObjects.Graphics;
+  title: Phaser.GameObjects.Text;
+  subtitle: Phaser.GameObjects.Text;
+  savedAt: Phaser.GameObjects.Text;
+  saveButton: ActionButtonControl;
+  loadButton: ActionButtonControl;
+  deleteButton: ActionButtonControl;
+  viewModel: SaveSlotViewModel | null;
+  layout: PauseSaveSlotRowLayout;
 }
 
-export function createPauseButton(
+export interface PauseSaveSlotRows {
+  rows: PauseSaveSlotRow[];
+}
+
+function drawSlotRowChrome(row: PauseSaveSlotRow): void {
+  const { x, y, width } = row.layout;
+  const occupied = row.viewModel?.occupied ?? false;
+  const accent = occupied ? 0x5fe7ff : 0x4c6078;
+  const height = row.layout.height;
+
+  row.chrome.clear();
+  row.chrome.fillStyle(occupied ? 0x071d31 : 0x07111d, occupied ? 0.82 : 0.55);
+  row.chrome.fillRoundedRect(x, y, width, height, 6);
+  row.chrome.lineStyle(1, accent, occupied ? 0.85 : 0.45);
+  row.chrome.strokeRoundedRect(x, y, width, height, 6);
+}
+
+function fitPauseSaveSlotRowText(row: PauseSaveSlotRow): void {
+  const controlLayout = getPauseSaveSlotRowControlLayout(row.layout);
+
+  setSingleLineTextWithEllipsis(
+    row.title,
+    row.viewModel?.title ?? row.title.text,
+    controlLayout.title.visible ? controlLayout.title.width : 0,
+    'SLOT'
+  );
+  setSingleLineTextWithEllipsis(
+    row.subtitle,
+    row.viewModel?.subtitle ?? row.subtitle.text,
+    controlLayout.subtitle.visible ? controlLayout.subtitle.width : 0,
+    'EMPTY'
+  );
+  setSingleLineTextWithEllipsis(
+    row.savedAt,
+    row.viewModel?.savedAtLabel || row.savedAt.text,
+    controlLayout.savedAt.visible ? controlLayout.savedAt.width : 0,
+    'NO CHECKPOINT'
+  );
+}
+
+export function createPauseSaveSlotRows(
   scene: Phaser.Scene,
-  label: string,
-  onClick: () => void,
-  width: number,
-  height: number
-): PauseButton {
-  const background = scene.add.graphics();
-  const text = scene.add.text(0, 0, label, {
-    fontSize: '17px',
-    color: '#f6fbff',
-    fontFamily: 'monospace',
-    fontStyle: 'bold',
-  }).setOrigin(0.5);
-  const hitArea = scene.add.zone(0, 0, width, height).setOrigin(0);
-
-  const button: PauseButton = {
-    background,
-    label: text,
-    hitArea,
-    hovered: false,
-    enabled: true,
-  };
-
-  hitArea.setInteractive({ useHandCursor: true });
-  hitArea.on('pointerover', () => {
-    if (!button.enabled) {
-      return;
-    }
-    button.hovered = true;
-    redrawPauseButton(button, width, height);
-  });
-  hitArea.on('pointerout', () => {
-    button.hovered = false;
-    redrawPauseButton(button, width, height);
-  });
-  hitArea.on('pointerdown', () => {
-    if (!button.enabled) {
-      return;
-    }
-    onClick();
-  });
-
-  redrawPauseButton(button, width, height);
-
-  return button;
-}
-
-function redrawPauseButton(button: PauseButton, width: number, height: number): void {
-  drawPauseButtonBackground(button.background, width, height, button);
-  button.label.setColor(button.enabled ? '#f6fbff' : '#9aa1a8');
-}
-
-export function setPauseButtonEnabled(button: PauseButton, width: number, height: number, enabled: boolean): void {
-  button.enabled = enabled;
-  if (!enabled) {
-    button.hovered = false;
+  handlers: {
+    onSaveSlot: (slotId: SaveSlotId) => void;
+    onLoadSlot: (slotId: SaveSlotId) => void;
+    onDeleteSlot: (slotId: SaveSlotId) => void;
   }
-
-  button.hitArea.disableInteractive();
-  if (enabled) {
-    button.hitArea.setInteractive({ useHandCursor: true });
-  }
-
-  redrawPauseButton(button, width, height);
-}
-
-export function setPauseButtonPosition(button: PauseButton, width: number, height: number, x: number, y: number): void {
-  button.background.setPosition(x, y);
-  button.label.setPosition(x + width / 2, y + height / 2);
-  button.hitArea.setPosition(x, y);
-  button.hitArea.setSize(width, height);
-}
-
-export function setPauseButtonDepth(button: PauseButton, depth: number): void {
-  button.background.setDepth(depth);
-  button.label.setDepth(depth + 1);
-  button.hitArea.setDepth(depth + 2);
-}
-
-export function setPauseButtonVisible(button: PauseButton, visible: boolean): void {
-  button.background.setVisible(visible);
-  button.label.setVisible(visible);
-  button.hitArea.setVisible(visible);
-
-  button.hitArea.disableInteractive();
-  if (visible && button.enabled) {
-    button.hitArea.setInteractive({ useHandCursor: true });
-  }
-}
-
-export function destroyPauseButton(button: PauseButton | null): void {
-  if (!button) {
-    return;
-  }
-
-  button.background.destroy();
-  button.label.destroy();
-  button.hitArea.destroy();
-}
-
-export function createPauseMusicSliders(
-  scene: Phaser.Scene,
-  getSliders: () => PauseMusicSliders | null
-): PauseMusicSliders {
-  const tuning = audioManager.getMusicRuntimeTuning();
+): PauseSaveSlotRows {
+  const slotIds: SaveSlotId[] = ['slot-1', 'slot-2', 'slot-3'];
 
   return {
-    creativity: createMusicSliderControl(scene, {
-      label: 'CREATIVITY',
-      value: tuning.creativity,
-      width: PAUSE_OVERLAY_PANEL_WIDTH - 90,
-      onChange: (value) => applyMusicRuntimeTuningValue('creativity', value, getSliders()),
-    }),
-    energy: createMusicSliderControl(scene, {
-      label: 'ENERGY',
-      value: tuning.energy,
-      width: PAUSE_OVERLAY_PANEL_WIDTH - 90,
-      onChange: (value) => applyMusicRuntimeTuningValue('energy', value, getSliders()),
-    }),
-    ambience: createMusicSliderControl(scene, {
-      label: 'AMBIENCE',
-      value: tuning.ambience,
-      width: PAUSE_OVERLAY_PANEL_WIDTH - 90,
-      onChange: (value) => applyMusicRuntimeTuningValue('ambience', value, getSliders()),
-    }),
-    volume: createMusicSliderControl(scene, {
-      label: 'MUSIC VOLUME',
-      value: audioManager.getMusicVolume(),
-      width: PAUSE_OVERLAY_PANEL_WIDTH - 90,
-      onChange: (value) => {
-        const nextVolume = audioManager.setMusicVolume(value);
-        getSliders()?.volume.setValue(nextVolume);
-      },
-    }),
+    rows: slotIds.map((slotId, index) => ({
+      chrome: scene.add.graphics(),
+      title: scene.add.text(0, 0, `SLOT ${index + 1}`, {
+        fontSize: '14px',
+        color: '#e9f8ff',
+        fontFamily: 'monospace',
+        fontStyle: 'bold',
+      }),
+      subtitle: scene.add.text(0, 0, 'EMPTY', {
+        fontSize: '12px',
+        color: '#9eb9d3',
+        fontFamily: 'monospace',
+      }),
+      savedAt: scene.add.text(0, 0, 'NO CHECKPOINT', {
+        fontSize: '10px',
+        color: '#6f8aa6',
+        fontFamily: 'monospace',
+      }),
+      saveButton: createActionButtonControl(scene, {
+        label: '+ SAVE',
+        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+        onClick: () => handlers.onSaveSlot(slotId),
+        variant: 'primary',
+        fontSize: '11px',
+      }),
+      loadButton: createActionButtonControl(scene, {
+        label: '> LOAD',
+        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+        onClick: () => handlers.onLoadSlot(slotId),
+        variant: 'secondary',
+        fontSize: '11px',
+      }),
+      deleteButton: createActionButtonControl(scene, {
+        label: 'X DEL',
+        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+        onClick: () => handlers.onDeleteSlot(slotId),
+        variant: 'danger',
+        fontSize: '11px',
+      }),
+      viewModel: null,
+      layout: { x: 0, y: 0, width: 300, height: PAUSE_OVERLAY_SLOT_ROW_HEIGHT },
+    })),
   };
 }
 
-export function setPauseMusicSlidersPosition(sliders: PauseMusicSliders, x: number, y: number): void {
-  sliders.creativity.setPosition(x, y);
-  sliders.energy.setPosition(x, y + PAUSE_OVERLAY_SLIDER_SPACING);
-  sliders.ambience.setPosition(x, y + PAUSE_OVERLAY_SLIDER_SPACING * 2);
-  sliders.volume.setPosition(x, y + PAUSE_OVERLAY_SLIDER_SPACING * 3);
+export function setPauseSaveSlotRowsPosition(rows: PauseSaveSlotRows, layouts: PauseSaveSlotRowLayout[]): void {
+  rows.rows.forEach((row, index) => {
+    const layout = layouts[index];
+    if (!layout) {
+      return;
+    }
+
+    row.layout = layout;
+    const controlLayout = getPauseSaveSlotRowControlLayout(layout);
+    row.title.setPosition(controlLayout.title.x, controlLayout.title.y);
+    row.subtitle.setPosition(controlLayout.subtitle.x, controlLayout.subtitle.y);
+    row.savedAt.setPosition(controlLayout.savedAt.x, controlLayout.savedAt.y);
+    row.title.setVisible(controlLayout.title.visible);
+    row.subtitle.setVisible(controlLayout.subtitle.visible);
+    row.savedAt.setVisible(controlLayout.savedAt.visible);
+    row.saveButton.setPosition(controlLayout.saveButton.x, controlLayout.saveButton.y);
+    row.loadButton.setPosition(controlLayout.loadButton.x, controlLayout.loadButton.y);
+    row.deleteButton.setPosition(controlLayout.deleteButton.x, controlLayout.deleteButton.y);
+    fitPauseSaveSlotRowText(row);
+    drawSlotRowChrome(row);
+  });
 }
 
-export function setPauseMusicSlidersDepth(sliders: PauseMusicSliders, depth: number): void {
-  sliders.creativity.setDepth(depth);
-  sliders.energy.setDepth(depth);
-  sliders.ambience.setDepth(depth);
-  sliders.volume.setDepth(depth);
+export function setPauseSaveSlotRowsState(rows: PauseSaveSlotRows, state: PauseOverlayState): void {
+  rows.rows.forEach((row, index) => {
+    const viewModel = state.saveSlots[index] ?? null;
+    row.viewModel = viewModel;
+
+    row.title.setText(viewModel?.title ?? `SLOT ${index + 1}`);
+    row.subtitle.setText(viewModel?.subtitle ?? 'EMPTY');
+    row.savedAt.setText(viewModel?.savedAtLabel || 'NO CHECKPOINT');
+    fitPauseSaveSlotRowText(row);
+    row.title.setColor(viewModel?.occupied ? '#f4feff' : '#aeb9c6');
+    row.subtitle.setColor(viewModel?.occupied ? '#b7dcff' : '#77869a');
+    row.savedAt.setColor(viewModel?.occupied ? '#6ff3ff' : '#647386');
+
+    row.saveButton.setEnabled(state.storageAvailable && state.canSave);
+    row.loadButton.setEnabled(state.storageAvailable && Boolean(viewModel?.occupied));
+    row.deleteButton.setEnabled(state.storageAvailable && Boolean(viewModel?.occupied));
+    drawSlotRowChrome(row);
+  });
 }
 
-export function setPauseMusicSlidersVisible(sliders: PauseMusicSliders, visible: boolean): void {
-  sliders.creativity.setVisible(visible);
-  sliders.energy.setVisible(visible);
-  sliders.ambience.setVisible(visible);
-  sliders.volume.setVisible(visible);
+export function setPauseSaveSlotRowsDepth(rows: PauseSaveSlotRows, depth: number): void {
+  rows.rows.forEach((row) => {
+    row.chrome.setDepth(depth);
+    row.title.setDepth(depth + 1);
+    row.subtitle.setDepth(depth + 1);
+    row.savedAt.setDepth(depth + 1);
+    row.saveButton.setDepth(depth + 2);
+    row.loadButton.setDepth(depth + 2);
+    row.deleteButton.setDepth(depth + 2);
+  });
 }
 
-export function destroyPauseMusicSliders(sliders: PauseMusicSliders | null): void {
-  sliders?.volume.destroy();
-  destroyMusicRuntimeTuningSliders(sliders);
+export function setPauseSaveSlotRowsVisible(rows: PauseSaveSlotRows, visible: boolean): void {
+  rows.rows.forEach((row) => {
+    const controlLayout = getPauseSaveSlotRowControlLayout(row.layout);
+    row.chrome.setVisible(visible);
+    row.title.setVisible(visible && controlLayout.title.visible);
+    row.subtitle.setVisible(visible && controlLayout.subtitle.visible);
+    row.savedAt.setVisible(visible && controlLayout.savedAt.visible);
+    row.saveButton.setVisible(visible);
+    row.loadButton.setVisible(visible);
+    row.deleteButton.setVisible(visible);
+  });
+}
+
+export function destroyPauseSaveSlotRows(rows: PauseSaveSlotRows | null): void {
+  rows?.rows.forEach((row) => {
+    row.chrome.destroy();
+    row.title.destroy();
+    row.subtitle.destroy();
+    row.savedAt.destroy();
+    row.saveButton.destroy();
+    row.loadButton.destroy();
+    row.deleteButton.destroy();
+  });
 }

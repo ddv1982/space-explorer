@@ -31,9 +31,3 @@ function syncMusicRuntimeTuningSliders(
   sliders.energy.setValue(tuning.energy);
   sliders.ambience.setValue(tuning.ambience);
 }
-
-export function destroyMusicRuntimeTuningSliders(sliders: MusicTuningSliders | null): void {
-  sliders?.creativity.destroy();
-  sliders?.energy.destroy();
-  sliders?.ambience.destroy();
-}

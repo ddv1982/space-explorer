@@ -67,7 +67,7 @@ function createRuntimeControlHarness(): {
 }
 
 describe('ProceduralMusicManager runtime control delegation', () => {
-  test('clamps volume/intensity and applies output gain from runtime state', () => {
+  test('clamps volume/intensity and keeps runtime output at least as strong as the menu baseline', () => {
     const { manager, musicGainEvents, currentTime } = createRuntimeControlHarness();
 
     const clampedVolume = manager.setMusicVolume(4);
@@ -80,7 +80,7 @@ describe('ProceduralMusicManager runtime control delegation', () => {
     const lastRamp = rampEvents.at(-1);
 
     expect(lastRamp).toBeDefined();
-    expect(lastRamp?.value).toBeCloseTo(0.58, 6);
+    expect(lastRamp?.value).toBeCloseTo(2.61, 6);
     expect(lastRamp?.time).toBeCloseTo(currentTime + 0.08, 6);
   });
 

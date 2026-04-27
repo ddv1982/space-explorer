@@ -1,22 +1,22 @@
-import Phaser from 'phaser';
+import type { SaveSlotId, SaveSlotViewModel } from '../../../systems/SaveSlotStorage';
 
 export interface PauseOverlayHandlers {
   onResume: () => void;
   onMainMenu: () => void;
+  onSaveSlot: (slotId: SaveSlotId) => void;
+  onLoadSlot: (slotId: SaveSlotId) => void;
+  onDeleteSlot: (slotId: SaveSlotId) => void;
 }
 
 export interface PauseOverlayState {
   visible: boolean;
   orientationBlocked: boolean;
   canResume: boolean;
-}
-
-export interface PauseButton {
-  background: Phaser.GameObjects.Graphics;
-  label: Phaser.GameObjects.Text;
-  hitArea: Phaser.GameObjects.Zone;
-  hovered: boolean;
-  enabled: boolean;
+  canSave: boolean;
+  storageAvailable: boolean;
+  saveSlots: SaveSlotViewModel[];
+  statusMessage: string;
+  statusOk?: boolean;
 }
 
 export interface PauseOverlayMessage {
@@ -24,6 +24,13 @@ export interface PauseOverlayMessage {
   subtitle: string;
   hint: string;
   resumeLabel: string;
+}
+
+export interface PauseSaveSlotRowLayout {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface PauseOverlayLayout {
@@ -34,8 +41,32 @@ export interface PauseOverlayLayout {
   centerX: number;
   panelX: number;
   panelY: number;
-  buttonsX: number;
-  buttonY: number;
+  panelWidth: number;
+  panelHeight: number;
+  titleY: number;
+  subtitleY: number;
+  subtitleVisible: boolean;
+  hintY: number;
+  hintVisible: boolean;
+  musicHeaderX: number;
+  musicHeaderY: number;
+  musicVisible: boolean;
+  saveSlotsVisible: boolean;
+  actionButtonsVisible: boolean;
   sliderX: number;
   sliderStartY: number;
+  saveHeaderX: number;
+  saveHeaderY: number;
+  slotRows: PauseSaveSlotRowLayout[];
+  statusX: number;
+  statusY: number;
+  resumeButtonX: number;
+  resumeButtonY: number;
+  saveButtonX: number;
+  saveButtonY: number;
+  loadButtonX: number;
+  loadButtonY: number;
+  menuButtonX: number;
+  menuButtonY: number;
+  buttonY: number;
 }

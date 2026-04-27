@@ -1,4 +1,6 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test, mock } from 'bun:test';
+
+mock.module('phaser', () => ({ default: {} }));
 
 const callLog: string[] = [];
 let hudCreateArgs: { scene: unknown; levelConfig: unknown } | null = null;

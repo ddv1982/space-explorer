@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type Phaser from 'phaser';
 import type { LastLifeHelperWing } from '../src/systems/LastLifeHelperWing';
 
+const actualPlayerState = await import('../src/systems/PlayerState');
 const saveHelperWingState = mock();
 mock.module('../src/systems/PlayerState', () => ({
+  ...actualPlayerState,
   saveHelperWingState,
 }));
 

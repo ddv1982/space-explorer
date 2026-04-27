@@ -5,6 +5,7 @@ export interface PlayerStateData {
   level: number;
   score: number;
   currentHp: number;
+  currentShields: number;
   remainingLives: number;
   upgrades: PlayerUpgradeLevels;
   helperWing: PersistentHelperWingState;
@@ -20,7 +21,7 @@ export interface PersistentHelperWingState {
   grantedSlots: number;
 }
 
-interface RunSummaryData {
+export interface RunSummaryData {
   finalScore: number;
   levelReached: number;
 }
@@ -42,6 +43,7 @@ function getDefaultPlayerState(): PlayerStateData {
     score: 0,
     currentHp: 5,
     remainingLives: DEFAULT_REMAINING_LIVES,
+    currentShields: 0,
     upgrades: {
       hp: 0,
       damage: 0,
@@ -90,21 +92,26 @@ function normalizeHelperWingState(state: PersistentHelperWingState | null | unde
 
 function normalizePlayerState(state: Partial<PlayerStateData> | null | undefined): PlayerStateData {
   const defaultState = getDefaultPlayerState();
+  const upgrades = {
+    hp: state?.upgrades?.hp ?? defaultState.upgrades.hp,
+    damage: state?.upgrades?.damage ?? defaultState.upgrades.damage,
+    fireRate: state?.upgrades?.fireRate ?? defaultState.upgrades.fireRate,
+    shield: state?.upgrades?.shield ?? defaultState.upgrades.shield,
+  };
+  const maxShields = Math.max(0, upgrades.shield);
+  const currentShieldsInput =
+    typeof state?.currentShields === 'number' ? state.currentShields : maxShields;
 
   return {
     level: typeof state?.level === 'number' ? state.level : defaultState.level,
     score: typeof state?.score === 'number' ? state.score : defaultState.score,
     currentHp: typeof state?.currentHp === 'number' ? state.currentHp : defaultState.currentHp,
+    currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), maxShields)),
     remainingLives:
       typeof state?.remainingLives === 'number'
         ? Math.max(0, state.remainingLives)
         : defaultState.remainingLives,
-    upgrades: {
-      hp: state?.upgrades?.hp ?? defaultState.upgrades.hp,
-      damage: state?.upgrades?.damage ?? defaultState.upgrades.damage,
-      fireRate: state?.upgrades?.fireRate ?? defaultState.upgrades.fireRate,
-      shield: state?.upgrades?.shield ?? defaultState.upgrades.shield,
-    },
+    upgrades,
     helperWing: normalizeHelperWingState(state?.helperWing),
   };
 }
@@ -152,6 +159,11 @@ export function setRunSummary(
   return nextSummary;
 }
 
+export function resetRunSummary(registry: Phaser.Data.DataManager): void {
+  registry.set(RUN_SUMMARY_KEYS.finalScore, DEFAULT_RUN_SUMMARY.finalScore);
+  registry.set(RUN_SUMMARY_KEYS.levelReached, DEFAULT_RUN_SUMMARY.levelReached);
+}
+
 export function getPlayerMaxHp(state: PlayerStateData): number {
   return 5 + state.upgrades.hp * 2;
 }
@@ -164,7 +176,7 @@ export function getPlayerFireRate(state: PlayerStateData): number {
   return Math.max(60, 150 - state.upgrades.fireRate * 15);
 }
 
-export function getPlayerShieldCount(state: PlayerStateData): number {
+function getPlayerShieldCount(state: PlayerStateData): number {
   return state.upgrades.shield;
 }
 
@@ -172,6 +184,7 @@ export function advanceToNextLevel(registry: Phaser.Data.DataManager): void {
   const state = getPlayerState(registry);
   state.level += 1;
   state.currentHp = getPlayerMaxHp(state);
+  state.currentShields = getPlayerShieldCount(state);
   setPlayerState(registry, state);
 }
 
@@ -184,6 +197,13 @@ export function saveScoreToState(registry: Phaser.Data.DataManager, score: numbe
 export function saveCurrentHp(registry: Phaser.Data.DataManager, hp: number): void {
   const state = getPlayerState(registry);
   state.currentHp = hp;
+  setPlayerState(registry, state);
+}
+
+export function saveCurrentShields(registry: Phaser.Data.DataManager, shields: number): void {
+  const state = getPlayerState(registry);
+  const maxShields = getPlayerShieldCount(state);
+  state.currentShields = Math.max(0, Math.min(Math.floor(shields), maxShields));
   setPlayerState(registry, state);
 }
 

@@ -15,7 +15,13 @@ import { ScoreManager } from '../systems/ScoreManager';
 import type { HUD } from '../systems/HUD';
 import { LevelManager } from '../systems/LevelManager';
 import { type EffectsManager } from '../systems/EffectsManager';
-import { getPlayerState } from '../systems/PlayerState';
+import {
+  getPlayerState,
+  setPlayerState,
+  setRunSummary,
+  type PersistentHelperWingState,
+  type PlayerStateData,
+} from '../systems/PlayerState';
 import { Boss } from '../entities/enemies/Boss';
 import type { WarpTransition } from '../systems/WarpTransition';
 import { audioManager } from '../systems/AudioManager';
@@ -209,6 +215,42 @@ export class GameScene extends Phaser.Scene {
 
   private getPlayerSpawnPoint(): { x: number; y: number } {
     return getPlayerSpawnPoint(this);
+  }
+
+  private captureCurrentRunStateForSave(): PlayerStateData {
+    const currentState = getPlayerState(this.registry);
+    const helperWingState: PersistentHelperWingState =
+      this.lastLifeHelperWing?.capturePersistentState() ?? currentState.helperWing;
+
+    const nextState: PlayerStateData = {
+      ...currentState,
+      level: this.levelManager.currentLevel,
+      score: this.scoreManager.getScore(),
+      currentHp: this.player.hp,
+      currentShields: this.player.shields,
+      remainingLives: this.flow.getRemainingLives(),
+      helperWing: helperWingState,
+    };
+
+    setPlayerState(this.registry, nextState);
+    setRunSummary(this.registry, {
+      finalScore: nextState.score,
+      levelReached: nextState.level,
+    });
+
+    return getPlayerState(this.registry);
+  }
+
+  private canSaveCurrentRun(): boolean {
+    if (this.flow.isGameplayLocked()) {
+      return false;
+    }
+
+    if (!this.player || !this.levelManager || !this.scoreManager) {
+      return false;
+    }
+
+    return this.player.isAlive;
   }
 
   private syncViewportBounds(): ReturnType<typeof syncSceneViewport> {

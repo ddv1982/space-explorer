@@ -66,8 +66,10 @@ function resolveOutputGain(args: {
   musicIntensity: number;
   musicVolume: number;
   musicOutputGainBoost: number;
+  minimumOutputIntensity: number;
 }): number {
-  return Math.max(0, args.musicIntensity * args.musicVolume * args.musicOutputGainBoost);
+  const effectiveOutputIntensity = Math.max(args.minimumOutputIntensity, args.musicIntensity);
+  return Math.max(0, effectiveOutputIntensity * args.musicVolume * args.musicOutputGainBoost);
 }
 
 function applyMusicGainFromState(args: {
@@ -76,6 +78,7 @@ function applyMusicGainFromState(args: {
   musicIntensity: number;
   musicVolume: number;
   musicOutputGainBoost: number;
+  minimumOutputIntensity: number;
   rampSeconds?: number;
 }): void {
   if (!args.ctx || !args.musicGain) {
@@ -86,6 +89,7 @@ function applyMusicGainFromState(args: {
     musicIntensity: args.musicIntensity,
     musicVolume: args.musicVolume,
     musicOutputGainBoost: args.musicOutputGainBoost,
+    minimumOutputIntensity: args.minimumOutputIntensity,
   });
 
   const rampSeconds = args.rampSeconds ?? 0.08;
@@ -104,6 +108,7 @@ interface MusicRuntimeControlConfig {
   minimumMusicIntensity: number;
   maximumMusicIntensity: number;
   musicOutputGainBoost: number;
+  minimumOutputIntensity: number;
   getCtx: () => AudioContext | null;
   getMusicGain: () => GainNode | null;
   getMusicFX: () => MusicFXChain | null;
@@ -190,6 +195,7 @@ export class MusicRuntimeControl {
       musicIntensity: this.musicIntensity,
       musicVolume: this.musicVolume,
       musicOutputGainBoost: this.config.musicOutputGainBoost,
+      minimumOutputIntensity: this.config.minimumOutputIntensity,
       rampSeconds,
     });
   }
@@ -199,6 +205,7 @@ export class MusicRuntimeControl {
       musicIntensity: this.musicIntensity,
       musicVolume: this.musicVolume,
       musicOutputGainBoost: this.config.musicOutputGainBoost,
+      minimumOutputIntensity: this.config.minimumOutputIntensity,
     });
   }
 }
