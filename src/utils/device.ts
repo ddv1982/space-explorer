@@ -1,5 +1,3 @@
-import { DEVICE_CONFIG } from '../config/deviceConfig';
-
 const hasWindow = typeof window !== 'undefined';
 
 function getViewportSize(): { width: number; height: number } {
@@ -35,19 +33,4 @@ export function isPortraitTouchViewport(): boolean {
   const { width, height } = getViewportSize();
 
   return matchesMedia('(orientation: portrait)') || height > width;
-}
-
-export function isPhoneSizedTouchViewport(): boolean {
-  if (!isTouchMobileDevice()) {
-    return false;
-  }
-
-  const { width, height } = getViewportSize();
-  const shortSide = Math.min(width, height);
-  const longSide = Math.max(width, height);
-
-  return (
-    shortSide <= DEVICE_CONFIG.viewportPolicy.phoneMaxShortSide &&
-    longSide <= DEVICE_CONFIG.viewportPolicy.phoneMaxLongSide
-  );
 }

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.14] - 2026-04-28
+
+### Fixed
+- Kept the desktop maximize/resizing pause-overlay relayout fix so hidden save-slot text no longer leaks into gameplay after a resize.
+
+### Changed
+- Reverted the phone-only gameplay viewport policy and restored the original full-screen viewport behavior across devices.
+- Removed the temporary phone viewport tuning config and related test scaffolding introduced for the reverted viewport policy.
+
+### Quality
+- Kept regression coverage for the pause-overlay relayout bugfix.
+- Verified with `bun test`, `bun run levels:validate`, `bun run lint`, `bun run build`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.13] - 2026-04-28
 
 ### Fixed

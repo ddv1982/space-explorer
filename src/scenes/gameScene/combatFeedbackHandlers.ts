@@ -10,7 +10,7 @@ import type { HUD } from '../../systems/HUD';
 import type { LevelManager } from '../../systems/LevelManager';
 import type { ScoreManager } from '../../systems/ScoreManager';
 import type { GameSceneFlowController, GameSceneFlowContext } from './GameSceneFlowController';
-import { getActiveGameplayBounds } from '../../utils/layout';
+import { getViewportBounds } from '../../utils/layout';
 import { trySpawnRandomPowerUp } from '../../systems/GameplayFlow';
 
 interface CombatFeedbackConstants {
@@ -106,7 +106,7 @@ export function createGameSceneCombatFeedbackHandlers(
   };
 
   const spawnBoss = (): void => {
-    const viewport = getActiveGameplayBounds(deps.scene);
+    const viewport = getViewportBounds(deps.scene);
     const levelConfig = deps.levelManager().getLevelConfig();
     const boss = deps.enemyPool().spawnBoss(
       viewport.centerX,

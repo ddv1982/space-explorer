@@ -12,7 +12,7 @@ import {
   getLevelConfig,
 } from '../config/LevelsConfig';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
-import { getActiveGameplayBounds } from '../utils/layout';
+import { getViewportBounds } from '../utils/layout';
 import { resolveSectionSpawnRateScale } from './sectionIdentity';
 import { WaveAsteroidSpawner } from './wave/WaveAsteroidSpawner';
 import {
@@ -342,7 +342,7 @@ export class WaveManager {
   }
 
   private getEncounterHorizontalRange(padding: number): { min: number; max: number } {
-    const viewportWidth = getActiveGameplayBounds(this.scene).width;
+    const viewportWidth = getViewportBounds(this.scene).width;
     const effectivePadding = Math.min(padding, viewportWidth / 2);
 
     return {

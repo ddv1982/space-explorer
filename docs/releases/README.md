@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.14`](./1.1.14.md) — reverts the viewport policy changes while keeping the desktop pause-slot maximize fix
 - [`1.1.13`](./1.1.13.md) — limits viewport-consistency changes to phone screens and fixes the desktop maximize pause-slot glitch
 - [`1.1.12`](./1.1.12.md) — tunes the mobile joystick with a deadzone, steadier direction gating, and better diagonal control
 - [`1.1.11`](./1.1.11.md) — fixes mobile pause-button first-render/rotate visibility and relaxes the ultra-short phone pause layout

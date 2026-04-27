@@ -32,7 +32,6 @@ mock.module('phaser', () => ({
 mock.module('../src/utils/device', () => ({
   isTouchMobileDevice: () => true,
   isPortraitTouchViewport: () => false,
-  isPhoneSizedTouchViewport: () => true,
 }));
 
 mock.module('../src/utils/layout', () => ({
@@ -56,16 +55,6 @@ mock.module('../src/utils/layout', () => ({
     centerX: 200,
     centerY: 150,
   }),
-  getGameplayBounds: () => ({
-    left: 0,
-    top: 0,
-    width: 1280,
-    height: 720,
-    right: 1280,
-    bottom: 720,
-    centerX: 640,
-    centerY: 360,
-  }),
   centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
 }));
 
@@ -75,20 +64,12 @@ function createKey() {
   return { isDown: false };
 }
 
-function createScene(pointers: Array<{ id: number; isDown: boolean; downX: number; downY?: number }> = []) {
+function createScene(pointers: Array<{ id: number; isDown: boolean; downX: number }> = []) {
   return {
-    cameras: {
-      main: {
-        x: 0,
-        y: 0,
-        width: 400,
-        height: 300,
-      },
-    },
     input: {
       activePointer: { isDown: false },
       manager: {
-        pointers: pointers.map((pointer) => ({ ...pointer, downY: pointer.downY ?? 150 })),
+        pointers,
       },
       keyboard: {
         createCursorKeys: () => ({
