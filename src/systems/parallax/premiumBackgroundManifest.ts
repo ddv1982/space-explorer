@@ -19,7 +19,6 @@ interface PremiumBackgroundManifest {
   levelName: string;
   assetPrefix: string;
   baseSize: { width: number; height: number };
-  premiumAssetsReplaceProcedural: boolean;
   layers: PremiumBackgroundLayerConfig[];
 }
 
@@ -60,7 +59,6 @@ function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManife
     levelName: level.name,
     assetPrefix,
     baseSize: { ...BASE_SIZE },
-    premiumAssetsReplaceProcedural: false,
     layers: [createLayer(level.index)],
   };
 }

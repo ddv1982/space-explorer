@@ -17,6 +17,3 @@ export function drawSoftCircle(
   }
 }
 
-export function parseHexColor(color: string): number {
-  return Number.parseInt(color.replace('#', ''), 16);
-}

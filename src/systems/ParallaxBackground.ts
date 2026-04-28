@@ -8,7 +8,6 @@ import {
   updateMoonSurfaceMotion,
   updatePassingPlanetMotion,
   updatePlanetLayerMotion,
-  updateScenicLayerMotion,
   updateTwinkleMotion,
 } from './parallax/backgroundMotion';
 import {
@@ -37,10 +36,6 @@ import {
   type MoonSurfaceState,
 } from './parallax/moonSurfaceLayerLifecycle';
 import { type ForegroundSilhouetteState } from './parallax/foregroundSilhouetteLifecycle';
-import {
-  layoutScenicLayers as layoutScenicLayersHelper,
-  type ScenicLayerState,
-} from './parallax/scenicLayerLifecycle';
 import {
   getPassingPlanetOffscreenThreshold,
   resetPassingPlanetPosition,
@@ -80,7 +75,6 @@ export class ParallaxBackground {
   private scene: Phaser.Scene | null = null;
   private levelConfig?: LevelConfig;
   private tileSprites: Phaser.GameObjects.TileSprite[] = [];
-  private scenicLayers: ScenicLayerState[] = [];
   private planetLayer: PlanetLayerState | null = null;
   private debrisMotes: DebrisMoteState[] = [];
   private twinkles: TwinkleState[] = [];
@@ -121,7 +115,6 @@ export class ParallaxBackground {
     this.scene = scene;
     this.levelConfig = levelConfig;
     this.tileSprites = [];
-    this.scenicLayers = [];
     this.debrisMotes = [];
     this.foregroundSilhouettes = [];
     this.resetRuntimeFieldState(scene.cameras.main.width, scene.cameras.main.height);
@@ -209,7 +202,6 @@ export class ParallaxBackground {
       this.scene,
       this.currentWidth,
       this.currentHeight,
-      this.scenicLayers,
       this.passingPlanetSprites,
       this.twinkles,
       this.foregroundSilhouettes,
@@ -363,7 +355,6 @@ export class ParallaxBackground {
   private updateVisualLayers(delta: number): void {
     scrollStarLayers(this.tileSprites, STARFIELD_LAYER_CONFIGS, delta);
     this.scrollPremiumBackgroundLayers(delta);
-    updateScenicLayerMotion(this.scenicLayers, this.elapsed, this.atmosphereDrift, this.atmosphereAlpha);
     updatePlanetLayerMotion(this.planetLayer, this.elapsed, this.atmosphereAlpha, this.landmarkAlpha);
     updateDebrisMoteMotion(this.debrisMotes, this.elapsed, delta, this.atmosphereAlpha);
     updateTwinkleMotion(this.twinkles, this.elapsed, this.atmosphereTwinkle);
@@ -411,7 +402,6 @@ export class ParallaxBackground {
   }
 
   private layoutLevelVisualLayers(): void {
-    layoutScenicLayersHelper(this.scenicLayers, this.getViewportSize());
     this.layoutMoonSurfaceLayer();
     this.layoutPlanetLayer();
   }

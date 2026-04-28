@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.17] - 2026-04-28
+
+### Changed
+- Removed the old procedural scenic fog/nebula overlay system from the parallax stack now that premium level backgrounds are the intended presentation path.
+- Deleted the scenic-layer lifecycle and scenic-texture generator code instead of keeping the overlay dormant behind runtime gating.
+- Simplified `ParallaxBackground` and level-visual lifecycle wiring by removing scenic-layer create/layout/update/destroy paths and the unused `premiumAssetsReplaceProcedural` manifest flag.
+
+### Quality
+- Added/updated regression coverage for the level-visual lifecycle and parallax orchestration after scenic-layer removal.
+- Verified with `bunx tsc --noEmit`, `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.16] - 2026-04-28
 
 ### Changed

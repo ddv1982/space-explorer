@@ -4,7 +4,6 @@ import { getLevelVisualLayerLifecycleContext } from '../src/systems/parallax/lev
 describe('getLevelVisualLayerLifecycleContext', () => {
   test('forwards all references and callbacks unchanged', () => {
     const scene = { id: 'scene' };
-    const scenicLayers = [{ id: 'scenic' }];
     const passingPlanetSprites = [{ id: 'planet' }];
     const twinkles = [{ id: 'twinkle' }];
     const foregroundSilhouettes = [{ id: 'silhouette' }];
@@ -21,7 +20,6 @@ describe('getLevelVisualLayerLifecycleContext', () => {
       scene as never,
       800,
       600,
-      scenicLayers as never,
       passingPlanetSprites as never,
       twinkles as never,
       foregroundSilhouettes as never,
@@ -41,7 +39,6 @@ describe('getLevelVisualLayerLifecycleContext', () => {
     expect(context.scene).toBe(scene);
     expect(context.currentWidth).toBe(800);
     expect(context.currentHeight).toBe(600);
-    expect(context.scenicLayers).toBe(scenicLayers);
     expect(context.passingPlanetSprites).toBe(passingPlanetSprites);
     expect(context.twinkles).toBe(twinkles);
     expect(context.foregroundSilhouettes).toBe(foregroundSilhouettes);

@@ -1,11 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../../config/LevelsConfig';
 import {
-  createScenicLayers,
-  destroyScenicLayers,
-  type ScenicLayerState,
-} from './scenicLayerLifecycle';
-import {
   createPassingPlanetLayers,
   destroyPassingPlanetLayers,
   type PassingPlanetState,
@@ -21,7 +16,6 @@ export type LevelVisualLayerLifecycleContext = {
   scene: Phaser.Scene | null;
   currentWidth: number;
   currentHeight: number;
-  scenicLayers: ScenicLayerState[];
   passingPlanetSprites: PassingPlanetState[];
   twinkles: TwinkleState[];
   foregroundSilhouettes: ForegroundSilhouetteState[];
@@ -43,15 +37,6 @@ export function createLevelVisualLayers(
   scene: Phaser.Scene,
   config: LevelConfig
 ): void {
-  createScenicLayers(
-    scene,
-    config,
-    {
-      width: context.currentWidth,
-      height: context.currentHeight,
-    },
-    context.scenicLayers
-  );
   context.createMoonSurfaceLayer(scene, config);
   createPassingPlanetLayers(
     scene,
@@ -81,7 +66,6 @@ export function createLevelVisualLayers(
 }
 
 export function destroyLevelVisualLayers(context: LevelVisualLayerLifecycleContext): void {
-  destroyScenicLayers(context.scene, context.scenicLayers);
   context.destroyMoonSurfaceLayer();
   context.setPassingPlanetSprites(destroyPassingPlanetLayers(context.passingPlanetSprites));
   context.destroyPlanetLayer();

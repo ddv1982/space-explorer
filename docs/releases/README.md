@@ -2,6 +2,8 @@
 
 Latest first.
 
+- [`1.1.17`](./1.1.17.md) — removes the old scenic overlay system now that premium backgrounds are the intended art path
+
 - [`1.1.16`](./1.1.16.md) — gameScene contract split and import-boundary cleanup for the next maintainability tranche
 
 - [`1.1.15`](./1.1.15.md) — maintainability release for gameplay/runtime refactors, import cleanup, and broader regression coverage

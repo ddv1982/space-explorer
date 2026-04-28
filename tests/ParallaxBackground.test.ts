@@ -74,9 +74,6 @@ function createResizeHarness(options?: { withLevelConfig?: boolean; withPremiumL
   (parallax as unknown as Record<string, unknown>).rebuildLevelVisualLayers = () => {
     calls.push('rebuildLevelVisualLayers');
   };
-  (parallax as unknown as Record<string, unknown>).layoutScenicLayers = () => {
-    calls.push('layoutScenicLayers');
-  };
   (parallax as unknown as Record<string, unknown>).layoutMoonSurfaceLayer = () => {
     calls.push('layoutMoonSurfaceLayer');
   };

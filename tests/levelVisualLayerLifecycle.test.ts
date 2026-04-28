@@ -4,20 +4,6 @@ import type Phaser from 'phaser';
 mock.module('phaser', () => ({ default: {} }));
 
 const callLog: string[] = [];
-const createScenicLayers = mock(() => {
-  callLog.push('createScenicLayers');
-});
-const destroyScenicLayers = mock(() => {
-  callLog.push('destroyScenicLayers');
-});
-mock.module('../src/systems/parallax/scenicLayerLifecycle', () => ({
-  createScenicLayers,
-  destroyScenicLayers,
-  layoutScenicLayers: () => {
-    callLog.push('layoutScenicLayers');
-  },
-}));
-
 const createPassingPlanetLayers = mock(() => {
   callLog.push('createPassingPlanetLayers');
 });
@@ -69,7 +55,6 @@ const {
 
 
 function createContext() {
-  const scenicLayers: unknown[] = [];
   const passingPlanetSprites: unknown[] = [];
   const twinkles: unknown[] = [];
   const foregroundSilhouettes: unknown[] = [];
@@ -78,7 +63,6 @@ function createContext() {
     scene: { id: 'scene' } as Phaser.Scene,
     currentWidth: 800,
     currentHeight: 600,
-    scenicLayers: scenicLayers as never,
     passingPlanetSprites: passingPlanetSprites as never,
     twinkles: twinkles as never,
     foregroundSilhouettes: foregroundSilhouettes as never,
@@ -121,7 +105,6 @@ describe('levelVisualLayerLifecycle', () => {
     createLevelVisualLayers(context as never, context.scene, levelConfig as never);
 
     expect(callLog).toEqual([
-      'createScenicLayers',
       'createMoonSurfaceLayer',
       'createPassingPlanetLayers',
       'createPlanetLayer',
@@ -140,7 +123,6 @@ describe('levelVisualLayerLifecycle', () => {
     destroyLevelVisualLayers(context as never);
 
     expect(callLog).toEqual([
-      'destroyScenicLayers',
       'destroyMoonSurfaceLayer',
       'destroyPassingPlanetLayers',
       'setPassingPlanetSprites',
@@ -162,7 +144,6 @@ describe('levelVisualLayerLifecycle', () => {
     rebuildLevelVisualLayers(context as never, context.scene, levelConfig as never);
 
     expect(callLog).toEqual([
-      'destroyScenicLayers',
       'destroyMoonSurfaceLayer',
       'destroyPassingPlanetLayers',
       'setPassingPlanetSprites',
@@ -171,7 +152,6 @@ describe('levelVisualLayerLifecycle', () => {
       'destroyTwinkles',
       'setTwinkles',
       'destroyForegroundSilhouettes',
-      'createScenicLayers',
       'createMoonSurfaceLayer',
       'createPassingPlanetLayers',
       'createPlanetLayer',

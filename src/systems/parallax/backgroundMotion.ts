@@ -5,17 +5,6 @@ interface TileSpriteScrollConfig {
   scrollSpeed: number;
 }
 
-interface ScenicMotionState {
-  sprite: Phaser.GameObjects.Image;
-  baseX: number;
-  baseY: number;
-  baseAlpha: number;
-  driftX: number;
-  driftY: number;
-  speed: number;
-  phase: number;
-}
-
 interface PlanetMotionState {
   sprite: Phaser.GameObjects.Image;
   baseX: number;
@@ -77,21 +66,6 @@ export function scrollStarLayers(
   for (let i = 0; i < tileSprites.length; i++) {
     const speed = layerConfigs[i].scrollSpeed * SCROLL_SPEED * delta / 16;
     tileSprites[i].tilePositionY += speed;
-  }
-}
-
-export function updateScenicLayerMotion(
-  layers: ScenicMotionState[],
-  elapsed: number,
-  atmosphereDrift: number,
-  atmosphereAlpha: number
-): void {
-  for (let i = 0; i < layers.length; i++) {
-    const layer = layers[i];
-    const phase = elapsed * layer.speed * atmosphereDrift + layer.phase;
-    layer.sprite.x = layer.baseX + Math.sin(phase) * layer.driftX * atmosphereDrift;
-    layer.sprite.y = layer.baseY + Math.cos(phase * 0.85) * layer.driftY * atmosphereDrift;
-    layer.sprite.setAlpha(Phaser.Math.Clamp(layer.baseAlpha * atmosphereAlpha, 0.16, 0.95));
   }
 }
 
