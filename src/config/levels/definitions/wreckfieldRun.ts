@@ -217,7 +217,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     scrollSpeed: 0.12,
     surfaceColor: 0x2a3535,
     accentColor: 0x53e2d5,
-    buildingCount: 6,
     craterCount: 12,
     horizonGlow: 0.8,
   },

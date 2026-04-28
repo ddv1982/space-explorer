@@ -142,7 +142,6 @@ export interface MoonSurfaceConfig {
   scrollSpeed: number;
   surfaceColor: number;
   accentColor: number;
-  buildingCount: number;
   craterCount: number;
   horizonGlow: number;
 }

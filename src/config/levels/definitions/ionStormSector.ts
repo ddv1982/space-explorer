@@ -202,7 +202,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
     scrollSpeed: 0.14,
     surfaceColor: 0x20372d,
     accentColor: 0x52f7a6,
-    buildingCount: 7,
     craterCount: 5,
     horizonGlow: 0.96,
   },

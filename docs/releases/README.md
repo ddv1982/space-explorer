@@ -2,6 +2,8 @@
 
 Latest first.
 
+- [`1.1.18`](./1.1.18.md) — removes moon-surface prop overlays from the premium-background levels that still used them
+
 - [`1.1.17`](./1.1.17.md) — removes the old scenic overlay system now that premium backgrounds are the intended art path
 
 - [`1.1.16`](./1.1.16.md) — gameScene contract split and import-boundary cleanup for the next maintainability tranche

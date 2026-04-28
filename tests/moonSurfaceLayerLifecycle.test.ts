@@ -77,7 +77,6 @@ describe('moonSurfaceLayerLifecycle', () => {
           scrollSpeed: 0.5,
           surfaceColor: 0x223344,
           accentColor: 0x55aaff,
-          buildingCount: 2,
           craterCount: 3,
           horizonGlow: 0.4,
         },

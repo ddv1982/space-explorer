@@ -208,7 +208,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
     scrollSpeed: 0.08,
     surfaceColor: 0x24163c,
     accentColor: 0xc67bff,
-    buildingCount: 3,
     craterCount: 6,
     horizonGlow: 0.92,
   },

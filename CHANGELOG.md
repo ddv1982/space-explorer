@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.18] - 2026-04-28
+
+### Changed
+- Removed the generated moon-surface prop geometry that was still layering over premium backgrounds on the levels that used moon-surface landmarks.
+- Deleted the moon-surface building, window, antenna-light, spire, and runway/light-strip drawing paths while keeping the simpler horizon/terrain/crater treatment intact.
+- Simplified the moon-surface config surface by removing the now-unused `buildingCount` field.
+
+### Quality
+- Added focused regression coverage proving the moon-surface generator no longer emits prop-style geometry.
+- Verified with `bunx tsc --noEmit`, `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.17] - 2026-04-28
 
 ### Changed
