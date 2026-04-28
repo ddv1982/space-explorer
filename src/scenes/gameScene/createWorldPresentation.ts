@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
-import { type getActiveSection } from '../../config/LevelsConfig';
-import { EffectsManager } from '../../systems/EffectsManager';
-import { type LevelManager } from '../../systems/LevelManager';
-import { ParallaxBackground } from '../../systems/ParallaxBackground';
+import { type getActiveSection } from '@/config/LevelsConfig';
+import { EffectsManager } from '@/systems/EffectsManager';
+import { type LevelManager } from '@/systems/LevelManager';
+import { ParallaxBackground } from '@/systems/ParallaxBackground';
 import { type getPlayerSpawnPoint } from './viewport';
 
 

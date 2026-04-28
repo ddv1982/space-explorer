@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
-import { audioManager } from '../../systems/AudioManager';
-import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
+import { audioManager } from '@/systems/AudioManager';
+import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { PauseOverlay } from './PauseOverlay';
 import type { PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
 

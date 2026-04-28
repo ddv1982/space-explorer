@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { Player } from '../../entities/Player';
-import { getViewportBounds } from '../../utils/layout';
+import type { Player } from '@/entities/Player';
+import { getViewportBounds } from '@/utils/layout';
 
 export function getPlayerSpawnPoint(scene: Phaser.Scene): { x: number; y: number } {
   const viewport = getViewportBounds(scene);

@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
-import { Player } from '../../entities/Player';
-import { InputManager } from '../../systems/InputManager';
-import { MobileControls } from '../../systems/MobileControls';
-import type { PlayerStateData } from '../../systems/PlayerState';
+import { Player } from '@/entities/Player';
+import { InputManager } from '@/systems/InputManager';
+import { MobileControls } from '@/systems/MobileControls';
+import type { PlayerStateData } from '@/systems/PlayerState';
 
 type CreateInputAndPlayerParams = {
   scene: Phaser.Scene;

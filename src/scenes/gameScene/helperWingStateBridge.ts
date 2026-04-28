@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
-import type { LastLifeHelperWing } from '../../systems/LastLifeHelperWing';
-import { saveHelperWingState } from '../../systems/PlayerState';
+import type { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
+import { saveHelperWingState } from '@/systems/PlayerState';
 
 export function syncLastLifeHelperWingState(
   lastLifeHelperWing: LastLifeHelperWing | null,

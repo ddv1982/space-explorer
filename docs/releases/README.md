@@ -2,6 +2,8 @@
 
 Latest first.
 
+- [`1.1.16`](./1.1.16.md) — gameScene contract split and import-boundary cleanup for the next maintainability tranche
+
 - [`1.1.15`](./1.1.15.md) — maintainability release for gameplay/runtime refactors, import cleanup, and broader regression coverage
 - [`1.1.14`](./1.1.14.md) — reverts the viewport policy changes while keeping the desktop pause-slot maximize fix
 - [`1.1.13`](./1.1.13.md) — limits viewport-consistency changes to phone screens and fixes the desktop maximize pause-slot glitch

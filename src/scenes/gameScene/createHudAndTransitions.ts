@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
-import { HUD } from '../../systems/HUD';
-import { WarpTransition } from '../../systems/WarpTransition';
+import { HUD } from '@/systems/HUD';
+import { WarpTransition } from '@/systems/WarpTransition';
 import { syncHudShields } from './hudSyncOrchestration';
-import type { LevelManager } from '../../systems/LevelManager';
+import type { LevelManager } from '@/systems/LevelManager';
 
 type CreateHudAndTransitionsParams = {
   scene: Phaser.Scene;

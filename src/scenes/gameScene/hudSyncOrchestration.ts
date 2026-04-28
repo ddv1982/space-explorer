@@ -1,7 +1,7 @@
-import type { Player } from '../../entities/Player';
-import type { HUD } from '../../systems/HUD';
-import type { LevelManager } from '../../systems/LevelManager';
-import type { ScoreManager } from '../../systems/ScoreManager';
+import type { Player } from '@/entities/Player';
+import type { HUD } from '@/systems/HUD';
+import type { LevelManager } from '@/systems/LevelManager';
+import type { ScoreManager } from '@/systems/ScoreManager';
 import type { GameSceneFlowController } from './GameSceneFlowController';
 
 interface HudSyncInput {

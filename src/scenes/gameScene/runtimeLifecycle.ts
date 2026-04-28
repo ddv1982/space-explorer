@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { rebindSceneLifecycleHandlers } from '../../utils/sceneLifecycle';
+import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
 import { rebindSceneEventHandlers, unbindSceneEventHandlers, type SceneEventBinding } from './sceneEvents';
 import {
   handleScaleResize as handleGameSceneScaleResize,

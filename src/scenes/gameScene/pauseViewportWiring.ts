@@ -1,14 +1,14 @@
 import Phaser from 'phaser';
 import { PauseStateController, type PauseSaveSlotAdapter } from './PauseStateController';
-import { MobileViewportGuard } from '../../systems/MobileViewportGuard';
-import { audioManager } from '../../systems/AudioManager';
-import type { MobileControls } from '../../systems/MobileControls';
+import { MobileViewportGuard } from '@/systems/MobileViewportGuard';
+import { audioManager } from '@/systems/AudioManager';
+import type { MobileControls } from '@/systems/MobileControls';
 import {
   getRunSummary,
   setPlayerState,
   setRunSummary,
   type PlayerStateData,
-} from '../../systems/PlayerState';
+} from '@/systems/PlayerState';
 import {
   createSaveSlotRecord,
   deleteSaveSlot,
@@ -16,7 +16,7 @@ import {
   listSaveSlots,
   readSaveSlot,
   writeSaveSlot,
-} from '../../systems/SaveSlotStorage';
+} from '@/systems/SaveSlotStorage';
 import { startRegisteredScene } from '../sceneRegistry';
 
 interface PauseViewportWiringContext {

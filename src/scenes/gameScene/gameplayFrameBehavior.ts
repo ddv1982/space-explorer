@@ -1,13 +1,13 @@
 import type Phaser from 'phaser';
-import { BULLET_SPEED } from '../../utils/constants';
+import { BULLET_SPEED } from '@/utils/constants';
 import {
   getActiveSection,
   getSectionProgress,
-} from '../../config/LevelsConfig';
-import type { Boss } from '../../entities/enemies/Boss';
-import { audioManager } from '../../systems/AudioManager';
-import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
-import { resolveSectionMusicIntensity } from '../../systems/sectionIdentity';
+} from '@/config/LevelsConfig';
+import type { Boss } from '@/entities/enemies/Boss';
+import { audioManager } from '@/systems/AudioManager';
+import { GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
+import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
 
 interface GameSceneGameplayFrameDelegate {
   inputManager: {

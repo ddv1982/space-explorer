@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.16] - 2026-04-28
+
+### Changed
+- Split the private `src/scenes/gameScene` bootstrap contract into phase-local runtime/world/input/gameplay/HUD/pause files so create-time ownership is easier to follow without hiding orchestration.
+- Removed the remaining cross-feature relative imports inside `src/scenes/gameScene` by standardizing `config`, `entities`, `systems`, and `utils` references on the existing `@/*` alias while keeping same-feature imports relative.
+- Kept the `runGameSceneCreateBootstrap.ts` orchestration map explicit while reducing the contract density behind it.
+
+### Quality
+- Verified with `bunx tsc --noEmit`, `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.15] - 2026-04-28
 
 ### Changed

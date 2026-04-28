@@ -1,20 +1,20 @@
 import Phaser from 'phaser';
-import { audioManager } from '../../systems/AudioManager';
+import { audioManager } from '@/systems/AudioManager';
 import {
   saveCurrentHp,
   saveRemainingLives,
   saveScoreToState,
   setRunSummary,
-} from '../../systems/PlayerState';
+} from '@/systems/PlayerState';
 import {
   TERMINAL_TRANSITIONS,
   type TerminalTransitionState,
-} from '../../systems/GameplayFlow';
-import type { Player } from '../../entities/Player';
-import type { CollisionManager } from '../../systems/CollisionManager';
-import type { LevelManager } from '../../systems/LevelManager';
-import type { ScoreManager } from '../../systems/ScoreManager';
-import type { WarpTransition } from '../../systems/WarpTransition';
+} from '@/systems/GameplayFlow';
+import type { Player } from '@/entities/Player';
+import type { CollisionManager } from '@/systems/CollisionManager';
+import type { LevelManager } from '@/systems/LevelManager';
+import type { ScoreManager } from '@/systems/ScoreManager';
+import type { WarpTransition } from '@/systems/WarpTransition';
 import { RespawnFrameProbe } from './respawnFrameProbe';
 
 const PLAYER_RESPAWN_DELAY_MS = 1000;

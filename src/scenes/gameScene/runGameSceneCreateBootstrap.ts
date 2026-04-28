@@ -2,15 +2,12 @@ import type Phaser from 'phaser';
 
 import { isTouchMobileDevice } from '@/utils/device';
 
-import type {
-  GameSceneCreateBootstrapBridge,
-  GameSceneCreateGameplayBridge,
-  GameSceneCreateHudBridge,
-  GameSceneCreateInputBridge,
-  GameSceneCreatePauseBridge,
-  GameSceneCreateRuntimeBridge,
-  GameSceneCreateWorldBridge,
-} from './bootstrapTypes';
+import type { GameSceneCreateGameplayBridge } from './bootstrapGameplayContract';
+import type { GameSceneCreateHudBridge } from './bootstrapHudContract';
+import type { GameSceneCreateInputBridge } from './bootstrapInputContract';
+import type { GameSceneCreatePauseBridge } from './bootstrapPauseContract';
+import type { GameSceneCreateRuntimeBridge } from './bootstrapRuntimeContract';
+import type { GameSceneCreateWorldBridge } from './bootstrapWorldContract';
 import { createHudAndTransitions } from './createHudAndTransitions';
 import { createInputAndPlayer } from './createInputAndPlayer';
 import { createPoolsAndGameplaySystems } from './createPoolsAndGameplaySystems';
@@ -18,6 +15,14 @@ import { createWorldPresentation } from './createWorldPresentation';
 import { initializeLevelRuntime } from './initializeLevelRuntime';
 import { createPauseViewportWiring } from './pauseViewportWiring';
 import { showControlsHint } from './showControlsHint';
+
+type GameSceneCreateBootstrapBridge = Phaser.Scene
+  & GameSceneCreateRuntimeBridge
+  & GameSceneCreateWorldBridge
+  & GameSceneCreateInputBridge
+  & GameSceneCreateGameplayBridge
+  & GameSceneCreateHudBridge
+  & GameSceneCreatePauseBridge;
 
 type RuntimeBootstrapScene = GameSceneCreateRuntimeBridge;
 type WorldBootstrapScene = Phaser.Scene & GameSceneCreateRuntimeBridge & GameSceneCreateWorldBridge;

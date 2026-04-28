@@ -1,17 +1,17 @@
 import Phaser from 'phaser';
-import type { BossConfig } from '../../config/LevelsConfig';
-import type { Boss } from '../../entities/enemies/Boss';
-import type { Player } from '../../entities/Player';
-import { audioManager } from '../../systems/AudioManager';
-import type { CollisionManager } from '../../systems/CollisionManager';
-import type { EffectsManager } from '../../systems/EffectsManager';
-import type { EnemyPool } from '../../systems/EnemyPool';
-import type { HUD } from '../../systems/HUD';
-import type { LevelManager } from '../../systems/LevelManager';
-import type { ScoreManager } from '../../systems/ScoreManager';
+import type { BossConfig } from '@/config/LevelsConfig';
+import type { Boss } from '@/entities/enemies/Boss';
+import type { Player } from '@/entities/Player';
+import { audioManager } from '@/systems/AudioManager';
+import type { CollisionManager } from '@/systems/CollisionManager';
+import type { EffectsManager } from '@/systems/EffectsManager';
+import type { EnemyPool } from '@/systems/EnemyPool';
+import type { HUD } from '@/systems/HUD';
+import type { LevelManager } from '@/systems/LevelManager';
+import type { ScoreManager } from '@/systems/ScoreManager';
 import type { GameSceneFlowController, GameSceneFlowContext } from './GameSceneFlowController';
-import { getViewportBounds } from '../../utils/layout';
-import { trySpawnRandomPowerUp } from '../../systems/GameplayFlow';
+import { getViewportBounds } from '@/utils/layout';
+import { trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
 
 interface CombatFeedbackConstants {
   bossExplosionVisualIntensity: number;

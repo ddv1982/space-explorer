@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
-import type { HUD } from '../../systems/HUD';
-import type { MobileControls } from '../../systems/MobileControls';
-import type { ParallaxBackground } from '../../systems/ParallaxBackground';
-import type { WarpTransition } from '../../systems/WarpTransition';
-import { getViewportBounds } from '../../utils/layout';
+import type { HUD } from '@/systems/HUD';
+import type { MobileControls } from '@/systems/MobileControls';
+import type { ParallaxBackground } from '@/systems/ParallaxBackground';
+import type { WarpTransition } from '@/systems/WarpTransition';
+import { getViewportBounds } from '@/utils/layout';
 import type { PauseStateController } from './PauseStateController';
 import { syncSceneViewport } from './viewport';
 

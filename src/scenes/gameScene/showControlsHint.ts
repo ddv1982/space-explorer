@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { centerHorizontally, getViewportLayout } from '../../utils/layout';
+import { centerHorizontally, getViewportLayout } from '@/utils/layout';
 
 type ShowControlsHintOptions = {
   mobile?: boolean;

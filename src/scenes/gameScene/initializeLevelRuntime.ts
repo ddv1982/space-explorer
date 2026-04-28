@@ -1,7 +1,7 @@
-import { getTotalLevels, type BossConfig } from '../../config/LevelsConfig';
-import { createScaledBossConfig } from '../../systems/balance/bossScaling';
-import { LevelManager } from '../../systems/LevelManager';
-import type { PlayerStateData } from '../../systems/PlayerState';
+import { getTotalLevels, type BossConfig } from '@/config/LevelsConfig';
+import { createScaledBossConfig } from '@/systems/balance/bossScaling';
+import { LevelManager } from '@/systems/LevelManager';
+import type { PlayerStateData } from '@/systems/PlayerState';
 
 interface InitializeLevelRuntimeState {
   level: PlayerStateData['level'];
