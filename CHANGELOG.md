@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.19] - 2026-04-28
+
+### Changed
+- Stopped stacking the old procedural starfield underneath premium background art, so premium-art levels no longer mix the legacy starfield pass into the new backdrop presentation.
+- Made premium background layers fully opaque so the level base background color no longer tints through the dark center lane.
+- Added regression coverage proving premium background levels skip the old starfield creation path.
+
+### Quality
+- Verified with `bunx tsc --noEmit`, `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.18] - 2026-04-28
 
 ### Changed

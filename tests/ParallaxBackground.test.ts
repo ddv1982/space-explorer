@@ -96,6 +96,46 @@ function createSection(overrides?: Partial<LevelSectionConfig>): LevelSectionCon
   };
 }
 
+describe('ParallaxBackground premium-background presentation regression coverage', () => {
+  test('createSceneLayers skips procedural starfield when premium background art is available', () => {
+    const tileSpriteCalls: string[] = [];
+    const tileSpriteStub = {
+      setOrigin: () => tileSpriteStub,
+      setDepth: (_value: number) => tileSpriteStub,
+      setAlpha: (_value: number) => tileSpriteStub,
+      setBlendMode: (_value: number | string) => tileSpriteStub,
+    };
+
+    const scene = {
+      textures: {
+        exists: (_key: string) => true,
+      },
+      add: {
+        tileSprite: (_x: number, _y: number, _w: number, _h: number, key: string) => {
+          tileSpriteCalls.push(key);
+          return tileSpriteStub;
+        },
+      },
+    };
+
+    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;
+    (parallax as unknown as Record<string, unknown>).currentWidth = 800;
+    (parallax as unknown as Record<string, unknown>).currentHeight = 600;
+    (parallax as unknown as Record<string, unknown>).premiumBackgroundLayers = [];
+    (parallax as unknown as Record<string, unknown>).tileSprites = ['stale'];
+    (parallax as unknown as Record<string, unknown>).createLevelVisualLayers = () => undefined;
+
+    (parallax as unknown as { createSceneLayers: (scene: unknown, levelConfig: unknown) => void }).createSceneLayers(
+      scene,
+      { name: 'Magnetar Foundry', accentColor: 0x52f7a6 } as never
+    );
+
+    expect(tileSpriteCalls).toEqual(['bg_level03']);
+    expect((parallax as unknown as Record<string, unknown>).tileSprites).toEqual([]);
+    expect(((parallax as unknown as Record<string, unknown>).premiumBackgroundLayers as unknown[]).length).toBe(1);
+  });
+});
+
 describe('ParallaxBackground atmosphere regression coverage', () => {
   test('setSectionAtmosphere(null) resets targets and clears hazards', () => {
     const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;

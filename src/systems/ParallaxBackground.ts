@@ -121,16 +121,18 @@ export class ParallaxBackground {
   }
 
   private createSceneLayers(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
-    if (levelConfig) {
-      this.createPremiumBackgroundLayers(scene, levelConfig);
-    }
+    const hasPremiumBackgroundLayers = levelConfig
+      ? this.createPremiumBackgroundLayers(scene, levelConfig)
+      : false;
 
-    this.tileSprites = createStarfieldTileSprites(
-      scene,
-      levelConfig,
-      this.currentWidth,
-      this.currentHeight
-    );
+    this.tileSprites = hasPremiumBackgroundLayers
+      ? []
+      : createStarfieldTileSprites(
+          scene,
+          levelConfig,
+          this.currentWidth,
+          this.currentHeight
+        );
 
     if (levelConfig) {
       this.createLevelVisualLayers(scene, levelConfig);

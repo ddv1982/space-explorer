@@ -24,7 +24,7 @@ interface PremiumBackgroundManifest {
 
 const BACKGROUND_BASE_URL = '/assets/backgrounds';
 const BASE_SIZE = { width: 1254, height: 1254 } as const;
-const BACKGROUND_ALPHA = 0.78;
+const BACKGROUND_ALPHA = 1;
 const BACKGROUND_SCROLL_SPEED = 0.09;
 
 const LEVELS = [

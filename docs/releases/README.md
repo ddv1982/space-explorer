@@ -2,6 +2,8 @@
 
 Latest first.
 
+- [`1.1.19`](./1.1.19.md) — stops stacking the legacy starfield under premium backgrounds and makes the premium art fully opaque
+
 - [`1.1.18`](./1.1.18.md) — removes moon-surface prop overlays from the premium-background levels that still used them
 
 - [`1.1.17`](./1.1.17.md) — removes the old scenic overlay system now that premium backgrounds are the intended art path
