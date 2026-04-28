@@ -3,7 +3,7 @@ import type {
   ProceduralMusicTrackConfig,
   ProceduralNoiseLayerConfig,
   ProceduralNoiseLayerExpressionConfig,
-} from '../../../config/LevelsConfig';
+} from '@/config/LevelsConfig';
 import { clamp, getAccentScale, resolveNoiseExpression } from './expression';
 
 interface DeriveNoisePlanArgs {

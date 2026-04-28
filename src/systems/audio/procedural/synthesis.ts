@@ -3,7 +3,7 @@ import type {
   ProceduralMusicLayerConfig,
   ProceduralMusicTrackConfig,
   ProceduralNoiseLayerConfig,
-} from '../../../config/LevelsConfig';
+} from '@/config/LevelsConfig';
 import { createPanner } from './createPanner';
 import { applyModulation } from './modulationLfo';
 import { deriveNoisePlan } from './noisePlan';

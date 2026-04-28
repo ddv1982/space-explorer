@@ -1,4 +1,4 @@
-import type { ProceduralMusicLayerConfig, ProceduralMusicTrackConfig } from '../../../config/LevelsConfig';
+import type { ProceduralMusicLayerConfig, ProceduralMusicTrackConfig } from '@/config/LevelsConfig';
 import { clamp, getAccentScale, getEnvelopeShape, resolveLayerExpression } from './expression';
 
 type ResolvedLayerExpression = ReturnType<typeof resolveLayerExpression>;

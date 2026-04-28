@@ -2,7 +2,7 @@ import type {
   MusicEnergyProfileConfig,
   ProceduralMusicIntentConfig,
   ProceduralMusicTrackConfig,
-} from '../../../config/LevelsConfig';
+} from '@/config/LevelsConfig';
 
 interface MusicMeterStepContext {
   stepsPerBar: number;

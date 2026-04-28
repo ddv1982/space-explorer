@@ -70,11 +70,11 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   }
 
   deployNearPlayer(player: Player, time: number): void {
-    if (this.depleted || this.remainingLives <= 0) {
+    if (!this.canDeploy()) {
       return;
     }
 
-    this.spawn(player.x + this.followOffsetX, player.y + this.followOffsetY, time);
+    this.spawnAtPlayerOffset(player, time);
   }
 
   updateWithPlayer(player: Player, time: number, bulletPool: BulletPool, effectsManager: EffectsManager): void {
@@ -83,8 +83,8 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (!this.active) {
-      if (this.respawnAt > 0 && time >= this.respawnAt && this.remainingLives > 0 && player.isAlive) {
-        this.spawn(player.x + this.followOffsetX, player.y + this.followOffsetY, time);
+      if (this.shouldRespawn(player, time)) {
+        this.spawnAtPlayerOffset(player, time);
       }
       return;
     }
@@ -93,20 +93,9 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    const targetX = player.x + this.followOffsetX;
-    const targetY = player.y + this.followOffsetY;
-    const nextX = Phaser.Math.Linear(this.x, targetX, this.followLerp);
-    const nextY = Phaser.Math.Linear(this.y, targetY, this.followLerp);
-    this.setPosition(nextX, nextY);
-    this.rotation = Phaser.Math.Linear(this.rotation, player.rotation * 0.75, 0.12);
-
-    const body = this.body as Phaser.Physics.Arcade.Body | null;
-    body?.updateFromGameObject();
-
-    if (time >= this.lastFireTime + this.fireRateMs) {
-      this.lastFireTime = time;
-      this.fireShot(bulletPool, effectsManager);
-    }
+    this.followPlayer(player);
+    this.updateBodyFromGameObject();
+    this.tryFireShot(time, bulletPool, effectsManager);
   }
 
   takeDamage(amount: number, time: number, effectsManager: EffectsManager): HelperShipDamageResult {
@@ -126,11 +115,11 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     this.remainingLives -= 1;
 
     if (this.remainingLives > 0) {
-      this.deactivateToRespawn(time);
+      this.scheduleRespawn(time);
       return 'respawning';
     }
 
-    this.deplete();
+    this.markDepleted();
     return 'depleted';
   }
 
@@ -140,13 +129,13 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
 
   applyPersistentState(player: Player, time: number, state: HelperShipPersistentState): void {
     if (state.remainingLives <= 0 || state.hp <= 0) {
-      this.deplete();
+      this.markDepleted();
       return;
     }
 
     this.depleted = false;
     this.remainingLives = Math.max(1, Math.floor(state.remainingLives));
-    this.spawn(player.x + this.followOffsetX, player.y + this.followOffsetY, time);
+    this.spawnAtPlayerOffset(player, time);
     this.hp = Phaser.Math.Clamp(Math.round(state.hp), 1, this.maxHp);
   }
 
@@ -161,6 +150,18 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     };
   }
 
+  private canDeploy(): boolean {
+    return !this.depleted && this.remainingLives > 0;
+  }
+
+  private shouldRespawn(player: Player, time: number): boolean {
+    return this.respawnAt > 0 && time >= this.respawnAt && this.remainingLives > 0 && player.isAlive;
+  }
+
+  private spawnAtPlayerOffset(player: Player, time: number): void {
+    this.spawn(player.x + this.followOffsetX, player.y + this.followOffsetY, time);
+  }
+
   private spawn(x: number, y: number, time: number): void {
     this.enableBody(true, x, y, true, true);
     this.hp = this.maxHp;
@@ -169,32 +170,56 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     this.clearTint();
     this.setScale(1);
     this.setAlpha(0.96);
-
-    const body = this.body as Phaser.Physics.Arcade.Body | null;
-    body?.setVelocity(0, 0);
+    this.resetBodyMotion();
   }
 
-  private deactivateToRespawn(time: number): void {
+  private scheduleRespawn(time: number): void {
     this.respawnAt = time + this.respawnDelayMs;
-    this.disableBody(true, true);
-    const body = this.body as Phaser.Physics.Arcade.Body | null;
-    if (body) {
-      body.enable = false;
-    }
+    this.disableHelperBody();
     this.clearTint();
   }
 
-  private deplete(): void {
+  private markDepleted(): void {
     this.depleted = true;
     this.respawnAt = -1;
-    this.disableBody(true, true);
+    this.disableHelperBody();
+    this.clearTint();
+  }
 
+  private followPlayer(player: Player): void {
+    const targetX = player.x + this.followOffsetX;
+    const targetY = player.y + this.followOffsetY;
+    const nextX = Phaser.Math.Linear(this.x, targetX, this.followLerp);
+    const nextY = Phaser.Math.Linear(this.y, targetY, this.followLerp);
+    this.setPosition(nextX, nextY);
+    this.rotation = Phaser.Math.Linear(this.rotation, player.rotation * 0.75, 0.12);
+  }
+
+  private updateBodyFromGameObject(): void {
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    body?.updateFromGameObject();
+  }
+
+  private tryFireShot(time: number, bulletPool: BulletPool, effectsManager: EffectsManager): void {
+    if (time < this.lastFireTime + this.fireRateMs) {
+      return;
+    }
+
+    this.lastFireTime = time;
+    this.fireShot(bulletPool, effectsManager);
+  }
+
+  private disableHelperBody(): void {
+    this.disableBody(true, true);
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     if (body) {
       body.enable = false;
     }
+  }
 
-    this.clearTint();
+  private resetBodyMotion(): void {
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    body?.setVelocity(0, 0);
   }
 
   private flashHit(): void {

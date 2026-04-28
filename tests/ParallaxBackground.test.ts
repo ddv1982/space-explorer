@@ -154,6 +154,36 @@ describe('ParallaxBackground atmosphere regression coverage', () => {
   });
 });
 
+describe('ParallaxBackground update orchestration regression coverage', () => {
+  test('update advances elapsed time and delegates to the named update phases in order', () => {
+    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;
+    const calls: string[] = [];
+
+    (parallax as unknown as Record<string, unknown>).elapsed = 10;
+    (parallax as unknown as Record<string, unknown>).hazardOverlayAlpha = 0.2;
+    (parallax as unknown as Record<string, unknown>).updateAtmosphereState = () => {
+      calls.push(`updateAtmosphereState:${String((parallax as unknown as Record<string, unknown>).elapsed)}`);
+    };
+    (parallax as unknown as Record<string, unknown>).updateVisualLayers = (delta: number) => {
+      calls.push(`updateVisualLayers:${delta}:${String((parallax as unknown as Record<string, unknown>).elapsed)}`);
+    };
+    (parallax as unknown as Record<string, unknown>).updateHazardOverlay = () => {
+      calls.push(`updateHazardOverlay:${String((parallax as unknown as Record<string, unknown>).elapsed)}`);
+      return 0.75;
+    };
+
+    parallax.update(16);
+
+    expect((parallax as unknown as Record<string, unknown>).elapsed).toBe(26);
+    expect((parallax as unknown as Record<string, unknown>).hazardOverlayAlpha).toBe(0.75);
+    expect(calls).toEqual([
+      'updateAtmosphereState:26',
+      'updateVisualLayers:16:26',
+      'updateHazardOverlay:26',
+    ]);
+  });
+});
+
 describe('ParallaxBackground resize debounce regression coverage', () => {
   test('resize schedules a debounced rebuild on size changes when level config exists', () => {
     const { parallax, calls, delayedCalls } = createResizeHarness({ withLevelConfig: true, withPremiumLayers: false });

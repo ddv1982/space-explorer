@@ -1,56 +1,58 @@
 import Phaser from 'phaser';
+
 import {
   getActiveSection,
   getSectionProgress,
   type BossConfig,
-} from '../config/LevelsConfig';
-import { type ParallaxBackground } from '../systems/ParallaxBackground';
-import type { InputManager } from '../systems/InputManager';
-import type { Player } from '../entities/Player';
-import { BulletPool } from '../systems/BulletPool';
-import { EnemyPool } from '../systems/EnemyPool';
-import { CollisionManager } from '../systems/CollisionManager';
-import { WaveManager } from '../systems/WaveManager';
-import { ScoreManager } from '../systems/ScoreManager';
-import type { HUD } from '../systems/HUD';
-import { LevelManager } from '../systems/LevelManager';
-import { type EffectsManager } from '../systems/EffectsManager';
+} from '@/config/LevelsConfig';
+import type { Player } from '@/entities/Player';
+import type { Boss } from '@/entities/enemies/Boss';
+import type { PowerUpType } from '@/entities/PowerUp';
+import { audioManager } from '@/systems/AudioManager';
+import type { BulletPool } from '@/systems/BulletPool';
+import type { CollisionManager } from '@/systems/CollisionManager';
+import type { EffectsManager } from '@/systems/EffectsManager';
+import type { EnemyPool } from '@/systems/EnemyPool';
+import { applyPowerUpPickup, GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
+import type { HUD } from '@/systems/HUD';
+import type { InputManager } from '@/systems/InputManager';
+import type { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
+import type { LevelManager } from '@/systems/LevelManager';
+import type { MobileControls } from '@/systems/MobileControls';
+import type { MobileViewportGuard } from '@/systems/MobileViewportGuard';
+import type { ParallaxBackground } from '@/systems/ParallaxBackground';
 import {
   getPlayerState,
   setPlayerState,
   setRunSummary,
   type PersistentHelperWingState,
   type PlayerStateData,
-} from '../systems/PlayerState';
-import { Boss } from '../entities/enemies/Boss';
-import type { WarpTransition } from '../systems/WarpTransition';
-import { audioManager } from '../systems/AudioManager';
-import { PowerUpType } from '../entities/PowerUp';
-import { applyPowerUpPickup, GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
+} from '@/systems/PlayerState';
+import type { ScoreManager } from '@/systems/ScoreManager';
+import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
+import type { WarpTransition } from '@/systems/WarpTransition';
+import type { WaveManager } from '@/systems/WaveManager';
+
+import { createGameSceneCombatFeedbackHandlers, runBestEffort } from './gameScene/combatFeedbackHandlers';
+import { createGameSceneFlowContext } from './gameScene/flowContextBridge';
 import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
+import { createGameSceneGameplayFrameBehavior } from './gameScene/gameplayFrameBehavior';
+import {
+  persistHelperWingState,
+  syncLastLifeHelperWingState,
+} from './gameScene/helperWingStateBridge';
+import { updateHud as updateHudOrchestration } from './gameScene/hudSyncOrchestration';
 import { PauseStateController } from './gameScene/PauseStateController';
-import { LastLifeHelperWing } from '../systems/LastLifeHelperWing';
-import { MobileViewportGuard } from '../systems/MobileViewportGuard';
-import { runGameSceneCreateBootstrap } from './gameScene/runGameSceneCreateBootstrap';
-import type { MobileControls } from '../systems/MobileControls';
-import { resolveSectionMusicIntensity } from '../systems/sectionIdentity';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
-import { type SceneEventBinding } from './gameScene/sceneEvents';
+import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
+import { runGameSceneCreateBootstrap } from './gameScene/runGameSceneCreateBootstrap';
+import type { SceneEventBinding } from './gameScene/sceneEvents';
+import { runGameSceneUpdateFrame } from './gameScene/updateFrame';
 import {
   clampPlayerToViewport,
   getPlayerSpawnPoint,
   syncSceneViewport,
 } from './gameScene/viewport';
-import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
-import { runGameSceneUpdateFrame } from './gameScene/updateFrame';
-import { createGameSceneGameplayFrameBehavior } from './gameScene/gameplayFrameBehavior';
-import { createGameSceneCombatFeedbackHandlers, runBestEffort } from './gameScene/combatFeedbackHandlers';
-import {
-  persistHelperWingState,
-  syncLastLifeHelperWingState,
-} from './gameScene/helperWingStateBridge';
-import { createGameSceneFlowContext } from './gameScene/flowContextBridge';
-import { updateHud as updateHudOrchestration } from './gameScene/hudSyncOrchestration';
 
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
@@ -84,97 +86,9 @@ export class GameScene extends Phaser.Scene {
   private readonly shotDirection = new Phaser.Math.Vector2();
   private readonly shotOrigin = new Phaser.Math.Vector2();
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
-  private readonly combatFeedbackHandlers = createGameSceneCombatFeedbackHandlers({
-    scene: this,
-    player: () => this.player,
-    scoreManager: () => this.scoreManager,
-    effectsManager: () => this.effectsManager,
-    flow: () => this.flow,
-    getFlowContext: () => this.getFlowContext(),
-    levelManager: () => this.levelManager,
-    collisionManager: () => this.collisionManager,
-    enemyPool: () => this.enemyPool,
-    hud: () => this.hud,
-    getBoss: () => this.boss,
-    setBoss: (boss) => {
-      this.boss = boss;
-    },
-    getScaledBossConfig: () => this.scaledBossConfig,
-    getLastLifeHelperWing: () => this.lastLifeHelperWing,
-    powerUpGroup: () => this.powerUpGroup,
-    persistHelperWingState: () => persistHelperWingState(this.registry, this.lastLifeHelperWing),
-    syncLastLifeHelperWingState: () =>
-      syncLastLifeHelperWingState(this.lastLifeHelperWing, this.flow.getRemainingLives()),
-    constants: {
-      bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
-      bossExplosionAudioIntensity: GameScene.BOSS_EXPLOSION_AUDIO_INTENSITY,
-      playerDeathExplosionVisualIntensity: GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY,
-      playerDeathExplosionAudioIntensity: GameScene.PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY,
-      playerDeathParticleBudgetScale: GameScene.PLAYER_DEATH_PARTICLE_BUDGET_SCALE,
-    },
-  });
-  private readonly sceneEventBindings: SceneEventBinding[] = [
-    { event: GAME_SCENE_EVENTS.enemyDeath, handler: this.combatFeedbackHandlers.handleEnemyDeath },
-    { event: GAME_SCENE_EVENTS.playerDeath, handler: this.combatFeedbackHandlers.handlePlayerDeath },
-    { event: GAME_SCENE_EVENTS.playerFatalHit, handler: this.combatFeedbackHandlers.handlePlayerFatalHit },
-    { event: GAME_SCENE_EVENTS.levelComplete, handler: this.combatFeedbackHandlers.handleLevelComplete },
-    { event: GAME_SCENE_EVENTS.bossSpawn, handler: this.combatFeedbackHandlers.handleBossSpawn },
-    { event: GAME_SCENE_EVENTS.playerHit, handler: this.combatFeedbackHandlers.handlePlayerHit },
-    { event: GAME_SCENE_EVENTS.playerExhaust, handler: this.combatFeedbackHandlers.handlePlayerExhaust },
-    { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: this.combatFeedbackHandlers.handleEnemySpawnWarning },
-    { event: GAME_SCENE_EVENTS.bossDeath, handler: this.combatFeedbackHandlers.handleBossDeath },
-    { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.combatFeedbackHandlers.handleBossPhaseChange },
-    { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.combatFeedbackHandlers.handleHelperWingActivated },
-    { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: this.combatFeedbackHandlers.handleHelperWingDepleted },
-    { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: this.combatFeedbackHandlers.handlePlayerBulletTrail },
-    { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: this.combatFeedbackHandlers.handleEnemyBulletTrail },
-  ];
-  private readonly runtimeLifecycle = createGameSceneRuntimeLifecycle({
-    scene: this,
-    sceneEventBindings: this.sceneEventBindings,
-    syncLastLifeHelperWingState: () =>
-      syncLastLifeHelperWingState(this.lastLifeHelperWing, this.flow.getRemainingLives()),
-    getScaleResizeContext: () => ({
-      scene: this,
-      parallax: this.parallax,
-      mobileControls: this.mobileControls,
-      hud: this.hud,
-      warpTransition: this.warpTransition,
-      pauseStateController: this.pauseStateController,
-      clampPlayerToViewport: () => this.clampPlayerToViewport(),
-    }),
-    destroyMobileViewportGuard: () => {
-      this.mobileViewportGuard?.destroy();
-      this.mobileViewportGuard = null;
-    },
-    destroyPauseStateController: () => {
-      this.pauseStateController?.destroy();
-      this.pauseStateController = null;
-    },
-    destroyMobileControls: () => {
-      this.mobileControls?.destroy();
-      this.mobileControls = null;
-    },
-    persistHelperWingState: () => persistHelperWingState(this.registry, this.lastLifeHelperWing),
-    destroyLastLifeHelperWing: () => {
-      this.lastLifeHelperWing?.destroy();
-      this.lastLifeHelperWing = null;
-    },
-    destroyParallax: () => {
-      this.parallax?.destroy();
-    },
-    destroyEffectsManager: () => {
-      this.effectsManager?.destroy();
-    },
-    shutdownFlow: () => {
-      this.flow.shutdown(this.collisionManager);
-    },
-    resetRuntimeStateAfterShutdown: () => {
-      this.lastFireTime = 0;
-      this.boss = null;
-      this.lastHudShieldCount = null;
-    },
-  });
+  private readonly combatFeedbackHandlers = this.createCombatFeedbackHandlers();
+  private readonly sceneEventBindings: SceneEventBinding[] = this.createSceneEventBindings();
+  private readonly runtimeLifecycle = this.createRuntimeLifecycle();
 
   constructor() {
     super({ key: 'Game' });
@@ -197,6 +111,116 @@ export class GameScene extends Phaser.Scene {
     this.flow.reset(state.remainingLives);
     this.flow.setRespawnFrameProbeEnabled(resolveRespawnFrameProbeEnabled());
     return state;
+  }
+
+  private createCombatFeedbackHandlers() {
+    return createGameSceneCombatFeedbackHandlers({
+      scene: this,
+      player: () => this.player,
+      scoreManager: () => this.scoreManager,
+      effectsManager: () => this.effectsManager,
+      flow: () => this.flow,
+      getFlowContext: () => this.getFlowContext(),
+      levelManager: () => this.levelManager,
+      collisionManager: () => this.collisionManager,
+      enemyPool: () => this.enemyPool,
+      hud: () => this.hud,
+      getBoss: () => this.boss,
+      setBoss: (boss) => {
+        this.boss = boss;
+      },
+      getScaledBossConfig: () => this.scaledBossConfig,
+      getLastLifeHelperWing: () => this.lastLifeHelperWing,
+      powerUpGroup: () => this.powerUpGroup,
+      persistHelperWingState: () => this.persistHelperWingState(),
+      syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
+      constants: {
+        bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
+        bossExplosionAudioIntensity: GameScene.BOSS_EXPLOSION_AUDIO_INTENSITY,
+        playerDeathExplosionVisualIntensity: GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY,
+        playerDeathExplosionAudioIntensity: GameScene.PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY,
+        playerDeathParticleBudgetScale: GameScene.PLAYER_DEATH_PARTICLE_BUDGET_SCALE,
+      },
+    });
+  }
+
+  private createSceneEventBindings(): SceneEventBinding[] {
+    return [
+      { event: GAME_SCENE_EVENTS.enemyDeath, handler: this.combatFeedbackHandlers.handleEnemyDeath },
+      { event: GAME_SCENE_EVENTS.playerDeath, handler: this.combatFeedbackHandlers.handlePlayerDeath },
+      { event: GAME_SCENE_EVENTS.playerFatalHit, handler: this.combatFeedbackHandlers.handlePlayerFatalHit },
+      { event: GAME_SCENE_EVENTS.levelComplete, handler: this.combatFeedbackHandlers.handleLevelComplete },
+      { event: GAME_SCENE_EVENTS.bossSpawn, handler: this.combatFeedbackHandlers.handleBossSpawn },
+      { event: GAME_SCENE_EVENTS.playerHit, handler: this.combatFeedbackHandlers.handlePlayerHit },
+      { event: GAME_SCENE_EVENTS.playerExhaust, handler: this.combatFeedbackHandlers.handlePlayerExhaust },
+      { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: this.combatFeedbackHandlers.handleEnemySpawnWarning },
+      { event: GAME_SCENE_EVENTS.bossDeath, handler: this.combatFeedbackHandlers.handleBossDeath },
+      { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.combatFeedbackHandlers.handleBossPhaseChange },
+      { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.combatFeedbackHandlers.handleHelperWingActivated },
+      { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: this.combatFeedbackHandlers.handleHelperWingDepleted },
+      { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: this.combatFeedbackHandlers.handlePlayerBulletTrail },
+      { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: this.combatFeedbackHandlers.handleEnemyBulletTrail },
+    ];
+  }
+
+  private createRuntimeLifecycle() {
+    return createGameSceneRuntimeLifecycle({
+      scene: this,
+      sceneEventBindings: this.sceneEventBindings,
+      syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
+      getScaleResizeContext: () => this.getScaleResizeContext(),
+      destroyMobileViewportGuard: () => {
+        this.mobileViewportGuard?.destroy();
+        this.mobileViewportGuard = null;
+      },
+      destroyPauseStateController: () => {
+        this.pauseStateController?.destroy();
+        this.pauseStateController = null;
+      },
+      destroyMobileControls: () => {
+        this.mobileControls?.destroy();
+        this.mobileControls = null;
+      },
+      persistHelperWingState: () => this.persistHelperWingState(),
+      destroyLastLifeHelperWing: () => {
+        this.lastLifeHelperWing?.destroy();
+        this.lastLifeHelperWing = null;
+      },
+      destroyParallax: () => {
+        this.parallax?.destroy();
+      },
+      destroyEffectsManager: () => {
+        this.effectsManager?.destroy();
+      },
+      shutdownFlow: () => {
+        this.flow.shutdown(this.collisionManager);
+      },
+      resetRuntimeStateAfterShutdown: () => {
+        this.lastFireTime = 0;
+        this.boss = null;
+        this.lastHudShieldCount = null;
+      },
+    });
+  }
+
+  private getScaleResizeContext() {
+    return {
+      scene: this,
+      parallax: this.parallax,
+      mobileControls: this.mobileControls,
+      hud: this.hud,
+      warpTransition: this.warpTransition,
+      pauseStateController: this.pauseStateController,
+      clampPlayerToViewport: () => this.clampPlayerToViewport(),
+    };
+  }
+
+  private persistHelperWingState(): void {
+    persistHelperWingState(this.registry, this.lastLifeHelperWing);
+  }
+
+  private syncLastLifeHelperWingState(): void {
+    syncLastLifeHelperWingState(this.lastLifeHelperWing, this.flow.getRemainingLives());
   }
 
   private initializeAudioForLevel(levelConfig: ReturnType<LevelManager['getLevelConfig']>): {
@@ -348,4 +372,3 @@ export class GameScene extends Phaser.Scene {
     );
   }
 }
-

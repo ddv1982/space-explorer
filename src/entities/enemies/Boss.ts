@@ -89,6 +89,23 @@ export class Boss extends EnemyBase {
     this.applyConfig(config);
     this.setTexture(ensureBossTextureVariant(this.scene, config.attackStyle, config.name));
     super.spawn(x, y);
+    this.resetCombatState();
+  }
+
+  updateBehavior(time: number, delta: number): void {
+    if (!this.arrived) {
+      this.handleArrival(time);
+      return;
+    }
+
+    this.updateMovement(time, delta);
+    this.updatePhaseState(time);
+    this.updateShieldState(time);
+
+    this.tryFirePattern(time);
+  }
+
+  private resetCombatState(): void {
     this.phase = 1;
     this.arrived = false;
     this.lastFireTime = 0;
@@ -101,26 +118,14 @@ export class Boss extends EnemyBase {
     this.clearTint();
   }
 
-  updateBehavior(time: number, delta: number): void {
-    if (!this.arrived) {
-      if (this.y >= this.targetY) {
-        this.arrived = true;
-        this.phaseStartedAt = time;
-        this.setVelocityY(0);
-      }
+  private handleArrival(time: number): void {
+    if (this.y < this.targetY) {
       return;
     }
 
-    this.updateMovement(time, delta);
-    this.updatePhaseState(time);
-    this.updateShieldState(time);
-
-    const cooldown = this.phase === 1 ? this.phase1Cooldown : this.phase2Cooldown;
-    if (this.bulletGroup && time > this.lastFireTime + cooldown) {
-      this.lastFireTime = time;
-      this.firePattern(time);
-      this.attackCycle += 1;
-    }
+    this.arrived = true;
+    this.phaseStartedAt = time;
+    this.setVelocityY(0);
   }
 
   private updateMovement(time: number, delta: number): void {
@@ -145,13 +150,17 @@ export class Boss extends EnemyBase {
 
   private updatePhaseState(time: number): void {
     if (shouldEnterBossPhaseTwo(this.phase, this.hp, this.maxHp)) {
-      this.phase = 2;
-      this.moveSpeed = this.phase2MoveSpeed;
-      this.phaseStartedAt = time;
-      this.lastFireTime = time + this.phaseTransitionPauseMs;
-      this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
-      this.flashPhaseChange();
+      this.transitionToPhaseTwo(time);
     }
+  }
+
+  private transitionToPhaseTwo(time: number): void {
+    this.phase = 2;
+    this.moveSpeed = this.phase2MoveSpeed;
+    this.phaseStartedAt = time;
+    this.lastFireTime = time + this.phaseTransitionPauseMs;
+    this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
+    this.flashPhaseChange();
   }
 
   private updateShieldState(time: number): void {
@@ -170,6 +179,28 @@ export class Boss extends EnemyBase {
     }
 
     this.clearTint();
+  }
+
+  private tryFirePattern(time: number): void {
+    if (!this.canFirePattern(time)) {
+      return;
+    }
+
+    this.lastFireTime = time;
+    this.firePattern(time);
+    this.attackCycle += 1;
+  }
+
+  private canFirePattern(time: number): boolean {
+    if (!this.bulletGroup) {
+      return false;
+    }
+
+    return time > this.lastFireTime + this.getCurrentAttackCooldown();
+  }
+
+  private getCurrentAttackCooldown(): number {
+    return this.phase === 1 ? this.phase1Cooldown : this.phase2Cooldown;
   }
 
   private firePattern(time: number): void {
@@ -200,26 +231,28 @@ export class Boss extends EnemyBase {
       return;
     }
 
-    const viewport = getViewportBounds(this.scene);
-    const effectivePadding = Math.min(50, viewport.width / 2);
-    const minX = viewport.left + effectivePadding;
-    const maxX = Math.max(minX, viewport.right - effectivePadding);
+    const summonBounds = this.getSummonBounds();
 
     types.forEach((type, index) => {
       const offset = index === 0 ? -36 : 36;
-      const summonX = Phaser.Math.Clamp(this.x + offset, minX, maxX);
+      const summonX = Phaser.Math.Clamp(this.x + offset, summonBounds.minX, summonBounds.maxX);
       summonHandler(type, summonX, this.y + 10);
     });
   }
 
-  private fireBullet(x: number, y: number, velocityX: number, velocityY: number): void {
-    if (!this.bulletGroup) {
-      return;
-    }
+  private getSummonBounds(): { minX: number; maxX: number } {
+    const viewport = getViewportBounds(this.scene);
+    const effectivePadding = Math.min(50, viewport.width / 2);
+    const minX = viewport.left + effectivePadding;
 
-    const bullet =
-      (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
-      (this.bulletGroup.get(x, y) as EnemyBullet | null);
+    return {
+      minX,
+      maxX: Math.max(minX, viewport.right - effectivePadding),
+    };
+  }
+
+  private fireBullet(x: number, y: number, velocityX: number, velocityY: number): void {
+    const bullet = this.getAvailableBullet(x, y);
     if (!bullet) {
       return;
     }
@@ -228,15 +261,34 @@ export class Boss extends EnemyBase {
     bullet.setVelocity(velocityX, velocityY);
   }
 
+  private getAvailableBullet(x: number, y: number): EnemyBullet | null {
+    if (!this.bulletGroup) {
+      return null;
+    }
+
+    return (
+      (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
+      (this.bulletGroup.get(x, y) as EnemyBullet | null)
+    );
+  }
+
   private getPlayer(): Player | null {
     const cachedPlayer = this.playerRef;
-    if (cachedPlayer && cachedPlayer.scene === this.scene && cachedPlayer.active) {
+    if (this.isValidCachedPlayer(cachedPlayer)) {
       return cachedPlayer;
     }
 
-    const match = this.scene.children.list.find((child) => child instanceof Player && child.active);
-    this.playerRef = (match as Player | undefined) ?? null;
+    this.playerRef = this.findActivePlayer();
     return this.playerRef;
+  }
+
+  private isValidCachedPlayer(player: Player | null): player is Player {
+    return Boolean(player && player.scene === this.scene && player.active);
+  }
+
+  private findActivePlayer(): Player | null {
+    const match = this.scene.children.list.find((child) => child instanceof Player && child.active);
+    return (match as Player | undefined) ?? null;
   }
 
   private getPlayerAimAngle(): number {

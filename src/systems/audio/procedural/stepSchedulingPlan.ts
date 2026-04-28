@@ -1,4 +1,4 @@
-import type { ProceduralMusicTrackConfig } from '../../../config/LevelsConfig';
+import type { ProceduralMusicTrackConfig } from '@/config/LevelsConfig';
 import { resolveArrangementForBar } from './arrangement';
 import { getIntensityBlend } from './expression';
 import { resolveHarmonicContext } from './harmony';

@@ -1,4 +1,4 @@
-import type { ProceduralMusicLayerExpressionConfig } from '../../../config/LevelsConfig';
+import type { ProceduralMusicLayerExpressionConfig } from '@/config/LevelsConfig';
 import { clamp } from './expression';
 
 export function createPanner(

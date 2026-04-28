@@ -1,4 +1,4 @@
-import type { MusicModulationConfig } from '../../../config/LevelsConfig';
+import type { MusicModulationConfig } from '@/config/LevelsConfig';
 
 export function applyModulation(
   ctx: AudioContext,

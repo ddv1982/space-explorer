@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.15] - 2026-04-28
+
+### Changed
+- Continued the gameplay/runtime refactor pass by breaking large orchestration files into smaller named setup and lifecycle helpers without changing expected game behavior.
+- Finished the next maintainability cleanup tier across scene bootstrap, wave spawning, combat flow, player/helper/boss runtime code, menu/intermission flow, and several supporting gameplay systems.
+- Standardized cross-feature imports around the existing `@/*` alias while keeping nearby same-feature imports relative, reducing deep import paths without hiding module ownership.
+
+### Quality
+- Added focused regression coverage for bootstrap sequencing, wave-manager orchestration, boss/runtime helper behavior, menu/load flow, helper-wing runtime behavior, and related gameplay helpers.
+- Verified with `bunx tsc --noEmit`, `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.14] - 2026-04-28
 
 ### Fixed

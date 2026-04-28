@@ -85,7 +85,10 @@ export class EnemyPool {
   create(scene: Phaser.Scene): void {
     this.scene = scene;
     this.groups = {};
+    this.initializeCoreGroups();
+  }
 
+  private initializeCoreGroups(): void {
     this.ensureGroup('scout');
     this.ensureGroup('fighter');
     this.ensureGroup('enemyBullet');
@@ -113,56 +116,54 @@ export class EnemyPool {
     this.ensureGroup('bomb');
   }
 
-  spawnScout(x: number, y: number): Scout | null {
-    const scout = this.acquireFromGroup<Scout>(this.ensureGroup('scout'), x, y);
-    if (scout) {
-      scout.spawn(x, y);
+  private spawnFromGroup<T extends { spawn(x: number, y: number): void }>(
+    key: PoolGroupKey,
+    x: number,
+    y: number
+  ): T | null {
+    const entity = this.acquireFromGroup<T>(this.ensureGroup(key), x, y);
+    if (entity) {
+      entity.spawn(x, y);
     }
-    return scout;
+    return entity;
+  }
+
+  private spawnArmedEnemy<T extends { spawn(x: number, y: number): void; setEnemyBulletGroup(group: Phaser.Physics.Arcade.Group): void }>(
+    key: PoolGroupKey,
+    x: number,
+    y: number
+  ): T | null {
+    const enemy = this.spawnFromGroup<T>(key, x, y);
+    if (enemy) {
+      enemy.setEnemyBulletGroup(this.ensureGroup('enemyBullet'));
+    }
+    return enemy;
+  }
+
+  spawnScout(x: number, y: number): Scout | null {
+    return this.spawnFromGroup<Scout>('scout', x, y);
   }
 
   spawnFighter(x: number, y: number): Fighter | null {
-    const fighterGroup = this.ensureGroup('fighter');
-    const enemyBulletGroup = this.ensureGroup('enemyBullet');
-    const fighter = this.acquireFromGroup<Fighter>(fighterGroup, x, y);
-    if (fighter) {
-      fighter.spawn(x, y);
-      fighter.setEnemyBulletGroup(enemyBulletGroup);
-    }
-    return fighter;
+    return this.spawnArmedEnemy<Fighter>('fighter', x, y);
   }
 
   spawnBomber(x: number, y: number): Bomber | null {
     this.ensureBomberSupport();
 
-    const bomberGroup = this.ensureGroup('bomber');
-    const bombGroup = this.ensureGroup('bomb');
-    const bomber = this.acquireFromGroup<Bomber>(bomberGroup, x, y);
+    const bomber = this.spawnFromGroup<Bomber>('bomber', x, y);
     if (bomber) {
-      bomber.spawn(x, y);
-      bomber.setBombGroup(bombGroup);
+      bomber.setBombGroup(this.ensureGroup('bomb'));
     }
     return bomber;
   }
 
   spawnSwarm(x: number, y: number): Swarm | null {
-    const swarmGroup = this.ensureGroup('swarm');
-    const swarm = this.acquireFromGroup<Swarm>(swarmGroup, x, y);
-    if (swarm) {
-      swarm.spawn(x, y);
-    }
-    return swarm;
+    return this.spawnFromGroup<Swarm>('swarm', x, y);
   }
 
   spawnGunship(x: number, y: number): Gunship | null {
-    const gunshipGroup = this.ensureGroup('gunship');
-    const enemyBulletGroup = this.ensureGroup('enemyBullet');
-    const gunship = this.acquireFromGroup<Gunship>(gunshipGroup, x, y);
-    if (gunship) {
-      gunship.spawn(x, y);
-      gunship.setEnemyBulletGroup(enemyBulletGroup);
-    }
-    return gunship;
+    return this.spawnArmedEnemy<Gunship>('gunship', x, y);
   }
 
   spawnEnemy(type: EnemyType, x: number, y: number): Phaser.Physics.Arcade.Sprite | null {
@@ -188,12 +189,16 @@ export class EnemyPool {
     const boss = this.acquireFromGroup<Boss>(bossGroup, x, y);
     if (boss) {
       boss.spawn(x, y, config);
-      boss.setEnemyBulletGroup(this.ensureGroup('enemyBullet'));
-      boss.setSummonHandler((type, spawnX, spawnY) => {
-        this.spawnEnemy(type, spawnX, spawnY);
-      });
+      this.configureBoss(boss);
     }
     return boss;
+  }
+
+  private configureBoss(boss: Boss): void {
+    boss.setEnemyBulletGroup(this.ensureGroup('enemyBullet'));
+    boss.setSummonHandler((type, spawnX, spawnY) => {
+      this.spawnEnemy(type, spawnX, spawnY);
+    });
   }
 
   fireEnemyBullet(x: number, y: number): EnemyBullet | null {
@@ -237,51 +242,43 @@ export class EnemyPool {
     return this.ensureGroup('enemyBullet');
   }
 
+  private createEnemyGroupRegistration(
+    key: EnemyPoolGroupKey,
+    group: Phaser.Physics.Arcade.Group,
+    playerCollisionBehavior: EnemyPlayerCollisionBehavior
+  ): EnemyGroupRegistration {
+    return { key, group, playerCollisionBehavior };
+  }
+
   getEnemyGroupRegistry(): EnemyGroupRegistration[] {
     return [
-      {
-        key: 'scout',
-        group: this.getScoutGroup(),
-        playerCollisionBehavior: 'kamikaze',
-      },
-      {
-        key: 'fighter',
-        group: this.getFighterGroup(),
-        playerCollisionBehavior: 'impact',
-      },
-      {
-        key: 'bomber',
-        group: this.getBomberGroup(),
-        playerCollisionBehavior: 'impact',
-      },
-      {
-        key: 'swarm',
-        group: this.getSwarmGroup(),
-        playerCollisionBehavior: 'kamikaze',
-      },
-      {
-        key: 'gunship',
-        group: this.getGunshipGroup(),
-        playerCollisionBehavior: 'impact',
-      },
-      {
-        key: 'boss',
-        group: this.getBossGroup(),
-        playerCollisionBehavior: 'none',
-      },
+      this.createEnemyGroupRegistration('scout', this.getScoutGroup(), 'kamikaze'),
+      this.createEnemyGroupRegistration('fighter', this.getFighterGroup(), 'impact'),
+      this.createEnemyGroupRegistration('bomber', this.getBomberGroup(), 'impact'),
+      this.createEnemyGroupRegistration('swarm', this.getSwarmGroup(), 'kamikaze'),
+      this.createEnemyGroupRegistration('gunship', this.getGunshipGroup(), 'impact'),
+      this.createEnemyGroupRegistration('boss', this.getBossGroup(), 'none'),
     ];
+  }
+
+  private appendGroupChildren(
+    enemies: Phaser.Physics.Arcade.Sprite[],
+    key: PoolGroupKey,
+    ensure = false
+  ): void {
+    const group = ensure ? this.ensureGroup(key) : this.groups[key];
+    group?.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
   }
 
   getAllEnemies(): Phaser.Physics.Arcade.Sprite[] {
     const enemies: Phaser.Physics.Arcade.Sprite[] = [];
 
-    this.ensureGroup('scout').getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
-    this.ensureGroup('fighter').getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+    this.appendGroupChildren(enemies, 'scout', true);
+    this.appendGroupChildren(enemies, 'fighter', true);
 
     const optionalGroups: PoolGroupKey[] = ['bomber', 'swarm', 'gunship'];
     optionalGroups.forEach((key) => {
-      const group = this.groups[key];
-      group?.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+      this.appendGroupChildren(enemies, key);
     });
 
     return enemies;

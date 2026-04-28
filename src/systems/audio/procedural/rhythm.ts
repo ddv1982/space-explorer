@@ -1,4 +1,4 @@
-import type { MusicLayerRhythmConfig } from '../../../config/LevelsConfig';
+import type { MusicLayerRhythmConfig } from '@/config/LevelsConfig';
 
 export interface RhythmMeterContext {
   barIndex: number;

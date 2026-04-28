@@ -108,7 +108,16 @@ export class ParallaxBackground {
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
+    this.initializeSceneState(scene, levelConfig);
+    this.createSceneLayers(scene, levelConfig);
+    this.createHazardOverlay(scene);
+    this.layoutSceneLayers();
 
+    // The seamless image backgrounds are a low-depth art backplate. The normal
+    // committed Phaser background stack remains in front of it.
+  }
+
+  private initializeSceneState(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.scene = scene;
     this.levelConfig = levelConfig;
     this.tileSprites = [];
@@ -116,7 +125,9 @@ export class ParallaxBackground {
     this.debrisMotes = [];
     this.foregroundSilhouettes = [];
     this.resetRuntimeFieldState(scene.cameras.main.width, scene.cameras.main.height);
+  }
 
+  private createSceneLayers(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     if (levelConfig) {
       this.createPremiumBackgroundLayers(scene, levelConfig);
     }
@@ -131,25 +142,30 @@ export class ParallaxBackground {
     if (levelConfig) {
       this.createLevelVisualLayers(scene, levelConfig);
     }
+  }
 
+  private createHazardOverlay(scene: Phaser.Scene): void {
     this.hazardOverlay = scene.add.graphics();
     this.hazardOverlay.setDepth(-5);
+  }
 
+  private layoutSceneLayers(): void {
     this.layoutTileSprites();
     this.layoutPremiumBackgroundLayers();
+  }
 
-    // The seamless image backgrounds are a low-depth art backplate. The normal
-    // committed Phaser background stack remains in front of it.
+  private getViewportSize(): { width: number; height: number } {
+    return {
+      width: this.currentWidth,
+      height: this.currentHeight,
+    };
   }
 
   private createPremiumBackgroundLayers(scene: Phaser.Scene, config: LevelConfig): boolean {
     return createPremiumBackgroundLayersHelper(
       scene,
       config,
-      {
-        width: this.currentWidth,
-        height: this.currentHeight,
-      },
+      this.getViewportSize(),
       this.premiumBackgroundLayers
     );
   }
@@ -170,20 +186,22 @@ export class ParallaxBackground {
     rebuildPremiumBackgroundLayersHelper({
       scene,
       config,
-      viewport: {
-        width: this.currentWidth,
-        height: this.currentHeight,
-      },
+      viewport: this.getViewportSize(),
       premiumBackgroundLayers: this.premiumBackgroundLayers,
       layoutPremiumBackgroundLayers: () => this.layoutPremiumBackgroundLayers(),
     });
   }
 
   private createMoonSurfaceLayer(scene: Phaser.Scene, config: LevelConfig): void {
-    this.moonSurface = createMoonSurfaceLayerHelper(scene, config, {
-      width: this.currentWidth,
-      height: this.currentHeight,
-    });
+    this.moonSurface = createMoonSurfaceLayerHelper(scene, config, this.getViewportSize());
+  }
+
+  private setPassingPlanetSprites(states: PassingPlanetState[]): void {
+    this.passingPlanetSprites = states;
+  }
+
+  private setTwinkles(states: TwinkleState[]): void {
+    this.twinkles = states;
   }
 
   private getLevelVisualLayerLifecycleContext(): LevelVisualLayerLifecycleContext {
@@ -204,8 +222,8 @@ export class ParallaxBackground {
       this.destroyMoonSurfaceLayer.bind(this),
       this.destroyPlanetLayer.bind(this),
       this.destroyDebrisMotes.bind(this),
-      (states) => { this.passingPlanetSprites = states; },
-      (states) => { this.twinkles = states; }
+      (states) => this.setPassingPlanetSprites(states),
+      (states) => this.setTwinkles(states)
     );
   }
 
@@ -231,10 +249,15 @@ export class ParallaxBackground {
       () => this.levelConfig,
       () => this.currentWidth,
       () => this.currentHeight,
-      (width, height) => { this.currentWidth = width; this.currentHeight = height; },
+      (width, height) => {
+        this.currentWidth = width;
+        this.currentHeight = height;
+      },
       () => this.premiumBackgroundLayers.length,
       () => this.pendingRebuildEvent,
-      (event) => { this.pendingRebuildEvent = event; },
+      (event) => {
+        this.pendingRebuildEvent = event;
+      },
       () => this.layoutTileSprites(),
       () => this.layoutPremiumBackgroundLayers(),
       () => this.layoutLevelVisualLayers(),
@@ -244,20 +267,24 @@ export class ParallaxBackground {
   }
 
   destroy(): void {
-    if (this.pendingRebuildEvent) {
-      this.pendingRebuildEvent.remove(false);
-      this.pendingRebuildEvent = null;
-    }
-
+    this.clearPendingRebuildEvent();
     this.destroyLevelVisualLayers();
     this.destroyPremiumBackgroundLayers();
-
     this.tileSprites = destroyStarfieldTileSprites(this.tileSprites);
     this.scene = null;
     this.levelConfig = undefined;
     this.resetRuntimeFieldState(0, 0);
     this.hazardOverlay?.destroy();
     this.hazardOverlay = null;
+  }
+
+  private clearPendingRebuildEvent(): void {
+    if (!this.pendingRebuildEvent) {
+      return;
+    }
+
+    this.pendingRebuildEvent.remove(false);
+    this.pendingRebuildEvent = null;
   }
 
   setSectionAtmosphere(section: LevelSectionConfig | null, sectionProgress: number): void {
@@ -299,10 +326,7 @@ export class ParallaxBackground {
   // ---------------------------------------------------------------------------
 
   private createPlanetLayer(scene: Phaser.Scene, config: LevelConfig): void {
-    this.planetLayer = createPlanetLayerHelper(scene, config, {
-      width: this.currentWidth,
-      height: this.currentHeight,
-    });
+    this.planetLayer = createPlanetLayerHelper(scene, config, this.getViewportSize());
   }
 
   // ---------------------------------------------------------------------------
@@ -313,10 +337,7 @@ export class ParallaxBackground {
     createDebrisMotesHelper(
       scene,
       config,
-      {
-        width: this.currentWidth,
-        height: this.currentHeight,
-      },
+      this.getViewportSize(),
       this.debrisMotes
     );
   }
@@ -327,11 +348,19 @@ export class ParallaxBackground {
 
   update(delta: number): void {
     this.elapsed += delta;
+    this.updateAtmosphereState();
+    this.updateVisualLayers(delta);
+    this.hazardOverlayAlpha = this.updateHazardOverlay();
+  }
+
+  private updateAtmosphereState(): void {
     this.atmosphereAlpha = Phaser.Math.Linear(this.atmosphereAlpha, this.targetAtmosphereAlpha, 0.08);
     this.atmosphereDrift = Phaser.Math.Linear(this.atmosphereDrift, this.targetAtmosphereDrift, 0.08);
     this.atmosphereTwinkle = Phaser.Math.Linear(this.atmosphereTwinkle, this.targetAtmosphereTwinkle, 0.08);
     this.landmarkAlpha = Phaser.Math.Linear(this.landmarkAlpha, this.targetLandmarkAlpha, 0.08);
+  }
 
+  private updateVisualLayers(delta: number): void {
     scrollStarLayers(this.tileSprites, STARFIELD_LAYER_CONFIGS, delta);
     this.scrollPremiumBackgroundLayers(delta);
     updateScenicLayerMotion(this.scenicLayers, this.elapsed, this.atmosphereDrift, this.atmosphereAlpha);
@@ -353,8 +382,10 @@ export class ParallaxBackground {
       )
     );
     updateForegroundSilhouetteMotion(this.foregroundSilhouettes, this.elapsed, this.landmarkAlpha);
+  }
 
-    this.hazardOverlayAlpha = updateHazardOverlayRuntime({
+  private updateHazardOverlay(): number {
+    return updateHazardOverlayRuntime({
       overlay: this.hazardOverlay,
       scene: this.scene,
       width: this.currentWidth,
@@ -376,17 +407,11 @@ export class ParallaxBackground {
   }
 
   private layoutPremiumBackgroundLayers(): void {
-    layoutPremiumBackgroundLayersHelper(this.premiumBackgroundLayers, {
-      width: this.currentWidth,
-      height: this.currentHeight,
-    });
+    layoutPremiumBackgroundLayersHelper(this.premiumBackgroundLayers, this.getViewportSize());
   }
 
   private layoutLevelVisualLayers(): void {
-    layoutScenicLayersHelper(this.scenicLayers, {
-      width: this.currentWidth,
-      height: this.currentHeight,
-    });
+    layoutScenicLayersHelper(this.scenicLayers, this.getViewportSize());
     this.layoutMoonSurfaceLayer();
     this.layoutPlanetLayer();
   }
@@ -403,17 +428,11 @@ export class ParallaxBackground {
   }
 
   private layoutPlanetLayer(): void {
-    layoutPlanetLayerHelper(this.planetLayer, {
-      width: this.currentWidth,
-      height: this.currentHeight,
-    });
+    layoutPlanetLayerHelper(this.planetLayer, this.getViewportSize());
   }
 
   private layoutMoonSurfaceLayer(): void {
-    layoutMoonSurfaceLayerHelper(this.moonSurface, {
-      width: this.currentWidth,
-      height: this.currentHeight,
-    });
+    layoutMoonSurfaceLayerHelper(this.moonSurface, this.getViewportSize());
   }
 
   // ---------------------------------------------------------------------------

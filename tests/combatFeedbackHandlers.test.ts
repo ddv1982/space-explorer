@@ -122,4 +122,89 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(audioManager.playExplosion).toHaveBeenCalledWith(0.5);
     expect(trySpawnRandomPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
   });
+
+  test('handleBossSpawn clears hazards, hides active enemies, starts boss music, and shows the boss bar', () => {
+    audioManager.startMusic.mockClear();
+
+    const clearPlayerHazards = mock();
+    const markBossSpawned = mock();
+    const showBossWarning = mock();
+    const showBossBar = mock();
+    const boss = { setPlayer: mock() };
+    const activeBody = { reset: mock() };
+    const activeEnemy = {
+      active: true,
+      setActive: mock(),
+      setVisible: mock(),
+      clearTint: mock(),
+      setVelocity: mock(),
+      body: activeBody,
+    };
+    const inactiveEnemy = {
+      active: false,
+      setActive: mock(),
+      setVisible: mock(),
+      clearTint: mock(),
+      setVelocity: mock(),
+      body: { reset: mock() },
+    };
+    const setBoss = mock();
+    const player = { id: 'player' };
+
+    const handlers = createGameSceneCombatFeedbackHandlers({
+      scene: { cameras: { main: {} } } as never,
+      player: () => player as never,
+      scoreManager: () => ({ addScore: mock() } as never),
+      effectsManager: () => ({ createScorePopup: mock() } as never),
+      flow: () => ({
+        handlePlayerDeath: mock(),
+        isPlayerDeathTransitionActive: mock(() => false),
+        queueLevelComplete: mock(),
+      } as never),
+      getFlowContext: () => ({}) as never,
+      levelManager: () => ({
+        markBossSpawned,
+        getLevelConfig: () => ({
+          boss: { name: 'Dreadnova' },
+          music: { boss: 'boss-track' },
+        }),
+      } as never),
+      collisionManager: () => ({ clearPlayerHazards } as never),
+      enemyPool: () => ({
+        getAllEnemies: () => [activeEnemy, inactiveEnemy],
+        spawnBoss: mock(() => boss),
+      } as never),
+      hud: () => ({ showBossWarning, showBossBar, hideBossBar: mock() } as never),
+      getBoss: () => null,
+      setBoss,
+      getScaledBossConfig: () => ({ name: 'Scaled Boss' } as never),
+      getLastLifeHelperWing: () => null,
+      powerUpGroup: () => ({ id: 'powerups' } as never),
+      persistHelperWingState: mock(),
+      syncLastLifeHelperWingState: mock(),
+      constants: {
+        bossExplosionVisualIntensity: 3,
+        bossExplosionAudioIntensity: 2,
+        playerDeathExplosionVisualIntensity: 2.2,
+        playerDeathExplosionAudioIntensity: 1.4,
+        playerDeathParticleBudgetScale: 0.6,
+      },
+    });
+
+    handlers.handleBossSpawn();
+
+    expect(markBossSpawned).toHaveBeenCalledTimes(1);
+    expect(clearPlayerHazards).toHaveBeenCalledTimes(1);
+    expect(activeEnemy.setActive).toHaveBeenCalledWith(false);
+    expect(activeEnemy.setVisible).toHaveBeenCalledWith(false);
+    expect(activeEnemy.clearTint).toHaveBeenCalledTimes(1);
+    expect(activeEnemy.setVelocity).toHaveBeenCalledWith(0, 0);
+    expect(activeBody.reset).toHaveBeenCalledWith(0, 0);
+    expect(inactiveEnemy.setActive).not.toHaveBeenCalled();
+    expect(showBossWarning).toHaveBeenCalledTimes(1);
+    expect(audioManager.startMusic).toHaveBeenCalledWith('boss-track');
+    expect(boss.setPlayer).toHaveBeenCalledWith(player);
+    expect(setBoss).toHaveBeenCalledWith(boss);
+    expect(showBossBar).toHaveBeenCalledWith('Dreadnova');
+  });
 });

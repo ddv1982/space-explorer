@@ -1,4 +1,4 @@
-import type { SaveSlotId, SaveSlotViewModel } from '../../../systems/SaveSlotStorage';
+import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 
 export interface PauseOverlayHandlers {
   onResume: () => void;

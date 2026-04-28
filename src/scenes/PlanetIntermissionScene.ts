@@ -1,11 +1,26 @@
 import Phaser from 'phaser';
-import { getPlayerState, setPlayerState, advanceToNextLevel, PlayerStateData, getRunSummary, setRunSummary } from '../systems/PlayerState';
-import { getLevelConfig, isLastLevel } from '../config/LevelsConfig';
-import { UpgradeEvaluation, UpgradeKey, evaluateUpgrade, evaluateUpgrades, getUpgradeByKey } from '../config/UpgradesConfig';
-import { getViewportLayout } from '../utils/layout';
-import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
-import { WarpTransition } from '../systems/WarpTransition';
-import { audioManager } from '../systems/AudioManager';
+
+import { getLevelConfig, isLastLevel } from '@/config/LevelsConfig';
+import {
+  evaluateUpgrade,
+  evaluateUpgrades,
+  getUpgradeByKey,
+  type UpgradeEvaluation,
+  type UpgradeKey,
+} from '@/config/UpgradesConfig';
+import { audioManager } from '@/systems/AudioManager';
+import {
+  advanceToNextLevel,
+  getPlayerState,
+  getRunSummary,
+  setPlayerState,
+  setRunSummary,
+  type PlayerStateData,
+} from '@/systems/PlayerState';
+import { WarpTransition } from '@/systems/WarpTransition';
+import { getViewportLayout } from '@/utils/layout';
+import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
+
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { findButtonIndexAtPoint } from './planetIntermission/navigation';
 import {
@@ -16,7 +31,7 @@ import {
   type IntermissionLayoutMetrics,
 } from './planetIntermission/presentation';
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
-import { type UpgradeButton } from './planetIntermission/shared';
+import type { UpgradeButton } from './planetIntermission/shared';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { PlanetIntermissionInteractionController } from './planetIntermission/interactionController';
 import { startRegisteredScene } from './sceneRegistry';
@@ -38,12 +53,31 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.initializeSceneLifecycle();
+    const intermissionLayout = this.initializeIntermissionState();
+    const completedLevelConfig = getLevelConfig(this.state.level);
+    this.generatePlanetTexture(completedLevelConfig.planetPalette, intermissionLayout.planetY, intermissionLayout.planetScale);
+    this.scoreText = createIntermissionHeader(this, intermissionLayout, {
+      planetName: completedLevelConfig.planetName,
+      level: this.state.level,
+      score: this.state.score,
+    });
+    this.initializeOverlayGraphics();
+    this.initializeUpgradeFlow(intermissionLayout);
+    this.initializeWarpTransition();
+    this.createContinuePrompt(intermissionLayout);
+    this.bindContinueInputs();
+  }
+
+  private initializeSceneLifecycle(): void {
     rebindSceneLifecycleHandlers(this, {
       onShutdown: this.handleSceneShutdown,
       context: this,
     });
     registerRestartOnResize(this, () => !this.transitioning);
+  }
 
+  private initializeIntermissionState(): IntermissionLayoutMetrics {
     audioManager.init();
     audioManager.stopMusic();
     this.state = getPlayerState(this.registry);
@@ -51,76 +85,92 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.interactionController = undefined;
     this.transitioning = false;
     this.cameras.main.setBackgroundColor('#000011');
-    const upgradeCount = this.isFinalMissionComplete
-      ? 0
-      : evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades).length;
-    const intermissionLayout = getIntermissionLayout(this, upgradeCount);
 
-    const completedLevelConfig = getLevelConfig(this.state.level);
+    return getIntermissionLayout(this, this.getUpgradeCount());
+  }
 
-    this.generatePlanetTexture(completedLevelConfig.planetPalette, intermissionLayout.planetY, intermissionLayout.planetScale);
-    this.scoreText = createIntermissionHeader(this, intermissionLayout, {
-      planetName: completedLevelConfig.planetName,
-      level: this.state.level,
-      score: this.state.score,
-    });
+  private getUpgradeCount(): number {
+    if (this.isFinalMissionComplete) {
+      return 0;
+    }
 
-    // Initialize focus graphics for keyboard navigation
+    return evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades).length;
+  }
+
+  private initializeOverlayGraphics(): void {
     this.focusGraphics = this.add.graphics();
     this.focusGraphics.setDepth(10);
 
-    // Initialize hover graphics for mouse interaction
     this.hoverGraphics = this.add.graphics();
     this.hoverGraphics.setDepth(9);
+  }
 
-    if (!this.isFinalMissionComplete) {
-      this.createUpgradeButtons(intermissionLayout);
-      this.interactionController = new PlanetIntermissionInteractionController({
-        scene: this,
-        buttons: this.buttons,
-        focusGraphics: this.focusGraphics,
-        hoverGraphics: this.hoverGraphics,
-        evaluateButton: (button) => this.getButtonEvaluation(button),
-        tryBuyUpgrade: (upgradeKey) => this.tryBuyUpgrade(upgradeKey),
-        continueToNextLevel: () => this.continueToNextLevel(),
-      });
-      this.interactionController.initialize();
+  private initializeUpgradeFlow(intermissionLayout: IntermissionLayoutMetrics): void {
+    if (this.isFinalMissionComplete) {
+      return;
     }
 
+    this.createUpgradeButtons(intermissionLayout);
+    this.interactionController = this.createInteractionController();
+    this.interactionController.initialize();
+  }
+
+  private createInteractionController(): PlanetIntermissionInteractionController {
+    return new PlanetIntermissionInteractionController({
+      scene: this,
+      buttons: this.buttons,
+      focusGraphics: this.focusGraphics,
+      hoverGraphics: this.hoverGraphics,
+      evaluateButton: (button) => this.getButtonEvaluation(button),
+      tryBuyUpgrade: (upgradeKey) => this.tryBuyUpgrade(upgradeKey),
+      continueToNextLevel: () => this.continueToNextLevel(),
+    });
+  }
+
+  private initializeWarpTransition(): void {
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
+  }
 
-    const nextLevelLabel = this.isFinalMissionComplete
-      ? null
-      : getLevelConfig(this.state.level + 1).name;
+  private createContinuePrompt(intermissionLayout: IntermissionLayoutMetrics): void {
+    createIntermissionPrompt(this, intermissionLayout, this.getContinueLabel());
+  }
 
-    const continueLabel = this.isFinalMissionComplete
-      ? 'CAMPAIGN COMPLETE - Click, Tap, or Press Any Key'
-      : `NEXT: ${nextLevelLabel} - Click, Tap, or Press a Key`;
+  private getContinueLabel(): string {
+    if (this.isFinalMissionComplete) {
+      return 'CAMPAIGN COMPLETE - Click, Tap, or Press Any Key';
+    }
 
-    createIntermissionPrompt(this, intermissionLayout, continueLabel);
+    const nextLevelLabel = getLevelConfig(this.state.level + 1).name;
+    return `NEXT: ${nextLevelLabel} - Click, Tap, or Press a Key`;
+  }
 
+  private bindContinueInputs(): void {
     if (this.isFinalMissionComplete) {
       bindProceedOnInput(this, () => this.continueToNextLevel());
-    } else {
-      this.pointerdownHandler = (pointer: Phaser.Input.Pointer) => {
-        if (this.transitioning) {
-          return;
-        }
-
-        if (this.handleUpgradeClick(pointer)) {
-          return;
-        }
-
-        this.continueToNextLevel();
-      };
-
-      this.input.on('pointerdown', this.pointerdownHandler);
-      bindProceedOnInput(this, () => this.continueToNextLevel(), {
-        includePointer: false,
-        shouldProceedKey: (event) => this.shouldProceedFromKeyboard(event),
-      });
+      return;
     }
+
+    this.pointerdownHandler = this.createPointerDownHandler();
+    this.input.on('pointerdown', this.pointerdownHandler);
+    bindProceedOnInput(this, () => this.continueToNextLevel(), {
+      includePointer: false,
+      shouldProceedKey: (event) => this.shouldProceedFromKeyboard(event),
+    });
+  }
+
+  private createPointerDownHandler(): (pointer: Phaser.Input.Pointer) => void {
+    return (pointer: Phaser.Input.Pointer) => {
+      if (this.transitioning) {
+        return;
+      }
+
+      if (this.handleUpgradeClick(pointer)) {
+        return;
+      }
+
+      this.continueToNextLevel();
+    };
   }
 
   private handleSceneShutdown(): void {
@@ -222,17 +272,21 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
     this.scoreText.setText(`CREDITS: ${this.state.score}`);
     this.refreshButtons();
-
-    // After purchase, if the focused button is no longer purchasable, move focus
-    const buttonIndex = this.buttons.findIndex((b) => b.upgradeKey === upgradeKey);
-    if (this.interactionController?.isFocusedButton(buttonIndex)) {
-      const newEval = this.getButtonEvaluation(button);
-      if (!newEval.canPurchase) {
-        this.interactionController.moveFocusAfterPurchase();
-      }
-    }
+    this.handlePostPurchaseFocus(button, upgradeKey);
 
     return true;
+  }
+
+  private handlePostPurchaseFocus(button: UpgradeButton, upgradeKey: UpgradeKey): void {
+    const buttonIndex = this.buttons.findIndex((entry) => entry.upgradeKey === upgradeKey);
+    if (!this.interactionController?.isFocusedButton(buttonIndex)) {
+      return;
+    }
+
+    const newEval = this.getButtonEvaluation(button);
+    if (!newEval.canPurchase) {
+      this.interactionController.moveFocusAfterPurchase();
+    }
   }
 
   private refreshButtons(): void {
@@ -258,22 +312,44 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     }
 
     this.transitioning = true;
+    this.beginSceneTransition();
+  }
+
+  private beginSceneTransition(): void {
     audioManager.playClick();
-    if (this.pointerdownHandler) {
-      this.input.off('pointerdown', this.pointerdownHandler);
-      this.pointerdownHandler = undefined;
-    }
+    this.unbindPointerDownHandler();
 
     if (this.isFinalMissionComplete) {
-      const runSummary = getRunSummary(this.registry);
-      setRunSummary(this.registry, { finalScore: runSummary.finalScore, levelReached: this.state.level });
-      startRegisteredScene(this, 'Victory');
-    } else {
-      this.warpTransition.play(() => {
-        advanceToNextLevel(this.registry);
-        startRegisteredScene(this, 'Game');
-      });
+      this.transitionToVictory();
+      return;
     }
+
+    this.transitionToNextGameLevel();
+  }
+
+  private unbindPointerDownHandler(): void {
+    if (!this.pointerdownHandler) {
+      return;
+    }
+
+    this.input.off('pointerdown', this.pointerdownHandler);
+    this.pointerdownHandler = undefined;
+  }
+
+  private transitionToVictory(): void {
+    const runSummary = getRunSummary(this.registry);
+    setRunSummary(this.registry, {
+      finalScore: runSummary.finalScore,
+      levelReached: this.state.level,
+    });
+    startRegisteredScene(this, 'Victory');
+  }
+
+  private transitionToNextGameLevel(): void {
+    this.warpTransition.play(() => {
+      advanceToNextLevel(this.registry);
+      startRegisteredScene(this, 'Game');
+    });
   }
 
   private shouldProceedFromKeyboard(event: KeyboardEvent): boolean {

@@ -61,35 +61,15 @@ export class GameSceneFlowController {
   }
 
   reset(remainingLives: number): void {
-    this.clearGameOverTransitionTimers();
-    this.clearPendingLevelCompleteTransition();
-    this.clearPendingRespawn();
-
-    this.gameOver = false;
-    this.gameOverSceneStarted = false;
-    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
-    this.levelCompleteQueued = false;
-    this.remainingLives = remainingLives;
-    this.respawnInProgress = false;
-    this.respawnScenePaused = false;
-    this.respawnFrameProbe.abort();
+    this.clearPendingTransitions();
+    this.resetFlowState(remainingLives);
   }
 
   shutdown(collisionManager: CollisionManager): void {
-    this.clearGameOverTransitionTimers();
-    this.clearPendingLevelCompleteTransition();
-    this.clearPendingRespawn();
+    this.clearPendingTransitions();
     collisionManager.setRespawnInProgress(false);
     collisionManager.setTerminalTransitionActive(false);
-
-    this.gameOver = false;
-    this.gameOverSceneStarted = false;
-    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
-    this.levelCompleteQueued = false;
-    this.remainingLives = 0;
-    this.respawnInProgress = false;
-    this.respawnScenePaused = false;
-    this.respawnFrameProbe.abort();
+    this.resetFlowState(0);
   }
 
   getRemainingLives(): number {
@@ -128,11 +108,7 @@ export class GameSceneFlowController {
 
     this.gameOver = true;
     this.scheduleGameOverTransition(context);
-
-    context.runBestEffort(() => audioManager.stopMusic());
-    context.runBestEffort(() => saveRemainingLives(context.registry, 0));
-    context.runBestEffort(() => saveScoreToState(context.registry, finalScore));
-    context.runBestEffort(() => setRunSummary(context.registry, { finalScore, levelReached: level }));
+    this.persistGameOverState(context, finalScore, level);
   }
 
   handlePlayerFatalHit(scene: Phaser.Scene): void {
@@ -205,12 +181,7 @@ export class GameSceneFlowController {
   }
 
   private flushQueuedLevelCompleteTransition(context: GameSceneFlowContext): void {
-    if (
-      !this.levelCompleteQueued ||
-      this.respawnInProgress ||
-      !context.player.isAlive ||
-      this.terminalTransitionState !== TERMINAL_TRANSITIONS.none
-    ) {
+    if (!this.canFlushLevelCompleteTransition(context)) {
       return;
     }
 
@@ -221,10 +192,7 @@ export class GameSceneFlowController {
       return;
     }
 
-    saveScoreToState(context.registry, context.scoreManager.getScore());
-    saveCurrentHp(context.registry, context.player.hp);
-    saveRemainingLives(context.registry, this.remainingLives);
-    setRunSummary(context.registry, { finalScore: context.scoreManager.getScore() });
+    this.persistLevelCompleteState(context);
     context.warpTransition.play(() => {
       context.startScene('PlanetIntermission');
     });
@@ -254,6 +222,51 @@ export class GameSceneFlowController {
       this.pendingRespawnFreeze = null;
     }
 
+  }
+
+  private clearPendingTransitions(): void {
+    this.clearGameOverTransitionTimers();
+    this.clearPendingLevelCompleteTransition();
+    this.clearPendingRespawn();
+  }
+
+  private resetFlowState(remainingLives: number): void {
+    this.gameOver = false;
+    this.gameOverSceneStarted = false;
+    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
+    this.levelCompleteQueued = false;
+    this.remainingLives = remainingLives;
+    this.respawnInProgress = false;
+    this.respawnScenePaused = false;
+    this.respawnFrameProbe.abort();
+  }
+
+  private persistGameOverState(
+    context: GameSceneFlowContext,
+    finalScore: number,
+    level: number
+  ): void {
+    context.runBestEffort(() => audioManager.stopMusic());
+    context.runBestEffort(() => saveRemainingLives(context.registry, 0));
+    context.runBestEffort(() => saveScoreToState(context.registry, finalScore));
+    context.runBestEffort(() => setRunSummary(context.registry, { finalScore, levelReached: level }));
+  }
+
+  private canFlushLevelCompleteTransition(context: GameSceneFlowContext): boolean {
+    return (
+      this.levelCompleteQueued &&
+      !this.respawnInProgress &&
+      context.player.isAlive &&
+      this.terminalTransitionState === TERMINAL_TRANSITIONS.none
+    );
+  }
+
+  private persistLevelCompleteState(context: GameSceneFlowContext): void {
+    const finalScore = context.scoreManager.getScore();
+    saveScoreToState(context.registry, finalScore);
+    saveCurrentHp(context.registry, context.player.hp);
+    saveRemainingLives(context.registry, this.remainingLives);
+    setRunSummary(context.registry, { finalScore });
   }
 
   private beginRespawnTransition(context: GameSceneFlowContext): void {
@@ -299,22 +312,35 @@ export class GameSceneFlowController {
     this.resumeSceneAfterRespawnPause(context);
 
     if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none || context.player.isAlive) {
-      this.respawnInProgress = false;
-      context.collisionManager.setRespawnInProgress(false);
-      this.respawnFrameProbe.finish('cancelled', context.scene.time.now);
+      this.cancelRespawnTransition(context);
       return;
     }
 
+    this.respawnPlayer(context);
+    this.finishRespawnTransition(context, 'respawned');
+    this.flushQueuedLevelCompleteTransition(context);
+  }
+
+  private cancelRespawnTransition(context: GameSceneFlowContext): void {
+    this.finishRespawnTransition(context, 'cancelled');
+  }
+
+  private respawnPlayer(context: GameSceneFlowContext): void {
     context.collisionManager.clearPlayerHazards();
     const respawnPosition = context.getPlayerRespawnPosition();
     context.player.spawn(respawnPosition.x, respawnPosition.y, {
       hp: context.player.maxHp,
       invulnerabilityDuration: PLAYER_RESPAWN_INVULNERABILITY_MS,
     });
+  }
+
+  private finishRespawnTransition(
+    context: GameSceneFlowContext,
+    outcome: 'cancelled' | 'respawned'
+  ): void {
     this.respawnInProgress = false;
     context.collisionManager.setRespawnInProgress(false);
-    this.respawnFrameProbe.finish('respawned', context.scene.time.now);
-    this.flushQueuedLevelCompleteTransition(context);
+    this.respawnFrameProbe.finish(outcome, context.scene.time.now);
   }
 
   private beginTerminalTransition(

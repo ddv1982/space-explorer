@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { BossAttackStyle } from '../../../config/LevelsConfig';
+import type { BossAttackStyle } from '@/config/LevelsConfig';
 
 interface BossMovementInput {
   attackStyle: BossAttackStyle;

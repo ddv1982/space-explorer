@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { EnemyPool } from './EnemyPool';
-import { Asteroid } from '../entities/Asteroid';
+
 import {
   type EnemySpawnConfig,
   type EnemyType,
@@ -8,11 +7,14 @@ import {
   type LevelSectionConfig,
   type ScriptedHazardConfig,
   getActiveSection,
-  getSectionProgress,
   getLevelConfig,
-} from '../config/LevelsConfig';
+  getSectionProgress,
+} from '@/config/LevelsConfig';
+import { Asteroid } from '@/entities/Asteroid';
+import { getViewportBounds } from '@/utils/layout';
+
+import type { EnemyPool } from './EnemyPool';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
-import { getViewportBounds } from '../utils/layout';
 import { resolveSectionSpawnRateScale } from './sectionIdentity';
 import { WaveAsteroidSpawner } from './wave/WaveAsteroidSpawner';
 import {
@@ -28,6 +30,11 @@ interface SpawnEntry {
   type: EnemyType;
   cumulativeWeight: number;
 }
+
+type EncounterSectionState = {
+  activeSection: LevelSectionConfig | null;
+  rateMultiplier: number;
+};
 
 export class WaveManager {
   private scene!: Phaser.Scene;
@@ -97,37 +104,62 @@ export class WaveManager {
 
   setLevelConfig(levelNumber: number): void {
     this.levelConfig = getLevelConfig(levelNumber);
-    this.lastEncounterSpawn = 0;
-    this.lastAsteroidSpawn = 0;
-    this.activeSection = null;
-    this.hazardPressure = 0;
-    this.hazardLastTriggered.clear();
+    this.resetLevelState();
+    this.resetHazardState();
     this.asteroidSpawner.resetCorridorGapCenter();
-    this.buildSpawnTable(this.levelConfig.enemies);
+    this.setEnemySpawnFocus(this.levelConfig.enemies);
   }
 
   update(time: number, delta: number, progress: number): void {
-    if (!this.levelConfig) return;
+    if (!this.levelConfig) {
+      return;
+    }
 
+    const sectionState = this.resolveEncounterSectionState(progress, time);
+    this.decayHazardPressure(delta);
+    this.spawnSectionHazards(time, sectionState.activeSection);
+    this.spawnEnemiesByConfig(time, sectionState.rateMultiplier, sectionState.activeSection);
+    this.updateAsteroids(time, sectionState.activeSection);
+  }
+
+  getAsteroidGroup(): Phaser.Physics.Arcade.Group {
+    return this.asteroidGroup;
+  }
+
+  private resetLevelState(): void {
+    this.lastEncounterSpawn = 0;
+    this.lastAsteroidSpawn = 0;
+    this.activeSection = null;
+  }
+
+  private resetHazardState(): void {
+    this.hazardPressure = 0;
+    this.hazardLastTriggered.clear();
+  }
+
+  private setEnemySpawnFocus(enemyEntries: EnemySpawnConfig[]): void {
+    this.buildSpawnTable(enemyEntries);
+  }
+
+  private resolveEncounterSectionState(progress: number, time: number): EncounterSectionState {
     const activeSection = getActiveSection(this.levelConfig, progress);
     const sectionProgress = activeSection ? getSectionProgress(activeSection, progress) : 0;
+
     this.setActiveSection(activeSection, time);
-    this.decayHazardPressure(delta);
 
-    const rateMultiplier = this.getEncounterRateMultiplier(progress, activeSection, sectionProgress);
+    return {
+      activeSection,
+      rateMultiplier: this.getEncounterRateMultiplier(progress, activeSection, sectionProgress),
+    };
+  }
 
-    this.spawnSectionHazards(time, activeSection);
-    this.spawnEnemiesByConfig(time, rateMultiplier, activeSection);
+  private updateAsteroids(time: number, activeSection: LevelSectionConfig | null): void {
     this.lastAsteroidSpawn = this.asteroidSpawner.spawnAsteroids(
       time,
       activeSection,
       this.levelConfig,
       this.lastAsteroidSpawn
     );
-  }
-
-  getAsteroidGroup(): Phaser.Physics.Arcade.Group {
-    return this.asteroidGroup;
   }
 
   private setActiveSection(section: LevelSectionConfig | null, time: number): void {
@@ -137,9 +169,8 @@ export class WaveManager {
 
     this.activeSection = section;
     this.activeSectionStartedAt = time;
-    this.hazardPressure = 0;
-    this.hazardLastTriggered.clear();
-    this.buildSpawnTable(section?.enemyFocus ?? this.levelConfig.enemies);
+    this.resetHazardState();
+    this.setEnemySpawnFocus(section?.enemyFocus ?? this.levelConfig.enemies);
   }
 
   private emitSpawnWarning(x: number): void {
@@ -231,25 +262,36 @@ export class WaveManager {
     return this.enemySpawnHandlers[type](anchorX);
   }
 
+  private shouldSpawnEncounter(time: number, rateMultiplier: number): boolean {
+    const encounterInterval = (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardPressure);
+    if (time <= this.lastEncounterSpawn + encounterInterval) {
+      return false;
+    }
+
+    this.lastEncounterSpawn = time;
+    return true;
+  }
+
+  private getEncounterCount(activeSection: LevelSectionConfig | null): number {
+    const encounterSize = activeSection?.encounterSizeOverride ?? this.levelConfig.encounterSize;
+    const pressureScale = getEncounterCountPressureScale(this.hazardPressure);
+    const minCount = Math.max(1, Math.round(encounterSize.min * pressureScale));
+    const maxCount = Math.max(minCount, Math.round(encounterSize.max * pressureScale));
+
+    return Phaser.Math.Between(minCount, maxCount);
+  }
+
   private spawnEnemiesByConfig(
     time: number,
     rateMultiplier: number,
     activeSection: LevelSectionConfig | null
   ): void {
-    const encounterInterval = (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardPressure);
-    if (time <= this.lastEncounterSpawn + encounterInterval) {
+    if (!this.shouldSpawnEncounter(time, rateMultiplier)) {
       return;
     }
 
-    this.lastEncounterSpawn = time;
-
-    const encounterSize = activeSection?.encounterSizeOverride ?? this.levelConfig.encounterSize;
     const anchorX = this.getEncounterRandomX(120);
-    const pressureScale = getEncounterCountPressureScale(this.hazardPressure);
-    const minCount = Math.max(1, Math.round(encounterSize.min * pressureScale));
-    const maxCount = Math.max(minCount, Math.round(encounterSize.max * pressureScale));
-    const encounterCount = Phaser.Math.Between(minCount, maxCount);
-
+    const encounterCount = this.getEncounterCount(activeSection);
     this.spawnEncounterBatch(anchorX, encounterCount, () => this.pickEnemyType());
   }
 
@@ -261,30 +303,50 @@ export class WaveManager {
     for (let index = 0; index < activeSection.hazardEvents.length; index++) {
       const hazard = activeSection.hazardEvents[index];
       const key = `${activeSection.id}:${hazard.type}:${index}`;
-      const cadence = hazard.cadenceMs ?? 2000;
-      const lastTriggered = this.hazardLastTriggered.get(key) ?? this.activeSectionStartedAt;
-      const sectionElapsedMs = Math.max(0, time - this.activeSectionStartedAt);
 
-      if (!isHazardWithinDuration(hazard, sectionElapsedMs)) {
+      if (!this.shouldTriggerHazard(time, hazard, key)) {
         continue;
       }
 
-      if (time <= lastTriggered + cadence) {
-        continue;
-      }
-
-      if (!canTriggerHazard(this.hazardPressure, hazard)) {
-        continue;
-      }
-
-      this.hazardLastTriggered.set(key, time);
+      this.recordHazardTrigger(key, time);
       this.triggerHazardEvent(hazard);
-      this.hazardPressure = consumeHazardPressure(this.hazardPressure, hazard);
+      this.consumeHazardPressure(hazard);
     }
+  }
+
+  private shouldTriggerHazard(time: number, hazard: ScriptedHazardConfig, key: string): boolean {
+    const cadence = hazard.cadenceMs ?? 2000;
+    const lastTriggered = this.hazardLastTriggered.get(key) ?? this.activeSectionStartedAt;
+    const sectionElapsedMs = Math.max(0, time - this.activeSectionStartedAt);
+
+    if (!isHazardWithinDuration(hazard, sectionElapsedMs)) {
+      return false;
+    }
+
+    if (time <= lastTriggered + cadence) {
+      return false;
+    }
+
+    return canTriggerHazard(this.hazardPressure, hazard);
+  }
+
+  private recordHazardTrigger(key: string, time: number): void {
+    this.hazardLastTriggered.set(key, time);
+  }
+
+  private consumeHazardPressure(hazard: ScriptedHazardConfig): void {
+    this.hazardPressure = consumeHazardPressure(this.hazardPressure, hazard);
   }
 
   private decayHazardPressure(delta: number): void {
     this.hazardPressure = decayHazardPressure(this.hazardPressure, delta);
+  }
+
+  private spawnMirroredHazardAsteroids(minSpeed: number, maxSpeed: number): void {
+    this.asteroidSpawner.spawnMirroredAsteroids(
+      Phaser.Math.Between(minSpeed, maxSpeed),
+      Phaser.Math.Between(minSpeed, maxSpeed)
+    );
   }
 
   private triggerHazardEvent(hazard: ScriptedHazardConfig): void {
@@ -297,10 +359,7 @@ export class WaveManager {
         this.asteroidSpawner.spawnAsteroidBurst(2, 40, 70, 80);
         return;
       case 'ring-crossfire':
-        this.asteroidSpawner.spawnMirroredAsteroids(
-          Phaser.Math.Between(90, 150),
-          Phaser.Math.Between(90, 150)
-        );
+        this.spawnMirroredHazardAsteroids(90, 150);
         return;
       case 'rock-corridor':
         this.asteroidSpawner.spawnEdgeAsteroids(hazard);
@@ -312,10 +371,7 @@ export class WaveManager {
         this.spawnHazardEncounter(['fighter', 'bomber', 'swarm'], hazard.intensity ?? 0.6);
         return;
       case 'gravity-well':
-        this.asteroidSpawner.spawnMirroredAsteroids(
-          Phaser.Math.Between(110, 160),
-          Phaser.Math.Between(110, 160)
-        );
+        this.spawnMirroredHazardAsteroids(110, 160);
         this.spawnHazardEncounter(['fighter', 'gunship'], hazard.intensity ?? 0.75);
         return;
     }

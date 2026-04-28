@@ -31,6 +31,25 @@ export class CollisionManager {
     enemyPool: EnemyPool,
     asteroidGroup: Phaser.Physics.Arcade.Group
   ): void {
+    this.assignSetupContext(scene, player, enemyPool, asteroidGroup);
+
+    const bulletGroup = bulletPool.getGroup();
+    const enemyGroups = enemyPool.getEnemyGroupRegistry();
+
+    this.registerBulletEnemyOverlaps(bulletGroup, enemyGroups);
+    this.registerBulletAsteroidOverlap(bulletGroup, asteroidGroup);
+    this.registerEnemyBulletPlayerOverlap(enemyPool.getEnemyBulletGroup(), player);
+    this.registerBombPlayerOverlap(enemyPool.getBombGroup(), player);
+    this.registerEnemyPlayerOverlaps(enemyGroups);
+    this.registerAsteroidPlayerOverlap(asteroidGroup, player);
+  }
+
+  private assignSetupContext(
+    scene: Phaser.Scene,
+    player: Player,
+    enemyPool: EnemyPool,
+    asteroidGroup: Phaser.Physics.Arcade.Group
+  ): void {
     this.scene = scene;
     this.player = player;
     this.enemyPool = enemyPool;
@@ -38,67 +57,47 @@ export class CollisionManager {
     this.terminalTransitionActive = false;
     this.respawnInProgress = false;
     this.lastPlayerHitFeedbackTime = Number.NEGATIVE_INFINITY;
+  }
 
-    const bulletGroup = bulletPool.getGroup();
-    const enemyGroups = enemyPool.getEnemyGroupRegistry();
-
+  private registerBulletEnemyOverlaps(
+    bulletGroup: Phaser.Physics.Arcade.Group,
+    enemyGroups: ReturnType<EnemyPool['getEnemyGroupRegistry']>
+  ): void {
     enemyGroups.forEach(({ group }) => {
-      scene.physics.add.overlap(
-        bulletGroup, group,
-        (_obj1, _obj2) => this.bulletVsEnemy(_obj1, _obj2)
-      );
+      this.registerOverlap(bulletGroup, group, (_obj1, _obj2) => this.bulletVsEnemy(_obj1, _obj2));
     });
+  }
 
-    // Bullets vs Asteroids
-    scene.physics.add.overlap(
-      bulletGroup, asteroidGroup,
-      (_obj1, _obj2) => {
-        const bullet = this.resolveCollisionTarget(Bullet, _obj1, _obj2);
-        const asteroid = this.resolveCollisionTarget(Asteroid, _obj1, _obj2);
-        if (bullet?.active && asteroid?.active) {
-          bullet.kill();
-          asteroid.takeDamage(this.bulletDamage);
-          this.effectsManager.createSparkBurst(asteroid.x, asteroid.y);
-          if (!asteroid.active) {
-            this.effectsManager.createAsteroidDebris(asteroid.x, asteroid.y);
-          }
-        }
-      }
-    );
+  private registerBulletAsteroidOverlap(
+    bulletGroup: Phaser.Physics.Arcade.Group,
+    asteroidGroup: Phaser.Physics.Arcade.Group
+  ): void {
+    this.registerOverlap(bulletGroup, asteroidGroup, (_obj1, _obj2) => {
+      this.handleBulletAsteroidOverlap(_obj1, _obj2);
+    });
+  }
 
-    // Enemy bullets vs Player
-    scene.physics.add.overlap(
-      enemyPool.getEnemyBulletGroup(), player,
-      (_obj1, _obj2) => {
-        const eBullet = this.resolveCollisionTarget(EnemyBullet, _obj1, _obj2);
-        if (eBullet?.active && this.canProcessPlayerCollision()) {
-          this.processAcceptedPlayerDamage({
-            amount: 1,
-            beforeDamage: () => eBullet.kill(),
-          });
-        }
-      }
-    );
+  private registerEnemyBulletPlayerOverlap(
+    enemyBulletGroup: Phaser.Physics.Arcade.Group,
+    player: Player
+  ): void {
+    this.registerOverlap(enemyBulletGroup, player, (_obj1, _obj2) => {
+      this.handleEnemyBulletPlayerOverlap(_obj1, _obj2);
+    });
+  }
 
-    // Bombs vs Player
-    scene.physics.add.overlap(
-      enemyPool.getBombGroup(), player,
-      (_obj1, _obj2) => {
-        const bomb = this.resolveCollisionTarget(BomberBomb, _obj1, _obj2);
-        if (bomb?.active && this.canProcessPlayerCollision()) {
-          const impactX = bomb.x;
-          const impactY = bomb.y;
+  private registerBombPlayerOverlap(
+    bombGroup: Phaser.Physics.Arcade.Group,
+    player: Player
+  ): void {
+    this.registerOverlap(bombGroup, player, (_obj1, _obj2) => {
+      this.handleBombPlayerOverlap(_obj1, _obj2);
+    });
+  }
 
-          this.processAcceptedPlayerDamage({
-            amount: 2,
-            beforeDamage: () => bomb.kill(),
-            afterDamage: () => this.effectsManager.createExplosion(impactX, impactY, 1.5),
-          });
-        }
-      }
-    );
-
-    // All enemy types vs Player (contact damage)
+  private registerEnemyPlayerOverlaps(
+    enemyGroups: ReturnType<EnemyPool['getEnemyGroupRegistry']>
+  ): void {
     enemyGroups.forEach(({ group, playerCollisionBehavior }) => {
       if (playerCollisionBehavior === 'none') {
         return;
@@ -106,44 +105,32 @@ export class CollisionManager {
 
       this.setupEnemyPlayerCollision(group, playerCollisionBehavior);
     });
+  }
 
-    // Asteroids vs Player
-    scene.physics.add.overlap(
-      asteroidGroup, player,
-      (_obj1, _obj2) => {
-        const asteroid = this.resolveCollisionTarget(Asteroid, _obj1, _obj2);
-        if (asteroid?.active && this.canProcessPlayerCollision()) {
-          this.processAcceptedPlayerDamage({
-            amount: asteroid.getCollisionDamage(),
-            afterDamage: () => asteroid.onPlayerCollision(),
-          });
-        }
-      }
-    );
+  private registerAsteroidPlayerOverlap(
+    asteroidGroup: Phaser.Physics.Arcade.Group,
+    player: Player
+  ): void {
+    this.registerOverlap(asteroidGroup, player, (_obj1, _obj2) => {
+      this.handleAsteroidPlayerOverlap(_obj1, _obj2);
+    });
+  }
+
+  private registerOverlap(
+    a: unknown,
+    b: unknown,
+    callback: (obj1: unknown, obj2: unknown) => void
+  ): void {
+    this.scene.physics.add.overlap(a as never, b as never, callback);
   }
 
   private setupEnemyPlayerCollision(
     group: Phaser.Physics.Arcade.Group,
     playerCollisionBehavior: 'kamikaze' | 'impact'
   ): void {
-    this.scene.physics.add.overlap(
-      group, this.player,
-      (_obj1, _obj2) => {
-        const enemy = this.resolveCollisionTarget(EnemyBase, _obj1, _obj2);
-        if (enemy?.active && this.canProcessPlayerCollision()) {
-          this.processAcceptedPlayerDamage({
-            amount: 1,
-            afterDamage: () => {
-              if (playerCollisionBehavior === 'kamikaze') {
-                enemy.die();
-              } else {
-                enemy.takeDamage(1);
-              }
-            },
-          });
-        }
-      }
-    );
+    this.registerOverlap(group, this.player, (_obj1, _obj2) => {
+      this.handleEnemyPlayerCollision(_obj1, _obj2, playerCollisionBehavior);
+    });
   }
 
   setEffectsManager(effectsManager: EffectsManager): void {
@@ -177,6 +164,89 @@ export class CollisionManager {
       enemy.takeDamage(this.bulletDamage);
       this.onEnemyHit(enemy);
     }
+  }
+
+  private handleBulletAsteroidOverlap(...values: unknown[]): void {
+    const bullet = this.resolveCollisionTarget(Bullet, ...values);
+    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    if (!(bullet?.active && asteroid?.active)) {
+      return;
+    }
+
+    bullet.kill();
+    asteroid.takeDamage(this.bulletDamage);
+    this.effectsManager.createSparkBurst(asteroid.x, asteroid.y);
+    if (!asteroid.active) {
+      this.effectsManager.createAsteroidDebris(asteroid.x, asteroid.y);
+    }
+  }
+
+  private handleEnemyBulletPlayerOverlap(...values: unknown[]): void {
+    const enemyBullet = this.resolveCollisionTarget(EnemyBullet, ...values);
+    if (!(enemyBullet?.active && this.canProcessPlayerCollision())) {
+      return;
+    }
+
+    this.processAcceptedPlayerDamage({
+      amount: 1,
+      beforeDamage: () => enemyBullet.kill(),
+    });
+  }
+
+  private handleBombPlayerOverlap(...values: unknown[]): void {
+    const bomb = this.resolveCollisionTarget(BomberBomb, ...values);
+    if (!(bomb?.active && this.canProcessPlayerCollision())) {
+      return;
+    }
+
+    const impactX = bomb.x;
+    const impactY = bomb.y;
+
+    this.processAcceptedPlayerDamage({
+      amount: 2,
+      beforeDamage: () => bomb.kill(),
+      afterDamage: () => this.effectsManager.createExplosion(impactX, impactY, 1.5),
+    });
+  }
+
+  private handleEnemyPlayerCollision(
+    obj1: unknown,
+    obj2: unknown,
+    playerCollisionBehavior: 'kamikaze' | 'impact'
+  ): void {
+    const enemy = this.resolveCollisionTarget(EnemyBase, obj1, obj2);
+    if (!(enemy?.active && this.canProcessPlayerCollision())) {
+      return;
+    }
+
+    this.processAcceptedPlayerDamage({
+      amount: 1,
+      afterDamage: () => this.applyEnemyContactOutcome(enemy, playerCollisionBehavior),
+    });
+  }
+
+  private applyEnemyContactOutcome(
+    enemy: EnemyBase,
+    playerCollisionBehavior: 'kamikaze' | 'impact'
+  ): void {
+    if (playerCollisionBehavior === 'kamikaze') {
+      enemy.die();
+      return;
+    }
+
+    enemy.takeDamage(1);
+  }
+
+  private handleAsteroidPlayerOverlap(...values: unknown[]): void {
+    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    if (!(asteroid?.active && this.canProcessPlayerCollision())) {
+      return;
+    }
+
+    this.processAcceptedPlayerDamage({
+      amount: asteroid.getCollisionDamage(),
+      afterDamage: () => asteroid.onPlayerCollision(),
+    });
   }
 
   private onEnemyHit(enemy: EnemyBase): void {

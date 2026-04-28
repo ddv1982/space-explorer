@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { centerHorizontally, getViewportLayout } from '../../../utils/layout';
+import { centerHorizontally, getViewportLayout } from '@/utils/layout';
 import { drawNeonDivider, drawNeonFrame, NEON } from '../../shared/neonUiTheme';
 import type { PauseOverlayLayout, PauseOverlayMessage, PauseOverlayState } from './types';
 

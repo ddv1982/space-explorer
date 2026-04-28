@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { SaveSlotId, SaveSlotViewModel } from '../../../systems/SaveSlotStorage';
+import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { createActionButtonControl, type ActionButtonControl } from '../../shared/actionButtonControl';
 import { setSingleLineTextWithEllipsis } from '../../shared/textFit';
 import {

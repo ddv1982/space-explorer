@@ -5,7 +5,7 @@ import type {
   ProceduralMusicLayerExpressionConfig,
   ProceduralMusicTrackExpressionConfig,
   ProceduralNoiseLayerExpressionConfig,
-} from '../../../config/LevelsConfig';
+} from '@/config/LevelsConfig';
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { BossAttackStyle, EnemyType } from '../../../config/LevelsConfig';
-import { ENEMY_BULLET_SPEED } from '../../../utils/constants';
+import type { BossAttackStyle, EnemyType } from '@/config/LevelsConfig';
+import { ENEMY_BULLET_SPEED } from '@/utils/constants';
 
 interface BossAttackContext {
   attackStyle: BossAttackStyle;

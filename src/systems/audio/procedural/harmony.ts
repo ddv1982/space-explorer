@@ -1,4 +1,4 @@
-import type { MusicHarmonicChordStepConfig, ProceduralMusicTrackConfig } from '../../../config/LevelsConfig';
+import type { MusicHarmonicChordStepConfig, ProceduralMusicTrackConfig } from '@/config/LevelsConfig';
 
 const MODE_DEGREE_OFFSETS: Record<string, readonly number[]> = {
   ionian: [0, 2, 4, 5, 7, 9, 11],

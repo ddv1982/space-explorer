@@ -44,44 +44,17 @@ export class LastLifeHelperWing {
   private depletedAnnounced = false;
 
   create(context: LastLifeHelperWingContext): void {
-    this.scene = context.scene;
-    this.player = context.player;
-    this.bulletPool = context.bulletPool;
-    this.enemyPool = context.enemyPool;
-    this.effectsManager = context.effectsManager;
-    this.runtimeConfig = resolveRuntimeConfig(context.config);
+    this.assignContext(context);
+    this.resetLifecycleState();
+    const persistedState = this.initializeSlotState(context);
 
-    this.activated = false;
-    this.depletedAnnounced = false;
-    this.destroyOverlaps();
-    this.helpers = [];
-
-    const persistedState = normalizePersistedState(context.persistentState);
-    const persistedSlots = persistedState.slots;
-    this.grantedSlots = persistedState.grantedSlots;
-
-    this.canAcquireInLevel = Boolean(
-      (context.config && context.config.shipCount > 0) || this.grantedSlots > 0
-    );
-    this.maxSlots = Math.max(this.canAcquireInLevel ? this.runtimeConfig.shipCount : 0, this.grantedSlots);
-
-    if (this.maxSlots <= 0) {
+    if (!this.hasHelperSlots()) {
       this.helperGroup = null;
       return;
     }
 
-    this.helperGroup = this.scene.physics.add.group({
-      maxSize: this.maxSlots,
-      classType: HelperShip,
-      runChildUpdate: false,
-    });
-
-    this.prewarmHelpers(this.maxSlots);
-    this.registerOverlaps();
-
-    if (persistedSlots.length > 0) {
-      this.restorePersistedWing(persistedSlots);
-    }
+    this.initializeHelperGroup();
+    this.restorePersistedHelpers(persistedState.slots);
   }
 
   updateLastLifeState(remainingLives: number): void {
@@ -99,11 +72,7 @@ export class LastLifeHelperWing {
 
     const liveHelpers = this.getLiveHelperCount();
     if (liveHelpers <= 0) {
-      this.activated = false;
-      if (!this.depletedAnnounced) {
-        this.depletedAnnounced = true;
-        this.scene.events.emit(GAME_SCENE_EVENTS.helperWingDepleted);
-      }
+      this.handleWingDepleted();
       return;
     }
 
@@ -167,6 +136,68 @@ export class LastLifeHelperWing {
     }
   }
 
+  private assignContext(context: LastLifeHelperWingContext): void {
+    this.scene = context.scene;
+    this.player = context.player;
+    this.bulletPool = context.bulletPool;
+    this.enemyPool = context.enemyPool;
+    this.effectsManager = context.effectsManager;
+    this.runtimeConfig = resolveRuntimeConfig(context.config);
+  }
+
+  private resetLifecycleState(): void {
+    this.activated = false;
+    this.depletedAnnounced = false;
+    this.destroyOverlaps();
+    this.helpers = [];
+  }
+
+  private initializeSlotState(
+    context: LastLifeHelperWingContext
+  ): PersistentHelperWingState {
+    const persistedState = normalizePersistedState(context.persistentState);
+    this.grantedSlots = persistedState.grantedSlots;
+    this.canAcquireInLevel = Boolean(
+      (context.config && context.config.shipCount > 0) || this.grantedSlots > 0
+    );
+    this.maxSlots = Math.max(this.canAcquireInLevel ? this.runtimeConfig.shipCount : 0, this.grantedSlots);
+
+    return persistedState;
+  }
+
+  private hasHelperSlots(): boolean {
+    return this.maxSlots > 0;
+  }
+
+  private initializeHelperGroup(): void {
+    this.helperGroup = this.scene.physics.add.group({
+      maxSize: this.maxSlots,
+      classType: HelperShip,
+      runChildUpdate: false,
+    });
+
+    this.prewarmHelpers(this.maxSlots);
+    this.registerOverlaps();
+  }
+
+  private restorePersistedHelpers(slots: PersistentHelperWingSlotState[]): void {
+    if (slots.length === 0) {
+      return;
+    }
+
+    this.restorePersistedWing(slots);
+  }
+
+  private handleWingDepleted(): void {
+    this.activated = false;
+    if (this.depletedAnnounced) {
+      return;
+    }
+
+    this.depletedAnnounced = true;
+    this.scene.events.emit(GAME_SCENE_EVENTS.helperWingDepleted);
+  }
+
   private prewarmHelpers(slotCount: number): void {
     if (!this.helperGroup) {
       return;
@@ -197,7 +228,10 @@ export class LastLifeHelperWing {
     this.configureHelperForSlot(helper, nextSlot);
     helper.deployNearPlayer(this.player, this.scene.time.now);
     this.grantedSlots += 1;
+    this.activateWing();
+  }
 
+  private activateWing(): void {
     this.activated = true;
     this.depletedAnnounced = false;
     this.scene.events.emit(GAME_SCENE_EVENTS.helperWingActivated, this.getLiveHelperCount());
@@ -270,32 +304,37 @@ export class LastLifeHelperWing {
       return;
     }
 
-    const enemyBulletCollider = this.scene.physics.add.overlap(
+    this.registerOverlap(
       this.enemyPool.getEnemyBulletGroup(),
-      this.helperGroup,
       (a, b) => this.handleEnemyBulletOverlap(a, b)
     );
-    this.overlapColliders.push(enemyBulletCollider);
-
-    const bombCollider = this.scene.physics.add.overlap(
+    this.registerOverlap(
       this.enemyPool.getBombGroup(),
-      this.helperGroup,
       (a, b) => this.handleBombOverlap(a, b)
     );
-    this.overlapColliders.push(bombCollider);
 
     for (const { key, group } of this.enemyPool.getEnemyGroupRegistry()) {
       if (key === 'boss') {
         continue;
       }
 
-      const enemyContactCollider = this.scene.physics.add.overlap(
+      this.registerOverlap(
         group,
-        this.helperGroup,
         (a, b) => this.handleEnemyContactOverlap(a, b)
       );
-      this.overlapColliders.push(enemyContactCollider);
     }
+  }
+
+  private registerOverlap(
+    group: Phaser.Physics.Arcade.Group,
+    callback: (a: unknown, b: unknown) => void
+  ): void {
+    if (!this.helperGroup) {
+      return;
+    }
+
+    const collider = this.scene.physics.add.overlap(group, this.helperGroup, callback);
+    this.overlapColliders.push(collider);
   }
 
   private destroyOverlaps(): void {

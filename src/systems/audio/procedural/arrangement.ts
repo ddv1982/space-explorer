@@ -3,7 +3,7 @@ import type {
   MusicArrangementLayerGainMultipliersConfig,
   MusicArrangementPhase,
   MusicArrangementSectionConfig,
-} from '../../../config/LevelsConfig';
+} from '@/config/LevelsConfig';
 
 interface MusicArrangementResolution {
   phase: MusicArrangementPhase;

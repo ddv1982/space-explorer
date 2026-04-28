@@ -47,28 +47,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   takeDamage(amount: number): PlayerDamageOutcome {
-    if (this.invulnerable || !this.isAlive || this.deathStarted) {
+    if (this.shouldIgnoreDamage()) {
       return 'ignored';
     }
 
-    if (this.shields > 0) {
-      this.shields--;
-      this.setInvulnerable(800);
-      this.flashShield();
+    if (this.absorbShieldHit()) {
       return 'absorbed';
     }
 
-    this.hp -= amount;
-
-    if (this.hp <= 0) {
-      this.hp = 0;
-      this.die();
-      return 'fatal';
-    }
-
-    this.setInvulnerable(1500);
-    this.flashWhite();
-    return 'damaged';
+    return this.applyHullDamage(amount);
   }
 
   playDeathAnimation(): void {
@@ -110,6 +97,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return Math.abs(this.rotation) < shotRotationDeadzone ? 0 : this.rotation;
   }
 
+  private shouldIgnoreDamage(): boolean {
+    return this.invulnerable || !this.isAlive || this.deathStarted;
+  }
+
+  private absorbShieldHit(): boolean {
+    if (this.shields <= 0) {
+      return false;
+    }
+
+    this.shields--;
+    this.setInvulnerable(800);
+    this.flashShield();
+    return true;
+  }
+
+  private applyHullDamage(amount: number): PlayerDamageOutcome {
+    this.hp -= amount;
+
+    if (this.hp <= 0) {
+      this.hp = 0;
+      this.die();
+      return 'fatal';
+    }
+
+    this.setInvulnerable(1500);
+    this.flashWhite();
+    return 'damaged';
+  }
+
   private setInvulnerable(duration: number): void {
     this.invulnerable = true;
     this.invulnerableTimer = duration;
@@ -142,34 +158,61 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnerableTimer = 0;
     this.isAlive = false;
     this.isMovingUp = false;
+    this.applyDeathVisualState();
+    this.disableBodyForDeath();
+
+    this.scene.events.emit(GAME_SCENE_EVENTS.playerDeath);
+  }
+
+  private applyDeathVisualState(): void {
     this.scene.tweens.killTweensOf(this);
     this.setAcceleration(0, 0);
     this.setAlpha(1);
     this.setScale(1);
     this.setAngle(0);
     this.setTint(0xff6644);
+  }
 
+  private disableBodyForDeath(): void {
     const body = this.body as Phaser.Physics.Arcade.Body | null;
-    if (body) {
-      body.stop();
-      body.enable = false;
+    if (!body) {
+      return;
     }
 
-    this.scene.events.emit(GAME_SCENE_EVENTS.playerDeath);
+    body.stop();
+    body.enable = false;
   }
 
   update(inputManager: InputManager): void {
     if (!this.isAlive) return;
     const delta = this.scene.game.loop.delta;
 
-    if (this.invulnerable) {
-      this.invulnerableTimer -= this.scene.game.loop.delta;
-      if (this.invulnerableTimer <= 0) {
-        this.invulnerable = false;
-        this.setAlpha(1);
-      }
+    this.updateInvulnerability(delta);
+
+    const movement = this.resolveMovementAcceleration(inputManager);
+    this.applyMovementAcceleration(movement.ax, movement.ay);
+    this.updateRotationFromMovement(movement.ax);
+    this.isMovingUp = movement.isMovingUp;
+    this.emitExhaustIfDue(delta, movement.ax, movement.ay);
+  }
+
+  private updateInvulnerability(delta: number): void {
+    if (!this.invulnerable) {
+      return;
     }
 
+    this.invulnerableTimer -= delta;
+    if (this.invulnerableTimer <= 0) {
+      this.invulnerable = false;
+      this.setAlpha(1);
+    }
+  }
+
+  private resolveMovementAcceleration(inputManager: InputManager): {
+    ax: number;
+    ay: number;
+    isMovingUp: boolean;
+  } {
     let ax = 0;
     let ay = 0;
 
@@ -178,24 +221,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (inputManager.isUp()) ay -= PLAYER_CONFIG.speed;
     if (inputManager.isDown()) ay += PLAYER_CONFIG.speed;
 
+    return {
+      ax,
+      ay,
+      isMovingUp: inputManager.isUp(),
+    };
+  }
+
+  private applyMovementAcceleration(ax: number, ay: number): void {
     this.setAcceleration(ax, ay);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.maxVelocity.set(PLAYER_CONFIG.speed);
+  }
 
+  private updateRotationFromMovement(ax: number): void {
     const targetRotation = (ax / PLAYER_CONFIG.speed) * Phaser.Math.DegToRad(15);
     this.rotation = Phaser.Math.Linear(this.rotation, targetRotation, 0.1);
+  }
 
-    this.isMovingUp = inputManager.isUp();
-
-    // Engine exhaust effect based on movement
+  private emitExhaustIfDue(delta: number, ax: number, ay: number): void {
     this.exhaustTimer -= delta;
-    if (this.exhaustTimer <= 0) {
-      const isMoving = ax !== 0 || ay !== 0;
-      const intensity = isMoving ? 1.0 : 0.3;
-      this.scene.events.emit(GAME_SCENE_EVENTS.playerExhaust, this.x, this.y + 20, intensity);
-      this.exhaustTimer = this.exhaustInterval;
+    if (this.exhaustTimer > 0) {
+      return;
     }
+
+    const isMoving = ax !== 0 || ay !== 0;
+    const intensity = isMoving ? 1.0 : 0.3;
+    this.scene.events.emit(GAME_SCENE_EVENTS.playerExhaust, this.x, this.y + 20, intensity);
+    this.exhaustTimer = this.exhaustInterval;
   }
 
   spawn(
@@ -204,7 +258,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     options: { hp?: number; invulnerabilityDuration?: number } = {}
   ): void {
     this.enableBody(true, x, y, true, true);
-    this.hp = options.hp ?? this.maxHp;
+    this.resetSpawnState(options.hp);
+    this.stopBodyMotion();
+    this.applySpawnInvulnerability(options.invulnerabilityDuration ?? 0);
+  }
+
+  private resetSpawnState(hp: number | undefined): void {
+    this.hp = hp ?? this.maxHp;
     this.isAlive = true;
     this.isMovingUp = false;
     this.deathStarted = false;
@@ -216,12 +276,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnerable = false;
     this.invulnerableTimer = 0;
     this.clearTint();
+  }
 
+  private stopBodyMotion(): void {
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     body?.stop();
+  }
 
-    if ((options.invulnerabilityDuration ?? 0) > 0) {
-      this.setInvulnerable(options.invulnerabilityDuration ?? 0);
+  private applySpawnInvulnerability(duration: number): void {
+    if (duration > 0) {
+      this.setInvulnerable(duration);
     }
   }
 

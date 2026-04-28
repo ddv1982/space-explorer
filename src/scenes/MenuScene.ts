@@ -40,42 +40,64 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    const menuConfig = getLevelConfig(1);
+    const layoutPlan = this.initializeMenuScene(menuConfig);
+    this.createMenuPanels(layoutPlan, menuConfig.accentColor);
+    this.refreshSaveSlots('');
+  }
+
+  private initializeMenuScene(menuConfig: ReturnType<typeof getLevelConfig>) {
     rebindSceneLifecycleHandlers(this, {
       onShutdown: this.handleSceneShutdown,
       context: this,
     });
 
     this.gameTransitionQueued = false;
-
-    const menuConfig = getLevelConfig(1);
-    const layoutPlan = createMenuLayoutPlan(this);
-
     this.cameras.main.setBackgroundColor(menuConfig.bgColor);
-
-    audioManager.init();
-    audioManager.startMusic(menuConfig.music.stage);
-    audioManager.setMusicIntensity(0.9);
-
-    this.parallax = new ParallaxBackground();
-    this.parallax.create(this, menuConfig);
+    this.initializeMenuAudio(menuConfig.music.stage);
+    this.initializeParallax(menuConfig);
     registerRestartOnResize(this);
 
-    createMenuBackdrop(this, layoutPlan, menuConfig.accentColor);
+    return createMenuLayoutPlan(this);
+  }
+
+  private initializeMenuAudio(stageMusicKey: ReturnType<typeof getLevelConfig>['music']['stage']): void {
+    audioManager.init();
+    audioManager.startMusic(stageMusicKey);
+    audioManager.setMusicIntensity(0.9);
+  }
+
+  private initializeParallax(menuConfig: ReturnType<typeof getLevelConfig>): void {
+    this.parallax = new ParallaxBackground();
+    this.parallax.create(this, menuConfig);
+  }
+
+  private createMenuPanels(
+    layoutPlan: ReturnType<typeof createMenuLayoutPlan>,
+    accentColor: number
+  ): void {
+    createMenuBackdrop(this, layoutPlan, accentColor);
     createMenuTitle(this, layoutPlan);
     this.saveSlotPanel = createSaveSlotEntryPanel(
       this,
       layoutPlan,
-      menuConfig.accentColor,
-      {
-        onNewRun: () => this.startNewRun(),
-        onLoadSlot: (slotId) => this.loadFromSlot(slotId),
-        onDeleteSlot: (slotId) => this.deleteSlot(slotId),
-      },
+      accentColor,
+      this.createSaveSlotPanelHandlers(),
       isSaveStorageAvailable(),
     );
-    this.musicSliders = createMusicLabPanel(this, layoutPlan, menuConfig.accentColor, () => this.musicSliders);
+    this.musicSliders = createMusicLabPanel(this, layoutPlan, accentColor, () => this.musicSliders);
+  }
 
-    this.refreshSaveSlots('');
+  private createSaveSlotPanelHandlers(): {
+    onNewRun: () => void;
+    onLoadSlot: (slotId: SaveSlotId) => void;
+    onDeleteSlot: (slotId: SaveSlotId) => void;
+  } {
+    return {
+      onNewRun: () => this.startNewRun(),
+      onLoadSlot: (slotId) => this.loadFromSlot(slotId),
+      onDeleteSlot: (slotId) => this.deleteSlot(slotId),
+    };
   }
 
   update(_time: number, delta: number): void {
@@ -87,25 +109,22 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
 
-    audioManager.init();
-    audioManager.playClick();
-    resetPlayerState(this.registry);
-    resetRunSummary(this.registry);
-    startRegisteredScene(this, 'Game');
+    this.playMenuClick();
+    this.resetRunState();
+    this.startGameScene();
   }
 
   private loadFromSlot(slotId: SaveSlotId): void {
-    audioManager.init();
-    audioManager.playClick();
+    this.playMenuClick();
 
-    if (!isSaveStorageAvailable()) {
-      this.refreshSaveSlots('Save slots unavailable in this browser context.', true);
+    if (!this.isSaveStorageAvailable()) {
+      this.showSaveSlotError('Save slots unavailable in this browser context.');
       return;
     }
 
-    const record = readSaveSlot(slotId);
+    const record = this.readSaveSlotRecord(slotId);
     if (!record) {
-      this.refreshSaveSlots(`Slot ${slotId.slice(-1)} is empty.`, true);
+      this.showSaveSlotError(`Slot ${slotId.slice(-1)} is empty.`);
       return;
     }
 
@@ -113,27 +132,30 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
 
-    setPlayerState(this.registry, record.playerState);
-    setRunSummary(this.registry, record.runSummary);
-    startRegisteredScene(this, 'Game');
+    this.applyLoadedRunState(record.playerState, record.runSummary);
+    this.startGameScene();
   }
 
   private deleteSlot(slotId: SaveSlotId): void {
-    audioManager.init();
-    audioManager.playClick();
+    this.playMenuClick();
 
-    if (!isSaveStorageAvailable()) {
-      this.refreshSaveSlots('Save slots unavailable in this browser context.', true);
+    if (!this.isSaveStorageAvailable()) {
+      this.showSaveSlotError('Save slots unavailable in this browser context.');
       return;
     }
 
-    const ok = deleteSaveSlot(slotId);
+    const ok = this.deleteStoredSaveSlot(slotId);
     if (!ok) {
-      this.refreshSaveSlots('Failed to delete slot. Check browser storage permissions.', true);
+      this.showSaveSlotError('Failed to delete slot. Check browser storage permissions.');
       return;
     }
 
     this.refreshSaveSlots(`Slot ${slotId.slice(-1)} cleared.`);
+  }
+
+  private playMenuClick(): void {
+    audioManager.init();
+    audioManager.playClick();
   }
 
   private queueGameTransition(): boolean {
@@ -146,8 +168,45 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private refreshSaveSlots(message: string, isError = false): void {
-    this.saveSlotPanel?.refresh(listSaveSlots());
+    this.saveSlotPanel?.refresh(this.listAvailableSaveSlots());
     this.saveSlotPanel?.setStatus(message, isError);
+  }
+
+  private showSaveSlotError(message: string): void {
+    this.refreshSaveSlots(message, true);
+  }
+
+  private isSaveStorageAvailable(): boolean {
+    return isSaveStorageAvailable();
+  }
+
+  private readSaveSlotRecord(slotId: SaveSlotId) {
+    return readSaveSlot(slotId);
+  }
+
+  private deleteStoredSaveSlot(slotId: SaveSlotId): boolean {
+    return deleteSaveSlot(slotId);
+  }
+
+  private listAvailableSaveSlots() {
+    return listSaveSlots();
+  }
+
+  private resetRunState(): void {
+    resetPlayerState(this.registry);
+    resetRunSummary(this.registry);
+  }
+
+  private applyLoadedRunState(
+    playerState: Parameters<typeof setPlayerState>[1],
+    runSummary: Parameters<typeof setRunSummary>[1]
+  ): void {
+    setPlayerState(this.registry, playerState);
+    setRunSummary(this.registry, runSummary);
+  }
+
+  private startGameScene(): void {
+    startRegisteredScene(this, 'Game');
   }
 
   private handleSceneShutdown(): void {
