@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.20] - 2026-04-28
+
+### Changed
+- Removed the remaining generated moon-surface landmark layer so premium-art levels no longer render the green crater/tint band over gameplay space.
+- Deleted the moon-surface config surface, generator, lifecycle wiring, and update/layout paths instead of leaving the layer dormant behind flags.
+- Simplified the shared parallax lifecycle by removing moon-surface creation/destruction from the level-visual orchestration context.
+
+### Quality
+- Updated parallax lifecycle regression coverage to reflect the smaller background stack after moon-surface removal.
+- Verified with `bunx tsc --noEmit`, `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.19] - 2026-04-28
 
 ### Changed

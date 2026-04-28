@@ -5,7 +5,6 @@ import {
   scrollStarLayers,
   updateDebrisMoteMotion,
   updateForegroundSilhouetteMotion,
-  updateMoonSurfaceMotion,
   updatePassingPlanetMotion,
   updatePlanetLayerMotion,
   updateTwinkleMotion,
@@ -30,17 +29,11 @@ import {
 } from './parallax/premiumBackgroundLayers';
 import { updateHazardOverlay as updateHazardOverlayRuntime } from './parallax/hazardOverlayRuntime';
 import {
-  createMoonSurfaceLayer as createMoonSurfaceLayerHelper,
-  destroyMoonSurfaceLayer as destroyMoonSurfaceLayerHelper,
-  layoutMoonSurfaceLayer as layoutMoonSurfaceLayerHelper,
-  type MoonSurfaceState,
-} from './parallax/moonSurfaceLayerLifecycle';
-import { type ForegroundSilhouetteState } from './parallax/foregroundSilhouetteLifecycle';
-import {
   getPassingPlanetOffscreenThreshold,
   resetPassingPlanetPosition,
   type PassingPlanetState,
 } from './parallax/passingPlanetLifecycle';
+import { type ForegroundSilhouetteState } from './parallax/foregroundSilhouetteLifecycle';
 import {
   createPlanetLayer as createPlanetLayerHelper,
   destroyPlanetLayer as destroyPlanetLayerHelper,
@@ -78,7 +71,6 @@ export class ParallaxBackground {
   private planetLayer: PlanetLayerState | null = null;
   private debrisMotes: DebrisMoteState[] = [];
   private twinkles: TwinkleState[] = [];
-  private moonSurface: MoonSurfaceState | null = null;
   private passingPlanetSprites: PassingPlanetState[] = [];
   private elapsed = 0;
   private currentWidth = 0;
@@ -187,10 +179,6 @@ export class ParallaxBackground {
     });
   }
 
-  private createMoonSurfaceLayer(scene: Phaser.Scene, config: LevelConfig): void {
-    this.moonSurface = createMoonSurfaceLayerHelper(scene, config, this.getViewportSize());
-  }
-
   private setPassingPlanetSprites(states: PassingPlanetState[]): void {
     this.passingPlanetSprites = states;
   }
@@ -210,10 +198,8 @@ export class ParallaxBackground {
       PASSING_PLANET_RESPAWN_MIN_X,
       PASSING_PLANET_RESPAWN_MAX_X,
       STARFIELD_TILE_DEPTHS,
-      this.createMoonSurfaceLayer.bind(this),
       this.createPlanetLayer.bind(this),
       this.createDebrisMotes.bind(this),
-      this.destroyMoonSurfaceLayer.bind(this),
       this.destroyPlanetLayer.bind(this),
       this.destroyDebrisMotes.bind(this),
       (states) => this.setPassingPlanetSprites(states),
@@ -360,7 +346,6 @@ export class ParallaxBackground {
     updatePlanetLayerMotion(this.planetLayer, this.elapsed, this.atmosphereAlpha, this.landmarkAlpha);
     updateDebrisMoteMotion(this.debrisMotes, this.elapsed, delta, this.atmosphereAlpha);
     updateTwinkleMotion(this.twinkles, this.elapsed, this.atmosphereTwinkle);
-    updateMoonSurfaceMotion(this.moonSurface, this.elapsed, this.atmosphereAlpha, this.landmarkAlpha);
     updatePassingPlanetMotion(
       this.passingPlanetSprites,
       delta,
@@ -404,7 +389,6 @@ export class ParallaxBackground {
   }
 
   private layoutLevelVisualLayers(): void {
-    this.layoutMoonSurfaceLayer();
     this.layoutPlanetLayer();
   }
 
@@ -423,10 +407,6 @@ export class ParallaxBackground {
     layoutPlanetLayerHelper(this.planetLayer, this.getViewportSize());
   }
 
-  private layoutMoonSurfaceLayer(): void {
-    layoutMoonSurfaceLayerHelper(this.moonSurface, this.getViewportSize());
-  }
-
   // ---------------------------------------------------------------------------
   // Cleanup
   // ---------------------------------------------------------------------------
@@ -438,9 +418,4 @@ export class ParallaxBackground {
   private destroyDebrisMotes(): void {
     this.debrisMotes = destroyDebrisMotesHelper(this.debrisMotes);
   }
-
-  private destroyMoonSurfaceLayer(): void {
-    this.moonSurface = destroyMoonSurfaceLayerHelper(this.scene, this.moonSurface);
-  }
-
 }

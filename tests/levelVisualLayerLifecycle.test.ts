@@ -69,17 +69,11 @@ function createContext() {
     passingPlanetRespawnMinX: 100,
     passingPlanetRespawnMaxX: 400,
     starfieldTileDepths: [-10, -8, -6, -4] as const,
-    createMoonSurfaceLayer: (_scene: Phaser.Scene, _config: unknown) => {
-      callLog.push('createMoonSurfaceLayer');
-    },
     createPlanetLayer: (_scene: Phaser.Scene, _config: unknown) => {
       callLog.push('createPlanetLayer');
     },
     createDebrisMotes: (_scene: Phaser.Scene, _config: unknown) => {
       callLog.push('createDebrisMotes');
-    },
-    destroyMoonSurfaceLayer: () => {
-      callLog.push('destroyMoonSurfaceLayer');
     },
     destroyPlanetLayer: () => {
       callLog.push('destroyPlanetLayer');
@@ -105,7 +99,6 @@ describe('levelVisualLayerLifecycle', () => {
     createLevelVisualLayers(context as never, context.scene, levelConfig as never);
 
     expect(callLog).toEqual([
-      'createMoonSurfaceLayer',
       'createPassingPlanetLayers',
       'createPlanetLayer',
       'createDebrisMotes',
@@ -123,7 +116,6 @@ describe('levelVisualLayerLifecycle', () => {
     destroyLevelVisualLayers(context as never);
 
     expect(callLog).toEqual([
-      'destroyMoonSurfaceLayer',
       'destroyPassingPlanetLayers',
       'setPassingPlanetSprites',
       'destroyPlanetLayer',
@@ -144,7 +136,6 @@ describe('levelVisualLayerLifecycle', () => {
     rebuildLevelVisualLayers(context as never, context.scene, levelConfig as never);
 
     expect(callLog).toEqual([
-      'destroyMoonSurfaceLayer',
       'destroyPassingPlanetLayers',
       'setPassingPlanetSprites',
       'destroyPlanetLayer',
@@ -152,7 +143,6 @@ describe('levelVisualLayerLifecycle', () => {
       'destroyTwinkles',
       'setTwinkles',
       'destroyForegroundSilhouettes',
-      'createMoonSurfaceLayer',
       'createPassingPlanetLayers',
       'createPlanetLayer',
       'createDebrisMotes',

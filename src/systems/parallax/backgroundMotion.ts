@@ -32,15 +32,6 @@ interface TwinkleMotionState {
   baseMaxAlpha: number;
 }
 
-interface MoonSurfaceMotionState {
-  sprite: Phaser.GameObjects.Image;
-  baseX: number;
-  baseY: number;
-  baseAlpha: number;
-  motionSpeed: number;
-  motionAmplitude: number;
-}
-
 interface PassingPlanetMotionState {
   sprite: Phaser.GameObjects.Image;
   scrollSpeed: number;
@@ -116,25 +107,6 @@ export function updateTwinkleMotion(
     const maxAlpha = twinkle.baseMaxAlpha * atmosphereTwinkle;
     twinkle.sprite.setAlpha(minAlpha + normalizedT * (maxAlpha - minAlpha));
   }
-}
-
-export function updateMoonSurfaceMotion(
-  moonSurface: MoonSurfaceMotionState | null,
-  elapsed: number,
-  atmosphereAlpha: number,
-  landmarkAlpha: number
-): void {
-  if (!moonSurface) {
-    return;
-  }
-
-  const phase = elapsed * moonSurface.motionSpeed;
-  const scrollOffset = Math.sin(phase) * moonSurface.motionAmplitude;
-  moonSurface.sprite.x = moonSurface.baseX + scrollOffset;
-  moonSurface.sprite.y = moonSurface.baseY;
-  moonSurface.sprite.setAlpha(
-    Phaser.Math.Clamp(moonSurface.baseAlpha * (0.94 + (atmosphereAlpha - 1) * 0.5) * landmarkAlpha, 0.24, 0.62)
-  );
 }
 
 export function updatePassingPlanetMotion(

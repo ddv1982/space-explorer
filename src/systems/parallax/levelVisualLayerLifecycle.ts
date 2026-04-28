@@ -22,10 +22,8 @@ export type LevelVisualLayerLifecycleContext = {
   passingPlanetRespawnMinX: number;
   passingPlanetRespawnMaxX: number;
   starfieldTileDepths: readonly number[];
-  createMoonSurfaceLayer: (scene: Phaser.Scene, config: LevelConfig) => void;
   createPlanetLayer: (scene: Phaser.Scene, config: LevelConfig) => void;
   createDebrisMotes: (scene: Phaser.Scene, config: LevelConfig) => void;
-  destroyMoonSurfaceLayer: () => void;
   destroyPlanetLayer: () => void;
   destroyDebrisMotes: () => void;
   setPassingPlanetSprites: (sprites: PassingPlanetState[]) => void;
@@ -37,7 +35,6 @@ export function createLevelVisualLayers(
   scene: Phaser.Scene,
   config: LevelConfig
 ): void {
-  context.createMoonSurfaceLayer(scene, config);
   createPassingPlanetLayers(
     scene,
     config,
@@ -66,7 +63,6 @@ export function createLevelVisualLayers(
 }
 
 export function destroyLevelVisualLayers(context: LevelVisualLayerLifecycleContext): void {
-  context.destroyMoonSurfaceLayer();
   context.setPassingPlanetSprites(destroyPassingPlanetLayers(context.passingPlanetSprites));
   context.destroyPlanetLayer();
   context.destroyDebrisMotes();

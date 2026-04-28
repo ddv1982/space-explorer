@@ -198,11 +198,4 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       },
     },
   }),
-  moonSurface: {
-    scrollSpeed: 0.14,
-    surfaceColor: 0x20372d,
-    accentColor: 0x52f7a6,
-    craterCount: 5,
-    horizonGlow: 0.96,
-  },
 };

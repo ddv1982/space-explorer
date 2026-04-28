@@ -204,13 +204,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       },
     },
   }),
-  moonSurface: {
-    scrollSpeed: 0.08,
-    surfaceColor: 0x24163c,
-    accentColor: 0xc67bff,
-    craterCount: 6,
-    horizonGlow: 0.92,
-  },
   passingPlanets: [
     { scrollSpeed: 0.015, planetPalette: [0x7445b0, 0xc593ff], size: 200, yPosition: 0.18, alpha: 0.2, ringChance: 0.5 },
     { scrollSpeed: 0.025, planetPalette: [0x3d8f99, 0x87fff0], size: 100, yPosition: 0.72, alpha: 0.15, ringChance: 0.3 },

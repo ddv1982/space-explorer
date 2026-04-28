@@ -213,11 +213,4 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       },
     },
   }),
-  moonSurface: {
-    scrollSpeed: 0.12,
-    surfaceColor: 0x2a3535,
-    accentColor: 0x53e2d5,
-    craterCount: 12,
-    horizonGlow: 0.8,
-  },
 };
