@@ -9,7 +9,11 @@ import type { EnemyPool } from '@/systems/EnemyPool';
 import type { HUD } from '@/systems/HUD';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { ScoreManager } from '@/systems/ScoreManager';
-import type { GameSceneFlowController, GameSceneFlowContext } from './GameSceneFlowController';
+import type {
+  GameSceneFlowController,
+  GameSceneFlowContext,
+  PlayerDeathFlowOutcome,
+} from './GameSceneFlowController';
 import { getViewportBounds } from '@/utils/layout';
 import { trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
 
@@ -67,6 +71,10 @@ export function runBestEffort(effect: () => void): void {
   } catch {
     // Keep the GameOver transition alive even if optional cleanup/effects fail.
   }
+}
+
+function shouldSyncHelperWingAfterPlayerDeath(outcome: PlayerDeathFlowOutcome): boolean {
+  return outcome.status === 'respawn-started' && !outcome.levelCompleteQueued;
 }
 
 export function createGameSceneCombatFeedbackHandlers(
@@ -191,10 +199,15 @@ export function createGameSceneCombatFeedbackHandlers(
       const player = deps.player();
       const deathX = player.x;
       const deathY = player.y;
+      const outcome = deps.flow().handlePlayerDeath(deps.getFlowContext());
 
-      runBestEffort(() => playPlayerDeathCue(deathX, deathY));
-      deps.flow().handlePlayerDeath(deps.getFlowContext());
-      deps.syncLastLifeHelperWingState();
+      if (outcome.status !== 'ignored-terminal-active') {
+        runBestEffort(() => playPlayerDeathCue(deathX, deathY));
+      }
+
+      if (shouldSyncHelperWingAfterPlayerDeath(outcome)) {
+        deps.syncLastLifeHelperWingState();
+      }
     },
 
     handlePlayerFatalHit: (): void => {

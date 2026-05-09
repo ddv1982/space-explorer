@@ -37,6 +37,17 @@ export interface GameSceneFlowContext {
   getPlayerRespawnPosition: () => { x: number; y: number };
 }
 
+export type PlayerDeathFlowOutcomeStatus =
+  | 'respawn-started'
+  | 'game-over-started'
+  | 'ignored-terminal-active';
+
+export interface PlayerDeathFlowOutcome {
+  status: PlayerDeathFlowOutcomeStatus;
+  levelCompleteQueued: boolean;
+  remainingLives: number;
+}
+
 export class GameSceneFlowController {
   private gameOver = false;
   private gameOverTransition: Phaser.Time.TimerEvent | null = null;
@@ -88,20 +99,25 @@ export class GameSceneFlowController {
     return this.terminalTransitionState === TERMINAL_TRANSITIONS.playerDeath;
   }
 
-  handlePlayerDeath(context: GameSceneFlowContext): void {
+  handlePlayerDeath(context: GameSceneFlowContext): PlayerDeathFlowOutcome {
+    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
+      return this.createPlayerDeathOutcome('ignored-terminal-active');
+    }
+
     if (this.remainingLives > 1) {
       this.remainingLives -= 1;
       saveRemainingLives(context.registry, this.remainingLives);
       this.beginRespawnTransition(context);
-      return;
+      return this.createPlayerDeathOutcome('respawn-started');
     }
 
-    this.levelCompleteQueued = false;
-    this.clearPendingLevelCompleteTransition();
+    this.clearLevelCompleteIntent();
 
     if (!this.beginTerminalTransition(context, TERMINAL_TRANSITIONS.playerDeath)) {
-      return;
+      return this.createPlayerDeathOutcome('ignored-terminal-active');
     }
+
+    this.remainingLives = 0;
 
     const finalScore = context.scoreManager.getScore();
     const level = context.levelManager.currentLevel;
@@ -109,6 +125,7 @@ export class GameSceneFlowController {
     this.gameOver = true;
     this.scheduleGameOverTransition(context);
     this.persistGameOverState(context, finalScore, level);
+    return this.createPlayerDeathOutcome('game-over-started');
   }
 
   handlePlayerFatalHit(scene: Phaser.Scene): void {
@@ -120,12 +137,12 @@ export class GameSceneFlowController {
   }
 
   queueLevelComplete(context: GameSceneFlowContext): void {
-    if (this.levelCompleteQueued || this.respawnInProgress || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
+    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
       return;
     }
 
     this.levelCompleteQueued = true;
-    this.scheduleLevelCompleteTransition(context);
+    this.requestLevelCompleteFlush(context);
   }
 
   private scheduleGameOverTransition(context: GameSceneFlowContext): void {
@@ -169,18 +186,23 @@ export class GameSceneFlowController {
     }
   }
 
-  private scheduleLevelCompleteTransition(context: GameSceneFlowContext): void {
+  private clearLevelCompleteIntent(): void {
+    this.levelCompleteQueued = false;
+    this.clearPendingLevelCompleteTransition();
+  }
+
+  private requestLevelCompleteFlush(context: GameSceneFlowContext): void {
     if (this.pendingLevelCompleteTransition || !this.levelCompleteQueued) {
       return;
     }
 
     this.pendingLevelCompleteTransition = context.scene.time.delayedCall(0, () => {
       this.pendingLevelCompleteTransition = null;
-      this.flushQueuedLevelCompleteTransition(context);
+      this.tryFlushQueuedLevelCompleteTransition(context);
     });
   }
 
-  private flushQueuedLevelCompleteTransition(context: GameSceneFlowContext): void {
+  private tryFlushQueuedLevelCompleteTransition(context: GameSceneFlowContext): void {
     if (!this.canFlushLevelCompleteTransition(context)) {
       return;
     }
@@ -234,7 +256,7 @@ export class GameSceneFlowController {
     this.gameOver = false;
     this.gameOverSceneStarted = false;
     this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
-    this.levelCompleteQueued = false;
+    this.clearLevelCompleteIntent();
     this.remainingLives = remainingLives;
     this.respawnInProgress = false;
     this.respawnScenePaused = false;
@@ -311,14 +333,20 @@ export class GameSceneFlowController {
     this.clearPendingRespawn();
     this.resumeSceneAfterRespawnPause(context);
 
-    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none || context.player.isAlive) {
+    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
       this.cancelRespawnTransition(context);
+      return;
+    }
+
+    if (context.player.isAlive) {
+      this.cancelRespawnTransition(context);
+      this.requestLevelCompleteFlush(context);
       return;
     }
 
     this.respawnPlayer(context);
     this.finishRespawnTransition(context, 'respawned');
-    this.flushQueuedLevelCompleteTransition(context);
+    this.requestLevelCompleteFlush(context);
   }
 
   private cancelRespawnTransition(context: GameSceneFlowContext): void {
@@ -347,17 +375,6 @@ export class GameSceneFlowController {
     context: GameSceneFlowContext,
     state: Exclude<TerminalTransitionState, 'none'>
   ): boolean {
-    if (state === TERMINAL_TRANSITIONS.playerDeath) {
-      this.clearPendingLevelCompleteTransition();
-    }
-
-    if (
-      state === TERMINAL_TRANSITIONS.playerDeath &&
-      this.terminalTransitionState === TERMINAL_TRANSITIONS.levelComplete
-    ) {
-      this.cancelLevelCompleteTransition(context);
-    }
-
     if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
       return false;
     }
@@ -368,13 +385,11 @@ export class GameSceneFlowController {
     return true;
   }
 
-  private cancelLevelCompleteTransition(context: GameSceneFlowContext): void {
-    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.levelComplete) {
-      return;
-    }
-
-    context.warpTransition.cancel();
-    this.terminalTransitionState = TERMINAL_TRANSITIONS.none;
-    context.collisionManager.setTerminalTransitionActive(false);
+  private createPlayerDeathOutcome(status: PlayerDeathFlowOutcomeStatus): PlayerDeathFlowOutcome {
+    return {
+      status,
+      levelCompleteQueued: this.levelCompleteQueued,
+      remainingLives: this.remainingLives,
+    };
   }
 }

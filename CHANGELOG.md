@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.21] - 2026-05-09
+
+### Fixed
+- Fixed the level 6 boss/death race so queued level completion survives non-final respawn and flushes after the player is alive again.
+- Made terminal scene-flow transitions monotonic so accepted level-complete handoff cannot be flipped by later player-death events, while final death can still beat a merely queued completion.
+- Suppressed helper-wing death sync and death side effects during queued level-complete or ignored terminal handoffs.
+
+### Quality
+- Added regression coverage for same-frame/adjacent boss-defeat and player-death permutations, respawn timer behavior under physics pause, transition-aware helper-wing sync, and flow-context physics-only pause behavior.
+- Verified with targeted scene-flow/helper tests, `bunx tsc --noEmit`, `bun run lint`, `bun test`, and `bun run build`.
+
 ## [1.1.20] - 2026-04-28
 
 ### Changed
