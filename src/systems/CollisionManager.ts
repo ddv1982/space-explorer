@@ -314,7 +314,7 @@ export class CollisionManager {
   }
 
   private clearHazardGroup(group: Phaser.Physics.Arcade.Group): void {
-    group.getChildren().forEach(child => {
+    this.getHazardChildrenSafely(group).forEach(child => {
       if (!(child instanceof Phaser.GameObjects.GameObject)) {
         return;
       }
@@ -331,6 +331,15 @@ export class CollisionManager {
         child.clear();
       }
     });
+  }
+
+  private getHazardChildrenSafely(group: Phaser.Physics.Arcade.Group): Phaser.GameObjects.GameObject[] {
+    try {
+      return group.getChildren();
+    } catch (_error) {
+      // Hazard groups may already be invalidated during terminal scene cleanup.
+      return [];
+    }
   }
 
   private resolveCollisionTarget<T>(ctor: CollisionTargetCtor<T>, ...values: unknown[]): T | null {

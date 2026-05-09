@@ -387,4 +387,17 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
       GAME_SCENE_EVENTS.playerFatalHit,
     ]);
   });
+
+  test('clearPlayerHazards tolerates hazard groups invalidated during teardown', () => {
+    const harness = createCollisionHarness(['damaged']);
+    const throwInvalidatedGroup = () => {
+      throw new TypeError("undefined is not an object (evaluating 'n.forEach')");
+    };
+
+    Object.assign(harness.groups.enemyBullet, { getChildren: throwInvalidatedGroup });
+    Object.assign(harness.groups.bomb, { getChildren: throwInvalidatedGroup });
+    Object.assign(harness.groups.asteroid, { getChildren: throwInvalidatedGroup });
+
+    expect(() => harness.manager.clearPlayerHazards()).not.toThrow();
+  });
 });

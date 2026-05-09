@@ -60,4 +60,54 @@ describe('LastLifeHelperWing', () => {
     expect(helperA.updateWithPlayer).toHaveBeenCalledWith(player, 500, bulletPool, effectsManager);
     expect(helperB.updateWithPlayer).toHaveBeenCalledWith(player, 500, bulletPool, effectsManager);
   });
+
+  test('destroy is idempotent when Phaser teardown has already invalidated group internals', () => {
+    const colliderDestroy = mock(() => {
+      throw new TypeError('already destroyed');
+    });
+    const helperDestroy = mock(() => {
+      throw new TypeError('already destroyed');
+    });
+    const helperDisableBody = mock(() => {
+      throw new TypeError('body already destroyed');
+    });
+    const helperClearTint = mock();
+    const groupClear = mock(() => {
+      throw new TypeError("undefined is not an object (evaluating 'n.forEach')");
+    });
+
+    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWing;
+    (wing as unknown as Record<string, unknown>).activated = true;
+    (wing as unknown as Record<string, unknown>).depletedAnnounced = true;
+    (wing as unknown as Record<string, unknown>).helpers = [
+      {
+        active: true,
+        disableBody: helperDisableBody,
+        clearTint: helperClearTint,
+        destroy: helperDestroy,
+      },
+    ];
+    (wing as unknown as Record<string, unknown>).helperGroup = { clear: groupClear };
+    (wing as unknown as Record<string, unknown>).overlapColliders = [{ destroy: colliderDestroy }];
+    (wing as unknown as Record<string, unknown>).maxSlots = 1;
+    (wing as unknown as Record<string, unknown>).grantedSlots = 1;
+    (wing as unknown as Record<string, unknown>).canAcquireInLevel = true;
+
+    expect(() => wing.destroy()).not.toThrow();
+    expect(() => wing.destroy()).not.toThrow();
+
+    expect(colliderDestroy).toHaveBeenCalledTimes(1);
+    expect(helperDisableBody).toHaveBeenCalledTimes(1);
+    expect(helperClearTint).not.toHaveBeenCalled();
+    expect(helperDestroy).toHaveBeenCalledTimes(1);
+    expect(groupClear).toHaveBeenCalledWith(false, false);
+    expect((wing as unknown as Record<string, unknown>).helpers).toEqual([]);
+    expect((wing as unknown as Record<string, unknown>).helperGroup).toBeNull();
+    expect((wing as unknown as Record<string, unknown>).overlapColliders).toEqual([]);
+    expect((wing as unknown as Record<string, unknown>).activated).toBe(false);
+    expect((wing as unknown as Record<string, unknown>).depletedAnnounced).toBe(false);
+    expect((wing as unknown as Record<string, unknown>).maxSlots).toBe(0);
+    expect((wing as unknown as Record<string, unknown>).grantedSlots).toBe(0);
+    expect((wing as unknown as Record<string, unknown>).canAcquireInLevel).toBe(false);
+  });
 });

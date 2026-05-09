@@ -323,4 +323,18 @@ describe('EnemyPool regression coverage', () => {
 
     expect(delegated).toEqual([{ type: 'scout', x: 42, y: 64 }]);
   });
+
+  test('getAllEnemies skips groups whose children were invalidated during teardown', () => {
+    const harness = createEnemyPoolHarness();
+    const scout = harness.pool.spawnScout(10, 20);
+    const fighter = harness.pool.spawnFighter(30, 40);
+    const bomberGroup = harness.pool.getBomberGroup();
+
+    bomberGroup.getChildren = () => {
+      throw new TypeError("undefined is not an object (evaluating 'n.forEach')");
+    };
+
+    expect(() => harness.pool.getAllEnemies()).not.toThrow();
+    expect(harness.pool.getAllEnemies()).toEqual([scout, fighter]);
+  });
 });

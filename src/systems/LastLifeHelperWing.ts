@@ -111,8 +111,9 @@ export class LastLifeHelperWing {
   destroy(): void {
     this.suspendForTransition();
     this.destroyOverlaps();
+    this.destroyHelpers();
+    this.clearHelperGroupSafely();
     this.helpers = [];
-    this.helperGroup?.clear(true, true);
     this.helperGroup = null;
     this.maxSlots = 0;
     this.grantedSlots = 0;
@@ -131,8 +132,16 @@ export class LastLifeHelperWing {
         continue;
       }
 
+      this.suspendHelperSafely(helper);
+    }
+  }
+
+  private suspendHelperSafely(helper: HelperShip): void {
+    try {
       helper.disableBody(true, true);
       helper.clearTint();
+    } catch (_error) {
+      // Phaser may already be tearing down bodies during scene transitions.
     }
   }
 
@@ -343,10 +352,40 @@ export class LastLifeHelperWing {
     }
 
     for (const collider of this.overlapColliders) {
-      collider.destroy();
+      this.destroyColliderSafely(collider);
     }
 
     this.overlapColliders = [];
+  }
+
+  private destroyColliderSafely(collider: Phaser.Physics.Arcade.Collider): void {
+    try {
+      collider.destroy();
+    } catch (_error) {
+      // Collider internals can already be disposed during Phaser scene shutdown.
+    }
+  }
+
+  private destroyHelpers(): void {
+    for (const helper of this.helpers) {
+      try {
+        helper.destroy();
+      } catch (_error) {
+        // Helper game objects may already be destroyed by a scene transition.
+      }
+    }
+  }
+
+  private clearHelperGroupSafely(): void {
+    if (!this.helperGroup) {
+      return;
+    }
+
+    try {
+      this.helperGroup.clear(false, false);
+    } catch (_error) {
+      // Some Phaser group internals can be undefined while a scene is ending.
+    }
   }
 
   private handleEnemyBulletOverlap(a: unknown, b: unknown): void {

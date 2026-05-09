@@ -183,7 +183,7 @@ export class EnemyPool {
 
   spawnBoss(x: number, y: number, config?: BossConfig): Boss | null {
     const bossGroup = this.ensureGroup('boss');
-    const activeBoss = bossGroup.getChildren().find(c => c.active) as Boss | undefined;
+    const activeBoss = this.getGroupChildrenSafely(bossGroup).find(c => c.active) as Boss | undefined;
     if (activeBoss) return null;
 
     const boss = this.acquireFromGroup<Boss>(bossGroup, x, y);
@@ -267,7 +267,20 @@ export class EnemyPool {
     ensure = false
   ): void {
     const group = ensure ? this.ensureGroup(key) : this.groups[key];
-    group?.getChildren().forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+    this.getGroupChildrenSafely(group).forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+  }
+
+  private getGroupChildrenSafely(group: Phaser.Physics.Arcade.Group | undefined): Phaser.GameObjects.GameObject[] {
+    if (!group) {
+      return [];
+    }
+
+    try {
+      return group.getChildren();
+    } catch (_error) {
+      // Phaser group internals can already be disposed during scene transitions.
+      return [];
+    }
   }
 
   getAllEnemies(): Phaser.Physics.Arcade.Sprite[] {

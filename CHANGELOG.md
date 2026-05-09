@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.22] - 2026-05-10
+
+### Fixed
+- Fixed the level 6 completion crash by making last-life helper-wing teardown tolerate Phaser groups, colliders, and helper bodies that are already partially invalidated during scene shutdown.
+- Hardened adjacent enemy-pool and collision hazard cleanup paths so invalidated Phaser group children no longer throw while terminal transitions are completing.
+
+### Quality
+- Added regression coverage for invalidated helper-wing teardown, enemy group child iteration, and hazard cleanup during transition cleanup.
+- Verified with targeted lifecycle tests, `bunx tsc --noEmit`, `bun run lint`, `bun test`, `bun run build`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.21] - 2026-05-09
 
 ### Fixed
