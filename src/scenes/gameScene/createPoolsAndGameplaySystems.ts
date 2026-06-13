@@ -191,6 +191,7 @@ export function createPoolsAndGameplaySystems(
     applyPowerUp,
     isTerminalTransitionActive,
   });
+  waveManager.setPowerUpGroup?.(powerUpGroup);
 
   return {
     bulletPool,

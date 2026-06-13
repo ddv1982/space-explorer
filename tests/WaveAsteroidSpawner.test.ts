@@ -98,6 +98,28 @@ describe('WaveAsteroidSpawner', () => {
       expect(call.config.indestructible).toBe(true);
       expect(call.config.scoreValue).toBe(0);
       expect(call.config.collisionDamage).toBe(3);
+      expect(call.config.blocksEnemyProjectiles).toBe(false);
+    }
+  });
+
+  test('spawnEdgeAsteroids can mark corridor asteroids as breakable projectile-blocking cover', () => {
+    const { helper, spawnCalls } = createHarness();
+
+    helper.spawnEdgeAsteroids({
+      type: 'rock-corridor',
+      laneCount: 1,
+      corridorWidth: 210,
+      damage: 1,
+      blocksEnemyProjectiles: true,
+      coverHp: 5,
+      coverIndestructible: false,
+    });
+
+    expect(spawnCalls).toHaveLength(2);
+    for (const call of spawnCalls) {
+      expect(call.config.blocksEnemyProjectiles).toBe(true);
+      expect(call.config.hp).toBe(5);
+      expect(call.config.indestructible).toBe(false);
     }
   });
 });

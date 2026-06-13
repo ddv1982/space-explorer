@@ -40,6 +40,7 @@ export class CollisionManager {
     this.registerBulletAsteroidOverlap(bulletGroup, asteroidGroup);
     this.registerEnemyBulletPlayerOverlap(enemyPool.getEnemyBulletGroup(), player);
     this.registerBombPlayerOverlap(enemyPool.getBombGroup(), player);
+    this.registerEnemyProjectileCoverOverlaps(enemyPool, asteroidGroup);
     this.registerEnemyPlayerOverlaps(enemyGroups);
     this.registerAsteroidPlayerOverlap(asteroidGroup, player);
   }
@@ -92,6 +93,18 @@ export class CollisionManager {
   ): void {
     this.registerOverlap(bombGroup, player, (_obj1, _obj2) => {
       this.handleBombPlayerOverlap(_obj1, _obj2);
+    });
+  }
+
+  private registerEnemyProjectileCoverOverlaps(
+    enemyPool: EnemyPool,
+    asteroidGroup: Phaser.Physics.Arcade.Group
+  ): void {
+    this.registerOverlap(enemyPool.getEnemyBulletGroup(), asteroidGroup, (_obj1, _obj2) => {
+      this.handleEnemyBulletAsteroidOverlap(_obj1, _obj2);
+    });
+    this.registerOverlap(enemyPool.getBombGroup(), asteroidGroup, (_obj1, _obj2) => {
+      this.handleBombAsteroidOverlap(_obj1, _obj2);
     });
   }
 
@@ -207,6 +220,39 @@ export class CollisionManager {
       beforeDamage: () => bomb.kill(),
       afterDamage: () => this.effectsManager.createExplosion(impactX, impactY, 1.5),
     });
+  }
+
+  private handleEnemyBulletAsteroidOverlap(...values: unknown[]): void {
+    const enemyBullet = this.resolveCollisionTarget(EnemyBullet, ...values);
+    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    if (!(enemyBullet?.active && asteroid?.active && asteroid.blocksEnemyProjectiles())) {
+      return;
+    }
+
+    enemyBullet.kill();
+    asteroid.takeDamage(1);
+    this.effectsManager.createSparkBurst(asteroid.x, asteroid.y);
+    if (!asteroid.active) {
+      this.effectsManager.createAsteroidDebris(asteroid.x, asteroid.y);
+    }
+  }
+
+  private handleBombAsteroidOverlap(...values: unknown[]): void {
+    const bomb = this.resolveCollisionTarget(BomberBomb, ...values);
+    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    if (!(bomb?.active && asteroid?.active && asteroid.blocksEnemyProjectiles())) {
+      return;
+    }
+
+    const impactX = bomb.x;
+    const impactY = bomb.y;
+
+    bomb.kill();
+    asteroid.takeDamage(2);
+    this.effectsManager.createExplosion(impactX, impactY, 1.15);
+    if (!asteroid.active) {
+      this.effectsManager.createAsteroidDebris(asteroid.x, asteroid.y);
+    }
   }
 
   private handleEnemyPlayerCollision(

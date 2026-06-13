@@ -76,6 +76,60 @@ function validateHazard(levelName: string, section: LevelSectionConfig, hazard: 
   if (hazard.damage !== undefined && hazard.damage < 0) {
     pushError(levelName, `${prefix}: damage must be >= 0`);
   }
+
+  if (hazard.coverHp !== undefined && hazard.coverHp <= 0) {
+    pushError(levelName, `${prefix}: coverHp must be > 0 when provided`);
+  }
+
+  if (hazard.coverHp !== undefined && hazard.coverIndestructible === true) {
+    pushWarning(levelName, `${prefix}: coverHp is ignored when coverIndestructible=true`);
+  }
+}
+
+function validateAuthoredSectionContent(levelName: string, section: LevelSectionConfig): void {
+  section.signatureWaves?.forEach((wave, waveIndex) => {
+    const prefix = `${section.id} signatureWaves[${waveIndex}]`;
+    if (wave.id.trim().length === 0) {
+      pushError(levelName, `${prefix}: id must be non-empty`);
+    }
+
+    if (wave.triggerProgress < 0 || wave.triggerProgress > 1) {
+      pushError(levelName, `${prefix}: triggerProgress must be within [0, 1]`);
+    }
+
+    if (wave.enemies.length === 0) {
+      pushError(levelName, `${prefix}: enemies must be non-empty`);
+    }
+
+    if (wave.enemies.length > 3) {
+      pushWarning(levelName, `${prefix}: more than three authored enemies may reduce mobile lane readability`);
+    }
+
+    const laneCounts = new Map<string, number>();
+    wave.enemies.forEach((enemy, enemyIndex) => {
+      laneCounts.set(enemy.lane, (laneCounts.get(enemy.lane) ?? 0) + 1);
+      if (enemy.y !== undefined && enemy.y > 0) {
+        pushWarning(levelName, `${prefix}.enemies[${enemyIndex}]: positive y starts may reduce spawn telegraph time`);
+      }
+    });
+
+    for (const [lane, count] of laneCounts) {
+      if (count > 2) {
+        pushWarning(levelName, `${prefix}: ${count} enemies share the ${lane} lane; consider spreading the wave`);
+      }
+    }
+  });
+
+  section.recoveryDrops?.forEach((drop, dropIndex) => {
+    const prefix = `${section.id} recoveryDrops[${dropIndex}]`;
+    if (drop.id.trim().length === 0) {
+      pushError(levelName, `${prefix}: id must be non-empty`);
+    }
+
+    if (drop.triggerProgress < 0 || drop.triggerProgress > 1) {
+      pushError(levelName, `${prefix}: triggerProgress must be within [0, 1]`);
+    }
+  });
 }
 
 function validateSectionSequence(level: LevelConfig): void {
@@ -131,6 +185,7 @@ function validateSectionSequence(level: LevelConfig): void {
     section.hazardEvents?.forEach((hazard, hazardIndex) => {
       validateHazard(name, section, hazard, hazardIndex);
     });
+    validateAuthoredSectionContent(name, section);
     validateHazardReachability(name, section);
 
     const next = sorted[i + 1];

@@ -64,6 +64,17 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
       phase: 'hazard',
       summary: 'Mirrored rocks frame clear lanes while fighters test side awareness.',
       encounterSizeOverride: { min: 2, max: 2 },
+      signatureWaves: [
+        {
+          id: 'prism-lane-read',
+          triggerProgress: 0.5,
+          enemies: [
+            { type: 'scout', lane: 'left' },
+            { type: 'scout', lane: 'right' },
+          ],
+          notes: 'Readable two-lane check that asks the player to choose a safe center/edge route after the crossfire tell.',
+        },
+      ],
       hazardEvents: [{ type: 'ring-crossfire', cadenceMs: 2000, intensity: 0.44 }],
       musicIntensity: 0.6,
       tensionArc: 'waves',
@@ -77,6 +88,16 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
       phase: 'climax',
       summary: 'A gentle corridor sequence showcases authored lane movement without punishing density.',
       spawnRateMultiplier: 1.14,
+      signatureWaves: [
+        {
+          id: 'canyon-lane-confirm',
+          triggerProgress: 0.62,
+          enemies: [
+            { type: 'fighter', lane: 'center', y: -90 },
+          ],
+          notes: 'Single focal enemy reinforces lane-reading without turning the opener into a boss substitute.',
+        },
+      ],
       hazardEvents: [{ type: 'rock-corridor', cadenceMs: 2150, corridorWidth: 250, laneCount: 1, damage: 1, intensity: 0.48 }],
       musicIntensity: 0.72,
       tensionArc: 'buildRelease',

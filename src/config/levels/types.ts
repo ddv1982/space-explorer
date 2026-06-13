@@ -78,6 +78,32 @@ export interface ScriptedHazardConfig {
   corridorWidth?: number;
   damage?: number;
   intensity?: number;
+  blocksEnemyProjectiles?: boolean;
+  coverHp?: number;
+  coverIndestructible?: boolean;
+  notes?: string;
+}
+
+export type AuthoredLaneAnchor = 'left' | 'center' | 'right';
+
+export interface SignatureWaveEnemyConfig {
+  type: EnemyType;
+  lane: AuthoredLaneAnchor;
+  y?: number;
+}
+
+export interface SignatureWaveConfig {
+  id: string;
+  triggerProgress: number;
+  enemies: SignatureWaveEnemyConfig[];
+  notes?: string;
+}
+
+export interface RecoveryDropConfig {
+  id: string;
+  triggerProgress: number;
+  type: 'health' | 'shield';
+  lane: AuthoredLaneAnchor;
   notes?: string;
 }
 
@@ -101,6 +127,8 @@ export interface LevelSectionConfig {
   spawnRateMultiplier?: number;
   asteroidInterval?: number;
   hazardEvents?: ScriptedHazardConfig[];
+  signatureWaves?: SignatureWaveConfig[];
+  recoveryDrops?: RecoveryDropConfig[];
   musicIntensity?: number;
   visualModifiers?: LevelSectionVisualModifierConfig;
   // VAT emotion targets for this section

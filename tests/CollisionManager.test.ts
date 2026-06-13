@@ -303,6 +303,77 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
     ]);
   });
 
+  test('enemy bullets are blocked by projectile-blocking cover asteroids', () => {
+    const harness = createCollisionHarness(['damaged']);
+    const enemyBulletVsAsteroid = harness.getOverlap(harness.groups.enemyBullet, harness.groups.asteroid);
+
+    const bullet = createInstance(EnemyBullet, {
+      active: true,
+      kill: () => harness.callLog.push('enemyBullet.kill'),
+    });
+    const asteroid = createInstance(Asteroid, {
+      active: true,
+      x: 120,
+      y: 140,
+      blocksEnemyProjectiles: () => true,
+      takeDamage: (amount: number) => harness.callLog.push(`asteroid.takeDamage:${amount}`),
+    });
+
+    enemyBulletVsAsteroid(bullet, asteroid);
+
+    expect(harness.callLog).toContain('enemyBullet.kill');
+    expect(harness.callLog).toContain('asteroid.takeDamage:1');
+    expect(harness.callLog).toContain('spark:120,140');
+    expect(harness.damageAmounts).toEqual([]);
+  });
+
+  test('enemy bullets pass through non-cover asteroids', () => {
+    const harness = createCollisionHarness(['damaged']);
+    const enemyBulletVsAsteroid = harness.getOverlap(harness.groups.enemyBullet, harness.groups.asteroid);
+
+    const bullet = createInstance(EnemyBullet, {
+      active: true,
+      kill: () => harness.callLog.push('enemyBullet.kill'),
+    });
+    const asteroid = createInstance(Asteroid, {
+      active: true,
+      blocksEnemyProjectiles: () => false,
+      takeDamage: (amount: number) => harness.callLog.push(`asteroid.takeDamage:${amount}`),
+    });
+
+    enemyBulletVsAsteroid(bullet, asteroid);
+
+    expect(harness.callLog).not.toContain('enemyBullet.kill');
+    expect(harness.callLog).not.toContain('asteroid.takeDamage:1');
+    expect(harness.damageAmounts).toEqual([]);
+  });
+
+  test('bomber bombs are blocked by projectile-blocking cover asteroids', () => {
+    const harness = createCollisionHarness(['damaged']);
+    const bombVsAsteroid = harness.getOverlap(harness.groups.bomb, harness.groups.asteroid);
+
+    const bomb = createInstance(BomberBomb, {
+      active: true,
+      x: 180,
+      y: 220,
+      kill: () => harness.callLog.push('bomb.kill'),
+    });
+    const asteroid = createInstance(Asteroid, {
+      active: true,
+      x: 160,
+      y: 210,
+      blocksEnemyProjectiles: () => true,
+      takeDamage: (amount: number) => harness.callLog.push(`asteroid.takeDamage:${amount}`),
+    });
+
+    bombVsAsteroid(bomb, asteroid);
+
+    expect(harness.callLog).toContain('bomb.kill');
+    expect(harness.callLog).toContain('asteroid.takeDamage:2');
+    expect(harness.callLog).toContain('explosion:180,220,1.15');
+    expect(harness.damageAmounts).toEqual([]);
+  });
+
   test('asteroid collision runs onPlayerCollision after damage and before hit routing', () => {
     const harness = createCollisionHarness(['damaged']);
     const asteroidVsPlayer = harness.getOverlap(harness.groups.asteroid, harness.player);

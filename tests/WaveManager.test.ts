@@ -112,7 +112,16 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
   };
   const emittedEvents: string[] = [];
   const spawnedEnemies: Array<{ type: string; x: number; y: number }> = [];
+  const spawnedPowerUps: Array<{ x: number; y: number; type: string }> = [];
   const asteroidGroup = { id: 'asteroid-group' };
+  const powerUpGroup = {
+    getFirstDead: () => ({
+      spawn: (x: number, y: number, type: string) => {
+        spawnedPowerUps.push({ x, y, type });
+      },
+    }),
+    get: () => null,
+  };
 
   const scene = {
     physics: {
@@ -163,6 +172,7 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
 
   const manager = new WaveManager();
   const returnedAsteroidGroup = manager.create(scene as never, enemyPool as never);
+  manager.setPowerUpGroup(powerUpGroup as never);
   const mutableManager = manager as unknown as WaveManagerMutable;
   mutableManager.asteroidSpawner = fakeSpawner;
   mutableManager.levelConfig = levelConfig;
@@ -176,6 +186,7 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
     asteroidGroup,
     emittedEvents,
     spawnedEnemies,
+    spawnedPowerUps,
     spawnerCalls,
   };
 }
@@ -243,5 +254,59 @@ describe('WaveManager', () => {
       { type: 'fighter', x: 100, y: -80 },
     ]);
     expect(harness.emittedEvents).toEqual([`${GAME_SCENE_EVENTS.enemySpawnWarning}:120`]);
+  });
+
+  test('update triggers lane-based signature waves once when section progress crosses the threshold', () => {
+    const activeSection = createSection({
+      signatureWaves: [
+        {
+          id: 'lane-read-check',
+          triggerProgress: 0.5,
+          enemies: [
+            { type: 'scout', lane: 'left', y: -70 },
+            { type: 'fighter', lane: 'center' },
+            { type: 'bomber', lane: 'right', y: -90 },
+          ],
+        },
+      ],
+    });
+    const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection] }));
+
+    harness.manager.update(100, 16, 0.4);
+    harness.manager.update(200, 16, 0.6);
+    harness.manager.update(300, 16, 0.7);
+
+    expect(harness.spawnedEnemies).toEqual([
+      { type: 'scout', x: 80, y: -70 },
+      { type: 'fighter', x: 400, y: -80 },
+      { type: 'bomber', x: 720, y: -90 },
+    ]);
+    expect(harness.emittedEvents).toEqual([
+      `${GAME_SCENE_EVENTS.enemySpawnWarning}:80`,
+      `${GAME_SCENE_EVENTS.enemySpawnWarning}:400`,
+      `${GAME_SCENE_EVENTS.enemySpawnWarning}:720`,
+    ]);
+  });
+
+  test('update triggers authored recovery drops once through the configured power-up group', () => {
+    const activeSection = createSection({
+      recoveryDrops: [
+        {
+          id: 'recover-after-climax',
+          triggerProgress: 0.45,
+          type: 'shield',
+          lane: 'center',
+        },
+      ],
+    });
+    const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection] }));
+
+    harness.manager.update(100, 16, 0.44);
+    harness.manager.update(200, 16, 0.45);
+    harness.manager.update(300, 16, 0.8);
+
+    expect(harness.spawnedPowerUps).toEqual([
+      { x: 400, y: -40, type: 'shield' },
+    ]);
   });
 });

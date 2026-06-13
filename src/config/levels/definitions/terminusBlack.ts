@@ -8,7 +8,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   destination: 'Terminal singularity threshold beyond Acheron Apex',
   visualTheme: 'Near-black vacuum broken by cobalt fracture light and warped stellar halos.',
   coreGameplayIdea: 'Final convergence stage where learned hazard grammars overlap in controlled overload patterns.',
-  pacingSummary: 'False calm, anomaly lattice, convergence overload, and final sovereign duel.',
+  pacingSummary: 'False calm, readable synthesis waves with short recovery beats, convergence overload, and final sovereign duel.',
   enemyCompositionSummary: 'Elite mixed roster with constant role overlap and minimal downtime.',
   hazardSummary: 'Layered anomaly overlap: ring sweeps, pull traps, storm bursts, and debris punctuation in planned waves.',
   bossConcept: 'Axiom Null cycles bulwark denial, chase pressure, and spiral collapse patterns.',
@@ -74,7 +74,27 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       startProgress: 0.11,
       endProgress: 0.26,
       phase: 'build',
-      summary: 'Distortion lattice starts the overlap language by pairing pulls with slow crossfire framing.',
+      summary: 'Distortion lattice starts the synthesis language by pairing pulls with slow crossfire framing.',
+      signatureWaves: [
+        {
+          id: 'synthesis-lane-pull',
+          triggerProgress: 0.52,
+          enemies: [
+            { type: 'fighter', lane: 'left' },
+            { type: 'gunship', lane: 'right' },
+          ],
+          notes: 'Lane-reading plus route-commitment synthesis before the heavier overlap sections.',
+        },
+      ],
+      recoveryDrops: [
+        {
+          id: 'distortion-breath',
+          triggerProgress: 0.86,
+          type: 'shield',
+          lane: 'center',
+          notes: 'Short task-shift Recovery Beat between synthesis waves.',
+        },
+      ],
       hazardEvents: [
         { type: 'gravity-well', cadenceMs: 2360, intensity: 0.63 },
         { type: 'ring-crossfire', cadenceMs: 2920, intensity: 0.34 },
@@ -97,6 +117,18 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       endProgress: 0.43,
       phase: 'hazard',
       summary: 'Anomaly rush sequences stack storm, debris, and pull beats into adaptive lane puzzles.',
+      signatureWaves: [
+        {
+          id: 'synthesis-endurance-switch',
+          triggerProgress: 0.5,
+          enemies: [
+            { type: 'bomber', lane: 'center' },
+            { type: 'fighter', lane: 'left' },
+            { type: 'fighter', lane: 'right' },
+          ],
+          notes: 'Endurance, target-priority, and route-switching synthesis in a readable three-lane template.',
+        },
+      ],
       hazardEvents: [
         { type: 'energy-storm', cadenceMs: 1880, intensity: 0.72 },
         { type: 'debris-surge', cadenceMs: 2080, intensity: 0.64 },
@@ -122,6 +154,27 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       summary: 'Convergence overload merges all major hazard grammars in one sustained final exam.',
       spawnRateMultiplier: 2.26,
       encounterSizeOverride: { min: 2, max: 3 },
+      signatureWaves: [
+        {
+          id: 'synthesis-final-spread',
+          triggerProgress: 0.36,
+          enemies: [
+            { type: 'gunship', lane: 'left' },
+            { type: 'swarm', lane: 'center' },
+            { type: 'gunship', lane: 'right' },
+          ],
+          notes: 'Final pre-boss synthesis wave asks for adaptation rather than pure memorization.',
+        },
+      ],
+      recoveryDrops: [
+        {
+          id: 'convergence-health-breath',
+          triggerProgress: 0.82,
+          type: 'health',
+          lane: 'center',
+          notes: 'Brief recovery before the last approach without removing danger from the finale.',
+        },
+      ],
       hazardEvents: [
         { type: 'gravity-well', cadenceMs: 1500, intensity: 0.44 },
         { type: 'energy-storm', cadenceMs: 3100, intensity: 0.5 },

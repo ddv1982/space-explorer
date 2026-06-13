@@ -61,6 +61,15 @@ export function trySpawnRandomPowerUp(
   }
 
   const type = Phaser.Utils.Array.GetRandom(POWER_UP_TYPES);
+  spawnPowerUp(group, x, y, type);
+}
+
+export function spawnPowerUp(
+  group: Phaser.Physics.Arcade.Group,
+  x: number,
+  y: number,
+  type: PowerUpType
+): void {
   const powerUp =
     (group.getFirstDead(false) as PowerUp | null) ??
     (group.get(x, y) as PowerUp | null);

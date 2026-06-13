@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 
 import {
+  type AuthoredLaneAnchor,
   type EnemySpawnConfig,
   type EnemyType,
   type LevelConfig,
   type LevelSectionConfig,
+  type RecoveryDropConfig,
   type ScriptedHazardConfig,
+  type SignatureWaveConfig,
   getActiveSection,
   getLevelConfig,
   getSectionProgress,
@@ -14,7 +17,7 @@ import { Asteroid } from '@/entities/Asteroid';
 import { getViewportBounds } from '@/utils/layout';
 
 import type { EnemyPool } from './EnemyPool';
-import { GAME_SCENE_EVENTS } from './GameplayFlow';
+import { GAME_SCENE_EVENTS, spawnPowerUp } from './GameplayFlow';
 import { resolveSectionSpawnRateScale } from './sectionIdentity';
 import { WaveAsteroidSpawner } from './wave/WaveAsteroidSpawner';
 import {
@@ -33,6 +36,7 @@ interface SpawnEntry {
 
 type EncounterSectionState = {
   activeSection: LevelSectionConfig | null;
+  sectionProgress: number;
   rateMultiplier: number;
 };
 
@@ -49,7 +53,9 @@ export class WaveManager {
   private activeSection: LevelSectionConfig | null = null;
   private activeSectionStartedAt = 0;
   private hazardPressure = 0;
+  private powerUpGroup: Phaser.Physics.Arcade.Group | null = null;
   private readonly hazardLastTriggered = new Map<string, number>();
+  private readonly triggeredAuthoredEvents = new Set<string>();
   private readonly enemySpawnHandlers: Record<EnemyType, (anchorX: number) => boolean> = {
     scout: (anchorX) => this.spawnRepeatedEnemies(
       'scout',
@@ -117,6 +123,7 @@ export class WaveManager {
 
     const sectionState = this.resolveEncounterSectionState(progress, time);
     this.decayHazardPressure(delta);
+    this.spawnAuthoredSectionContent(sectionState.activeSection, sectionState.sectionProgress);
     this.spawnSectionHazards(time, sectionState.activeSection);
     this.spawnEnemiesByConfig(time, sectionState.rateMultiplier, sectionState.activeSection);
     this.updateAsteroids(time, sectionState.activeSection);
@@ -126,10 +133,15 @@ export class WaveManager {
     return this.asteroidGroup;
   }
 
+  setPowerUpGroup(powerUpGroup: Phaser.Physics.Arcade.Group): void {
+    this.powerUpGroup = powerUpGroup;
+  }
+
   private resetLevelState(): void {
     this.lastEncounterSpawn = 0;
     this.lastAsteroidSpawn = 0;
     this.activeSection = null;
+    this.triggeredAuthoredEvents.clear();
   }
 
   private resetHazardState(): void {
@@ -149,8 +161,65 @@ export class WaveManager {
 
     return {
       activeSection,
+      sectionProgress,
       rateMultiplier: this.getEncounterRateMultiplier(progress, activeSection, sectionProgress),
     };
+  }
+
+  private spawnAuthoredSectionContent(section: LevelSectionConfig | null, sectionProgress: number): void {
+    if (!section) {
+      return;
+    }
+
+    section.signatureWaves?.forEach((wave) => {
+      if (this.shouldTriggerAuthoredEvent(section, 'wave', wave.id, wave.triggerProgress, sectionProgress)) {
+        this.spawnSignatureWave(wave);
+      }
+    });
+
+    section.recoveryDrops?.forEach((drop) => {
+      if (this.shouldTriggerAuthoredEvent(section, 'drop', drop.id, drop.triggerProgress, sectionProgress)) {
+        this.spawnRecoveryDrop(drop);
+      }
+    });
+  }
+
+  private shouldTriggerAuthoredEvent(
+    section: LevelSectionConfig,
+    type: 'wave' | 'drop',
+    id: string,
+    triggerProgress: number,
+    sectionProgress: number
+  ): boolean {
+    const key = `${section.id}:${type}:${id}`;
+    if (this.triggeredAuthoredEvents.has(key) || sectionProgress < triggerProgress) {
+      return false;
+    }
+
+    this.triggeredAuthoredEvents.add(key);
+    return true;
+  }
+
+  private spawnSignatureWave(wave: SignatureWaveConfig): void {
+    const warningLanes = new Set<number>();
+
+    wave.enemies.forEach((entry) => {
+      const x = this.getLaneAnchorX(entry.lane, 80);
+      const enemy = this.enemyPool.spawnEnemy(entry.type, x, entry.y ?? -80);
+      if (enemy) {
+        warningLanes.add(x);
+      }
+    });
+
+    warningLanes.forEach((x) => this.emitSpawnWarning(x));
+  }
+
+  private spawnRecoveryDrop(drop: RecoveryDropConfig): void {
+    if (!this.powerUpGroup) {
+      return;
+    }
+
+    spawnPowerUp(this.powerUpGroup, this.getLaneAnchorX(drop.lane, 60), -40, drop.type);
   }
 
   private updateAsteroids(time: number, activeSection: LevelSectionConfig | null): void {
@@ -395,6 +464,20 @@ export class WaveManager {
   private clampEncounterX(x: number, padding: number): number {
     const { min, max } = this.getEncounterHorizontalRange(padding);
     return Phaser.Math.Clamp(x, min, max);
+  }
+
+  private getLaneAnchorX(lane: AuthoredLaneAnchor, padding: number): number {
+    const { min, max } = this.getEncounterHorizontalRange(padding);
+    const center = (min + max) / 2;
+
+    switch (lane) {
+      case 'left':
+        return min;
+      case 'center':
+        return center;
+      case 'right':
+        return max;
+    }
   }
 
   private getEncounterHorizontalRange(padding: number): { min: number; max: number } {

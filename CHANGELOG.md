@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.24] - 2026-06-13
+
+### Added
+- Added authored section primitives for lane-based signature waves and health/shield Recovery Beat drops.
+- Added opt-in literal cover so selected asteroid terrain blocks enemy bullets and bomber bombs without blocking enemy bodies.
+- Added the first gameplay-diversity vertical slice across Levels 1, 5, 6, and 10, including Level 6 terrain-as-cover routing and finale synthesis waves.
+
+### Changed
+- Reworked Level 6 into a cover-reading stage with breakable projectile-blocking wreck plates and a bulwark-style boss pressure profile.
+- Tuned Level 5 toward endurance survival with authored relief and a burst-duel boss contrast.
+- Preserved Level 1 onboarding while adding readable authored lane-reading checks.
+
+### Quality
+- Added validator guardrails for authored waves, Recovery Beat drops, and cover durability configuration.
+- Added regression coverage for authored wave/drop execution, cover projectile blocking, cover spawner config, and vertical-slice campaign expectations.
+- Added design glossary, ADR, implementation plan, and manual playtest checklist for the gameplay-diversity slice.
+
 ## [1.1.22] - 2026-05-10
 
 ### Fixed

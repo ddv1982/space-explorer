@@ -11,7 +11,7 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   pacingSummary: 'Heat rise, ignition breaks, furnace gauntlet, then Leviathan showdown.',
   enemyCompositionSummary: 'Bombers and gunships enforce deliberate target priority under constant chip pressure.',
   hazardSummary: 'Thermal debris sheets, ignition storm breaks, and furnace corridor choke points.',
-  bossConcept: 'Pyre Leviathan alternates broad denial flames with aggressive chase bursts.',
+  bossConcept: 'Pyre Leviathan contrasts the endurance route with a concentrated burst-duel damage check.',
   difficultyRole: 'Endurance test at the end of core campaign.',
   journeyNote: 'The route glows like a forge furnace where hesitation costs hull.',
   bgColor: '#180606',
@@ -33,11 +33,11 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   boss: {
     name: 'Pyre Leviathan',
     maxHp: 2300,
-    phase1Cooldown: 960,
-    phase2Cooldown: 430,
-    phase2MoveSpeed: 214,
+    phase1Cooldown: 880,
+    phase2Cooldown: 380,
+    phase2MoveSpeed: 224,
     phaseTransitionPauseMs: 360,
-    attackStyle: 'maelstrom',
+    attackStyle: 'pressure',
     phase1SpreadShotCount: 8,
     phase1SpreadArcDegrees: 78,
     phase1BulletSpeedScale: 1,
@@ -82,6 +82,15 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
       phase: 'hazard',
       summary: 'Ignition breaks repeatedly cut otherwise stable routes and punish tempo drift.',
       spawnRateMultiplier: 1.82,
+      recoveryDrops: [
+        {
+          id: 'heatfront-health-stabilizer',
+          triggerProgress: 0.78,
+          type: 'health',
+          lane: 'center',
+          notes: 'Authored endurance relief after the first sustained heat-front pressure peak.',
+        },
+      ],
       hazardEvents: [
         { type: 'energy-storm', cadenceMs: 1980, intensity: 0.62 },
         { type: 'debris-surge', cadenceMs: 2360, intensity: 0.46 },
@@ -98,6 +107,17 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
       phase: 'climax',
       summary: 'Furnace lock sequence stacks rock lanes with late ignition bursts for composure checks.',
       encounterSizeOverride: { min: 2, max: 3 },
+      signatureWaves: [
+        {
+          id: 'furnace-priority-check',
+          triggerProgress: 0.46,
+          enemies: [
+            { type: 'bomber', lane: 'left' },
+            { type: 'gunship', lane: 'right' },
+          ],
+          notes: 'Endurance peak asks for target priority without adding a new enemy type.',
+        },
+      ],
       hazardEvents: [
         { type: 'rock-corridor', cadenceMs: 1860, corridorWidth: 195, laneCount: 2, damage: 1, intensity: 0.74 },
         { type: 'debris-surge', cadenceMs: 2300, intensity: 0.58 },
@@ -116,6 +136,15 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
       summary: 'Ash clears briefly as the Leviathan enters.',
       spawnRateMultiplier: 0.9,
       asteroidInterval: 5100,
+      recoveryDrops: [
+        {
+          id: 'pre-leviathan-shield',
+          triggerProgress: 0.35,
+          type: 'shield',
+          lane: 'center',
+          notes: 'Pre-boss Recovery Beat stabilizes the endurance level before the burst-duel boss.',
+        },
+      ],
       musicIntensity: 0.82,
       tensionArc: 'constant',
       vatTarget: { valence: -0.1, arousal: 0.48, tension: 0.54 },

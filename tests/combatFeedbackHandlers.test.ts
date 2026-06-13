@@ -9,8 +9,13 @@ const audioManager = {
 };
 mock.module('../src/systems/AudioManager', () => ({ audioManager }));
 const trySpawnRandomPowerUp = mock();
+const spawnPowerUp = mock((group: { getFirstDead?: (createIfNull: boolean) => unknown; get?: (x: number, y: number) => unknown }, x: number, y: number, type: string) => {
+  const powerUp = (group.getFirstDead?.(false) ?? group.get?.(x, y)) as { spawn?: (spawnX: number, spawnY: number, powerUpType: string) => void } | null;
+  powerUp?.spawn?.(x, y, type);
+});
 mock.module('../src/systems/GameplayFlow', () => ({
   trySpawnRandomPowerUp,
+  spawnPowerUp,
   applyPowerUpPickup: mock(),
   GAME_SCENE_EVENTS: {
     enemyDeath: 'enemy-death',

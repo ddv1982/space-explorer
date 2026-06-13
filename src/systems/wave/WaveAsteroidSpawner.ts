@@ -69,7 +69,9 @@ export class WaveAsteroidSpawner {
     const baseConfig: AsteroidSpawnConfig = {
       collisionDamage,
       destroyOnPlayerImpact: false,
-      indestructible: true,
+      indestructible: hazard.coverIndestructible ?? hazard.coverHp === undefined,
+      blocksEnemyProjectiles: hazard.blocksEnemyProjectiles ?? false,
+      hp: hazard.coverHp,
       scoreValue: 0,
       tint: 0x7a4a2e,
       depth: 3,

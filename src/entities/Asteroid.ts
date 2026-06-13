@@ -9,6 +9,7 @@ export interface AsteroidSpawnConfig {
   collisionDamage?: number;
   destroyOnPlayerImpact?: boolean;
   indestructible?: boolean;
+  blocksEnemyProjectiles?: boolean;
   scoreValue?: number;
   tint?: number;
   hp?: number;
@@ -24,6 +25,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   private collisionDamage = 1;
   private destroyOnPlayerImpact = true;
   private indestructible = false;
+  private blocksProjectiles = false;
   private scoreValue = 50;
   private baseTint: number | null = null;
 
@@ -46,6 +48,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     this.collisionDamage = config.collisionDamage ?? 1;
     this.destroyOnPlayerImpact = config.destroyOnPlayerImpact ?? true;
     this.indestructible = config.indestructible ?? false;
+    this.blocksProjectiles = config.blocksEnemyProjectiles ?? false;
     this.scoreValue = config.scoreValue ?? 50;
     this.baseTint = config.tint ?? null;
 
@@ -68,6 +71,10 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
   getCollisionDamage(): number {
     return this.collisionDamage;
+  }
+
+  blocksEnemyProjectiles(): boolean {
+    return this.blocksProjectiles;
   }
 
   onPlayerCollision(): void {
@@ -139,6 +146,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     this.collisionDamage = 1;
     this.destroyOnPlayerImpact = true;
     this.indestructible = false;
+    this.blocksProjectiles = false;
     this.scoreValue = 50;
     this.baseTint = null;
   }
