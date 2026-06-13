@@ -1,5 +1,4 @@
 import { describe, expect, mock, test } from 'bun:test';
-import type Phaser from 'phaser';
 
 mock.module('phaser', () => ({
   default: {
@@ -14,7 +13,7 @@ mock.module('../src/systems/parallax/starfieldTextureGenerator', () => ({
   ensureStarfieldTexture,
 }));
 
-const { createStarfieldTileSprites, layoutStarfieldTileSprites, destroyStarfieldTileSprites, STARFIELD_TILE_DEPTHS } = await import(
+const { createStarfieldTileSprites, destroyStarfieldTileSprites, STARFIELD_TILE_DEPTHS } = await import(
   '../src/systems/parallax/starfieldTileSpriteLifecycle'
 );
 

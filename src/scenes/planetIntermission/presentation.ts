@@ -27,7 +27,7 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
   const layout = getViewportLayout(scene);
   const compact = layout.height < 430;
   const tight = layout.height < 520;
-  const gridLayout = getUpgradeGridLayout(layout.height);
+  const gridLayout = getUpgradeGridLayout(layout.height, layout.width);
   const promptY = layout.bottom - (compact ? 22 : tight ? 32 : 60);
   const planetNameY = layout.top + (compact ? 18 : tight ? 28 : 50);
   const titleY = planetNameY + (compact ? 22 : tight ? 28 : 35);
@@ -39,7 +39,11 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
   const gridHeight = rows > 0
     ? rows * gridLayout.buttonHeight + (rows - 1) * gridLayout.spacingY
     : 0;
-  const minGridTop = planetY + (compact ? 46 : tight ? 72 : 110);
+  const stackedGrid = gridLayout.columns === 1 && rows > 2;
+  const minGridGap = stackedGrid
+    ? compact ? 38 : tight ? 50 : 56
+    : compact ? 46 : tight ? 72 : 110;
+  const minGridTop = planetY + minGridGap;
   const desiredGridTop = compact ? 168 : tight ? 244 : gridLayout.top;
   const gridTop = rows > 0
     ? Math.max(minGridTop, Math.min(desiredGridTop, promptY - (compact ? 18 : 24) - gridHeight))

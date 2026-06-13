@@ -45,6 +45,7 @@ const {
   PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
 } = await import('../src/scenes/gameScene/pauseOverlay/view');
 const { createMenuLayoutPlan } = await import('../src/scenes/menuScene/layout');
+const { getIntermissionLayout, getUpgradeGridStartX } = await import('../src/scenes/planetIntermission/presentation');
 
 type SceneLike = {
   scale: {
@@ -192,6 +193,34 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
   }
 
   expect(statusRect.y + statusRect.height).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
+}
+
+function assertIntermissionUpgradeButtonsFit(viewport: { width: number; height: number }, buttonCount: number): void {
+  const scene = createScene(viewport.width, viewport.height) as never;
+  const layout = getIntermissionLayout(scene, buttonCount);
+  const startX = getUpgradeGridStartX(scene, layout.gridLayout);
+  const rows = Math.ceil(buttonCount / layout.gridLayout.columns);
+  const gridHeight = rows * layout.gridLayout.buttonHeight + Math.max(0, rows - 1) * layout.gridLayout.spacingY;
+  const gridWidth =
+    layout.gridLayout.buttonWidth * layout.gridLayout.columns +
+    layout.gridLayout.spacingX * (layout.gridLayout.columns - 1);
+
+  expect(startX).toBeGreaterThanOrEqual(0);
+  expect(startX + gridWidth).toBeLessThanOrEqual(viewport.width);
+  expect(layout.gridTop).toBeGreaterThan(layout.planetY);
+  expect(layout.gridTop + gridHeight).toBeLessThanOrEqual(layout.promptY - 12);
+
+  for (let i = 0; i < buttonCount; i++) {
+    const col = i % layout.gridLayout.columns;
+    const row = Math.floor(i / layout.gridLayout.columns);
+    const x = startX + col * (layout.gridLayout.buttonWidth + layout.gridLayout.spacingX);
+    const y = layout.gridTop + row * (layout.gridLayout.buttonHeight + layout.gridLayout.spacingY);
+
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(x + layout.gridLayout.buttonWidth).toBeLessThanOrEqual(viewport.width);
+    expect(y).toBeGreaterThanOrEqual(0);
+    expect(y + layout.gridLayout.buttonHeight).toBeLessThanOrEqual(viewport.height);
+  }
 }
 
 describe('responsive save-slot layouts', () => {
@@ -390,5 +419,14 @@ describe('responsive save-slot layouts', () => {
     expect(plan.musicPanelY).toBeGreaterThanOrEqual(0);
     expect(plan.musicPanelY + plan.musicPanelHeight).toBeLessThanOrEqual(viewport.height);
     expect(plan.sliderStartY + plan.sliderSpacing * 3 + 32).toBeLessThanOrEqual(viewport.height);
+  });
+
+  test.each([
+    { width: 360, height: 640 },
+    { width: 320, height: 640 },
+    { width: 280, height: 360 },
+    { width: 480, height: 320 },
+  ])('planet intermission keeps upgrade buttons inside narrow viewports', (viewport) => {
+    assertIntermissionUpgradeButtonsFit(viewport, 4);
   });
 });

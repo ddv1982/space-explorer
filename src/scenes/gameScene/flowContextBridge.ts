@@ -3,7 +3,7 @@ import type { GameSceneFlowContext } from './GameSceneFlowController';
 
 type GameSceneFlowContextBridgeInput = Omit<
   GameSceneFlowContext,
-  'startScene' | 'pauseScene' | 'resumeScene'
+  'startScene'
 >;
 
 export function createGameSceneFlowContext(
@@ -12,7 +12,5 @@ export function createGameSceneFlowContext(
   return {
     ...input,
     startScene: (key) => startRegisteredScene(input.scene, key),
-    pauseScene: () => input.scene.physics.world.pause(),
-    resumeScene: () => input.scene.physics.world.resume(),
   };
 }

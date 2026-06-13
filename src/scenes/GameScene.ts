@@ -315,6 +315,12 @@ export class GameScene extends Phaser.Scene {
       warpTransition: this.warpTransition,
       stopPlayerMotion: () => this.stopPlayerMotion(),
       runBestEffort,
+      pauseScene: () => this.physics.world.pause(),
+      resumeScene: () => {
+        if (!this.pauseStateController?.isGameplayPaused()) {
+          this.physics.world.resume();
+        }
+      },
       getPlayerRespawnPosition: () => this.getPlayerSpawnPoint(),
     });
   }

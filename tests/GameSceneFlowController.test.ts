@@ -41,8 +41,7 @@ function createTimerHarness() {
   const time = {
     now: 0,
     delayedCall: mock((delay: number, callback: () => void): FakeTimer => {
-      let timer: FakeTimer;
-      timer = {
+      const timer: FakeTimer = {
         delay,
         callback,
         removed: false,

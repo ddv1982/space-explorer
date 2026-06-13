@@ -18,6 +18,8 @@ describe('gameScene flowContextBridge', () => {
     const getPlayerRespawnPosition = mock(() => ({ x: 120, y: 240 }));
     const pause = mock();
     const resume = mock();
+    const pauseScene = mock();
+    const resumeScene = mock();
     const clockPause = mock();
     const clockResume = mock();
     const effect = mock();
@@ -52,6 +54,8 @@ describe('gameScene flowContextBridge', () => {
       warpTransition: warpTransition as never,
       stopPlayerMotion,
       runBestEffort,
+      pauseScene,
+      resumeScene,
       getPlayerRespawnPosition,
     });
 
@@ -73,8 +77,10 @@ describe('gameScene flowContextBridge', () => {
     expect(runBestEffort).toHaveBeenCalledWith(effect);
     expect(effect).toHaveBeenCalledTimes(1);
     expect(startRegisteredScene).toHaveBeenCalledWith(scene, 'GameOver');
-    expect(pause).toHaveBeenCalledTimes(1);
-    expect(resume).toHaveBeenCalledTimes(1);
+    expect(pauseScene).toHaveBeenCalledTimes(1);
+    expect(resumeScene).toHaveBeenCalledTimes(1);
+    expect(pause).not.toHaveBeenCalled();
+    expect(resume).not.toHaveBeenCalled();
     expect(clockPause).not.toHaveBeenCalled();
     expect(clockResume).not.toHaveBeenCalled();
     expect(scene.time.paused).toBe(false);

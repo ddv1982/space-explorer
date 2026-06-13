@@ -17,7 +17,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/**/*.ts', 'vite.config.ts'],
+    files: ['src/**/*.ts', 'tests/**/*.ts', 'scripts/**/*.ts', 'vite.config.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 'latest',
@@ -36,6 +36,15 @@ export default defineConfig([
           varsIgnorePattern: '^_',
         },
       ],
+    },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    ...js.configs.recommended,
+    languageOptions: {
+      ...js.configs.recommended.languageOptions,
+      sourceType: 'module',
+      globals: globals.node,
     },
   },
 ]);

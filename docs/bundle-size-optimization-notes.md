@@ -24,7 +24,7 @@
 
 - Command: `bun run build`
 - Config change: Added a conservative manual chunk strategy in `vite.config.ts` to emit `phaser` for `node_modules/phaser` and `vendor` for other `node_modules` dependencies.
-- Current warning: `Some chunks are larger than 500 kB after minification.` (default warning threshold, no warning-limit increase used)
+- Current warning: `Some chunks are larger than 1500 kB after minification.` (`vite.config.ts` sets `chunkSizeWarningLimit: 1500`)
 - Notable chunk sizes:
   - `dist/assets/phaser-CS3aEib-.js`: 1,351.46 kB (gzip 348.50 kB)
   - `dist/assets/index-0KqbZ6Bn.js`: 34.02 kB (gzip 10.46 kB)
@@ -36,17 +36,19 @@
 - Baseline had a single large app entry chunk: `dist/assets/index-Dc0mJv79.js` at 1,623.84 kB (gzip 418.53 kB).
 - Post-change build moves Phaser engine code into a dedicated `phaser` chunk, reducing the app entry chunk to 34.02 kB (gzip 10.46 kB).
 - Largest chunk size drops by 272.38 kB minified and 70.03 kB gzip versus baseline.
-- Build still warns at default 500 kB due Phaser chunk size, but warning is now informative instead of muted by a raised threshold.
+- Build can still warn at the configured 1500 kB threshold when the Phaser chunk grows beyond that guardrail.
 
 ## Bundle Guardrails
 
 - `bun run bundle:report` reads files under `dist/`, skips sourcemaps, and prints a concise raw/gzip size summary (top 8 largest files plus totals).
 - `bun run bundle:check` runs the same report in check mode and exits non-zero when a threshold is exceeded.
 - Defaults:
-  - Largest file threshold: `1500` kB (`BUNDLE_MAX_ASSET_KB`)
-  - Total `dist` threshold: `1800` kB (`BUNDLE_MAX_TOTAL_KB`)
-- Rationale: the latest Phaser chunk baseline is ~1351 kB, so `1500` kB leaves modest headroom for normal upgrades while still catching accidental regressions. The total threshold of `1800` kB allows expected app growth without masking substantial jumps.
+  - Largest file threshold: `3500` kB (`BUNDLE_MAX_ASSET_KB`)
+  - Total `dist` threshold: `30000` kB (`BUNDLE_MAX_TOTAL_KB`)
+  - Largest JavaScript asset threshold: `1500` kB (`BUNDLE_MAX_JS_ASSET_KB`)
+  - Total JavaScript threshold: `1800` kB (`BUNDLE_MAX_TOTAL_JS_KB`)
+- Rationale: broad asset thresholds leave room for non-JS files, while JavaScript-specific thresholds keep the latest Phaser chunk baseline near ~1351 kB under a tighter guardrail and catch accidental JS regressions.
 - Threshold overrides are supported for local/CI tuning, for example:
-  - `bun run bundle:check --max-asset-kb 1450 --max-total-kb 1750`
-  - `BUNDLE_MAX_ASSET_KB=1450 BUNDLE_MAX_TOTAL_KB=1750 bun run bundle:check`
-- This guardrail is additive and does not alter Vite `chunkSizeWarningLimit`, so native Vite warnings remain visible during `bun run build`.
+  - `bun run bundle:check --max-js-asset-kb 1450 --max-total-js-kb 1750`
+  - `BUNDLE_MAX_JS_ASSET_KB=1450 BUNDLE_MAX_TOTAL_JS_KB=1750 bun run bundle:check`
+- This guardrail is additive to Vite `chunkSizeWarningLimit`, so native Vite warnings remain visible during `bun run build`.

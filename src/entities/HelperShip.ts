@@ -7,6 +7,8 @@ import { ensureHelperShipTexture } from '../utils/SpriteFactory';
 
 type HelperShipDamageResult = 'ignored' | 'active' | 'respawning' | 'depleted';
 
+const HELPER_CONTACT_DAMAGE_COOLDOWN_MS = 450;
+
 interface HelperShipLoadout {
   maxHp: number;
   lives: number;
@@ -32,6 +34,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   private followOffsetY = 16;
   private followLerp = 0.18;
   private lastFireTime = 0;
+  private lastContactDamageTime = Number.NEGATIVE_INFINITY;
   private respawnAt = -1;
   private depleted = false;
 
@@ -63,6 +66,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     this.followOffsetX = loadout.followOffsetX;
     this.followOffsetY = loadout.followOffsetY;
     this.lastFireTime = 0;
+    this.lastContactDamageTime = Number.NEGATIVE_INFINITY;
     this.respawnAt = -1;
     this.depleted = false;
     this.setRotation(0);
@@ -123,6 +127,18 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     return 'depleted';
   }
 
+  takeContactDamage(amount: number, time: number, effectsManager: EffectsManager): HelperShipDamageResult {
+    if (time < this.lastContactDamageTime + HELPER_CONTACT_DAMAGE_COOLDOWN_MS) {
+      return 'ignored';
+    }
+
+    const outcome = this.takeDamage(amount, time, effectsManager);
+    if (outcome !== 'ignored') {
+      this.lastContactDamageTime = time;
+    }
+    return outcome;
+  }
+
   isDepleted(): boolean {
     return this.depleted;
   }
@@ -166,6 +182,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     this.enableBody(true, x, y, true, true);
     this.hp = this.maxHp;
     this.lastFireTime = time - Phaser.Math.Between(0, Math.floor(this.fireRateMs * 0.6));
+    this.lastContactDamageTime = Number.NEGATIVE_INFINITY;
     this.respawnAt = -1;
     this.clearTint();
     this.setScale(1);

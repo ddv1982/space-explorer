@@ -1,12 +1,12 @@
 # Space Explorer
 
-A retro arcade space shooter built with [Phaser 4 RC](https://phaser.io), TypeScript, and Vite. Pilot a responsive ship through a **10-level campaign**, survive escalating hazards, defeat themed bosses, collect power-ups, and upgrade your ship between missions.
+A retro arcade space shooter built with [Phaser 4](https://phaser.io), TypeScript, and Vite. Pilot a responsive ship through a **10-level campaign**, survive escalating hazards, defeat themed bosses, collect power-ups, and upgrade your ship between missions.
 
 Playable here:
 [Space Explorer](https://space-explorer.net)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
-![Phaser](https://img.shields.io/badge/Phaser-4.0.0--rc.7-green)
+![Phaser](https://img.shields.io/badge/Phaser-4.0.0-green)
 ![Vite](https://img.shields.io/badge/Vite-8.0-purple)
 
 ## Quick start
@@ -87,7 +87,7 @@ Some upgrades unlock later in the campaign and use progression caps so the run s
 
 ## Tech stack
 
-- **Phaser 4 RC (4.0.0-rc.7)** — game engine
+- **Phaser 4** — game engine
 - **TypeScript** — strict typing across gameplay and config
 - **Vite 8** — dev server and production build
 - **Bun** — package manager / script runner
@@ -161,11 +161,14 @@ src/
 
 ```bash
 bun run dev      # start local dev server
+bun test         # run unit/regression tests
 bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
 bun run knip     # unused-code analysis
 bun run levels:validate # config validation for level authoring
+bun run bundle:report   # report dist asset sizes after a build
+bun run bundle:check    # enforce bundle guardrail thresholds after a build
 ```
 
 ## Docs

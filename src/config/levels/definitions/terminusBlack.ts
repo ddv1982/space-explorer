@@ -123,10 +123,10 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       spawnRateMultiplier: 2.26,
       encounterSizeOverride: { min: 2, max: 3 },
       hazardEvents: [
-        { type: 'ring-crossfire', cadenceMs: 1600, intensity: 0.8 },
-        { type: 'gravity-well', cadenceMs: 1780, intensity: 0.76 },
-        { type: 'energy-storm', cadenceMs: 1740, intensity: 0.74 },
-        { type: 'debris-surge', cadenceMs: 2100, intensity: 0.62 },
+        { type: 'gravity-well', cadenceMs: 1500, intensity: 0.44 },
+        { type: 'energy-storm', cadenceMs: 3100, intensity: 0.5 },
+        { type: 'ring-crossfire', cadenceMs: 2300, intensity: 0.56 },
+        { type: 'debris-surge', cadenceMs: 3900, intensity: 0.44 },
       ],
       musicIntensity: 0.97,
       visualModifiers: {

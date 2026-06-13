@@ -18,6 +18,20 @@ const EARLY_LEVEL_MAX_HAZARD_INTENSITY = 0.62;
 const MIN_RELEASE_INTENSITY_DELTA = 0.18;
 const HAZARD_INTENSITY_JUMP_WARNING_DELTA = 0.35;
 const HAZARD_CADENCE_JUMP_WARNING_RATIO = 1.8;
+const HAZARD_PRESSURE_DECAY_PER_MS = 1 / 1800;
+const HAZARD_PRESSURE_MAX = 2.4;
+const HAZARD_REACHABILITY_STEP_MS = 100;
+const HAZARD_REACHABILITY_CYCLES = 6;
+const HAZARD_BASE_PRESSURE_COST: Record<ScriptedHazardConfig['type'], number> = {
+  'ambient-asteroids': 0.35,
+  'debris-surge': 0.55,
+  minefield: 0.7,
+  'nebula-ambush': 0.78,
+  'ring-crossfire': 0.85,
+  'rock-corridor': 1.05,
+  'energy-storm': 0.95,
+  'gravity-well': 1.1,
+};
 const EARLY_LEVELS = new Set(
   CORE_CAMPAIGN.levels.slice(0, EARLY_LEVEL_GUARDRAIL_COUNT).map((level) => levelLabel(level))
 );
@@ -117,6 +131,7 @@ function validateSectionSequence(level: LevelConfig): void {
     section.hazardEvents?.forEach((hazard, hazardIndex) => {
       validateHazard(name, section, hazard, hazardIndex);
     });
+    validateHazardReachability(name, section);
 
     const next = sorted[i + 1];
     if (!next) {
@@ -136,6 +151,72 @@ function average(values: number[]): number | null {
   }
 
   return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getValidationHazardPressureCost(hazard: ScriptedHazardConfig): number {
+  const baseCost = HAZARD_BASE_PRESSURE_COST[hazard.type];
+  const intensity = clamp(hazard.intensity ?? 0.5, 0, 1.25);
+  return baseCost * (0.8 + (1.35 - 0.8) * intensity);
+}
+
+function simulateHazardReachability(hazards: ScriptedHazardConfig[]): { counts: number[]; horizonMs: number } {
+  const maxCadenceMs = Math.max(...hazards.map((hazard) => hazard.cadenceMs ?? 2000));
+  const maxDurationMs = Math.max(...hazards.map((hazard) => hazard.durationMs ?? 0));
+  const horizonMs = Math.max(maxCadenceMs * HAZARD_REACHABILITY_CYCLES, maxDurationMs);
+  const counts = hazards.map(() => 0);
+  const lastTriggered = hazards.map(() => 0);
+  let hazardPressure = 0;
+
+  for (let time = HAZARD_REACHABILITY_STEP_MS; time <= horizonMs; time += HAZARD_REACHABILITY_STEP_MS) {
+    hazardPressure = Math.max(0, hazardPressure - HAZARD_REACHABILITY_STEP_MS * HAZARD_PRESSURE_DECAY_PER_MS);
+
+    hazards.forEach((hazard, index) => {
+      const cadence = hazard.cadenceMs ?? 2000;
+      const duration = hazard.durationMs;
+
+      if (duration !== undefined && time > Math.max(0, duration)) {
+        return;
+      }
+
+      if (time <= lastTriggered[index] + cadence) {
+        return;
+      }
+
+      const pressureCost = getValidationHazardPressureCost(hazard);
+      if (hazardPressure + pressureCost > HAZARD_PRESSURE_MAX) {
+        return;
+      }
+
+      hazardPressure = Math.min(HAZARD_PRESSURE_MAX, hazardPressure + pressureCost);
+      lastTriggered[index] = time;
+      counts[index] += 1;
+    });
+  }
+
+  return { counts, horizonMs };
+}
+
+function validateHazardReachability(levelName: string, section: LevelSectionConfig): void {
+  const hazards = section.hazardEvents;
+  if (!hazards?.length) {
+    return;
+  }
+
+  const { counts, horizonMs } = simulateHazardReachability(hazards);
+  counts.forEach((count, hazardIndex) => {
+    if (count > 0) {
+      return;
+    }
+
+    pushError(
+      levelName,
+      `${section.id} hazard[${hazardIndex}] (${hazards[hazardIndex].type}) is not pressure-reachable within ${horizonMs}ms; stagger cadence/order or reduce pressure`
+    );
+  });
 }
 
 function validatePacingGuardrails(level: LevelConfig): void {
@@ -303,10 +384,11 @@ function validateEarlyLevelRhythmGuardrails(level: LevelConfig, trackName: 'stag
       );
     }
 
-    if (isFiniteNumber(rhythm.gate ?? Number.NaN) && rhythm.gate < EARLY_LEVEL_GATE_WARNING_THRESHOLD) {
+    const gate = rhythm.gate;
+    if (gate !== undefined && isFiniteNumber(gate) && gate < EARLY_LEVEL_GATE_WARNING_THRESHOLD) {
       pushWarning(
         levelName,
-        `${rhythmScope}: early-level gate ${rhythm.gate.toFixed(2)} is below recommended threshold ${EARLY_LEVEL_GATE_WARNING_THRESHOLD.toFixed(2)}`
+        `${rhythmScope}: early-level gate ${gate.toFixed(2)} is below recommended threshold ${EARLY_LEVEL_GATE_WARNING_THRESHOLD.toFixed(2)}`
       );
     }
   }

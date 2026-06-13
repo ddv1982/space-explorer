@@ -35,9 +35,31 @@ const DEFAULT_UPGRADE_GRID_LAYOUT: UpgradeGridLayout = {
   costFontSize: '16px',
 };
 
-export function getUpgradeGridLayout(viewportHeight: number): UpgradeGridLayout {
+function fitGridToViewport(layout: UpgradeGridLayout, viewportWidth: number, compact: boolean): UpgradeGridLayout {
+  const horizontalMargin = compact ? 20 : 32;
+  const maxGridWidth = Math.max(180, viewportWidth - horizontalMargin);
+  const gridWidth = layout.buttonWidth * layout.columns + layout.spacingX * (layout.columns - 1);
+
+  if (gridWidth <= maxGridWidth) {
+    return layout;
+  }
+
+  return {
+    ...layout,
+    columns: 1,
+    buttonWidth: Math.min(layout.buttonWidth, maxGridWidth),
+    buttonHeight: compact ? Math.min(layout.buttonHeight, 35) : Math.min(layout.buttonHeight, 44),
+    spacingX: 0,
+    spacingY: compact ? Math.min(layout.spacingY, 6) : Math.min(layout.spacingY, 8),
+    titleOffsetY: compact ? Math.min(layout.titleOffsetY, 5) : layout.titleOffsetY,
+    descriptionOffsetY: compact ? Math.min(layout.descriptionOffsetY, 19) : Math.min(layout.descriptionOffsetY, 22),
+    costFontSize: compact ? '12px' : layout.costFontSize,
+  };
+}
+
+export function getUpgradeGridLayout(viewportHeight: number, viewportWidth = Number.POSITIVE_INFINITY): UpgradeGridLayout {
   if (viewportHeight < 430) {
-    return {
+    return fitGridToViewport({
       ...DEFAULT_UPGRADE_GRID_LAYOUT,
       buttonWidth: 210,
       buttonHeight: 44,
@@ -51,11 +73,11 @@ export function getUpgradeGridLayout(viewportHeight: number): UpgradeGridLayout 
       titleFontSize: '12px',
       descriptionFontSize: '10px',
       costFontSize: '13px',
-    };
+    }, viewportWidth, true);
   }
 
   if (viewportHeight < 520) {
-    return {
+    return fitGridToViewport({
       ...DEFAULT_UPGRADE_GRID_LAYOUT,
       buttonWidth: 220,
       buttonHeight: 52,
@@ -64,10 +86,10 @@ export function getUpgradeGridLayout(viewportHeight: number): UpgradeGridLayout 
       titleFontSize: '13px',
       descriptionFontSize: '10px',
       costFontSize: '14px',
-    };
+    }, viewportWidth, true);
   }
 
-  return DEFAULT_UPGRADE_GRID_LAYOUT;
+  return fitGridToViewport(DEFAULT_UPGRADE_GRID_LAYOUT, viewportWidth, false);
 }
 
 export interface UpgradeButton {

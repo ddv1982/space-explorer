@@ -110,4 +110,35 @@ describe('LastLifeHelperWing', () => {
     expect((wing as unknown as Record<string, unknown>).grantedSlots).toBe(0);
     expect((wing as unknown as Record<string, unknown>).canAcquireInLevel).toBe(false);
   });
+
+  test('enemy contact uses contact damage pacing while projectiles still apply direct damage', () => {
+    const bulletKill = mock();
+    const takeDamage = mock();
+    const takeContactDamage = mock();
+    const effectsManager = { id: 'effectsManager' };
+
+    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWing;
+    (wing as unknown as Record<string, unknown>).scene = { time: { now: 1234 } };
+    (wing as unknown as Record<string, unknown>).effectsManager = effectsManager;
+    (wing as unknown as Record<string, unknown>).resolveCollisionTarget = (ctor: unknown) => {
+      const ctorName = typeof ctor === 'function' ? ctor.name : '';
+      if (ctorName === 'EnemyBullet') {
+        return { active: true, kill: bulletKill };
+      }
+      if (ctorName === 'EnemyBase') {
+        return { active: true };
+      }
+      if (ctorName === 'HelperShip') {
+        return { takeDamage, takeContactDamage };
+      }
+      return null;
+    };
+
+    (wing as unknown as { handleEnemyBulletOverlap: (a: unknown, b: unknown) => void }).handleEnemyBulletOverlap(null, null);
+    (wing as unknown as { handleEnemyContactOverlap: (a: unknown, b: unknown) => void }).handleEnemyContactOverlap(null, null);
+
+    expect(bulletKill).toHaveBeenCalledTimes(1);
+    expect(takeDamage).toHaveBeenCalledWith(1, 1234, effectsManager);
+    expect(takeContactDamage).toHaveBeenCalledWith(1, 1234, effectsManager);
+  });
 });

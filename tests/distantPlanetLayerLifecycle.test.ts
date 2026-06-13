@@ -1,5 +1,4 @@
 import { describe, expect, mock, test } from 'bun:test';
-import type Phaser from 'phaser';
 
 mock.module('phaser', () => ({ default: {} }));
 

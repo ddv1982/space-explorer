@@ -47,6 +47,32 @@ describe('HelperShip', () => {
     expect(deplete).not.toHaveBeenCalled();
   });
 
+  test('takeContactDamage is rate-limited without throttling projectile damage', () => {
+    const createSparkBurst = mock();
+    const setTint = mock();
+
+    const helper = Object.create(HelperShip.prototype) as HelperShip;
+    helper.hp = 4;
+    helper.remainingLives = 1;
+    helper.x = 40;
+    helper.y = 60;
+    (helper as unknown as Record<string, unknown>).active = true;
+    (helper as unknown as Record<string, unknown>).depleted = false;
+    (helper as unknown as Record<string, unknown>).scene = { time: { delayedCall: mock() } };
+    (helper as unknown as Record<string, unknown>).setTint = setTint;
+
+    const effectsManager = { createSparkBurst } as never;
+
+    expect(helper.takeContactDamage(1, 1000, effectsManager)).toBe('active');
+    expect(helper.takeContactDamage(1, 1200, effectsManager)).toBe('ignored');
+    expect(helper.takeDamage(1, 1300, effectsManager)).toBe('active');
+    expect(helper.takeContactDamage(1, 1500, effectsManager)).toBe('active');
+
+    expect(helper.hp).toBe(1);
+    expect(createSparkBurst).toHaveBeenCalledTimes(3);
+    expect(setTint).toHaveBeenCalledTimes(3);
+  });
+
   test('updateWithPlayer respawns when timer elapses and otherwise follows and fires when active', () => {
     const spawn = mock();
     const fireShot = mock();

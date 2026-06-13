@@ -423,7 +423,7 @@ export class LastLifeHelperWing {
       return;
     }
 
-    helper.takeDamage(1, this.scene.time.now, this.effectsManager);
+    helper.takeContactDamage(1, this.scene.time.now, this.effectsManager);
   }
 
   private resolveCollisionTarget<T>(ctor: abstract new (...args: never[]) => T, ...values: unknown[]): T | null {
