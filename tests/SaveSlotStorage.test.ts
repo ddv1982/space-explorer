@@ -260,6 +260,41 @@ describe('SaveSlotStorage', () => {
     expect(listSaveSlots()[0].subtitle).toContain('3 LIVES');
   });
 
+  test('renders legacy save labels that are missing level names', () => {
+    const storage = new MemoryStorage();
+    installWindow(storage);
+
+    const record = createSaveSlotRecord(
+      'slot-1',
+      {
+        level: 2,
+        score: 100,
+        currentHp: 5,
+        currentShields: 0,
+        remainingLives: 3,
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        helperWing: { grantedSlots: 0, slots: [] },
+      },
+      { finalScore: 100, levelReached: 2 },
+      new Date('2026-04-27T10:30:00.000Z')
+    );
+
+    storage.setItem(
+      SAVE_SLOT_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        slots: {
+          'slot-1': {
+            ...record,
+            label: { level: 2, score: 100, remainingLives: 3 },
+          },
+        },
+      })
+    );
+
+    expect(listSaveSlots()[0].title).toContain(getLevelConfig(2).name.toUpperCase());
+  });
+
   test('normalizes corrupt saved levels below the first mission to level one', () => {
     const storage = new MemoryStorage();
     installWindow(storage);

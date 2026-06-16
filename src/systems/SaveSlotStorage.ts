@@ -294,12 +294,14 @@ function toViewModel(id: SaveSlotId, index: number, record: SaveSlotRecordV1 | n
     };
   }
 
+  const label = normalizeSaveSlotLabel(record.label, record.playerState);
+
   return {
     id,
     index,
     occupied: true,
-    title: `SLOT ${index} — ${record.label.levelName.toUpperCase()}`,
-    subtitle: `LVL ${record.label.level} • SCORE ${record.label.score} • ${formatLivesLabel(record.label.remainingLives)}`,
+    title: `SLOT ${index} — ${label.levelName.toUpperCase()}`,
+    subtitle: `LVL ${label.level} • SCORE ${label.score} • ${formatLivesLabel(label.remainingLives)}`,
     savedAtLabel: formatSavedAtLabel(record.savedAt),
   };
 }
