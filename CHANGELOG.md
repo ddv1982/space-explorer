@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file.
 ### Quality
 - Added regression coverage for stale pooled visual callbacks.
 - Made hazard pressure policy tests independently runnable with their own Phaser mock.
-- Verified with `bun run build`, `bun run typecheck`, `bun run lint`, `bun test`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+- Verified with `bun run build`, `bun run typecheck`, `bun run lint`, `bun run test`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
 
 ## [1.1.24] - 2026-06-13
 

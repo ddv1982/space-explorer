@@ -162,7 +162,7 @@ src/
 ```bash
 bun run dev      # start local dev server
 bun run typecheck # type-check source, scripts, config, and tests
-bun test         # run unit/regression tests
+bun run test     # run unit/regression tests with per-file isolation
 bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
