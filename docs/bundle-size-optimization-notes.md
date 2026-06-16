@@ -6,12 +6,13 @@
   - `dist/assets/index-Dc0mJv79.js`: 1,623.84 kB (gzip 418.53 kB)
   - `dist/index.html`: 1.81 kB (gzip 0.81 kB)
 
-## Startup Entry Path Summary
+## Current Startup Entry Path Summary
 
-- Entry file `src/main.ts` statically imports Phaser plus all scenes at startup: `BootScene`, `PreloadScene`, `MenuScene`, `GameScene`, `PlanetIntermissionScene`, `GameOverScene`, `VictoryScene`.
-- `src/main.ts` immediately constructs `new Phaser.Game(config)` with all scene classes in the initial `scene` array.
-- `src/main.ts` also wires viewport/resize listeners eagerly, but this is likely minor versus scene + engine code.
-- `vite.config.ts` has default chunking behavior and a raised warning threshold (`chunkSizeWarningLimit: 1600`), so current output remains mostly as one large JS bundle.
+- Entry file `src/main.ts` statically imports Phaser plus only `BootScene`, `PreloadScene`, and `MenuScene`.
+- `src/main.ts` constructs `new Phaser.Game(config)` with those startup scenes in the initial `scene` array.
+- `src/scenes/sceneRegistry.ts` lazy-loads `GameScene`, `PlanetIntermissionScene`, `GameOverScene`, and `VictoryScene` on first use.
+- `src/main.ts` eagerly wires viewport/resize recovery because mobile browser viewport changes affect the Phaser scale manager during play.
+- `vite.config.ts` keeps Phaser in a manual `phaser` chunk and other dependencies in `vendor` when present, with `chunkSizeWarningLimit: 1500`.
 
 ## Low-Risk Optimization Targets
 
@@ -52,3 +53,17 @@
   - `bun run bundle:check --max-js-asset-kb 1450 --max-total-js-kb 1750`
   - `BUNDLE_MAX_JS_ASSET_KB=1450 BUNDLE_MAX_TOTAL_JS_KB=1750 bun run bundle:check`
 - This guardrail is additive to Vite `chunkSizeWarningLimit`, so native Vite warnings remain visible during `bun run build`.
+
+## Current Vite 8 Rebaseline (2026-06-16)
+
+- Commands: `bun run build`, `bun run bundle:report`, `bun run bundle:check`.
+- Build output: Vite 8.0.10 emitted lazy scene chunks plus the manual Phaser chunk without exceeding bundle guardrails.
+- JavaScript chunks:
+  - `dist/assets/phaser-CxcFaG1v.js`: 1,353.43 kB raw / 351.21 kB gzip.
+  - `dist/assets/GameScene-Cu_Lm2tk.js`: 162.14 kB raw / 41.55 kB gzip.
+  - `dist/assets/index-CYP4MDtu.js`: 122.91 kB raw / 35.10 kB gzip.
+  - `dist/assets/AudioManager--0kR67TR.js`: 33.61 kB raw / 9.65 kB gzip.
+  - `dist/assets/PlanetIntermissionScene-Do5cXozF.js`: 19.15 kB raw / 6.00 kB gzip.
+- Bundle report totals: 21 files, 28,065.72 kB raw / 26,724.17 kB gzip; JavaScript total 1,659.73 kB raw.
+- Largest assets remain premium background PNGs, led by `bg_level02.png` at 3,018.43 kB raw / 3,007.77 kB gzip.
+- `bun run bundle:check` passed with thresholds: largest asset <= 3,500 kB, total <= 30,000 kB, largest JS <= 1,500 kB, total JS <= 1,800 kB.

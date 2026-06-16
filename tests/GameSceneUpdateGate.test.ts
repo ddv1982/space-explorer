@@ -51,9 +51,10 @@ mock.module('../src/config/LevelsConfig', () => ({
 }));
 const { GameScene } = await import('../src/scenes/GameScene');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
+type GameSceneInstance = InstanceType<typeof GameScene>;
 
 type UpdateHarness = {
-  scene: GameScene;
+  scene: GameSceneInstance;
   calls: string[];
   setPaused: (paused: boolean) => void;
   setLocked: (locked: boolean) => void;
@@ -64,7 +65,7 @@ type UpdateHarness = {
 };
 
 function createUpdateHarness(): UpdateHarness {
-  const scene = Object.create(GameScene.prototype) as GameScene;
+  const scene = Object.create(GameScene.prototype) as GameSceneInstance;
   const calls: string[] = [];
   activeCallLog = calls;
 

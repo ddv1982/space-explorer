@@ -28,6 +28,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   private blocksProjectiles = false;
   private scoreValue = 50;
   private baseTint: number | null = null;
+  private visualFlashToken = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureAsteroidTexture(scene);
@@ -41,6 +42,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   }
 
   spawn(x: number, y: number, speed: number = 80, config: AsteroidSpawnConfig = {}): void {
+    this.visualFlashToken += 1;
     spawnEntity(this, x, y);
 
     this.maxHp = config.hp ?? ASTEROID_HP;
@@ -83,12 +85,13 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    const flashToken = ++this.visualFlashToken;
     this.setTint(0xffaa66);
-    this.scene.time.delayedCall(80, this.restoreTintAfterCollisionFlash, undefined, this);
+    this.scene.time.delayedCall(80, this.restoreTintAfterCollisionFlash, [flashToken], this);
   }
 
-  private restoreTintAfterCollisionFlash(): void {
-    if (!this.active) {
+  private restoreTintAfterCollisionFlash(flashToken: number): void {
+    if (!this.active || flashToken !== this.visualFlashToken) {
       return;
     }
 
@@ -139,6 +142,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   }
 
   private deactivate(): void {
+    this.visualFlashToken += 1;
     despawnEntity(this);
     this.setScale(1);
     this.setDepth(2);

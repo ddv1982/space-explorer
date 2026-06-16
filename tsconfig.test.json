@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": false,
+    "types": ["bun"],
+    "paths": {
+      "@/*": ["src/*"],
+      "bun:test": ["tests/types/bun-test"]
+    }
+  },
+  "include": ["src", "scripts/**/*.ts", "tests/**/*.ts", "tests/types/**/*.d.ts", "vite.config.ts"]
+}

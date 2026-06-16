@@ -39,16 +39,6 @@ interface PassingPlanetMotionState {
   baseAlpha: number;
 }
 
-interface ForegroundSilhouetteMotionState {
-  sprite: Phaser.GameObjects.Image;
-  baseX: number;
-  baseY: number;
-  driftX: number;
-  driftY: number;
-  phase: number;
-  alpha: number;
-}
-
 export function scrollStarLayers(
   tileSprites: Phaser.GameObjects.TileSprite[],
   layerConfigs: TileSpriteScrollConfig[],
@@ -124,19 +114,5 @@ export function updatePassingPlanetMotion(
     if (planet.sprite.x < getOffscreenThreshold(planet.sprite)) {
       resetPosition(planet);
     }
-  }
-}
-
-export function updateForegroundSilhouetteMotion(
-  silhouettes: ForegroundSilhouetteMotionState[],
-  elapsed: number,
-  landmarkAlpha: number
-): void {
-  for (let i = 0; i < silhouettes.length; i++) {
-    const silhouette = silhouettes[i];
-    const phase = elapsed * 0.00022 + silhouette.phase;
-    silhouette.sprite.x = silhouette.baseX + Math.sin(phase) * silhouette.driftX;
-    silhouette.sprite.y = silhouette.baseY + Math.cos(phase * 0.7) * silhouette.driftY;
-    silhouette.sprite.setAlpha(Phaser.Math.Clamp(silhouette.alpha * landmarkAlpha, 0.04, 0.14));
   }
 }

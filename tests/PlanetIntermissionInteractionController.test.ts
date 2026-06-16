@@ -136,7 +136,7 @@ type PurchaseState = {
 };
 
 type ControllerHarness = {
-  controller: PlanetIntermissionInteractionController;
+  controller: InstanceType<typeof PlanetIntermissionInteractionController>;
   buttons: Array<{ bg: ButtonBgStub; upgradeKey: string }>;
   keyboardHandlers: KeyboardMap;
   pointerHandlers: Map<string, EventHandler[]>;
@@ -183,7 +183,7 @@ function createControllerHarness(initialPurchasable: boolean[]): ControllerHarne
           descriptionFontSize: '10px',
           costFontSize: '12px',
         },
-      },
+      } as unknown as UpgradeButton,
     };
   });
 

@@ -4,7 +4,6 @@ import { resolveSectionAtmosphereTargets } from './parallax/atmosphereProfile';
 import {
   scrollStarLayers,
   updateDebrisMoteMotion,
-  updateForegroundSilhouetteMotion,
   updatePassingPlanetMotion,
   updatePlanetLayerMotion,
   updateTwinkleMotion,
@@ -33,7 +32,6 @@ import {
   resetPassingPlanetPosition,
   type PassingPlanetState,
 } from './parallax/passingPlanetLifecycle';
-import { type ForegroundSilhouetteState } from './parallax/foregroundSilhouetteLifecycle';
 import {
   createPlanetLayer as createPlanetLayerHelper,
   destroyPlanetLayer as destroyPlanetLayerHelper,
@@ -89,7 +87,6 @@ export class ParallaxBackground {
   private hazardResponseScale = 1;
   private activeHazards: ScriptedHazardConfig[] = [];
   private hazardOverlay: Phaser.GameObjects.Graphics | null = null;
-  private foregroundSilhouettes: ForegroundSilhouetteState[] = [];
   private premiumBackgroundLayers: PremiumBackgroundLayerState[] = [];
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
@@ -108,7 +105,6 @@ export class ParallaxBackground {
     this.levelConfig = levelConfig;
     this.tileSprites = [];
     this.debrisMotes = [];
-    this.foregroundSilhouettes = [];
     this.resetRuntimeFieldState(scene.cameras.main.width, scene.cameras.main.height);
   }
 
@@ -194,7 +190,6 @@ export class ParallaxBackground {
       this.currentHeight,
       this.passingPlanetSprites,
       this.twinkles,
-      this.foregroundSilhouettes,
       PASSING_PLANET_RESPAWN_MIN_X,
       PASSING_PLANET_RESPAWN_MAX_X,
       STARFIELD_TILE_DEPTHS,
@@ -359,7 +354,6 @@ export class ParallaxBackground {
         PASSING_PLANET_RESPAWN_MAX_X
       )
     );
-    updateForegroundSilhouetteMotion(this.foregroundSilhouettes, this.elapsed, this.landmarkAlpha);
   }
 
   private updateHazardOverlay(): number {

@@ -35,6 +35,7 @@ mock.module('phaser', () => ({
 
 const { Player } = await import('../src/entities/Player');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
+type PlayerInstance = InstanceType<typeof Player>;
 
 describe('Player', () => {
   test('takeDamage consumes a shield, starts invulnerability, and does not reduce hp', () => {
@@ -42,7 +43,7 @@ describe('Player', () => {
     const flashShield = mock();
     const die = mock();
 
-    const player = Object.create(Player.prototype) as Player;
+    const player = Object.create(Player.prototype) as PlayerInstance;
     player.shields = 2;
     player.hp = 5;
     player.isAlive = true;
@@ -67,7 +68,7 @@ describe('Player', () => {
     const setAcceleration = mock();
     const maxVelocitySet = mock();
 
-    const player = Object.create(Player.prototype) as Player;
+    const player = Object.create(Player.prototype) as PlayerInstance;
     player.isAlive = true;
     player.x = 100;
     player.y = 200;

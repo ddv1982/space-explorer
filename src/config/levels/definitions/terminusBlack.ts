@@ -163,7 +163,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
             { type: 'swarm', lane: 'center' },
             { type: 'gunship', lane: 'right' },
           ],
-          notes: 'Final pre-boss synthesis wave asks for adaptation rather than pure memorization.',
+          notes: 'Final pre-boss synthesis wave asks for lane-reading adaptation rather than pure memorization.',
         },
       ],
       recoveryDrops: [
@@ -172,7 +172,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
           triggerProgress: 0.82,
           type: 'health',
           lane: 'center',
-          notes: 'Brief recovery before the last approach without removing danger from the finale.',
+          notes: 'Brief Recovery Beat before the last approach without removing danger from the finale.',
         },
       ],
       hazardEvents: [

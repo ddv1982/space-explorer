@@ -18,6 +18,7 @@ mock.module('phaser', () => ({
 }));
 
 const { HelperShip } = await import('../src/entities/HelperShip');
+type HelperShipInstance = InstanceType<typeof HelperShip>;
 
 describe('HelperShip', () => {
   test('takeDamage enters respawn when lives remain after lethal damage', () => {
@@ -25,7 +26,7 @@ describe('HelperShip', () => {
     const disableBody = mock();
     const deplete = mock();
 
-    const helper = Object.create(HelperShip.prototype) as HelperShip;
+    const helper = Object.create(HelperShip.prototype) as HelperShipInstance;
     helper.hp = 1;
     helper.remainingLives = 2;
     (helper as unknown as Record<string, unknown>).active = true;
@@ -43,7 +44,8 @@ describe('HelperShip', () => {
     expect(helper.remainingLives).toBe(1);
     expect(createExplosion).toHaveBeenCalledWith(40, 60, 0.65);
     expect(disableBody).toHaveBeenCalledWith(true, true);
-    expect((helper as unknown as Record<string, unknown>).respawnAt).toBe(1234 + (helper as unknown as Record<string, unknown>).respawnDelayMs);
+    const helperState = helper as unknown as Record<string, number>;
+    expect(helperState.respawnAt).toBe(1234 + helperState.respawnDelayMs);
     expect(deplete).not.toHaveBeenCalled();
   });
 
@@ -51,7 +53,7 @@ describe('HelperShip', () => {
     const createSparkBurst = mock();
     const setTint = mock();
 
-    const helper = Object.create(HelperShip.prototype) as HelperShip;
+    const helper = Object.create(HelperShip.prototype) as HelperShipInstance;
     helper.hp = 4;
     helper.remainingLives = 1;
     helper.x = 40;
@@ -81,7 +83,7 @@ describe('HelperShip', () => {
     const bulletPool = { id: 'bulletPool' };
     const effectsManager = { id: 'effectsManager' };
 
-    const helper = Object.create(HelperShip.prototype) as HelperShip;
+    const helper = Object.create(HelperShip.prototype) as HelperShipInstance;
     (helper as unknown as Record<string, unknown>).depleted = false;
     (helper as unknown as Record<string, unknown>).active = false;
     (helper as unknown as Record<string, unknown>).respawnAt = 500;

@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.25] - 2026-06-16
+
+### Added
+- Added Bun-based CI quality gates for type-checking, linting, tests, level validation, Knip, build, and bundle guardrails.
+- Added explicit `typecheck` coverage for production source plus tests through a dedicated test TypeScript config.
+- Added warning-level level validation for Within-Level Pacing, Dominant Motif, Lane-Reading, Recovery Beats, and Ambush Anticipation.
+
+### Changed
+- Removed per-frame gameplay behavior construction from `GameScene.update` while preserving live boss HUD state through a getter.
+- Hardened pooled delayed tint callbacks for enemies, bosses, asteroids, and helper ships with lifecycle tokens.
+- Deleted the no-op foreground silhouette lifecycle seam from the parallax stack.
+- Refreshed bundle/startup documentation with current Vite 8 lazy-scene output and documented release smoke coverage.
+
+### Quality
+- Added regression coverage for stale pooled visual callbacks.
+- Made hazard pressure policy tests independently runnable with their own Phaser mock.
+- Verified with `bun run build`, `bun run typecheck`, `bun run lint`, `bun test`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.24] - 2026-06-13
 
 ### Added

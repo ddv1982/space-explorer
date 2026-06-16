@@ -60,7 +60,7 @@ interface GameSceneGameplayFrameDelegate {
   effectsManager: {
     createMuzzleFlash(x: number, y: number): void;
   };
-  boss: Boss | null;
+  getBoss(): Boss | null;
   getLastFireTime(): number;
   setLastFireTime(time: number): void;
   shotDirection: Phaser.Math.Vector2;
@@ -68,7 +68,7 @@ interface GameSceneGameplayFrameDelegate {
   muzzleFlashOrigin: Phaser.Math.Vector2;
 }
 
-interface GameSceneGameplayFrameBehavior {
+export interface GameSceneGameplayFrameBehavior {
   handlePauseInput(): void;
   isPausedOrLockedFrame(): boolean;
   updatePausedFrame(delta: number, updateHud: () => void): void;
@@ -157,8 +157,10 @@ export function createGameSceneGameplayFrameBehavior(
   };
 
   const updateBossHudIfNeeded = (): void => {
-    if (delegate.boss && delegate.boss.active) {
-      delegate.hud.updateBossHp(delegate.boss.hp, delegate.boss.maxHp);
+    const boss = delegate.getBoss();
+
+    if (boss && boss.active) {
+      delegate.hud.updateBossHp(boss.hp, boss.maxHp);
     }
   };
 

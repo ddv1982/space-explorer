@@ -20,13 +20,14 @@ mock.module('phaser', () => ({
 }));
 
 const { Boss } = await import('../src/entities/enemies/Boss');
+type BossInstance = InstanceType<typeof Boss>;
 
 describe('Boss', () => {
   test('updateBehavior marks arrival when reaching target Y and stops descent', () => {
     const setVelocityY = mock();
     const updateMovement = mock();
 
-    const boss = Object.create(Boss.prototype) as Boss;
+    const boss = Object.create(Boss.prototype) as BossInstance;
     (boss as unknown as Record<string, unknown>).arrived = false;
     (boss as unknown as Record<string, unknown>).y = 80;
     (boss as unknown as Record<string, unknown>).targetY = 80;
@@ -49,7 +50,7 @@ describe('Boss', () => {
     const updateShieldState = mock();
     const firePattern = mock();
 
-    const boss = Object.create(Boss.prototype) as Boss;
+    const boss = Object.create(Boss.prototype) as BossInstance;
     (boss as unknown as Record<string, unknown>).arrived = true;
     (boss as unknown as Record<string, unknown>).phase = 1;
     (boss as unknown as Record<string, unknown>).hp = 20;

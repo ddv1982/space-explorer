@@ -51,6 +51,7 @@ export class Boss extends EnemyBase {
   private summonHandler: BossSummonHandler | null = null;
   private phaseStartedAt = 0;
   private playerRef: Player | null = null;
+  private bossFlashToken = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     const textureKey = ensureBossTextureVariant(scene, DEFAULT_BOSS_CONFIG.attackStyle, DEFAULT_BOSS_CONFIG.name);
@@ -86,6 +87,7 @@ export class Boss extends EnemyBase {
   }
 
   spawn(x: number, y: number, config: BossConfig = DEFAULT_BOSS_CONFIG): void {
+    this.bossFlashToken += 1;
     this.applyConfig(config);
     this.setTexture(ensureBossTextureVariant(this.scene, config.attackStyle, config.name));
     super.spawn(x, y);
@@ -312,24 +314,26 @@ export class Boss extends EnemyBase {
   }
 
   private flashShieldImpact(): void {
+    const flashToken = ++this.bossFlashToken;
     this.setTint(0xddeeff);
-    this.scene.time.delayedCall(70, this.restoreShieldTintAfterImpact, undefined, this);
+    this.scene.time.delayedCall(70, this.restoreShieldTintAfterImpact, [flashToken], this);
   }
 
   private flashPhaseChange(): void {
+    const flashToken = ++this.bossFlashToken;
     this.setTint(0xff0000);
     this.scene.cameras.main.shake(300, 0.02);
-    this.scene.time.delayedCall(300, this.restoreTintAfterPhaseChangeFlash, undefined, this);
+    this.scene.time.delayedCall(300, this.restoreTintAfterPhaseChangeFlash, [flashToken], this);
   }
 
-  private restoreShieldTintAfterImpact(): void {
-    if (this.active && this.shieldActive) {
+  private restoreShieldTintAfterImpact(flashToken: number): void {
+    if (this.active && this.shieldActive && flashToken === this.bossFlashToken) {
       this.setTint(0x77ccff);
     }
   }
 
-  private restoreTintAfterPhaseChangeFlash(): void {
-    if (!this.active) {
+  private restoreTintAfterPhaseChangeFlash(flashToken: number): void {
+    if (!this.active || flashToken !== this.bossFlashToken) {
       return;
     }
 

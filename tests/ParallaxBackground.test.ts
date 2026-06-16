@@ -20,6 +20,7 @@ mock.module('phaser', () => ({
 }));
 
 const { ParallaxBackground } = await import('../src/systems/ParallaxBackground');
+type ParallaxBackgroundInstance = InstanceType<typeof ParallaxBackground>;
 
 type DelayedCall = {
   ms: number;
@@ -49,7 +50,7 @@ function createResizeHarness(options?: { withLevelConfig?: boolean; withPremiumL
     },
   };
 
-  const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;
+  const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
 
   (parallax as unknown as Record<string, unknown>).scene = scene;
   (parallax as unknown as Record<string, unknown>).levelConfig = options?.withLevelConfig
@@ -115,7 +116,7 @@ describe('ParallaxBackground premium-background presentation regression coverage
       },
     };
 
-    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;
+    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
     (parallax as unknown as Record<string, unknown>).currentWidth = 800;
     (parallax as unknown as Record<string, unknown>).currentHeight = 600;
     (parallax as unknown as Record<string, unknown>).premiumBackgroundLayers = [];
@@ -135,7 +136,7 @@ describe('ParallaxBackground premium-background presentation regression coverage
 
 describe('ParallaxBackground atmosphere regression coverage', () => {
   test('setSectionAtmosphere(null) resets targets and clears hazards', () => {
-    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;
+    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
 
     (parallax as unknown as Record<string, unknown>).targetAtmosphereAlpha = 0;
     (parallax as unknown as Record<string, unknown>).targetAtmosphereDrift = 0;
@@ -157,7 +158,7 @@ describe('ParallaxBackground atmosphere regression coverage', () => {
   });
 
   test('setSectionAtmosphere(section, progress) computes stable target fields', () => {
-    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;
+    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
     const hazards: ScriptedHazardConfig[] = [
       { type: 'energy-storm', intensity: 1 },
       { type: 'debris-surge', intensity: 0.8 },
@@ -190,7 +191,7 @@ describe('ParallaxBackground atmosphere regression coverage', () => {
 
 describe('ParallaxBackground update orchestration regression coverage', () => {
   test('update advances elapsed time and delegates to the named update phases in order', () => {
-    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackground;
+    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
     const calls: string[] = [];
 
     (parallax as unknown as Record<string, unknown>).elapsed = 10;

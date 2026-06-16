@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.1.25`](./1.1.25.md) — hardens quality gates, pooled visual callbacks, level guardrails, and release documentation
 - [`1.1.24`](./1.1.24.md) — adds authored recovery/signature-wave primitives, literal cover, and the first gameplay-diversity vertical slice
 - [`1.1.23`](./1.1.23.md) — hardens pause/helper safety, narrows intermission layouts, and validates final-hazard reachability
 - [`1.1.22`](./1.1.22.md) — seals the level 6 helper-wing teardown crash and hardens adjacent Phaser group cleanup paths

@@ -9,6 +9,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   scoreValue: number = 100;
   enemyType: string = 'base';
   despawnOffscreen: boolean = true;
+  private visualFlashToken = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string) {
     super(scene, x, y, textureKey);
@@ -28,12 +29,13 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   }
 
   private flashHit(): void {
+    const flashToken = ++this.visualFlashToken;
     this.setTint(0xffffff);
-    this.scene.time.delayedCall(80, this.clearTintIfActive, undefined, this);
+    this.scene.time.delayedCall(80, this.clearTintIfActive, [flashToken], this);
   }
 
-  private clearTintIfActive(): void {
-    if (this.active) {
+  private clearTintIfActive(flashToken: number): void {
+    if (this.active && flashToken === this.visualFlashToken) {
       this.clearTint();
     }
   }
@@ -44,10 +46,13 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   }
 
   despawn(): void {
+    this.visualFlashToken += 1;
     despawnEntity(this);
+    this.clearTint();
   }
 
   spawn(x: number, y: number): void {
+    this.visualFlashToken += 1;
     spawnEntity(this, x, y);
     this.hp = this.maxHp;
   }

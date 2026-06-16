@@ -6,11 +6,6 @@ import {
   type PassingPlanetState,
 } from './passingPlanetLifecycle';
 import { createStarTwinkles, destroyTwinkles, type TwinkleState } from './starTwinkleLifecycle';
-import {
-  createForegroundSilhouettes,
-  destroyForegroundSilhouettes,
-  type ForegroundSilhouetteState,
-} from './foregroundSilhouetteLifecycle';
 
 export type LevelVisualLayerLifecycleContext = {
   scene: Phaser.Scene | null;
@@ -18,7 +13,6 @@ export type LevelVisualLayerLifecycleContext = {
   currentHeight: number;
   passingPlanetSprites: PassingPlanetState[];
   twinkles: TwinkleState[];
-  foregroundSilhouettes: ForegroundSilhouetteState[];
   passingPlanetRespawnMinX: number;
   passingPlanetRespawnMaxX: number;
   starfieldTileDepths: readonly number[];
@@ -51,15 +45,6 @@ export function createLevelVisualLayers(
     height: context.currentHeight,
     depths: context.starfieldTileDepths,
   });
-  createForegroundSilhouettes(
-    scene,
-    config,
-    {
-      width: context.currentWidth,
-      height: context.currentHeight,
-    },
-    context.foregroundSilhouettes
-  );
 }
 
 export function destroyLevelVisualLayers(context: LevelVisualLayerLifecycleContext): void {
@@ -67,7 +52,6 @@ export function destroyLevelVisualLayers(context: LevelVisualLayerLifecycleConte
   context.destroyPlanetLayer();
   context.destroyDebrisMotes();
   context.setTwinkles(destroyTwinkles(context.twinkles));
-  destroyForegroundSilhouettes(context.scene, context.foregroundSilhouettes);
 }
 
 export function rebuildLevelVisualLayers(

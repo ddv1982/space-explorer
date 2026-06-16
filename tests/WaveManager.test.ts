@@ -38,7 +38,7 @@ type FakeSpawner = {
   spawnEdgeAsteroids: (hazard: unknown) => void;
 };
 
-type WaveManagerMutable = InstanceType<typeof WaveManager> & {
+type WaveManagerMutable = {
   levelConfig: LevelConfig;
   asteroidSpawner: FakeSpawner;
   buildSpawnTable: (enemyEntries: EnemySpawnConfig[]) => void;
@@ -66,16 +66,7 @@ function createLevelConfig(overrides: Partial<LevelConfig> = {}): LevelConfig {
     bossTriggerProgress: 1,
     asteroidInterval: 500,
     sections: [],
-    music: {
-      seed: 'test',
-      tempo: 120,
-      meter: { beatsPerBar: 4, beatUnit: 4 },
-      key: 'C',
-      mode: 'ionian',
-      energyCurve: 'steady',
-      layers: [],
-      arrangement: { sections: [] },
-    },
+    music: {} as LevelConfig['music'],
     destination: 'test',
     visualTheme: 'test',
     coreGameplayIdea: 'test',

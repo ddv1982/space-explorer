@@ -36,7 +36,10 @@ import type { WaveManager } from '@/systems/WaveManager';
 import { createGameSceneCombatFeedbackHandlers, runBestEffort } from './gameScene/combatFeedbackHandlers';
 import { createGameSceneFlowContext } from './gameScene/flowContextBridge';
 import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
-import { createGameSceneGameplayFrameBehavior } from './gameScene/gameplayFrameBehavior';
+import {
+  createGameSceneGameplayFrameBehavior,
+  type GameSceneGameplayFrameBehavior,
+} from './gameScene/gameplayFrameBehavior';
 import {
   persistHelperWingState,
   syncLastLifeHelperWingState,
@@ -86,6 +89,7 @@ export class GameScene extends Phaser.Scene {
   private readonly shotDirection = new Phaser.Math.Vector2();
   private readonly shotOrigin = new Phaser.Math.Vector2();
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
+  private gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null = null;
   private readonly combatFeedbackHandlers = this.createCombatFeedbackHandlers();
   private readonly sceneEventBindings: SceneEventBinding[] = this.createSceneEventBindings();
   private readonly runtimeLifecycle = this.createRuntimeLifecycle();
@@ -96,6 +100,7 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     runGameSceneCreateBootstrap(this);
+    this.gameplayFrameBehavior = this.createGameplayFrameBehavior();
   }
 
   private resetRuntimeState(): void {
@@ -104,6 +109,7 @@ export class GameScene extends Phaser.Scene {
     this.lastLifeHelperWing = null;
     this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
+    this.gameplayFrameBehavior = null;
   }
 
   private initializePlayerRunState(): ReturnType<typeof getPlayerState> {
@@ -350,7 +356,7 @@ export class GameScene extends Phaser.Scene {
       hud: this.hud,
       bulletPool: this.bulletPool,
       effectsManager: this.effectsManager,
-      boss: this.boss,
+      getBoss: () => this.boss,
       getLastFireTime: () => this.lastFireTime,
       setLastFireTime: (nextTime: number) => {
         this.lastFireTime = nextTime;
@@ -362,7 +368,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    const frameBehavior = this.createGameplayFrameBehavior();
+    const frameBehavior = this.gameplayFrameBehavior ?? this.createGameplayFrameBehavior();
+    this.gameplayFrameBehavior = frameBehavior;
 
     runGameSceneUpdateFrame(
       {

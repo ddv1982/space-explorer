@@ -37,6 +37,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   private lastContactDamageTime = Number.NEGATIVE_INFINITY;
   private respawnAt = -1;
   private depleted = false;
+  private visualFlashToken = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureHelperShipTexture(scene);
@@ -179,6 +180,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   }
 
   private spawn(x: number, y: number, time: number): void {
+    this.visualFlashToken += 1;
     this.enableBody(true, x, y, true, true);
     this.hp = this.maxHp;
     this.lastFireTime = time - Phaser.Math.Between(0, Math.floor(this.fireRateMs * 0.6));
@@ -191,12 +193,14 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   }
 
   private scheduleRespawn(time: number): void {
+    this.visualFlashToken += 1;
     this.respawnAt = time + this.respawnDelayMs;
     this.disableHelperBody();
     this.clearTint();
   }
 
   private markDepleted(): void {
+    this.visualFlashToken += 1;
     this.depleted = true;
     this.respawnAt = -1;
     this.disableHelperBody();
@@ -240,12 +244,13 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   }
 
   private flashHit(): void {
+    const flashToken = ++this.visualFlashToken;
     this.setTint(0xffffff);
-    this.scene.time.delayedCall(70, this.clearTintIfRecoverable, undefined, this);
+    this.scene.time.delayedCall(70, this.clearTintIfRecoverable, [flashToken], this);
   }
 
-  private clearTintIfRecoverable(): void {
-    if (this.active && !this.depleted) {
+  private clearTintIfRecoverable(flashToken: number): void {
+    if (this.active && !this.depleted && flashToken === this.visualFlashToken) {
       this.clearTint();
     }
   }

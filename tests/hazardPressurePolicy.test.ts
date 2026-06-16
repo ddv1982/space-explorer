@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
+import type { ScriptedHazardConfig } from '../src/config/LevelsConfig';
 
 mock.module('phaser', () => ({
   default: {
@@ -9,7 +10,7 @@ mock.module('phaser', () => ({
   },
 }));
 
-import {
+const {
   canTriggerHazard,
   consumeHazardPressure,
   decayHazardPressure,
@@ -17,10 +18,10 @@ import {
   getEncounterIntervalPressureScale,
   getHazardPressureCost,
   isHazardWithinDuration,
-} from '../src/systems/wave/hazardPressurePolicy';
-import { TERMINUS_BLACK_LEVEL } from '../src/config/levels/definitions/terminusBlack';
+} = await import('../src/systems/wave/hazardPressurePolicy');
+const { TERMINUS_BLACK_LEVEL } = await import('../src/config/levels/definitions/terminusBlack');
 
-function simulateHazardTriggerCounts(hazards: NonNullable<(typeof TERMINUS_BLACK_LEVEL.sections)[number]['hazardEvents']>): number[] {
+function simulateHazardTriggerCounts(hazards: ScriptedHazardConfig[]): number[] {
   const maxCadenceMs = Math.max(...hazards.map((hazard) => hazard.cadenceMs ?? 2000));
   const horizonMs = maxCadenceMs * 6;
   const stepMs = 100;

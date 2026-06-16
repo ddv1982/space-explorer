@@ -12,6 +12,7 @@ mock.module('phaser', () => ({
 }));
 
 const { MenuScene } = await import('../src/scenes/MenuScene');
+type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
 describe('MenuScene', () => {
   test('loadFromSlot loads persisted state and starts Game exactly once', () => {
@@ -26,7 +27,7 @@ describe('MenuScene', () => {
     const applyLoadedRunState = mock(() => undefined);
     const startGameScene = mock(() => undefined);
 
-    const scene = Object.create(MenuScene.prototype) as MenuScene;
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
     (scene as unknown as Record<string, unknown>).gameTransitionQueued = false;
     (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
     (scene as unknown as Record<string, unknown>).isSaveStorageAvailable = isSaveStorageAvailable;
@@ -34,8 +35,8 @@ describe('MenuScene', () => {
     (scene as unknown as Record<string, unknown>).applyLoadedRunState = applyLoadedRunState;
     (scene as unknown as Record<string, unknown>).startGameScene = startGameScene;
 
-    (scene as unknown as Record<string, unknown>).loadFromSlot('slot-1');
-    (scene as unknown as Record<string, unknown>).loadFromSlot('slot-1');
+    (scene as unknown as { loadFromSlot: (slotId: string) => void }).loadFromSlot('slot-1');
+    (scene as unknown as { loadFromSlot: (slotId: string) => void }).loadFromSlot('slot-1');
 
     expect(playMenuClick).toHaveBeenCalledTimes(2);
     expect(readSaveSlotRecord).toHaveBeenCalledWith('slot-1');
@@ -51,7 +52,7 @@ describe('MenuScene', () => {
     const readSaveSlotRecord = mock(() => null);
     const startGameScene = mock(() => undefined);
 
-    const scene = Object.create(MenuScene.prototype) as MenuScene;
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
     (scene as unknown as Record<string, unknown>).gameTransitionQueued = false;
     (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
     (scene as unknown as Record<string, unknown>).isSaveStorageAvailable = isSaveStorageAvailable;
@@ -59,7 +60,7 @@ describe('MenuScene', () => {
     (scene as unknown as Record<string, unknown>).readSaveSlotRecord = readSaveSlotRecord;
     (scene as unknown as Record<string, unknown>).startGameScene = startGameScene;
 
-    (scene as unknown as Record<string, unknown>).loadFromSlot('slot-2');
+    (scene as unknown as { loadFromSlot: (slotId: string) => void }).loadFromSlot('slot-2');
 
     expect(playMenuClick).toHaveBeenCalledTimes(1);
     expect(showSaveSlotError).toHaveBeenCalledWith('Save slots unavailable in this browser context.');

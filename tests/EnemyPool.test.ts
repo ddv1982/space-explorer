@@ -19,6 +19,7 @@ const { Gunship } = await import('../src/entities/enemies/Gunship');
 const { Boss } = await import('../src/entities/enemies/Boss');
 const { BomberBomb } = await import('../src/entities/BomberBomb');
 const { EnemyBullet } = await import('../src/entities/EnemyBullet');
+type EnemyPoolInstance = InstanceType<typeof EnemyPool>;
 
 type GroupConfig = {
   maxSize: number;
@@ -46,7 +47,7 @@ const EXPECTED_GROUP_CONFIGS = new Map<unknown, GroupConfig>([
 ]);
 
 type EnemyPoolHarness = {
-  pool: EnemyPool;
+  pool: EnemyPoolInstance;
   groupsByClassType: Map<unknown, FakeGroup>;
   groupCreateCalls: GroupConfig[];
   lastFighter: { setEnemyBulletGroupArgs: unknown[] } | null;
@@ -184,7 +185,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     },
   };
 
-  const pool = new EnemyPool();
+    const pool = new EnemyPool();
   pool.create(scene as never);
 
   return {
@@ -317,7 +318,7 @@ describe('EnemyPool regression coverage', () => {
     harness.pool.spawnEnemy = ((type: string, x: number, y: number) => {
       delegated.push({ type, x, y });
       return null;
-    }) as EnemyPool['spawnEnemy'];
+    }) as EnemyPoolInstance['spawnEnemy'];
 
     harness.lastBoss?.summonHandler?.('scout', 42, 64);
 

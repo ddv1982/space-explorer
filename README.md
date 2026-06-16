@@ -161,6 +161,7 @@ src/
 
 ```bash
 bun run dev      # start local dev server
+bun run typecheck # type-check source, scripts, config, and tests
 bun test         # run unit/regression tests
 bun run build    # type-check and production build
 bun run preview  # preview production build
@@ -174,6 +175,7 @@ bun run bundle:check    # enforce bundle guardrail thresholds after a build
 ## Docs
 
 - [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
+- [`docs/qa/quality-gates.md`](docs/qa/quality-gates.md) — local and CI validation gates
 - [`docs/procedural-music-system.md`](docs/procedural-music-system.md) — procedural music architecture, authoring contract, and deterministic QA workflow
 - [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
 

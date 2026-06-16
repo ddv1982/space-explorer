@@ -14,13 +14,14 @@ mock.module('phaser', () => ({
 
 const { LastLifeHelperWing } = await import('../src/systems/LastLifeHelperWing');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
+type LastLifeHelperWingInstance = InstanceType<typeof LastLifeHelperWing>;
 
 describe('LastLifeHelperWing', () => {
   test('update emits helperWingDepleted once when no live helpers remain', () => {
     const emit = mock();
     const updateWithPlayer = mock();
 
-    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWing;
+    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWingInstance;
     (wing as unknown as Record<string, unknown>).activated = true;
     (wing as unknown as Record<string, unknown>).depletedAnnounced = false;
     (wing as unknown as Record<string, unknown>).helpers = [{ updateWithPlayer }];
@@ -47,7 +48,7 @@ describe('LastLifeHelperWing', () => {
     const bulletPool = { id: 'bulletPool' };
     const effectsManager = { id: 'effectsManager' };
 
-    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWing;
+    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWingInstance;
     (wing as unknown as Record<string, unknown>).activated = true;
     (wing as unknown as Record<string, unknown>).helpers = [helperA, helperB];
     (wing as unknown as Record<string, unknown>).player = player;
@@ -76,7 +77,7 @@ describe('LastLifeHelperWing', () => {
       throw new TypeError("undefined is not an object (evaluating 'n.forEach')");
     });
 
-    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWing;
+    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWingInstance;
     (wing as unknown as Record<string, unknown>).activated = true;
     (wing as unknown as Record<string, unknown>).depletedAnnounced = true;
     (wing as unknown as Record<string, unknown>).helpers = [
@@ -117,7 +118,7 @@ describe('LastLifeHelperWing', () => {
     const takeContactDamage = mock();
     const effectsManager = { id: 'effectsManager' };
 
-    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWing;
+    const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWingInstance;
     (wing as unknown as Record<string, unknown>).scene = { time: { now: 1234 } };
     (wing as unknown as Record<string, unknown>).effectsManager = effectsManager;
     (wing as unknown as Record<string, unknown>).resolveCollisionTarget = (ctor: unknown) => {

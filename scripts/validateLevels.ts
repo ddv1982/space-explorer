@@ -18,6 +18,9 @@ const EARLY_LEVEL_MAX_HAZARD_INTENSITY = 0.62;
 const MIN_RELEASE_INTENSITY_DELTA = 0.18;
 const HAZARD_INTENSITY_JUMP_WARNING_DELTA = 0.35;
 const HAZARD_CADENCE_JUMP_WARNING_RATIO = 1.8;
+const MIN_GAMEPLAY_SECTION_SPAN = 0.08;
+const HIGH_PRESSURE_MUSIC_INTENSITY = 0.78;
+const MIN_SIGNATURE_WAVE_TELEGRAPH_PROGRESS = 0.12;
 const HAZARD_PRESSURE_DECAY_PER_MS = 1 / 1800;
 const HAZARD_PRESSURE_MAX = 2.4;
 const HAZARD_REACHABILITY_STEP_MS = 100;
@@ -105,6 +108,21 @@ function validateAuthoredSectionContent(levelName: string, section: LevelSection
       pushWarning(levelName, `${prefix}: more than three authored enemies may reduce mobile lane readability`);
     }
 
+    if (wave.triggerProgress < MIN_SIGNATURE_WAVE_TELEGRAPH_PROGRESS) {
+      pushWarning(
+        levelName,
+        `${prefix}: triggerProgress ${wave.triggerProgress.toFixed(2)} may not leave enough Lane-Reading setup before the authored wave`
+      );
+    }
+
+    const laneReadingText = `${section.summary} ${wave.notes ?? ''}`.toLowerCase();
+    if (!/(lane|route|shelter|cover|telegraph|read)/.test(laneReadingText)) {
+      pushWarning(
+        levelName,
+        `${prefix}: notes/summary should explain the Lane-Reading or route cue protected by this authored wave`
+      );
+    }
+
     const laneCounts = new Map<string, number>();
     wave.enemies.forEach((enemy, enemyIndex) => {
       laneCounts.set(enemy.lane, (laneCounts.get(enemy.lane) ?? 0) + 1);
@@ -128,6 +146,25 @@ function validateAuthoredSectionContent(levelName: string, section: LevelSection
 
     if (drop.triggerProgress < 0 || drop.triggerProgress > 1) {
       pushError(levelName, `${prefix}: triggerProgress must be within [0, 1]`);
+    }
+
+    const recoveryText = `${section.summary} ${drop.notes ?? ''}`.toLowerCase();
+    if (!/(recovery beat|relief|breath|stabiliz|task-shift)/.test(recoveryText)) {
+      pushWarning(
+        levelName,
+        `${prefix}: notes/summary should identify the Recovery Beat purpose instead of only placing a pickup`
+      );
+    }
+
+    if (
+      section.phase !== 'boss-approach' &&
+      (section.musicIntensity ?? 0) >= HIGH_PRESSURE_MUSIC_INTENSITY &&
+      drop.triggerProgress < 0.5
+    ) {
+      pushWarning(
+        levelName,
+        `${prefix}: high-pressure Recovery Beat appears before the section midpoint; verify it follows a pressure peak`
+      );
     }
   });
 }
@@ -163,6 +200,14 @@ function validateSectionSequence(level: LevelConfig): void {
 
     if (section.endProgress <= section.startProgress) {
       pushError(name, `${section.id}: endProgress must be > startProgress`);
+    }
+
+    const sectionSpan = section.endProgress - section.startProgress;
+    if (section.phase !== 'boss-approach' && sectionSpan < MIN_GAMEPLAY_SECTION_SPAN) {
+      pushWarning(
+        name,
+        `${section.id}: gameplay section span ${sectionSpan.toFixed(2)} may be too short for readable Within-Level Pacing`
+      );
     }
 
     if (section.encounterSizeOverride) {
@@ -291,6 +336,22 @@ function validatePacingGuardrails(level: LevelConfig): void {
     pushWarning(name, 'section progression should include both build and hazard/climax phases to create a readable difficulty arc');
   }
 
+  if (level.coreGameplayIdea.trim().length < 24) {
+    pushWarning(name, 'coreGameplayIdea should state the level Dominant Motif in concrete project language');
+  }
+
+  const motifText = level.coreGameplayIdea.toLowerCase();
+  const motifIsReferenced = sorted.some((section) => {
+    const summary = section.summary.toLowerCase();
+    return motifText
+      .split(/[^a-z0-9]+/)
+      .filter((word) => word.length >= 6)
+      .some((word) => summary.includes(word));
+  });
+  if (!motifIsReferenced) {
+    pushWarning(name, 'section summaries should echo or twist the Dominant Motif rather than reading as disconnected pressure beats');
+  }
+
   const musicIntensities = sorted
     .map((section) => section.musicIntensity)
     .filter((value): value is number => value !== undefined);
@@ -307,6 +368,7 @@ function validatePacingGuardrails(level: LevelConfig): void {
 
   let previousCadence: number | null = null;
   let previousIntensity: number | null = null;
+  const seenHazards = new Set<ScriptedHazardConfig['type']>();
   for (const section of sorted) {
     const cadences = section.hazardEvents
       ?.map((hazard) => hazard.cadenceMs)
@@ -317,6 +379,22 @@ function validatePacingGuardrails(level: LevelConfig): void {
 
     const cadence = average(cadences);
     const intensity = average(intensities);
+
+    for (const [hazardIndex, hazard] of section.hazardEvents?.entries() ?? []) {
+      if (
+        hazard.type === 'nebula-ambush' &&
+        (hazard.intensity ?? 0.5) >= 0.6 &&
+        section.phase !== 'build' &&
+        !seenHazards.has('nebula-ambush')
+      ) {
+        pushWarning(
+          name,
+          `${section.id} hazard[${hazardIndex}]: high-pressure nebula-ambush lacks an earlier Ambush Anticipation setup cue`
+        );
+      }
+
+      seenHazards.add(hazard.type);
+    }
 
     if (cadence !== null && previousCadence !== null) {
       const ratio = cadence > previousCadence ? cadence / previousCadence : previousCadence / cadence;

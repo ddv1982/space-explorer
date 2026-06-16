@@ -32,21 +32,6 @@ mock.module('../src/systems/parallax/starTwinkleLifecycle', () => ({
   destroyTwinkles,
 }));
 
-const createForegroundSilhouettes = mock(() => {
-  callLog.push('createForegroundSilhouettes');
-});
-let destroyForegroundSilhouettesSceneArg: unknown;
-let destroyForegroundSilhouettesListArg: unknown;
-const destroyForegroundSilhouettes = mock((scene: unknown, silhouettes: unknown) => {
-  destroyForegroundSilhouettesSceneArg = scene;
-  destroyForegroundSilhouettesListArg = silhouettes;
-  callLog.push('destroyForegroundSilhouettes');
-});
-mock.module('../src/systems/parallax/foregroundSilhouetteLifecycle', () => ({
-  createForegroundSilhouettes,
-  destroyForegroundSilhouettes,
-}));
-
 const {
   createLevelVisualLayers,
   destroyLevelVisualLayers,
@@ -57,15 +42,13 @@ const {
 function createContext() {
   const passingPlanetSprites: unknown[] = [];
   const twinkles: unknown[] = [];
-  const foregroundSilhouettes: unknown[] = [];
 
   return {
-    scene: { id: 'scene' } as Phaser.Scene,
+    scene: { id: 'scene' } as unknown as Phaser.Scene,
     currentWidth: 800,
     currentHeight: 600,
     passingPlanetSprites: passingPlanetSprites as never,
     twinkles: twinkles as never,
-    foregroundSilhouettes: foregroundSilhouettes as never,
     passingPlanetRespawnMinX: 100,
     passingPlanetRespawnMaxX: 400,
     starfieldTileDepths: [-10, -8, -6, -4] as const,
@@ -103,14 +86,11 @@ describe('levelVisualLayerLifecycle', () => {
       'createPlanetLayer',
       'createDebrisMotes',
       'createStarTwinkles',
-      'createForegroundSilhouettes',
     ]);
   });
 
   test('destroyLevelVisualLayers delegates in the expected order', () => {
     callLog.length = 0;
-    destroyForegroundSilhouettesSceneArg = undefined;
-    destroyForegroundSilhouettesListArg = undefined;
     const context = createContext();
 
     destroyLevelVisualLayers(context as never);
@@ -122,10 +102,7 @@ describe('levelVisualLayerLifecycle', () => {
       'destroyDebrisMotes',
       'destroyTwinkles',
       'setTwinkles',
-      'destroyForegroundSilhouettes',
     ]);
-    expect(destroyForegroundSilhouettesSceneArg).toBe(context.scene);
-    expect(destroyForegroundSilhouettesListArg).toBe(context.foregroundSilhouettes);
   });
 
   test('rebuildLevelVisualLayers destroys then recreates in order', () => {
@@ -142,12 +119,10 @@ describe('levelVisualLayerLifecycle', () => {
       'destroyDebrisMotes',
       'destroyTwinkles',
       'setTwinkles',
-      'destroyForegroundSilhouettes',
       'createPassingPlanetLayers',
       'createPlanetLayer',
       'createDebrisMotes',
       'createStarTwinkles',
-      'createForegroundSilhouettes',
     ]);
   });
 });

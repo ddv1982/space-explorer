@@ -6,7 +6,6 @@ describe('getLevelVisualLayerLifecycleContext', () => {
     const scene = { id: 'scene' };
     const passingPlanetSprites = [{ id: 'planet' }];
     const twinkles = [{ id: 'twinkle' }];
-    const foregroundSilhouettes = [{ id: 'silhouette' }];
     const createPlanetLayer = () => 'planet';
     const createDebrisMotes = () => 'debris';
     const destroyPlanetLayer = () => 'destroyPlanet';
@@ -20,7 +19,6 @@ describe('getLevelVisualLayerLifecycleContext', () => {
       600,
       passingPlanetSprites as never,
       twinkles as never,
-      foregroundSilhouettes as never,
       100,
       400,
       [-10, -8, -6, -4],
@@ -37,7 +35,6 @@ describe('getLevelVisualLayerLifecycleContext', () => {
     expect(context.currentHeight).toBe(600);
     expect(context.passingPlanetSprites).toBe(passingPlanetSprites);
     expect(context.twinkles).toBe(twinkles);
-    expect(context.foregroundSilhouettes).toBe(foregroundSilhouettes);
     expect(context.passingPlanetRespawnMinX).toBe(100);
     expect(context.passingPlanetRespawnMaxX).toBe(400);
     expect(context.starfieldTileDepths).toEqual([-10, -8, -6, -4]);

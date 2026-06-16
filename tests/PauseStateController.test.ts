@@ -85,7 +85,7 @@ function createPauseHarness(
   };
 
   const controller = PauseStateController.create({
-    scene,
+    scene: scene as unknown as Phaser.Scene,
     stopPlayerMotion: () => {
       stopPlayerMotionCalls += 1;
     },

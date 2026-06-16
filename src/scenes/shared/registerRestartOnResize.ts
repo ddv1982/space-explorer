@@ -8,7 +8,7 @@ export function registerRestartOnResize(
 ): void {
   let width = Math.round(scene.scale.gameSize.width);
   let height = Math.round(scene.scale.gameSize.height);
-  let pendingRestart: ReturnType<typeof window.setTimeout> | null = null;
+  let pendingRestart: number | null = null;
 
   const handleResize = (gameSize: Phaser.Structs.Size): void => {
     const nextWidth = Math.round(gameSize.width);
@@ -44,7 +44,7 @@ export function registerRestartOnResize(
       width = nextWidth;
       height = nextHeight;
       scene.scene.restart();
-    }, RESIZE_RESTART_DEBOUNCE_MS);
+    }, RESIZE_RESTART_DEBOUNCE_MS) as unknown as number;
   };
 
   const cleanup = (): void => {
