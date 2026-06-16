@@ -10,7 +10,7 @@ Run these before packaging a release or when a change touches shared runtime, le
 bun install
 bun run typecheck
 bun run lint
-bun test
+bun run test
 bun run levels:validate
 bun run knip
 bun run build
@@ -20,6 +20,7 @@ bun run bundle:check
 ## Notes
 
 - `bun run typecheck` covers production source, scripts, Vite config, and tests.
+- `bun run test` runs each test file in its own Bun process so file-level mocks and globals cannot leak across suites.
 - `bun run build` keeps the production build path focused on source type-checking plus Vite output.
 - `bun run bundle:check` expects a fresh `dist/` from `bun run build`.
 

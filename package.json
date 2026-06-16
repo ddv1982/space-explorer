@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "bun test --max-concurrency=1",
+    "test": "bun scripts/run-tests.mjs",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
     "build": "tsc -p tsconfig.json && vite build",
     "bundle:report": "bun scripts/bundle-report.mjs",
@@ -19,6 +19,9 @@
     "levels:validate": "bun scripts/validateLevels.ts"
   },
   "knip": {
+    "entry": [
+      "tests/**/*.test.ts"
+    ],
     "ignore": [
       "tests/types/bun-test.d.ts"
     ],
