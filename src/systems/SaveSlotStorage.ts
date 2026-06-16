@@ -114,7 +114,10 @@ function normalizeKnownLevel(value: unknown, fallback: number): number {
 
 function getSafeLevelName(level: number): string {
   try {
-    return getLevelConfig(level).name;
+    const levelName = getLevelConfig(level).name;
+    return typeof levelName === 'string' && levelName.length > 0
+      ? levelName
+      : `Level ${Math.max(1, Math.floor(normalizeFiniteNumber(level, 1)))}`;
   } catch {
     return `Level ${Math.max(1, Math.floor(normalizeFiniteNumber(level, 1)))}`;
   }

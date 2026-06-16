@@ -28,7 +28,7 @@ jobs:
         run: bun run lint
 
       - name: Test
-        run: bun test
+        run: bun run test
 
       - name: Validate levels
         run: bun run levels:validate
