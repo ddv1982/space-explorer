@@ -20,7 +20,67 @@ mock.module('phaser', () => ({
 }));
 
 const { ParallaxBackground } = await import('../src/systems/ParallaxBackground');
+const { resolveSectionAtmosphereTargets } = await import('../src/systems/parallax/atmosphereProfile');
 type ParallaxBackgroundInstance = InstanceType<typeof ParallaxBackground>;
+
+/**
+ * Typed view of private ParallaxBackground fields/methods used by unit harnesses.
+ * Prefer this over ad-hoc `Record<string, unknown>` casts so field names stay checked.
+ */
+type ParallaxTestState = {
+  scene: {
+    time: {
+      delayedCall: (ms: number, callback: () => void) => { remove: (dispatchCallback: boolean) => void };
+    };
+  } | null;
+  levelConfig?: { name: string };
+  currentWidth: number;
+  currentHeight: number;
+  pendingRebuildEvent: { remove: (dispatchCallback: boolean) => void } | null;
+  premiumBackgroundLayers: unknown[];
+  tileSprites: unknown[];
+  elapsed: number;
+  hazardOverlayAlpha: number;
+  targetAtmosphereAlpha: number;
+  targetAtmosphereDrift: number;
+  targetAtmosphereTwinkle: number;
+  targetLandmarkAlpha: number;
+  targetHazardOverlayAlpha: number;
+  activeHazards: ScriptedHazardConfig[];
+  layoutTileSprites: () => void;
+  layoutPremiumBackgroundLayers: () => void;
+  rebuildPremiumBackgroundLayers: () => void;
+  rebuildLevelVisualLayers: () => void;
+  layoutPlanetLayer: () => void;
+  createLevelVisualLayers: () => void;
+  createSceneLayers: (
+    scene: {
+      textures: { exists: (key: string) => boolean };
+      add: {
+        tileSprite: (
+          x: number,
+          y: number,
+          w: number,
+          h: number,
+          key: string
+        ) => {
+          setOrigin: () => unknown;
+          setDepth: (value: number) => unknown;
+          setAlpha: (value: number) => unknown;
+          setBlendMode: (value: number | string) => unknown;
+        };
+      };
+    },
+    levelConfig: { name: string; accentColor?: number }
+  ) => void;
+  updateAtmosphereState: () => void;
+  updateVisualLayers: (delta: number) => void;
+  updateHazardOverlay: () => number;
+};
+
+function stateOf(parallax: ParallaxBackgroundInstance): ParallaxTestState {
+  return parallax as unknown as ParallaxTestState;
+}
 
 type DelayedCall = {
   ms: number;
@@ -51,31 +111,28 @@ function createResizeHarness(options?: { withLevelConfig?: boolean; withPremiumL
   };
 
   const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
+  const state = stateOf(parallax);
 
-  (parallax as unknown as Record<string, unknown>).scene = scene;
-  (parallax as unknown as Record<string, unknown>).levelConfig = options?.withLevelConfig
-    ? ({ name: 'Test Level' } as unknown)
-    : undefined;
-  (parallax as unknown as Record<string, unknown>).currentWidth = 800;
-  (parallax as unknown as Record<string, unknown>).currentHeight = 600;
-  (parallax as unknown as Record<string, unknown>).pendingRebuildEvent = null;
-  (parallax as unknown as Record<string, unknown>).premiumBackgroundLayers = options?.withPremiumLayers
-    ? [{}]
-    : [];
+  state.scene = scene;
+  state.levelConfig = options?.withLevelConfig ? { name: 'Test Level' } : undefined;
+  state.currentWidth = 800;
+  state.currentHeight = 600;
+  state.pendingRebuildEvent = null;
+  state.premiumBackgroundLayers = options?.withPremiumLayers ? [{}] : [];
 
-  (parallax as unknown as Record<string, unknown>).layoutTileSprites = () => {
+  state.layoutTileSprites = () => {
     calls.push('layoutTileSprites');
   };
-  (parallax as unknown as Record<string, unknown>).layoutPremiumBackgroundLayers = () => {
+  state.layoutPremiumBackgroundLayers = () => {
     calls.push('layoutPremiumBackgroundLayers');
   };
-  (parallax as unknown as Record<string, unknown>).rebuildPremiumBackgroundLayers = () => {
+  state.rebuildPremiumBackgroundLayers = () => {
     calls.push('rebuildPremiumBackgroundLayers');
   };
-  (parallax as unknown as Record<string, unknown>).rebuildLevelVisualLayers = () => {
+  state.rebuildLevelVisualLayers = () => {
     calls.push('rebuildLevelVisualLayers');
   };
-  (parallax as unknown as Record<string, unknown>).layoutPlanetLayer = () => {
+  state.layoutPlanetLayer = () => {
     calls.push('layoutPlanetLayer');
   };
 
@@ -117,48 +174,50 @@ describe('ParallaxBackground premium-background presentation regression coverage
     };
 
     const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
-    (parallax as unknown as Record<string, unknown>).currentWidth = 800;
-    (parallax as unknown as Record<string, unknown>).currentHeight = 600;
-    (parallax as unknown as Record<string, unknown>).premiumBackgroundLayers = [];
-    (parallax as unknown as Record<string, unknown>).tileSprites = ['stale'];
-    (parallax as unknown as Record<string, unknown>).createLevelVisualLayers = () => undefined;
+    const state = stateOf(parallax);
+    state.currentWidth = 800;
+    state.currentHeight = 600;
+    state.premiumBackgroundLayers = [];
+    state.tileSprites = ['stale'];
+    state.createLevelVisualLayers = () => undefined;
 
-    (parallax as unknown as { createSceneLayers: (scene: unknown, levelConfig: unknown) => void }).createSceneLayers(
-      scene,
-      { name: 'Magnetar Foundry', accentColor: 0x52f7a6 } as never
-    );
+    state.createSceneLayers(scene, {
+      name: 'Magnetar Foundry',
+      accentColor: 0x52f7a6,
+    });
 
     expect(tileSpriteCalls).toEqual(['bg_level03']);
-    expect((parallax as unknown as Record<string, unknown>).tileSprites).toEqual([]);
-    expect(((parallax as unknown as Record<string, unknown>).premiumBackgroundLayers as unknown[]).length).toBe(1);
+    expect(state.tileSprites).toEqual([]);
+    expect(state.premiumBackgroundLayers.length).toBe(1);
   });
 });
 
-describe('ParallaxBackground atmosphere regression coverage', () => {
-  test('setSectionAtmosphere(null) resets targets and clears hazards', () => {
+describe('ParallaxBackground atmosphere wiring regression coverage', () => {
+  test('setSectionAtmosphere(null) applies neutral targets from the atmosphere profile', () => {
     const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
+    const state = stateOf(parallax);
+    const expected = resolveSectionAtmosphereTargets(null, 0.5);
 
-    (parallax as unknown as Record<string, unknown>).targetAtmosphereAlpha = 0;
-    (parallax as unknown as Record<string, unknown>).targetAtmosphereDrift = 0;
-    (parallax as unknown as Record<string, unknown>).targetAtmosphereTwinkle = 0;
-    (parallax as unknown as Record<string, unknown>).targetLandmarkAlpha = 0;
-    (parallax as unknown as Record<string, unknown>).targetHazardOverlayAlpha = 1;
-    (parallax as unknown as Record<string, unknown>).hazardResponseScale = 5;
-    (parallax as unknown as Record<string, unknown>).activeHazards = [{ type: 'debris-surge' }];
+    state.targetAtmosphereAlpha = 0;
+    state.targetAtmosphereDrift = 0;
+    state.targetAtmosphereTwinkle = 0;
+    state.targetLandmarkAlpha = 0;
+    state.targetHazardOverlayAlpha = 1;
+    state.activeHazards = [{ type: 'debris-surge' }];
 
     parallax.setSectionAtmosphere(null, 0.5);
 
-    expect((parallax as unknown as Record<string, unknown>).targetAtmosphereAlpha).toBe(1);
-    expect((parallax as unknown as Record<string, unknown>).targetAtmosphereDrift).toBe(1);
-    expect((parallax as unknown as Record<string, unknown>).targetAtmosphereTwinkle).toBe(1);
-    expect((parallax as unknown as Record<string, unknown>).targetLandmarkAlpha).toBe(1);
-    expect((parallax as unknown as Record<string, unknown>).targetHazardOverlayAlpha).toBe(0);
-    expect((parallax as unknown as Record<string, unknown>).hazardResponseScale).toBe(1);
-    expect((parallax as unknown as Record<string, unknown>).activeHazards).toEqual([]);
+    expect(state.targetAtmosphereAlpha).toBe(expected.atmosphereAlpha);
+    expect(state.targetAtmosphereDrift).toBe(expected.atmosphereDrift);
+    expect(state.targetAtmosphereTwinkle).toBe(expected.atmosphereTwinkle);
+    expect(state.targetLandmarkAlpha).toBe(expected.landmarkAlpha);
+    expect(state.targetHazardOverlayAlpha).toBe(expected.hazardOverlayAlpha);
+    expect(state.activeHazards).toEqual(expected.activeHazards);
   });
 
-  test('setSectionAtmosphere(section, progress) computes stable target fields', () => {
+  test('setSectionAtmosphere(section, progress) wires profile targets onto instance state', () => {
     const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
+    const state = stateOf(parallax);
     const hazards: ScriptedHazardConfig[] = [
       { type: 'energy-storm', intensity: 1 },
       { type: 'debris-surge', intensity: 0.8 },
@@ -176,41 +235,42 @@ describe('ParallaxBackground atmosphere regression coverage', () => {
         hazardResponseScale: 1.2,
       },
     });
+    const expected = resolveSectionAtmosphereTargets(section, 0.5);
 
     parallax.setSectionAtmosphere(section, 0.5);
 
-    expect((parallax as unknown as Record<string, unknown>).targetAtmosphereAlpha).toBeCloseTo(1.18, 6);
-    expect((parallax as unknown as Record<string, unknown>).targetAtmosphereDrift).toBeCloseTo(1.0278, 6);
-    expect((parallax as unknown as Record<string, unknown>).targetAtmosphereTwinkle).toBeCloseTo(1.1508, 6);
-    expect((parallax as unknown as Record<string, unknown>).targetLandmarkAlpha).toBeCloseTo(0.98515, 6);
-    expect((parallax as unknown as Record<string, unknown>).targetHazardOverlayAlpha).toBeCloseTo(0.1944, 6);
-    expect((parallax as unknown as Record<string, unknown>).hazardResponseScale).toBeCloseTo(1.2, 6);
-    expect((parallax as unknown as Record<string, unknown>).activeHazards).toEqual(hazards);
+    expect(state.targetAtmosphereAlpha).toBe(expected.atmosphereAlpha);
+    expect(state.targetAtmosphereDrift).toBe(expected.atmosphereDrift);
+    expect(state.targetAtmosphereTwinkle).toBe(expected.atmosphereTwinkle);
+    expect(state.targetLandmarkAlpha).toBe(expected.landmarkAlpha);
+    expect(state.targetHazardOverlayAlpha).toBe(expected.hazardOverlayAlpha);
+    expect(state.activeHazards).toBe(expected.activeHazards);
   });
 });
 
 describe('ParallaxBackground update orchestration regression coverage', () => {
   test('update advances elapsed time and delegates to the named update phases in order', () => {
     const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
+    const state = stateOf(parallax);
     const calls: string[] = [];
 
-    (parallax as unknown as Record<string, unknown>).elapsed = 10;
-    (parallax as unknown as Record<string, unknown>).hazardOverlayAlpha = 0.2;
-    (parallax as unknown as Record<string, unknown>).updateAtmosphereState = () => {
-      calls.push(`updateAtmosphereState:${String((parallax as unknown as Record<string, unknown>).elapsed)}`);
+    state.elapsed = 10;
+    state.hazardOverlayAlpha = 0.2;
+    state.updateAtmosphereState = () => {
+      calls.push(`updateAtmosphereState:${String(state.elapsed)}`);
     };
-    (parallax as unknown as Record<string, unknown>).updateVisualLayers = (delta: number) => {
-      calls.push(`updateVisualLayers:${delta}:${String((parallax as unknown as Record<string, unknown>).elapsed)}`);
+    state.updateVisualLayers = (delta: number) => {
+      calls.push(`updateVisualLayers:${delta}:${String(state.elapsed)}`);
     };
-    (parallax as unknown as Record<string, unknown>).updateHazardOverlay = () => {
-      calls.push(`updateHazardOverlay:${String((parallax as unknown as Record<string, unknown>).elapsed)}`);
+    state.updateHazardOverlay = () => {
+      calls.push(`updateHazardOverlay:${String(state.elapsed)}`);
       return 0.75;
     };
 
     parallax.update(16);
 
-    expect((parallax as unknown as Record<string, unknown>).elapsed).toBe(26);
-    expect((parallax as unknown as Record<string, unknown>).hazardOverlayAlpha).toBe(0.75);
+    expect(state.elapsed).toBe(26);
+    expect(state.hazardOverlayAlpha).toBe(0.75);
     expect(calls).toEqual([
       'updateAtmosphereState:26',
       'updateVisualLayers:16:26',
@@ -255,7 +315,7 @@ describe('ParallaxBackground resize debounce regression coverage', () => {
     const { parallax, calls, delayedCalls } = createResizeHarness({ withLevelConfig: true, withPremiumLayers: false });
 
     parallax.resize(900, 700);
-    (parallax as unknown as Record<string, unknown>).currentWidth = 901;
+    stateOf(parallax).currentWidth = 901;
     delayedCalls[0]?.callback();
 
     expect(calls).not.toContain('rebuildPremiumBackgroundLayers');

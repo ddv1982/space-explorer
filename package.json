@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "1.1.25",
+  "version": "1.1.26",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -20,6 +20,8 @@
   },
   "knip": {
     "entry": [
+      "index.html",
+      "scripts/**/*.{ts,mjs}",
       "tests/**/*.test.ts"
     ],
     "ignore": [

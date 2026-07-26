@@ -35,7 +35,6 @@ export class EffectsManager {
 
   private scene!: Phaser.Scene;
   private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
-  private bloom: Phaser.Filters.Glow | null = null;
   private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -62,7 +61,6 @@ export class EffectsManager {
     this.destroyEmitters();
     this.clearCameraFX();
     this.colorMatrix = null;
-    this.bloom = null;
     this.exhaustConfigIntensityTenths = -1;
     this.exhaustConfigCount = -1;
     this.currentLevelConfig = null;
@@ -98,8 +96,7 @@ export class EffectsManager {
   }
 
   private setupCameraFX(): void {
-    const camera = this.scene.cameras.main;
-    this.bloom = applyBaselineCameraFilters(camera);
+    applyBaselineCameraFilters(this.scene.cameras.main);
   }
 
   private generateParticleTextures(): void {
@@ -195,11 +192,6 @@ export class EffectsManager {
       const debrisCount = Math.max(1, Math.floor(8 * intensity * burstScale));
       this.debrisEmitter.explode(debrisCount, x, y);
     }
-
-    this.scene.cameras.main.shake(
-      Math.floor(100 * intensity),
-      0.005 * intensity
-    );
   }
 
   createSparkBurst(x: number, y: number): void {

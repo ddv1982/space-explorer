@@ -181,10 +181,6 @@ export class HUD {
     this.shieldIconRenderer.updateShields(shields, () => this.renderShieldIcons());
   }
 
-  private clearShieldIcons(): void {
-    this.shieldIconRenderer.clearShieldIcons();
-  }
-
   private setScrollFactor(factor: number): void {
     this.topBarPanel.setScrollFactor(factor);
     this.hpBarBg.setScrollFactor(factor);

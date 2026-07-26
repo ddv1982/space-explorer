@@ -2,12 +2,14 @@ import type Phaser from 'phaser';
 
 import { isTouchMobileDevice } from '@/utils/device';
 
-import type { GameSceneCreateGameplayBridge } from './bootstrapGameplayContract';
-import type { GameSceneCreateHudBridge } from './bootstrapHudContract';
-import type { GameSceneCreateInputBridge } from './bootstrapInputContract';
-import type { GameSceneCreatePauseBridge } from './bootstrapPauseContract';
-import type { GameSceneCreateRuntimeBridge } from './bootstrapRuntimeContract';
-import type { GameSceneCreateWorldBridge } from './bootstrapWorldContract';
+import type {
+  GameSceneCreateGameplayBridge,
+  GameSceneCreateHudBridge,
+  GameSceneCreateInputBridge,
+  GameSceneCreatePauseBridge,
+  GameSceneCreateRuntimeBridge,
+  GameSceneCreateWorldBridge,
+} from './bootstrapContracts';
 import { createHudAndTransitions } from './createHudAndTransitions';
 import { createInputAndPlayer } from './createInputAndPlayer';
 import { createPoolsAndGameplaySystems } from './createPoolsAndGameplaySystems';

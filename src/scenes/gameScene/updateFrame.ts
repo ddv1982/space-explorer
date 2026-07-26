@@ -1,4 +1,4 @@
-interface GameSceneFrameDelegate {
+export interface GameSceneFrameDelegate {
   syncViewportIfNeeded(): void;
   handlePauseInput(): void;
   isPausedOrLockedFrame(): boolean;

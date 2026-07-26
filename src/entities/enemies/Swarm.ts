@@ -24,7 +24,7 @@ export class Swarm extends EnemyBase {
     this.setVelocityY(this.speed);
   }
 
-  updateBehavior(time: number, delta: number): void {
+  updateBehavior(_time: number, delta: number): void {
     this.wobbleAngle += this.angularSpeed * delta / 1000;
     this.setVelocityY(this.speed);
     this.setVelocityX(Math.sin(this.wobbleAngle) * 100);

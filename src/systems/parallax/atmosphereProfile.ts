@@ -13,7 +13,6 @@ interface SectionAtmosphereTargets {
   atmosphereTwinkle: number;
   landmarkAlpha: number;
   hazardOverlayAlpha: number;
-  hazardResponseScale: number;
   activeHazards: ScriptedHazardConfig[];
 }
 
@@ -53,7 +52,6 @@ export function resolveSectionAtmosphereTargets(
       atmosphereTwinkle: 1,
       landmarkAlpha: 1,
       hazardOverlayAlpha: 0,
-      hazardResponseScale: 1,
       activeHazards: [],
     };
   }
@@ -109,7 +107,6 @@ export function resolveSectionAtmosphereTargets(
     atmosphereTwinkle,
     landmarkAlpha,
     hazardOverlayAlpha,
-    hazardResponseScale,
     activeHazards,
   };
 }

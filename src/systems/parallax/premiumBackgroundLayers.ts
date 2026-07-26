@@ -14,7 +14,7 @@ export interface PremiumBackgroundLayerState {
   scrollOffsetY: number;
 }
 
-export interface PremiumBackgroundScrollSnapshot {
+interface PremiumBackgroundScrollSnapshot {
   key: string;
   scrollOffsetY: number;
 }
@@ -71,7 +71,7 @@ export function destroyPremiumBackgroundLayers(premiumBackgroundLayers: PremiumB
   premiumBackgroundLayers.length = 0;
 }
 
-export function capturePremiumBackgroundScrollOffsets(
+function capturePremiumBackgroundScrollOffsets(
   premiumBackgroundLayers: PremiumBackgroundLayerState[]
 ): PremiumBackgroundScrollSnapshot[] {
   return premiumBackgroundLayers.map((layer) => ({
@@ -80,7 +80,7 @@ export function capturePremiumBackgroundScrollOffsets(
   }));
 }
 
-export function restorePremiumBackgroundScrollOffsets(
+function restorePremiumBackgroundScrollOffsets(
   premiumBackgroundLayers: PremiumBackgroundLayerState[],
   snapshots: PremiumBackgroundScrollSnapshot[]
 ): void {

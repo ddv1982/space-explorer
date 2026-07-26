@@ -55,7 +55,7 @@ export function resizeParallaxBackground(
   context.layoutLevelVisualLayers();
 }
 
-export function scheduleLevelVisualRebuild(context: ResizeRebuildOrchestrationContext): void {
+function scheduleLevelVisualRebuild(context: ResizeRebuildOrchestrationContext): void {
   const scene = context.getScene();
   const levelConfig = context.getLevelConfig();
   if (!scene || !levelConfig) {

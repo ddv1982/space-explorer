@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.26] - 2026-07-26
+
+### Changed
+- Reused stable gameplay frame delegates instead of rebuilding update closures on every frame.
+- Consolidated GameScene bootstrap contracts and inlined one-use parallax lifecycle context builders.
+- Removed camera shake from routine explosions and accepted player impacts while preserving particles, audio, and hit feedback.
+- Added explicit Knip entry coverage for the browser entry point and repository scripts.
+
+### Quality
+- Removed confirmed dead private methods, fields, exports, and forwarding-only tests from HUD, effects, and parallax systems.
+- Added focused atmosphere-profile and update-frame regression coverage.
+- Verified with `bun run build`, `bun run typecheck`, `bun run lint`, `bun run test`, `bun run levels:validate`, `bun run knip`, and `bun run bundle:check`.
+
 ## [1.1.25] - 2026-06-16
 
 ### Added

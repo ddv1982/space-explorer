@@ -347,7 +347,6 @@ export class CollisionManager {
     this.lastPlayerHitFeedbackTime = now;
 
     this.runBestEffort(() => this.effectsManager.createSparkBurst(this.player.x, this.player.y));
-    this.runBestEffort(() => this.scene.cameras.main.shake(200, 0.01));
     this.runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerHit));
   }
 

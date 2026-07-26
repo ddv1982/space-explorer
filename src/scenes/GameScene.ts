@@ -50,7 +50,7 @@ import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
 import { runGameSceneCreateBootstrap } from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
-import { runGameSceneUpdateFrame } from './gameScene/updateFrame';
+import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
 import {
   clampPlayerToViewport,
   getPlayerSpawnPoint,
@@ -90,6 +90,7 @@ export class GameScene extends Phaser.Scene {
   private readonly shotOrigin = new Phaser.Math.Vector2();
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
   private gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null = null;
+  private updateFrameDelegate: GameSceneFrameDelegate | null = null;
   private readonly combatFeedbackHandlers = this.createCombatFeedbackHandlers();
   private readonly sceneEventBindings: SceneEventBinding[] = this.createSceneEventBindings();
   private readonly runtimeLifecycle = this.createRuntimeLifecycle();
@@ -101,6 +102,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     runGameSceneCreateBootstrap(this);
     this.gameplayFrameBehavior = this.createGameplayFrameBehavior();
+    this.updateFrameDelegate = this.createUpdateFrameDelegate();
   }
 
   private resetRuntimeState(): void {
@@ -110,6 +112,7 @@ export class GameScene extends Phaser.Scene {
     this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
     this.gameplayFrameBehavior = null;
+    this.updateFrameDelegate = null;
   }
 
   private initializePlayerRunState(): ReturnType<typeof getPlayerState> {
@@ -349,7 +352,7 @@ export class GameScene extends Phaser.Scene {
       flow: this.flow,
       parallax: this.parallax,
       player: this.player,
-      lastLifeHelperWing: this.lastLifeHelperWing,
+      getLastLifeHelperWing: () => this.lastLifeHelperWing,
       waveManager: this.waveManager,
       levelManager: this.levelManager,
       events: this.events,
@@ -367,21 +370,34 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  update(time: number, delta: number): void {
-    const frameBehavior = this.gameplayFrameBehavior ?? this.createGameplayFrameBehavior();
-    this.gameplayFrameBehavior = frameBehavior;
+  private requireGameplayFrameBehavior(): GameSceneGameplayFrameBehavior {
+    return this.gameplayFrameBehavior
+      ?? (this.gameplayFrameBehavior = this.createGameplayFrameBehavior());
+  }
 
-    runGameSceneUpdateFrame(
-      {
-        syncViewportIfNeeded: () => this.syncViewportIfNeeded(),
-        handlePauseInput: () => frameBehavior.handlePauseInput(),
-        isPausedOrLockedFrame: () => frameBehavior.isPausedOrLockedFrame(),
-        updatePausedFrame: (pausedDelta) => frameBehavior.updatePausedFrame(pausedDelta, () => this.updateHud()),
-        updateGameplayFrame: (gameTime, gameDelta) => frameBehavior.updateGameplayFrame(gameTime, gameDelta),
-        updateHud: () => this.updateHud(),
+  private createUpdateFrameDelegate(): GameSceneFrameDelegate {
+    return {
+      syncViewportIfNeeded: () => this.syncViewportIfNeeded(),
+      handlePauseInput: () => this.requireGameplayFrameBehavior().handlePauseInput(),
+      isPausedOrLockedFrame: () => this.requireGameplayFrameBehavior().isPausedOrLockedFrame(),
+      updatePausedFrame: (pausedDelta) => {
+        this.requireGameplayFrameBehavior().updatePausedFrame(pausedDelta, () => this.updateHud());
       },
-      time,
-      delta
-    );
+      updateGameplayFrame: (gameTime, gameDelta) => {
+        this.requireGameplayFrameBehavior().updateGameplayFrame(gameTime, gameDelta);
+      },
+      updateHud: () => this.updateHud(),
+    };
+  }
+
+  private ensureUpdateFrameDelegate(): GameSceneFrameDelegate {
+    if (!this.updateFrameDelegate) {
+      this.updateFrameDelegate = this.createUpdateFrameDelegate();
+    }
+    return this.updateFrameDelegate;
+  }
+
+  update(time: number, delta: number): void {
+    runGameSceneUpdateFrame(this.ensureUpdateFrameDelegate(), time, delta);
   }
 }

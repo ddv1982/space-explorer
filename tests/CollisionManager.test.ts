@@ -129,13 +129,6 @@ function createCollisionHarness(outcomes: DamageOutcome[]): CollisionHarness {
         return now;
       },
     },
-    cameras: {
-      main: {
-        shake: () => {
-          callLog.push('camera.shake');
-        },
-      },
-    },
     events: {
       emit: (eventName: string) => {
         emittedEvents.push(eventName);

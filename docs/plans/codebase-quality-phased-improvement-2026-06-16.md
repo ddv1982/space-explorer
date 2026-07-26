@@ -2,6 +2,8 @@
 
 Date: 2026-06-16
 
+> **Superseded for residual work.** Phases 0–6 of this plan largely shipped in v1.1.25 (see `CHANGELOG.md` and `docs/releases/1.1.25.md`). Remaining quality work is the residual plan executed after that release (confirmed dead private surface, hot-path allocation, knip entry hygiene, packing/bridge simplification). Treat this document as historical baseline, not a todo list.
+
 ## Scope
 
 This plan reviews Space Explorer against its current stack, repo quality criteria, external Phaser/Vite/TypeScript guidance, and the architecture language in `CONTEXT.md` and `docs/architecture-guidelines.md`. It intentionally proposes improvements only; no application code was changed as part of this review.

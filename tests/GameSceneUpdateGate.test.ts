@@ -1,5 +1,8 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import type { GameSceneFrameDelegate } from '../src/scenes/gameScene/updateFrame';
+import type { GameSceneGameplayFrameBehavior } from '../src/scenes/gameScene/gameplayFrameBehavior';
+
 mock.module('phaser', () => ({
   default: {
     Scene: class {},
@@ -49,12 +52,99 @@ mock.module('../src/config/LevelsConfig', () => ({
   }),
   isLastLevel: () => false,
 }));
+
 const { GameScene } = await import('../src/scenes/GameScene');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
 type GameSceneInstance = InstanceType<typeof GameScene>;
 
+/**
+ * Typed view of private GameScene fields used by the update-gate harness.
+ * Prefer this over ad-hoc Record casts so field names stay checked.
+ */
+type GameSceneTestState = {
+  syncViewportIfNeeded: () => void;
+  updateHud: () => void;
+  gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null;
+  updateFrameDelegate: GameSceneFrameDelegate | null;
+  inputManager: {
+    consumePauseToggleRequest: () => boolean;
+    isFiring: () => boolean;
+  };
+  pauseStateController: {
+    togglePauseRequest: (isGameplayLocked: boolean) => void;
+    isGameplayPaused: () => boolean;
+  };
+  flow: {
+    isGameplayLocked: () => boolean;
+    sampleRespawnTransitionFrame: (delta: number) => void;
+    isTerminalTransitionActive: () => boolean;
+    getRemainingLives: () => number;
+  };
+  parallax: {
+    update: (delta: number) => void;
+    setSectionAtmosphere: (section: unknown, sectionProgress: number) => void;
+  };
+  player: {
+    isAlive: boolean;
+    fireRate: number;
+    getFireDirection: (out: unknown) => { x: number; y: number };
+    getMuzzlePosition: (distance: number, out: unknown) => { x: number; y: number };
+    update: (input: unknown) => void;
+  };
+  lastLifeHelperWing: {
+    update: (time: number) => void;
+  } | null;
+  waveManager: {
+    update: (time: number, delta: number, progress: number) => void;
+  };
+  levelManager: {
+    progress: number;
+    hasBossSpawned: () => boolean;
+    isComplete: () => boolean;
+    update: (delta: number) => void;
+    getLevelConfig: () => { sections: unknown[]; music: { stage: string; boss: string } };
+    shouldSpawnBoss: () => boolean;
+  };
+  hud: {
+    updateBossHp: (hp: number, maxHp: number) => void;
+  };
+  boss: unknown;
+  lastFireTime: number;
+  bulletPool: {
+    fire: () => void;
+  };
+  effectsManager: {
+    createMuzzleFlash: (x: number, y: number) => void;
+  };
+  events: {
+    emit: (eventName: string) => void;
+  };
+  shotDirection: { x: number; y: number };
+  shotOrigin: { x: number; y: number };
+  muzzleFlashOrigin: { x: number; y: number };
+};
+
+function stateOf(scene: GameSceneInstance): GameSceneTestState {
+  return scene as unknown as GameSceneTestState;
+}
+
+const GAMEPLAY_SYSTEM_CALLS = [
+  'parallax.update',
+  'player.update',
+  'lastLifeHelperWing.update',
+  'waveManager.update',
+  'levelManager.update',
+] as const;
+
+function expectGameplaySystemsSkipped(calls: string[]): void {
+  for (const name of GAMEPLAY_SYSTEM_CALLS) {
+    expect(calls).not.toContain(name);
+  }
+}
+
 type UpdateHarness = {
   scene: GameSceneInstance;
+  state: GameSceneTestState;
   calls: string[];
   setPaused: (paused: boolean) => void;
   setLocked: (locked: boolean) => void;
@@ -66,6 +156,7 @@ type UpdateHarness = {
 
 function createUpdateHarness(): UpdateHarness {
   const scene = Object.create(GameScene.prototype) as GameSceneInstance;
+  const state = stateOf(scene);
   const calls: string[] = [];
   activeCallLog = calls;
 
@@ -76,15 +167,15 @@ function createUpdateHarness(): UpdateHarness {
   let shouldSpawnBoss = false;
   let levelComplete = false;
 
-  (scene as unknown as Record<string, unknown>).syncViewportIfNeeded = () => {
+  state.syncViewportIfNeeded = () => {
     calls.push('syncViewportIfNeeded');
   };
 
-  (scene as unknown as Record<string, unknown>).updateHud = () => {
+  state.updateHud = () => {
     calls.push('updateHud');
   };
 
-  (scene as unknown as Record<string, unknown>).inputManager = {
+  state.inputManager = {
     consumePauseToggleRequest: () => {
       calls.push('consumePauseToggleRequest');
       return consumePauseToggle;
@@ -92,7 +183,7 @@ function createUpdateHarness(): UpdateHarness {
     isFiring: () => false,
   };
 
-  (scene as unknown as Record<string, unknown>).pauseStateController = {
+  state.pauseStateController = {
     togglePauseRequest: (isGameplayLocked: boolean) => {
       calls.push(`togglePauseRequest:${String(isGameplayLocked)}`);
     },
@@ -102,7 +193,7 @@ function createUpdateHarness(): UpdateHarness {
     },
   };
 
-  (scene as unknown as Record<string, unknown>).flow = {
+  state.flow = {
     isGameplayLocked: () => {
       calls.push('isGameplayLocked');
       return locked;
@@ -114,7 +205,7 @@ function createUpdateHarness(): UpdateHarness {
     getRemainingLives: () => 2,
   };
 
-  (scene as unknown as Record<string, unknown>).parallax = {
+  state.parallax = {
     update: (_delta: number) => {
       calls.push('parallax.update');
     },
@@ -123,7 +214,7 @@ function createUpdateHarness(): UpdateHarness {
     },
   };
 
-  (scene as unknown as Record<string, unknown>).player = {
+  state.player = {
     isAlive: true,
     fireRate: 100,
     getFireDirection: (_out: unknown) => ({ x: 0, y: -1 }),
@@ -133,19 +224,19 @@ function createUpdateHarness(): UpdateHarness {
     },
   };
 
-  (scene as unknown as Record<string, unknown>).lastLifeHelperWing = {
+  state.lastLifeHelperWing = {
     update: (_time: number) => {
       calls.push('lastLifeHelperWing.update');
     },
   };
 
-  (scene as unknown as Record<string, unknown>).waveManager = {
+  state.waveManager = {
     update: (_time: number, _delta: number, _progress: number) => {
       calls.push('waveManager.update');
     },
   };
 
-  (scene as unknown as Record<string, unknown>).levelManager = {
+  state.levelManager = {
     progress: 0.25,
     hasBossSpawned: () => bossSpawned,
     isComplete: () => levelComplete,
@@ -160,33 +251,39 @@ function createUpdateHarness(): UpdateHarness {
     shouldSpawnBoss: () => shouldSpawnBoss,
   };
 
-  (scene as unknown as Record<string, unknown>).hud = {
+  state.hud = {
     updateBossHp: (_hp: number, _maxHp: number) => {
       calls.push('hud.updateBossHp');
     },
   };
 
-  (scene as unknown as Record<string, unknown>).boss = null;
-  (scene as unknown as Record<string, unknown>).lastFireTime = 0;
-  (scene as unknown as Record<string, unknown>).bulletPool = {
+  state.boss = null;
+  state.lastFireTime = 0;
+  state.bulletPool = {
     fire: () => {
       calls.push('bulletPool.fire');
     },
   };
-  (scene as unknown as Record<string, unknown>).effectsManager = {
+  state.effectsManager = {
     createMuzzleFlash: (_x: number, _y: number) => {
       calls.push('effectsManager.createMuzzleFlash');
     },
   };
 
-  (scene as unknown as Record<string, unknown>).events = {
+  state.events = {
     emit: (eventName: string) => {
       calls.push(`emit:${eventName}`);
     },
   };
 
+  // createGameplayFrameBehavior closes over these vectors.
+  state.shotDirection = { x: 0, y: 0 };
+  state.shotOrigin = { x: 0, y: 0 };
+  state.muzzleFlashOrigin = { x: 0, y: 0 };
+
   return {
     scene,
+    state,
     calls,
     setPaused: (nextPaused: boolean) => {
       paused = nextPaused;
@@ -234,11 +331,7 @@ describe('GameScene update gate regression coverage', () => {
 
     expect(harness.calls).toContain('sampleRespawnTransitionFrame');
     expect(harness.calls).toContain('updateHud');
-    expect(harness.calls).not.toContain('parallax.update');
-    expect(harness.calls).not.toContain('player.update');
-    expect(harness.calls).not.toContain('lastLifeHelperWing.update');
-    expect(harness.calls).not.toContain('waveManager.update');
-    expect(harness.calls).not.toContain('levelManager.update');
+    expectGameplaySystemsSkipped(harness.calls);
   });
 
   test('locked frame uses same early-return path as paused frames', () => {
@@ -249,9 +342,7 @@ describe('GameScene update gate regression coverage', () => {
 
     expect(harness.calls).toContain('sampleRespawnTransitionFrame');
     expect(harness.calls).toContain('updateHud');
-    expect(harness.calls).not.toContain('parallax.update');
-    expect(harness.calls).not.toContain('player.update');
-    expect(harness.calls).not.toContain('waveManager.update');
+    expectGameplaySystemsSkipped(harness.calls);
   });
 
   test('active gameplay frame preserves update ordering and progression event timing', () => {
@@ -280,6 +371,58 @@ describe('GameScene update gate regression coverage', () => {
     expect(bossEmitIndex).toBeGreaterThan(setAtmosphereIndex);
     expect(levelCompleteEmitIndex).toBeGreaterThan(setAtmosphereIndex);
     expect(hudIndex).toBe(harness.calls.length - 1);
+  });
+
+  test('reuses a stable update-frame delegate across consecutive frames', () => {
+    const harness = createUpdateHarness();
+
+    harness.scene.update(1000, 16);
+    const firstDelegate = harness.state.updateFrameDelegate;
+    const firstBehavior = harness.state.gameplayFrameBehavior;
+
+    harness.scene.update(1016, 16);
+    const secondDelegate = harness.state.updateFrameDelegate;
+    const secondBehavior = harness.state.gameplayFrameBehavior;
+
+    expect(firstDelegate).not.toBeNull();
+    expect(firstBehavior).not.toBeNull();
+    expect(secondDelegate).toBe(firstDelegate);
+    expect(secondBehavior).toBe(firstBehavior);
+  });
+
+  test('re-materializes gameplay frame behavior when only the outer delegate remains', () => {
+    const harness = createUpdateHarness();
+
+    harness.scene.update(1000, 16);
+    const cachedDelegate = harness.state.updateFrameDelegate;
+    expect(cachedDelegate).not.toBeNull();
+
+    harness.state.gameplayFrameBehavior = null;
+    harness.scene.update(1016, 16);
+
+    expect(harness.state.updateFrameDelegate).toBe(cachedDelegate);
+    expect(harness.state.gameplayFrameBehavior).not.toBeNull();
+    expect(harness.calls).toContain('parallax.update');
+  });
+
+  test('reads lastLifeHelperWing live so mid-run replacement is visible to a cached behavior', () => {
+    const harness = createUpdateHarness();
+
+    harness.scene.update(1000, 16);
+    expect(harness.calls).toContain('lastLifeHelperWing.update');
+
+    const replacementCalls: string[] = [];
+    harness.state.lastLifeHelperWing = {
+      update: (_time: number) => {
+        replacementCalls.push('replacementHelperWing.update');
+      },
+    };
+
+    harness.calls.length = 0;
+    harness.scene.update(1016, 16);
+
+    expect(harness.calls).not.toContain('lastLifeHelperWing.update');
+    expect(replacementCalls).toEqual(['replacementHelperWing.update']);
   });
 
   test('wave update is skipped after boss has spawned', () => {
