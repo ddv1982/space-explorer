@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
+import { SWARM_HP, SWARM_SCORE, SWARM_SPEED } from '../../utils/constants';
 import { ensureSwarmTexture } from '../../utils/SpriteFactory';
 
 export class Swarm extends EnemyBase {
@@ -10,10 +11,10 @@ export class Swarm extends EnemyBase {
     ensureSwarmTexture(scene);
 
     super(scene, x, y, 'swarm-texture');
-    this.maxHp = 1;
-    this.hp = 1;
-    this.speed = 220;
-    this.scoreValue = 50;
+    this.maxHp = SWARM_HP;
+    this.hp = SWARM_HP;
+    this.speed = SWARM_SPEED;
+    this.scoreValue = SWARM_SCORE;
     this.enemyType = 'swarm';
   }
 

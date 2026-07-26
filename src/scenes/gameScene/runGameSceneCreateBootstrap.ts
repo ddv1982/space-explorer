@@ -18,7 +18,11 @@ import { initializeLevelRuntime } from './initializeLevelRuntime';
 import { createPauseViewportWiring } from './pauseViewportWiring';
 import { showControlsHint } from './showControlsHint';
 
-type GameSceneCreateBootstrapBridge = Phaser.Scene
+/**
+ * Create-time surface required by bootstrap orchestration.
+ * GameScene satisfies this structurally after private members are cast at the call site.
+ */
+export type GameSceneCreateBootstrapBridge = Phaser.Scene
   & GameSceneCreateRuntimeBridge
   & GameSceneCreateWorldBridge
   & GameSceneCreateInputBridge
@@ -86,12 +90,14 @@ function initializeRuntimeState(
 function bootstrapWorldPresentation(
   gameScene: WorldBootstrapScene,
   levelConfig: BootstrapLevelRuntime['levelConfig'],
+  levelNumber: number,
   audioInitialization: BootstrapAudioInitialization,
   dependencies: Pick<BootstrapDependencies, 'createWorldPresentation'>
 ): { playerSpawnPoint: { x: number; y: number } } {
   const worldPresentation = dependencies.createWorldPresentation({
     scene: gameScene,
     levelConfig,
+    levelNumber,
     initialSection: audioInitialization.initialSection,
     initialSectionProgress: audioInitialization.initialSectionProgress,
     syncViewportBounds: () => {
@@ -192,24 +198,23 @@ function bootstrapPauseAndViewportWiring(
 }
 
 export function runGameSceneCreateBootstrap(
-  scene: unknown,
+  scene: GameSceneCreateBootstrapBridge,
   dependencies: BootstrapDependencies = defaultBootstrapDependencies
 ): void {
-  const gameScene = scene as GameSceneCreateBootstrapBridge;
-
-  const { state, levelRuntime, audioInitialization } = initializeRuntimeState(gameScene, dependencies);
+  const { state, levelRuntime, audioInitialization } = initializeRuntimeState(scene, dependencies);
   const { playerSpawnPoint } = bootstrapWorldPresentation(
-    gameScene,
+    scene,
     levelRuntime.levelConfig,
+    state.level,
     audioInitialization,
     dependencies
   );
 
-  bootstrapInputAndPlayer(gameScene, state, playerSpawnPoint, dependencies);
-  bootstrapGameplaySystems(gameScene, levelRuntime.levelConfig, state, dependencies);
-  bootstrapHudAndTransitions(gameScene, levelRuntime.levelConfig, state.level, dependencies);
-  bootstrapPauseAndViewportWiring(gameScene, dependencies);
+  bootstrapInputAndPlayer(scene, state, playerSpawnPoint, dependencies);
+  bootstrapGameplaySystems(scene, levelRuntime.levelConfig, state, dependencies);
+  bootstrapHudAndTransitions(scene, levelRuntime.levelConfig, state.level, dependencies);
+  bootstrapPauseAndViewportWiring(scene, dependencies);
 
-  dependencies.showControlsHint(gameScene, { mobile: dependencies.isTouchMobileDevice() });
-  gameScene.runtimeLifecycle.registerRuntimeHandlers();
+  dependencies.showControlsHint(scene, { mobile: dependencies.isTouchMobileDevice() });
+  scene.runtimeLifecycle.registerRuntimeHandlers();
 }

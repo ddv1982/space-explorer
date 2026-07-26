@@ -48,6 +48,7 @@ export class EffectsManager {
   private exhaustConfigIntensityTenths = -1;
   private exhaustConfigCount = -1;
   private currentLevelConfig: LevelConfig | null = null;
+  private colorPulseToken = 0;
 
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
@@ -58,6 +59,7 @@ export class EffectsManager {
   }
 
   destroy(): void {
+    this.colorPulseToken += 1;
     this.destroyEmitters();
     this.clearCameraFX();
     this.colorMatrix = null;
@@ -67,6 +69,7 @@ export class EffectsManager {
   }
 
   applyLevelColorGrade(config: LevelConfig): void {
+    this.colorPulseToken += 1;
     this.currentLevelConfig = config;
     if (!config.colorGrade) return;
 
@@ -84,15 +87,23 @@ export class EffectsManager {
     }
 
     const existingGrade = this.currentLevelConfig?.colorGrade ?? { brightness: 0, contrast: 1, saturation: 1 };
+    const pulseToken = ++this.colorPulseToken;
     this.colorMatrix = applyCameraColorPulse(camera, this.colorMatrix, pulse);
 
     this.scene.time.delayedCall(durationMs, () => {
-      if (!this.scene?.cameras?.main) {
-        return;
-      }
-
-      this.colorMatrix = applyCameraColorGrade(this.scene.cameras.main, this.colorMatrix, existingGrade);
+      this.restoreCameraColorGradeAfterPulse(pulseToken, existingGrade);
     });
+  }
+
+  private restoreCameraColorGradeAfterPulse(
+    pulseToken: number,
+    existingGrade: { brightness: number; contrast: number; saturation: number }
+  ): void {
+    if (pulseToken !== this.colorPulseToken || !this.scene?.cameras?.main) {
+      return;
+    }
+
+    this.colorMatrix = applyCameraColorGrade(this.scene.cameras.main, this.colorMatrix, existingGrade);
   }
 
   private setupCameraFX(): void {

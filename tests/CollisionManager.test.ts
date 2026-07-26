@@ -1,56 +1,7 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
+import { mockPhaserModule } from './helpers/phaserMock';
 
-mock.module('phaser', () => {
-  class GameObject {
-    active = true;
-  }
-
-  class Sprite extends GameObject {}
-
-  return {
-    default: {
-      GameObjects: {
-        GameObject,
-      },
-      Physics: {
-        Arcade: {
-          Sprite,
-        },
-      },
-      Math: {
-        DegToRad: (degrees: number) => (degrees * Math.PI) / 180,
-        Linear: (a: number, b: number, t: number) => a + (b - a) * t,
-        Vector2: class {
-          x = 0;
-          y = 0;
-
-          set(x: number, y: number) {
-            this.x = x;
-            this.y = y;
-            return this;
-          }
-
-          rotate(_radians: number) {
-            return this;
-          }
-
-          normalize() {
-            return this;
-          }
-
-          scale(_value: number) {
-            return this;
-          }
-        },
-      },
-      Utils: {
-        Array: {
-          GetRandom: <T>(values: T[]) => values[0],
-        },
-      },
-    },
-  };
-});
+mockPhaserModule();
 
 const { CollisionManager } = await import('../src/systems/CollisionManager');
 const { EnemyBullet } = await import('../src/entities/EnemyBullet');

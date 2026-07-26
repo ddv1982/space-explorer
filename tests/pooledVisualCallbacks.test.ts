@@ -1,24 +1,16 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { mockPhaserModule } from './helpers/phaserMock';
 
-mock.module('phaser', () => ({
-  default: {
-    Physics: {
-      Arcade: {
-        Sprite: class {},
-      },
-    },
-    Math: {
-      FloatBetween: (min: number) => min,
-    },
-  },
-}));
+mockPhaserModule();
 
 const { Asteroid } = await import('../src/entities/Asteroid');
 const { EnemyBase } = await import('../src/entities/enemies/EnemyBase');
 const { HelperShip } = await import('../src/entities/HelperShip');
+const { Player } = await import('../src/entities/Player');
 type AsteroidInstance = InstanceType<typeof Asteroid>;
 type EnemyBaseInstance = InstanceType<typeof EnemyBase>;
 type HelperShipInstance = InstanceType<typeof HelperShip>;
+type PlayerInstance = InstanceType<typeof Player>;
 
 type ScheduledTintCallback = {
   callback: (token: number) => void;
@@ -101,6 +93,53 @@ describe('pooled visual callback guards', () => {
     helper.takeDamage(1, 1000, { createSparkBurst: mock(), createExplosion: mock() } as never);
 
     (helper as unknown as Record<string, number>).visualFlashToken = scheduled[0].args[0] + 1;
+    scheduled[0].callback.apply(scheduled[0].scope, scheduled[0].args);
+
+    expect(clearTint).not.toHaveBeenCalled();
+  });
+
+  test('player shield flash callback ignores a later damage flash on the same player', () => {
+    const { scene, scheduled } = createDelayedCallHarness();
+    const setTint = mock();
+    const clearTint = mock();
+
+    const player = Object.create(Player.prototype) as PlayerInstance;
+    player.isAlive = true;
+    (player as unknown as Record<string, unknown>).visualFlashToken = 0;
+    (player as unknown as Record<string, unknown>).scene = scene;
+    (player as unknown as Record<string, unknown>).setTint = setTint;
+    (player as unknown as Record<string, unknown>).clearTint = clearTint;
+
+    (player as unknown as { flashShield: () => void }).flashShield();
+    const shieldFlash = scheduled[0];
+
+    (player as unknown as { flashWhite: () => void }).flashWhite();
+    const damageFlash = scheduled[1];
+
+    shieldFlash.callback.apply(shieldFlash.scope, shieldFlash.args);
+    expect(clearTint).not.toHaveBeenCalled();
+
+    damageFlash.callback.apply(damageFlash.scope, damageFlash.args);
+    expect(clearTint).toHaveBeenCalledTimes(1);
+    expect(setTint).toHaveBeenCalledWith(0x44aaff);
+    expect(setTint).toHaveBeenCalledWith(0xffffff);
+  });
+
+  test('player hit flash callback ignores a player that died after the flash was scheduled', () => {
+    const { scene, scheduled } = createDelayedCallHarness();
+    const clearTint = mock();
+
+    const player = Object.create(Player.prototype) as PlayerInstance;
+    player.isAlive = true;
+    (player as unknown as Record<string, unknown>).visualFlashToken = 0;
+    (player as unknown as Record<string, unknown>).scene = scene;
+    (player as unknown as Record<string, unknown>).setTint = mock();
+    (player as unknown as Record<string, unknown>).clearTint = clearTint;
+
+    (player as unknown as { flashWhite: () => void }).flashWhite();
+
+    player.isAlive = false;
+    (player as unknown as Record<string, number>).visualFlashToken = scheduled[0].args[0] + 1;
     scheduled[0].callback.apply(scheduled[0].scope, scheduled[0].args);
 
     expect(clearTint).not.toHaveBeenCalled();

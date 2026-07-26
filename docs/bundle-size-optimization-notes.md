@@ -67,3 +67,11 @@
 - Bundle report totals: 21 files, 28,065.72 kB raw / 26,724.17 kB gzip; JavaScript total 1,659.73 kB raw.
 - Largest assets remain premium background PNGs, led by `bg_level02.png` at 3,018.43 kB raw / 3,007.77 kB gzip.
 - `bun run bundle:check` passed with thresholds: largest asset <= 3,500 kB, total <= 30,000 kB, largest JS <= 1,500 kB, total JS <= 1,800 kB.
+
+## Premium Background Load Path Rebaseline (2026-07-26)
+
+- `PreloadScene` now loads only the startup premium window (levels 1–2) via `getStartupPremiumBackgroundPreloadQueue()`.
+- Later levels load just-in-time through `ensurePremiumBackgroundAssets` before `Game` starts (Menu new/load, intermission advance, pause-slot load). Ensure does **not** release textures by default (outgoing Menu/Game may still display them); `createWorldPresentation` releases outside the active window after Game parallax claims its layers.
+- Intermission warms the next level window without releasing textures. Menu blocks resize-restart while a Game transition load is queued.
+- On-disk `public/assets/backgrounds/*.png` pack is unchanged (still ~26 MB). Bundle/guardrail totals still count all packaged assets; the win is startup download/decode and runtime texture residency, not dist footprint.
+- Empty unused WebP scaffolding directories were removed (`webp_desktop_1024x2048`, `webp_mobile_768x1536`); delivery remains PNG until WebP variants are authored.

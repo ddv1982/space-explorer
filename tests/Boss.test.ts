@@ -1,23 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { mockPhaserModule } from './helpers/phaserMock';
 
-mock.module('phaser', () => ({
-  default: {
-    Physics: {
-      Arcade: {
-        Sprite: class {},
-        Body: class {},
-      },
-    },
-    Math: {
-      Clamp: (value: number, min: number, max: number) => Math.min(max, Math.max(min, value)),
-      DegToRad: (degrees: number) => degrees * (Math.PI / 180),
-      RadToDeg: (radians: number) => radians * (180 / Math.PI),
-      Angle: {
-        Between: (x1: number, y1: number, x2: number, y2: number) => Math.atan2(y2 - y1, x2 - x1),
-      },
-    },
-  },
-}));
+mockPhaserModule();
 
 const { Boss } = await import('../src/entities/enemies/Boss');
 type BossInstance = InstanceType<typeof Boss>;

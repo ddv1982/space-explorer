@@ -21,6 +21,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private invulnerableTimer: number = 0;
   private exhaustTimer: number = 0;
   private readonly exhaustInterval: number = 50;
+  private visualFlashToken = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePlayerTexture(scene);
@@ -133,17 +134,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private flashWhite(): void {
+    const flashToken = ++this.visualFlashToken;
     this.setTint(0xffffff);
-    this.scene.time.delayedCall(100, this.clearTintIfAlive, undefined, this);
+    this.scene.time.delayedCall(100, this.clearTintIfAlive, [flashToken], this);
   }
 
   private flashShield(): void {
+    const flashToken = ++this.visualFlashToken;
     this.setTint(0x44aaff);
-    this.scene.time.delayedCall(150, this.clearTintIfAlive, undefined, this);
+    this.scene.time.delayedCall(150, this.clearTintIfAlive, [flashToken], this);
   }
 
-  private clearTintIfAlive(): void {
-    if (this.isAlive) {
+  private clearTintIfAlive(flashToken: number): void {
+    if (this.isAlive && flashToken === this.visualFlashToken) {
       this.clearTint();
     }
   }
@@ -154,6 +157,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.deathStarted = true;
+    this.visualFlashToken += 1;
     this.invulnerable = true;
     this.invulnerableTimer = 0;
     this.isAlive = false;
@@ -264,6 +268,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private resetSpawnState(hp: number | undefined): void {
+    this.visualFlashToken += 1;
     this.hp = hp ?? this.maxHp;
     this.isAlive = true;
     this.isMovingUp = false;
@@ -294,6 +299,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    this.visualFlashToken += 1;
     this.scene.tweens.killTweensOf(this);
     this.clearTint();
     this.setVisible(false);

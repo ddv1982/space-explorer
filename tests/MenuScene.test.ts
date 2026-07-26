@@ -11,10 +11,53 @@ mock.module('phaser', () => ({
   },
 }));
 
+const ensurePremiumBackgroundAssets = mock();
+const startRegisteredScene = mock();
+let currentLevel = 1;
+
+mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
+  ensurePremiumBackgroundAssets,
+}));
+
+mock.module('../src/scenes/sceneRegistry', () => ({
+  startRegisteredScene,
+}));
+
+mock.module('../src/systems/PlayerState', () => ({
+  getPlayerState: () => ({ level: currentLevel }),
+  resetPlayerState: mock(),
+  resetRunSummary: mock(),
+  setPlayerState: mock(),
+  setRunSummary: mock(),
+}));
+
 const { MenuScene } = await import('../src/scenes/MenuScene');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
 describe('MenuScene', () => {
+  test('waits for the saved level premium background window before starting Game', () => {
+    currentLevel = 7;
+    ensurePremiumBackgroundAssets.mockClear();
+    startRegisteredScene.mockClear();
+
+    let onReady: (() => void) | undefined;
+    ensurePremiumBackgroundAssets.mockImplementation((_scene, _level, callback) => {
+      onReady = callback;
+    });
+
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
+    (scene as unknown as Record<string, unknown>).registry = {};
+
+    (scene as unknown as { startGameScene: () => void }).startGameScene();
+
+    expect(ensurePremiumBackgroundAssets).toHaveBeenCalledWith(scene, 7, expect.any(Function));
+    expect(startRegisteredScene).not.toHaveBeenCalled();
+
+    onReady?.();
+
+    expect(startRegisteredScene).toHaveBeenCalledWith(scene, 'Game');
+  });
+
   test('loadFromSlot loads persisted state and starts Game exactly once', () => {
     const record = {
       playerState: { level: 4, score: 1200 },

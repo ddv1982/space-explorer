@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getAllPremiumBackgroundPreloadQueue } from '../systems/parallax/premiumBackgroundManifest';
+import { getStartupPremiumBackgroundPreloadQueue } from '../systems/parallax/premiumBackgroundManifest';
 import { getViewportLayout } from '../utils/layout';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
@@ -9,7 +9,8 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    for (const asset of getAllPremiumBackgroundPreloadQueue()) {
+    // Only warm the first campaign window; later levels load just-in-time before Game starts.
+    for (const asset of getStartupPremiumBackgroundPreloadQueue()) {
       if (!this.textures.exists(asset.key)) {
         this.load.image(asset.key, asset.url);
       }

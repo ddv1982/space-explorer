@@ -1,14 +1,7 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
+import { mockPhaserModule } from './helpers/phaserMock';
 
-mock.module('phaser', () => ({
-  default: {
-    Physics: {
-      Arcade: {
-        Sprite: class {},
-      },
-    },
-  },
-}));
+mockPhaserModule();
 
 const { EnemyPool } = await import('../src/systems/EnemyPool');
 const { Scout } = await import('../src/entities/enemies/Scout');

@@ -23,6 +23,7 @@ bun run bundle:check
 - `bun run test` runs each test file in its own Bun process so file-level mocks and globals cannot leak across suites.
 - `bun run build` keeps the production build path focused on source type-checking plus Vite output.
 - `bun run bundle:check` expects a fresh `dist/` from `bun run build`.
+- Production `tsconfig.json` keeps `noUnusedLocals` / `noUnusedParameters` **off** on purpose. ESLint (`@typescript-eslint/no-unused-vars`) already gates unused symbols. Enabling the TypeScript flags falsely flags private `GameScene` create-time methods that are only invoked through the bootstrap bridge cast (`runGameSceneCreateBootstrap(this as …)`).
 
 ## Manual Release Smoke
 

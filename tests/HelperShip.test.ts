@@ -1,21 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { mockPhaserModule } from './helpers/phaserMock';
 
-mock.module('phaser', () => ({
-  default: {
-    Physics: {
-      Arcade: {
-        Sprite: class {},
-        Body: class {},
-      },
-    },
-    Math: {
-      Linear: (a: number, b: number, t: number) => a + (b - a) * t,
-      Clamp: (value: number, min: number, max: number) => Math.min(max, Math.max(min, value)),
-      DegToRad: (degrees: number) => (degrees * Math.PI) / 180,
-      Between: (min: number) => min,
-    },
-  },
-}));
+mockPhaserModule();
 
 const { HelperShip } = await import('../src/entities/HelperShip');
 type HelperShipInstance = InstanceType<typeof HelperShip>;

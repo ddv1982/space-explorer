@@ -1,19 +1,13 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { mockPhaserModule } from './helpers/phaserMock';
 
-mock.module('phaser', () => ({
-  default: {
-    Scene: class {},
-    Physics: {
-      Arcade: {
-        Sprite: class {},
-        Group: class {},
-      },
-    },
-  },
-}));
+mockPhaserModule();
 
 const { LastLifeHelperWing } = await import('../src/systems/LastLifeHelperWing');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
+const { EnemyBullet } = await import('../src/entities/EnemyBullet');
+const { EnemyBase } = await import('../src/entities/enemies/EnemyBase');
+const { HelperShip } = await import('../src/entities/HelperShip');
 type LastLifeHelperWingInstance = InstanceType<typeof LastLifeHelperWing>;
 
 describe('LastLifeHelperWing', () => {
@@ -121,22 +115,20 @@ describe('LastLifeHelperWing', () => {
     const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWingInstance;
     (wing as unknown as Record<string, unknown>).scene = { time: { now: 1234 } };
     (wing as unknown as Record<string, unknown>).effectsManager = effectsManager;
-    (wing as unknown as Record<string, unknown>).resolveCollisionTarget = (ctor: unknown) => {
-      const ctorName = typeof ctor === 'function' ? ctor.name : '';
-      if (ctorName === 'EnemyBullet') {
-        return { active: true, kill: bulletKill };
-      }
-      if (ctorName === 'EnemyBase') {
-        return { active: true };
-      }
-      if (ctorName === 'HelperShip') {
-        return { takeDamage, takeContactDamage };
-      }
-      return null;
-    };
 
-    (wing as unknown as { handleEnemyBulletOverlap: (a: unknown, b: unknown) => void }).handleEnemyBulletOverlap(null, null);
-    (wing as unknown as { handleEnemyContactOverlap: (a: unknown, b: unknown) => void }).handleEnemyContactOverlap(null, null);
+    const bullet = Object.create(EnemyBullet.prototype) as InstanceType<typeof EnemyBullet>;
+    bullet.active = true;
+    bullet.kill = bulletKill as never;
+
+    const enemy = Object.create(EnemyBase.prototype) as InstanceType<typeof EnemyBase>;
+    enemy.active = true;
+
+    const helper = Object.create(HelperShip.prototype) as InstanceType<typeof HelperShip>;
+    helper.takeDamage = takeDamage as never;
+    helper.takeContactDamage = takeContactDamage as never;
+
+    (wing as unknown as { handleEnemyBulletOverlap: (a: unknown, b: unknown) => void }).handleEnemyBulletOverlap(bullet, helper);
+    (wing as unknown as { handleEnemyContactOverlap: (a: unknown, b: unknown) => void }).handleEnemyContactOverlap(enemy, helper);
 
     expect(bulletKill).toHaveBeenCalledTimes(1);
     expect(takeDamage).toHaveBeenCalledWith(1, 1234, effectsManager);

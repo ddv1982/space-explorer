@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.27] - 2026-07-26
+
+### Added
+- Added windowed premium-background loading so startup warms only Levels 1-2 and later campaign art loads before the relevant Game transition.
+- Added lifecycle-aware loading coverage for Menu, intermission, and pause checkpoint transitions.
+- Added shared collision-target and best-effort side-effect helpers, plus a focused shared Phaser test mock.
+
+### Changed
+- Released premium textures outside the active level window after the new Game parallax has claimed its layers.
+- Warmed the next premium-background window during intermission without removing art still owned by the outgoing scene.
+- Centralized bomber, gunship, and swarm tuning constants without changing their gameplay values.
+
+### Fixed
+- Prevented stale player flash callbacks and camera color-pulse callbacks from mutating a later visual lifecycle.
+- Guarded Menu resize restarts while an asynchronous Game transition is loading campaign art.
+
+### Quality
+- Refreshed death/respawn research notes and documented the intentional TypeScript unused-symbol policy.
+- Verified with `bun run build`, `bun run typecheck`, `bun run lint`, `bun run test`, `bun run levels:validate`, `bun run knip`, `bun run bundle:check`, and `git diff --check`.
+
 ## [1.1.26] - 2026-07-26
 
 ### Changed

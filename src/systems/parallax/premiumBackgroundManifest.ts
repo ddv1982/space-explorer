@@ -75,15 +75,84 @@ export function getPremiumBackgroundManifest(levelName: string | undefined): Pre
   return PREMIUM_BACKGROUND_MANIFESTS[levelName];
 }
 
+export type PremiumBackgroundAsset = { key: string; url: string };
 
-export function getAllPremiumBackgroundPreloadQueue(): Array<{ key: string; url: string }> {
-  const queued = new Map<string, { key: string; url: string }>();
+/**
+ * Level numbers to keep warm for gameplay: the active level plus a short look-ahead.
+ * Defaults match the art-bible guidance (current + next).
+ */
+export function getPremiumBackgroundLevelWindow(
+  levelNumber: number,
+  options: { lookAhead?: number; totalLevels?: number } = {}
+): number[] {
+  const totalLevels = options.totalLevels ?? LEVELS.length;
+  const lookAhead = options.lookAhead ?? 1;
+  if (totalLevels <= 0) {
+    return [];
+  }
 
-  for (const manifest of Object.values(PREMIUM_BACKGROUND_MANIFESTS)) {
+  const current = Math.min(Math.max(1, Math.floor(levelNumber)), totalLevels);
+  const last = Math.min(totalLevels, current + Math.max(0, Math.floor(lookAhead)));
+  const windowLevels: number[] = [];
+
+  for (let level = current; level <= last; level += 1) {
+    windowLevels.push(level);
+  }
+
+  return windowLevels;
+}
+
+function getPremiumBackgroundPreloadQueueForLevels(
+  levelNumbers: readonly number[]
+): PremiumBackgroundAsset[] {
+  const queued = new Map<string, PremiumBackgroundAsset>();
+
+  for (const levelNumber of levelNumbers) {
+    const level = LEVELS.find((entry) => entry.index === levelNumber);
+    if (!level) {
+      continue;
+    }
+
+    const manifest = PREMIUM_BACKGROUND_MANIFESTS[level.name];
+    if (!manifest) {
+      continue;
+    }
+
     for (const layer of manifest.layers) {
       queued.set(layer.key, { key: layer.key, url: layer.url });
     }
   }
 
   return [...queued.values()];
+}
+
+export function getPremiumBackgroundPreloadQueueForLevelWindow(
+  levelNumber: number,
+  options: { lookAhead?: number; totalLevels?: number } = {}
+): PremiumBackgroundAsset[] {
+  return getPremiumBackgroundPreloadQueueForLevels(
+    getPremiumBackgroundLevelWindow(levelNumber, options)
+  );
+}
+
+/** Boot-time queue: first campaign window so Menu → Level 1 is ready. */
+export function getStartupPremiumBackgroundPreloadQueue(): PremiumBackgroundAsset[] {
+  return getPremiumBackgroundPreloadQueueForLevelWindow(1);
+}
+
+export function getAllPremiumBackgroundPreloadQueue(): PremiumBackgroundAsset[] {
+  return getPremiumBackgroundPreloadQueueForLevels(LEVELS.map((level) => level.index));
+}
+
+export function getPremiumBackgroundKeysOutsideLevelWindow(
+  levelNumber: number,
+  options: { lookAhead?: number; totalLevels?: number } = {}
+): string[] {
+  const keep = new Set(
+    getPremiumBackgroundPreloadQueueForLevelWindow(levelNumber, options).map((asset) => asset.key)
+  );
+
+  return getAllPremiumBackgroundPreloadQueue()
+    .map((asset) => asset.key)
+    .filter((key) => !keep.has(key));
 }

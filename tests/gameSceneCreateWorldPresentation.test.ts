@@ -7,16 +7,18 @@ let parallaxCreateArgs: { scene: unknown; levelConfig: unknown } | null = null;
 let parallaxAtmosphereArgs: { section: unknown; progress: number } | null = null;
 let effectsSetupScene: unknown = null;
 let effectsColorGradeConfig: unknown = null;
+let releasedLevel: number | null = null;
 
 const { createWorldPresentation } = await import('../src/scenes/gameScene/createWorldPresentation');
 
 describe('createWorldPresentation', () => {
-  test('configures scene presentation and returns spawn point', () => {
+  test('configures scene presentation, releases outside premium window after parallax create, and returns spawn point', () => {
     callLog.length = 0;
     parallaxCreateArgs = null;
     parallaxAtmosphereArgs = null;
     effectsSetupScene = null;
     effectsColorGradeConfig = null;
+    releasedLevel = null;
 
     const scene = {
       cameras: {
@@ -52,8 +54,13 @@ describe('createWorldPresentation', () => {
           effectsColorGradeConfig = levelConfig;
         },
       }) as never,
+      releaseOutsidePremiumWindow: (_scene, levelNumber) => {
+        callLog.push('releaseOutsidePremiumWindow');
+        releasedLevel = levelNumber;
+      },
       scene: scene as Parameters<typeof createWorldPresentation>[0]['scene'],
       levelConfig: levelConfig as Parameters<typeof createWorldPresentation>[0]['levelConfig'],
+      levelNumber: 4,
       initialSection: initialSection as Parameters<typeof createWorldPresentation>[0]['initialSection'],
       initialSectionProgress: 0.4,
       syncViewportBounds: () => {
@@ -73,11 +80,13 @@ describe('createWorldPresentation', () => {
       'syncViewportBounds',
       'getPlayerSpawnPoint',
       'parallax.create',
+      'releaseOutsidePremiumWindow',
       'parallax.setSectionAtmosphere',
       'registerScaleHandlers',
       'effects.setup',
       'effects.applyLevelColorGrade',
     ]);
+    expect(releasedLevel).toBe(4);
     expect(parallaxCreateArgs).toEqual({ scene, levelConfig });
     expect(parallaxAtmosphereArgs).toEqual({ section: initialSection, progress: 0.4 });
     expect(effectsSetupScene).toBe(scene);

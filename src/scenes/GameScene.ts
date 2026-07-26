@@ -48,7 +48,10 @@ import { updateHud as updateHudOrchestration } from './gameScene/hudSyncOrchestr
 import { PauseStateController } from './gameScene/PauseStateController';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
-import { runGameSceneCreateBootstrap } from './gameScene/runGameSceneCreateBootstrap';
+import {
+  runGameSceneCreateBootstrap,
+  type GameSceneCreateBootstrapBridge,
+} from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
 import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
 import {
@@ -100,7 +103,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    runGameSceneCreateBootstrap(this);
+    // Private GameScene members are not publicly assignable; cast only at this create-time seam.
+    runGameSceneCreateBootstrap(this as unknown as GameSceneCreateBootstrapBridge);
     this.gameplayFrameBehavior = this.createGameplayFrameBehavior();
     this.updateFrameDelegate = this.createUpdateFrameDelegate();
   }

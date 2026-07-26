@@ -15,7 +15,10 @@ import type {
   PlayerDeathFlowOutcome,
 } from './GameSceneFlowController';
 import { getViewportBounds } from '@/utils/layout';
+import { runBestEffort } from '@/utils/runBestEffort';
 import { trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
+
+export { runBestEffort };
 
 interface CombatFeedbackConstants {
   bossExplosionVisualIntensity: number;
@@ -63,14 +66,6 @@ interface GameSceneCombatFeedbackHandlers {
   handleHelperWingActivated: (helperCount: number) => void;
   handleHelperWingDepleted: () => void;
   spawnBoss: () => void;
-}
-
-export function runBestEffort(effect: () => void): void {
-  try {
-    effect();
-  } catch {
-    // Keep the GameOver transition alive even if optional cleanup/effects fail.
-  }
 }
 
 function shouldSyncHelperWingAfterPlayerDeath(outcome: PlayerDeathFlowOutcome): boolean {

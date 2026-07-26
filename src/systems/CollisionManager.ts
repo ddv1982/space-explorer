@@ -4,13 +4,13 @@ import { Bullet } from '../entities/Bullet';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { Asteroid } from '../entities/Asteroid';
+import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
+import { runBestEffort } from '../utils/runBestEffort';
 import { BulletPool } from './BulletPool';
 import { EnemyPool } from './EnemyPool';
 import { EffectsManager } from './EffectsManager';
 import { BomberBomb } from '../entities/BomberBomb';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
-
-type CollisionTargetCtor<T> = abstract new (...args: never[]) => T;
 
 export class CollisionManager {
   private scene!: Phaser.Scene;
@@ -169,8 +169,8 @@ export class CollisionManager {
   }
 
   private bulletVsEnemy(...values: unknown[]): void {
-    const bullet = this.resolveCollisionTarget(Bullet, ...values);
-    const enemy = this.resolveCollisionTarget(EnemyBase, ...values);
+    const bullet = resolveCollisionTarget(Bullet, ...values);
+    const enemy = resolveCollisionTarget(EnemyBase, ...values);
 
     if (bullet?.active && enemy?.active) {
       bullet.kill();
@@ -180,8 +180,8 @@ export class CollisionManager {
   }
 
   private handleBulletAsteroidOverlap(...values: unknown[]): void {
-    const bullet = this.resolveCollisionTarget(Bullet, ...values);
-    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    const bullet = resolveCollisionTarget(Bullet, ...values);
+    const asteroid = resolveCollisionTarget(Asteroid, ...values);
     if (!(bullet?.active && asteroid?.active)) {
       return;
     }
@@ -195,7 +195,7 @@ export class CollisionManager {
   }
 
   private handleEnemyBulletPlayerOverlap(...values: unknown[]): void {
-    const enemyBullet = this.resolveCollisionTarget(EnemyBullet, ...values);
+    const enemyBullet = resolveCollisionTarget(EnemyBullet, ...values);
     if (!(enemyBullet?.active && this.canProcessPlayerCollision())) {
       return;
     }
@@ -207,7 +207,7 @@ export class CollisionManager {
   }
 
   private handleBombPlayerOverlap(...values: unknown[]): void {
-    const bomb = this.resolveCollisionTarget(BomberBomb, ...values);
+    const bomb = resolveCollisionTarget(BomberBomb, ...values);
     if (!(bomb?.active && this.canProcessPlayerCollision())) {
       return;
     }
@@ -223,8 +223,8 @@ export class CollisionManager {
   }
 
   private handleEnemyBulletAsteroidOverlap(...values: unknown[]): void {
-    const enemyBullet = this.resolveCollisionTarget(EnemyBullet, ...values);
-    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    const enemyBullet = resolveCollisionTarget(EnemyBullet, ...values);
+    const asteroid = resolveCollisionTarget(Asteroid, ...values);
     if (!(enemyBullet?.active && asteroid?.active && asteroid.blocksEnemyProjectiles())) {
       return;
     }
@@ -238,8 +238,8 @@ export class CollisionManager {
   }
 
   private handleBombAsteroidOverlap(...values: unknown[]): void {
-    const bomb = this.resolveCollisionTarget(BomberBomb, ...values);
-    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    const bomb = resolveCollisionTarget(BomberBomb, ...values);
+    const asteroid = resolveCollisionTarget(Asteroid, ...values);
     if (!(bomb?.active && asteroid?.active && asteroid.blocksEnemyProjectiles())) {
       return;
     }
@@ -260,7 +260,7 @@ export class CollisionManager {
     obj2: unknown,
     playerCollisionBehavior: 'kamikaze' | 'impact'
   ): void {
-    const enemy = this.resolveCollisionTarget(EnemyBase, obj1, obj2);
+    const enemy = resolveCollisionTarget(EnemyBase, obj1, obj2);
     if (!(enemy?.active && this.canProcessPlayerCollision())) {
       return;
     }
@@ -284,7 +284,7 @@ export class CollisionManager {
   }
 
   private handleAsteroidPlayerOverlap(...values: unknown[]): void {
-    const asteroid = this.resolveCollisionTarget(Asteroid, ...values);
+    const asteroid = resolveCollisionTarget(Asteroid, ...values);
     if (!(asteroid?.active && this.canProcessPlayerCollision())) {
       return;
     }
@@ -346,8 +346,8 @@ export class CollisionManager {
 
     this.lastPlayerHitFeedbackTime = now;
 
-    this.runBestEffort(() => this.effectsManager.createSparkBurst(this.player.x, this.player.y));
-    this.runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerHit));
+    runBestEffort(() => this.effectsManager.createSparkBurst(this.player.x, this.player.y));
+    runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerHit));
   }
 
   private onPlayerFatalHit(): void {
@@ -355,7 +355,7 @@ export class CollisionManager {
       return;
     }
 
-    this.runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerFatalHit));
+    runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerFatalHit));
   }
 
   private clearHazardGroup(group: Phaser.Physics.Arcade.Group): void {
@@ -387,30 +387,4 @@ export class CollisionManager {
     }
   }
 
-  private resolveCollisionTarget<T>(ctor: CollisionTargetCtor<T>, ...values: unknown[]): T | null {
-    for (const value of values) {
-      if (value instanceof ctor) {
-        return value;
-      }
-
-      if (!value || typeof value !== 'object' || !('gameObject' in value)) {
-        continue;
-      }
-
-      const { gameObject } = value as { gameObject?: unknown };
-      if (gameObject instanceof ctor) {
-        return gameObject;
-      }
-    }
-
-    return null;
-  }
-
-  private runBestEffort(effect: () => void): void {
-    try {
-      effect();
-    } catch {
-      // Keep collision handling alive even if optional hit feedback fails.
-    }
-  }
 }

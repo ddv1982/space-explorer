@@ -1,12 +1,21 @@
 # Death / Respawn Hitch Research Notes
 
+> **Partially historical (as of 2026-07 / v1.1.26+).**
+> Use this note as background on death/respawn pressure, not as a line-accurate map of current code.
+> Confirmed drift vs current sources:
+> - Respawn is driven by Phaser timers (`pendingRespawn`, `pendingRespawnFreeze`); the browser `setTimeout` watchdog described for respawn is no longer present. `setTimeout` remains for the game-over path only (`gameOverWatchdog`).
+> - Routine impact camera shake was removed in v1.1.26; death still uses larger explosion feedback.
+> - Respawn frame probing is opt-in (`RespawnFrameProbe` / `?debugRespawnFrameProbe=1`), not always-on instrumentation.
+>
+> Prefer `GameSceneFlowController.ts`, `combatFeedbackHandlers.ts`, and release notes `1.1.21`–`1.1.26` when verifying current behavior.
+
 ## Issue framing
 
 Observed symptom: a noticeable hitch around player life-loss and respawn in `GameScene`.
 
 High-risk moment in current flow combines multiple bursty operations in a short window:
 
-- death animation + explosion particles + camera shake,
+- death animation + explosion particles (+ historically camera shake on routine hits),
 - immediate hazard cleanup and gameplay lock,
 - a delayed forced scene pause,
 - a later resume plus respawn spawn-state restoration.
@@ -15,18 +24,15 @@ The hitch likely comes from a stack of short CPU / render spikes plus timing bou
 
 ## Key local findings (hotspot inspection)
 
-### 1) `GameSceneFlowController` mixes Phaser clock and browser timers during respawn
+### 1) `GameSceneFlowController` timer handoff during respawn / game-over
 
 File: `src/scenes/gameScene/GameSceneFlowController.ts`
 
-- Respawn uses both `scene.time.delayedCall(...)` and `setTimeout(...)` watchdogs.
-  - `pendingRespawn` at 1000 ms (Phaser timer)
-  - `pendingRespawnFreeze` at 240 ms (Phaser timer) -> calls `scene.pause()`
-  - `respawnWatchdog` at 1250 ms (browser timer) -> calls `completeRespawnTransition(...)`
-- Because Phaser timers are scene-clock-driven, pausing the scene freezes them; browser `setTimeout` keeps running.
-- Current design appears to rely on that behavior to finish respawn while paused, then force `scene.resume()`.
+- **Historical note (may be stale):** earlier notes described respawn using both Phaser timers and a browser `setTimeout` watchdog.
+- **Current shape (verify in source):** respawn uses Phaser `delayedCall` for freeze and respawn completion; game-over still uses a Phaser delay plus a browser `setTimeout` watchdog.
+- Because Phaser timers are scene-clock-driven, pausing the scene freezes them; browser `setTimeout` keeps running when used.
 
-Risk: this cross-clock handoff can fire transition work off the normal scene clock cadence and produce resume-frame churn.
+Risk: any remaining cross-clock handoff can fire transition work off the normal scene clock cadence and produce resume-frame churn.
 
 ### 2) Death cue performs a high-intensity burst effect right before transition logic
 

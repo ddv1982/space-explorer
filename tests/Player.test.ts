@@ -1,37 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { mockPhaserModule } from './helpers/phaserMock';
 
-mock.module('phaser', () => ({
-  default: {
-    Physics: {
-      Arcade: {
-        Sprite: class {},
-        Body: class {},
-      },
-    },
-    Math: {
-      DegToRad: (degrees: number) => (degrees * Math.PI) / 180,
-      Linear: (a: number, b: number, t: number) => a + (b - a) * t,
-      Vector2: class {
-        x = 0;
-        y = 0;
-        set(x: number, y: number) {
-          this.x = x;
-          this.y = y;
-          return this;
-        }
-        rotate() {
-          return this;
-        }
-        normalize() {
-          return this;
-        }
-        scale() {
-          return this;
-        }
-      },
-    },
-  },
-}));
+mockPhaserModule();
 
 const { Player } = await import('../src/entities/Player');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');

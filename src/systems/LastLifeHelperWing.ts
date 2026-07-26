@@ -10,6 +10,7 @@ import { BomberBomb } from '../entities/BomberBomb';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
 import type { PersistentHelperWingSlotState, PersistentHelperWingState } from './PlayerState';
+import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
 import {
   DEFAULT_HELPER_CONFIG,
   normalizePersistedState,
@@ -389,8 +390,8 @@ export class LastLifeHelperWing {
   }
 
   private handleEnemyBulletOverlap(a: unknown, b: unknown): void {
-    const bullet = this.resolveCollisionTarget(EnemyBullet, a, b);
-    const helper = this.resolveCollisionTarget(HelperShip, a, b);
+    const bullet = resolveCollisionTarget(EnemyBullet, a, b);
+    const helper = resolveCollisionTarget(HelperShip, a, b);
 
     if (!bullet?.active || !helper) {
       return;
@@ -401,8 +402,8 @@ export class LastLifeHelperWing {
   }
 
   private handleBombOverlap(a: unknown, b: unknown): void {
-    const bomb = this.resolveCollisionTarget(BomberBomb, a, b);
-    const helper = this.resolveCollisionTarget(HelperShip, a, b);
+    const bomb = resolveCollisionTarget(BomberBomb, a, b);
+    const helper = resolveCollisionTarget(HelperShip, a, b);
 
     if (!bomb?.active || !helper) {
       return;
@@ -416,8 +417,8 @@ export class LastLifeHelperWing {
   }
 
   private handleEnemyContactOverlap(a: unknown, b: unknown): void {
-    const enemy = this.resolveCollisionTarget(EnemyBase, a, b);
-    const helper = this.resolveCollisionTarget(HelperShip, a, b);
+    const enemy = resolveCollisionTarget(EnemyBase, a, b);
+    const helper = resolveCollisionTarget(HelperShip, a, b);
 
     if (!enemy?.active || !helper) {
       return;
@@ -426,22 +427,4 @@ export class LastLifeHelperWing {
     helper.takeContactDamage(1, this.scene.time.now, this.effectsManager);
   }
 
-  private resolveCollisionTarget<T>(ctor: abstract new (...args: never[]) => T, ...values: unknown[]): T | null {
-    for (const value of values) {
-      if (value instanceof ctor) {
-        return value;
-      }
-
-      if (!value || typeof value !== 'object' || !('gameObject' in value)) {
-        continue;
-      }
-
-      const { gameObject } = value as { gameObject?: unknown };
-      if (gameObject instanceof ctor) {
-        return gameObject;
-      }
-    }
-
-    return null;
-  }
 }

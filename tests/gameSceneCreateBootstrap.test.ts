@@ -11,6 +11,7 @@ mock.module('phaser', () => ({
 }));
 
 const { runGameSceneCreateBootstrap } = await import('../src/scenes/gameScene/runGameSceneCreateBootstrap');
+type GameSceneCreateBootstrapBridge = import('../src/scenes/gameScene/runGameSceneCreateBootstrap').GameSceneCreateBootstrapBridge;
 
 describe('runGameSceneCreateBootstrap', () => {
   test('orchestrates create-time phases in order and wires pause handling', () => {
@@ -83,11 +84,13 @@ describe('runGameSceneCreateBootstrap', () => {
         getPlayerSpawnPoint: () => { x: number; y: number };
         registerScaleHandlers: () => void;
         levelConfig: unknown;
+        levelNumber: number;
         initialSection: unknown;
         initialSectionProgress: number;
       }) => {
         callLog.push('createWorldPresentation');
         expect(params.levelConfig).toBe(levelConfig);
+        expect(params.levelNumber).toBe(state.level);
         expect(params.initialSection).toBe(initialSection);
         expect(params.initialSectionProgress).toBe(0.25);
         params.syncViewportBounds();
@@ -224,7 +227,7 @@ describe('runGameSceneCreateBootstrap', () => {
       },
     };
 
-    runGameSceneCreateBootstrap(scene, dependencies as never);
+    runGameSceneCreateBootstrap(scene as unknown as GameSceneCreateBootstrapBridge, dependencies as never);
 
     expect(callLog).toEqual([
       'resetRuntimeState',

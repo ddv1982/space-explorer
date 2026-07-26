@@ -18,6 +18,7 @@ import {
   type PlayerStateData,
 } from '@/systems/PlayerState';
 import { WarpTransition } from '@/systems/WarpTransition';
+import { ensurePremiumBackgroundAssets } from '@/systems/parallax/premiumBackgroundLoading';
 import { getViewportLayout } from '@/utils/layout';
 import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
 
@@ -56,6 +57,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.initializeSceneLifecycle();
     const intermissionLayout = this.initializeIntermissionState();
     const completedLevelConfig = getLevelConfig(this.state.level);
+    this.warmNextLevelBackgroundAssets();
     this.generatePlanetTexture(completedLevelConfig.planetPalette, intermissionLayout.planetY, intermissionLayout.planetScale);
     this.scoreText = createIntermissionHeader(this, intermissionLayout, {
       planetName: completedLevelConfig.planetName,
@@ -67,6 +69,16 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.initializeWarpTransition();
     this.createContinuePrompt(intermissionLayout);
     this.bindContinueInputs();
+  }
+
+  private warmNextLevelBackgroundAssets(): void {
+    if (this.isFinalMissionComplete) {
+      return;
+    }
+
+    // Next Game scene uses state.level + 1 after advanceToNextLevel.
+    // releaseOutsideWindow defaults false so intermission / menu art stay intact.
+    ensurePremiumBackgroundAssets(this, this.state.level + 1, () => {});
   }
 
   private initializeSceneLifecycle(): void {
@@ -348,7 +360,10 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private transitionToNextGameLevel(): void {
     this.warpTransition.play(() => {
       advanceToNextLevel(this.registry);
-      startRegisteredScene(this, 'Game');
+      const nextLevel = getPlayerState(this.registry).level;
+      ensurePremiumBackgroundAssets(this, nextLevel, () => {
+        startRegisteredScene(this, 'Game');
+      });
     });
   }
 

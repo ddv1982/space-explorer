@@ -9,12 +9,14 @@ import {
   type SaveSlotId,
 } from '../systems/SaveSlotStorage';
 import {
+  getPlayerState,
   resetPlayerState,
   resetRunSummary,
   setPlayerState,
   setRunSummary,
 } from '../systems/PlayerState';
 import { audioManager } from '../systems/AudioManager';
+import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { createMenuLayoutPlan } from './menuScene/layout';
@@ -56,7 +58,9 @@ export class MenuScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(menuConfig.bgColor);
     this.initializeMenuAudio(menuConfig.music.stage);
     this.initializeParallax(menuConfig);
-    registerRestartOnResize(this);
+    // Block resize restarts while a Game transition load is in flight so we do not
+    // reset gameTransitionQueued and orphan a late ensure COMPLETE callback.
+    registerRestartOnResize(this, () => !this.gameTransitionQueued);
 
     return createMenuLayoutPlan(this);
   }
@@ -206,7 +210,10 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private startGameScene(): void {
-    startRegisteredScene(this, 'Game');
+    const level = getPlayerState(this.registry).level;
+    ensurePremiumBackgroundAssets(this, level, () => {
+      startRegisteredScene(this, 'Game');
+    });
   }
 
   private handleSceneShutdown(): void {
