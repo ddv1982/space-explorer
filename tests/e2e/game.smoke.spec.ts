@@ -30,7 +30,12 @@ async function snapshot(page: Page): Promise<BrowserHarnessSnapshot> {
 }
 
 async function waitForScene(page: Page, sceneKey: string): Promise<void> {
-  await expect.poll(async () => (await snapshot(page)).activeScenes).toContain(sceneKey);
+  await expect.poll(() =>
+    page.evaluate((key) => {
+      const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+      return harness?.snapshot().activeScenes.includes(key) ?? false;
+    }, sceneKey),
+  ).toBe(true);
 }
 
 async function openMenu(page: Page): Promise<void> {
