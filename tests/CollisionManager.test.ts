@@ -271,6 +271,29 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
     expect(harness.damageAmounts).toEqual([]);
   });
 
+  test('collision target resolution accepts reversed Arcade callback order', () => {
+    const harness = createCollisionHarness(['damaged']);
+    const enemyBulletVsAsteroid = harness.getOverlap(harness.groups.enemyBullet, harness.groups.asteroid);
+
+    const bullet = createInstance(EnemyBullet, {
+      active: true,
+      kill: () => harness.callLog.push('enemyBullet.kill'),
+    });
+    const asteroid = createInstance(Asteroid, {
+      active: true,
+      x: 125,
+      y: 145,
+      blocksEnemyProjectiles: () => true,
+      takeDamage: (amount: number) => harness.callLog.push(`asteroid.takeDamage:${amount}`),
+    });
+
+    enemyBulletVsAsteroid(asteroid, bullet);
+
+    expect(harness.callLog).toContain('enemyBullet.kill');
+    expect(harness.callLog).toContain('asteroid.takeDamage:1');
+    expect(harness.callLog).toContain('spark:125,145');
+  });
+
   test('enemy bullets pass through non-cover asteroids', () => {
     const harness = createCollisionHarness(['damaged']);
     const enemyBulletVsAsteroid = harness.getOverlap(harness.groups.enemyBullet, harness.groups.asteroid);

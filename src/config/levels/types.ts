@@ -7,7 +7,7 @@ export interface EnemySpawnConfig {
   weight: number;
 }
 
-export interface EncounterSizeConfig {
+interface EncounterSizeConfig {
   min: number;
   max: number;
 }
@@ -46,9 +46,9 @@ export interface LastLifeHelperWingConfig {
   followOffsetY?: number;
 }
 
-export type LevelPacingPhase = 'intro' | 'build' | 'hazard' | 'climax' | 'boss-approach';
+type LevelPacingPhase = 'intro' | 'build' | 'hazard' | 'climax' | 'boss-approach';
 
-export type HazardType =
+type HazardType =
   | 'ambient-asteroids'
   | 'debris-surge'
   | 'minefield'
@@ -58,7 +58,7 @@ export type HazardType =
   | 'energy-storm'
   | 'gravity-well';
 
-export interface LevelThemeSummary {
+interface LevelThemeSummary {
   destination: string;
   visualTheme: string;
   coreGameplayIdea: string;
@@ -86,7 +86,7 @@ export interface ScriptedHazardConfig {
 
 export type AuthoredLaneAnchor = 'left' | 'center' | 'right';
 
-export interface SignatureWaveEnemyConfig {
+interface SignatureWaveEnemyConfig {
   type: EnemyType;
   lane: AuthoredLaneAnchor;
   y?: number;
@@ -107,7 +107,7 @@ export interface RecoveryDropConfig {
   notes?: string;
 }
 
-export interface LevelSectionVisualModifierConfig {
+interface LevelSectionVisualModifierConfig {
   atmosphereAlpha?: number;
   driftScale?: number;
   twinkleScale?: number;

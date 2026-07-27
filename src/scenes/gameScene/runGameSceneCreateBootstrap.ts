@@ -20,10 +20,11 @@ import { showControlsHint } from './showControlsHint';
 
 /**
  * Create-time surface required by bootstrap orchestration.
- * GameScene satisfies this structurally after private members are cast at the call site.
+ * GameScene exposes this as a private adapter so its owned members remain private.
  */
-export type GameSceneCreateBootstrapBridge = Phaser.Scene
-  & GameSceneCreateRuntimeBridge
+export type GameSceneCreateBootstrapBridge = {
+  scene: Phaser.Scene;
+} & GameSceneCreateRuntimeBridge
   & GameSceneCreateWorldBridge
   & GameSceneCreateInputBridge
   & GameSceneCreateGameplayBridge
@@ -31,11 +32,11 @@ export type GameSceneCreateBootstrapBridge = Phaser.Scene
   & GameSceneCreatePauseBridge;
 
 type RuntimeBootstrapScene = GameSceneCreateRuntimeBridge;
-type WorldBootstrapScene = Phaser.Scene & GameSceneCreateRuntimeBridge & GameSceneCreateWorldBridge;
-type InputBootstrapScene = Phaser.Scene & GameSceneCreateInputBridge;
-type GameplayBootstrapScene = Phaser.Scene & GameSceneCreateGameplayBridge & Pick<GameSceneCreateWorldBridge, 'effectsManager'> & Pick<GameSceneCreateInputBridge, 'player'>;
-type HudBootstrapScene = Phaser.Scene & GameSceneCreateHudBridge & Pick<GameSceneCreateInputBridge, 'player'>;
-type PauseBootstrapScene = Phaser.Scene & GameSceneCreatePauseBridge & Pick<GameSceneCreateInputBridge, 'mobileControls'> & Pick<GameSceneCreateGameplayBridge, 'flow'>;
+type WorldBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateRuntimeBridge & GameSceneCreateWorldBridge;
+type InputBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateInputBridge;
+type GameplayBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateGameplayBridge & Pick<GameSceneCreateWorldBridge, 'effectsManager'> & Pick<GameSceneCreateInputBridge, 'player'>;
+type HudBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateHudBridge & Pick<GameSceneCreateInputBridge, 'player'>;
+type PauseBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreatePauseBridge & Pick<GameSceneCreateInputBridge, 'mobileControls'> & Pick<GameSceneCreateGameplayBridge, 'flow'>;
 
 type BootstrapRuntimeState = ReturnType<RuntimeBootstrapScene['initializePlayerRunState']>;
 type BootstrapLevelRuntime = ReturnType<typeof initializeLevelRuntime>;
@@ -95,7 +96,7 @@ function bootstrapWorldPresentation(
   dependencies: Pick<BootstrapDependencies, 'createWorldPresentation'>
 ): { playerSpawnPoint: { x: number; y: number } } {
   const worldPresentation = dependencies.createWorldPresentation({
-    scene: gameScene,
+    scene: gameScene.scene,
     levelConfig,
     levelNumber,
     initialSection: audioInitialization.initialSection,
@@ -124,7 +125,7 @@ function bootstrapInputAndPlayer(
   dependencies: Pick<BootstrapDependencies, 'createInputAndPlayer'>
 ): void {
   const inputAndPlayer = dependencies.createInputAndPlayer({
-    scene: gameScene,
+    scene: gameScene.scene,
     state,
     playerSpawnPoint,
   });
@@ -141,7 +142,7 @@ function bootstrapGameplaySystems(
   dependencies: Pick<BootstrapDependencies, 'createPoolsAndGameplaySystems'>
 ): void {
   const gameplaySystems = dependencies.createPoolsAndGameplaySystems({
-    scene: gameScene,
+    scene: gameScene.scene,
     player: gameScene.player,
     effectsManager: gameScene.effectsManager,
     levelConfig,
@@ -166,7 +167,7 @@ function bootstrapHudAndTransitions(
   dependencies: Pick<BootstrapDependencies, 'createHudAndTransitions'>
 ): void {
   const hudAndTransitions = dependencies.createHudAndTransitions({
-    scene: gameScene,
+    scene: gameScene.scene,
     levelConfig,
     level,
     playerShields: gameScene.player.shields,
@@ -183,7 +184,7 @@ function bootstrapPauseAndViewportWiring(
   dependencies: Pick<BootstrapDependencies, 'createPauseViewportWiring'>
 ): void {
   const { pauseStateController, mobileViewportGuard } = dependencies.createPauseViewportWiring({
-    scene: gameScene,
+    scene: gameScene.scene,
     stopPlayerMotion: () => gameScene.stopPlayerMotion(),
     getMobileControls: () => gameScene.mobileControls,
     captureCurrentRunStateForSave: () => gameScene.captureCurrentRunStateForSave(),
@@ -215,6 +216,6 @@ export function runGameSceneCreateBootstrap(
   bootstrapHudAndTransitions(scene, levelRuntime.levelConfig, state.level, dependencies);
   bootstrapPauseAndViewportWiring(scene, dependencies);
 
-  dependencies.showControlsHint(scene, { mobile: dependencies.isTouchMobileDevice() });
+  dependencies.showControlsHint(scene.scene, { mobile: dependencies.isTouchMobileDevice() });
   scene.runtimeLifecycle.registerRuntimeHandlers();
 }

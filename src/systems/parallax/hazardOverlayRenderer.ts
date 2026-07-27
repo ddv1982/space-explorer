@@ -74,8 +74,10 @@ export function drawHazardOverlayPrimitives(
   }
 
   if (ringCrossfire > 0) {
-    const arcAlpha = overlayAlpha * 0.26 * ringCrossfire;
-    overlay.lineStyle(2, mixColor(accentColor, 0xffffff, 0.28), arcAlpha);
+    // overlayAlpha already contains hazard intensity. Avoid attenuating it twice
+    // so mirrored lane tells remain readable over premium background detail.
+    const arcAlpha = overlayAlpha * 0.7;
+    overlay.lineStyle(3, mixColor(accentColor, 0xffffff, 0.28), arcAlpha);
     overlay.beginPath();
     overlay.arc(width * 0.16, height * 0.26, width * 0.16, -0.35, 0.55);
     overlay.strokePath();

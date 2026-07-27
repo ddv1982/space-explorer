@@ -1,0 +1,35 @@
+{
+  "command": "VISUAL_SCREENSHOT_DIR=tests/e2e/visual-evidence bunx playwright test tests/e2e/game.smoke.spec.ts --grep \"crossfire telegraph glow\" --workers=1",
+  "thresholds": {
+    "averageRegressionMs": 1,
+    "p95RegressionMs": 2
+  },
+  "chromium-desktop": {
+    "baseline": {
+      "averageMs": 0.337777777430084,
+      "p95Ms": 0.5,
+      "sampleCount": 90
+    },
+    "glow": {
+      "averageMs": 0.36111111086275843,
+      "p95Ms": 0.5,
+      "sampleCount": 90
+    },
+    "averageRegressionMs": 0.023333333432674408,
+    "p95RegressionMs": 0
+  },
+  "chromium-mobile": {
+    "baseline": {
+      "averageMs": 0.44777777791023254,
+      "p95Ms": 0.5999999940395355,
+      "sampleCount": 90
+    },
+    "glow": {
+      "averageMs": 0.49888888862397934,
+      "p95Ms": 0.6000000014901161,
+      "sampleCount": 90
+    },
+    "averageRegressionMs": 0.0511111107137468,
+    "p95RegressionMs": 7.450580596923828e-9
+  }
+}

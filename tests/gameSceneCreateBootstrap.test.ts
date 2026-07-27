@@ -179,8 +179,10 @@ describe('runGameSceneCreateBootstrap', () => {
       },
     };
 
-    const scene = {
-      runtimeLifecycle,
+    const phaserScene = {} as never;
+    const scene: GameSceneCreateBootstrapBridge = {
+      scene: phaserScene,
+      runtimeLifecycle: runtimeLifecycle as never,
       flow: {
         isTerminalTransitionActive: () => false,
         isGameplayLocked: () => {
@@ -188,19 +190,37 @@ describe('runGameSceneCreateBootstrap', () => {
           return true;
         },
       },
+      levelManager: null as never,
+      scaledBossConfig: null,
+      parallax: null as never,
+      effectsManager: null as never,
+      mobileControls: null,
+      inputManager: null as never,
+      player: null as never,
+      bulletPool: null as never,
+      enemyPool: null as never,
+      lastLifeHelperWing: null,
+      waveManager: null as never,
+      collisionManager: null as never,
+      scoreManager: null as never,
+      powerUpGroup: null as never,
+      hud: null as never,
+      warpTransition: null as never,
+      pauseStateController: null,
+      mobileViewportGuard: null,
       lastHudShieldCount: 7,
       resetRuntimeState: () => {
         callLog.push('resetRuntimeState');
       },
       initializePlayerRunState: () => {
         callLog.push('initializePlayerRunState');
-        return state;
+        return state as never;
       },
       initializeAudioForLevel: (receivedLevelConfig: unknown) => {
         callLog.push('initializeAudioForLevel');
         expect(receivedLevelConfig).toBe(levelConfig);
         return {
-          initialSection,
+          initialSection: initialSection as never,
           initialSectionProgress: 0.25,
         };
       },
@@ -219,7 +239,7 @@ describe('runGameSceneCreateBootstrap', () => {
       },
       captureCurrentRunStateForSave: () => {
         callLog.push('captureCurrentRunStateForSave');
-        return savedState;
+        return savedState as never;
       },
       canSaveCurrentRun: () => {
         callLog.push('canSaveCurrentRun');
@@ -227,7 +247,7 @@ describe('runGameSceneCreateBootstrap', () => {
       },
     };
 
-    runGameSceneCreateBootstrap(scene as unknown as GameSceneCreateBootstrapBridge, dependencies as never);
+    runGameSceneCreateBootstrap(scene, dependencies as never);
 
     expect(callLog).toEqual([
       'resetRuntimeState',
@@ -275,7 +295,7 @@ describe('runGameSceneCreateBootstrap', () => {
       lastHudShieldCount: 11,
     });
 
-    expect(showControlsHintArgs).toEqual([scene, { mobile: false }]);
+    expect(showControlsHintArgs).toEqual([phaserScene, { mobile: false }]);
     expect(pauseHandler).not.toBeNull();
 
     pauseHandler?.();

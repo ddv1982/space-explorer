@@ -76,7 +76,7 @@ function createFixture() {
       add: (config: MockTweenConfig) => {
         tweenConfigs.push(config);
         const tween = {
-          stop: () => undefined,
+          stop: (): void => undefined,
         } as unknown as Phaser.Tweens.Tween;
         tweenInstances.push(tween);
         return tween;

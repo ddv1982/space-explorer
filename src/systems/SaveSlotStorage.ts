@@ -11,7 +11,7 @@ const SAVE_SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
 
 export type SaveSlotId = (typeof SAVE_SLOT_IDS)[number];
 
-export interface SaveSlotLabel {
+interface SaveSlotLabel {
   level: number;
   levelName: string;
   score: number;

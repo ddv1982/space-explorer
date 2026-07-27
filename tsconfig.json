@@ -5,16 +5,15 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "types": [],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
-    "ignoreDeprecations": "6.0",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
+    "noUncheckedSideEffectImports": true,
     "noEmit": true,
     "strict": true,
     "noUnusedLocals": false,

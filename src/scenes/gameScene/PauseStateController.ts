@@ -4,7 +4,7 @@ import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { PauseOverlay } from './PauseOverlay';
 import type { PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
 
-export type SaveSlotActionResult =
+type SaveSlotActionResult =
   | { ok: true; message: string }
   | { ok: false; message: string };
 
@@ -31,6 +31,7 @@ interface PauseStateControllerConfig {
   saveSlotAdapter?: PauseSaveSlotAdapter;
   createOverlay?: (scene: Phaser.Scene, handlers: PauseOverlayHandlers) => PauseOverlayPort;
   playClick?: () => void;
+  setAudioPaused?: (paused: boolean) => void;
 }
 
 const createUnavailableSaveSlotAdapter = (): PauseSaveSlotAdapter => ({
@@ -50,6 +51,7 @@ export class PauseStateController {
   private onReturnToMenu: (() => void) | null = null;
   private saveSlotAdapter: PauseSaveSlotAdapter = createUnavailableSaveSlotAdapter();
   private playClick: (() => void) | null = null;
+  private setAudioPaused: ((paused: boolean) => void) | null = null;
 
   private manualPauseRequested = false;
   private orientationPauseActive = false;
@@ -70,6 +72,7 @@ export class PauseStateController {
     this.onReturnToMenu = config.onReturnToMenu;
     this.saveSlotAdapter = config.saveSlotAdapter ?? createUnavailableSaveSlotAdapter();
     this.playClick = config.playClick ?? (() => audioManager.playClick());
+    this.setAudioPaused = config.setAudioPaused ?? ((paused) => audioManager.setPaused('gameplay', paused));
 
     this.manualPauseRequested = false;
     this.orientationPauseActive = false;
@@ -92,6 +95,9 @@ export class PauseStateController {
   }
 
   destroy(): void {
+    if (this.gameplayPaused) {
+      this.setAudioPaused?.(false);
+    }
     this.pauseOverlay?.destroy();
 
     this.pauseOverlay = null;
@@ -101,6 +107,7 @@ export class PauseStateController {
     this.onReturnToMenu = null;
     this.saveSlotAdapter = createUnavailableSaveSlotAdapter();
     this.playClick = null;
+    this.setAudioPaused = null;
     this.manualPauseRequested = false;
     this.orientationPauseActive = false;
     this.gameplayPaused = false;
@@ -233,6 +240,7 @@ export class PauseStateController {
 
     if (this.gameplayPaused !== shouldPause) {
       this.gameplayPaused = shouldPause;
+      this.setAudioPaused?.(shouldPause);
 
       if (shouldPause) {
         this.stopPlayerMotion?.();

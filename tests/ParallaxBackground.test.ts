@@ -41,6 +41,10 @@ type ParallaxTestState = {
   tileSprites: unknown[];
   elapsed: number;
   hazardOverlayAlpha: number;
+  atmosphereAlpha: number;
+  atmosphereDrift: number;
+  atmosphereTwinkle: number;
+  landmarkAlpha: number;
   targetAtmosphereAlpha: number;
   targetAtmosphereDrift: number;
   targetAtmosphereTwinkle: number;
@@ -73,9 +77,9 @@ type ParallaxTestState = {
     },
     levelConfig: { name: string; accentColor?: number }
   ) => void;
-  updateAtmosphereState: () => void;
+  updateAtmosphereState: (delta: number) => void;
   updateVisualLayers: (delta: number) => void;
-  updateHazardOverlay: () => number;
+  updateHazardOverlay: (delta: number) => number;
 };
 
 function stateOf(parallax: ParallaxBackgroundInstance): ParallaxTestState {
@@ -276,6 +280,35 @@ describe('ParallaxBackground update orchestration regression coverage', () => {
       'updateVisualLayers:16:26',
       'updateHazardOverlay:26',
     ]);
+  });
+
+  test('atmosphere damping is elapsed-time equivalent and bounded after a long frame', () => {
+    const createParallax = () => {
+      const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
+      const state = stateOf(parallax);
+      state.atmosphereAlpha = 0;
+      state.atmosphereDrift = 0;
+      state.atmosphereTwinkle = 0;
+      state.landmarkAlpha = 0;
+      state.targetAtmosphereAlpha = 1;
+      state.targetAtmosphereDrift = 1;
+      state.targetAtmosphereTwinkle = 1;
+      state.targetLandmarkAlpha = 1;
+      return { parallax, state };
+    };
+    const at30 = createParallax();
+    const at120 = createParallax();
+
+    for (let i = 0; i < 30; i++) at30.state.updateAtmosphereState(1000 / 30);
+    for (let i = 0; i < 120; i++) at120.state.updateAtmosphereState(1000 / 120);
+
+    expect(at30.state.atmosphereAlpha).toBeCloseTo(at120.state.atmosphereAlpha, 10);
+    expect(at30.state.atmosphereDrift).toBeCloseTo(at120.state.atmosphereDrift, 10);
+
+    const throttled = createParallax();
+    throttled.state.updateAtmosphereState(60_000);
+    expect(throttled.state.atmosphereAlpha).toBeGreaterThanOrEqual(0);
+    expect(throttled.state.atmosphereAlpha).toBeLessThanOrEqual(1);
   });
 });
 

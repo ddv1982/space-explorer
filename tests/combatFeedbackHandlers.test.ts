@@ -145,7 +145,7 @@ function createCombatFeedbackHarness(options: {
       getLevelConfig: () => ({ music: { boss: 'boss-track' } }),
     } as never),
     collisionManager: () => ({ clearPlayerHazards: mock() } as never),
-    enemyPool: () => ({ getAllEnemies: () => [], spawnBoss: mock() } as never),
+    enemyPool: () => ({ getAllEnemies: (): never[] => [], spawnBoss: mock() } as never),
     hud: () => ({
       showBossWarning: mock(),
       showBossBar: mock(),
@@ -206,7 +206,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       getFlowContext: () => ({}) as never,
       levelManager: () => ({ getLevelConfig: () => ({ music: { boss: 'boss-track' } }) } as never),
       collisionManager: () => ({ clearPlayerHazards: mock() } as never),
-      enemyPool: () => ({ getAllEnemies: () => [] } as never),
+      enemyPool: () => ({ getAllEnemies: (): never[] => [] } as never),
       hud: () => ({ showBossWarning: mock(), hideBossBar: mock() } as never),
       getBoss: () => null,
       setBoss: mock(),

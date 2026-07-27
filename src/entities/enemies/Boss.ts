@@ -175,8 +175,10 @@ export class Boss extends EnemyBase {
     }
 
     this.shieldActive = active;
+    this.invalidateHitFlash();
     if (active) {
       this.setTint(0x77ccff);
+      this.setTintMode(Phaser.TintModes.MULTIPLY);
       return;
     }
 
@@ -316,12 +318,15 @@ export class Boss extends EnemyBase {
   private flashShieldImpact(): void {
     const flashToken = ++this.bossFlashToken;
     this.setTint(0xddeeff);
+    this.setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(70, this.restoreShieldTintAfterImpact, [flashToken], this);
   }
 
   private flashPhaseChange(): void {
     const flashToken = ++this.bossFlashToken;
+    this.invalidateHitFlash();
     this.setTint(0xff0000);
+    this.setTintMode(Phaser.TintModes.MULTIPLY);
     this.scene.cameras.main.shake(300, 0.02);
     this.scene.time.delayedCall(300, this.restoreTintAfterPhaseChangeFlash, [flashToken], this);
   }
@@ -329,6 +334,7 @@ export class Boss extends EnemyBase {
   private restoreShieldTintAfterImpact(flashToken: number): void {
     if (this.active && this.shieldActive && flashToken === this.bossFlashToken) {
       this.setTint(0x77ccff);
+      this.setTintMode(Phaser.TintModes.MULTIPLY);
     }
   }
 
@@ -339,6 +345,7 @@ export class Boss extends EnemyBase {
 
     if (this.shieldActive) {
       this.setTint(0x77ccff);
+      this.setTintMode(Phaser.TintModes.MULTIPLY);
     } else {
       this.clearTint();
     }

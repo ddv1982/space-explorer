@@ -226,7 +226,7 @@ describe('bootstrapRelayout', () => {
     expect(bossNameText.state.y).toBe(560);
     expect(stop).toHaveBeenCalledTimes(1);
     expect(tweensAdd).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ id: 'newTween' });
+    expect(result as unknown).toEqual({ id: 'newTween' });
     expect(nextTween).toBeNull();
   });
 });

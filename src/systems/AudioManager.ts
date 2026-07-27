@@ -7,10 +7,13 @@ import {
   type MusicRuntimeTuning,
 } from './audio/ProceduralMusicManager';
 
-class AudioManager {
+export type AudioPauseReason = 'gameplay' | 'visibility';
+
+export class AudioManager {
   private contextManager = new AudioContextManager();
   private sfxManager = new SFXManager(this.contextManager);
   private musicManager = new ProceduralMusicManager(this.contextManager);
+  private pauseReasons = new Set<AudioPauseReason>();
 
   init(): void {
     this.contextManager.init();
@@ -26,6 +29,13 @@ class AudioManager {
     const isReady = this.contextManager.ensureContext();
     if (!isReady) {
       this.resetNodes();
+    }
+    if (isReady) {
+      if (this.pauseReasons.size > 0) {
+        this.contextManager.suspend();
+      } else {
+        this.contextManager.resume();
+      }
     }
     return isReady;
   }
@@ -72,6 +82,28 @@ class AudioManager {
     this.musicManager.stopMusic();
   }
 
+  setPaused(reason: AudioPauseReason, paused: boolean): void {
+    if (paused) {
+      this.pauseReasons.add(reason);
+    } else {
+      this.pauseReasons.delete(reason);
+    }
+
+    if (this.pauseReasons.size > 0) {
+      this.contextManager.suspend();
+    } else {
+      this.contextManager.resume();
+    }
+  }
+
+  getPauseReasons(): readonly AudioPauseReason[] {
+    return [...this.pauseReasons].sort();
+  }
+
+  getContextState(): AudioContextState | null {
+    return this.contextManager.getState();
+  }
+
   setMusicIntensity(intensity: number): void {
     if (!this.ensureContext()) return;
     this.musicManager.setMusicIntensity(intensity);
@@ -101,6 +133,7 @@ class AudioManager {
   }
 
   destroy(): void {
+    this.pauseReasons.clear();
     this.musicManager.resetNodes();
     this.contextManager.destroy();
   }

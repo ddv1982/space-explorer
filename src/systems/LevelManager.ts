@@ -2,6 +2,8 @@ import { LEVEL_DISTANCE, SCROLL_SPEED } from '../utils/constants';
 import { getLevelConfig } from '../config/LevelsConfig';
 import type { LevelConfig } from '../config/LevelsConfig';
 
+const NOMINAL_FRAMES_PER_SECOND = 60;
+
 export class LevelManager {
   distance: number = 0;
   progress: number = 0;
@@ -23,7 +25,8 @@ export class LevelManager {
   }
 
   update(delta: number): void {
-    this.distance += this.scrollSpeed * delta / 16;
+    const elapsedSeconds = Math.max(0, delta) / 1000;
+    this.distance += this.scrollSpeed * NOMINAL_FRAMES_PER_SECOND * elapsedSeconds;
     this.progress = this.distance / this.levelDistance;
     if (this.progress >= 1.0 && !this.levelConfig.hasBoss) {
       this.progress = 1.0;

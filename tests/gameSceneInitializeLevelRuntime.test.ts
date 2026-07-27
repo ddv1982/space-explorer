@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 const initMock = mock();
 const getLevelConfigMock = mock();
 const getTotalLevelsMock = mock(() => 42);
-const createScaledBossConfigMock = mock(() => ({ maxHp: 999 }));
+const createScaledBossConfigMock = mock(() => ({ maxHp: 999 }) as never);
 
 const { initializeLevelRuntime } = await import('../src/scenes/gameScene/initializeLevelRuntime');
 
@@ -43,8 +43,8 @@ describe('initializeLevelRuntime', () => {
       upgrades: state.upgrades,
     });
 
-    expect(result.levelConfig).toBe(levelConfig);
-    expect(result.scaledBossConfig).toEqual({ maxHp: 999 });
+    expect(result.levelConfig as unknown).toBe(levelConfig);
+    expect(result.scaledBossConfig as unknown).toEqual({ maxHp: 999 });
     expect(result.levelManager).toBeDefined();
   });
 });

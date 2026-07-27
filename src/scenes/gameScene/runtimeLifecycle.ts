@@ -4,7 +4,6 @@ import { rebindSceneEventHandlers, unbindSceneEventHandlers, type SceneEventBind
 import {
   handleScaleResize as handleGameSceneScaleResize,
   registerScaleHandlers as registerGameSceneScaleHandlers,
-  syncViewportIfNeeded as syncGameSceneViewportIfNeeded,
   type ViewportScaleResizeContext,
 } from './viewportScaleRegistration';
 
@@ -18,7 +17,6 @@ interface GameSceneRuntimeLifecycleHandlers {
   handleSceneDestroy(): void;
   teardownSceneResources(): void;
   handleScaleResize(): void;
-  syncViewportIfNeeded(): void;
 }
 
 interface CreateGameSceneRuntimeLifecycleOptions {
@@ -112,10 +110,6 @@ export function createGameSceneRuntimeLifecycle(
     options.syncLastLifeHelperWingState();
   };
 
-  const syncViewportIfNeeded = (): void => {
-    syncGameSceneViewportIfNeeded(scene, handleScaleResize);
-  };
-
   return {
     registerRuntimeHandlers,
     registerLifecycleHandlers,
@@ -126,6 +120,5 @@ export function createGameSceneRuntimeLifecycle(
     handleSceneDestroy,
     teardownSceneResources,
     handleScaleResize,
-    syncViewportIfNeeded,
   };
 }

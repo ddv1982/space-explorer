@@ -1,3 +1,5 @@
+/// <reference types="bun" />
+
 import { gzipSync } from 'node:zlib';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -8,7 +10,21 @@ const DEFAULT_MAX_TOTAL_KB = 30000;
 const DEFAULT_MAX_JS_ASSET_KB = 1500;
 const DEFAULT_MAX_TOTAL_JS_KB = 1800;
 
-async function walkFiles(dir) {
+interface BundleArgs {
+  check: boolean;
+  maxAssetKb?: number;
+  maxTotalKb?: number;
+  maxJsAssetKb?: number;
+  maxTotalJsKb?: number;
+}
+
+interface BundleItem {
+  file: string;
+  rawBytes: number;
+  gzipBytes: number;
+}
+
+async function walkFiles(dir: string): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const files = await Promise.all(
     entries.map(async (entry) => {
@@ -25,7 +41,7 @@ async function walkFiles(dir) {
   return files.flat();
 }
 
-function parseNumber(value, name) {
+function parseNumber(value: string | undefined, name: string): number {
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -35,8 +51,8 @@ function parseNumber(value, name) {
   return parsed;
 }
 
-function parseArgs(argv) {
-  const result = {
+function parseArgs(argv: string[]): BundleArgs {
+  const result: BundleArgs = {
     check: false,
     maxAssetKb: undefined,
     maxTotalKb: undefined,
@@ -106,7 +122,7 @@ function parseArgs(argv) {
   return result;
 }
 
-function formatKb(bytes) {
+function formatKb(bytes: number): string {
   return `${(bytes / 1024).toFixed(2)} kB`;
 }
 
@@ -133,7 +149,7 @@ async function main() {
       ? parseNumber(process.env.BUNDLE_MAX_TOTAL_JS_KB, 'BUNDLE_MAX_TOTAL_JS_KB')
       : DEFAULT_MAX_TOTAL_JS_KB);
 
-  let files;
+  let files: string[] = [];
 
   try {
     files = await walkFiles(DIST_DIR);
@@ -151,7 +167,7 @@ async function main() {
     process.exit(1);
   }
 
-  const report = await Promise.all(
+  const report: BundleItem[] = await Promise.all(
     relevantFiles.map(async (filePath) => {
       const content = await fs.readFile(filePath);
 
@@ -183,7 +199,7 @@ async function main() {
     return;
   }
 
-  const violations = [];
+  const violations: string[] = [];
   const largest = report[0];
 
   if ((largest?.rawBytes ?? 0) > maxAssetKb * 1024) {

@@ -66,6 +66,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
     if (this.baseTint !== null) {
       this.setTint(this.baseTint);
+      this.setTintMode(Phaser.TintModes.MULTIPLY);
     } else {
       this.clearTint();
     }
@@ -87,6 +88,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
     const flashToken = ++this.visualFlashToken;
     this.setTint(0xffaa66);
+    this.setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(80, this.restoreTintAfterCollisionFlash, [flashToken], this);
   }
 
@@ -97,6 +99,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
     if (this.baseTint !== null) {
       this.setTint(this.baseTint);
+      this.setTintMode(Phaser.TintModes.MULTIPLY);
     } else {
       this.clearTint();
     }
@@ -108,9 +111,17 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.hp -= amount;
+    this.flashHit();
     if (this.hp <= 0) {
       this.die();
     }
+  }
+
+  private flashHit(): void {
+    const flashToken = ++this.visualFlashToken;
+    this.setTint(0xffffff);
+    this.setTintMode(Phaser.TintModes.FILL);
+    this.scene.time.delayedCall(80, this.restoreTintAfterCollisionFlash, [flashToken], this);
   }
 
   die(): void {

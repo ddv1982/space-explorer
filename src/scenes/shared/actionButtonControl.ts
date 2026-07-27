@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { drawAngledRectPath, NEON, NEON_FONT } from './neonUiTheme';
 
-export type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'disabled';
+type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'disabled';
 
 export interface ActionButtonControl {
   background: Phaser.GameObjects.Graphics;

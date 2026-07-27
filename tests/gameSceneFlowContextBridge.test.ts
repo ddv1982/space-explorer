@@ -65,13 +65,13 @@ describe('gameScene flowContextBridge', () => {
     flowContext.pauseScene();
     flowContext.resumeScene();
 
-    expect(flowContext.scene).toBe(scene);
-    expect(flowContext.registry).toBe(registry);
-    expect(flowContext.player).toBe(player);
-    expect(flowContext.collisionManager).toBe(collisionManager);
-    expect(flowContext.levelManager).toBe(levelManager);
-    expect(flowContext.scoreManager).toBe(scoreManager);
-    expect(flowContext.warpTransition).toBe(warpTransition);
+    expect(flowContext.scene as unknown).toBe(scene);
+    expect(flowContext.registry as unknown).toBe(registry);
+    expect(flowContext.player as unknown).toBe(player);
+    expect(flowContext.collisionManager as unknown).toBe(collisionManager);
+    expect(flowContext.levelManager as unknown).toBe(levelManager);
+    expect(flowContext.scoreManager as unknown).toBe(scoreManager);
+    expect(flowContext.warpTransition as unknown).toBe(warpTransition);
 
     expect(stopPlayerMotion).toHaveBeenCalledTimes(1);
     expect(runBestEffort).toHaveBeenCalledWith(effect);

@@ -130,11 +130,11 @@ export class CollisionManager {
   }
 
   private registerOverlap(
-    a: unknown,
-    b: unknown,
-    callback: (obj1: unknown, obj2: unknown) => void
+    a: Phaser.Types.Physics.Arcade.ArcadeColliderType,
+    b: Phaser.Types.Physics.Arcade.ArcadeColliderType,
+    callback: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback
   ): void {
-    this.scene.physics.add.overlap(a as never, b as never, callback);
+    this.scene.physics.add.overlap(a, b, callback);
   }
 
   private setupEnemyPlayerCollision(

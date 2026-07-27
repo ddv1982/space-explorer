@@ -24,11 +24,20 @@ jobs:
       - name: Type-check source and tests
         run: bun run typecheck
 
+      - name: Type-check TypeScript 6 compatibility
+        run: bun run typecheck:ts6
+
       - name: Lint
         run: bun run lint
 
       - name: Test
         run: bun run test
+
+      - name: Install browser test runtime
+        run: bunx playwright install --with-deps chromium
+
+      - name: Browser smoke tests
+        run: bun run test:e2e
 
       - name: Validate levels
         run: bun run levels:validate

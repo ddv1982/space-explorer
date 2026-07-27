@@ -137,4 +137,28 @@ describe('hazardOverlayRenderer', () => {
 
     expect(calls).toHaveLength(0);
   });
+
+  test('keeps mirrored crossfire lane arcs legible without double intensity attenuation', () => {
+    const { recorder, calls } = createGraphicsRecorder();
+
+    drawHazardOverlayPrimitives(recorder as never, {
+      width: 800,
+      height: 600,
+      time: 1000,
+      accentColor: 0x335577,
+      overlayAlpha: 0.1,
+      energyStorm: 0,
+      gravityWell: 0,
+      nebulaAmbush: 0,
+      ringCrossfire: 0.44,
+      debrisSurge: 0,
+      minefield: 0,
+      rockCorridor: 0,
+    });
+
+    const lineStyle = calls.find((call) => call.method === 'lineStyle');
+    expect(lineStyle?.args[0]).toBe(3);
+    expect(lineStyle?.args[2]).toBeCloseTo(0.07, 6);
+    expect(countByMethod(calls, 'arc')).toBe(2);
+  });
 });

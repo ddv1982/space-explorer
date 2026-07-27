@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-07-27
+
+### Added
+- Added source-bound desktop and mobile Chromium smoke coverage for boot, gameplay, Arcade overlap callbacks, generated textures, filters, particles, tweens, lazy scene routing, orientation handling, and unsupported WebGL messaging.
+- Added a gated browser harness for runtime probes and synchronized WebGL render-cost comparisons.
+- Added a measured Prism Crossfire visual pilot with clearer hazard arcs and a bounded Phaser 4 glow treatment.
+- Added focused regular-enemy durability coverage that locks base shot counts and preserves the fighter, bomber, and gunship hierarchy.
+
+### Changed
+- Upgraded the runtime to Phaser 4.2.1 package ESM with explicit WebGL support requirements.
+- Promoted TypeScript 7.0.2 to the authoritative source, script, and test compiler while retaining a temporary TypeScript 6 compatibility check for compiler-API tooling.
+- Updated Vite, ESLint, Knip, typescript-eslint, Bun types, and related reproducible dependency metadata.
+- Converted release scripts from JavaScript to typed TypeScript entry points.
+- Reduced fighter HP from 3 to 2, bomber HP from 5 to 4, and gunship HP from 6 to 5 so regular encounters preserve pressure without repetitive cleanup.
+- Updated README badges and architecture/quality documentation for the current compiler, engine, browser harness, and release gates.
+
+### Fixed
+- Corrected Phaser 4 tint modes so damage, shield, collision, and phase feedback use intentional fill or multiply semantics.
+- Made movement rotation and related frame behavior time-consistent across configured frame-rate limits.
+- Hardened resize, pause, audio, loading, registry, persistence, and scene teardown boundaries against stale or partially destroyed runtime state.
+- Kept loading progress and Menu handoff tied to real loader completion instead of optimistic transition timing.
+
+### Quality
+- Added frozen-install, TypeScript 7/6 parity, real-browser, build, bundle, level-validation, lint, test, and Knip gates to the documented release corridor.
+- Retained reviewer-accessible desktop/mobile Prism Crossfire screenshots and synchronized render-cost evidence.
+- Verified the modernization and durability slices through independent Flow review before release preparation.
+
 ## [1.1.27] - 2026-07-26
 
 ### Added

@@ -38,6 +38,7 @@ describe('HelperShip', () => {
   test('takeContactDamage is rate-limited without throttling projectile damage', () => {
     const createSparkBurst = mock();
     const setTint = mock();
+    const setTintMode = mock();
 
     const helper = Object.create(HelperShip.prototype) as HelperShipInstance;
     helper.hp = 4;
@@ -48,6 +49,7 @@ describe('HelperShip', () => {
     (helper as unknown as Record<string, unknown>).depleted = false;
     (helper as unknown as Record<string, unknown>).scene = { time: { delayedCall: mock() } };
     (helper as unknown as Record<string, unknown>).setTint = setTint;
+    (helper as unknown as Record<string, unknown>).setTintMode = setTintMode;
 
     const effectsManager = { createSparkBurst } as never;
 
@@ -59,6 +61,7 @@ describe('HelperShip', () => {
     expect(helper.hp).toBe(1);
     expect(createSparkBurst).toHaveBeenCalledTimes(3);
     expect(setTint).toHaveBeenCalledTimes(3);
+    expect(setTintMode).toHaveBeenCalledTimes(3);
   });
 
   test('updateWithPlayer respawns when timer elapses and otherwise follows and fires when active', () => {
@@ -78,7 +81,7 @@ describe('HelperShip', () => {
     (helper as unknown as Record<string, unknown>).followOffsetY = 16;
     (helper as unknown as Record<string, unknown>).spawn = spawn;
 
-    helper.updateWithPlayer(player as never, 500, bulletPool as never, effectsManager as never);
+    helper.updateWithPlayer(player as never, 500, 1000 / 60, bulletPool as never, effectsManager as never);
     expect(spawn).toHaveBeenCalledWith(110, 216, 500);
 
     (helper as unknown as Record<string, unknown>).active = true;
@@ -93,9 +96,47 @@ describe('HelperShip', () => {
     (helper as unknown as Record<string, unknown>).setPosition = setPosition;
     helper.body = { updateFromGameObject: mock() } as never;
 
-    helper.updateWithPlayer(player as never, 120, bulletPool as never, effectsManager as never);
+    helper.updateWithPlayer(player as never, 120, 1000 / 60, bulletPool as never, effectsManager as never);
 
     expect(setPosition).toHaveBeenCalledWith(55, 108);
     expect(fireShot).toHaveBeenCalledWith(bulletPool, effectsManager);
+  });
+
+  test('follow damping reaches equivalent position and rotation over equal elapsed time', () => {
+    const createHelper = () => {
+      const helper = Object.create(HelperShip.prototype) as HelperShipInstance;
+      (helper as unknown as Record<string, unknown>).depleted = false;
+      (helper as unknown as Record<string, unknown>).active = true;
+      (helper as unknown as Record<string, unknown>).followOffsetX = 0;
+      (helper as unknown as Record<string, unknown>).followOffsetY = 0;
+      (helper as unknown as Record<string, unknown>).followLerp = 0.18;
+      (helper as unknown as Record<string, unknown>).lastFireTime = 10000;
+      (helper as unknown as Record<string, unknown>).fireRateMs = 100;
+      helper.x = 0;
+      helper.y = 0;
+      helper.rotation = 0;
+      helper.setPosition = ((x: number, y: number) => {
+        helper.x = x;
+        helper.y = y;
+        return helper;
+      }) as never;
+      helper.body = { updateFromGameObject: mock() } as never;
+      return helper;
+    };
+    const player = { x: 100, y: 200, isAlive: true, rotation: 0.4 };
+    const at30 = createHelper();
+    const at120 = createHelper();
+
+    for (let i = 0; i < 30; i++) at30.updateWithPlayer(player as never, i, 1000 / 30, {} as never, {} as never);
+    for (let i = 0; i < 120; i++) at120.updateWithPlayer(player as never, i, 1000 / 120, {} as never, {} as never);
+
+    expect(at30.x).toBeCloseTo(at120.x, 10);
+    expect(at30.y).toBeCloseTo(at120.y, 10);
+    expect(at30.rotation).toBeCloseTo(at120.rotation, 10);
+
+    const throttled = createHelper();
+    throttled.updateWithPlayer(player as never, 0, 60_000, {} as never, {} as never);
+    expect(throttled.x).toBeGreaterThanOrEqual(0);
+    expect(throttled.x).toBeLessThanOrEqual(player.x);
   });
 });

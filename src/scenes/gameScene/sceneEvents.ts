@@ -1,9 +1,15 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
+import type {
+  GameSceneEventHandler,
+  GameSceneEventName,
+} from '@/systems/GameplayFlow';
 
-export interface SceneEventBinding {
-  event: string;
-  handler: (...args: never[]) => void;
-}
+export type SceneEventBinding = {
+  [Event in GameSceneEventName]: {
+    event: Event;
+    handler: GameSceneEventHandler<Event>;
+  };
+}[GameSceneEventName];
 
 interface SceneEventBindingsOptions {
   events: Phaser.Events.EventEmitter;

@@ -13,6 +13,7 @@ type PauseHarness = {
   overlayStates: PauseOverlayState[];
   mobileControlBlocked: boolean[];
   physicsActions: Array<'pause' | 'resume'>;
+  audioPauseStates: boolean[];
   handlers: PauseOverlayHandlers;
   playClickCalls: number;
   stopPlayerMotionCalls: number;
@@ -50,6 +51,7 @@ function createPauseHarness(
   const overlayStates: PauseOverlayState[] = [];
   const mobileControlBlocked: boolean[] = [];
   const physicsActions: Array<'pause' | 'resume'> = [];
+  const audioPauseStates: boolean[] = [];
 
   let playClickCalls = 0;
   let stopPlayerMotionCalls = 0;
@@ -99,6 +101,7 @@ function createPauseHarness(
     playClick: () => {
       playClickCalls += 1;
     },
+    setAudioPaused: (paused) => audioPauseStates.push(paused),
     createOverlay: (_scene: unknown, overlayHandlers: PauseOverlayHandlers) => {
       handlers = overlayHandlers;
       return {
@@ -124,6 +127,7 @@ function createPauseHarness(
     overlayStates,
     mobileControlBlocked,
     physicsActions,
+    audioPauseStates,
     handlers,
     get playClickCalls() {
       return playClickCalls;
@@ -165,10 +169,13 @@ describe('PauseStateController regression coverage', () => {
     expect(harness.playClickCalls).toBe(1);
     expect(harness.stopPlayerMotionCalls).toBe(1);
     expect(harness.physicsActions).toEqual(['pause']);
+    expect(harness.audioPauseStates).toEqual([true]);
     expect(harness.overlayStates.at(-1)).toEqual(createOverlayState({ visible: true, orientationBlocked: false, canResume: true }));
     expect(harness.mobileControlBlocked).toEqual([false, true]);
 
     harness.controller.togglePauseRequest(false);
+
+    expect(harness.audioPauseStates).toEqual([true, false]);
 
     expect(harness.controller.isGameplayPaused()).toBe(false);
     expect(harness.playClickCalls).toBe(2);

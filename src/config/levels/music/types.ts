@@ -1,7 +1,7 @@
-export type MusicWaveform = OscillatorType;
-export type MusicStep = number | null;
+type MusicWaveform = OscillatorType;
+type MusicStep = number | null;
 
-export type MusicEnvelopeCurve = 'linear' | 'soft' | 'hard';
+type MusicEnvelopeCurve = 'linear' | 'soft' | 'hard';
 
 export interface MusicEnvelopeShapeConfig {
   attack?: number;
@@ -11,14 +11,14 @@ export interface MusicEnvelopeShapeConfig {
   curve?: MusicEnvelopeCurve;
 }
 
-export interface MusicStereoMotionConfig {
+interface MusicStereoMotionConfig {
   pan?: number;
   width?: number;
   rateHz?: number;
   phaseOffset?: number;
 }
 
-export type MusicModulationTarget = 'gain' | 'filter' | 'pitch' | 'pan';
+type MusicModulationTarget = 'gain' | 'filter' | 'pitch' | 'pan';
 
 export interface MusicModulationConfig {
   target?: MusicModulationTarget;
@@ -41,8 +41,8 @@ export interface MusicLayerRhythmConfig {
   accentPattern?: number[];
 }
 
-export type MusicNoiseColor = 'white' | 'pink' | 'brown';
-export type MusicNoiseTexture = 'smooth' | 'grainy' | 'shimmer';
+type MusicNoiseColor = 'white' | 'pink' | 'brown';
+type MusicNoiseTexture = 'smooth' | 'grainy' | 'shimmer';
 
 export interface MusicNoiseCharacterConfig {
   color?: MusicNoiseColor;
@@ -68,7 +68,7 @@ export interface ProceduralMusicTrackExpressionConfig {
   accent?: MusicAccentConfig;
 }
 
-export type MusicTimeSignatureBeatUnit = 2 | 4 | 8 | 16;
+type MusicTimeSignatureBeatUnit = 2 | 4 | 8 | 16;
 
 export interface MusicTimeSignatureConfig {
   beatsPerBar: number;
@@ -81,7 +81,7 @@ export interface MusicEnergyProfileConfig {
   curve: 'steady' | 'build' | 'build-release' | 'surge';
 }
 
-export type MusicChordQuality =
+type MusicChordQuality =
   | 'major'
   | 'minor'
   | 'diminished'
@@ -97,7 +97,7 @@ export interface MusicHarmonicChordStepConfig {
   octaveShift?: number;
 }
 
-export interface MusicHarmonicProgressionConfig {
+interface MusicHarmonicProgressionConfig {
   steps: MusicHarmonicChordStepConfig[];
 }
 

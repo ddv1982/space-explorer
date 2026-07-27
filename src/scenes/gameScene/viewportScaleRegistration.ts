@@ -3,7 +3,6 @@ import type { HUD } from '@/systems/HUD';
 import type { MobileControls } from '@/systems/MobileControls';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
 import type { WarpTransition } from '@/systems/WarpTransition';
-import { getViewportBounds } from '@/utils/layout';
 import type { PauseStateController } from './PauseStateController';
 import { syncSceneViewport } from './viewport';
 
@@ -35,18 +34,4 @@ export function handleScaleResize(context: ViewportScaleResizeContext): void {
   context.warpTransition?.resize();
   context.pauseStateController?.relayout();
   context.clampPlayerToViewport();
-}
-
-export function syncViewportIfNeeded(scene: Phaser.Scene, resize: () => void): void {
-  const viewport = getViewportBounds(scene);
-  const camera = scene.cameras.main;
-
-  if (
-    Math.abs(camera.width - viewport.width) <= 1 &&
-    Math.abs(camera.height - viewport.height) <= 1
-  ) {
-    return;
-  }
-
-  resize();
 }

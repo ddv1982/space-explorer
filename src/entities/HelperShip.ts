@@ -8,6 +8,15 @@ import { ensureHelperShipTexture } from '../utils/SpriteFactory';
 type HelperShipDamageResult = 'ignored' | 'active' | 'respawning' | 'depleted';
 
 const HELPER_CONTACT_DAMAGE_COOLDOWN_MS = 450;
+const NOMINAL_FRAME_MS = 1000 / 60;
+
+function getFrameDampingAlpha(frameAlpha: number, delta: number): number {
+  if (!Number.isFinite(delta) || delta <= 0) {
+    return 0;
+  }
+
+  return Phaser.Math.Clamp(1 - Math.pow(1 - frameAlpha, delta / NOMINAL_FRAME_MS), 0, 1);
+}
 
 interface HelperShipLoadout {
   maxHp: number;
@@ -82,7 +91,13 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     this.spawnAtPlayerOffset(player, time);
   }
 
-  updateWithPlayer(player: Player, time: number, bulletPool: BulletPool, effectsManager: EffectsManager): void {
+  updateWithPlayer(
+    player: Player,
+    time: number,
+    delta: number,
+    bulletPool: BulletPool,
+    effectsManager: EffectsManager
+  ): void {
     if (this.depleted) {
       return;
     }
@@ -98,7 +113,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    this.followPlayer(player);
+    this.followPlayer(player, delta);
     this.updateBodyFromGameObject();
     this.tryFireShot(time, bulletPool, effectsManager);
   }
@@ -207,13 +222,18 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     this.clearTint();
   }
 
-  private followPlayer(player: Player): void {
+  private followPlayer(player: Player, delta: number): void {
     const targetX = player.x + this.followOffsetX;
     const targetY = player.y + this.followOffsetY;
-    const nextX = Phaser.Math.Linear(this.x, targetX, this.followLerp);
-    const nextY = Phaser.Math.Linear(this.y, targetY, this.followLerp);
+    const followAlpha = getFrameDampingAlpha(this.followLerp, delta);
+    const nextX = Phaser.Math.Linear(this.x, targetX, followAlpha);
+    const nextY = Phaser.Math.Linear(this.y, targetY, followAlpha);
     this.setPosition(nextX, nextY);
-    this.rotation = Phaser.Math.Linear(this.rotation, player.rotation * 0.75, 0.12);
+    this.rotation = Phaser.Math.Linear(
+      this.rotation,
+      player.rotation * 0.75,
+      getFrameDampingAlpha(0.12, delta)
+    );
   }
 
   private updateBodyFromGameObject(): void {
@@ -246,6 +266,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   private flashHit(): void {
     const flashToken = ++this.visualFlashToken;
     this.setTint(0xffffff);
+    this.setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(70, this.clearTintIfRecoverable, [flashToken], this);
   }
 

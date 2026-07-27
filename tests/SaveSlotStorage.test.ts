@@ -379,7 +379,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         remainingLives: 2,
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 3 },
-        helperWing: { grantedSlots: 0, slots: [] },
+        helperWing: { grantedSlots: 0, slots: [] as unknown[] },
       },
       runSummary: { finalScore: 900, levelReached: 4 },
       label: { level: 4, levelName: 'Legacy', score: 900, remainingLives: 2 },

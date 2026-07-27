@@ -38,13 +38,4 @@ export default defineConfig([
       ],
     },
   },
-  {
-    files: ['scripts/**/*.mjs'],
-    ...js.configs.recommended,
-    languageOptions: {
-      ...js.configs.recommended.languageOptions,
-      sourceType: 'module',
-      globals: globals.node,
-    },
-  },
 ]);

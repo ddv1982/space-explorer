@@ -25,8 +25,8 @@ describe('LastLifeHelperWing', () => {
     (wing as unknown as Record<string, unknown>).effectsManager = { id: 'effectsManager' };
     (wing as unknown as Record<string, unknown>).getLiveHelperCount = () => 0;
 
-    wing.update(1000);
-    wing.update(1016);
+    wing.update(1000, 16);
+    wing.update(1016, 16);
 
     expect((wing as unknown as Record<string, unknown>).activated).toBe(false);
     expect((wing as unknown as Record<string, unknown>).depletedAnnounced).toBe(true);
@@ -50,10 +50,10 @@ describe('LastLifeHelperWing', () => {
     (wing as unknown as Record<string, unknown>).effectsManager = effectsManager;
     (wing as unknown as Record<string, unknown>).getLiveHelperCount = () => 2;
 
-    wing.update(500);
+    wing.update(500, 1000 / 60);
 
-    expect(helperA.updateWithPlayer).toHaveBeenCalledWith(player, 500, bulletPool, effectsManager);
-    expect(helperB.updateWithPlayer).toHaveBeenCalledWith(player, 500, bulletPool, effectsManager);
+    expect(helperA.updateWithPlayer).toHaveBeenCalledWith(player, 500, 1000 / 60, bulletPool, effectsManager);
+    expect(helperB.updateWithPlayer).toHaveBeenCalledWith(player, 500, 1000 / 60, bulletPool, effectsManager);
   });
 
   test('destroy is idempotent when Phaser teardown has already invalidated group internals', () => {

@@ -31,6 +31,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   private flashHit(): void {
     const flashToken = ++this.visualFlashToken;
     this.setTint(0xffffff);
+    this.setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(80, this.clearTintIfActive, [flashToken], this);
   }
 
@@ -40,21 +41,26 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  protected invalidateHitFlash(): void {
+    this.visualFlashToken += 1;
+  }
+
   die(): void {
     this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.despawn();
   }
 
   despawn(): void {
-    this.visualFlashToken += 1;
+    this.invalidateHitFlash();
     despawnEntity(this);
     this.clearTint();
   }
 
   spawn(x: number, y: number): void {
-    this.visualFlashToken += 1;
+    this.invalidateHitFlash();
     spawnEntity(this, x, y);
     this.hp = this.maxHp;
+    this.clearTint();
   }
 
   protected updateHorizontalSine(

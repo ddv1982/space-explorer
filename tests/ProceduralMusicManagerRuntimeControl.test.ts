@@ -47,10 +47,10 @@ function createRuntimeControlHarness(): {
 
   const contextManager = {
     getCtx: () => ctx,
-    getMasterGain: () => null,
+    getMasterGain: (): null => null,
     ensureContext: () => true,
-    getNoiseBuffer: () => null,
-    getExplosionBuffer: () => null,
+    getNoiseBuffer: (): null => null,
+    getExplosionBuffer: (): null => null,
   } as unknown as AudioContextManager;
 
   const manager = new ProceduralMusicManager(contextManager);

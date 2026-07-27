@@ -216,9 +216,11 @@ describe('EnemyPool regression coverage', () => {
       EXPECTED_GROUP_CONFIGS.get(EnemyBullet),
     ]);
 
-    expect(harness.pool.getScoutGroup()).toBe(harness.groupsByClassType.get(Scout));
-    expect(harness.pool.getFighterGroup()).toBe(harness.groupsByClassType.get(Fighter));
-    expect(harness.pool.getEnemyBulletGroup()).toBe(harness.groupsByClassType.get(EnemyBullet));
+    expect(harness.pool.getScoutGroup() as unknown).toBe(harness.groupsByClassType.get(Scout));
+    expect(harness.pool.getFighterGroup() as unknown).toBe(harness.groupsByClassType.get(Fighter));
+    expect(harness.pool.getEnemyBulletGroup() as unknown).toBe(
+      harness.groupsByClassType.get(EnemyBullet),
+    );
   });
 
   test('enemy registry order is stable and repeated accessor calls do not duplicate groups', () => {
@@ -268,7 +270,7 @@ describe('EnemyPool regression coverage', () => {
 
     const bomber = harness.pool.spawnBomber(10, 20);
 
-    expect(bomber).toBe(harness.lastBomber);
+    expect(bomber as unknown).toBe(harness.lastBomber);
     expect(harness.lastBomber?.setBombGroupArgs).toEqual([harness.pool.getBombGroup()]);
 
     const bomberCreateIndex = harness.groupCreateCalls.findIndex(call => call.classType === Bomber);

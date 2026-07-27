@@ -21,6 +21,29 @@ export const GAME_SCENE_EVENTS = {
   enemyBulletTrail: 'enemy-bullet-trail',
 } as const;
 
+type GameSceneEventPayloads = {
+  [GAME_SCENE_EVENTS.enemyDeath]: [score: number, x: number, y: number];
+  [GAME_SCENE_EVENTS.playerDeath]: [];
+  [GAME_SCENE_EVENTS.playerFatalHit]: [];
+  [GAME_SCENE_EVENTS.levelComplete]: [];
+  [GAME_SCENE_EVENTS.bossSpawn]: [];
+  [GAME_SCENE_EVENTS.playerHit]: [];
+  [GAME_SCENE_EVENTS.playerExhaust]: [x: number, y: number, intensity: number];
+  [GAME_SCENE_EVENTS.enemySpawnWarning]: [x: number];
+  [GAME_SCENE_EVENTS.bossDeath]: [score: number, x: number, y: number];
+  [GAME_SCENE_EVENTS.bossPhaseChange]: [phase: number];
+  [GAME_SCENE_EVENTS.helperWingActivated]: [helperCount: number];
+  [GAME_SCENE_EVENTS.helperWingDepleted]: [];
+  [GAME_SCENE_EVENTS.playerBulletTrail]: [x: number, y: number];
+  [GAME_SCENE_EVENTS.enemyBulletTrail]: [x: number, y: number];
+};
+
+export type GameSceneEventName = keyof GameSceneEventPayloads;
+
+export type GameSceneEventHandler<Event extends GameSceneEventName> = (
+  ...args: GameSceneEventPayloads[Event]
+) => void;
+
 export const TERMINAL_TRANSITIONS = {
   none: 'none',
   playerDeath: 'player-death',

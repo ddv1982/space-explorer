@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../config/LevelsConfig';
+import { applyHazardTelegraphGlow } from '../utils/renderingCompat';
 import { resolveSectionAtmosphereTargets } from './parallax/atmosphereProfile';
 import {
   scrollStarLayers,
@@ -86,7 +87,7 @@ export class ParallaxBackground {
     this.destroy();
     this.initializeSceneState(scene, levelConfig);
     this.createSceneLayers(scene, levelConfig);
-    this.createHazardOverlay(scene);
+    this.createHazardOverlay(scene, levelConfig?.accentColor ?? 0x88c8ff);
     this.layoutSceneLayers();
 
     // The seamless image backgrounds are a low-depth art backplate. The normal
@@ -120,9 +121,12 @@ export class ParallaxBackground {
     }
   }
 
-  private createHazardOverlay(scene: Phaser.Scene): void {
+  private createHazardOverlay(scene: Phaser.Scene, accentColor: number): void {
     this.hazardOverlay = scene.add.graphics();
     this.hazardOverlay.setDepth(-5);
+    // Keep authored hazard tells legible over detailed backplates without adding
+    // new danger geometry or changing their lane information.
+    applyHazardTelegraphGlow(this.hazardOverlay, accentColor);
   }
 
   private layoutSceneLayers(): void {
@@ -302,16 +306,25 @@ export class ParallaxBackground {
 
   update(delta: number): void {
     this.elapsed += delta;
-    this.updateAtmosphereState();
+    this.updateAtmosphereState(delta);
     this.updateVisualLayers(delta);
-    this.hazardOverlayAlpha = this.updateHazardOverlay();
+    this.hazardOverlayAlpha = this.updateHazardOverlay(delta);
   }
 
-  private updateAtmosphereState(): void {
-    this.atmosphereAlpha = Phaser.Math.Linear(this.atmosphereAlpha, this.targetAtmosphereAlpha, 0.08);
-    this.atmosphereDrift = Phaser.Math.Linear(this.atmosphereDrift, this.targetAtmosphereDrift, 0.08);
-    this.atmosphereTwinkle = Phaser.Math.Linear(this.atmosphereTwinkle, this.targetAtmosphereTwinkle, 0.08);
-    this.landmarkAlpha = Phaser.Math.Linear(this.landmarkAlpha, this.targetLandmarkAlpha, 0.08);
+  private getFrameDampingAlpha(frameAlpha: number, delta: number): number {
+    if (!Number.isFinite(delta) || delta <= 0) {
+      return 0;
+    }
+
+    return Phaser.Math.Clamp(1 - Math.pow(1 - frameAlpha, delta / (1000 / 60)), 0, 1);
+  }
+
+  private updateAtmosphereState(delta: number): void {
+    const alpha = this.getFrameDampingAlpha(0.08, delta);
+    this.atmosphereAlpha = Phaser.Math.Linear(this.atmosphereAlpha, this.targetAtmosphereAlpha, alpha);
+    this.atmosphereDrift = Phaser.Math.Linear(this.atmosphereDrift, this.targetAtmosphereDrift, alpha);
+    this.atmosphereTwinkle = Phaser.Math.Linear(this.atmosphereTwinkle, this.targetAtmosphereTwinkle, alpha);
+    this.landmarkAlpha = Phaser.Math.Linear(this.landmarkAlpha, this.targetLandmarkAlpha, alpha);
   }
 
   private updateVisualLayers(delta: number): void {
@@ -335,13 +348,14 @@ export class ParallaxBackground {
     );
   }
 
-  private updateHazardOverlay(): number {
+  private updateHazardOverlay(delta: number): number {
     return updateHazardOverlayRuntime({
       overlay: this.hazardOverlay,
       scene: this.scene,
       width: this.currentWidth,
       height: this.currentHeight,
       time: this.elapsed,
+      delta,
       levelConfig: this.levelConfig,
       overlayAlpha: this.hazardOverlayAlpha,
       targetOverlayAlpha: this.targetHazardOverlayAlpha,

@@ -68,11 +68,11 @@ class ButtonBgStub {
 
 function createGraphicsStub(): Phaser.GameObjects.Graphics {
   return {
-    clear: () => undefined,
-    lineStyle: () => undefined,
-    strokeRoundedRect: () => undefined,
-    fillStyle: () => undefined,
-    fillRoundedRect: () => undefined,
+    clear: (): undefined => undefined,
+    lineStyle: (): undefined => undefined,
+    strokeRoundedRect: (): undefined => undefined,
+    fillStyle: (): undefined => undefined,
+    fillRoundedRect: (): undefined => undefined,
   } as unknown as Phaser.GameObjects.Graphics;
 }
 

@@ -1,4 +1,4 @@
-export type PremiumBackgroundLayerRole = 'far' | 'nebula' | 'mid' | 'near' | 'overlay';
+type PremiumBackgroundLayerRole = 'far' | 'nebula' | 'mid' | 'near' | 'overlay';
 
 export interface PremiumBackgroundLayerConfig {
   role: PremiumBackgroundLayerRole;

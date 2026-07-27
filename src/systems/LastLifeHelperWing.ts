@@ -66,7 +66,7 @@ export class LastLifeHelperWing {
     this.grantHelperIfPossible();
   }
 
-  update(time: number): void {
+  update(time: number, delta: number): void {
     if (!this.activated || this.helpers.length === 0) {
       return;
     }
@@ -78,7 +78,7 @@ export class LastLifeHelperWing {
     }
 
     for (const helper of this.helpers) {
-      helper.updateWithPlayer(this.player, time, this.bulletPool, this.effectsManager);
+      helper.updateWithPlayer(this.player, time, delta, this.bulletPool, this.effectsManager);
     }
   }
 

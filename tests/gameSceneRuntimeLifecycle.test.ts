@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type Phaser from 'phaser';
+import type { SceneEventBinding } from '../src/scenes/gameScene/sceneEvents';
 
 mock.module('phaser', () => ({
   default: {
@@ -18,9 +19,9 @@ function createRuntimeLifecycleHarness() {
   const log: string[] = [];
   const lifecycleHandlers: Record<string, () => void> = {};
 
-  const bindings = [
-    { event: 'enemyDeath', handler: () => {} },
-    { event: 'bossDeath', handler: () => {} },
+  const bindings: SceneEventBinding[] = [
+    { event: 'enemy-death', handler: () => {} },
+    { event: 'boss-death', handler: () => {} },
   ];
 
   const scene = {
@@ -99,8 +100,8 @@ describe('createGameSceneRuntimeLifecycle', () => {
     lifecycle.handleSceneShutdown();
 
     expect(log).toEqual([
-      'off:enemyDeath',
-      'off:bossDeath',
+      'off:enemy-death',
+      'off:boss-death',
       'scaleOff:resize',
       'destroyMobileViewportGuard',
       'destroyPauseStateController',

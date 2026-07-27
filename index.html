@@ -47,6 +47,43 @@
       font: 600 1.1rem/1.5 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       letter-spacing: 0.02em;
     }
+    #rotate-device-overlay[hidden] {
+      display: none;
+    }
+    #webgl-unsupported {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background: radial-gradient(circle at 50% 35%, #102541 0%, #050b18 44%, #02040d 100%);
+      color: #eefbff;
+      text-align: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      z-index: 20;
+    }
+    #webgl-unsupported[hidden] {
+      display: none;
+    }
+    #webgl-unsupported > div {
+      max-width: 34rem;
+      padding: 28px;
+      border: 1px solid #48c9ff;
+      background: rgba(3, 12, 27, 0.88);
+      box-shadow: 0 0 36px rgba(41, 181, 255, 0.18);
+    }
+    #webgl-unsupported h1 {
+      margin-bottom: 12px;
+      color: #71e7ff;
+      font-size: clamp(1.5rem, 5vw, 2.25rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    #webgl-unsupported p {
+      color: #c8d8e8;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
     @media (orientation: portrait) and (pointer: coarse) {
       #rotate-device-overlay {
         display: flex;
@@ -65,6 +102,12 @@
   <div id="rotate-device-overlay" role="dialog" aria-live="polite">
     <p>Rotate your device to landscape to keep playing.</p>
   </div>
+  <main id="webgl-unsupported" role="alert" hidden>
+    <div>
+      <h1>WebGL Required</h1>
+      <p>Space Explorer needs WebGL to render its campaign. Enable hardware acceleration or use a browser and device with WebGL support, then reload the page.</p>
+    </div>
+  </main>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -32,10 +32,10 @@ interface GameSceneGameplayFrameDelegate {
     fireRate: number;
     getFireDirection(out: Phaser.Math.Vector2): Phaser.Math.Vector2;
     getMuzzlePosition(distance: number, out: Phaser.Math.Vector2): Phaser.Math.Vector2;
-    update(inputManager: unknown): void;
+    update(inputManager: unknown, delta: number): void;
   };
   getLastLifeHelperWing(): {
-    update(time: number): void;
+    update(time: number, delta: number): void;
   } | null;
   waveManager: {
     update(time: number, delta: number, progress: number): void;
@@ -166,8 +166,8 @@ export function createGameSceneGameplayFrameBehavior(
 
   const updateGameplayFrame = (time: number, delta: number): void => {
     delegate.parallax.update(delta);
-    delegate.player.update(delegate.inputManager);
-    delegate.getLastLifeHelperWing()?.update(time);
+    delegate.player.update(delegate.inputManager, delta);
+    delegate.getLastLifeHelperWing()?.update(time, delta);
 
     updatePlayerFiring(time);
     updateEncounterAndLevelProgress(time, delta);

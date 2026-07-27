@@ -1,9 +1,11 @@
+/// <reference types="bun" />
+
+import { spawnSync } from 'node:child_process';
 import { readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { spawnSync } from 'node:child_process';
 
-function collectTestFiles(directory) {
-  const files = [];
+function collectTestFiles(directory: string): string[] {
+  const files: string[] = [];
 
   for (const entry of readdirSync(directory)) {
     const path = join(directory, entry);

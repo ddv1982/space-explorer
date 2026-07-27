@@ -37,15 +37,22 @@ describe('pooled visual callback guards', () => {
   test('enemy hit flash callback ignores an enemy reused after the flash was scheduled', () => {
     const { scene, scheduled } = createDelayedCallHarness();
     const clearTint = mock();
+    const setTint = mock();
+    const setTintMode = mock();
 
     const enemy = Object.create(EnemyBase.prototype) as EnemyBaseInstance;
     enemy.hp = 2;
     (enemy as unknown as Record<string, unknown>).active = true;
+    (enemy as unknown as Record<string, unknown>).visualFlashToken = 0;
     (enemy as unknown as Record<string, unknown>).scene = scene;
-    (enemy as unknown as Record<string, unknown>).setTint = mock();
+    (enemy as unknown as Record<string, unknown>).setTint = setTint;
+    (enemy as unknown as Record<string, unknown>).setTintMode = setTintMode;
     (enemy as unknown as Record<string, unknown>).clearTint = clearTint;
 
     enemy.takeDamage(1);
+
+    expect(setTint).toHaveBeenCalledWith(0xffffff);
+    expect(setTintMode).toHaveBeenCalledWith(1);
 
     (enemy as unknown as Record<string, number>).visualFlashToken = scheduled[0].args[0] + 1;
     scheduled[0].callback.apply(scheduled[0].scope, scheduled[0].args);
@@ -56,14 +63,17 @@ describe('pooled visual callback guards', () => {
   test('asteroid collision flash callback ignores an asteroid reused with a new tint', () => {
     const { scene, scheduled } = createDelayedCallHarness();
     const setTint = mock();
+    const setTintMode = mock();
     const clearTint = mock();
 
     const asteroid = Object.create(Asteroid.prototype) as AsteroidInstance;
     (asteroid as unknown as Record<string, unknown>).active = true;
+    (asteroid as unknown as Record<string, unknown>).visualFlashToken = 0;
     (asteroid as unknown as Record<string, unknown>).scene = scene;
     (asteroid as unknown as Record<string, unknown>).destroyOnPlayerImpact = false;
     (asteroid as unknown as Record<string, unknown>).baseTint = 0x446688;
     (asteroid as unknown as Record<string, unknown>).setTint = setTint;
+    (asteroid as unknown as Record<string, unknown>).setTintMode = setTintMode;
     (asteroid as unknown as Record<string, unknown>).clearTint = clearTint;
 
     asteroid.onPlayerCollision();
@@ -74,7 +84,63 @@ describe('pooled visual callback guards', () => {
 
     expect(setTint).toHaveBeenCalledTimes(1);
     expect(setTint).toHaveBeenCalledWith(0xffaa66);
+    expect(setTintMode).toHaveBeenCalledWith(1);
     expect(clearTint).not.toHaveBeenCalled();
+  });
+
+  test('asteroid hit uses fill tint and restores its configured base tint', () => {
+    const { scene, scheduled } = createDelayedCallHarness();
+    const setTint = mock();
+    const setTintMode = mock();
+    const clearTint = mock();
+
+    const asteroid = Object.create(Asteroid.prototype) as AsteroidInstance;
+    asteroid.hp = 2;
+    (asteroid as unknown as Record<string, unknown>).active = true;
+    (asteroid as unknown as Record<string, unknown>).visualFlashToken = 0;
+    (asteroid as unknown as Record<string, unknown>).scene = scene;
+    (asteroid as unknown as Record<string, unknown>).indestructible = false;
+    (asteroid as unknown as Record<string, unknown>).baseTint = 0x446688;
+    (asteroid as unknown as Record<string, unknown>).setTint = setTint;
+    (asteroid as unknown as Record<string, unknown>).setTintMode = setTintMode;
+    (asteroid as unknown as Record<string, unknown>).clearTint = clearTint;
+
+    asteroid.takeDamage(1);
+    scheduled[0].callback.apply(scheduled[0].scope, scheduled[0].args);
+
+    expect(asteroid.hp).toBe(1);
+    expect(setTint).toHaveBeenCalledWith(0xffffff);
+    expect(setTintMode).toHaveBeenCalledWith(1);
+    expect(setTint).toHaveBeenCalledWith(0x446688);
+    expect(setTintMode).toHaveBeenCalledWith(0);
+    expect(clearTint).not.toHaveBeenCalled();
+  });
+
+  test('asteroid hit callback ignores a pooled reuse with a different base tint', () => {
+    const { scene, scheduled } = createDelayedCallHarness();
+    const setTint = mock();
+    const setTintMode = mock();
+
+    const asteroid = Object.create(Asteroid.prototype) as AsteroidInstance;
+    asteroid.hp = 2;
+    (asteroid as unknown as Record<string, unknown>).active = true;
+    (asteroid as unknown as Record<string, unknown>).visualFlashToken = 0;
+    (asteroid as unknown as Record<string, unknown>).scene = scene;
+    (asteroid as unknown as Record<string, unknown>).indestructible = false;
+    (asteroid as unknown as Record<string, unknown>).baseTint = 0x446688;
+    (asteroid as unknown as Record<string, unknown>).setTint = setTint;
+    (asteroid as unknown as Record<string, unknown>).setTintMode = setTintMode;
+    (asteroid as unknown as Record<string, unknown>).clearTint = mock();
+
+    asteroid.takeDamage(1);
+    (asteroid as unknown as Record<string, number>).visualFlashToken = scheduled[0].args[0] + 1;
+    (asteroid as unknown as Record<string, unknown>).baseTint = 0x99ccff;
+    scheduled[0].callback.apply(scheduled[0].scope, scheduled[0].args);
+
+    expect(setTint).toHaveBeenCalledTimes(1);
+    expect(setTint).toHaveBeenCalledWith(0xffffff);
+    expect(setTint).not.toHaveBeenCalledWith(0x99ccff);
+    expect(setTintMode).toHaveBeenCalledWith(1);
   });
 
   test('helper hit flash callback ignores a helper that entered a later lifecycle', () => {
@@ -88,6 +154,7 @@ describe('pooled visual callback guards', () => {
     (helper as unknown as Record<string, unknown>).depleted = false;
     (helper as unknown as Record<string, unknown>).scene = scene;
     (helper as unknown as Record<string, unknown>).setTint = mock();
+    (helper as unknown as Record<string, unknown>).setTintMode = mock();
     (helper as unknown as Record<string, unknown>).clearTint = clearTint;
 
     helper.takeDamage(1, 1000, { createSparkBurst: mock(), createExplosion: mock() } as never);
@@ -108,6 +175,7 @@ describe('pooled visual callback guards', () => {
     (player as unknown as Record<string, unknown>).visualFlashToken = 0;
     (player as unknown as Record<string, unknown>).scene = scene;
     (player as unknown as Record<string, unknown>).setTint = setTint;
+    (player as unknown as Record<string, unknown>).setTintMode = mock();
     (player as unknown as Record<string, unknown>).clearTint = clearTint;
 
     (player as unknown as { flashShield: () => void }).flashShield();
@@ -134,6 +202,7 @@ describe('pooled visual callback guards', () => {
     (player as unknown as Record<string, unknown>).visualFlashToken = 0;
     (player as unknown as Record<string, unknown>).scene = scene;
     (player as unknown as Record<string, unknown>).setTint = mock();
+    (player as unknown as Record<string, unknown>).setTintMode = mock();
     (player as unknown as Record<string, unknown>).clearTint = clearTint;
 
     (player as unknown as { flashWhite: () => void }).flashWhite();

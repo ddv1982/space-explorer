@@ -40,7 +40,7 @@ function createHarness() {
 
   const group = {
     getFirstDead: () => pooledAsteroid,
-    get: () => null,
+    get: (): null => null,
   };
 
   const helper = new WaveAsteroidSpawner({} as never, group as never);

@@ -21,6 +21,7 @@ interface HazardOverlayRuntimeUpdateInput {
   width: number;
   height: number;
   time: number;
+  delta: number;
   levelConfig?: LevelConfig;
   overlayAlpha: number;
   targetOverlayAlpha: number;
@@ -34,6 +35,7 @@ export function updateHazardOverlay(input: HazardOverlayRuntimeUpdateInput): num
     width,
     height,
     time,
+    delta,
     levelConfig,
     overlayAlpha,
     targetOverlayAlpha,
@@ -45,7 +47,10 @@ export function updateHazardOverlay(input: HazardOverlayRuntimeUpdateInput): num
   }
 
   overlay.clear();
-  const nextOverlayAlpha = Phaser.Math.Linear(overlayAlpha, targetOverlayAlpha, 0.12);
+  const dampingAlpha = Number.isFinite(delta) && delta > 0
+    ? Phaser.Math.Clamp(1 - Math.pow(1 - 0.12, delta / (1000 / 60)), 0, 1)
+    : 0;
+  const nextOverlayAlpha = Phaser.Math.Linear(overlayAlpha, targetOverlayAlpha, dampingAlpha);
 
   if (nextOverlayAlpha <= 0.005 || !scene) {
     return nextOverlayAlpha;

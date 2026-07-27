@@ -111,7 +111,7 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
         spawnedPowerUps.push({ x, y, type });
       },
     }),
-    get: () => null,
+    get: (): null => null,
   };
 
   const scene = {
@@ -189,7 +189,7 @@ describe('WaveManager', () => {
 
     harness.manager.update(2500, 16, 0.4);
 
-    expect(harness.returnedAsteroidGroup).toBe(harness.asteroidGroup);
+    expect(harness.returnedAsteroidGroup as unknown).toBe(harness.asteroidGroup);
     expect(harness.spawnerCalls.resetCorridorGapCenter).toBe(0);
     expect(harness.spawnerCalls.spawnAsteroids).toEqual([
       {

@@ -16,7 +16,7 @@ const getHelperWingState = mock(() => ({ grantedSlots: 0, slots: [] }));
 mock.module('@/systems/PlayerState', () => ({
   ...actualPlayerState,
   getHelperWingState,
-  saveHelperWingState: () => undefined,
+  saveHelperWingState: (): void => undefined,
 }));
 
 mock.module('@/entities/PowerUp', () => ({

@@ -8,6 +8,16 @@ import { applyGameObjectGlow } from '../utils/renderingCompat';
 
 export type PlayerDamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
 
+const NOMINAL_FRAME_MS = 1000 / 60;
+
+function getFrameDampingAlpha(frameAlpha: number, delta: number): number {
+  if (!Number.isFinite(delta) || delta <= 0) {
+    return 0;
+  }
+
+  return Phaser.Math.Clamp(1 - Math.pow(1 - frameAlpha, delta / NOMINAL_FRAME_MS), 0, 1);
+}
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   hp: number = PLAYER_CONFIG.baseMaxHp;
   maxHp: number = PLAYER_CONFIG.baseMaxHp;
@@ -136,12 +146,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private flashWhite(): void {
     const flashToken = ++this.visualFlashToken;
     this.setTint(0xffffff);
+    this.setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(100, this.clearTintIfAlive, [flashToken], this);
   }
 
   private flashShield(): void {
     const flashToken = ++this.visualFlashToken;
     this.setTint(0x44aaff);
+    this.setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(150, this.clearTintIfAlive, [flashToken], this);
   }
 
@@ -187,15 +199,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.enable = false;
   }
 
-  update(inputManager: InputManager): void {
+  update(inputManager: InputManager, delta: number): void {
     if (!this.isAlive) return;
-    const delta = this.scene.game.loop.delta;
 
     this.updateInvulnerability(delta);
 
     const movement = this.resolveMovementAcceleration(inputManager);
     this.applyMovementAcceleration(movement.ax, movement.ay);
-    this.updateRotationFromMovement(movement.ax);
+    this.updateRotationFromMovement(movement.ax, delta);
     this.isMovingUp = movement.isMovingUp;
     this.emitExhaustIfDue(delta, movement.ax, movement.ay);
   }
@@ -239,9 +250,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.maxVelocity.set(PLAYER_CONFIG.speed);
   }
 
-  private updateRotationFromMovement(ax: number): void {
+  private updateRotationFromMovement(ax: number, delta: number): void {
     const targetRotation = (ax / PLAYER_CONFIG.speed) * Phaser.Math.DegToRad(15);
-    this.rotation = Phaser.Math.Linear(this.rotation, targetRotation, 0.1);
+    this.rotation = Phaser.Math.Linear(
+      this.rotation,
+      targetRotation,
+      getFrameDampingAlpha(0.1, delta)
+    );
   }
 
   private emitExhaustIfDue(delta: number, ax: number, ay: number): void {

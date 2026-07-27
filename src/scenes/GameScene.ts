@@ -103,10 +103,66 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Private GameScene members are not publicly assignable; cast only at this create-time seam.
-    runGameSceneCreateBootstrap(this as unknown as GameSceneCreateBootstrapBridge);
+    runGameSceneCreateBootstrap(this.createBootstrapBridge());
     this.gameplayFrameBehavior = this.createGameplayFrameBehavior();
     this.updateFrameDelegate = this.createUpdateFrameDelegate();
+  }
+
+  private createBootstrapBridge(): GameSceneCreateBootstrapBridge {
+    const owner = (): GameScene => this;
+
+    return {
+      scene: owner(),
+      resetRuntimeState: () => owner().resetRuntimeState(),
+      initializePlayerRunState: () => owner().initializePlayerRunState(),
+      initializeAudioForLevel: (levelConfig) => owner().initializeAudioForLevel(levelConfig),
+      runtimeLifecycle: owner().runtimeLifecycle,
+      get levelManager() { return owner().levelManager; },
+      set levelManager(value) { owner().levelManager = value; },
+      get scaledBossConfig() { return owner().scaledBossConfig; },
+      set scaledBossConfig(value) { owner().scaledBossConfig = value; },
+      syncViewportBounds: () => owner().syncViewportBounds(),
+      getPlayerSpawnPoint: () => owner().getPlayerSpawnPoint(),
+      get parallax() { return owner().parallax; },
+      set parallax(value) { owner().parallax = value; },
+      get effectsManager() { return owner().effectsManager; },
+      set effectsManager(value) { owner().effectsManager = value; },
+      get mobileControls() { return owner().mobileControls; },
+      set mobileControls(value) { owner().mobileControls = value; },
+      get inputManager() { return owner().inputManager; },
+      set inputManager(value) { owner().inputManager = value; },
+      get player() { return owner().player; },
+      set player(value) { owner().player = value; },
+      applyPowerUp: (type) => owner().applyPowerUp(type),
+      flow: owner().flow,
+      get bulletPool() { return owner().bulletPool; },
+      set bulletPool(value) { owner().bulletPool = value; },
+      get enemyPool() { return owner().enemyPool; },
+      set enemyPool(value) { owner().enemyPool = value; },
+      get lastLifeHelperWing() { return owner().lastLifeHelperWing; },
+      set lastLifeHelperWing(value) { owner().lastLifeHelperWing = value; },
+      get waveManager() { return owner().waveManager; },
+      set waveManager(value) { owner().waveManager = value; },
+      get collisionManager() { return owner().collisionManager; },
+      set collisionManager(value) { owner().collisionManager = value; },
+      get scoreManager() { return owner().scoreManager; },
+      set scoreManager(value) { owner().scoreManager = value; },
+      get powerUpGroup() { return owner().powerUpGroup; },
+      set powerUpGroup(value) { owner().powerUpGroup = value; },
+      get hud() { return owner().hud; },
+      set hud(value) { owner().hud = value; },
+      get warpTransition() { return owner().warpTransition; },
+      set warpTransition(value) { owner().warpTransition = value; },
+      get lastHudShieldCount() { return owner().lastHudShieldCount; },
+      set lastHudShieldCount(value) { owner().lastHudShieldCount = value; },
+      stopPlayerMotion: () => owner().stopPlayerMotion(),
+      captureCurrentRunStateForSave: () => owner().captureCurrentRunStateForSave(),
+      canSaveCurrentRun: () => owner().canSaveCurrentRun(),
+      get pauseStateController() { return owner().pauseStateController; },
+      set pauseStateController(value) { owner().pauseStateController = value; },
+      get mobileViewportGuard() { return owner().mobileViewportGuard; },
+      set mobileViewportGuard(value) { owner().mobileViewportGuard = value; },
+    };
   }
 
   private resetRuntimeState(): void {
@@ -298,10 +354,6 @@ export class GameScene extends Phaser.Scene {
     clampPlayerToViewport(this, this.player);
   }
 
-  private syncViewportIfNeeded(): void {
-    this.runtimeLifecycle.syncViewportIfNeeded();
-  }
-
   private stopPlayerMotion(): void {
     const body = this.player.body as Phaser.Physics.Arcade.Body | null;
     if (!body) {
@@ -381,7 +433,6 @@ export class GameScene extends Phaser.Scene {
 
   private createUpdateFrameDelegate(): GameSceneFrameDelegate {
     return {
-      syncViewportIfNeeded: () => this.syncViewportIfNeeded(),
       handlePauseInput: () => this.requireGameplayFrameBehavior().handlePauseInput(),
       isPausedOrLockedFrame: () => this.requireGameplayFrameBehavior().isPausedOrLockedFrame(),
       updatePausedFrame: (pausedDelta) => {

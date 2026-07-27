@@ -12,9 +12,6 @@ function createRecordingDelegate(options?: {
   const pausedOrLocked = options?.pausedOrLocked ?? false;
 
   const delegate: GameSceneFrameDelegate = {
-    syncViewportIfNeeded: () => {
-      calls.push('syncViewportIfNeeded');
-    },
     handlePauseInput: () => {
       calls.push('handlePauseInput');
     },
@@ -37,26 +34,24 @@ function createRecordingDelegate(options?: {
 }
 
 describe('runGameSceneUpdateFrame', () => {
-  test('paused/locked path: sync → pause input → gate → paused frame only', () => {
+  test('paused/locked path: pause input → gate → paused frame only', () => {
     const { calls, delegate } = createRecordingDelegate({ pausedOrLocked: true });
 
     runGameSceneUpdateFrame(delegate, 1000, 16);
 
     expect(calls).toEqual([
-      'syncViewportIfNeeded',
       'handlePauseInput',
       'isPausedOrLockedFrame',
       'updatePausedFrame:16',
     ]);
   });
 
-  test('active path: sync → pause input → gate → gameplay → HUD', () => {
+  test('active path: pause input → gate → gameplay → HUD', () => {
     const { calls, delegate } = createRecordingDelegate({ pausedOrLocked: false });
 
     runGameSceneUpdateFrame(delegate, 2000, 16);
 
     expect(calls).toEqual([
-      'syncViewportIfNeeded',
       'handlePauseInput',
       'isPausedOrLockedFrame',
       'updateGameplayFrame:2000:16',

@@ -1,5 +1,4 @@
 export interface GameSceneFrameDelegate {
-  syncViewportIfNeeded(): void;
   handlePauseInput(): void;
   isPausedOrLockedFrame(): boolean;
   updatePausedFrame(delta: number): void;
@@ -12,7 +11,6 @@ export function runGameSceneUpdateFrame(
   time: number,
   delta: number
 ): void {
-  delegate.syncViewportIfNeeded();
   delegate.handlePauseInput();
 
   if (delegate.isPausedOrLockedFrame()) {

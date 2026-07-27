@@ -5,9 +5,13 @@ A retro arcade space shooter built with [Phaser 4](https://phaser.io), TypeScrip
 Playable here:
 [Space Explorer](https://space-explorer.net)
 
-![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
-![Phaser](https://img.shields.io/badge/Phaser-4.0.0-green)
-![Vite](https://img.shields.io/badge/Vite-8.0-purple)
+[![Latest release](https://img.shields.io/github/v/release/ddv1982/space-explorer?sort=semver)](https://github.com/ddv1982/space-explorer/releases/latest)
+[![Quality Gates](https://github.com/ddv1982/space-explorer/actions/workflows/quality.yml/badge.svg)](https://github.com/ddv1982/space-explorer/actions/workflows/quality.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-7.0-blue)
+![Phaser](https://img.shields.io/badge/Phaser-4.2.1-green)
+![Vite](https://img.shields.io/badge/Vite-8.1.5-purple)
+![Bun](https://img.shields.io/badge/Bun-1.3.5-f9f1e1)
+[![License](https://img.shields.io/github/license/ddv1982/space-explorer)](LICENSE)
 
 ## Quick start
 
@@ -57,10 +61,10 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 ### Enemy roster
 
 - **Scout** — fast, low-HP contact threat
-- **Fighter** — mobile ranged pressure
-- **Bomber** — slower, heavier target that drops bombs
+- **Fighter** — mobile ranged pressure tuned to two base-weapon hits
+- **Bomber** — slower bomb carrier tuned to four base-weapon hits
 - **Swarm** — fragile group attackers
-- **Gunship** — heavier enemy with spread fire
+- **Gunship** — spread-fire anchor tuned to five base-weapon hits
 - **Bosses** — named encounters with distinct styles such as barrage, pursuit, carrier, bulwark, and maelstrom patterns
 
 ### Gameplay systems
@@ -87,10 +91,14 @@ Some upgrades unlock later in the campaign and use progression caps so the run s
 
 ## Tech stack
 
-- **Phaser 4** — game engine
+- **Phaser 4.2.1** — ESM game engine with WebGL rendering
 - **TypeScript** — strict typing across gameplay and config
-- **Vite 8** — dev server and production build
-- **Bun** — package manager / script runner
+- **Vite 8.1.5** — dev server and production build
+- **Bun 1.3.5** — package manager and script runner
+
+TypeScript 7 is the authoritative compiler for application and test type-checking. Until compiler-API consumers support TypeScript 7, the canonical `typescript` package temporarily remains on TypeScript 6 for ESLint; `@typescript/native` provides the TypeScript 7 compiler, and `bun run typecheck:ts6` provides the parity check. The scripts use explicit package paths so Bun cannot resolve the wrong compiler when both packages expose a `tsc` binary.
+
+Phaser is consumed through its package ESM export and the game requires WebGL. Browsers without WebGL receive an explicit unsupported-device message instead of a partial Canvas fallback.
 
 ## Project structure
 
@@ -162,7 +170,9 @@ src/
 ```bash
 bun run dev      # start local dev server
 bun run typecheck # type-check source, scripts, config, and tests
+bun run typecheck:ts6 # compare against the temporary TypeScript 6 compatibility compiler
 bun run test     # run unit/regression tests with per-file isolation
+bun run test:e2e # run desktop and mobile Chromium smoke tests
 bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
@@ -181,7 +191,8 @@ bun run bundle:check    # enforce bundle guardrail thresholds after a build
 
 ## Release notes
 
-- [Latest](docs/releases/README.md)
+- [Latest release notes](docs/releases/1.2.0.md)
+- [Release archive](docs/releases/README.md)
 
 ## Acknowledgements
 

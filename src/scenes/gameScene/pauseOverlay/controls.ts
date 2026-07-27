@@ -73,7 +73,7 @@ export function createPauseSaveSlotRows(
   const slotIds: SaveSlotId[] = ['slot-1', 'slot-2', 'slot-3'];
 
   return {
-    rows: slotIds.map((slotId, index) => ({
+    rows: slotIds.map<PauseSaveSlotRow>((slotId, index) => ({
       chrome: scene.add.graphics(),
       title: scene.add.text(0, 0, `SLOT ${index + 1}`, {
         fontSize: '14px',

@@ -48,7 +48,7 @@ mock.module('../src/config/LevelsConfig', () => ({
   getSectionProgress: () => 0.5,
   getTotalLevels: () => 10,
   getLevelConfig: () => ({
-    sections: [],
+    sections: [] as unknown[],
   }),
   isLastLevel: () => false,
 }));
@@ -62,7 +62,6 @@ type GameSceneInstance = InstanceType<typeof GameScene>;
  * Prefer this over ad-hoc Record casts so field names stay checked.
  */
 type GameSceneTestState = {
-  syncViewportIfNeeded: () => void;
   updateHud: () => void;
   gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null;
   updateFrameDelegate: GameSceneFrameDelegate | null;
@@ -167,9 +166,6 @@ function createUpdateHarness(): UpdateHarness {
   let shouldSpawnBoss = false;
   let levelComplete = false;
 
-  state.syncViewportIfNeeded = () => {
-    calls.push('syncViewportIfNeeded');
-  };
 
   state.updateHud = () => {
     calls.push('updateHud');
@@ -307,15 +303,14 @@ function createUpdateHarness(): UpdateHarness {
 }
 
 describe('GameScene update gate regression coverage', () => {
-  test('runs viewport sync before pause handling and pause toggle before pause/lock gating', () => {
+  test('runs pause toggle before pause/lock gating', () => {
     const harness = createUpdateHarness();
     harness.setConsumePauseToggle(true);
     harness.setPaused(true);
 
     harness.scene.update(1000, 16);
 
-    expect(harness.calls.slice(0, 5)).toEqual([
-      'syncViewportIfNeeded',
+    expect(harness.calls.slice(0, 4)).toEqual([
       'consumePauseToggleRequest',
       'isGameplayLocked',
       'togglePauseRequest:false',

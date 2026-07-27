@@ -45,6 +45,10 @@ function createDefaultPhaserMock() {
   return {
     default: {
       Scene: MockScene,
+      TintModes: {
+        MULTIPLY: 0,
+        FILL: 1,
+      },
       GameObjects: {
         GameObject: MockGameObject,
         Image: class {},

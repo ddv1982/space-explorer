@@ -9,6 +9,8 @@ export class AudioContextManager {
   private masterGain: GainNode | null = null;
   private explosionBuffer: AudioBuffer | null = null;
   private readonly noiseBuffers = new Map<string, AudioBuffer>();
+  private desiredSuspended = false;
+  private stateTransition: Promise<void> = Promise.resolve();
 
   getCtx(): AudioContext | null {
     return this.ctx;
@@ -16,6 +18,10 @@ export class AudioContextManager {
 
   getMasterGain(): GainNode | null {
     return this.masterGain;
+  }
+
+  getState(): AudioContextState | null {
+    return this.ctx?.state ?? null;
   }
 
   init(): void {
@@ -27,6 +33,7 @@ export class AudioContextManager {
       if (this.ctx) {
         this.ensureGains();
         this.getExplosionBuffer();
+        if (this.desiredSuspended) this.queueStateTransition();
         return;
       }
 
@@ -39,6 +46,7 @@ export class AudioContextManager {
       this.ctx = new AudioContextCtor();
       this.ensureGains();
       this.getExplosionBuffer();
+      if (this.desiredSuspended) this.queueStateTransition();
     } catch {
       this.resetNodes();
     }
@@ -129,12 +137,39 @@ export class AudioContextManager {
       this.resetNodes();
       return false;
     }
-    if (this.ctx.state === 'suspended') {
-      void this.ctx.resume().catch(() => {
-        // Best effort resume; callers already guard against missing audio.
-      });
-    }
     return true;
+  }
+
+  suspend(): void {
+    this.desiredSuspended = true;
+    this.queueStateTransition();
+  }
+
+  resume(): void {
+    this.desiredSuspended = false;
+    this.queueStateTransition();
+  }
+
+  private queueStateTransition(): void {
+    this.stateTransition = this.stateTransition
+      .catch((): void => undefined)
+      .then(async () => {
+        const context = this.ctx;
+        if (!context || context.state === 'closed') return;
+
+        while (context === this.ctx) {
+          if (this.desiredSuspended && context.state === 'running') {
+            await context.suspend();
+            continue;
+          }
+          if (!this.desiredSuspended && context.state === 'suspended') {
+            await context.resume();
+            continue;
+          }
+          break;
+        }
+      })
+      .catch((): void => undefined);
   }
 
   resetNodes(): void {
@@ -142,14 +177,16 @@ export class AudioContextManager {
     this.masterGain = null;
     this.explosionBuffer = null;
     this.noiseBuffers.clear();
+    this.desiredSuspended = false;
   }
 
   destroy(): void {
-    if (this.ctx) {
-      void this.ctx.close().catch(() => {
+    const context = this.ctx;
+    this.resetNodes();
+    if (context) {
+      void context.close().catch(() => {
         // Best effort close during shutdown.
       });
     }
-    this.resetNodes();
   }
 }

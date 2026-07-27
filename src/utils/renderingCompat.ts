@@ -55,6 +55,18 @@ export function applyGameObjectGlow(
   );
 }
 
+export function applyHazardTelegraphGlow(
+  gameObject: FilterableGameObject,
+  color: number
+): Phaser.Filters.Glow | null {
+  return applyGameObjectGlow(gameObject, color, {
+    outerStrength: 1.4,
+    innerStrength: 0.15,
+    scale: 0.5,
+    knockout: false,
+  });
+}
+
 export function applyCameraColorGrade(
   camera: Phaser.Cameras.Scene2D.Camera,
   currentFilter: Phaser.Filters.ColorMatrix | null,
