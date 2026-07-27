@@ -14,6 +14,9 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     browserName: 'chromium',
     trace: 'retain-on-failure',
+    launchOptions: process.env.CI ? {
+      args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader'],
+    } : undefined,
   },
   projects: [
     {
