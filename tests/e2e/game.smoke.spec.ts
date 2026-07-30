@@ -227,7 +227,7 @@ test('captures representative active-gameplay frame pacing with synchronized loa
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(process.env.CI ? 300_000 : 180_000);
   // CI software WebGL verifies the probe paths; local evidence runs retain the full comparison window.
   const sampleCount = process.env.CI ? 10 : 60;
   const mobile = test.info().project.name === 'chromium-mobile';
@@ -315,7 +315,7 @@ test('captures representative active-gameplay frame pacing with synchronized loa
       if (session) {
         await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }).catch((): void => undefined);
       } else if (options.firing) {
-        await page.keyboard.up('Space');
+        await page.keyboard.up('Space').catch((): void => undefined);
       }
       if (options.playerBulletTrails === false) {
         await page.evaluate(() => {
