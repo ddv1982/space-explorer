@@ -227,9 +227,10 @@ test('captures representative active-gameplay frame pacing with synchronized loa
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(process.env.CI ? 300_000 : 180_000);
+  test.setTimeout(300_000);
   // CI software WebGL verifies the probe paths; local evidence runs retain the full comparison window.
   const sampleCount = process.env.CI ? 10 : 60;
+  const activeTrailIntervalMs = 150;
   const mobile = test.info().project.name === 'chromium-mobile';
   const measureScenario = async (options: {
     moving?: boolean;
@@ -328,9 +329,9 @@ test('captures representative active-gameplay frame pacing with synchronized loa
         });
       }
       if (options.trailIntervals) {
-        await page.evaluate(() => {
-          window.__SPACE_EXPLORER_BROWSER_HARNESS__?.setProjectileTrailIntervals(150, 150);
-        });
+        await page.evaluate((intervalMs) => {
+          window.__SPACE_EXPLORER_BROWSER_HARNESS__?.setProjectileTrailIntervals(intervalMs, intervalMs);
+        }, activeTrailIntervalMs);
       }
       if (options.moving) await page.keyboard.up('ArrowLeft');
     }
@@ -358,27 +359,36 @@ test('captures representative active-gameplay frame pacing with synchronized loa
     firing: true,
     captureTrailEvidence: true,
   });
-  expect(activeCombat.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
-  expect(firingWithoutPlayerTrails.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
-  expect(firingWithoutAudioResumeRequests.runtimeLoad.audioResumeRequestCount).toBeGreaterThan(0);
-  expect(activeCombat.runtimeLoad.laserRequestCount).toBeGreaterThan(0);
   const legacyTrailEventsPerShot = legacyCadenceCombat.runtimeLoad.effectEventCount.playerBulletTrail
     / legacyCadenceCombat.runtimeLoad.laserRequestCount;
   const optimizedTrailEventsPerShot = activeCombat.runtimeLoad.effectEventCount.playerBulletTrail
     / activeCombat.runtimeLoad.laserRequestCount;
-  if (process.env.CI) {
-    expect(legacyCadenceCombat.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
-  } else {
-    expect(optimizedTrailEventsPerShot).toBeLessThan(legacyTrailEventsPerShot * 0.8);
-  }
-
+  const cadenceComparisonResolvable = sampleCount >= 60 && Math.max(
+    legacyCadenceCombat.p95Ms,
+    activeCombat.p95Ms,
+  ) < activeTrailIntervalMs;
+  const trailCadenceComparison = {
+    activeTrailIntervalMs,
+    cadenceComparisonResolvable,
+    legacyTrailEventsPerShot,
+    optimizedTrailEventsPerShot,
+  };
   await test.info().attach(`frame-pacing-${test.info().project.name}`, {
-    body: JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, firingWithoutAudioResumeRequests, legacyCadenceCombat, activeCombat }, null, 2),
+    body: JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, firingWithoutAudioResumeRequests, legacyCadenceCombat, activeCombat, trailCadenceComparison }, null, 2),
     contentType: 'application/json',
   });
   console.info(
-    `frame pacing ${test.info().project.name}: ${JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, firingWithoutAudioResumeRequests, legacyCadenceCombat, activeCombat })}`,
+    `frame pacing ${test.info().project.name}: ${JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, firingWithoutAudioResumeRequests, legacyCadenceCombat, activeCombat, trailCadenceComparison })}`,
   );
+
+  expect(activeCombat.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
+  expect(firingWithoutPlayerTrails.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
+  expect(firingWithoutAudioResumeRequests.runtimeLoad.audioResumeRequestCount).toBeGreaterThan(0);
+  expect(activeCombat.runtimeLoad.laserRequestCount).toBeGreaterThan(0);
+  expect(legacyCadenceCombat.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
+  if (cadenceComparisonResolvable) {
+    expect(optimizedTrailEventsPerShot).toBeLessThan(legacyTrailEventsPerShot * 0.8);
+  }
 
   await openMenu(page);
   await startNewRun(page);

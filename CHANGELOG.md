@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-07-30
+
+### Changed
+- Restored Level 1 to standard weighted scout/fighter encounters by removing the two extra authored enemy packets from Prism Crossfire and Light Channel.
+- Preserved Solar Slipstream's bossless onboarding structure, hazard telegraphs, encounter sizing, spawn pacing, and final Recovery Beat.
+- Limited strict projectile-cadence A/B assertions to full-sample runs whose frame delivery can resolve the active 150 ms cadence.
+
+### Quality
+- Added a campaign regression guard requiring Level 1 to remain free of authored signature waves while retaining authored gameplay in later levels.
+- Attached and logged frame-pacing evidence before assertions, including whether the cadence comparison was resolvable and both trail-event-per-shot rates.
+- Allowed the full six-scenario frame probe to finish its lifecycle checks under slow software-rendered desktop delivery.
+- Passed TypeScript 7 and TypeScript 6 checks, lint, unit tests, desktop/mobile browser smoke, level validation, Knip, production build, bundle budgets, and `git diff --check`.
+
 ## [1.2.1] - 2026-07-30
 
 ### Added

@@ -75,14 +75,14 @@ describe('campaign helper regression coverage', () => {
     );
   });
 
-  test('vertical slice levels declare their approved authored gameplay beats', () => {
+  test('vertical slice levels declare their approved gameplay beats', () => {
     const level1 = getLevelByNumber(1);
     const level5 = getLevelByNumber(5);
     const level6 = getLevelByNumber(6);
     const level10 = getLevelByNumber(10);
 
     expect(level1.hasBoss).toBe(false);
-    expect(countSignatureWaves(level1)).toBeGreaterThanOrEqual(2);
+    expect(countSignatureWaves(level1)).toBe(0);
 
     expect(level5.boss?.attackStyle).toBe('pressure');
     expect(countRecoveryDrops(level5)).toBeGreaterThanOrEqual(2);

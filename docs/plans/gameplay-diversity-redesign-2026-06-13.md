@@ -57,11 +57,11 @@ Improve the full 10-level campaign so each level has a clearer dominant motif, s
 
 Implement the redesign first across Levels 1, 5, 6, and 10.
 
-Status: implemented in the first vertical slice for reusable authored section primitives, Level 6 literal cover, and authored content/guardrails for Levels 1, 5, 6, and 10. Manual playtest proof is still required before treating the redesign as fully tuned.
+Status: implemented in the first vertical slice for reusable authored section primitives, Level 6 literal cover, and authored content/guardrails for Levels 5, 6, and 10. Level 1 retains standard weighted encounters with readable hazard cues instead of authored enemy waves. Manual playtest proof is still required before treating the redesign as fully tuned.
 
 | Level | Slice purpose | Scope |
 |------:|---------------|-------|
-| 1 | Onboarding/readability proof | Polish the existing lane-reading structure rather than rebuilding it |
+| 1 | Onboarding/readability baseline | Preserve weighted encounters and existing hazard telegraphs without authored enemy waves |
 | 5 | Endurance and authored relief proof | Preserve endurance identity, add recovery/resource structure, and create burst-duel boss contrast |
 | 6 | New cover mechanic proof | Implement real bullet/bomb-blocking cover and a cover-focused boss |
 | 10 | Finale synthesis proof | Restructure pre-boss into clear synthesis waves with short recovery beats |
@@ -74,7 +74,7 @@ Status: implemented in the first vertical slice for reusable authored section pr
 
 ## Manual Playtest Checklist
 
-- Level 1: confirm the authored lane-reading waves are readable on desktop and narrow viewport, and the final release still feels like a short confidence beat rather than downtime.
+- Level 1: confirm weighted encounters and existing hazard cues remain readable on desktop and narrow viewport, and the final release still feels like a short confidence beat rather than downtime.
 - Level 5: confirm authored health/shield relief stabilizes endurance without trivializing the furnace run, and the Pyre Leviathan feels like a burst-duel contrast rather than another endurance stretch.
 - Level 6: confirm cover blocks enemy bullets and bomber bombs clearly, enemy bodies still remain threatening, and breakable cover durability is readable before it collapses.
 - Level 10: confirm each synthesis wave has a distinct readable task, short Recovery Beats are noticeable but still dangerous, and the final boss approach does not feel memorization-only.

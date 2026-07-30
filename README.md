@@ -191,7 +191,7 @@ bun run bundle:check    # enforce bundle guardrail thresholds after a build
 
 ## Release notes
 
-- [Latest release notes](docs/releases/1.2.1.md)
+- [Latest release notes](docs/releases/1.2.2.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements
