@@ -432,6 +432,7 @@ test('preload feedback remains visible until a real asset request completes', as
 
   await page.goto('/?browserHarness=1', { waitUntil: 'domcontentloaded' });
   await requestStarted;
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__SPACE_EXPLORER_BROWSER_HARNESS__))).toBe(true);
   await expect.poll(async () => (await snapshot(page)).preload?.progress ?? 1).toBeLessThan(1);
   await expect.poll(async () => (await snapshot(page)).preload?.texts[0] ?? '').toContain('LOADING...');
   const loadingSnapshot = await snapshot(page);
