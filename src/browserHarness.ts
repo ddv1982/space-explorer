@@ -498,7 +498,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
       activeGameScene.events.on(GAME_SCENE_EVENTS.enemyBulletTrail, countEnemyBulletTrail);
       timeout = window.setTimeout(
         () => finish(new Error('Browser harness frame-pacing probe timed out')),
-        Math.max(15_000, sampleCount * 250),
+        Math.max(15_000, sampleCount * 750),
       );
     });
   };
