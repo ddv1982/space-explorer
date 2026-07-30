@@ -5,7 +5,12 @@ import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { ensurePlayerBulletTexture } from '../utils/SpriteFactory';
 
 export class Bullet extends Phaser.Physics.Arcade.Sprite {
+  private static trailIntervalMs = 150;
   private lastTrailTime = 0;
+
+  static setTrailIntervalMs(intervalMs: number): void {
+    Bullet.trailIntervalMs = Math.max(0, intervalMs);
+  }
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePlayerBulletTexture(scene);
@@ -40,7 +45,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    if (this.active && time >= this.lastTrailTime + 18) {
+    if (this.active && time >= this.lastTrailTime + Bullet.trailIntervalMs) {
       this.lastTrailTime = time;
       this.scene.events.emit(GAME_SCENE_EVENTS.playerBulletTrail, this.x, this.y + 6);
     }

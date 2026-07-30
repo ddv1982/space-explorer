@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-07-30
+
+### Added
+- Added a browser-harness-gated active-combat frame-pacing probe with raw p50/p95/p99/max timing, over-budget counts, synchronized update/render/GPU work, and runtime-load context.
+- Added current-source legacy-versus-active projectile cadence comparisons for desktop and mobile Chromium.
+- Added retained desktop/mobile projectile-trail evidence using real pooled player and enemy projectiles after performance measurement.
+
+### Changed
+- Reduced player and enemy projectile trail emission cadence from 18/24 ms to 150 ms, substantially lowering trail-event pressure while retaining directional feedback.
+- Shifted enemy projectiles and trails to a brighter magenta-white palette so hostile downward lanes remain distinct from cyan player fire and orange nebula backgrounds.
+- Made successful test output concise while preserving complete diagnostics on failure.
+
+### Fixed
+- Avoided redundant audio-context suspend/resume Promise chains when the requested context state is already satisfied.
+- Isolated shared combat-feedback test doubles so real audio singletons cannot leak behavior across test files.
+
+### Quality
+- Verified the frame-pacing diagnosis and smoothness changes through independent Flow review.
+- Passed TypeScript 7 and TypeScript 6 checks, lint, unit tests, desktop/mobile browser smoke, level validation, Knip, production build, bundle budgets, and `git diff --check`.
+- Retained one advisory coverage gap for representative enemy pressure and uncommon probe cleanup/recovery interleavings.
+
 ## [1.2.0] - 2026-07-27
 
 ### Added

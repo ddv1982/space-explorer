@@ -141,11 +141,17 @@ export class AudioContextManager {
   }
 
   suspend(): void {
+    if (this.desiredSuspended && (!this.ctx || this.ctx.state === 'suspended')) {
+      return;
+    }
     this.desiredSuspended = true;
     this.queueStateTransition();
   }
 
   resume(): void {
+    if (!this.desiredSuspended && (!this.ctx || this.ctx.state === 'running')) {
+      return;
+    }
     this.desiredSuspended = false;
     this.queueStateTransition();
   }

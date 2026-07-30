@@ -93,8 +93,8 @@ export function getEnemyBulletTrailConfig(): Phaser.Types.GameObjects.Particles.
     lifespan: { min: 80, max: 150 },
     blendMode: Phaser.BlendModes.ADD,
     quantity: 1,
-    tint: [0xff4422, 0xff6644],
-    alpha: { start: 0.4, end: 0 },
+    tint: [0xff3366, 0xff99cc, 0xffffff],
+    alpha: { start: 0.7, end: 0 },
   };
 }
 

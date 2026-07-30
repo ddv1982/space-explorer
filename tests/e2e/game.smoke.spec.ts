@@ -1,5 +1,8 @@
 import { expect, test as base, type Page } from '@playwright/test';
-import type { BrowserHarnessSnapshot } from '../../src/browserHarness';
+import type {
+  BrowserHarnessFramePacingProbe,
+  BrowserHarnessSnapshot,
+} from '../../src/browserHarness';
 
 interface BrowserErrorFixture {
   assertNoBrowserErrors: () => void;
@@ -35,6 +38,7 @@ async function waitForScene(page: Page, sceneKey: string): Promise<void> {
       const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
       return harness?.snapshot().activeScenes.includes(key) ?? false;
     }, sceneKey),
+    { timeout: 15_000 },
   ).toBe(true);
 }
 
@@ -51,6 +55,42 @@ async function startNewRun(page: Page): Promise<void> {
   expect(newRun).toBeDefined();
   await page.mouse.click(newRun?.x ?? 0, newRun?.y ?? 0);
   await waitForScene(page, 'Game');
+}
+
+function expectConsistentFramePacingMetrics(metrics: BrowserHarnessFramePacingProbe, sampleCount: number): void {
+  expect(metrics.sampleCount).toBe(sampleCount);
+  expect(metrics.averageMs).toBeGreaterThan(0);
+  expect(metrics.averageMs).toBeLessThanOrEqual(metrics.maxMs);
+  expect(metrics.p50Ms).toBeLessThanOrEqual(metrics.p95Ms);
+  expect(metrics.p95Ms).toBeLessThanOrEqual(metrics.p99Ms);
+  expect(metrics.p99Ms).toBeLessThanOrEqual(metrics.maxMs);
+  expect(metrics.over16_67MsCount).toBeGreaterThanOrEqual(metrics.over33_33MsCount);
+  for (const count of [metrics.over16_67MsCount, metrics.over33_33MsCount]) {
+    expect(count).toBeGreaterThanOrEqual(0);
+    expect(count).toBeLessThanOrEqual(metrics.sampleCount);
+  }
+  for (const workCost of [
+    metrics.workCost.update,
+    metrics.workCost.renderSubmission,
+    metrics.workCost.gpuSynchronizedRender,
+  ]) {
+    expect(workCost.sampleCount).toBeGreaterThanOrEqual(metrics.sampleCount);
+    expect(workCost.averageMs).toBeGreaterThanOrEqual(0);
+    expect(workCost.p95Ms).toBeGreaterThanOrEqual(0);
+  }
+  expect(metrics.runtimeLoad.activeTexturedObjectCount).toBeGreaterThan(0);
+  expect(metrics.runtimeLoad.activePhysicsBodyCount).toBeGreaterThan(0);
+  expect(metrics.runtimeLoad.activeParticleCount).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.activePlayerBulletCount).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.activeEnemyBulletCount).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.particleEmitterCount).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.tweenCount).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.effectEventCount.playerExhaust).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.effectEventCount.enemyBulletTrail).toBeGreaterThanOrEqual(0);
+  expect(metrics.runtimeLoad.musicIntensityRequestCount).toBeGreaterThanOrEqual(metrics.sampleCount);
+  expect(metrics.runtimeLoad.audioResumeRequestCount).toBeGreaterThanOrEqual(metrics.sampleCount);
+  expect(metrics.runtimeLoad.laserRequestCount).toBeGreaterThanOrEqual(0);
 }
 
 test('boots once, enters gameplay, and exercises real rendering and Arcade bodies', async ({
@@ -180,6 +220,190 @@ test('runtime feedback remains comparable under measured low frame delivery', as
   });
   expect(tintProbe.duringMode).toBe(1);
   expect(tintProbe.afterMode).toBe(0);
+  assertNoBrowserErrors();
+});
+
+test('captures representative active-gameplay frame pacing with synchronized load context', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(180_000);
+  const sampleCount = 60;
+  const mobile = test.info().project.name === 'chromium-mobile';
+  const measureScenario = async (options: {
+    moving?: boolean;
+    firing?: boolean;
+    playerBulletTrails?: boolean;
+    audioResumeRequests?: boolean;
+    trailIntervals?: { playerMs: number; enemyMs: number };
+    captureTrailEvidence?: boolean;
+  }): Promise<BrowserHarnessFramePacingProbe> => {
+    await openMenu(page);
+    await startNewRun(page);
+    await page.waitForTimeout(2500);
+    if (options.trailIntervals) {
+      await page.evaluate(({ playerMs, enemyMs }) => {
+        const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+        if (!harness) throw new Error('Browser harness is not installed');
+        harness.setProjectileTrailIntervals(playerMs, enemyMs);
+      }, options.trailIntervals);
+    }
+    if (options.playerBulletTrails === false) {
+      const emitterCount = await page.evaluate(() => {
+        const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+        if (!harness) throw new Error('Browser harness is not installed');
+        return harness.setPlayerBulletTrailEmissionEnabled(false);
+      });
+      expect(emitterCount).toBe(1);
+    }
+    if (options.audioResumeRequests === false) {
+      expect((await snapshot(page)).audioContextState).toBe('running');
+      await page.evaluate(() => {
+        const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+        if (!harness) throw new Error('Browser harness is not installed');
+        harness.setAudioResumeRequestsEnabled(false);
+      });
+    }
+    if (options.moving) await page.keyboard.down('ArrowLeft');
+
+    const session = mobile && options.firing ? await page.context().newCDPSession(page) : null;
+    if (session) {
+      const viewport = page.viewportSize();
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x: (viewport?.width ?? 844) * 0.75, y: (viewport?.height ?? 390) * 0.5 }],
+      });
+    } else if (options.firing) {
+      await page.keyboard.down('Space');
+    }
+
+    try {
+      if (options.firing) {
+        await expect.poll(async () =>
+          (await snapshot(page)).objects.some((object) =>
+            object.textureKey === 'player-bullet' && object.active
+          ),
+        ).toBe(true);
+      }
+      const metrics = await page.evaluate(async (count) => {
+        const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+        if (!harness) throw new Error('Browser harness is not installed');
+        return harness.probeFramePacing(count);
+      }, sampleCount);
+      expectConsistentFramePacingMetrics(metrics, sampleCount);
+      if (options.captureTrailEvidence) {
+        const staged = await page.evaluate(() => {
+          const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+          if (!harness) throw new Error('Browser harness is not installed');
+          return harness.stageProjectileTrailEvidence();
+        });
+        expect(staged).toEqual({ playerCount: 4, enemyCount: 4 });
+        await page.waitForTimeout(32);
+        const evidenceName = `projectile-trails-${test.info().project.name}.png`;
+        const evidencePath = process.env.VISUAL_SCREENSHOT_DIR
+          ? `${process.env.VISUAL_SCREENSHOT_DIR}/${evidenceName}`
+          : test.info().outputPath(evidenceName);
+        await page.screenshot({ path: evidencePath });
+        await test.info().attach(`projectile-trails-${test.info().project.name}`, {
+          path: evidencePath,
+          contentType: 'image/png',
+        });
+      }
+      return metrics;
+    } finally {
+      if (session) {
+        await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      } else if (options.firing) {
+        await page.keyboard.up('Space');
+      }
+      if (options.playerBulletTrails === false) {
+        await page.evaluate(() => {
+          window.__SPACE_EXPLORER_BROWSER_HARNESS__?.setPlayerBulletTrailEmissionEnabled(true);
+        });
+      }
+      if (options.audioResumeRequests === false) {
+        await page.evaluate(() => {
+          window.__SPACE_EXPLORER_BROWSER_HARNESS__?.setAudioResumeRequestsEnabled(true);
+        });
+      }
+      if (options.trailIntervals) {
+        await page.evaluate(() => {
+          window.__SPACE_EXPLORER_BROWSER_HARNESS__?.setProjectileTrailIntervals(150, 150);
+        });
+      }
+      if (options.moving) await page.keyboard.up('ArrowLeft');
+    }
+  };
+
+  const baseline = await measureScenario({});
+  const movementOnly = await measureScenario({ moving: true });
+  const firingWithoutPlayerTrails = await measureScenario({
+    moving: true,
+    firing: true,
+    playerBulletTrails: false,
+  });
+  const firingWithoutAudioResumeRequests = await measureScenario({
+    moving: true,
+    firing: true,
+    audioResumeRequests: false,
+  });
+  const legacyCadenceCombat = await measureScenario({
+    moving: true,
+    firing: true,
+    trailIntervals: { playerMs: 18, enemyMs: 24 },
+  });
+  const activeCombat = await measureScenario({
+    moving: true,
+    firing: true,
+    captureTrailEvidence: true,
+  });
+  expect(activeCombat.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
+  expect(firingWithoutPlayerTrails.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
+  expect(firingWithoutAudioResumeRequests.runtimeLoad.audioResumeRequestCount).toBeGreaterThan(0);
+  expect(activeCombat.runtimeLoad.laserRequestCount).toBeGreaterThan(0);
+  const legacyTrailEventsPerShot = legacyCadenceCombat.runtimeLoad.effectEventCount.playerBulletTrail
+    / legacyCadenceCombat.runtimeLoad.laserRequestCount;
+  const optimizedTrailEventsPerShot = activeCombat.runtimeLoad.effectEventCount.playerBulletTrail
+    / activeCombat.runtimeLoad.laserRequestCount;
+  expect(optimizedTrailEventsPerShot).toBeLessThan(legacyTrailEventsPerShot * 0.8);
+
+  await test.info().attach(`frame-pacing-${test.info().project.name}`, {
+    body: JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, firingWithoutAudioResumeRequests, legacyCadenceCombat, activeCombat }, null, 2),
+    contentType: 'application/json',
+  });
+  console.info(
+    `frame pacing ${test.info().project.name}: ${JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, firingWithoutAudioResumeRequests, legacyCadenceCombat, activeCombat })}`,
+  );
+
+  await openMenu(page);
+  await startNewRun(page);
+  const lifecycleChecks = await page.evaluate(async () => {
+    const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+    if (!harness) throw new Error('Browser harness is not installed');
+    let invalidSampleError = '';
+    try {
+      await harness.probeFramePacing(0);
+    } catch (error) {
+      invalidSampleError = error instanceof Error ? error.message : String(error);
+    }
+    const first = await harness.probeFramePacing(2);
+    const second = await harness.probeFramePacing(2);
+    const interruptedProbe = harness.probeFramePacing(240).then(
+      () => '',
+      (error) => error instanceof Error ? error.message : String(error),
+    );
+    await harness.route('Victory');
+    return {
+      invalidSampleError,
+      firstSampleCount: first.sampleCount,
+      secondSampleCount: second.sampleCount,
+      interruptionError: await interruptedProbe,
+    };
+  });
+  expect(lifecycleChecks.invalidSampleError).toContain('between 1 and 240');
+  expect(lifecycleChecks.firstSampleCount).toBe(2);
+  expect(lifecycleChecks.secondSampleCount).toBe(2);
+  expect(lifecycleChecks.interruptionError).toContain('gameplay transition');
   assertNoBrowserErrors();
 });
 

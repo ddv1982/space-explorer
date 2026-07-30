@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.2.1`](./1.2.1.md) - steadies active-combat frame pacing, trims projectile trail pressure, and sharpens hostile firing lanes
 - [`1.2.0`](./1.2.0.md) - modernizes the flight deck, strengthens browser/runtime safety, clarifies Prism Crossfire, and lightens regular-enemy durability
 - [`1.1.27`](./1.1.27.md) - stages premium campaign skies on demand and guards delayed visual feedback across lifecycles
 - [`1.1.26`](./1.1.26.md) — smooths combat impacts and finishes the residual runtime and bridge cleanup

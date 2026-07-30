@@ -5,7 +5,12 @@ import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { ensureEnemyBulletTexture } from '../utils/SpriteFactory';
 
 export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
+  private static trailIntervalMs = 150;
   private lastTrailTime = 0;
+
+  static setTrailIntervalMs(intervalMs: number): void {
+    EnemyBullet.trailIntervalMs = Math.max(0, intervalMs);
+  }
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureEnemyBulletTexture(scene);
@@ -35,7 +40,7 @@ export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    if (this.active && time >= this.lastTrailTime + 24) {
+    if (this.active && time >= this.lastTrailTime + EnemyBullet.trailIntervalMs) {
       this.lastTrailTime = time;
       this.scene.events.emit(GAME_SCENE_EVENTS.enemyBulletTrail, this.x, this.y - 4);
     }

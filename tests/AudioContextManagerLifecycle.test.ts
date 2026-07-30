@@ -19,6 +19,28 @@ async function flushTransitions(): Promise<void> {
 }
 
 describe('AudioContextManager lifecycle control', () => {
+  test('does not queue transitions when the requested state is already satisfied', () => {
+    let state: AudioContextState = 'running';
+    const manager = new AudioContextManager();
+    (manager as unknown as { ctx: AudioContext | null }).ctx = {
+      get state() {
+        return state;
+      },
+    } as AudioContext;
+    const queueStateTransition = mock(() => undefined);
+    (manager as unknown as { queueStateTransition: () => void }).queueStateTransition = queueStateTransition;
+
+    manager.resume();
+    manager.resume();
+    expect(queueStateTransition).not.toHaveBeenCalled();
+
+    state = 'suspended';
+    (manager as unknown as { desiredSuspended: boolean }).desiredSuspended = true;
+    manager.suspend();
+    manager.suspend();
+    expect(queueStateTransition).not.toHaveBeenCalled();
+  });
+
   test('serializes suspend and resume transitions', async () => {
     const suspend = mock(() => Promise.resolve());
     const resume = mock(() => Promise.resolve());

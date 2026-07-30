@@ -22,16 +22,16 @@ export function ensurePlayerBulletTexture(scene: Phaser.Scene): string {
 
 export function ensureEnemyBulletTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'enemy-bullet', 8, 8, (g) => {
-    g.fillStyle(0xff4422, 0.3);
+    g.fillStyle(0xff174d, 0.35);
     g.fillCircle(4, 4, 4);
 
-    g.fillStyle(0xff6644, 0.6);
+    g.fillStyle(0xff4d8d, 0.7);
     g.fillCircle(4, 4, 3);
 
-    g.fillStyle(0xff8866, 1);
+    g.fillStyle(0xffb3dd, 1);
     g.fillCircle(4, 4, 2);
 
-    g.fillStyle(0xffccaa, 0.8);
+    g.fillStyle(0xffffff, 0.9);
     g.fillCircle(4, 3, 1);
   });
 }

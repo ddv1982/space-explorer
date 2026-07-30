@@ -26,11 +26,13 @@ const testFiles = requestedFiles.length > 0 ? requestedFiles : collectTestFiles(
 
 for (const file of testFiles) {
   const displayPath = relative(process.cwd(), file);
-  console.log(`\n${displayPath}`);
-
-  const result = spawnSync('bun', ['test', file], { stdio: 'inherit' });
+  const result = spawnSync('bun', ['test', file], { encoding: 'utf8' });
 
   if (result.status !== 0) {
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
     process.exit(result.status ?? 1);
   }
+
+  console.log(`${displayPath}: passed`);
 }
