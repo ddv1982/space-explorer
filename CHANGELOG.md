@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Isolated CI browser lanes on separate runners and limited each software-WebGL runner to one Playwright worker, preventing parallel Phaser navigation stalls while retaining job-level parallelism.
+
 ## [1.3.2] - 2026-08-01
 
 ### Changed

@@ -3,7 +3,10 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
-  workers: process.env.CI ? 2 : 4,
+  // GitHub's software WebGL renderer can stall when multiple Phaser instances
+  // compete inside one runner. CI parallelism is provided by isolated workflow
+  // jobs instead; local hardware-backed runs can safely fan out.
+  workers: process.env.CI ? 1 : 4,
   timeout: 60_000,
   expect: {
     timeout: process.env.CI ? 15_000 : 5_000,
