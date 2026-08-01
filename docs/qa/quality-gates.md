@@ -26,6 +26,7 @@ bun run bundle:check
 - `bun run test` runs each test file in its own Bun process so file-level mocks and globals cannot leak across suites.
 - `bun run test:e2e` runs independent functional and visual coverage with bounded parallel workers, then runs timing-sensitive performance evidence alone on one worker. It exercises the real Phaser runtime in desktop and mobile Chromium, including WebGL rendering, Arcade Physics, routing, resize, lifecycle recovery, and console-error failure.
 - CI runs static/build checks and the two browser lanes concurrently on separate runners. Each CI browser runner uses one Playwright worker because parallel Phaser instances can starve GitHub's software WebGL renderer; local hardware-backed browser runs retain four workers.
+- CI performance evidence uses short structural samples and leaves refresh-cadence and real-time movement gates to hardware-backed local runs, because SwiftShader delivery is not representative of player hardware.
 - `bun run build` keeps the production build path focused on source type-checking plus Vite output.
 - `bun run bundle:check` expects a fresh `dist/` from `bun run build`.
 - Phaser is pinned to 4.2.1, consumed through its package ESM export, and configured for WebGL. Unsupported browsers receive the explicit WebGL-required state.

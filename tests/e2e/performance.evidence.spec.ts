@@ -318,7 +318,10 @@ test('delivers active gameplay frames without recurring refresh-cadence drops', 
 
   await openMenu(page);
   await startNewRun(page);
-  const sampleCount = process.env.CI ? 60 : 240;
+  // GitHub's software renderer can deliver fewer than two frames per second.
+  // CI validates the probe lifecycle and metric shape; hardware-backed local
+  // runs retain the full cadence sample used as the presentation gate.
+  const sampleCount = process.env.CI ? 10 : 240;
   const metrics = await page.evaluate((count) => {
     const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
     if (!harness) throw new Error('Browser harness is not installed');
