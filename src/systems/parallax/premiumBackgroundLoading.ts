@@ -42,7 +42,7 @@ export function ensurePremiumBackgroundAssets(
   onReady: () => void,
   options: EnsurePremiumBackgroundAssetsOptions = {}
 ): void {
-  const lookAhead = options.lookAhead ?? 1;
+  const lookAhead = options.lookAhead ?? 0;
 
   for (const windowLevel of getPremiumBackgroundLevelWindow(levelNumber, { lookAhead })) {
     ensureNeonBackgroundTextures(scene, windowLevel);

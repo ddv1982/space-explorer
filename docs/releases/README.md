@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.3.2`](./1.3.2.md) - preserves the procedural neon skies while collapsing Chrome's full-screen compositor load and parallelizing safe browser checks
 - [`1.3.1`](./1.3.1.md) - quiets redundant frame work and splits fast browser checks from isolated visual/performance evidence
 - [`1.2.2`](./1.2.2.md) - restores Level 1's standard encounter flow and makes projectile-cadence evidence frame-resolution aware
 - [`1.2.1`](./1.2.1.md) - steadies active-combat frame pacing, trims projectile trail pressure, and sharpens hostile firing lanes

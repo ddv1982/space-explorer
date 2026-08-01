@@ -131,6 +131,28 @@ export function renderProgressBar(params: {
 
 export const SURGE_BAR_HEIGHT = 5;
 
+/**
+ * Quantize meter redraws to visible pixels while still drawing endpoint
+ * transitions exactly once. In particular, a settled empty meter must not
+ * clear its Graphics object again on every gameplay frame.
+ */
+export function shouldRenderMeterRatio(
+  currentRatio: number | null,
+  nextRatio: number,
+  renderStep: number,
+): boolean {
+  if (currentRatio === null) {
+    return true;
+  }
+  if (currentRatio === nextRatio) {
+    return false;
+  }
+
+  return nextRatio === 0
+    || nextRatio === 1
+    || Math.abs(nextRatio - currentRatio) >= renderStep;
+}
+
 export function renderSurgeBar(params: {
   surgeFill: Phaser.GameObjects.Graphics;
   currentSurgeRatio: number | null;

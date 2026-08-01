@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import {
-  applyBaselineCameraFilters,
   applyCameraColorGrade,
   applyCameraColorPulse,
   clearCameraFilters,
@@ -54,7 +53,6 @@ export class EffectsManager {
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
     this.clearCameraFX();
-    this.setupCameraFX();
     this.generateParticleTextures();
     this.createParticleEmitters();
   }
@@ -105,10 +103,6 @@ export class EffectsManager {
     }
 
     this.colorMatrix = applyCameraColorGrade(this.scene.cameras.main, this.colorMatrix, existingGrade);
-  }
-
-  private setupCameraFX(): void {
-    applyBaselineCameraFilters(this.scene.cameras.main);
   }
 
   private generateParticleTextures(): void {

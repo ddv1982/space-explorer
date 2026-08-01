@@ -177,7 +177,7 @@ bun run dev      # start local dev server
 bun run typecheck # type-check source, scripts, config, and tests
 bun run typecheck:ts6 # compare against the temporary TypeScript 6 compatibility compiler
 bun run test     # run unit/regression tests with per-file isolation
-bun run test:e2e # run desktop and mobile Chromium smoke tests
+bun run test:e2e # run parallel functional/visual checks, then isolated performance evidence
 bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
@@ -201,7 +201,7 @@ for an explicit loadout, or `&upgrades=0` for a stock ship.
 
 ## Release notes
 
-- [Latest release notes](docs/releases/1.3.1.md)
+- [Latest release notes](docs/releases/1.3.2.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

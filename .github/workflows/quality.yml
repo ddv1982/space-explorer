@@ -36,11 +36,11 @@ jobs:
       - name: Install browser test runtime
         run: bunx playwright install --with-deps chromium
 
-      - name: Browser smoke tests (bounded parallel workers)
-        run: bun run test:e2e:smoke
+      - name: Browser functional and visual tests (bounded parallel workers)
+        run: bun run test:e2e:fast
 
-      - name: Browser visual and performance evidence (isolated)
-        run: bun run test:e2e:evidence
+      - name: Browser performance evidence (isolated)
+        run: bun run test:e2e:performance
 
       - name: Validate levels
         run: bun run levels:validate

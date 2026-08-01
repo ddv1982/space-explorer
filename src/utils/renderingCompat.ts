@@ -114,13 +114,6 @@ export function applyCameraColorPulse(
   return filter;
 }
 
-export function applyBaselineCameraFilters(
-  camera: Phaser.Cameras.Scene2D.Camera
-): Phaser.Filters.Glow {
-  camera.filters.external.addVignette(0.5, 0.5, 0.87, 0.12);
-  return camera.filters.external.addGlow(0x88c8ff, 0.3, 0.08, 1, false, 0, 5);
-}
-
 export function clearCameraFilters(camera: Phaser.Cameras.Scene2D.Camera): void {
   camera.filters.internal.clear();
   camera.filters.external.clear();

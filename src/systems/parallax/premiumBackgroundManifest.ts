@@ -17,6 +17,7 @@ export interface PremiumBackgroundLayerConfig {
 interface PremiumBackgroundManifest {
   levelName: string;
   assetPrefix: string;
+  compositeKey: string;
   baseSize: { width: number; height: number };
   layers: PremiumBackgroundLayerConfig[];
 }
@@ -92,6 +93,7 @@ function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManife
   return {
     levelName: level.name,
     assetPrefix,
+    compositeKey: `${assetPrefix}_composite`,
     baseSize: { ...BASE_SIZE },
     layers: createLayers(assetPrefix),
   };
@@ -110,15 +112,16 @@ export function getPremiumBackgroundManifest(levelName: string | undefined): Pre
 }
 
 /**
- * Level numbers to keep warm for gameplay: the active level plus a short look-ahead.
- * Defaults match the art-direction guidance (current + next).
+ * Level numbers to keep warm for gameplay. By default only the active level is
+ * retained; PlanetIntermission explicitly generates the next level before the
+ * transition, avoiding permanent double residency for five 1024px textures.
  */
 export function getPremiumBackgroundLevelWindow(
   levelNumber: number,
   options: { lookAhead?: number; totalLevels?: number } = {}
 ): number[] {
   const totalLevels = options.totalLevels ?? LEVELS.length;
-  const lookAhead = options.lookAhead ?? 1;
+  const lookAhead = options.lookAhead ?? 0;
   if (totalLevels <= 0) {
     return [];
   }
@@ -151,6 +154,7 @@ function getPremiumBackgroundKeysForLevels(levelNumbers: readonly number[]): str
     for (const layer of manifest.layers) {
       keys.push(layer.key);
     }
+    keys.push(manifest.compositeKey);
   }
 
   return keys;
@@ -163,7 +167,7 @@ export function getPremiumBackgroundPreloadQueueForLevelWindow(
   return getPremiumBackgroundKeysForLevels(getPremiumBackgroundLevelWindow(levelNumber, options));
 }
 
-/** Boot-time queue: first campaign window so Menu → Level 1 is ready. */
+/** Boot-time queue: Level 1 only, so Menu → gameplay is ready without a second resident set. */
 export function getStartupPremiumBackgroundPreloadQueue(): string[] {
   return getPremiumBackgroundPreloadQueueForLevelWindow(1);
 }

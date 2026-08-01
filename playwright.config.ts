@@ -2,8 +2,8 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: false,
-  workers: 2,
+  fullyParallel: true,
+  workers: process.env.CI ? 2 : 4,
   timeout: 60_000,
   expect: {
     timeout: process.env.CI ? 15_000 : 5_000,
@@ -34,13 +34,27 @@ export default defineConfig({
       },
     },
     {
-      name: 'chromium-desktop-evidence',
-      testMatch: '**/*.evidence.spec.ts',
+      name: 'chromium-desktop-visual',
+      testMatch: '**/visual.evidence.spec.ts',
       use: { viewport: { width: 1280, height: 720 } },
     },
     {
-      name: 'chromium-mobile-evidence',
-      testMatch: '**/*.evidence.spec.ts',
+      name: 'chromium-mobile-visual',
+      testMatch: '**/visual.evidence.spec.ts',
+      use: {
+        viewport: { width: 844, height: 390 },
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+    {
+      name: 'chromium-desktop-performance',
+      testMatch: '**/performance.evidence.spec.ts',
+      use: { viewport: { width: 1280, height: 720 } },
+    },
+    {
+      name: 'chromium-mobile-performance',
+      testMatch: '**/performance.evidence.spec.ts',
       use: {
         viewport: { width: 844, height: 390 },
         hasTouch: true,

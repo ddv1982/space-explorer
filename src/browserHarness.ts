@@ -65,7 +65,6 @@ export interface BrowserHarnessFramePacingProbe {
   workCost: Readonly<{
     update: BrowserHarnessRenderCost;
     renderSubmission: BrowserHarnessRenderCost;
-    gpuSynchronizedRender: BrowserHarnessRenderCost;
   }>;
   runtimeLoad: Readonly<{
     activeTexturedObjectCount: number;
@@ -86,6 +85,19 @@ export interface BrowserHarnessFramePacingProbe {
   }>;
 }
 
+export interface BrowserHarnessFrameDeliveryProbe {
+  sampleCount: number;
+  averageMs: number;
+  p50Ms: number;
+  p95Ms: number;
+  p99Ms: number;
+  maxMs: number;
+  cadenceDropThresholdMs: number;
+  cadenceDropCount: number;
+  cadenceDropRatio: number;
+  over33_33MsCount: number;
+}
+
 export interface BrowserHarnessApi {
   destroyGame: () => void;
   snapshot: () => BrowserHarnessSnapshot;
@@ -100,6 +112,7 @@ export interface BrowserHarnessApi {
   setAudioResumeRequestsEnabled: (enabled: boolean) => void;
   setLaserSfxEnabled: (enabled: boolean) => void;
   probeFramePacing: (sampleCount?: number) => Promise<BrowserHarnessFramePacingProbe>;
+  probeFrameDelivery: (sampleCount?: number) => Promise<BrowserHarnessFrameDeliveryProbe>;
   showLaneReadingPilot: (glowEnabled?: boolean) => { filterCount: number; sectionId: string };
   measureLaneReadingPilotRenderCost: () => Promise<BrowserHarnessVisualPilotMetrics>;
   route: (key: string) => Promise<void>;
@@ -307,6 +320,97 @@ export function installBrowserHarness(game: Phaser.Game): void {
     });
   };
 
+  const summarizeFrameDelivery = (samples: number[]): BrowserHarnessFrameDeliveryProbe => {
+    const sorted = [...samples].sort((a, b) => a - b);
+    const percentile = (value: number): number =>
+      sorted[Math.max(0, Math.ceil(sorted.length * value) - 1)] ?? 0;
+    const p50Ms = percentile(0.5);
+    // A delivered frame is considered dropped when it is much closer to two
+    // refresh intervals than one. This adapts to 60/90/100/120 Hz displays.
+    const cadenceDropThresholdMs = Math.max(p50Ms * 1.65, p50Ms + 4);
+    const cadenceDropCount = samples.filter((sample) => sample > cadenceDropThresholdMs).length;
+
+    return Object.freeze({
+      sampleCount: samples.length,
+      averageMs: samples.reduce((total, sample) => total + sample, 0) / samples.length,
+      p50Ms,
+      p95Ms: percentile(0.95),
+      p99Ms: percentile(0.99),
+      maxMs: sorted[sorted.length - 1] ?? 0,
+      cadenceDropThresholdMs,
+      cadenceDropCount,
+      cadenceDropRatio: cadenceDropCount / samples.length,
+      over33_33MsCount: samples.filter((sample) => sample > 33.33).length,
+    });
+  };
+
+  let frameDeliveryProbeActive = false;
+  const probeFrameDelivery = (sampleCount = 240): Promise<BrowserHarnessFrameDeliveryProbe> => {
+    if (!Number.isInteger(sampleCount) || sampleCount < 1 || sampleCount > 1200) {
+      throw new Error('Browser harness frame-delivery sample count must be between 1 and 1200');
+    }
+
+    const gameScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game');
+    if (!gameScene || !gameScene.sys.isActive()) {
+      throw new Error('Browser harness cannot probe frame delivery without active gameplay');
+    }
+    if (frameDeliveryProbeActive) {
+      throw new Error('Browser harness frame-delivery probe is already active');
+    }
+
+    frameDeliveryProbeActive = true;
+    const activeGameScene = gameScene;
+    return new Promise<BrowserHarnessFrameDeliveryProbe>((resolve, reject) => {
+      const samples: number[] = [];
+      let lastFrameAt: number | null = null;
+      let animationFrame = 0;
+      let settled = false;
+      const timeout = window.setTimeout(
+        () => finish(new Error('Browser harness frame-delivery probe timed out')),
+        Math.max(15_000, sampleCount * 250),
+      );
+
+      function cleanup(): void {
+        window.clearTimeout(timeout);
+        window.cancelAnimationFrame(animationFrame);
+        game.events.off(Phaser.Core.Events.DESTROY, onDestroy);
+        frameDeliveryProbeActive = false;
+      }
+      function finish(error?: Error): void {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (error) {
+          reject(error);
+        } else {
+          resolve(summarizeFrameDelivery(samples));
+        }
+      }
+      function onAnimationFrame(frameAt: number): void {
+        if (!activeGameScene.sys.isActive() || !game.scene.getScenes(true).includes(activeGameScene)) {
+          finish(new Error('Browser harness frame-delivery probe was interrupted by a gameplay transition'));
+          return;
+        }
+        if (lastFrameAt !== null) {
+          samples.push(frameAt - lastFrameAt);
+        }
+        lastFrameAt = frameAt;
+
+        if (samples.length >= sampleCount) {
+          finish();
+          return;
+        }
+        animationFrame = window.requestAnimationFrame(onAnimationFrame);
+      }
+      function onDestroy(): void {
+        finish(new Error('Browser harness frame-delivery probe was interrupted by game destruction'));
+      }
+
+      game.events.once(Phaser.Core.Events.DESTROY, onDestroy);
+      animationFrame = window.requestAnimationFrame(onAnimationFrame);
+    });
+  };
+
   const probeFramePacing = (sampleCount = 120): Promise<BrowserHarnessFramePacingProbe> => {
     if (!Number.isInteger(sampleCount) || sampleCount < 1 || sampleCount > 240) {
       throw new Error('Browser harness frame-pacing sample count must be between 1 and 240');
@@ -319,13 +423,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
     if (framePacingProbeActive) {
       throw new Error('Browser harness frame-pacing probe is already active');
     }
-    const renderer = game.renderer;
-    if (!(renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) {
-      throw new Error('Browser harness frame-pacing probe requires WebGL');
-    }
-    const gl = renderer.gl;
     const activeGameScene = gameScene;
-    const originalRendererPreRender = renderer.preRender;
     const originalSetMusicIntensity = audioManager.setMusicIntensity;
     const originalResume = harnessAudioContextManager.resume;
     const originalPlayLaser = audioManager.playLaser;
@@ -350,7 +448,6 @@ export function installBrowserHarness(game: Phaser.Game): void {
       const samples: number[] = [];
       const updateSamples: number[] = [];
       const renderSamples: number[] = [];
-      const gpuSynchronizedRenderSamples: number[] = [];
       const effectEventCount = {
         playerExhaust: 0,
         playerBulletTrail: 0,
@@ -359,7 +456,6 @@ export function installBrowserHarness(game: Phaser.Game): void {
       let lastFrameAt: number | null = null;
       let updateStartedAt = 0;
       let renderStartedAt = 0;
-      let fullRenderStartedAt = 0;
       let readyToFinish = false;
       const countPlayerExhaust = (): void => { effectEventCount.playerExhaust += 1; };
       const countPlayerBulletTrail = (): void => { effectEventCount.playerBulletTrail += 1; };
@@ -380,7 +476,6 @@ export function installBrowserHarness(game: Phaser.Game): void {
         audioManager.setMusicIntensity = originalSetMusicIntensity;
         harnessAudioContextManager.resume = originalResume;
         audioManager.playLaser = originalPlayLaser;
-        renderer.preRender = originalRendererPreRender;
         framePacingProbeActive = false;
       }
       function finish(error?: Error): void {
@@ -432,7 +527,6 @@ export function installBrowserHarness(game: Phaser.Game): void {
           workCost: Object.freeze({
             update: summarizeWorkCost(updateSamples),
             renderSubmission: summarizeWorkCost(renderSamples),
-            gpuSynchronizedRender: summarizeWorkCost(gpuSynchronizedRenderSamples),
           }),
           runtimeLoad: Object.freeze({
             activeTexturedObjectCount: currentSnapshot.objects.filter((object) => object.active).length,
@@ -479,21 +573,12 @@ export function installBrowserHarness(game: Phaser.Game): void {
       }
       function onPostRender(): void {
         if (renderStartedAt > 0) renderSamples.push(performance.now() - renderStartedAt);
-        gl.finish();
-        if (fullRenderStartedAt > 0) {
-          gpuSynchronizedRenderSamples.push(performance.now() - fullRenderStartedAt);
-        }
         if (readyToFinish) finish();
       }
       function onDestroy(): void {
         finish(new Error('Browser harness frame-pacing probe was interrupted by game destruction'));
       }
 
-      renderer.preRender = function (): void {
-        gl.finish();
-        fullRenderStartedAt = performance.now();
-        originalRendererPreRender.call(this);
-      };
       game.events.on(Phaser.Core.Events.STEP, onStep);
       game.events.on(Phaser.Core.Events.PRE_STEP, onPreStep);
       game.events.on(Phaser.Core.Events.POST_STEP, onPostStep);
@@ -640,6 +725,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
       }
     },
     probeFramePacing,
+    probeFrameDelivery,
     probeArcadeOverlap: async () => {
       const activeScene = game.scene.getScenes(true)[0];
       if (!activeScene) {

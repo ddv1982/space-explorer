@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-08-01
+
+### Changed
+- Preserved all five procedural neon background planes by compositing their authored alpha and additive treatment once per level, then rendering one full-screen texture alongside the existing independently moving planets, twinkles, and debris.
+- Reduced premium-background residency to the active composite by default while keeping the next level's just-in-time PlanetIntermission warmup.
+- Replaced the redundant full-camera WebGL vignette/glow pair with a CSS vignette; the new procedural art, ships, and effects retain their baked neon glow and the level color grade remains active.
+- Suppressed settled surge-meter redraws while preserving exact endpoint updates.
+- Ran functional and visual browser coverage with bounded parallel workers, then kept timing-sensitive performance evidence isolated on one worker.
+
+### Quality
+- Added a non-invasive raw `requestAnimationFrame` delivery probe with refresh-adaptive cadence classification and lifecycle coverage, without `gl.finish()` or renderer monkeypatch synchronization.
+- Added focused tests for procedural compositing, one-layer presentation, texture-residency windows, and HUD redraw policy.
+- Retained desktop/mobile visual evidence and isolated performance evidence while making slow or background-throttled Chromium measurements self-describing instead of timing out.
+- Passed 20 canonical browser checks with 3 expected project-applicability skips, alongside both TypeScript compilers, lint, unit tests, level validation, Knip, production build, and bundle budgets.
+
 ## [1.3.1] - 2026-08-01
 
 ### Changed

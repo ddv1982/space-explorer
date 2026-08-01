@@ -190,15 +190,9 @@ describe('ParallaxBackground premium-background presentation regression coverage
       accentColor: 0x52f7a6,
     });
 
-    expect(tileSpriteCalls).toEqual([
-      'bg_level03',
-      'bg_level03_nebula',
-      'bg_level03_mid',
-      'bg_level03_near',
-      'bg_level03_overlay',
-    ]);
+    expect(tileSpriteCalls).toEqual(['bg_level03_composite']);
     expect(state.tileSprites).toEqual([]);
-    expect(state.premiumBackgroundLayers.length).toBe(5);
+    expect(state.premiumBackgroundLayers.length).toBe(1);
   });
 });
 

@@ -50,8 +50,8 @@ export class PreloadScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanupLoaderProgress);
     this.events.once(Phaser.Scenes.Events.DESTROY, cleanupLoaderProgress);
 
-    // Neon backgrounds are generated procedurally: warm only the first campaign
-    // window; later levels generate just-in-time before Game starts.
+    // Neon backgrounds are generated procedurally: warm Level 1 only; later
+    // levels generate just-in-time during the preceding intermission.
     ensurePremiumBackgroundAssets(this, 1, () => {});
 
     // Kick off the bundled UI faces so the Menu transition can wait for them.

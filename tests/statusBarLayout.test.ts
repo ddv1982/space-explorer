@@ -43,7 +43,7 @@ mock.module('../src/utils/layout', () => ({
   centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
 }));
 
-const { getLayoutMetrics, renderHpBar, renderProgressBar, renderBossBar } = await import(
+const { getLayoutMetrics, renderHpBar, renderProgressBar, renderBossBar, shouldRenderMeterRatio } = await import(
   '../src/systems/hud/statusBarLayout'
 );
 
@@ -86,6 +86,16 @@ function createGraphicsStub(): { graphics: Phaser.GameObjects.Graphics; calls: C
 }
 
 describe('statusBarLayout helpers', () => {
+  test('meter redraw policy renders changed endpoints once and skips settled values', () => {
+    expect(shouldRenderMeterRatio(null, 0, 0.01)).toBe(true);
+    expect(shouldRenderMeterRatio(0.2, 0, 0.01)).toBe(true);
+    expect(shouldRenderMeterRatio(0, 0, 0.01)).toBe(false);
+    expect(shouldRenderMeterRatio(0.9, 1, 0.01)).toBe(true);
+    expect(shouldRenderMeterRatio(1, 1, 0.01)).toBe(false);
+    expect(shouldRenderMeterRatio(0.5, 0.505, 0.01)).toBe(false);
+    expect(shouldRenderMeterRatio(0.5, 0.51, 0.01)).toBe(true);
+  });
+
   test('getLayoutMetrics derives stable layout metrics from viewport size', () => {
     const layout = getLayoutMetrics({} as Phaser.Scene, 200, 300, 400);
 

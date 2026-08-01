@@ -534,6 +534,10 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
     return;
   }
 
+  if (scene.textures.exists(manifest.compositeKey)) {
+    return;
+  }
+
   const motif = LEVEL_MOTIFS[levelNumber] ?? 'aurora';
   const size = manifest.baseSize.width;
 
@@ -561,5 +565,37 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
           break;
       }
     });
+  }
+
+  if (scene.textures.exists(manifest.compositeKey)) {
+    return;
+  }
+
+  // Graphics.generateTexture produces CanvasTextures. Merge all five authored
+  // canvases with the browser's 2D compositor, then upload one ordinary
+  // texture. Unlike a framebuffer-backed DynamicTexture, this follows the
+  // same fast sampling path as the previous known-good single PNG backplate.
+  const composite = scene.textures.createCanvas(manifest.compositeKey, size, size);
+  if (!composite) {
+    return;
+  }
+  const context = composite.context;
+  context.clearRect(0, 0, size, size);
+  for (const layer of manifest.layers) {
+    const source = scene.textures.get(layer.key).getSourceImage() as CanvasImageSource;
+    context.globalAlpha = layer.alpha;
+    context.globalCompositeOperation = layer.blendMode === 'ADD' ? 'lighter' : 'source-over';
+    context.drawImage(source, 0, 0);
+  }
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = 'source-over';
+  composite.refresh();
+
+  // The gameplay presentation now needs only the baked result. Release every
+  // source canvas immediately so the active level keeps one 1024px texture.
+  for (const layer of manifest.layers) {
+    if (scene.textures.exists(layer.key)) {
+      scene.textures.remove(layer.key);
+    }
   }
 }

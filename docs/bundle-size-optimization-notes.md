@@ -80,4 +80,7 @@
 
 - Release 1.3.0 replaces the ten packaged premium PNGs with five procedurally generated neon layers per level.
 - `public/assets/backgrounds/*.png` is removed from the distribution; the earlier PNG size and delivery notes above remain as historical baselines only.
-- Game creation retains only the active level plus one look-ahead level and releases obsolete generated textures after the new parallax has claimed its layers.
+- Game creation retains only the active level and releases obsolete generated textures after the new parallax has claimed its layers. The next set is generated during PlanetIntermission, immediately before it is needed.
+- The five authored procedural planes are now generated as before, composited once with their original alpha/additive treatment, and released as source canvases. Gameplay samples one 1024px background texture while planets, twinkles, and debris preserve independent depth and motion.
+- The active level is the default residency window. PlanetIntermission explicitly warms the next composite just before transition rather than permanently keeping a second five-canvas source set alive.
+- The global vignette is a CSS compositor overlay and the procedural/entity art keeps its baked neon glow. Gameplay retains its color-grade filter without two additional full-camera WebGL post-processing passes.

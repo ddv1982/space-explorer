@@ -10,6 +10,7 @@ import {
   renderHpBar,
   renderProgressBar,
   renderSurgeBar,
+  shouldRenderMeterRatio,
 } from './hud/statusBarLayout';
 import { HudShieldIconRenderer } from './hud/shieldIconRenderer';
 import {
@@ -307,12 +308,7 @@ export class HUD {
     const layout = getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth);
     const surgeStep = 1 / Math.max(1, layout.hpBarWidth - 26);
 
-    if (
-      this.currentSurgeRatio !== null &&
-      Math.abs(clampedRatio - this.currentSurgeRatio) < surgeStep &&
-      clampedRatio !== 0 &&
-      clampedRatio !== 1
-    ) {
+    if (!shouldRenderMeterRatio(this.currentSurgeRatio, clampedRatio, surgeStep)) {
       return;
     }
 

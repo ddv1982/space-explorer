@@ -1,4 +1,7 @@
-import type { BrowserHarnessFramePacingProbe } from '../../src/browserHarness';
+import type {
+  BrowserHarnessFrameDeliveryProbe,
+  BrowserHarnessFramePacingProbe,
+} from '../../src/browserHarness';
 import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
 
 function expectConsistentFramePacingMetrics(metrics: BrowserHarnessFramePacingProbe, sampleCount: number): void {
@@ -16,7 +19,6 @@ function expectConsistentFramePacingMetrics(metrics: BrowserHarnessFramePacingPr
   for (const workCost of [
     metrics.workCost.update,
     metrics.workCost.renderSubmission,
-    metrics.workCost.gpuSynchronizedRender,
   ]) {
     expect(workCost.sampleCount).toBeGreaterThanOrEqual(metrics.sampleCount);
     expect(workCost.averageMs).toBeGreaterThanOrEqual(0);
@@ -42,6 +44,23 @@ function expectConsistentFramePacingMetrics(metrics: BrowserHarnessFramePacingPr
   expect(metrics.runtimeLoad.audioResumeRequestCount).toBeGreaterThanOrEqual(0);
   expect(metrics.runtimeLoad.audioResumeRequestCount).toBeLessThan(metrics.sampleCount);
   expect(metrics.runtimeLoad.laserRequestCount).toBeGreaterThanOrEqual(0);
+}
+
+function expectConsistentFrameDeliveryMetrics(
+  metrics: BrowserHarnessFrameDeliveryProbe,
+  sampleCount: number,
+): void {
+  expect(metrics.sampleCount).toBe(sampleCount);
+  expect(metrics.averageMs).toBeGreaterThan(0);
+  expect(metrics.p50Ms).toBeLessThanOrEqual(metrics.p95Ms);
+  expect(metrics.p95Ms).toBeLessThanOrEqual(metrics.p99Ms);
+  expect(metrics.p99Ms).toBeLessThanOrEqual(metrics.maxMs);
+  expect(metrics.cadenceDropThresholdMs).toBeGreaterThan(metrics.p50Ms);
+  expect(metrics.cadenceDropCount).toBeGreaterThanOrEqual(0);
+  expect(metrics.cadenceDropCount).toBeLessThanOrEqual(sampleCount);
+  expect(metrics.cadenceDropRatio).toBe(metrics.cadenceDropCount / sampleCount);
+  expect(metrics.over33_33MsCount).toBeGreaterThanOrEqual(0);
+  expect(metrics.over33_33MsCount).toBeLessThanOrEqual(sampleCount);
 }
 
 test('runtime feedback remains comparable under measured low frame delivery', async ({
@@ -106,7 +125,7 @@ test('runtime feedback remains comparable under measured low frame delivery', as
   assertNoBrowserErrors();
 });
 
-test('captures representative active-gameplay frame pacing with synchronized load context', async ({
+test('captures representative active-gameplay frame pacing with non-invasive load context', async ({
   page,
   assertNoBrowserErrors,
 }) => {
@@ -287,5 +306,38 @@ test('captures representative active-gameplay frame pacing with synchronized loa
   expect(lifecycleChecks.firstSampleCount).toBe(2);
   expect(lifecycleChecks.secondSampleCount).toBe(2);
   expect(lifecycleChecks.interruptionError).toContain('gameplay transition');
+  assertNoBrowserErrors();
+});
+
+test('delivers active gameplay frames without recurring refresh-cadence drops', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.skip(!test.info().project.name.includes('desktop'), 'desktop Chrome delivery regression');
+  test.setTimeout(120_000);
+
+  await openMenu(page);
+  await startNewRun(page);
+  const sampleCount = process.env.CI ? 60 : 240;
+  const metrics = await page.evaluate((count) => {
+    const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+    if (!harness) throw new Error('Browser harness is not installed');
+    return harness.probeFrameDelivery(count);
+  }, sampleCount);
+
+  expectConsistentFrameDeliveryMetrics(metrics, sampleCount);
+  const cadenceGateResolvable = metrics.p50Ms <= 25;
+  await test.info().attach(`frame-delivery-${test.info().project.name}`, {
+    body: JSON.stringify({ cadenceGateResolvable, metrics }, null, 2),
+    contentType: 'application/json',
+  });
+
+  // Software WebGL CI and background-throttled local browsers validate lifecycle
+  // and metric structure. A real-time local run is the presentation gate that
+  // catches the Chrome swap-queue regression.
+  if (!process.env.CI && cadenceGateResolvable) {
+    expect(metrics.p95Ms).toBeLessThanOrEqual(metrics.cadenceDropThresholdMs);
+    expect(metrics.cadenceDropRatio).toBeLessThan(0.06);
+  }
   assertNoBrowserErrors();
 });

@@ -11,13 +11,8 @@ export interface PremiumBackgroundLayerState {
   sprite: Phaser.GameObjects.TileSprite;
   config: PremiumBackgroundLayerConfig;
   baseAlpha: number;
+  currentAlpha: number;
   scrollOffsetY: number;
-}
-
-function setAlphaIfChanged(sprite: Phaser.GameObjects.TileSprite, alpha: number): void {
-  if (sprite.alpha !== alpha) {
-    sprite.setAlpha(alpha);
-  }
 }
 
 interface PremiumBackgroundScrollSnapshot {
@@ -30,25 +25,55 @@ interface ViewportSize {
   height: number;
 }
 
+function getRuntimeLayerConfigs(config: LevelConfig): PremiumBackgroundLayerConfig[] | null {
+  const manifest = getPremiumBackgroundManifest(config.name);
+  if (!manifest) {
+    return null;
+  }
+
+  const far = manifest.layers.find((layer) => layer.role === 'far');
+  const mid = manifest.layers.find((layer) => layer.role === 'mid');
+  if (!far || !mid) {
+    return null;
+  }
+
+  // All five generated art layers are baked into this texture once at level
+  // load. The surrounding planets, twinkles, and debris retain visible depth
+  // and independent motion without another full-screen compositor pass.
+  const composite: PremiumBackgroundLayerConfig = {
+    ...far,
+    key: manifest.compositeKey,
+    alpha: 1,
+    scrollSpeed: mid.scrollSpeed,
+  };
+
+  return [composite];
+}
+
+function setAlphaIfChanged(sprite: Phaser.GameObjects.TileSprite, alpha: number): void {
+  if (sprite.alpha !== alpha) {
+    sprite.setAlpha(alpha);
+  }
+}
+
 export function createPremiumBackgroundLayers(
   scene: Phaser.Scene,
   config: LevelConfig,
   viewport: ViewportSize,
-  premiumBackgroundLayers: PremiumBackgroundLayerState[]
+  premiumBackgroundLayers: PremiumBackgroundLayerState[],
 ): boolean {
-  const manifest = getPremiumBackgroundManifest(config.name);
-
-  if (!manifest || !manifest.layers.every((layer) => scene.textures.exists(layer.key))) {
+  const runtimeLayers = getRuntimeLayerConfigs(config);
+  if (!runtimeLayers || !runtimeLayers.every((layer) => scene.textures.exists(layer.key))) {
     return false;
   }
 
-  for (const layer of manifest.layers) {
+  for (const layer of runtimeLayers) {
     const sprite = scene.add.tileSprite(
       viewport.width / 2,
       viewport.height / 2,
       viewport.width,
       viewport.height,
-      layer.key
+      layer.key,
     );
     sprite.setOrigin(0.5);
     sprite.setDepth(layer.depth);
@@ -62,6 +87,7 @@ export function createPremiumBackgroundLayers(
       sprite,
       config: layer,
       baseAlpha: layer.alpha,
+      currentAlpha: layer.alpha,
       scrollOffsetY: 0,
     });
   }
@@ -69,7 +95,9 @@ export function createPremiumBackgroundLayers(
   return true;
 }
 
-export function destroyPremiumBackgroundLayers(premiumBackgroundLayers: PremiumBackgroundLayerState[]): void {
+export function destroyPremiumBackgroundLayers(
+  premiumBackgroundLayers: PremiumBackgroundLayerState[],
+): void {
   for (const layer of premiumBackgroundLayers) {
     layer.sprite.destroy();
   }
@@ -78,7 +106,7 @@ export function destroyPremiumBackgroundLayers(premiumBackgroundLayers: PremiumB
 }
 
 function capturePremiumBackgroundScrollOffsets(
-  premiumBackgroundLayers: PremiumBackgroundLayerState[]
+  premiumBackgroundLayers: PremiumBackgroundLayerState[],
 ): PremiumBackgroundScrollSnapshot[] {
   return premiumBackgroundLayers.map((layer) => ({
     key: layer.config.key,
@@ -88,7 +116,7 @@ function capturePremiumBackgroundScrollOffsets(
 
 function restorePremiumBackgroundScrollOffsets(
   premiumBackgroundLayers: PremiumBackgroundLayerState[],
-  snapshots: PremiumBackgroundScrollSnapshot[]
+  snapshots: PremiumBackgroundScrollSnapshot[],
 ): void {
   for (const layer of premiumBackgroundLayers) {
     const snapshot = snapshots.find((entry) => entry.key === layer.config.key);
@@ -116,7 +144,7 @@ export function rebuildPremiumBackgroundLayers(params: {
 
 export function layoutPremiumBackgroundLayers(
   premiumBackgroundLayers: PremiumBackgroundLayerState[],
-  viewport: ViewportSize
+  viewport: ViewportSize,
 ): void {
   for (const layer of premiumBackgroundLayers) {
     applyHeightCoverRepeatLayout(layer.sprite, viewport, {
@@ -143,21 +171,18 @@ export function scrollPremiumBackgroundLayers(params: {
       layer.sprite,
       params.currentHeight,
       layer.sprite.tileScaleY,
-      layer.scrollOffsetY
+      layer.scrollOffsetY,
     );
 
-    if (layer.config.pulse) {
-      const pulse = Math.sin(params.elapsed * layer.config.pulse.speed);
-      setAlphaIfChanged(
-        layer.sprite,
-        Phaser.Math.Clamp(
-          layer.baseAlpha * params.atmosphereAlpha + pulse * layer.config.pulse.amplitude,
+    const nextAlpha = layer.config.pulse
+      ? Phaser.Math.Clamp(
+          layer.baseAlpha * params.atmosphereAlpha
+            + Math.sin(params.elapsed * layer.config.pulse.speed) * layer.config.pulse.amplitude,
           0,
-          1
+          1,
         )
-      );
-    } else {
-      setAlphaIfChanged(layer.sprite, Phaser.Math.Clamp(layer.baseAlpha * params.atmosphereAlpha, 0, 1));
-    }
+      : Phaser.Math.Clamp(layer.baseAlpha * params.atmosphereAlpha, 0, 1);
+    layer.currentAlpha = nextAlpha;
+    setAlphaIfChanged(layer.sprite, nextAlpha);
   }
 }
