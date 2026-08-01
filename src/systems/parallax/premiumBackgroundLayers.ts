@@ -14,6 +14,12 @@ export interface PremiumBackgroundLayerState {
   scrollOffsetY: number;
 }
 
+function setAlphaIfChanged(sprite: Phaser.GameObjects.TileSprite, alpha: number): void {
+  if (sprite.alpha !== alpha) {
+    sprite.setAlpha(alpha);
+  }
+}
+
 interface PremiumBackgroundScrollSnapshot {
   key: string;
   scrollOffsetY: number;
@@ -142,7 +148,8 @@ export function scrollPremiumBackgroundLayers(params: {
 
     if (layer.config.pulse) {
       const pulse = Math.sin(params.elapsed * layer.config.pulse.speed);
-      layer.sprite.setAlpha(
+      setAlphaIfChanged(
+        layer.sprite,
         Phaser.Math.Clamp(
           layer.baseAlpha * params.atmosphereAlpha + pulse * layer.config.pulse.amplitude,
           0,
@@ -150,7 +157,7 @@ export function scrollPremiumBackgroundLayers(params: {
         )
       );
     } else {
-      layer.sprite.setAlpha(Phaser.Math.Clamp(layer.baseAlpha * params.atmosphereAlpha, 0, 1));
+      setAlphaIfChanged(layer.sprite, Phaser.Math.Clamp(layer.baseAlpha * params.atmosphereAlpha, 0, 1));
     }
   }
 }

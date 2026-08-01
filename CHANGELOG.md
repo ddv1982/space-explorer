@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-08-01
+
+### Changed
+- Cached exact active-section resolution and suppressed duplicate music-intensity and atmosphere presentation writes without quantizing campaign progress or changing authored transitions.
+- Avoided unchanged background alpha writes while preserving every layer, blend mode, texture, motion formula, and visual value.
+- Aggregated active hazard intensity in one pass and stopped clearing an already-empty dormant hazard overlay while retaining frame-by-frame animation whenever it is visible.
+- Split browser coverage into a bounded two-worker functional lane and a single-worker visual/performance evidence lane.
+- Replaced repeated E2E helpers and avoidable fixed startup delays with shared harness-ready fixtures and scene-state polling.
+
+### Quality
+- Added focused regression coverage for section and boss presentation transitions, redundant alpha suppression, hazard aggregation, and dormant-overlay cleanup.
+- Removed an obsolete audio-resume-disabled performance scenario after request deduplication made both its control and treatment paths measure zero; stable probes now require music/audio request pressure to remain below sampled frame count.
+- Passed TypeScript 7 and TypeScript 6 checks, lint, unit tests, 14 functional browser checks with one expected project skip, five isolated evidence checks with one expected project skip, level validation, Knip, production build, bundle budgets, and `git diff --check`.
+
 ## [1.2.2] - 2026-07-30
 
 ### Changed

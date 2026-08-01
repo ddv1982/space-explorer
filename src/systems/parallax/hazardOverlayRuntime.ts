@@ -2,17 +2,49 @@ import Phaser from 'phaser';
 import type { LevelConfig, ScriptedHazardConfig } from '../../config/LevelsConfig';
 import { drawHazardOverlayPrimitives } from './hazardOverlayRenderer';
 
-function getHazardIntensity(
-  activeHazards: ScriptedHazardConfig[],
-  type: ScriptedHazardConfig['type']
-): number {
-  return Phaser.Math.Clamp(
-    activeHazards
-      .filter((hazard) => hazard.type === type)
-      .reduce((sum, hazard) => sum + (hazard.intensity ?? 0.5), 0),
-    0,
-    1.8
-  );
+interface HazardIntensities {
+  energyStorm: number;
+  gravityWell: number;
+  nebulaAmbush: number;
+  ringCrossfire: number;
+  debrisSurge: number;
+  minefield: number;
+  rockCorridor: number;
+}
+
+function getHazardIntensities(activeHazards: ScriptedHazardConfig[]): HazardIntensities {
+  const intensities: HazardIntensities = {
+    energyStorm: 0,
+    gravityWell: 0,
+    nebulaAmbush: 0,
+    ringCrossfire: 0,
+    debrisSurge: 0,
+    minefield: 0,
+    rockCorridor: 0,
+  };
+
+  for (const hazard of activeHazards) {
+    const intensity = hazard.intensity ?? 0.5;
+    switch (hazard.type) {
+      case 'energy-storm': intensities.energyStorm += intensity; break;
+      case 'gravity-well': intensities.gravityWell += intensity; break;
+      case 'nebula-ambush': intensities.nebulaAmbush += intensity; break;
+      case 'ring-crossfire': intensities.ringCrossfire += intensity; break;
+      case 'debris-surge': intensities.debrisSurge += intensity; break;
+      case 'minefield': intensities.minefield += intensity; break;
+      case 'rock-corridor': intensities.rockCorridor += intensity; break;
+    }
+  }
+
+  intensities.energyStorm = Phaser.Math.Clamp(intensities.energyStorm, 0, 1.8);
+  intensities.gravityWell = Phaser.Math.Clamp(intensities.gravityWell, 0, 1.8);
+  intensities.nebulaAmbush = Phaser.Math.Clamp(intensities.nebulaAmbush, 0, 1.8);
+  intensities.ringCrossfire = Phaser.Math.Clamp(intensities.ringCrossfire, 0, 1.8);
+  intensities.debrisSurge = Phaser.Math.Clamp(intensities.debrisSurge, 0, 1.8);
+  intensities.minefield = Phaser.Math.Clamp(intensities.minefield, 0, 1.8);
+  intensities.rockCorridor = Phaser.Math.Clamp(intensities.rockCorridor, 0, 1.8);
+
+  return intensities;
 }
 
 interface HazardOverlayRuntimeUpdateInput {
@@ -46,17 +78,23 @@ export function updateHazardOverlay(input: HazardOverlayRuntimeUpdateInput): num
     return overlayAlpha;
   }
 
-  overlay.clear();
   const dampingAlpha = Number.isFinite(delta) && delta > 0
     ? Phaser.Math.Clamp(1 - Math.pow(1 - 0.12, delta / (1000 / 60)), 0, 1)
     : 0;
   const nextOverlayAlpha = Phaser.Math.Linear(overlayAlpha, targetOverlayAlpha, dampingAlpha);
 
   if (nextOverlayAlpha <= 0.005 || !scene) {
+    // Clear once when the last visible frame expires, then leave the already-empty
+    // Graphics object untouched while the overlay remains dormant.
+    if (overlayAlpha > 0.005) {
+      overlay.clear();
+    }
     return nextOverlayAlpha;
   }
 
+  overlay.clear();
   const accentColor = levelConfig?.accentColor ?? 0xffffff;
+  const intensities = getHazardIntensities(activeHazards);
 
   drawHazardOverlayPrimitives(overlay, {
     width,
@@ -64,13 +102,7 @@ export function updateHazardOverlay(input: HazardOverlayRuntimeUpdateInput): num
     time,
     accentColor,
     overlayAlpha: nextOverlayAlpha,
-    energyStorm: getHazardIntensity(activeHazards, 'energy-storm'),
-    gravityWell: getHazardIntensity(activeHazards, 'gravity-well'),
-    nebulaAmbush: getHazardIntensity(activeHazards, 'nebula-ambush'),
-    ringCrossfire: getHazardIntensity(activeHazards, 'ring-crossfire'),
-    debrisSurge: getHazardIntensity(activeHazards, 'debris-surge'),
-    minefield: getHazardIntensity(activeHazards, 'minefield'),
-    rockCorridor: getHazardIntensity(activeHazards, 'rock-corridor'),
+    ...intensities,
   });
 
   return nextOverlayAlpha;

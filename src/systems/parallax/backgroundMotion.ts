@@ -39,6 +39,12 @@ interface PassingPlanetMotionState {
   baseAlpha: number;
 }
 
+function setAlphaIfChanged(sprite: Phaser.GameObjects.Image, alpha: number): void {
+  if (sprite.alpha !== alpha) {
+    sprite.setAlpha(alpha);
+  }
+}
+
 export function scrollStarLayers(
   tileSprites: Phaser.GameObjects.TileSprite[],
   layerConfigs: TileSpriteScrollConfig[],
@@ -63,7 +69,8 @@ export function updatePlanetLayerMotion(
   const phase = elapsed * 0.00004;
   planetLayer.sprite.x = planetLayer.baseX + Math.sin(phase) * 30;
   planetLayer.sprite.y = planetLayer.baseY + Math.cos(phase * 0.6) * 15;
-  planetLayer.sprite.setAlpha(
+  setAlphaIfChanged(
+    planetLayer.sprite,
     Phaser.Math.Clamp(planetLayer.baseAlpha * (0.92 + (atmosphereAlpha - 1) * 0.6) * landmarkAlpha, 0.12, 0.4)
   );
 }
@@ -80,7 +87,7 @@ export function updateDebrisMoteMotion(
     mote.sprite.x = mote.baseX + Math.sin(phase) * mote.driftX;
     mote.sprite.y = mote.baseY + Math.cos(phase * 0.7) * mote.driftY;
     mote.sprite.angle += mote.rotSpeed * delta / 16;
-    mote.sprite.setAlpha(Phaser.Math.Clamp(mote.baseAlpha * atmosphereAlpha, 0.08, 0.45));
+    setAlphaIfChanged(mote.sprite, Phaser.Math.Clamp(mote.baseAlpha * atmosphereAlpha, 0.08, 0.45));
   }
 }
 
@@ -95,7 +102,7 @@ export function updateTwinkleMotion(
     const normalizedT = (t + 1) / 2;
     const minAlpha = twinkle.baseMinAlpha * atmosphereTwinkle;
     const maxAlpha = twinkle.baseMaxAlpha * atmosphereTwinkle;
-    twinkle.sprite.setAlpha(minAlpha + normalizedT * (maxAlpha - minAlpha));
+    setAlphaIfChanged(twinkle.sprite, minAlpha + normalizedT * (maxAlpha - minAlpha));
   }
 }
 
@@ -110,7 +117,10 @@ export function updatePassingPlanetMotion(
   for (let i = 0; i < planets.length; i++) {
     const planet = planets[i];
     planet.sprite.x -= planet.scrollSpeed * SCROLL_SPEED * delta / 16;
-    planet.sprite.setAlpha(Phaser.Math.Clamp(planet.baseAlpha * atmosphereAlpha * landmarkAlpha, 0.05, 0.28));
+    setAlphaIfChanged(
+      planet.sprite,
+      Phaser.Math.Clamp(planet.baseAlpha * atmosphereAlpha * landmarkAlpha, 0.05, 0.28)
+    );
     if (planet.sprite.x < getOffscreenThreshold(planet.sprite)) {
       resetPosition(planet);
     }

@@ -1,5 +1,9 @@
 import { mixColor } from '../../utils/colorUtils';
 
+const ENERGY_STORM_RATIOS = [0.18, 0.48, 0.78] as const;
+const DEBRIS_SURGE_RATIOS = [0.12, 0.28, 0.72, 0.88] as const;
+const MINEFIELD_RATIOS = [0.15, 0.24, 0.76, 0.85] as const;
+
 interface HazardOverlayGraphics {
   lineStyle(lineWidth: number, color: number, alpha?: number): void;
   lineBetween(x1: number, y1: number, x2: number, y2: number): void;
@@ -48,7 +52,7 @@ export function drawHazardOverlayPrimitives(
 
   if (energyStorm > 0) {
     const stormAlpha = overlayAlpha * 0.45 * energyStorm;
-    for (const ratio of [0.18, 0.48, 0.78]) {
+    for (const ratio of ENERGY_STORM_RATIOS) {
       const x = width * ratio;
       const pulse = (Math.sin(time * 0.01 + ratio * 10) + 1) / 2;
       overlay.lineStyle(2, mixColor(accentColor, 0xffffff, 0.35), stormAlpha * (0.35 + pulse * 0.45));
@@ -89,7 +93,7 @@ export function drawHazardOverlayPrimitives(
   if (debrisSurge > 0) {
     const streakAlpha = overlayAlpha * 0.18 * debrisSurge;
     overlay.lineStyle(1.5, mixColor(0x8899aa, accentColor, 0.2), streakAlpha);
-    for (const ratio of [0.12, 0.28, 0.72, 0.88]) {
+    for (const ratio of DEBRIS_SURGE_RATIOS) {
       const x = width * ratio;
       overlay.lineBetween(x - 20, height * 0.18, x + 18, height * 0.34);
     }
@@ -98,7 +102,7 @@ export function drawHazardOverlayPrimitives(
   if (minefield > 0) {
     const mineAlpha = overlayAlpha * 0.16 * minefield;
     overlay.fillStyle(mixColor(accentColor, 0xffcc88, 0.35), mineAlpha);
-    for (const ratio of [0.15, 0.24, 0.76, 0.85]) {
+    for (const ratio of MINEFIELD_RATIOS) {
       overlay.fillCircle(width * ratio, height * 0.62, 2);
       overlay.fillCircle(width * (ratio + 0.02), height * 0.68, 1.6);
     }

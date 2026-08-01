@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
-  workers: 1,
+  workers: 2,
   timeout: 60_000,
   expect: {
     timeout: process.env.CI ? 15_000 : 5_000,
@@ -21,10 +21,26 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-desktop',
+      testMatch: ['**/smoke.spec.ts', '**/interaction.spec.ts'],
       use: { viewport: { width: 1280, height: 720 } },
     },
     {
       name: 'chromium-mobile',
+      testMatch: ['**/smoke.spec.ts', '**/interaction.spec.ts', '**/hardwareKeyboard.spec.ts'],
+      use: {
+        viewport: { width: 844, height: 390 },
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+    {
+      name: 'chromium-desktop-evidence',
+      testMatch: '**/*.evidence.spec.ts',
+      use: { viewport: { width: 1280, height: 720 } },
+    },
+    {
+      name: 'chromium-mobile-evidence',
+      testMatch: '**/*.evidence.spec.ts',
       use: {
         viewport: { width: 844, height: 390 },
         hasTouch: true,

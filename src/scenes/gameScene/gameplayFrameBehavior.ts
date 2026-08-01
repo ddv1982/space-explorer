@@ -82,6 +82,14 @@ export interface GameSceneGameplayFrameBehavior {
 export function createGameSceneGameplayFrameBehavior(
   delegate: GameSceneGameplayFrameDelegate
 ): GameSceneGameplayFrameBehavior {
+  type ActiveSection = ReturnType<typeof getActiveSection>;
+
+  let cachedLevelConfig: Parameters<typeof getActiveSection>[0] | null = null;
+  let cachedSection: ActiveSection = null;
+  let lastPresentedSection: ActiveSection | undefined;
+  let lastPresentedSectionProgress: number | undefined;
+  let lastMusicIntensity: number | undefined;
+
   const handlePauseInput = (): void => {
     if (delegate.inputManager.consumePauseToggleRequest()) {
       delegate.pauseStateController?.togglePauseRequest(delegate.flow.isGameplayLocked());
@@ -124,14 +132,35 @@ export function createGameSceneGameplayFrameBehavior(
   };
 
   const syncSectionPresentation = (): void => {
-    const activeSection = getActiveSection(delegate.levelManager.getLevelConfig(), delegate.levelManager.progress);
-    const sectionProgress = activeSection
-      ? getSectionProgress(activeSection, delegate.levelManager.progress)
-      : 0;
-    const sectionMusicIntensity = resolveSectionMusicIntensity(activeSection, sectionProgress);
+    const levelConfig = delegate.levelManager.getLevelConfig();
+    const progress = delegate.levelManager.progress;
+    const cachedSectionStillActive = cachedLevelConfig === levelConfig && cachedSection !== null
+      && progress >= cachedSection.startProgress
+      && (progress < cachedSection.endProgress || (progress === 1 && cachedSection.endProgress === 1));
 
-    audioManager.setMusicIntensity(delegate.levelManager.hasBossSpawned() ? 1.1 : sectionMusicIntensity);
-    delegate.parallax.setSectionAtmosphere(activeSection, sectionProgress);
+    if (!cachedSectionStillActive) {
+      cachedLevelConfig = levelConfig;
+      cachedSection = getActiveSection(levelConfig, progress);
+    }
+
+    const activeSection = cachedSection;
+    const sectionProgress = activeSection
+      ? getSectionProgress(activeSection, progress)
+      : 0;
+    const musicIntensity = delegate.levelManager.hasBossSpawned()
+      ? 1.1
+      : resolveSectionMusicIntensity(activeSection, sectionProgress);
+
+    if (musicIntensity !== lastMusicIntensity) {
+      audioManager.setMusicIntensity(musicIntensity);
+      lastMusicIntensity = musicIntensity;
+    }
+
+    if (activeSection !== lastPresentedSection || sectionProgress !== lastPresentedSectionProgress) {
+      delegate.parallax.setSectionAtmosphere(activeSection, sectionProgress);
+      lastPresentedSection = activeSection;
+      lastPresentedSectionProgress = sectionProgress;
+    }
   };
 
   const emitProgressionEvents = (prevComplete: boolean): void => {
