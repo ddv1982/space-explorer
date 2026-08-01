@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 
 export const NEON = {
   cyan: 0x5bd8ff,
@@ -27,8 +28,8 @@ export const NEON_TEXT = {
 } as const;
 
 export const NEON_FONT = {
-  display: '"Arial Black", "Impact", "Helvetica Neue", Arial, sans-serif',
-  mono: 'monospace',
+  display: UI_FONT_DISPLAY,
+  mono: UI_FONT_MONO,
 } as const;
 
 interface NeonFrameOptions {
@@ -108,6 +109,42 @@ export function drawNeonDivider(
   graphics.strokeCircle(centerX, y, 6);
 }
 
+interface NeonTitleColors {
+  glowDark?: string;
+  glowMid?: string;
+  glowBright?: string;
+  textColor?: string;
+}
+
+/**
+ * Shrinks a neon title font size until the rendered text fits maxWidth.
+ * Measures with a scratch Text so layered glow copies stay in sync.
+ */
+export function fitNeonTitleFontSize(
+  scene: Phaser.Scene,
+  text: string,
+  desiredFontSize: number,
+  maxWidth: number,
+  minFontSize = 18,
+): number {
+  const probe = scene.add
+    .text(0, 0, text, {
+      fontSize: `${desiredFontSize}px`,
+      fontStyle: 'bold',
+      fontFamily: NEON_FONT.display,
+    })
+    .setVisible(false);
+  const width = probe.width;
+  probe.destroy();
+
+  if (width <= 0 || width <= maxWidth) {
+    return desiredFontSize;
+  }
+
+  const scaled = Math.floor((desiredFontSize * maxWidth) / width);
+  return Math.max(minFontSize, Math.min(desiredFontSize, scaled));
+}
+
 export function addNeonTitle(
   scene: Phaser.Scene,
   x: number,
@@ -115,11 +152,19 @@ export function addNeonTitle(
   text: string,
   fontSize: number,
   depth: number,
+  colors: NeonTitleColors = {},
 ): Phaser.GameObjects.Text {
+  const {
+    glowDark = '#145fb2',
+    glowMid = '#3aa0ff',
+    glowBright = NEON_TEXT.titleGlow,
+    textColor = NEON_TEXT.title,
+  } = colors;
+
   scene.add
     .text(x, y + 2, text, {
       fontSize: `${fontSize}px`,
-      color: '#145fb2',
+      color: glowDark,
       fontStyle: 'bold',
       fontFamily: NEON_FONT.display,
       stroke: '#00152f',
@@ -132,10 +177,10 @@ export function addNeonTitle(
   scene.add
     .text(x, y + 1, text, {
       fontSize: `${fontSize}px`,
-      color: '#3aa0ff',
+      color: glowMid,
       fontStyle: 'bold',
       fontFamily: NEON_FONT.display,
-      stroke: '#5bd8ff',
+      stroke: glowBright,
       strokeThickness: Math.max(2, Math.round(fontSize * 0.04)),
     })
     .setOrigin(0.5)
@@ -145,10 +190,10 @@ export function addNeonTitle(
   return scene.add
     .text(x, y, text, {
       fontSize: `${fontSize}px`,
-      color: NEON_TEXT.title,
+      color: textColor,
       fontStyle: 'bold',
       fontFamily: NEON_FONT.display,
-      stroke: NEON_TEXT.titleGlow,
+      stroke: glowBright,
       strokeThickness: 1,
     })
     .setOrigin(0.5)

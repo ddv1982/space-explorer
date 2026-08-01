@@ -6,6 +6,7 @@ import { audioManager } from '@/systems/AudioManager';
 import type { CollisionManager } from '@/systems/CollisionManager';
 import type { EffectsManager } from '@/systems/EffectsManager';
 import type { EnemyPool } from '@/systems/EnemyPool';
+import type { GrazeSurgeSystem } from '@/systems/GrazeSurgeSystem';
 import type { HUD } from '@/systems/HUD';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { ScoreManager } from '@/systems/ScoreManager';
@@ -37,6 +38,8 @@ interface GameSceneCombatFeedbackDeps {
   getFlowContext: () => GameSceneFlowContext;
   levelManager: () => LevelManager;
   collisionManager: () => CollisionManager;
+  waveManager: () => { applyDeathRelief(): void };
+  grazeSurge: () => GrazeSurgeSystem | null;
   enemyPool: () => EnemyPool;
   hud: () => HUD;
   getBoss: () => Boss | null;
@@ -61,6 +64,8 @@ interface GameSceneCombatFeedbackHandlers {
   handlePlayerBulletTrail: (x: number, y: number) => void;
   handleEnemyBulletTrail: (x: number, y: number) => void;
   handleEnemySpawnWarning: (x: number) => void;
+  handleWormholeTelegraph: (x: number, y: number) => void;
+  handleEliteWave: () => void;
   handleBossDeath: () => void;
   handleBossPhaseChange: (phase: number) => void;
   handleHelperWingActivated: (helperCount: number) => void;
@@ -150,6 +155,7 @@ export function createGameSceneCombatFeedbackHandlers(
 
   const playBossPhaseChangeEffects = (): void => {
     runBestEffort(() => deps.scene.cameras.main.flash(120, 255, 196, 96, false));
+    runBestEffort(() => deps.scene.cameras.main.shake(160, 0.006));
     runBestEffort(() =>
       deps.effectsManager().pulseCameraColor({ brightness: 1.08, contrast: 0.1, saturation: 0.12 }, 220)
     );
@@ -173,19 +179,23 @@ export function createGameSceneCombatFeedbackHandlers(
         boss.y,
         deps.constants.bossExplosionVisualIntensity
       );
+      runBestEffort(() => deps.effectsManager().createSurgePulse(boss.x, boss.y));
+      runBestEffort(() => deps.scene.cameras.main.flash(260, 255, 255, 255, false));
+      runBestEffort(() => deps.scene.cameras.main.shake(320, 0.012));
       audioManager.playExplosion(deps.constants.bossExplosionAudioIntensity);
       deps.hud().hideBossBar();
     }
 
     deps.setBoss(null);
+    deps.grazeSurge()?.setBossActive(false);
     deps.levelManager().markBossDefeated();
     queueLevelCompleteTransition();
   };
 
   return {
     handleEnemyDeath: (score, x, y): void => {
-      deps.scoreManager().addScore(score);
-      deps.effectsManager().createScorePopup(x, y, score);
+      const awarded = deps.scoreManager().registerKill(score, deps.scene.time.now);
+      deps.effectsManager().createScorePopup(x, y, awarded);
       audioManager.playExplosion(0.5);
       tryDropPowerUp(x, y);
     },
@@ -198,6 +208,12 @@ export function createGameSceneCombatFeedbackHandlers(
 
       if (outcome.status !== 'ignored-terminal-active') {
         runBestEffort(() => playPlayerDeathCue(deathX, deathY));
+      }
+
+      if (outcome.status === 'respawn-started') {
+        deps.scoreManager().onPlayerDeath();
+        deps.collisionManager().clearPlayerHazards();
+        deps.waveManager().applyDeathRelief();
       }
 
       if (shouldSyncHelperWingAfterPlayerDeath(outcome)) {
@@ -220,6 +236,7 @@ export function createGameSceneCombatFeedbackHandlers(
     handleBossSpawn: (): void => {
       deps.levelManager().markBossSpawned();
       clearFieldForBossIntro();
+      deps.grazeSurge()?.setBossActive(true);
       deps.hud().showBossWarning();
       audioManager.startMusic(deps.levelManager().getLevelConfig().music.boss);
       spawnBoss();
@@ -228,6 +245,7 @@ export function createGameSceneCombatFeedbackHandlers(
     clearFieldForBossIntro,
 
     handlePlayerHit: (): void => {
+      deps.scoreManager().onPlayerHit();
       runBestEffort(() => audioManager.playPlayerHit());
     },
 
@@ -245,6 +263,18 @@ export function createGameSceneCombatFeedbackHandlers(
 
     handleEnemySpawnWarning: (x): void => {
       deps.effectsManager().createSpawnWarning(x);
+    },
+
+    handleWormholeTelegraph: (x, y): void => {
+      deps.effectsManager().createWormholeTelegraph(x, y);
+    },
+
+    handleEliteWave: (): void => {
+      deps.hud().showEliteWaveAnnouncement();
+      runBestEffort(() => deps.scene.cameras.main.flash(120, 178, 132, 255, false));
+      runBestEffort(() =>
+        deps.effectsManager().pulseCameraColor({ brightness: 1.06, contrast: 0.08, saturation: 0.16 }, 200)
+      );
     },
 
     handleBossDeath: (): void => {

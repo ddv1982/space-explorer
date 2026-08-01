@@ -54,7 +54,6 @@ export class PauseStateController {
   private setAudioPaused: ((paused: boolean) => void) | null = null;
 
   private manualPauseRequested = false;
-  private orientationPauseActive = false;
   private gameplayPaused = false;
   private statusMessage = '';
   private statusOk = true;
@@ -75,7 +74,6 @@ export class PauseStateController {
     this.setAudioPaused = config.setAudioPaused ?? ((paused) => audioManager.setPaused('gameplay', paused));
 
     this.manualPauseRequested = false;
-    this.orientationPauseActive = false;
     this.gameplayPaused = false;
     this.statusMessage = '';
     this.statusOk = true;
@@ -109,7 +107,6 @@ export class PauseStateController {
     this.playClick = null;
     this.setAudioPaused = null;
     this.manualPauseRequested = false;
-    this.orientationPauseActive = false;
     this.gameplayPaused = false;
     this.statusMessage = '';
     this.statusOk = true;
@@ -123,21 +120,8 @@ export class PauseStateController {
     return this.gameplayPaused;
   }
 
-  setOrientationBlocked(blocked: boolean): void {
-    this.orientationPauseActive = blocked;
-    if (blocked) {
-      this.stopPlayerMotion?.();
-    }
-
-    this.syncGameplayPauseState();
-  }
-
   togglePauseRequest(gameplayLocked: boolean): void {
     if (gameplayLocked) {
-      return;
-    }
-
-    if (this.orientationPauseActive && !this.manualPauseRequested) {
       return;
     }
 
@@ -150,7 +134,7 @@ export class PauseStateController {
   }
 
   private handlePauseResumeRequested(): void {
-    if (!this.manualPauseRequested || this.orientationPauseActive) {
+    if (!this.manualPauseRequested) {
       return;
     }
 
@@ -221,7 +205,7 @@ export class PauseStateController {
   }
 
   private syncGameplayPauseState(): void {
-    const shouldPause = this.manualPauseRequested || this.orientationPauseActive;
+    const shouldPause = this.manualPauseRequested;
     if (!shouldPause) {
       this.statusMessage = '';
       this.statusOk = true;
@@ -229,7 +213,6 @@ export class PauseStateController {
 
     const overlayState: PauseOverlayState = {
       visible: shouldPause,
-      orientationBlocked: this.orientationPauseActive,
       canResume: this.manualPauseRequested,
       canSave: this.saveSlotAdapter.isAvailable() && this.saveSlotAdapter.canSave(),
       storageAvailable: this.saveSlotAdapter.isAvailable(),

@@ -422,34 +422,33 @@ test('captures representative active-gameplay frame pacing with synchronized loa
   assertNoBrowserErrors();
 });
 
-test('preload feedback remains visible until a real asset request completes', async ({
+test('preload feedback remains visible until startup font loading completes', async ({
   page,
   assertNoBrowserErrors,
 }) => {
-  let releaseAsset = (): void => {};
+  let releaseFonts = (): void => {};
   let markRequestStarted = (): void => {};
-  const assetRelease = new Promise<void>((resolve) => {
-    releaseAsset = resolve;
+  const fontRelease = new Promise<void>((resolve) => {
+    releaseFonts = resolve;
   });
   const requestStarted = new Promise<void>((resolve) => {
     markRequestStarted = resolve;
   });
-  await page.route('**/bg_level01.png', async (route) => {
+  await page.route('**/fonts/*.woff2', async (route) => {
     markRequestStarted();
-    await assetRelease;
+    await fontRelease;
     await route.continue();
   });
 
   await page.goto('/?browserHarness=1', { waitUntil: 'domcontentloaded' });
   await requestStarted;
   await expect.poll(async () => page.evaluate(() => Boolean(window.__SPACE_EXPLORER_BROWSER_HARNESS__))).toBe(true);
-  await expect.poll(async () => (await snapshot(page)).preload?.progress ?? 1).toBeLessThan(1);
-  await expect.poll(async () => (await snapshot(page)).preload?.texts[0] ?? '').toContain('LOADING...');
+
   const loadingSnapshot = await snapshot(page);
-  const loadingProgress = loadingSnapshot.preload?.progress ?? 1;
-  expect(loadingSnapshot.preload?.texts).toContain(`LOADING... ${Math.round(loadingProgress * 100)}%`);
+  expect(loadingSnapshot.preload?.texts[0] ?? '').toContain('LOADING...');
   expect(loadingSnapshot.activeScenes).not.toContain('Menu');
-  releaseAsset();
+
+  releaseFonts();
   await waitForScene(page, 'Menu');
   assertNoBrowserErrors();
 });
@@ -569,18 +568,26 @@ test('resizes, pauses, resumes, restores visibility, and lazy-routes scenes', as
   assertNoBrowserErrors();
 });
 
-test('mobile portrait guard recovers to landscape gameplay', async ({ page, assertNoBrowserErrors }) => {
+test('mobile portrait plays without a rotate block and rotates freely', async ({ page, assertNoBrowserErrors }) => {
   test.skip(test.info().project.name !== 'chromium-mobile', 'mobile-only orientation scenario');
 
-  await openMenu(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('#rotate-device-overlay')).toBeVisible();
-  await expect(page.locator('#game-root > canvas')).toBeHidden();
+  await openMenu(page);
+  await expect(page.locator('#game-root > canvas')).toBeVisible();
+  await expect(page.locator('#rotate-device-overlay')).toHaveCount(0);
+
+  await startNewRun(page);
+  const portrait = await snapshot(page);
+  expect(portrait.gameSize).toEqual({ width: 390, height: 844 });
+  expect(portrait.physicsBodyCount).toBeGreaterThan(0);
 
   await page.setViewportSize({ width: 844, height: 390 });
-  await expect(page.locator('#rotate-device-overlay')).toBeHidden();
-  await expect(page.locator('#game-root > canvas')).toBeVisible();
-  await waitForScene(page, 'Menu');
+  await expect
+    .poll(async () => (await snapshot(page)).gameSize.width)
+    .toBe(844);
+  const landscape = await snapshot(page);
+  expect(landscape.gameSize).toEqual({ width: 844, height: 390 });
+  expect(landscape.activeScenes).toContain('Game');
   assertNoBrowserErrors();
 });
 
@@ -605,7 +612,6 @@ test('shows a clear unsupported state when WebGL is unavailable', async ({
   await page.goto('/');
   await expect(page.getByRole('alert')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'WebGL Required' })).toBeVisible();
-  await expect(page.locator('#rotate-device-overlay')).toBeHidden();
   await expect(page.locator('#game-root > canvas')).toHaveCount(0);
   assertNoBrowserErrors();
 });

@@ -39,6 +39,7 @@ describe('createPoolsAndGameplaySystems', () => {
   test('initializes gameplay systems in order and wires power-up overlap behavior', () => {
     const callLog: string[] = [];
     let overlapCallback: ((a: unknown, b: unknown) => void) | null = null;
+    let capturedTargetProvider: (() => { x: number; y: number } | null) | null = null;
 
     const scene = {
       registry: { id: 'registry' },
@@ -59,10 +60,16 @@ describe('createPoolsAndGameplaySystems', () => {
     const player = {
       damage: 9,
       isAlive: true,
+      x: 111,
+      y: 222,
     };
     const effectsManager = {};
     const enemyPool = {
       create: () => { callLog.push('enemyPool.create'); },
+      setTargetProvider: (provider: () => { x: number; y: number } | null) => {
+        callLog.push('enemyPool.setTargetProvider');
+        capturedTargetProvider = provider;
+      },
     };
     const bulletPool = {
       create: () => { callLog.push('bulletPool.create'); },
@@ -74,6 +81,9 @@ describe('createPoolsAndGameplaySystems', () => {
       },
     };
     const asteroidGroup = { id: 'asteroids' };
+    const hazardBeamSystem = {
+      create: () => { callLog.push('hazardBeamSystem.create'); },
+    };
     const waveManager = {
       create: () => {
         callLog.push('waveManager.create');
@@ -82,11 +92,16 @@ describe('createPoolsAndGameplaySystems', () => {
       setLevelConfig: (level: number) => {
         callLog.push(`waveManager.setLevelConfig:${level}`);
       },
+      setHazardBeamSystem: (system: unknown) => {
+        callLog.push('waveManager.setHazardBeamSystem');
+        expect(system).toBe(hazardBeamSystem);
+      },
     };
     const collisionManager = {
-      setup: (_scene: unknown, _player: unknown, _bulletPool: unknown, _enemyPool: unknown, group: unknown) => {
+      setup: (_scene: unknown, _player: unknown, _bulletPool: unknown, _enemyPool: unknown, group: unknown, beams: unknown) => {
         callLog.push('collisionManager.setup');
         expect(group).toBe(asteroidGroup);
+        expect(beams).toBe(hazardBeamSystem);
       },
       setEffectsManager: (_effectsManager: unknown) => {
         callLog.push('collisionManager.setEffectsManager');
@@ -117,14 +132,18 @@ describe('createPoolsAndGameplaySystems', () => {
       createWaveManager: () => waveManager as never,
       createCollisionManager: () => collisionManager as never,
       createScoreManager: () => scoreManager as never,
+      createHazardBeamSystem: () => hazardBeamSystem as never,
     });
 
     expect(callLog).toEqual([
       'bulletPool.create',
       'enemyPool.create',
+      'enemyPool.setTargetProvider',
       'helperWing.create',
+      'hazardBeamSystem.create',
       'waveManager.create',
       'waveManager.setLevelConfig:4',
+      'waveManager.setHazardBeamSystem',
       'collisionManager.setup',
       'collisionManager.setEffectsManager',
       'collisionManager.setBulletDamage:9',
@@ -144,5 +163,9 @@ describe('createPoolsAndGameplaySystems', () => {
     overlapCallback?.(powerUp, player);
     expect(applyPowerUp).toHaveBeenCalledWith('shield');
     expect(powerUp.kill).toHaveBeenCalledTimes(1);
+
+    expect(capturedTargetProvider?.()).toEqual({ x: 111, y: 222 });
+    player.isAlive = false;
+    expect(capturedTargetProvider?.()).toBeNull();
   });
 });

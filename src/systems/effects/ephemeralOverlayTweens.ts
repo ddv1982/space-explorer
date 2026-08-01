@@ -15,10 +15,15 @@ export function createSpawnWarning(scene: Phaser.Scene, x: number): void {
   arrow.setScrollFactor(0);
 
   const ay = 30;
-  arrow.fillStyle(0xff4444, 0.8);
+  // Neon hazard chevron: wide glow pass, bright core, hot tip.
+  arrow.lineStyle(4, 0xff756f, 0.2);
+  arrow.strokeTriangle(x - 7, ay - 7, x + 7, ay - 7, x, ay + 7);
+  arrow.fillStyle(0x3d0a0a, 0.9);
   arrow.fillTriangle(x - 6, ay - 6, x + 6, ay - 6, x, ay + 6);
-  arrow.fillStyle(0xffffff, 0.5);
-  arrow.fillTriangle(x - 3, ay - 3, x + 3, ay - 3, x, ay + 3);
+  arrow.lineStyle(1.5, 0xff756f, 0.95);
+  arrow.strokeTriangle(x - 6, ay - 6, x + 6, ay - 6, x, ay + 6);
+  arrow.fillStyle(0xffd7d4, 0.9);
+  arrow.fillTriangle(x - 2.5, ay - 3, x + 2.5, ay - 3, x, ay + 3);
 
   // Flash and fade
   scene.tweens.add({

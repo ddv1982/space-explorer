@@ -196,7 +196,6 @@ describe('pauseOverlay controls ultra-compact row behavior', () => {
     setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 300, height: 44 }]);
     setPauseSaveSlotRowsState(rows, {
       visible: true,
-      orientationBlocked: false,
       canResume: true,
       canSave: true,
       storageAvailable: true,

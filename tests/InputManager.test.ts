@@ -31,7 +31,6 @@ mock.module('phaser', () => ({
 
 mock.module('../src/utils/device', () => ({
   isTouchMobileDevice: () => true,
-  isPortraitTouchViewport: () => false,
 }));
 
 mock.module('../src/utils/layout', () => ({

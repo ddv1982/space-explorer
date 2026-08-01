@@ -24,7 +24,6 @@ interface CreateGameSceneRuntimeLifecycleOptions {
   sceneEventBindings: SceneEventBinding[];
   syncLastLifeHelperWingState: () => void;
   getScaleResizeContext: () => ViewportScaleResizeContext;
-  destroyMobileViewportGuard: () => void;
   destroyPauseStateController: () => void;
   destroyMobileControls: () => void;
   persistHelperWingState: () => void;
@@ -73,7 +72,6 @@ export function createGameSceneRuntimeLifecycle(
     didTeardownCurrentLifecycle = true;
     removeSceneEventHandlers();
     scene.scale.off(Phaser.Scale.Events.RESIZE, handleScaleResize, scene);
-    options.destroyMobileViewportGuard();
     options.destroyPauseStateController();
     options.destroyMobileControls();
     options.persistHelperWingState();

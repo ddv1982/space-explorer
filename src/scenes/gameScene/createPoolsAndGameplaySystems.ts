@@ -7,6 +7,8 @@ import { BulletPool } from '@/systems/BulletPool';
 import { CollisionManager } from '@/systems/CollisionManager';
 import type { EffectsManager } from '@/systems/EffectsManager';
 import { EnemyPool } from '@/systems/EnemyPool';
+import { GrazeSurgeSystem, SURGE_SCORE_PER_BULLET, type GrazeSurgeBullet } from '@/systems/GrazeSurgeSystem';
+import { HazardBeamSystem } from '@/systems/HazardBeamSystem';
 import { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
 import type { LevelManager } from '@/systems/LevelManager';
 import { getHelperWingState } from '@/systems/PlayerState';
@@ -24,6 +26,7 @@ type PoolsAndGameplaySystems = {
   waveManager: WaveManager;
   collisionManager: CollisionManager;
   scoreManager: ScoreManager;
+  grazeSurge: GrazeSurgeSystem;
   powerUpGroup: Phaser.Physics.Arcade.Group;
 };
 
@@ -41,6 +44,7 @@ type CreatePoolsAndGameplaySystemsParams = {
   createWaveManager?: () => WaveManager;
   createCollisionManager?: () => CollisionManager;
   createScoreManager?: () => ScoreManager;
+  createHazardBeamSystem?: () => HazardBeamSystem;
 };
 
 type CollisionSetupParams = {
@@ -50,6 +54,7 @@ type CollisionSetupParams = {
   bulletPool: BulletPool;
   enemyPool: EnemyPool;
   asteroidGroup: Phaser.Physics.Arcade.Group;
+  hazardBeamSystem: HazardBeamSystem;
   createCollisionManager: () => CollisionManager;
 };
 
@@ -94,10 +99,11 @@ function createCollisionSystem({
   bulletPool,
   enemyPool,
   asteroidGroup,
+  hazardBeamSystem,
   createCollisionManager,
 }: CollisionSetupParams): CollisionManager {
   const collisionManager = createCollisionManager();
-  collisionManager.setup(scene, player, bulletPool, enemyPool, asteroidGroup);
+  collisionManager.setup(scene, player, bulletPool, enemyPool, asteroidGroup, hazardBeamSystem);
   collisionManager.setEffectsManager(effectsManager);
   collisionManager.setBulletDamage(player.damage);
 
@@ -150,6 +156,7 @@ export function createPoolsAndGameplaySystems(
     createWaveManager = () => new WaveManager(),
     createCollisionManager = () => new CollisionManager(),
     createScoreManager = () => new ScoreManager(),
+    createHazardBeamSystem = () => new HazardBeamSystem(),
   } = params;
 
   const bulletPool = createBulletPool();
@@ -157,6 +164,7 @@ export function createPoolsAndGameplaySystems(
 
   const enemyPool = createEnemyPool();
   enemyPool.create(scene);
+  enemyPool.setTargetProvider(() => (player.isAlive ? { x: player.x, y: player.y } : null));
 
   const lastLifeHelperWing = createHelperWing({
     scene,
@@ -168,9 +176,13 @@ export function createPoolsAndGameplaySystems(
     createLastLifeHelperWing,
   });
 
+  const hazardBeamSystem = createHazardBeamSystem();
+  hazardBeamSystem.create(scene);
+
   const waveManager = createWaveManager();
   const asteroidGroup = waveManager.create(scene, enemyPool);
   waveManager.setLevelConfig(state.level);
+  waveManager.setHazardBeamSystem(hazardBeamSystem);
 
   const collisionManager = createCollisionSystem({
     scene,
@@ -179,11 +191,25 @@ export function createPoolsAndGameplaySystems(
     bulletPool,
     enemyPool,
     asteroidGroup,
+    hazardBeamSystem,
     createCollisionManager,
   });
 
   const scoreManager = createScoreManager();
   scoreManager.addScore(state.score);
+
+  const grazeSurge = new GrazeSurgeSystem({
+    getPlayerPosition: () => (player.isAlive ? { x: player.x, y: player.y } : null),
+    getEnemyBullets: () =>
+      enemyPool.getEnemyBulletGroup().getChildren() as unknown as GrazeSurgeBullet[],
+    onGraze: (x, y) => effectsManager.createGrazeSpark(x, y),
+    onSurgePulse: (x, y, clearedBullets) => {
+      if (clearedBullets > 0) {
+        scoreManager.addScore(clearedBullets * SURGE_SCORE_PER_BULLET);
+      }
+      effectsManager.createSurgePulse(x, y);
+    },
+  });
 
   const powerUpGroup = createPowerUpGroup({
     scene,
@@ -200,6 +226,7 @@ export function createPoolsAndGameplaySystems(
     waveManager,
     collisionManager,
     scoreManager,
+    grazeSurge,
     powerUpGroup,
   };
 }

@@ -66,6 +66,76 @@ describe('Boss', () => {
     expect(firePattern).not.toHaveBeenCalled();
   });
 
+  test('phase two transition honors a configured phase2AttackStyle switch', () => {
+    const emit = mock();
+    const setTexture = mock();
+    const flashPhaseChange = mock();
+
+    const boss = Object.create(Boss.prototype) as BossInstance;
+    (boss as unknown as Record<string, unknown>).arrived = true;
+    (boss as unknown as Record<string, unknown>).phase = 1;
+    (boss as unknown as Record<string, unknown>).hp = 20;
+    (boss as unknown as Record<string, unknown>).maxHp = 40;
+    (boss as unknown as Record<string, unknown>).moveSpeed = 80;
+    (boss as unknown as Record<string, unknown>).phase2MoveSpeed = 150;
+    (boss as unknown as Record<string, unknown>).phaseTransitionPauseMs = 320;
+    (boss as unknown as Record<string, unknown>).attackStyle = 'pressure';
+    (boss as unknown as Record<string, unknown>).phase2AttackStyle = 'maelstrom';
+    (boss as unknown as Record<string, unknown>).bossName = 'Omega Null';
+    (boss as unknown as Record<string, unknown>).lastFireTime = 100;
+    (boss as unknown as Record<string, unknown>).bulletGroup = null;
+    (boss as unknown as Record<string, unknown>).scene = {
+      events: { emit },
+      textures: { exists: () => true },
+    };
+    (boss as unknown as Record<string, unknown>).updateMovement = mock();
+    (boss as unknown as Record<string, unknown>).updateShieldState = mock();
+    (boss as unknown as Record<string, unknown>).flashPhaseChange = flashPhaseChange;
+    (boss as unknown as Record<string, unknown>).firePattern = mock();
+    (boss as unknown as Record<string, unknown>).setTexture = setTexture;
+
+    boss.updateBehavior(1000, 16);
+
+    expect((boss as unknown as Record<string, unknown>).phase).toBe(2);
+    expect((boss as unknown as Record<string, unknown>).attackStyle).toBe('maelstrom');
+    expect(setTexture).toHaveBeenCalledTimes(1);
+    expect(setTexture.mock.calls[0]?.[0] as string).toContain('boss-texture-maelstrom-');
+    expect(flashPhaseChange).toHaveBeenCalledTimes(1);
+  });
+
+  test('phase two transition keeps the base style without a phase2AttackStyle override', () => {
+    const setTexture = mock();
+
+    const boss = Object.create(Boss.prototype) as BossInstance;
+    (boss as unknown as Record<string, unknown>).arrived = true;
+    (boss as unknown as Record<string, unknown>).phase = 1;
+    (boss as unknown as Record<string, unknown>).hp = 20;
+    (boss as unknown as Record<string, unknown>).maxHp = 40;
+    (boss as unknown as Record<string, unknown>).moveSpeed = 80;
+    (boss as unknown as Record<string, unknown>).phase2MoveSpeed = 150;
+    (boss as unknown as Record<string, unknown>).phaseTransitionPauseMs = 320;
+    (boss as unknown as Record<string, unknown>).attackStyle = 'pressure';
+    (boss as unknown as Record<string, unknown>).phase2AttackStyle = null;
+    (boss as unknown as Record<string, unknown>).bossName = 'Marshal Vectra';
+    (boss as unknown as Record<string, unknown>).lastFireTime = 100;
+    (boss as unknown as Record<string, unknown>).bulletGroup = null;
+    (boss as unknown as Record<string, unknown>).scene = {
+      events: { emit: mock() },
+      textures: { exists: () => true },
+    };
+    (boss as unknown as Record<string, unknown>).updateMovement = mock();
+    (boss as unknown as Record<string, unknown>).updateShieldState = mock();
+    (boss as unknown as Record<string, unknown>).flashPhaseChange = mock();
+    (boss as unknown as Record<string, unknown>).firePattern = mock();
+    (boss as unknown as Record<string, unknown>).setTexture = setTexture;
+
+    boss.updateBehavior(1000, 16);
+
+    expect((boss as unknown as Record<string, unknown>).phase).toBe(2);
+    expect((boss as unknown as Record<string, unknown>).attackStyle).toBe('pressure');
+    expect(setTexture).not.toHaveBeenCalled();
+  });
+
   test('phase flash invalidates an ordinary hit restore and keeps its intentional tint', () => {
     const scheduled: Array<{ callback: (token: number) => void; args: [number]; scope: unknown }> = [];
     const setTint = mock();

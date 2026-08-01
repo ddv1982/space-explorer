@@ -43,16 +43,8 @@ mock.module('../src/scenes/gameScene/PauseStateController', () => ({
   PauseStateController: {
     create: (config: { saveSlotAdapter: typeof capturedSaveSlotAdapter }) => {
       capturedSaveSlotAdapter = config.saveSlotAdapter;
-      return {
-        setOrientationBlocked: mock(),
-      };
+      return {};
     },
-  },
-}));
-
-mock.module('@/systems/MobileViewportGuard', () => ({
-  MobileViewportGuard: {
-    create: () => ({ isBlocked: () => false }),
   },
 }));
 

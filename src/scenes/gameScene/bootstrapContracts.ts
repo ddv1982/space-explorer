@@ -8,12 +8,12 @@ import type { BulletPool } from '@/systems/BulletPool';
 import type { CollisionManager } from '@/systems/CollisionManager';
 import type { EffectsManager } from '@/systems/EffectsManager';
 import type { EnemyPool } from '@/systems/EnemyPool';
+import type { GrazeSurgeSystem } from '@/systems/GrazeSurgeSystem';
 import type { HUD } from '@/systems/HUD';
 import type { InputManager } from '@/systems/InputManager';
 import type { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { MobileControls } from '@/systems/MobileControls';
-import type { MobileViewportGuard } from '@/systems/MobileViewportGuard';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
 import type { getPlayerState, PlayerStateData } from '@/systems/PlayerState';
 import type { ScoreManager } from '@/systems/ScoreManager';
@@ -68,6 +68,7 @@ export type GameSceneCreateGameplayBridge = {
   waveManager: WaveManager;
   collisionManager: CollisionManager;
   scoreManager: ScoreManager;
+  grazeSurge: GrazeSurgeSystem;
   powerUpGroup: Phaser.Physics.Arcade.Group;
 };
 
@@ -82,5 +83,4 @@ export type GameSceneCreatePauseBridge = {
   captureCurrentRunStateForSave: () => PlayerStateData;
   canSaveCurrentRun: () => boolean;
   pauseStateController: PauseStateController | null;
-  mobileViewportGuard: MobileViewportGuard | null;
 };

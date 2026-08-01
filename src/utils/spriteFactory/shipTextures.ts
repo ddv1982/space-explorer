@@ -1,337 +1,447 @@
 import Phaser from 'phaser';
 import { withGeneratedTexture } from '../generatedTexture';
+import {
+  NEON_ENTITY,
+  fillHotCore,
+  fillNeonCircle,
+  fillNeonPolygon,
+  strokeNeonLine,
+} from './neonStyle';
 
 export function ensurePlayerTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'player-ship', 36, 44, (g) => {
-    g.fillStyle(0x16243b, 1);
-    g.beginPath();
-    g.moveTo(18, 1);
-    g.lineTo(28, 10);
-    g.lineTo(35, 30);
-    g.lineTo(29, 37);
-    g.lineTo(25, 43);
-    g.lineTo(18, 39);
-    g.lineTo(11, 43);
-    g.lineTo(7, 37);
-    g.lineTo(1, 30);
-    g.lineTo(8, 10);
-    g.closePath();
-    g.fillPath();
+    const palette = NEON_ENTITY.player;
 
-    g.fillStyle(0x24466e, 1);
-    g.beginPath();
-    g.moveTo(8, 12);
-    g.lineTo(2, 28);
-    g.lineTo(7, 28);
-    g.lineTo(13, 19);
-    g.lineTo(12, 14);
-    g.closePath();
-    g.fillPath();
-    g.beginPath();
-    g.moveTo(28, 12);
-    g.lineTo(34, 28);
-    g.lineTo(29, 28);
-    g.lineTo(23, 19);
-    g.lineTo(24, 14);
-    g.closePath();
-    g.fillPath();
+    // Sleek forward dart hull with swept wings.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 18, y: 3 },
+        { x: 24, y: 12 },
+        { x: 31, y: 30 },
+        { x: 25, y: 34 },
+        { x: 21, y: 31 },
+        { x: 18, y: 34 },
+        { x: 15, y: 31 },
+        { x: 11, y: 34 },
+        { x: 5, y: 30 },
+        { x: 12, y: 12 },
+      ],
+      palette
+    );
 
-    g.fillStyle(0x2f5b8c, 1);
-    g.beginPath();
-    g.moveTo(18, 3);
-    g.lineTo(23, 14);
-    g.lineTo(22, 31);
-    g.lineTo(18, 35);
-    g.lineTo(14, 31);
-    g.lineTo(13, 14);
-    g.closePath();
-    g.fillPath();
+    // Spine and wing edge light strips.
+    strokeNeonLine(g, 18, 7, 18, 29, palette.outline, 1);
+    strokeNeonLine(g, 8, 27, 13, 15, palette.glow, 1);
+    strokeNeonLine(g, 28, 27, 23, 15, palette.glow, 1);
 
-    g.fillStyle(0x00d4ff, 0.95);
-    g.beginPath();
-    g.moveTo(18, 4);
-    g.lineTo(20, 11);
-    g.lineTo(18, 13);
-    g.lineTo(16, 11);
-    g.closePath();
-    g.fillPath();
-    g.fillRect(17, 12, 2, 12);
+    // Cockpit hot core.
+    fillHotCore(g, 18, 12, 1.7, palette.hot);
 
-    g.fillStyle(0x76efff, 0.9);
-    g.beginPath();
-    g.moveTo(18, 10);
-    g.lineTo(21, 16);
-    g.lineTo(18, 19);
-    g.lineTo(15, 16);
-    g.closePath();
-    g.fillPath();
-    g.fillStyle(0xd6ffff, 0.45);
-    g.fillCircle(17.4, 12.6, 1.2);
-
-    g.fillStyle(0x2cc4ff, 0.8);
-    g.fillTriangle(2, 28, 7, 28, 8, 35);
-    g.fillTriangle(34, 28, 29, 28, 28, 35);
-
-    g.fillStyle(0x2f4052, 1);
-    g.fillRect(9, 36, 5, 7);
-    g.fillRect(22, 36, 5, 7);
-    g.fillStyle(0x00e5ff, 0.75);
-    g.fillCircle(11.5, 41.5, 2.2);
-    g.fillCircle(24.5, 41.5, 2.2);
-    g.fillStyle(0xffffff, 0.7);
-    g.fillCircle(11.5, 41.2, 0.8);
-    g.fillCircle(24.5, 41.2, 0.8);
-
-    g.lineStyle(1, 0x4c87bf, 0.28);
-    g.lineBetween(18, 6, 18, 34);
-    g.lineBetween(10, 30, 15, 27);
-    g.lineBetween(26, 30, 21, 27);
+    // Twin engine cores.
+    fillNeonCircle(g, 11.5, 38, 2.1, palette, { haloScale: 1.5, midScale: 1.25, outlineWidth: 0 });
+    fillNeonCircle(g, 24.5, 38, 2.1, palette, { haloScale: 1.5, midScale: 1.25, outlineWidth: 0 });
+    fillHotCore(g, 11.5, 38, 0.8, palette.hot);
+    fillHotCore(g, 24.5, 38, 0.8, palette.hot);
   });
 }
 
 export function ensureHelperShipTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'helper-ship', 24, 30, (g) => {
-    g.fillStyle(0x17283f, 1);
-    g.fillRoundedRect(7, 5, 10, 16, 4);
+    const palette = NEON_ENTITY.helper;
 
-    g.beginPath();
-    g.moveTo(12, 0);
-    g.lineTo(17, 7);
-    g.lineTo(12, 8);
-    g.lineTo(7, 7);
-    g.closePath();
-    g.fillPath();
+    fillNeonPolygon(
+      g,
+      [
+        { x: 12, y: 2 },
+        { x: 17, y: 8 },
+        { x: 20, y: 20 },
+        { x: 15, y: 25 },
+        { x: 12, y: 23 },
+        { x: 9, y: 25 },
+        { x: 4, y: 20 },
+        { x: 7, y: 8 },
+      ],
+      palette,
+      { haloScale: 1.12 }
+    );
 
-    g.fillStyle(0x274a73, 1);
-    g.fillRoundedRect(1, 12, 7, 7, 2);
-    g.fillRoundedRect(16, 12, 7, 7, 2);
-    g.fillTriangle(1, 19, 6, 17, 6, 23);
-    g.fillTriangle(23, 19, 18, 17, 18, 23);
+    strokeNeonLine(g, 12, 6, 12, 20, palette.outline, 1);
+    fillHotCore(g, 12, 9, 1.3, palette.hot);
 
-    g.fillStyle(0x4fd9ff, 0.95);
-    g.fillRect(11, 5, 2, 13);
-    g.fillStyle(0x9bf2ff, 0.9);
-    g.fillCircle(12, 10, 2);
-
-    g.fillStyle(0x31485e, 1);
-    g.fillRect(5, 22, 4, 6);
-    g.fillRect(15, 22, 4, 6);
-    g.fillStyle(0x74efff, 0.82);
-    g.fillCircle(7, 28, 1.7);
-    g.fillCircle(17, 28, 1.7);
-
-    g.lineStyle(1, 0x3e78a8, 0.25);
-    g.lineBetween(12, 4, 12, 21);
+    fillNeonCircle(g, 8, 26, 1.6, palette, { haloScale: 1.5, midScale: 1.25, outlineWidth: 0 });
+    fillNeonCircle(g, 16, 26, 1.6, palette, { haloScale: 1.5, midScale: 1.25, outlineWidth: 0 });
+    fillHotCore(g, 8, 26, 0.6, palette.hot);
+    fillHotCore(g, 16, 26, 0.6, palette.hot);
   });
 }
 
 export function ensureScoutTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'scout-texture', 26, 28, (g) => {
-    g.fillStyle(0x6d0d1d, 1);
-    g.beginPath();
-    g.moveTo(13, 0);
-    g.lineTo(18, 10);
-    g.lineTo(17, 22);
-    g.lineTo(13, 28);
-    g.lineTo(9, 22);
-    g.lineTo(8, 10);
-    g.closePath();
-    g.fillPath();
+    const palette = NEON_ENTITY.scout;
 
-    g.fillStyle(0xb81d32, 1);
-    g.fillTriangle(8, 10, 2, 20, 8, 19);
-    g.fillTriangle(18, 10, 24, 20, 18, 19);
+    // Narrow aggressive arrow hull.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 13, y: 1 },
+        { x: 17, y: 9 },
+        { x: 15, y: 22 },
+        { x: 13, y: 27 },
+        { x: 11, y: 22 },
+        { x: 9, y: 9 },
+      ],
+      palette,
+      { haloScale: 1.12 }
+    );
 
-    g.fillStyle(0xff4665, 1);
-    g.fillTriangle(13, 1, 15, 8, 11, 8);
+    // Swept fins.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 9, y: 12 },
+        { x: 3, y: 21 },
+        { x: 9, y: 19 },
+      ],
+      palette,
+      { haloScale: 1.1, outlineWidth: 1 }
+    );
+    fillNeonPolygon(
+      g,
+      [
+        { x: 17, y: 12 },
+        { x: 23, y: 21 },
+        { x: 17, y: 19 },
+      ],
+      palette,
+      { haloScale: 1.1, outlineWidth: 1 }
+    );
 
-    g.fillStyle(0xff8fa0, 0.9);
-    g.fillCircle(13, 11.5, 1.8);
-    g.fillStyle(0xffffff, 0.6);
-    g.fillCircle(12.5, 11, 0.6);
-
-    g.fillStyle(0xff4a3d, 0.7);
-    g.fillEllipse(13, 25, 3.2, 5.5);
-
-    g.lineStyle(1, 0xff6b7f, 0.35);
-    g.lineBetween(13, 4, 13, 22);
+    strokeNeonLine(g, 13, 5, 13, 21, palette.outline, 1);
+    fillHotCore(g, 13, 10, 1.4, palette.hot);
+    fillNeonCircle(g, 13, 25, 1.3, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
   });
 }
 
 export function ensureFighterTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'fighter-texture', 36, 36, (g) => {
-    g.fillStyle(0x123e29, 1);
-    g.beginPath();
-    g.moveTo(18, 0);
-    g.lineTo(25, 9);
-    g.lineTo(31, 28);
-    g.lineTo(25, 35);
-    g.lineTo(18, 32);
-    g.lineTo(11, 35);
-    g.lineTo(5, 28);
-    g.lineTo(11, 9);
-    g.closePath();
-    g.fillPath();
+    const palette = NEON_ENTITY.fighter;
 
-    g.fillStyle(0x1fa253, 1);
-    g.beginPath();
-    g.moveTo(11, 10);
-    g.lineTo(0, 26);
-    g.lineTo(4, 30);
-    g.lineTo(13, 18);
-    g.lineTo(16, 14);
-    g.closePath();
-    g.fillPath();
-    g.beginPath();
-    g.moveTo(25, 10);
-    g.lineTo(36, 26);
-    g.lineTo(32, 30);
-    g.lineTo(23, 18);
-    g.lineTo(20, 14);
-    g.closePath();
-    g.fillPath();
+    // Broad chevron hull.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 18, y: 1 },
+        { x: 24, y: 9 },
+        { x: 30, y: 27 },
+        { x: 24, y: 33 },
+        { x: 18, y: 30 },
+        { x: 12, y: 33 },
+        { x: 6, y: 27 },
+        { x: 12, y: 9 },
+      ],
+      palette
+    );
 
-    g.fillStyle(0x35cf70, 1);
-    g.beginPath();
-    g.moveTo(18, 3);
-    g.lineTo(22, 13);
-    g.lineTo(21, 28);
-    g.lineTo(18, 30);
-    g.lineTo(15, 28);
-    g.lineTo(14, 13);
-    g.closePath();
-    g.fillPath();
+    // Wing slash light strips.
+    strokeNeonLine(g, 10, 25, 14, 13, palette.outline, 1);
+    strokeNeonLine(g, 26, 25, 22, 13, palette.outline, 1);
+    strokeNeonLine(g, 18, 6, 18, 26, palette.glow, 1);
 
-    g.fillStyle(0x52f28e, 0.85);
-    g.fillRect(8, 18, 5, 2);
-    g.fillRect(23, 18, 5, 2);
+    fillHotCore(g, 18, 11, 1.8, palette.hot);
 
-    g.fillStyle(0x9affc3, 0.8);
-    g.fillEllipse(18, 12, 4.5, 6.5);
-    g.fillStyle(0x4aff87, 1);
-    g.fillTriangle(18, 1, 20, 7, 16, 7);
-
-    g.fillStyle(0x67ff9f, 0.72);
-    g.fillCircle(14, 33, 1.9);
-    g.fillCircle(22, 33, 1.9);
-
-    g.lineStyle(1, 0x58d38b, 0.3);
-    g.lineBetween(18, 4, 18, 30);
+    fillNeonCircle(g, 14, 32, 1.7, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
+    fillNeonCircle(g, 22, 32, 1.7, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
+    fillHotCore(g, 14, 32, 0.7, palette.hot);
+    fillHotCore(g, 22, 32, 0.7, palette.hot);
   });
 }
 
 export function ensureBomberTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'bomber-texture', 44, 38, (g) => {
-    g.fillStyle(0x713513, 1);
-    g.beginPath();
-    g.moveTo(22, 1);
-    g.lineTo(33, 6);
-    g.lineTo(39, 16);
-    g.lineTo(40, 28);
-    g.lineTo(34, 36);
-    g.lineTo(10, 36);
-    g.lineTo(4, 28);
-    g.lineTo(5, 16);
-    g.lineTo(11, 6);
-    g.closePath();
-    g.fillPath();
+    const palette = NEON_ENTITY.bomber;
 
-    g.fillStyle(0xa85320, 1);
-    g.fillRoundedRect(11, 12, 22, 20, 6);
-    g.fillStyle(0xe77e3a, 0.95);
-    g.fillRoundedRect(17, 5, 10, 18, 4);
+    // Heavy armored hex hull.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 22, y: 2 },
+        { x: 33, y: 7 },
+        { x: 40, y: 17 },
+        { x: 37, y: 30 },
+        { x: 30, y: 36 },
+        { x: 14, y: 36 },
+        { x: 7, y: 30 },
+        { x: 4, y: 17 },
+        { x: 11, y: 7 },
+      ],
+      palette
+    );
 
-    g.fillStyle(0x8f461f, 1);
-    g.fillRoundedRect(1, 16, 8, 13, 3);
-    g.fillRoundedRect(35, 16, 8, 13, 3);
-    g.fillStyle(0xffb14b, 0.78);
-    g.fillCircle(5, 25, 3);
-    g.fillCircle(39, 25, 3);
+    // Armor plate seams.
+    strokeNeonLine(g, 13, 22, 31, 22, palette.glow, 1);
+    strokeNeonLine(g, 13, 22, 13, 32, palette.glow, 1);
+    strokeNeonLine(g, 31, 22, 31, 32, palette.glow, 1);
 
-    g.fillStyle(0xffd27b, 0.82);
-    g.fillRoundedRect(17, 8, 10, 4, 2);
+    // Ordnance pods.
+    fillNeonCircle(g, 7, 24, 2.6, palette, { haloScale: 1.6, midScale: 1.3 });
+    fillNeonCircle(g, 37, 24, 2.6, palette, { haloScale: 1.6, midScale: 1.3 });
+    fillHotCore(g, 7, 24, 1, palette.hot);
+    fillHotCore(g, 37, 24, 1, palette.hot);
 
-    g.lineStyle(2, 0x5e2a0e, 0.55);
-    g.lineBetween(14, 24, 30, 24);
-    g.lineBetween(14, 24, 14, 33);
-    g.lineBetween(30, 24, 30, 33);
-
-    g.fillStyle(0xffc500, 0.42);
-    g.fillRect(15, 30, 5, 2);
-    g.fillRect(24, 30, 5, 2);
+    // Canopy slit.
+    strokeNeonLine(g, 17, 10, 27, 10, palette.hot, 1.5);
   });
 }
 
 export function ensureGunshipTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'gunship-texture', 40, 40, (g) => {
-    g.fillStyle(0x132b56, 1);
-    g.fillRoundedRect(10, 6, 20, 28, 4);
-    g.fillRect(2, 11, 36, 10);
+    const palette = NEON_ENTITY.gunship;
 
-    g.fillStyle(0x24519e, 1);
-    g.fillRoundedRect(14, 4, 12, 26, 3);
-    g.fillStyle(0x3f7fda, 1);
-    g.fillRoundedRect(16, 7, 8, 18, 3);
+    // Twin long prongs.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 6, y: 9 },
+        { x: 12, y: 9 },
+        { x: 12, y: 31 },
+        { x: 6, y: 31 },
+      ],
+      palette,
+      { haloScale: 1.1, outlineWidth: 1 }
+    );
+    fillNeonPolygon(
+      g,
+      [
+        { x: 28, y: 9 },
+        { x: 34, y: 9 },
+        { x: 34, y: 31 },
+        { x: 28, y: 31 },
+      ],
+      palette,
+      { haloScale: 1.1, outlineWidth: 1 }
+    );
 
-    g.fillStyle(0x1d3f84, 1);
-    g.fillRect(0, 14, 9, 7);
-    g.fillRect(31, 14, 9, 7);
-    g.fillStyle(0x63a4ff, 0.75);
-    g.fillCircle(4, 17.5, 2);
-    g.fillCircle(36, 17.5, 2);
+    // Center command pod.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 20, y: 3 },
+        { x: 25, y: 10 },
+        { x: 25, y: 26 },
+        { x: 20, y: 33 },
+        { x: 15, y: 26 },
+        { x: 15, y: 10 },
+      ],
+      palette
+    );
 
-    g.fillStyle(0x4e90ff, 1);
-    g.fillRect(16, 0, 8, 6);
-    g.fillRect(18, 0, 4, 3);
+    // Cannon tips and cross-brace.
+    fillHotCore(g, 9, 8, 1.5, palette.hot);
+    fillHotCore(g, 31, 8, 1.5, palette.hot);
+    strokeNeonLine(g, 12, 22, 28, 22, palette.glow, 1);
 
-    g.fillStyle(0x8ed6ff, 0.8);
-    g.fillRoundedRect(17, 10, 6, 5, 2);
+    fillHotCore(g, 20, 12, 1.7, palette.hot);
 
-    g.fillStyle(0x304364, 1);
-    g.fillRect(12, 34, 5, 5);
-    g.fillRect(18, 35, 4, 5);
-    g.fillRect(23, 34, 5, 5);
-    g.fillStyle(0x67a3ff, 0.72);
-    g.fillCircle(14.5, 38, 1.8);
-    g.fillCircle(20, 39, 1.6);
-    g.fillCircle(25.5, 38, 1.8);
-
-    g.lineStyle(1, 0x4e79b9, 0.28);
-    g.lineBetween(10, 21, 30, 21);
-    g.lineBetween(20, 5, 20, 34);
+    fillNeonCircle(g, 17, 34, 1.6, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
+    fillNeonCircle(g, 23, 34, 1.6, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
+    fillHotCore(g, 17, 34, 0.6, palette.hot);
+    fillHotCore(g, 23, 34, 0.6, palette.hot);
   });
 }
 
 export function ensureSwarmTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'swarm-texture', 20, 20, (g) => {
-    g.fillStyle(0x847600, 1);
-    g.beginPath();
-    g.moveTo(10, 1);
-    g.lineTo(16, 6);
-    g.lineTo(18, 12);
-    g.lineTo(15, 18);
-    g.lineTo(11, 20);
-    g.lineTo(6, 18);
-    g.lineTo(4, 12);
-    g.lineTo(6, 5);
-    g.closePath();
-    g.fillPath();
+    const palette = NEON_ENTITY.swarm;
 
-    g.fillStyle(0xe3d63a, 0.45);
-    g.fillEllipse(4.5, 9, 8, 12);
-    g.fillEllipse(15.5, 9, 8, 12);
+    // Tri-shard arrowhead.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 10, y: 2 },
+        { x: 17, y: 15 },
+        { x: 10, y: 12 },
+        { x: 3, y: 15 },
+      ],
+      palette,
+      { haloScale: 1.12, outlineWidth: 1 }
+    );
 
-    g.fillStyle(0xb9a400, 0.95);
-    g.fillEllipse(10, 10, 8, 11);
-    g.fillStyle(0xffb000, 0.8);
-    g.fillTriangle(8, 17, 10, 20, 9, 16);
-    g.fillTriangle(12, 17, 10, 20, 11, 16);
+    strokeNeonLine(g, 10, 5, 10, 11, palette.outline, 1);
+    fillHotCore(g, 10, 8, 1.3, palette.hot);
+  });
+}
 
-    g.fillStyle(0xffff5d, 0.9);
-    g.fillCircle(7.2, 7, 1.6);
-    g.fillCircle(12.8, 7, 1.6);
-    g.fillStyle(0xffffff, 0.55);
-    g.fillCircle(7, 6.4, 0.6);
-    g.fillCircle(12.6, 6.4, 0.6);
+export function ensureDiverTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'diver-texture', 24, 30, (g) => {
+    const palette = NEON_ENTITY.diver;
+
+    // Swept crescent hull built for dive runs.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 12, y: 1 },
+        { x: 18, y: 10 },
+        { x: 21, y: 24 },
+        { x: 15, y: 20 },
+        { x: 12, y: 26 },
+        { x: 9, y: 20 },
+        { x: 3, y: 24 },
+        { x: 6, y: 10 },
+      ],
+      palette,
+      { haloScale: 1.12 }
+    );
+
+    strokeNeonLine(g, 12, 5, 12, 22, palette.outline, 1);
+    strokeNeonLine(g, 6, 13, 10, 18, palette.glow, 1);
+    strokeNeonLine(g, 18, 13, 14, 18, palette.glow, 1);
+
+    fillHotCore(g, 12, 11, 1.5, palette.hot);
+    fillNeonCircle(g, 12, 27, 1.3, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
+  });
+}
+
+export function ensureDodgerTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'dodger-texture', 30, 24, (g) => {
+    const palette = NEON_ENTITY.dodger;
+
+    // Wide slim wing built for lateral evasion.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 15, y: 2 },
+        { x: 19, y: 8 },
+        { x: 28, y: 14 },
+        { x: 22, y: 19 },
+        { x: 15, y: 16 },
+        { x: 8, y: 19 },
+        { x: 2, y: 14 },
+        { x: 11, y: 8 },
+      ],
+      palette,
+      { haloScale: 1.12 }
+    );
+
+    strokeNeonLine(g, 4, 14, 12, 9, palette.outline, 1);
+    strokeNeonLine(g, 26, 14, 18, 9, palette.outline, 1);
+
+    fillHotCore(g, 15, 10, 1.4, palette.hot);
+    fillNeonCircle(g, 11, 20, 1.2, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
+    fillNeonCircle(g, 19, 20, 1.2, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
+  });
+}
+
+export function ensureSowerTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'sower-texture', 34, 34, (g) => {
+    const palette = NEON_ENTITY.sower;
+
+    // Bulbous minelayer pod.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 17, y: 2 },
+        { x: 27, y: 8 },
+        { x: 30, y: 18 },
+        { x: 25, y: 29 },
+        { x: 17, y: 32 },
+        { x: 9, y: 29 },
+        { x: 4, y: 18 },
+        { x: 7, y: 8 },
+      ],
+      palette
+    );
+
+    // Mine bay doors.
+    fillNeonCircle(g, 11, 20, 2.4, palette, { haloScale: 1.6, midScale: 1.3 });
+    fillNeonCircle(g, 23, 20, 2.4, palette, { haloScale: 1.6, midScale: 1.3 });
+    fillHotCore(g, 11, 20, 0.9, palette.hot);
+    fillHotCore(g, 23, 20, 0.9, palette.hot);
+
+    strokeNeonLine(g, 10, 12, 24, 12, palette.glow, 1);
+    fillHotCore(g, 17, 9, 1.6, palette.hot);
+  });
+}
+
+export function ensureLancerTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'lancer-texture', 22, 40, (g) => {
+    const palette = NEON_ENTITY.lancer;
+
+    // Long needle hull with a charged lance tip.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 11, y: 2 },
+        { x: 15, y: 10 },
+        { x: 14, y: 30 },
+        { x: 11, y: 38 },
+        { x: 8, y: 30 },
+        { x: 7, y: 10 },
+      ],
+      palette,
+      { haloScale: 1.12 }
+    );
+
+    // Stabilizer fins.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 7, y: 22 },
+        { x: 2, y: 30 },
+        { x: 7, y: 29 },
+      ],
+      palette,
+      { haloScale: 1.1, outlineWidth: 1 }
+    );
+    fillNeonPolygon(
+      g,
+      [
+        { x: 15, y: 22 },
+        { x: 20, y: 30 },
+        { x: 15, y: 29 },
+      ],
+      palette,
+      { haloScale: 1.1, outlineWidth: 1 }
+    );
+
+    strokeNeonLine(g, 11, 6, 11, 34, palette.outline, 1);
+    fillHotCore(g, 11, 8, 1.6, palette.hot);
+    fillNeonCircle(g, 11, 4, 1.4, palette, { haloScale: 1.8, midScale: 1.35, outlineWidth: 0 });
+  });
+}
+
+export function ensureSplitterTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'splitter-texture', 30, 26, (g) => {
+    const palette = NEON_ENTITY.splitter;
+
+    // Twin-lobed pod held by a light bridge.
+    fillNeonCircle(g, 9, 13, 6.5, palette, { haloScale: 1.25, midScale: 1.1 });
+    fillNeonCircle(g, 21, 13, 6.5, palette, { haloScale: 1.25, midScale: 1.1 });
+    strokeNeonLine(g, 9, 13, 21, 13, palette.outline, 1.5);
+
+    fillHotCore(g, 9, 13, 1.6, palette.hot);
+    fillHotCore(g, 21, 13, 1.6, palette.hot);
+    fillNeonCircle(g, 15, 13, 1.2, palette, { haloScale: 1.6, midScale: 1.25, outlineWidth: 0 });
+  });
+}
+
+export function ensureSwarmlingTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'swarmling-texture', 14, 14, (g) => {
+    const palette = NEON_ENTITY.swarmling;
+
+    // Tiny shard spawned by the splitter.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 7, y: 1 },
+        { x: 12, y: 10 },
+        { x: 7, y: 8 },
+        { x: 2, y: 10 },
+      ],
+      palette,
+      { haloScale: 1.15, outlineWidth: 1 }
+    );
+
+    fillHotCore(g, 7, 6, 1, palette.hot);
   });
 }

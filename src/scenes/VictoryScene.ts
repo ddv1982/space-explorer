@@ -4,8 +4,10 @@ import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { audioManager } from '../systems/AudioManager';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
+import { UI_FONT_MONO } from '../utils/uiFonts';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
+import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_TEXT } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class VictoryScene extends Phaser.Scene {
@@ -22,42 +24,59 @@ export class VictoryScene extends Phaser.Scene {
 
     const layout = getViewportLayout(this);
 
-    this.cameras.main.setBackgroundColor('#000822');
+    this.cameras.main.setBackgroundColor('#02081c');
 
     // Animated star background via parallax
     const bgConfig = getLevelConfig(10);
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, bgConfig);
 
-    // Victory text with glow effect
-    this.add.text(layout.centerX, layout.centerY - 120, 'MISSION COMPLETE', {
-      fontSize: '52px',
-      color: '#ffcc00',
-      fontStyle: 'bold',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
+    const frameWidth = Math.min(620, layout.width - 48);
+    const frameHeight = 340;
+    const frameX = layout.centerX - frameWidth / 2;
+    const frameY = layout.centerY - frameHeight / 2;
 
-    this.add.text(layout.centerX, layout.centerY - 60, 'ALL SECTORS CLEARED', {
-      fontSize: '24px',
-      color: '#44ff88',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
+    const frame = this.add.graphics();
+    frame.setDepth(10);
+    drawNeonFrame(frame, frameX, frameY, frameWidth, frameHeight, {
+      accentColor: NEON.amber,
+      fillAlpha: 0.6,
+      strokeAlpha: 0.75,
+      cornerCut: 24,
+      glow: true,
+    });
+    drawNeonDivider(frame, layout.centerX, frameY + 32, frameWidth - 150, NEON.amber);
+    drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 32, frameWidth - 150, NEON.teal);
+
+    addNeonTitle(this, layout.centerX, layout.centerY - 108, 'MISSION COMPLETE', 44, 11, {
+      glowDark: '#8c6a1f',
+      glowMid: '#d9a638',
+      glowBright: '#ffc36e',
+    });
+
+    this.add.text(layout.centerX, layout.centerY - 52, 'ALL SECTORS CLEARED', {
+      fontSize: '20px',
+      color: '#58f0d8',
+      fontFamily: UI_FONT_MONO,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(12);
 
     const finalScore = getRunSummary(this.registry).finalScore;
-    this.add.text(layout.centerX, layout.centerY, `FINAL SCORE: ${finalScore}`, {
-      fontSize: '32px',
-      color: '#ffffff',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
+    this.add.text(layout.centerX, layout.centerY + 4, `FINAL SCORE: ${finalScore}`, {
+      fontSize: '28px',
+      color: NEON_TEXT.primary,
+      fontFamily: UI_FONT_MONO,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(12);
 
     const totalLevels = getTotalLevels();
-    this.add.text(layout.centerX, layout.centerY + 50, `${totalLevels}/${totalLevels} LEVELS COMPLETED`, {
-      fontSize: '20px',
-      color: '#aaaaaa',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
+    this.add.text(layout.centerX, layout.centerY + 46, `${totalLevels}/${totalLevels} LEVELS COMPLETED`, {
+      fontSize: '15px',
+      color: NEON_TEXT.muted,
+      fontFamily: UI_FONT_MONO,
+    }).setOrigin(0.5).setDepth(12);
 
-    createPromptText(this, layout.centerX, layout.centerY + 130, CONTINUE_PROMPT, {
+    createPromptText(this, layout.centerX, layout.centerY + 118, CONTINUE_PROMPT, {
       color: '#dce8ff',
     });
 

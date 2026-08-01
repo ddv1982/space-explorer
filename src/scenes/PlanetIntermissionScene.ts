@@ -207,25 +207,40 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       const g = this.add.graphics();
       const cx = 60;
       const cy = 60;
-      const r = 50;
+      const r = 46;
 
-      g.fillStyle(colorPair[0], 1);
+      // Atmospheric halo.
+      g.fillStyle(colorPair[1], 0.06);
+      g.fillCircle(cx, cy, r + 14);
+      g.fillStyle(colorPair[1], 0.1);
+      g.fillCircle(cx, cy, r + 7);
+
+      // Dark sphere body with a soft lit crescent.
+      g.fillStyle(0x060a18, 1);
       g.fillCircle(cx, cy, r);
+      g.fillStyle(colorPair[0], 0.55);
+      g.fillCircle(cx - 9, cy - 7, r * 0.72);
+      g.fillStyle(colorPair[1], 0.35);
+      g.fillCircle(cx - 14, cy - 11, r * 0.42);
+      g.fillStyle(0x060a18, 0.8);
+      g.fillCircle(cx + 16, cy + 9, r * 0.62);
 
-      g.fillStyle(colorPair[1], 0.6);
-      g.fillCircle(cx - 10, cy - 8, r * 0.7);
-
-      g.fillStyle(0x000000, 0.2);
-      g.fillCircle(cx + 15, cy + 10, r * 0.5);
-
-      g.lineStyle(1, colorPair[1], 0.3);
-      for (let i = 0; i < 3; i++) {
-        const ringY = cy - 20 + i * 20;
-        g.beginPath();
-        g.moveTo(cx - r + 5, ringY);
-        g.lineTo(cx + r - 5, ringY);
-        g.strokePath();
+      // Wireframe latitude/longitude grid.
+      g.lineStyle(1, colorPair[1], 0.22);
+      for (let i = -1; i <= 1; i++) {
+        g.strokeEllipse(cx, cy + i * 16, r * 2 - 4, (r * 2 - 4) * 0.34);
       }
+      g.strokeEllipse(cx, cy, (r * 2 - 4) * 0.36, r * 2 - 4);
+
+      // Neon limb.
+      g.lineStyle(3, colorPair[1], 0.14);
+      g.strokeCircle(cx, cy, r);
+      g.lineStyle(1.25, colorPair[1], 0.85);
+      g.strokeCircle(cx, cy, r);
+
+      // Hot glint on the lit limb.
+      g.fillStyle(0xffffff, 0.85);
+      g.fillCircle(cx - r * 0.62, cy - r * 0.62, 1.6);
 
       g.generateTexture(key, 120, 120);
       g.destroy();

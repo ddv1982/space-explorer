@@ -105,6 +105,27 @@ export class HudAnnouncementTweens {
     }));
   }
 
+  showEliteWaveAnnouncement(): void {
+    const layout = this.deps.getLayoutMetrics();
+
+    this.deps.announcementText.setText('⚠ ELITE WAVE ⚠');
+    this.deps.announcementText.setColor('#c99bff');
+    this.deps.announcementText.setAlpha(1);
+    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
+    this.deps.getAnnouncementTween()?.stop();
+
+    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
+      targets: this.deps.announcementText,
+      alpha: { from: 1, to: 0 },
+      y: { from: layout.announcementY - 6, to: layout.announcementY - 30 },
+      duration: 1500,
+      ease: 'Power2',
+      onComplete: () => {
+        this.deps.setAnnouncementTween(null);
+      },
+    }));
+  }
+
   showHelperWingDepletedAnnouncement(): void {
     const layout = this.deps.getLayoutMetrics();
 

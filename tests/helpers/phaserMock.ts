@@ -10,7 +10,9 @@ class MockGameObject {
   active = true;
 }
 
-class MockArcadeSprite extends MockGameObject {}
+class MockArcadeSprite extends MockGameObject {
+  preUpdate(_time: number, _delta: number): void {}
+}
 
 class MockArcadeBody {}
 
@@ -48,6 +50,15 @@ function createDefaultPhaserMock() {
       TintModes: {
         MULTIPLY: 0,
         FILL: 1,
+      },
+      BlendModes: {
+        NORMAL: 0,
+        ADD: 1,
+      },
+      Display: {
+        Color: {
+          HexStringToColor: (hex: string) => ({ color: parseInt(hex.replace('#', ''), 16) }),
+        },
       },
       GameObjects: {
         GameObject: MockGameObject,

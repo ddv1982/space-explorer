@@ -1,6 +1,17 @@
 import type { LevelMusicConfig } from './music/types';
 
-export type EnemyType = 'scout' | 'fighter' | 'bomber' | 'swarm' | 'gunship';
+export type EnemyType =
+  | 'scout'
+  | 'fighter'
+  | 'bomber'
+  | 'swarm'
+  | 'gunship'
+  | 'diver'
+  | 'dodger'
+  | 'sower'
+  | 'lancer'
+  | 'splitter'
+  | 'swarmling';
 
 export interface EnemySpawnConfig {
   type: EnemyType;
@@ -28,6 +39,7 @@ export interface BossConfig {
   phase2MoveSpeed: number;
   phaseTransitionPauseMs?: number;
   attackStyle: BossAttackStyle;
+  phase2AttackStyle?: BossAttackStyle;
   phase1SpreadShotCount: number;
   phase1SpreadArcDegrees: number;
   phase1BulletSpeedScale: number;
@@ -56,7 +68,10 @@ type HazardType =
   | 'ring-crossfire'
   | 'rock-corridor'
   | 'energy-storm'
-  | 'gravity-well';
+  | 'gravity-well'
+  | 'solar-flare'
+  | 'laser-lattice'
+  | 'wormhole-spawn';
 
 interface LevelThemeSummary {
   destination: string;
@@ -81,6 +96,7 @@ export interface ScriptedHazardConfig {
   blocksEnemyProjectiles?: boolean;
   coverHp?: number;
   coverIndestructible?: boolean;
+  enemyTypes?: EnemyType[];
   notes?: string;
 }
 
@@ -96,6 +112,25 @@ export interface SignatureWaveConfig {
   id: string;
   triggerProgress: number;
   enemies: SignatureWaveEnemyConfig[];
+  notes?: string;
+}
+
+export type WaveFormation = 'column' | 'line' | 'vee' | 'ring' | 'pincer';
+
+type WaveTelegraph = 'none' | 'warning' | 'wormhole';
+
+export interface ChoreographedWaveConfig {
+  id: string;
+  atMs: number;
+  formation: WaveFormation;
+  type: EnemyType;
+  count: number;
+  lane?: number;
+  spacing?: number;
+  telegraph?: WaveTelegraph;
+  bonusOnClearMs?: number;
+  bonusWave?: { type: EnemyType; count: number };
+  midBossBeat?: boolean;
   notes?: string;
 }
 
@@ -128,6 +163,7 @@ export interface LevelSectionConfig {
   asteroidInterval?: number;
   hazardEvents?: ScriptedHazardConfig[];
   signatureWaves?: SignatureWaveConfig[];
+  waves?: ChoreographedWaveConfig[];
   recoveryDrops?: RecoveryDropConfig[];
   musicIntensity?: number;
   visualModifiers?: LevelSectionVisualModifierConfig;
@@ -157,6 +193,7 @@ export interface LevelConfig extends LevelThemeSummary {
   levelDistance: number;
   hasBoss: boolean;
   boss: BossConfig | null;
+  bossAddWaves?: boolean;
   lastLifeHelperWing?: LastLifeHelperWingConfig | null;
   bossTriggerProgress: number;
   asteroidInterval: number;

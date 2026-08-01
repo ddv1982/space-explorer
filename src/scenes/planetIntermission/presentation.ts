@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '../../utils/layout';
+import { UI_FONT_MONO } from '../../utils/uiFonts';
 import { createPromptText } from '../shared/createPromptText';
 import { getUpgradeGridLayout, type UpgradeGridLayout } from './shared';
 
@@ -74,26 +75,26 @@ export function createIntermissionHeader(
   scene.add.text(layout.centerX, intermissionLayout.planetNameY, config.planetName, {
     fontSize: intermissionLayout.compact ? '16px' : intermissionLayout.tight ? '18px' : '20px',
     color: '#888888',
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
   }).setOrigin(0.5);
 
   scene.add.text(layout.centerX, intermissionLayout.titleY, 'PLANET APPROACHED', {
     fontSize: intermissionLayout.compact ? '28px' : intermissionLayout.tight ? '32px' : '36px',
     color: '#ffffff',
     fontStyle: 'bold',
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
   }).setOrigin(0.5);
 
   scene.add.text(layout.centerX, intermissionLayout.levelCompleteY, `LEVEL ${config.level} COMPLETE`, {
     fontSize: intermissionLayout.compact ? '14px' : intermissionLayout.tight ? '16px' : '18px',
     color: '#44ff88',
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
   }).setOrigin(0.5);
 
   return scene.add.text(layout.centerX, intermissionLayout.scoreY, `CREDITS: ${config.score}`, {
     fontSize: intermissionLayout.compact ? '18px' : intermissionLayout.tight ? '20px' : '24px',
     color: '#ffcc00',
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
   }).setOrigin(0.5);
 }
 

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
+import { UI_FONT_MONO } from '../utils/uiFonts';
 import {
   applyBaselineCameraFilters,
   applyCameraColorGrade,
@@ -28,8 +29,8 @@ import {
 export class EffectsManager {
   private static readonly SCORE_POPUP_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
     fontSize: '16px',
-    color: '#ffcc00',
-    fontFamily: 'monospace',
+    color: '#ffc36e',
+    fontFamily: UI_FONT_MONO,
     fontStyle: 'bold',
   };
 
@@ -197,6 +198,7 @@ export class EffectsManager {
 
     this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount));
     this.explosionEmitter.explode(particleCount, x, y);
+    this.createExplosionShockwave(x, y, intensity);
 
     // Add debris for larger explosions
     if (intensity >= 1.0 && this.debrisEmitter) {
@@ -205,8 +207,82 @@ export class EffectsManager {
     }
   }
 
+  /** White-hot flash pop followed by an expanding neon shockwave ring. */
+  private createExplosionShockwave(x: number, y: number, intensity: number): void {
+    const flash = this.scene.add
+      .image(x, y, 'particle-burst')
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xffe6b0)
+      .setScale(0.4 * intensity);
+
+    this.scene.tweens.add({
+      targets: flash,
+      scale: 1.6 * intensity,
+      alpha: 0,
+      duration: 140,
+      ease: 'Cubic.easeOut',
+      onComplete: () => flash.destroy(),
+    });
+
+    const ring = this.scene.add
+      .image(x, y, 'particle-ring')
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xffb066)
+      .setScale(0.25 * intensity);
+
+    this.scene.tweens.add({
+      targets: ring,
+      scale: 2.4 * intensity,
+      alpha: 0,
+      duration: 320,
+      ease: 'Cubic.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+  }
+
   createSparkBurst(x: number, y: number): void {
     this.sparkEmitter?.explode(8, x, y);
+  }
+
+  createGrazeSpark(x: number, y: number): void {
+    this.sparkEmitter?.explode(3, x, y);
+  }
+
+  /** Cyan Surge Pulse: soft flash pop plus a wide expanding neon ring. */
+  createSurgePulse(x: number, y: number): void {
+    const flash = this.scene.add
+      .image(x, y, 'particle-burst')
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xd6f6ff)
+      .setScale(0.6);
+
+    this.scene.tweens.add({
+      targets: flash,
+      scale: 2.2,
+      alpha: 0,
+      duration: 180,
+      ease: 'Cubic.easeOut',
+      onComplete: () => flash.destroy(),
+    });
+
+    const ring = this.scene.add
+      .image(x, y, 'particle-ring')
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0x9be8ff)
+      .setScale(0.4);
+
+    this.scene.tweens.add({
+      targets: ring,
+      scale: 3.4,
+      alpha: 0,
+      duration: 380,
+      ease: 'Cubic.easeOut',
+      onComplete: () => ring.destroy(),
+    });
   }
 
   createMuzzleFlash(x: number, y: number): void {
@@ -232,6 +308,43 @@ export class EffectsManager {
 
   createSpawnWarning(x: number): void {
     createOverlaySpawnWarning(this.scene, x);
+  }
+
+  /** Wormhole warp-in telegraph: neon ring shrinking onto the arrival point. */
+  createWormholeTelegraph(x: number, y: number): void {
+    const ring = this.scene.add
+      .image(x, y, 'particle-ring')
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xb48cff)
+      .setScale(2.2)
+      .setAlpha(0.9);
+
+    this.scene.tweens.add({
+      targets: ring,
+      scale: 0.35,
+      alpha: 0.25,
+      duration: 600,
+      ease: 'Cubic.easeIn',
+      onComplete: () => ring.destroy(),
+    });
+
+    const core = this.scene.add
+      .image(x, y, 'particle-burst')
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xd9c8ff)
+      .setScale(0.2)
+      .setAlpha(0);
+
+    this.scene.tweens.add({
+      targets: core,
+      scale: 1.1,
+      alpha: { from: 0, to: 0.85 },
+      duration: 600,
+      ease: 'Quad.easeIn',
+      onComplete: () => core.destroy(),
+    });
   }
 
   createScorePopup(x: number, y: number, score: number): void {

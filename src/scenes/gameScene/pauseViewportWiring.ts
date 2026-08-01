@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { PauseStateController, type PauseSaveSlotAdapter } from './PauseStateController';
-import { MobileViewportGuard } from '@/systems/MobileViewportGuard';
 import { audioManager } from '@/systems/AudioManager';
 import type { MobileControls } from '@/systems/MobileControls';
 import {
@@ -30,7 +29,6 @@ interface PauseViewportWiringContext {
 
 interface PauseViewportWiring {
   pauseStateController: PauseStateController;
-  mobileViewportGuard: MobileViewportGuard;
 }
 
 function createPauseSaveSlotAdapter(context: PauseViewportWiringContext): PauseSaveSlotAdapter {
@@ -93,14 +91,7 @@ export function createPauseViewportWiring(context: PauseViewportWiringContext): 
     saveSlotAdapter: createPauseSaveSlotAdapter(context),
   });
 
-  const mobileViewportGuard = MobileViewportGuard.create(context.scene, (blocked) => {
-    pauseStateController.setOrientationBlocked(blocked);
-  });
-
-  pauseStateController.setOrientationBlocked(mobileViewportGuard.isBlocked());
-
   return {
     pauseStateController,
-    mobileViewportGuard,
   };
 }

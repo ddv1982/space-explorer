@@ -31,6 +31,7 @@ export interface BrowserHarnessSnapshot {
     rotation: number;
     tintMode: number | null;
   }>[];
+  arcs: readonly Readonly<{ x: number; y: number; radius: number; visible: boolean }>[];
 }
 
 export interface BrowserHarnessFrameMetrics {
@@ -128,6 +129,7 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
     rotation: number;
     tintMode: number | null;
   }> = [];
+  const arcs: Array<{ x: number; y: number; radius: number; visible: boolean }> = [];
   let cameraFilterCount = 0;
   let particleEmitterCount = 0;
   let tweenCount = 0;
@@ -143,6 +145,10 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
     for (const child of scene.children.list) {
       if (child instanceof Phaser.GameObjects.Particles.ParticleEmitter) {
         particleEmitterCount += 1;
+      }
+
+      if (child instanceof Phaser.GameObjects.Arc) {
+        arcs.push({ x: child.x, y: child.y, radius: child.radius, visible: child.visible });
       }
 
       if (child instanceof Phaser.GameObjects.Text) {
@@ -202,6 +208,7 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
     }),
     texts: freezeList(texts),
     objects: freezeList(objects),
+    arcs: freezeList(arcs),
   });
 }
 

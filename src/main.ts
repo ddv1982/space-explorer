@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
 import { audioManager } from './systems/AudioManager';
+import { initHardwareKeyboardDetection } from './systems/hardwareKeyboardDetection';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -41,7 +42,6 @@ const game = supportsWebGL() ? new Phaser.Game(config) : null;
 
 if (!game && typeof document !== 'undefined') {
   document.getElementById('game-shell')?.setAttribute('hidden', '');
-  document.getElementById('rotate-device-overlay')?.setAttribute('hidden', '');
   document.getElementById('webgl-unsupported')?.removeAttribute('hidden');
 }
 
@@ -51,6 +51,10 @@ if (
   new URLSearchParams(window.location.search).get('browserHarness') === '1'
 ) {
   void import('./browserHarness').then(({ installBrowserHarness }) => installBrowserHarness(game));
+}
+
+if (typeof window !== 'undefined') {
+  initHardwareKeyboardDetection(window);
 }
 
 if (game && typeof window !== 'undefined') {

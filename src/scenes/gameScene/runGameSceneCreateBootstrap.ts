@@ -1,6 +1,7 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 
 import { isTouchMobileDevice } from '@/utils/device';
+import { onHardwareKeyboardDetected } from '@/systems/hardwareKeyboardDetection';
 
 import type {
   GameSceneCreateGameplayBridge,
@@ -37,12 +38,14 @@ type InputBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameS
 type GameplayBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateGameplayBridge & Pick<GameSceneCreateWorldBridge, 'effectsManager'> & Pick<GameSceneCreateInputBridge, 'player'>;
 type HudBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateHudBridge & Pick<GameSceneCreateInputBridge, 'player'>;
 type PauseBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreatePauseBridge & Pick<GameSceneCreateInputBridge, 'mobileControls'> & Pick<GameSceneCreateGameplayBridge, 'flow'>;
+type HardwareKeyboardBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & Pick<GameSceneCreateInputBridge, 'mobileControls'>;
 
 type BootstrapRuntimeState = ReturnType<RuntimeBootstrapScene['initializePlayerRunState']>;
 type BootstrapLevelRuntime = ReturnType<typeof initializeLevelRuntime>;
 type BootstrapAudioInitialization = ReturnType<RuntimeBootstrapScene['initializeAudioForLevel']>;
 type BootstrapDependencies = {
   isTouchMobileDevice: typeof isTouchMobileDevice;
+  onHardwareKeyboardDetected: typeof onHardwareKeyboardDetected;
   initializeLevelRuntime: typeof initializeLevelRuntime;
   createWorldPresentation: typeof createWorldPresentation;
   createInputAndPlayer: typeof createInputAndPlayer;
@@ -54,6 +57,7 @@ type BootstrapDependencies = {
 
 const defaultBootstrapDependencies: BootstrapDependencies = {
   isTouchMobileDevice,
+  onHardwareKeyboardDetected,
   initializeLevelRuntime,
   createWorldPresentation,
   createInputAndPlayer,
@@ -157,6 +161,7 @@ function bootstrapGameplaySystems(
   gameScene.waveManager = gameplaySystems.waveManager;
   gameScene.collisionManager = gameplaySystems.collisionManager;
   gameScene.scoreManager = gameplaySystems.scoreManager;
+  gameScene.grazeSurge = gameplaySystems.grazeSurge;
   gameScene.powerUpGroup = gameplaySystems.powerUpGroup;
 }
 
@@ -183,7 +188,7 @@ function bootstrapPauseAndViewportWiring(
   gameScene: PauseBootstrapScene,
   dependencies: Pick<BootstrapDependencies, 'createPauseViewportWiring'>
 ): void {
-  const { pauseStateController, mobileViewportGuard } = dependencies.createPauseViewportWiring({
+  const { pauseStateController } = dependencies.createPauseViewportWiring({
     scene: gameScene.scene,
     stopPlayerMotion: () => gameScene.stopPlayerMotion(),
     getMobileControls: () => gameScene.mobileControls,
@@ -192,10 +197,19 @@ function bootstrapPauseAndViewportWiring(
   });
 
   gameScene.pauseStateController = pauseStateController;
-  gameScene.mobileViewportGuard = mobileViewportGuard;
   gameScene.mobileControls?.setPauseButtonHandler(() => {
     pauseStateController.togglePauseRequest(gameScene.flow.isGameplayLocked());
   });
+}
+
+function bootstrapHardwareKeyboardSuppression(
+  gameScene: HardwareKeyboardBootstrapScene,
+  dependencies: Pick<BootstrapDependencies, 'onHardwareKeyboardDetected'>
+): void {
+  const unsubscribe = dependencies.onHardwareKeyboardDetected(() => {
+    gameScene.mobileControls?.setJoystickSuppressed(true);
+  });
+  gameScene.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribe);
 }
 
 export function runGameSceneCreateBootstrap(
@@ -215,6 +229,7 @@ export function runGameSceneCreateBootstrap(
   bootstrapGameplaySystems(scene, levelRuntime.levelConfig, state, dependencies);
   bootstrapHudAndTransitions(scene, levelRuntime.levelConfig, state.level, dependencies);
   bootstrapPauseAndViewportWiring(scene, dependencies);
+  bootstrapHardwareKeyboardSuppression(scene, dependencies);
 
   dependencies.showControlsHint(scene.scene, { mobile: dependencies.isTouchMobileDevice() });
   scene.runtimeLifecycle.registerRuntimeHandlers();

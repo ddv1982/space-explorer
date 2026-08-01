@@ -10,7 +10,6 @@ export interface PauseOverlayHandlers {
 
 export interface PauseOverlayState {
   visible: boolean;
-  orientationBlocked: boolean;
   canResume: boolean;
   canSave: boolean;
   storageAvailable: boolean;

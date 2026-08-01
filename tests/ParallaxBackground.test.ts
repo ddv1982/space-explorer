@@ -186,13 +186,19 @@ describe('ParallaxBackground premium-background presentation regression coverage
     state.createLevelVisualLayers = () => undefined;
 
     state.createSceneLayers(scene, {
-      name: 'Magnetar Foundry',
+      name: 'Ember Monsoon',
       accentColor: 0x52f7a6,
     });
 
-    expect(tileSpriteCalls).toEqual(['bg_level03']);
+    expect(tileSpriteCalls).toEqual([
+      'bg_level03',
+      'bg_level03_nebula',
+      'bg_level03_mid',
+      'bg_level03_near',
+      'bg_level03_overlay',
+    ]);
     expect(state.tileSprites).toEqual([]);
-    expect(state.premiumBackgroundLayers.length).toBe(1);
+    expect(state.premiumBackgroundLayers.length).toBe(5);
   });
 });
 

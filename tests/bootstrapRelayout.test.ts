@@ -162,12 +162,13 @@ describe('bootstrapRelayout', () => {
     });
 
     expect(widgets.topBarPanel).toBeDefined();
-    expect(graphics).toHaveLength(7);
-    expect(texts).toHaveLength(9);
+    expect(graphics).toHaveLength(9);
+    expect(texts).toHaveLength(10);
     expect(graphics[0]?.graphics.depth).toBe(99);
     expect(graphics[5]?.graphics.visible).toBe(false);
     expect(graphics[6]?.graphics.visible).toBe(false);
     expect(texts[8]?.state.visible).toBe(false);
+    expect(texts[9]?.state.visible).toBe(false);
   });
 
   test('relayoutHudWidgets repositions widgets and restarts announcement fade tween when visible', () => {
@@ -184,6 +185,8 @@ describe('bootstrapRelayout', () => {
     const announcementText = createTextStub('ALERT');
     announcementText.state.alpha = 0.5;
     const bossNameText = createTextStub('BOSS');
+    const chainText = createTextStub('');
+    const surgeBg = createGraphicsStub();
     const stop = mock();
     const tweensAdd = mock(() => ({ id: 'newTween' }));
     let nextTween: unknown = null;
@@ -205,6 +208,8 @@ describe('bootstrapRelayout', () => {
       progressBg: progressBg.graphics,
       announcementText: announcementText.text,
       bossNameText: bossNameText.text,
+      chainText: chainText.text,
+      surgeBg: surgeBg.graphics,
       hpBarHeight: 16,
       progressHeight: 6,
       panelStrokeColor: 0x123456,

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '@/utils/layout';
 import { drawNeonDivider, drawNeonFrame, NEON } from '../../shared/neonUiTheme';
-import type { PauseOverlayLayout, PauseOverlayMessage, PauseOverlayState } from './types';
+import type { PauseOverlayLayout, PauseOverlayMessage } from './types';
 
 const PAUSE_OVERLAY_PANEL_WIDTH = 940;
 const PAUSE_OVERLAY_PANEL_HEIGHT = 700;
@@ -306,16 +306,7 @@ export function drawPauseOverlayBackdrop(
   panel.fillRect(layout.panelX + 18, layout.panelY + layout.panelHeight - 13, layout.panelWidth - 36, 1);
 }
 
-export function getPauseOverlayMessage(state: PauseOverlayState): PauseOverlayMessage {
-  if (state.orientationBlocked) {
-    return {
-      title: 'PAUSED',
-      subtitle: 'ORIENTATION LOCK ENGAGED',
-      hint: 'Rotate to landscape to resume, or manage checkpoint slots while paused.',
-      resumeLabel: '!!\nROTATE',
-    };
-  }
-
+export function getPauseOverlayMessage(): PauseOverlayMessage {
   return {
     title: 'PAUSED',
     subtitle: 'Press ESC or tap RESUME to continue.',

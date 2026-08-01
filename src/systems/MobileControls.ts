@@ -27,6 +27,7 @@ export class MobileControls {
   private pauseButtonHitArea: Phaser.GameObjects.Zone | null = null;
   private enabledForTouchDevice: boolean = false;
   private blocked: boolean = false;
+  private joystickSuppressed: boolean = false;
   private joystickPointerId: number | null = null;
   private pauseButtonPointerId: number | null = null;
   private joystickX: number = 0;
@@ -138,6 +139,7 @@ export class MobileControls {
     this.pauseButtonHitArea = null;
     this.enabledForTouchDevice = false;
     this.blocked = false;
+    this.joystickSuppressed = false;
     this.pauseButtonHandler = null;
   }
 
@@ -166,6 +168,24 @@ export class MobileControls {
 
     this.refreshVisibility();
     this.updatePauseButtonVisual();
+  }
+
+  /**
+   * Hides the joystick once a hardware keyboard is in use. The pause button
+   * stays visible so tap-to-pause remains available on the touchscreen.
+   */
+  setJoystickSuppressed(suppressed: boolean): void {
+    if (this.joystickSuppressed === suppressed) {
+      return;
+    }
+
+    this.joystickSuppressed = suppressed;
+
+    if (suppressed) {
+      this.releaseJoystick();
+    }
+
+    this.refreshVisibility();
   }
 
   isEnabled(): boolean {
@@ -201,7 +221,7 @@ export class MobileControls {
   }
 
   private handleJoystickDown(pointer: Phaser.Input.Pointer): void {
-    if (!this.isEnabled() || this.joystickPointerId !== null) {
+    if (!this.isEnabled() || this.joystickSuppressed || this.joystickPointerId !== null) {
       return;
     }
 
@@ -269,18 +289,18 @@ export class MobileControls {
   }
 
   private refreshVisibility(): void {
-    const visible = this.isEnabled();
+    const joystickVisible = this.isEnabled() && !this.joystickSuppressed;
     const pauseVisible = this.enabledForTouchDevice && this.scene !== null;
 
-    this.joystickBase?.setVisible(visible);
-    this.joystickCenter?.setVisible(visible);
-    this.joystickThumb?.setVisible(visible);
+    this.joystickBase?.setVisible(joystickVisible);
+    this.joystickCenter?.setVisible(joystickVisible);
+    this.joystickThumb?.setVisible(joystickVisible);
     this.pauseButtonBg?.setVisible(pauseVisible);
     this.pauseButtonIcon?.setVisible(pauseVisible);
     this.pauseButtonHitArea?.setVisible(pauseVisible);
 
     if (this.joystickBase?.input) {
-      this.joystickBase.input.enabled = visible;
+      this.joystickBase.input.enabled = joystickVisible;
     }
     if (this.pauseButtonHitArea?.input) {
       this.pauseButtonHitArea.input.enabled = pauseVisible && !this.blocked;

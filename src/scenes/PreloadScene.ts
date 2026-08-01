@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
-import { getStartupPremiumBackgroundPreloadQueue } from '../systems/parallax/premiumBackgroundManifest';
+import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { getViewportLayout } from '../utils/layout';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class PreloadScene extends Phaser.Scene {
   private menuTransitionStarted = false;
   private cleanupLoaderProgress?: () => void;
+  private fontsReady: Promise<unknown> | null = null;
 
   constructor() {
     super({ key: 'Preload' });
@@ -17,6 +18,7 @@ export class PreloadScene extends Phaser.Scene {
     this.cleanupLoaderProgress?.();
     this.menuTransitionStarted = false;
     this.cleanupLoaderProgress = undefined;
+    this.fontsReady = null;
   }
 
   preload(): void {
@@ -48,11 +50,17 @@ export class PreloadScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanupLoaderProgress);
     this.events.once(Phaser.Scenes.Events.DESTROY, cleanupLoaderProgress);
 
-    // Only warm the first campaign window; later levels load just-in-time before Game starts.
-    for (const asset of getStartupPremiumBackgroundPreloadQueue()) {
-      if (!this.textures.exists(asset.key)) {
-        this.load.image(asset.key, asset.url);
-      }
+    // Neon backgrounds are generated procedurally: warm only the first campaign
+    // window; later levels generate just-in-time before Game starts.
+    ensurePremiumBackgroundAssets(this, 1, () => {});
+
+    // Kick off the bundled UI faces so the Menu transition can wait for them.
+    const fontFaceSet = typeof document !== 'undefined' ? document.fonts : undefined;
+    if (fontFaceSet?.load) {
+      this.fontsReady = Promise.all([
+        fontFaceSet.load('700 32px Orbitron', 'SPACE EXPLORER'),
+        fontFaceSet.load('400 16px "Share Tech Mono"', 'SCORE 0123456789'),
+      ]).catch((): unknown[] => []);
     }
   }
 
@@ -66,6 +74,24 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     this.menuTransitionStarted = true;
-    this.scene.start('Menu');
+
+    // Hold the transition briefly for the bundled UI faces so menus never
+    // flash fallback fonts; the timeout keeps us moving if loading stalls.
+    if (!this.fontsReady) {
+      this.scene.start('Menu');
+      return;
+    }
+
+    let advanced = false;
+    const advance = (): void => {
+      if (advanced) {
+        return;
+      }
+      advanced = true;
+      this.scene.start('Menu');
+    };
+
+    this.fontsReady.then(advance, advance);
+    this.time?.delayedCall?.(2500, advance);
   }
 }

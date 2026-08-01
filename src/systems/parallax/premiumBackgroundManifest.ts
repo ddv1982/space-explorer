@@ -3,7 +3,6 @@ type PremiumBackgroundLayerRole = 'far' | 'nebula' | 'mid' | 'near' | 'overlay';
 export interface PremiumBackgroundLayerConfig {
   role: PremiumBackgroundLayerRole;
   key: string;
-  url: string;
   alpha: number;
   depth: number;
   scrollSpeed: number;
@@ -22,34 +21,69 @@ interface PremiumBackgroundManifest {
   layers: PremiumBackgroundLayerConfig[];
 }
 
-const BACKGROUND_BASE_URL = '/assets/backgrounds';
-const BASE_SIZE = { width: 1254, height: 1254 } as const;
-const BACKGROUND_ALPHA = 1;
-const BACKGROUND_SCROLL_SPEED = 0.09;
+/**
+ * Premium backgrounds are generated procedurally at runtime (neon vector art
+ * direction), so manifests describe layer structure only; there are no image
+ * URLs to download. Textures are produced by neonBackgroundGenerator.
+ */
+const BASE_SIZE = { width: 1024, height: 1024 } as const;
 
 const LEVELS = [
-  { index: 1, name: 'Solar Slipstream' },
-  { index: 2, name: 'Prism Reef' },
-  { index: 3, name: 'Magnetar Foundry' },
-  { index: 4, name: 'Fracture Convoy' },
-  { index: 5, name: 'Cinder Vault' },
-  { index: 6, name: 'Graveyard Lattice' },
-  { index: 7, name: 'Mirage Archive' },
-  { index: 8, name: 'Halo Cartography' },
-  { index: 9, name: 'Glass Rift Narrows' },
-  { index: 10, name: 'Eventide Singularity' },
+  { index: 1, name: 'Aurora Threshold' },
+  { index: 2, name: 'Tideglass Shallows' },
+  { index: 3, name: 'Ember Monsoon' },
+  { index: 4, name: 'Clockwork Causeway' },
+  { index: 5, name: 'Shatter Reef' },
+  { index: 6, name: 'Debris Gauntlet' },
+  { index: 7, name: 'Hollow Choir' },
+  { index: 8, name: 'Eclipse Narrows' },
+  { index: 9, name: 'Swarmfront' },
+  { index: 10, name: 'Eventide Engine' },
 ] as const;
 
-function createLayer(levelIndex: number): PremiumBackgroundLayerConfig {
-  const key = `bg_level${String(levelIndex).padStart(2, '0')}`;
-  return {
-    role: 'far',
-    key,
-    url: `${BACKGROUND_BASE_URL}/${key}.png`,
-    alpha: BACKGROUND_ALPHA,
-    depth: -20,
-    scrollSpeed: BACKGROUND_SCROLL_SPEED,
-  };
+interface LayerSpec {
+  suffix: string;
+  role: PremiumBackgroundLayerRole;
+  alpha: number;
+  depth: number;
+  scrollSpeed: number;
+  blendMode?: string;
+  pulse?: { amplitude: number; speed: number };
+}
+
+const LAYER_SPECS: LayerSpec[] = [
+  { suffix: '', role: 'far', alpha: 1, depth: -20, scrollSpeed: 0.05 },
+  {
+    suffix: '_nebula',
+    role: 'nebula',
+    alpha: 0.9,
+    depth: -19,
+    scrollSpeed: 0.1,
+    pulse: { amplitude: 0.05, speed: 0.0006 },
+  },
+  { suffix: '_mid', role: 'mid', alpha: 0.85, depth: -18, scrollSpeed: 0.16 },
+  { suffix: '_near', role: 'near', alpha: 0.9, depth: -17, scrollSpeed: 0.24 },
+  {
+    suffix: '_overlay',
+    role: 'overlay',
+    alpha: 0.75,
+    depth: -16,
+    scrollSpeed: 0.34,
+    blendMode: 'ADD',
+  },
+];
+
+function createLayers(assetPrefix: string): PremiumBackgroundLayerConfig[] {
+  return LAYER_SPECS.map((spec) => ({
+    role: spec.role,
+    key: `${assetPrefix}${spec.suffix}`,
+    alpha: spec.alpha,
+    depth: spec.depth,
+    scrollSpeed: spec.scrollSpeed,
+    ...(spec.blendMode ? { blendMode: spec.blendMode } : {}),
+    ...(spec.role !== 'far' ? { transparent: true } : {}),
+    ...(spec.pulse ? { pulse: spec.pulse } : {}),
+  }));
 }
 
 function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManifest {
@@ -59,7 +93,7 @@ function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManife
     levelName: level.name,
     assetPrefix,
     baseSize: { ...BASE_SIZE },
-    layers: [createLayer(level.index)],
+    layers: createLayers(assetPrefix),
   };
 }
 
@@ -75,11 +109,9 @@ export function getPremiumBackgroundManifest(levelName: string | undefined): Pre
   return PREMIUM_BACKGROUND_MANIFESTS[levelName];
 }
 
-export type PremiumBackgroundAsset = { key: string; url: string };
-
 /**
  * Level numbers to keep warm for gameplay: the active level plus a short look-ahead.
- * Defaults match the art-bible guidance (current + next).
+ * Defaults match the art-direction guidance (current + next).
  */
 export function getPremiumBackgroundLevelWindow(
   levelNumber: number,
@@ -102,10 +134,8 @@ export function getPremiumBackgroundLevelWindow(
   return windowLevels;
 }
 
-function getPremiumBackgroundPreloadQueueForLevels(
-  levelNumbers: readonly number[]
-): PremiumBackgroundAsset[] {
-  const queued = new Map<string, PremiumBackgroundAsset>();
+function getPremiumBackgroundKeysForLevels(levelNumbers: readonly number[]): string[] {
+  const keys: string[] = [];
 
   for (const levelNumber of levelNumbers) {
     const level = LEVELS.find((entry) => entry.index === levelNumber);
@@ -119,40 +149,34 @@ function getPremiumBackgroundPreloadQueueForLevels(
     }
 
     for (const layer of manifest.layers) {
-      queued.set(layer.key, { key: layer.key, url: layer.url });
+      keys.push(layer.key);
     }
   }
 
-  return [...queued.values()];
+  return keys;
 }
 
 export function getPremiumBackgroundPreloadQueueForLevelWindow(
   levelNumber: number,
   options: { lookAhead?: number; totalLevels?: number } = {}
-): PremiumBackgroundAsset[] {
-  return getPremiumBackgroundPreloadQueueForLevels(
-    getPremiumBackgroundLevelWindow(levelNumber, options)
-  );
+): string[] {
+  return getPremiumBackgroundKeysForLevels(getPremiumBackgroundLevelWindow(levelNumber, options));
 }
 
 /** Boot-time queue: first campaign window so Menu → Level 1 is ready. */
-export function getStartupPremiumBackgroundPreloadQueue(): PremiumBackgroundAsset[] {
+export function getStartupPremiumBackgroundPreloadQueue(): string[] {
   return getPremiumBackgroundPreloadQueueForLevelWindow(1);
 }
 
-export function getAllPremiumBackgroundPreloadQueue(): PremiumBackgroundAsset[] {
-  return getPremiumBackgroundPreloadQueueForLevels(LEVELS.map((level) => level.index));
+export function getAllPremiumBackgroundPreloadQueue(): string[] {
+  return getPremiumBackgroundKeysForLevels(LEVELS.map((level) => level.index));
 }
 
 export function getPremiumBackgroundKeysOutsideLevelWindow(
   levelNumber: number,
   options: { lookAhead?: number; totalLevels?: number } = {}
 ): string[] {
-  const keep = new Set(
-    getPremiumBackgroundPreloadQueueForLevelWindow(levelNumber, options).map((asset) => asset.key)
-  );
+  const keep = new Set(getPremiumBackgroundPreloadQueueForLevelWindow(levelNumber, options));
 
-  return getAllPremiumBackgroundPreloadQueue()
-    .map((asset) => asset.key)
-    .filter((key) => !keep.has(key));
+  return getAllPremiumBackgroundPreloadQueue().filter((key) => !keep.has(key));
 }

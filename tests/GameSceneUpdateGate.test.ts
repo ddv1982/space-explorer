@@ -93,8 +93,12 @@ type GameSceneTestState = {
   lastLifeHelperWing: {
     update: (time: number) => void;
   } | null;
+  grazeSurge: {
+    update: () => void;
+  };
   waveManager: {
     update: (time: number, delta: number, progress: number) => void;
+    updateBossAdds: (time: number) => void;
   };
   levelManager: {
     progress: number;
@@ -131,6 +135,7 @@ const GAMEPLAY_SYSTEM_CALLS = [
   'parallax.update',
   'player.update',
   'lastLifeHelperWing.update',
+  'grazeSurge.update',
   'waveManager.update',
   'levelManager.update',
 ] as const;
@@ -151,6 +156,7 @@ type UpdateHarness = {
   setBossSpawned: (spawned: boolean) => void;
   setShouldSpawnBoss: (shouldSpawn: boolean) => void;
   setLevelComplete: (complete: boolean) => void;
+  setBossAddWaves: (enabled: boolean) => void;
 };
 
 function createUpdateHarness(): UpdateHarness {
@@ -165,6 +171,7 @@ function createUpdateHarness(): UpdateHarness {
   let bossSpawned = false;
   let shouldSpawnBoss = false;
   let levelComplete = false;
+  let bossAddWaves = false;
 
 
   state.updateHud = () => {
@@ -226,9 +233,18 @@ function createUpdateHarness(): UpdateHarness {
     },
   };
 
+  state.grazeSurge = {
+    update: () => {
+      calls.push('grazeSurge.update');
+    },
+  };
+
   state.waveManager = {
     update: (_time: number, _delta: number, _progress: number) => {
       calls.push('waveManager.update');
+    },
+    updateBossAdds: (_time: number) => {
+      calls.push('waveManager.updateBossAdds');
     },
   };
 
@@ -243,6 +259,7 @@ function createUpdateHarness(): UpdateHarness {
     getLevelConfig: () => ({
       sections: [],
       music: { stage: 'stage-track', boss: 'boss-track' },
+      bossAddWaves,
     }),
     shouldSpawnBoss: () => shouldSpawnBoss,
   };
@@ -298,6 +315,9 @@ function createUpdateHarness(): UpdateHarness {
     },
     setLevelComplete: (nextComplete: boolean) => {
       levelComplete = nextComplete;
+    },
+    setBossAddWaves: (enabled: boolean) => {
+      bossAddWaves = enabled;
     },
   };
 }
@@ -427,7 +447,19 @@ describe('GameScene update gate regression coverage', () => {
     harness.scene.update(2000, 16);
 
     expect(harness.calls).not.toContain('waveManager.update');
+    expect(harness.calls).not.toContain('waveManager.updateBossAdds');
     expect(harness.calls).toContain('levelManager.update');
     expect(harness.calls).toContain('updateHud');
+  });
+
+  test('boss add-waves tick after boss spawn when the level enables them', () => {
+    const harness = createUpdateHarness();
+    harness.setBossSpawned(true);
+    harness.setBossAddWaves(true);
+
+    harness.scene.update(2000, 16);
+
+    expect(harness.calls).not.toContain('waveManager.update');
+    expect(harness.calls).toContain('waveManager.updateBossAdds');
   });
 });

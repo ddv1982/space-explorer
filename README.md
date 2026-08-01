@@ -29,6 +29,11 @@ Open `http://localhost:5173` in your browser.
 | Arrow keys / WASD | Move ship |
 | Space / Click | Fire weapons |
 
+On touch devices the on-screen joystick and tap-to-fire are active by default; when a hardware
+keyboard is used, the first keypress switches to keyboard controls and hides the joystick for the
+rest of the session (tap-to-pause stays available). Phones and tablets play in both portrait and
+landscape; on phones, portrait gives the longest vertical read on incoming threats.
+
 ## Game overview
 
 ### Core loop
@@ -181,6 +186,11 @@ bun run levels:validate # config validation for level authoring
 bun run bundle:report   # report dist asset sizes after a build
 bun run bundle:check    # enforce bundle guardrail thresholds after a build
 ```
+
+Playtest shortcut (dev server only, stripped from production builds): open
+`http://localhost:5173/?startLevel=9` to skip the menu into any level with that level's
+progression-legal max loadout. Append `&upgrades=3,3,3,2` (hp,damage,fireRate,shield)
+for an explicit loadout, or `&upgrades=0` for a stock ship.
 
 ## Docs
 

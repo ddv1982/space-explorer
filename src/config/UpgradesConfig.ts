@@ -115,7 +115,7 @@ export function getUpgradeByKey(key: UpgradeKey): UpgradeDef {
   return upgrade;
 }
 
-function getUpgradeProgressionLimit(upgrade: UpgradeDef, playerLevel: number): number {
+export function getUpgradeProgressionLimit(upgrade: UpgradeDef, playerLevel: number): number {
   const cappedLevel = Math.max(1, playerLevel);
   const configuredCap = upgrade.progressionCaps[cappedLevel - 1] ?? upgrade.progressionCaps[upgrade.progressionCaps.length - 1];
   return Math.min(upgrade.maxLevel, Math.max(0, configuredCap ?? upgrade.maxLevel));

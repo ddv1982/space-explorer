@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { UI_FONT_MONO } from '../../utils/uiFonts';
 
 export const CONTINUE_PROMPT = 'Click, Tap, or Press Any Key';
 
@@ -17,7 +18,7 @@ export function createPromptText(
   const prompt = scene.add.text(x, y, text, {
     fontSize: options.fontSize ?? '24px',
     color: options.color ?? '#cfefff',
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
     stroke: '#040b12',
     strokeThickness: 2,
   }).setOrigin(0.5);

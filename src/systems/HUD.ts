@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
 import { colorToHexString, mixColor } from '../utils/colorUtils';
+import { UI_FONT_MONO } from '../utils/uiFonts';
+import type { ChainState } from './ScoreManager';
 import { HudAnnouncementTweens } from './hud/announcementTweens';
 import {
   getLayoutMetrics,
   renderBossBar,
   renderHpBar,
   renderProgressBar,
+  renderSurgeBar,
 } from './hud/statusBarLayout';
 import { HudShieldIconRenderer } from './hud/shieldIconRenderer';
 import {
@@ -34,6 +37,11 @@ export class HUD {
   private announcementText!: Phaser.GameObjects.Text;
   private announcementTween: Phaser.Tweens.Tween | null = null;
   private announcementTweens!: HudAnnouncementTweens;
+  private chainText!: Phaser.GameObjects.Text;
+  private surgeBg!: Phaser.GameObjects.Graphics;
+  private surgeFill!: Phaser.GameObjects.Graphics;
+  private currentChainLabel: string | null = null;
+  private currentSurgeRatio: number | null = null;
 
   private readonly baseHpBarWidth = 200;
   private readonly hpBarHeight = 16;
@@ -67,6 +75,8 @@ export class HUD {
     this.currentBossMaxHp = null;
     this.bossVisible = false;
     this.announcementTween = null;
+    this.currentChainLabel = null;
+    this.currentSurgeRatio = null;
 
     const accentColor = levelConfig?.accentColor ?? 0x54dcff;
     const labelColor = colorToHexString(mixColor(0xd8f4ff, accentColor, 0.28));
@@ -79,7 +89,7 @@ export class HUD {
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '11px',
       color: labelColor,
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
@@ -87,7 +97,7 @@ export class HUD {
     const valueStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '12px',
       color: '#f6fbff',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
@@ -110,6 +120,9 @@ export class HUD {
       bossBarBg: this.bossBarBg,
       bossBarFill: this.bossBarFill,
       bossNameText: this.bossNameText,
+      chainText: this.chainText,
+      surgeBg: this.surgeBg,
+      surgeFill: this.surgeFill,
     } = createHudWidgets({
       scene,
       labelStyle,
@@ -156,6 +169,8 @@ export class HUD {
       progressBg: this.progressBg,
       announcementText: this.announcementText,
       bossNameText: this.bossNameText,
+      chainText: this.chainText,
+      surgeBg: this.surgeBg,
       hpBarHeight: this.hpBarHeight,
       progressHeight: this.progressHeight,
       panelStrokeColor: this.panelStrokeColor,
@@ -171,6 +186,7 @@ export class HUD {
     this.renderProgressBar();
     this.renderShieldIcons();
     this.renderBossBar();
+    this.renderSurge();
   }
 
   showLevelAnnouncement(levelName: string, levelNumber: number): void {
@@ -198,6 +214,9 @@ export class HUD {
     this.bossBarFill.setScrollFactor(factor);
     this.bossNameText.setScrollFactor(factor);
     this.announcementText.setScrollFactor(factor);
+    this.chainText.setScrollFactor(factor);
+    this.surgeBg.setScrollFactor(factor);
+    this.surgeFill.setScrollFactor(factor);
   }
 
   showBossBar(name: string = 'BOSS'): void {
@@ -270,6 +289,46 @@ export class HUD {
     }
   }
 
+  updateChainMeter(chainState: ChainState): void {
+    const label =
+      chainState.multiplier > 1 ? `x${chainState.multiplier} CHAIN ${chainState.chain}` : '';
+
+    if (label === this.currentChainLabel) {
+      return;
+    }
+
+    this.currentChainLabel = label;
+    this.chainText.setText(label);
+    this.chainText.setVisible(label !== '');
+  }
+
+  updateSurge(ratio: number): void {
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const layout = getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth);
+    const surgeStep = 1 / Math.max(1, layout.hpBarWidth - 26);
+
+    if (
+      this.currentSurgeRatio !== null &&
+      Math.abs(clampedRatio - this.currentSurgeRatio) < surgeStep &&
+      clampedRatio !== 0 &&
+      clampedRatio !== 1
+    ) {
+      return;
+    }
+
+    this.currentSurgeRatio = clampedRatio;
+    this.renderSurge();
+  }
+
+  private renderSurge(): void {
+    renderSurgeBar({
+      surgeFill: this.surgeFill,
+      currentSurgeRatio: this.currentSurgeRatio,
+      hpBarHeight: this.hpBarHeight,
+      layout: getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth),
+    });
+  }
+
   showBossWarning(): void {
     this.announcementTweens.showBossWarning();
   }
@@ -280,6 +339,10 @@ export class HUD {
 
   showHelperWingAnnouncement(helperCount: number): void {
     this.announcementTweens.showHelperWingAnnouncement(helperCount);
+  }
+
+  showEliteWaveAnnouncement(): void {
+    this.announcementTweens.showEliteWaveAnnouncement();
   }
 
   showHelperWingDepletedAnnouncement(): void {

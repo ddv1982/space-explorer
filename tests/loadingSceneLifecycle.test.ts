@@ -51,9 +51,12 @@ mock.module('phaser', () => ({
   },
 }));
 
-let startupQueue: Array<{ key: string; url: string }> = [];
-mock.module('../src/systems/parallax/premiumBackgroundManifest', () => ({
-  getStartupPremiumBackgroundPreloadQueue: () => startupQueue,
+let ensuredLevels: number[] = [];
+mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
+  ensurePremiumBackgroundAssets: (_scene: unknown, level: number, onReady: () => void) => {
+    ensuredLevels.push(level);
+    onReady();
+  },
 }));
 mock.module('../src/utils/layout', () => ({
   getViewportLayout: () => ({ centerX: 400, centerY: 300 }),
@@ -70,18 +73,15 @@ type PreloadHarness = {
   loadEvents: MockEmitter;
   lifecycleEvents: MockEmitter;
   displayedText: string[];
-  imageCalls: Array<[string, string]>;
   startCalls: string[];
 };
 
-function createPreloadHarness(existingKeys: string[] = []): PreloadHarness {
+function createPreloadHarness(): PreloadHarness {
   const scene = Object.create(PreloadScene.prototype) as InstanceType<typeof PreloadScene>;
   const loadEvents = new MockEmitter();
   const lifecycleEvents = new MockEmitter();
   const displayedText: string[] = [];
-  const imageCalls: Array<[string, string]> = [];
   const startCalls: string[] = [];
-  const existing = new Set(existingKeys);
   const text = {
     setOrigin: () => text,
     setText: (value: string) => {
@@ -98,14 +98,11 @@ function createPreloadHarness(existingKeys: string[] = []): PreloadHarness {
       },
     },
     events: lifecycleEvents,
-    load: Object.assign(loadEvents, {
-      image: (key: string, url: string) => imageCalls.push([key, url]),
-    }),
+    load: loadEvents,
     scene: { start: (key: string) => startCalls.push(key) },
-    textures: { exists: (key: string) => existing.has(key) },
   });
 
-  return { scene, loadEvents, lifecycleEvents, displayedText, imageCalls, startCalls };
+  return { scene, loadEvents, lifecycleEvents, displayedText, startCalls };
 }
 
 describe('boot and preload loader lifecycle', () => {
@@ -121,16 +118,13 @@ describe('boot and preload loader lifecycle', () => {
     expect(startCalls).toEqual(['Preload']);
   });
 
-  test('queued assets update normalized progress and transition only at create', () => {
-    startupQueue = [
-      { key: 'queued', url: '/queued.png' },
-      { key: 'cached', url: '/cached.png' },
-    ];
-    const harness = createPreloadHarness(['cached']);
+  test('warms the first level window via procedural generation and transitions at create', () => {
+    ensuredLevels = [];
+    const harness = createPreloadHarness();
 
     harness.scene.init();
     harness.scene.preload();
-    expect(harness.imageCalls).toEqual([['queued', '/queued.png']]);
+    expect(ensuredLevels).toEqual([1]);
     expect(harness.startCalls).toEqual([]);
 
     harness.loadEvents.emit('progress', -0.2);
@@ -150,34 +144,21 @@ describe('boot and preload loader lifecycle', () => {
     expect(harness.loadEvents.listenerCount('progress')).toBe(0);
   });
 
-  test('empty or already-cached queue completes without a timeout', () => {
-    startupQueue = [{ key: 'cached', url: '/cached.png' }];
-    const harness = createPreloadHarness(['cached']);
+  test('create completes the transition without requiring loader progress', () => {
+    ensuredLevels = [];
+    const harness = createPreloadHarness();
 
     harness.scene.init();
     harness.scene.preload();
     harness.scene.create();
 
-    expect(harness.imageCalls).toEqual([]);
+    expect(ensuredLevels).toEqual([1]);
     expect(harness.startCalls).toEqual(['Menu']);
     expect(harness.displayedText).toEqual(['LOADING... 0%']);
   });
 
-  test('load errors do not fabricate completion progress', () => {
-    startupQueue = [{ key: 'broken', url: '/broken.png' }];
-    const harness = createPreloadHarness();
-
-    harness.scene.init();
-    harness.scene.preload();
-    harness.loadEvents.emit('progress', 0.4);
-    harness.loadEvents.emit('loaderror', { key: 'broken' });
-
-    expect(harness.displayedText).toEqual(['LOADING... 0%', 'LOADING... 40%']);
-    expect(harness.startCalls).toEqual([]);
-  });
-
   test('shutdown removes old-run progress callbacks before recreate', () => {
-    startupQueue = [{ key: 'queued', url: '/queued.png' }];
+    ensuredLevels = [];
     const harness = createPreloadHarness();
 
     harness.scene.init();

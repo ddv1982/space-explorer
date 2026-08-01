@@ -37,7 +37,7 @@ Run this checklist when changes touch scene flow, persistence, controls, respons
 - Fresh load reaches the menu without console errors.
 - Starting a run from the menu reaches gameplay on the first attempt.
 - Save, load, delete, pause, resume, and return-to-menu controls work from the pause overlay.
-- Mobile controls and orientation overlay remain usable on a narrow viewport.
+- Mobile controls remain usable on a narrow viewport in both orientations (there is no rotate block).
 - A non-final mission completes into PlanetIntermission and returns to gameplay.
 - Boss defeat, player death, game-over, and victory transitions happen once and land on the expected scene.
 - Audio unlocks after user input, resumes after pause/focus recovery, and does not stack duplicate music after scene transitions.

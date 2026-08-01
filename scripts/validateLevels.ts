@@ -34,6 +34,9 @@ const HAZARD_BASE_PRESSURE_COST: Record<ScriptedHazardConfig['type'], number> = 
   'rock-corridor': 1.05,
   'energy-storm': 0.95,
   'gravity-well': 1.1,
+  'solar-flare': 1.0,
+  'laser-lattice': 1.0,
+  'wormhole-spawn': 0.9,
 };
 const EARLY_LEVELS = new Set(
   CORE_CAMPAIGN.levels.slice(0, EARLY_LEVEL_GUARDRAIL_COUNT).map((level) => levelLabel(level))

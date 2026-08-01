@@ -1,0 +1,78 @@
+# Space Explorer Art Direction — Neon Vector
+
+This document is the master visual bible for the neon vector redesign. It supersedes the painterly direction in `background-art-bible.md` (kept for history) and extends the scope to ships, projectiles, VFX, backgrounds, and UI. Everything is produced procedurally in code: zero downloaded art assets.
+
+## Pillars
+
+1. **Neon vector** — clean geometric silhouettes, hot cores, layered glow halos, crisp outlines. Geometry Wars readability with a modern space-opera palette.
+2. **Procedural only** — every texture is generated at runtime via Phaser Graphics (`withGeneratedTexture`). No raster downloads; the former 25 MB of painterly background PNGs is retired.
+3. **Readable pressure** — the center gameplay lane stays dark and calm. Bullets, enemies, hazards, and pickups win attention with saturated neon cores; scenery never crosses their luminance in the lane.
+
+## Palette System
+
+Global base (from `scenes/shared/neonUiTheme.ts`):
+
+- Space base: `#020816` (NEON.navy), panel `#030a18`
+- Player cyan: `#5bd8ff` (NEON.cyan), hot core `#bff6ff`
+- Ally/blue tech: `#2f94ff` (NEON.blue), deep `#0a2d5c`
+- Teal support: `#58f0d8`, purple special: `#8f6bff`
+- Danger red: `#ff756f`, amber warning: `#ffc36e`
+- Text/white-hot: `#f4fdff`
+
+Per-level identity: each level keeps its `accentColor` / `nebulaColor` from the level definition; the neon background generator derives the level's glow palette from those two values plus a per-level motif (arcs, crystals, grid, shards, rings).
+
+### Entity color coding (gameplay readability, fixed regardless of level)
+
+| Entity | Glow color | Meaning |
+| --- | --- | --- |
+| Player ship | cyan `#5bd8ff` | hero |
+| Helper wing | teal `#58f0d8` | ally |
+| Player bullets | cyan-white | friendly fire |
+| Scout | red `#ff5d73` | fast flanker |
+| Fighter | green `#52f28e` | balanced |
+| Bomber | amber `#ffb14b` | heavy ordnance |
+| Gunship | blue `#63a4ff` | ranged |
+| Swarm | yellow `#ffff5d` | weak, numerous |
+| Enemy bullets / bombs | magenta-red `#ff4d8d` / amber | hostile fire |
+| Bosses | per-attack-style accent (existing palette, neon-ized) | set piece |
+| Asteroids | cool grey-violet wireframe | neutral hazard |
+| Power-ups | green health / blue shield / gold rapidfire, white halo | pickup |
+
+## Shape Language
+
+- **Player**: sleek forward dart; twin prongs; engine cores glow. Banking conveyed by rotation (code-driven, no extra frames).
+- **Enemies**: single-gesture silhouettes (dart, chevron, hex, twin-prong, tri-shard) readable at 20–44 px.
+- **Bosses**: wide multi-part hulls with concentric rings / arc motifs; pulsing core.
+- **Glow recipe** (all entities): halo pass (shape scaled up, low alpha) → mid glow pass → near-black body fill tinted with hue → bright neon outline → white-hot core accents (cockpit, engine dots).
+- **Asteroids**: faceted wireframe polygons, dim inner fill, neon edge strokes; rotating.
+
+## Backgrounds
+
+Per level, five procedurally generated tile layers (vertically seamless), replacing the old PNG backplate:
+
+1. `far` — deep vertical gradient (navy → black), sparse dim stars. Opaque.
+2. `nebula` — large soft radial glow blobs in the level's `nebulaColor`, weighted to edges.
+3. `mid` — the level's neon motif: thin line work drawn by `LEVEL_MOTIFS` in `neonBackgroundGenerator.ts` (aurora ribbons, glass-tide swells, ember-storm streaks, clockwork gears, coral fans, wreckage plates, cathedral arches, eclipse coronas, hive honeycomb, singularity-engine swirl).
+4. `near` — rare dark silhouette flecks near edges. Transparent.
+5. `overlay` — tiny bright motes, additive blend, very sparse.
+
+Rules: center 45–55% of the lane stays under ~20% luminance; scroll speeds increase far → overlay; layers are generated per level window and released outside it (existing window logic). The procedural starfield/twinkle/debris/planet extras remain as enhancement layers.
+
+## VFX
+
+- Explosions: white-hot flash → expanding neon ring → line-burst sparks → shard debris (additive).
+- Muzzle flash: four-point star flare. Exhaust: soft glow orbs. Bullet trails: small glow dots.
+- Hit splash: sharp cross flare. Power-up burst: halo ring + sparks in pickup color.
+- Warp transition: vertical speed-line streaks in cyan/white.
+
+## UI
+
+- Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles.
+- Typography: bundled display font (Orbitron) with system fallback stack; mono for numeric readouts.
+- Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planets become neon-limb wireframe spheres.
+
+## Performance Rules
+
+- Additive glow is expensive: cap simultaneous ADD-blend layers, keep halos inside texture canvases, prefer texture-baked glow over runtime filters for pooled objects.
+- Camera glow filter stays subtle (existing baseline). Per-object glow filters are reserved for the player, bosses, and telegraphs.
+- Generated textures are power-of-two where practical and reused via stable keys.

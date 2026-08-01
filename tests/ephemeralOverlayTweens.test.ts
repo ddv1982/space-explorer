@@ -34,6 +34,8 @@ class MockGraphics extends MockGameObject {
   public scrollFactor = -1;
   public fillStyleCalls: Array<{ color: number; alpha: number }> = [];
   public fillTriangleCalls: Array<[number, number, number, number, number, number]> = [];
+  public lineStyleCalls: Array<{ width: number; color: number; alpha: number }> = [];
+  public strokeTriangleCalls: Array<[number, number, number, number, number, number]> = [];
 
   setDepth(depth: number): this {
     this.depth = depth;
@@ -52,6 +54,16 @@ class MockGraphics extends MockGameObject {
 
   fillTriangle(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): this {
     this.fillTriangleCalls.push([x1, y1, x2, y2, x3, y3]);
+    return this;
+  }
+
+  lineStyle(width: number, color: number, alpha: number): this {
+    this.lineStyleCalls.push({ width, color, alpha });
+    return this;
+  }
+
+  strokeTriangle(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): this {
+    this.strokeTriangleCalls.push([x1, y1, x2, y2, x3, y3]);
     return this;
   }
 }
@@ -115,13 +127,21 @@ describe('ephemeralOverlayTweens', () => {
     const arrow = fixture.graphics[0];
     expect(arrow.depth).toBe(150);
     expect(arrow.scrollFactor).toBe(0);
+    expect(arrow.lineStyleCalls).toEqual([
+      { width: 4, color: 0xff756f, alpha: 0.2 },
+      { width: 1.5, color: 0xff756f, alpha: 0.95 },
+    ]);
+    expect(arrow.strokeTriangleCalls).toEqual([
+      [133, 23, 147, 23, 140, 37],
+      [134, 24, 146, 24, 140, 36],
+    ]);
     expect(arrow.fillStyleCalls).toEqual([
-      { color: 0xff4444, alpha: 0.8 },
-      { color: 0xffffff, alpha: 0.5 },
+      { color: 0x3d0a0a, alpha: 0.9 },
+      { color: 0xffd7d4, alpha: 0.9 },
     ]);
     expect(arrow.fillTriangleCalls).toEqual([
       [134, 24, 146, 24, 140, 36],
-      [137, 27, 143, 27, 140, 33],
+      [137.5, 27, 142.5, 27, 140, 33],
     ]);
 
     expect(fixture.tweens).toHaveLength(1);

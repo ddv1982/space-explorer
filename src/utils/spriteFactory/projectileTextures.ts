@@ -1,88 +1,97 @@
 import Phaser from 'phaser';
 import { withGeneratedTexture } from '../generatedTexture';
+import { NEON_ENTITY, fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine } from './neonStyle';
 
 export function ensurePlayerBulletTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'player-bullet', 8, 18, (g) => {
-    g.fillStyle(0x00aaff, 0.3);
-    g.fillRect(1, 4, 6, 14);
+    const palette = NEON_ENTITY.player;
 
-    g.fillStyle(0x00ccff, 0.5);
-    g.fillRect(2, 2, 4, 16);
+    // Layered glow capsule with a hot tip.
+    g.fillStyle(palette.glow, 0.22);
+    g.fillRect(1, 5, 6, 13);
+    g.fillStyle(palette.glow, 0.45);
+    g.fillRect(2, 2, 4, 15);
 
-    g.fillStyle(0x00ffff, 1);
-    g.fillRect(3, 0, 2, 18);
+    strokeNeonLine(g, 4, 2, 4, 17, palette.outline, 1.5);
 
-    g.fillStyle(0xffffff, 0.9);
-    g.fillRect(3, 0, 2, 5);
-
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(4, 1, 1);
+    g.fillStyle(palette.hot, 1);
+    g.fillRect(3, 1, 2, 5);
+    fillHotCore(g, 4, 2, 1, 0xffffff);
   });
 }
 
 export function ensureEnemyBulletTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'enemy-bullet', 8, 8, (g) => {
-    g.fillStyle(0xff174d, 0.35);
-    g.fillCircle(4, 4, 4);
+    const palette = NEON_ENTITY.enemyFire;
 
-    g.fillStyle(0xff4d8d, 0.7);
-    g.fillCircle(4, 4, 3);
-
-    g.fillStyle(0xffb3dd, 1);
-    g.fillCircle(4, 4, 2);
-
-    g.fillStyle(0xffffff, 0.9);
-    g.fillCircle(4, 3, 1);
+    fillNeonCircle(g, 4, 4, 2.2, palette, {
+      haloScale: 1.9,
+      midScale: 1.45,
+      outlineWidth: 0,
+      solidCore: true,
+    });
+    fillHotCore(g, 4, 4, 0.9, palette.hot);
   });
 }
 
 export function ensureBomberBombTexture(scene: Phaser.Scene): string {
   return withGeneratedTexture(scene, 'bomber-bomb', 14, 18, (g) => {
-    g.fillStyle(0x885522, 1);
-    g.beginPath();
-    g.moveTo(7, 0);
-    g.lineTo(12, 4);
-    g.lineTo(14, 10);
-    g.lineTo(12, 16);
-    g.lineTo(7, 18);
-    g.lineTo(2, 16);
-    g.lineTo(0, 10);
-    g.lineTo(2, 4);
-    g.closePath();
-    g.fillPath();
+    const palette = NEON_ENTITY.bomber;
 
-    g.fillStyle(0xaa7733, 1);
-    g.beginPath();
-    g.moveTo(7, 1);
-    g.lineTo(10, 4);
-    g.lineTo(11, 10);
-    g.lineTo(7, 8);
-    g.lineTo(4, 10);
-    g.lineTo(5, 4);
-    g.closePath();
-    g.fillPath();
+    // Faceted ordnance shell.
+    fillNeonPolygon(
+      g,
+      [
+        { x: 7, y: 1 },
+        { x: 11, y: 4 },
+        { x: 13, y: 10 },
+        { x: 11, y: 15 },
+        { x: 7, y: 17 },
+        { x: 3, y: 15 },
+        { x: 1, y: 10 },
+        { x: 3, y: 4 },
+      ],
+      palette,
+      { haloScale: 1.12, outlineWidth: 1 }
+    );
 
-    g.fillStyle(0xffcc00, 0.7);
-    g.fillRect(3, 8, 8, 3);
+    // Armed charge band and fuse.
+    strokeNeonLine(g, 3, 9, 11, 9, palette.hot, 1.5);
+    fillNeonCircle(g, 7, 3, 1.6, palette, { haloScale: 1.6, midScale: 1.25, outlineWidth: 0 });
+    fillHotCore(g, 7, 3, 0.7, 0xffffff);
+  });
+}
 
-    g.fillStyle(0xff8800, 0.8);
-    g.fillCircle(7, 2, 2);
+export function ensureMineTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'sower-mine', 16, 16, (g) => {
+    const palette = NEON_ENTITY.mine;
 
-    g.fillStyle(0xffcc44, 0.9);
-    g.fillCircle(7, 1, 1);
+    // Spiked proximity orb.
+    fillNeonCircle(g, 8, 8, 4, palette, { haloScale: 1.4, midScale: 1.2 });
 
-    g.fillStyle(0x774411, 1);
-    g.beginPath();
-    g.moveTo(2, 14);
-    g.lineTo(0, 18);
-    g.lineTo(4, 16);
-    g.closePath();
-    g.fillPath();
-    g.beginPath();
-    g.moveTo(12, 14);
-    g.lineTo(14, 18);
-    g.lineTo(10, 16);
-    g.closePath();
-    g.fillPath();
+    strokeNeonLine(g, 8, 1, 8, 4, palette.outline, 1);
+    strokeNeonLine(g, 8, 12, 8, 15, palette.outline, 1);
+    strokeNeonLine(g, 1, 8, 4, 8, palette.outline, 1);
+    strokeNeonLine(g, 12, 8, 15, 8, palette.outline, 1);
+    strokeNeonLine(g, 3, 3, 5, 5, palette.glow, 1);
+    strokeNeonLine(g, 13, 3, 11, 5, palette.glow, 1);
+    strokeNeonLine(g, 3, 13, 5, 11, palette.glow, 1);
+    strokeNeonLine(g, 13, 13, 11, 11, palette.glow, 1);
+
+    fillHotCore(g, 8, 8, 1.4, palette.hot);
+  });
+}
+
+export function ensureBeamTexture(scene: Phaser.Scene): string {
+  return withGeneratedTexture(scene, 'hazard-beam', 32, 128, (g) => {
+    // Soft beam bar tinted at runtime: wide glow falloff with a hot core.
+    g.fillStyle(0xffffff, 0.1);
+    g.fillRect(0, 0, 32, 128);
+    g.fillStyle(0xffffff, 0.22);
+    g.fillRect(6, 0, 20, 128);
+    g.fillStyle(0xffffff, 0.45);
+    g.fillRect(11, 0, 10, 128);
+    g.fillStyle(0xffffff, 0.95);
+    g.fillRect(14, 0, 4, 128);
   });
 }

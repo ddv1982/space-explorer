@@ -9,17 +9,20 @@ import {
   type SaveSlotId,
 } from '../systems/SaveSlotStorage';
 import {
+  getPlayerMaxHp,
   getPlayerState,
   resetPlayerState,
   resetRunSummary,
   setPlayerState,
   setRunSummary,
+  type PlayerStateData,
 } from '../systems/PlayerState';
 import { audioManager } from '../systems/AudioManager';
 import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { createMenuLayoutPlan } from './menuScene/layout';
+import { resolveDevLevelJump } from './menuScene/devLevelJump';
 import { startRegisteredScene } from './sceneRegistry';
 import {
   createMenuBackdrop,
@@ -46,6 +49,33 @@ export class MenuScene extends Phaser.Scene {
     const layoutPlan = this.initializeMenuScene(menuConfig);
     this.createMenuPanels(layoutPlan, menuConfig.accentColor);
     this.refreshSaveSlots('');
+    this.maybeStartDevLevelJump();
+  }
+
+  private maybeStartDevLevelJump(): void {
+    // Dev-server playtest shortcut only; Vite dead-code-eliminates this whole
+    // path (including the devLevelJump module) from production builds.
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    const jump = resolveDevLevelJump(window.location.search);
+    if (!jump || !this.queueGameTransition()) {
+      return;
+    }
+
+    this.resetRunState();
+    const baseState = getPlayerState(this.registry);
+    const jumpState: PlayerStateData = {
+      ...baseState,
+      level: jump.level,
+      upgrades: jump.upgrades,
+      currentShields: jump.upgrades.shield,
+      remainingLives: 3,
+    };
+    jumpState.currentHp = getPlayerMaxHp(jumpState);
+    setPlayerState(this.registry, jumpState);
+    this.startGameScene();
   }
 
   private initializeMenuScene(menuConfig: ReturnType<typeof getLevelConfig>) {

@@ -10,6 +10,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   enemyType: string = 'base';
   despawnOffscreen: boolean = true;
   private visualFlashToken = 0;
+  private defeatCount = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string) {
     super(scene, x, y, textureKey);
@@ -46,8 +47,17 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   }
 
   die(): void {
+    this.defeatCount += 1;
     this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.despawn();
+  }
+
+  /**
+   * Monotonic marker used by encounter systems to distinguish a combat defeat
+   * from ordinary pooling/despawning, even if this instance is reused immediately.
+   */
+  getDefeatCount(): number {
+    return this.defeatCount;
   }
 
   despawn(): void {

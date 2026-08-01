@@ -113,6 +113,8 @@ function createCombatFeedbackHarness(options: {
   );
   const queueLevelComplete = mock(() => options.queueLevelComplete?.());
   const createExplosion = mock();
+  const createWormholeTelegraph = mock();
+  const showEliteWaveAnnouncement = mock();
   const hideBossBar = mock();
   const markBossDefeated = mock();
   const setBoss = mock();
@@ -128,12 +130,20 @@ function createCombatFeedbackHarness(options: {
           shake: mock(),
         },
       },
+      time: { now: 1000 },
     } as never,
     player: () => player as never,
-    scoreManager: () => ({ addScore: mock() } as never),
+    scoreManager: () => ({
+      addScore: mock(),
+      registerKill: mock((score: number) => score),
+      onPlayerHit: mock(),
+      onPlayerDeath: mock(),
+    } as never),
     effectsManager: () => ({
       createScorePopup: mock(),
       createExplosion,
+      createSurgePulse: mock(),
+      createWormholeTelegraph,
       pulseCameraColor: mock(),
     } as never),
     flow: () => ({
@@ -147,6 +157,8 @@ function createCombatFeedbackHarness(options: {
       getLevelConfig: () => ({ music: { boss: 'boss-track' } }),
     } as never),
     collisionManager: () => ({ clearPlayerHazards: mock() } as never),
+    waveManager: () => ({ applyDeathRelief: mock() } as never),
+    grazeSurge: () => null,
     enemyPool: () => ({ getAllEnemies: (): never[] => [], spawnBoss: mock() } as never),
     hud: () => ({
       showBossWarning: mock(),
@@ -155,6 +167,7 @@ function createCombatFeedbackHarness(options: {
       showBossPhaseAnnouncement: mock(),
       showHelperWingAnnouncement: mock(),
       showHelperWingDepletedAnnouncement: mock(),
+      showEliteWaveAnnouncement,
     } as never),
     getBoss: () => (options.boss ?? null) as never,
     setBoss,
@@ -179,6 +192,8 @@ function createCombatFeedbackHarness(options: {
     handlePlayerDeath,
     queueLevelComplete,
     createExplosion,
+    createWormholeTelegraph,
+    showEliteWaveAnnouncement,
     hideBossBar,
     markBossDefeated,
     setBoss,
@@ -192,13 +207,13 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
   test('handleEnemyDeath adds score, shows popup, plays explosion, and tries dropping a power-up', () => {
     playExplosion.mockClear();
     trySpawnRandomPowerUp.mockClear();
-    const addScore = mock();
+    const addScore = mock((score: number) => score);
     const createScorePopup = mock();
 
     const handlers = createGameSceneCombatFeedbackHandlers({
-      scene: { cameras: { main: {} } } as never,
+      scene: { cameras: { main: {} }, time: { now: 1000 } } as never,
       player: () => ({ x: 0, y: 0 } as never),
-      scoreManager: () => ({ addScore } as never),
+      scoreManager: () => ({ registerKill: addScore } as never),
       effectsManager: () => ({ createScorePopup } as never),
       flow: () => ({
         handlePlayerDeath: mock(),
@@ -208,6 +223,8 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       getFlowContext: () => ({}) as never,
       levelManager: () => ({ getLevelConfig: () => ({ music: { boss: 'boss-track' } }) } as never),
       collisionManager: () => ({ clearPlayerHazards: mock() } as never),
+      waveManager: () => ({ applyDeathRelief: mock() } as never),
+      grazeSurge: () => null,
       enemyPool: () => ({ getAllEnemies: (): never[] => [] } as never),
       hud: () => ({ showBossWarning: mock(), hideBossBar: mock() } as never),
       getBoss: () => null,
@@ -228,7 +245,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
 
     handlers.handleEnemyDeath(500, 12, 34);
 
-    expect(addScore).toHaveBeenCalledWith(500);
+    expect(addScore).toHaveBeenCalledWith(500, 1000);
     expect(createScorePopup).toHaveBeenCalledWith(12, 34, 500);
     expect(playExplosion).toHaveBeenCalledWith(0.5);
     expect(trySpawnRandomPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
@@ -366,6 +383,8 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
         }),
       } as never),
       collisionManager: () => ({ clearPlayerHazards } as never),
+      waveManager: () => ({ applyDeathRelief: mock() } as never),
+      grazeSurge: () => null,
       enemyPool: () => ({
         getAllEnemies: () => [activeEnemy, inactiveEnemy],
         spawnBoss: mock(() => boss),
@@ -402,5 +421,22 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(boss.setPlayer).toHaveBeenCalledWith(player);
     expect(setBoss).toHaveBeenCalledWith(boss);
     expect(showBossBar).toHaveBeenCalledWith('Dreadnova');
+  });
+
+  test('handleWormholeTelegraph renders the wormhole telegraph VFX at the portal position', () => {
+    const harness = createCombatFeedbackHarness({});
+
+    harness.handlers.handleWormholeTelegraph(180, 240);
+
+    expect(harness.createWormholeTelegraph).toHaveBeenCalledTimes(1);
+    expect(harness.createWormholeTelegraph).toHaveBeenCalledWith(180, 240);
+  });
+
+  test('handleEliteWave shows the elite wave announcement with a camera beat', () => {
+    const harness = createCombatFeedbackHarness({});
+
+    harness.handlers.handleEliteWave();
+
+    expect(harness.showEliteWaveAnnouncement).toHaveBeenCalledTimes(1);
   });
 });

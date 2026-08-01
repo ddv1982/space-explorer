@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
 import {
   createMusicSliderCluster,
@@ -31,7 +32,6 @@ import {
 function createDefaultPauseOverlayState(): PauseOverlayState {
   return {
     visible: false,
-    orientationBlocked: false,
     canResume: true,
     canSave: false,
     storageAvailable: false,
@@ -87,39 +87,39 @@ export class PauseOverlay {
       fontSize: '86px',
       color: '#eefbff',
       fontStyle: 'bold',
-      fontFamily: '"Arial Black", "Impact", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: UI_FONT_DISPLAY,
       stroke: '#42c9ff',
       strokeThickness: 2,
     }).setOrigin(0.5);
     this.subtitleText = scene.add.text(0, 0, '', {
       fontSize: '16px',
       color: '#d5e6f6',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       align: 'center',
     }).setOrigin(0.5);
     this.hintText = scene.add.text(0, 0, '', {
       fontSize: '14px',
       color: '#7fa8df',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       align: 'center',
       wordWrap: { width: 650 },
     }).setOrigin(0.5);
     this.musicHeaderText = scene.add.text(0, 0, 'TUNE MUSIC + VOLUME', {
       fontSize: '14px',
       color: '#7fa8df',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
     });
     this.savesHeaderText = scene.add.text(0, 0, 'CHECKPOINT GRID', {
       fontSize: '14px',
       color: '#ffbf6b',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
     });
     this.statusText = scene.add.text(0, 0, '', {
       fontSize: '13px',
       color: '#72ecff',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       align: 'center',
       wordWrap: { width: 620 },
     }).setOrigin(0.5);
@@ -175,7 +175,6 @@ export class PauseOverlay {
 
   setState(nextState: Partial<PauseOverlayState>): void {
     this.state.visible = nextState.visible ?? this.state.visible;
-    this.state.orientationBlocked = nextState.orientationBlocked ?? this.state.orientationBlocked;
     this.state.canResume = nextState.canResume ?? this.state.canResume;
     this.state.canSave = nextState.canSave ?? this.state.canSave;
     this.state.storageAvailable = nextState.storageAvailable ?? this.state.storageAvailable;
@@ -215,6 +214,11 @@ export class PauseOverlay {
     drawPauseOverlayBackdrop(this.dimmer, this.panel, layout);
 
     this.titleText.setFontSize(layout.titleFontSize);
+    const maxTitleWidth = Math.max(180, layout.panelWidth - 64);
+    if (this.titleText.width > maxTitleWidth) {
+      const scaled = Math.floor((layout.titleFontSize * maxTitleWidth) / this.titleText.width);
+      this.titleText.setFontSize(Math.max(28, scaled));
+    }
     this.subtitleText.setFontSize(layout.subtitleFontSize);
     this.hintText.setFontSize(layout.hintFontSize);
     this.titleText.setPosition(layout.centerX, layout.titleY);
@@ -335,8 +339,8 @@ export class PauseOverlay {
     }
 
     const shouldShow = this.state.visible;
-    const canResume = this.state.canResume && !this.state.orientationBlocked;
-    const message = getPauseOverlayMessage(this.state);
+    const canResume = this.state.canResume;
+    const message = getPauseOverlayMessage();
     const statusMessage = this.state.statusMessage ||
       (this.state.storageAvailable ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.' : 'Checkpoint storage unavailable in this browser.');
 

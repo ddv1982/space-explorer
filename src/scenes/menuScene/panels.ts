@@ -8,7 +8,7 @@ import {
   setMusicSliderClusterPosition,
   type MusicSliderCluster,
 } from '../shared/musicSliderCluster';
-import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_FONT, NEON_TEXT } from '../shared/neonUiTheme';
+import { addNeonTitle, drawNeonDivider, drawNeonFrame, fitNeonTitleFontSize, NEON, NEON_FONT, NEON_TEXT } from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
 import type { MenuLayoutPlan } from './layout';
 
@@ -53,7 +53,8 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
 }
 
 export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void {
-  const titleSize = plan.veryShortCompact ? 48 : plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
+  const desiredTitleSize = plan.veryShortCompact ? 48 : plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
+  const titleSize = fitNeonTitleFontSize(scene, 'SPACE EXPLORER', desiredTitleSize, Math.max(180, plan.outerFrameWidth - 96));
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
 
   const wings = scene.add.graphics();

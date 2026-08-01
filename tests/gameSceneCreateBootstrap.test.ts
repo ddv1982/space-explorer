@@ -7,6 +7,11 @@ mock.module('phaser', () => ({
         Sprite: class {},
       },
     },
+    Scenes: {
+      Events: {
+        SHUTDOWN: 'shutdown',
+      },
+    },
   },
 }));
 
@@ -19,6 +24,10 @@ describe('runGameSceneCreateBootstrap', () => {
     let pauseHandler: (() => void) | null = null;
     let pauseToggleArg: boolean | null = null;
     let showControlsHintArgs: unknown[] = [];
+    let keyboardDetectedHandler: (() => void) | null = null;
+    let shutdownEventName: string | null = null;
+    let shutdownUnsubscribe: (() => void) | null = null;
+    const suppressedValues: boolean[] = [];
 
     const levelConfig = { id: 'level-config' };
     const scaledBossConfig = { id: 'scaled-boss-config' };
@@ -33,6 +42,10 @@ describe('runGameSceneCreateBootstrap', () => {
       setPauseButtonHandler(handler: () => void) {
         callLog.push('mobileControls.setPauseButtonHandler');
         pauseHandler = handler;
+      },
+      setJoystickSuppressed(value: boolean) {
+        callLog.push('mobileControls.setJoystickSuppressed');
+        suppressedValues.push(value);
       },
     };
     const inputManager = { id: 'input-manager' };
@@ -52,7 +65,6 @@ describe('runGameSceneCreateBootstrap', () => {
         pauseToggleArg = value;
       },
     };
-    const mobileViewportGuard = { id: 'mobile-viewport-guard' };
     const runtimeLifecycle = {
       registerLifecycleHandlers() {
         callLog.push('runtimeLifecycle.registerLifecycleHandlers');
@@ -170,16 +182,29 @@ describe('runGameSceneCreateBootstrap', () => {
         expect(params.canSaveCurrentRun()).toBe(true);
         return {
           pauseStateController,
-          mobileViewportGuard,
         };
       },
       showControlsHint: (...args: unknown[]) => {
         callLog.push('showControlsHint');
         showControlsHintArgs = args;
       },
+      onHardwareKeyboardDetected: (handler: () => void) => {
+        callLog.push('onHardwareKeyboardDetected');
+        keyboardDetectedHandler = handler;
+        return () => {
+          callLog.push('unsubscribeHardwareKeyboardDetected');
+        };
+      },
     };
 
-    const phaserScene = {} as never;
+    const phaserScene = {
+      events: {
+        once: (event: string, callback: () => void) => {
+          shutdownEventName = event;
+          shutdownUnsubscribe = callback;
+        },
+      },
+    } as never;
     const scene: GameSceneCreateBootstrapBridge = {
       scene: phaserScene,
       runtimeLifecycle: runtimeLifecycle as never,
@@ -203,11 +228,11 @@ describe('runGameSceneCreateBootstrap', () => {
       waveManager: null as never,
       collisionManager: null as never,
       scoreManager: null as never,
+      grazeSurge: null as never,
       powerUpGroup: null as never,
       hud: null as never,
       warpTransition: null as never,
       pauseStateController: null,
-      mobileViewportGuard: null,
       lastHudShieldCount: 7,
       resetRuntimeState: () => {
         callLog.push('resetRuntimeState');
@@ -268,6 +293,7 @@ describe('runGameSceneCreateBootstrap', () => {
       'captureCurrentRunStateForSave',
       'canSaveCurrentRun',
       'mobileControls.setPauseButtonHandler',
+      'onHardwareKeyboardDetected',
       'isTouchMobileDevice',
       'showControlsHint',
       'runtimeLifecycle.registerRuntimeHandlers',
@@ -291,12 +317,18 @@ describe('runGameSceneCreateBootstrap', () => {
       hud,
       warpTransition,
       pauseStateController,
-      mobileViewportGuard,
       lastHudShieldCount: 11,
     });
 
     expect(showControlsHintArgs).toEqual([phaserScene, { mobile: false }]);
     expect(pauseHandler).not.toBeNull();
+
+    expect(shutdownEventName).toBe('shutdown');
+    expect(keyboardDetectedHandler).not.toBeNull();
+    keyboardDetectedHandler?.();
+    expect(suppressedValues).toEqual([true]);
+    shutdownUnsubscribe?.();
+    expect(callLog.slice(-1)).toEqual(['unsubscribeHardwareKeyboardDetected']);
 
     pauseHandler?.();
     expect(callLog.slice(-2)).toEqual([

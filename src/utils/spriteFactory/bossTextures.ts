@@ -1,6 +1,22 @@
 import Phaser from 'phaser';
 import type { BossAttackStyle } from '../../config/levels/types';
 import { withGeneratedTexture } from '../generatedTexture';
+import {
+  fillHotCore,
+  fillNeonCircle,
+  fillNeonPolygon,
+  strokeNeonLine,
+  type NeonPalette,
+} from './neonStyle';
+
+const BOSS_PALETTES: Record<BossAttackStyle, NeonPalette> = {
+  barrage: { body: 0x330a16, outline: 0xff6688, glow: 0x991833, hot: 0xffd7e0 },
+  bulwark: { body: 0x1e1444, outline: 0xb49cff, glow: 0x5740a6, hot: 0xecdfff },
+  carrier: { body: 0x33190a, outline: 0xffb066, glow: 0x8d4f22, hot: 0xffe8cc },
+  pursuit: { body: 0x330d14, outline: 0xff7892, glow: 0x9c2338, hot: 0xffdee6 },
+  maelstrom: { body: 0x0e2440, outline: 0x8fd3ff, glow: 0x2b6ca3, hot: 0xe0f3ff },
+  pressure: { body: 0x33150c, outline: 0xff9a66, glow: 0xb64d29, hot: 0xffe3d1 },
+};
 
 export function ensureBossTextureVariant(
   scene: Phaser.Scene,
@@ -11,173 +27,236 @@ export function ensureBossTextureVariant(
   const textureKey = `boss-texture-${attackStyle}-${motifVariant}`;
 
   return withGeneratedTexture(scene, textureKey, 88, 56, (g) => {
-    const palette = {
-      base: attackStyle === 'bulwark' ? 0x2a1e56 : attackStyle === 'carrier' ? 0x4e2a16 : attackStyle === 'pursuit' ? 0x53171d : attackStyle === 'maelstrom' ? 0x203b5a : attackStyle === 'pressure' ? 0x5a2418 : 0x661122,
-      mid: attackStyle === 'bulwark' ? 0x5740a6 : attackStyle === 'carrier' ? 0x8d4f22 : attackStyle === 'pursuit' ? 0x9c2338 : attackStyle === 'maelstrom' ? 0x2b6ca3 : attackStyle === 'pressure' ? 0xb64d29 : 0x991833,
-      accent: attackStyle === 'bulwark' ? 0xb49cff : attackStyle === 'carrier' ? 0xffb066 : attackStyle === 'pursuit' ? 0xff7892 : attackStyle === 'maelstrom' ? 0x8fd3ff : attackStyle === 'pressure' ? 0xff9a66 : 0xff6688,
-      panel: attackStyle === 'bulwark' ? 0x3b2a77 : attackStyle === 'carrier' ? 0x6b3918 : attackStyle === 'pursuit' ? 0x781b2d : attackStyle === 'maelstrom' ? 0x22507a : attackStyle === 'pressure' ? 0x7d311d : 0x771122,
-    };
+    const palette = BOSS_PALETTES[attackStyle];
 
     switch (attackStyle) {
       case 'pursuit':
-        g.fillStyle(palette.base, 1);
-        g.beginPath();
-        g.moveTo(44, 0);
-        g.lineTo(58, 12);
-        g.lineTo(64, 30);
-        g.lineTo(52, 56);
-        g.lineTo(36, 56);
-        g.lineTo(24, 30);
-        g.lineTo(30, 12);
-        g.closePath();
-        g.fillPath();
-        g.fillStyle(palette.mid, 1);
-        g.beginPath();
-        g.moveTo(44, 3);
-        g.lineTo(54, 16);
-        g.lineTo(50, 40);
-        g.lineTo(44, 46);
-        g.lineTo(38, 40);
-        g.lineTo(34, 16);
-        g.closePath();
-        g.fillPath();
-        g.fillStyle(palette.mid, 0.92);
-        g.fillTriangle(30, 16, 10, 36, 28, 28);
-        g.fillTriangle(58, 16, 78, 36, 60, 28);
+        fillNeonPolygon(
+          g,
+          [
+            { x: 44, y: 2 },
+            { x: 57, y: 13 },
+            { x: 62, y: 29 },
+            { x: 51, y: 54 },
+            { x: 37, y: 54 },
+            { x: 26, y: 29 },
+            { x: 31, y: 13 },
+          ],
+          palette,
+          { haloScale: 1.06 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 31, y: 16 },
+            { x: 12, y: 35 },
+            { x: 29, y: 28 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 57, y: 16 },
+            { x: 76, y: 35 },
+            { x: 59, y: 28 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
         break;
       case 'bulwark':
-        g.fillStyle(palette.base, 1);
-        g.fillRoundedRect(18, 6, 52, 42, 8);
-        g.fillStyle(palette.mid, 0.95);
-        g.fillRoundedRect(26, 10, 36, 28, 6);
-        g.fillStyle(palette.mid, 0.9);
-        g.fillCircle(14, 28, 10);
-        g.fillCircle(74, 28, 10);
-        g.lineStyle(3, palette.accent, 0.35);
-        g.strokeCircle(14, 28, 12);
-        g.strokeCircle(74, 28, 12);
+        fillNeonPolygon(
+          g,
+          [
+            { x: 20, y: 8 },
+            { x: 68, y: 8 },
+            { x: 72, y: 16 },
+            { x: 72, y: 40 },
+            { x: 66, y: 46 },
+            { x: 22, y: 46 },
+            { x: 16, y: 40 },
+            { x: 16, y: 16 },
+          ],
+          palette,
+          { haloScale: 1.06 }
+        );
+        fillNeonCircle(g, 14, 28, 8, palette, { haloScale: 1.5, midScale: 1.25 });
+        fillNeonCircle(g, 74, 28, 8, palette, { haloScale: 1.5, midScale: 1.25 });
         break;
       case 'carrier':
-        g.fillStyle(palette.base, 1);
-        g.fillRoundedRect(18, 4, 52, 44, 6);
-        g.fillStyle(palette.mid, 0.95);
-        g.fillRoundedRect(10, 10, 18, 22, 4);
-        g.fillRoundedRect(60, 10, 18, 22, 4);
-        g.fillStyle(0x150b06, 0.75);
-        g.fillRect(12, 16, 12, 8);
-        g.fillRect(64, 16, 12, 8);
-        g.fillStyle(palette.mid, 0.9);
-        g.fillRoundedRect(34, 8, 20, 32, 4);
+        fillNeonPolygon(
+          g,
+          [
+            { x: 20, y: 6 },
+            { x: 68, y: 6 },
+            { x: 70, y: 46 },
+            { x: 18, y: 46 },
+          ],
+          palette,
+          { haloScale: 1.06 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 12, y: 12 },
+            { x: 26, y: 12 },
+            { x: 26, y: 32 },
+            { x: 12, y: 32 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 62, y: 12 },
+            { x: 76, y: 12 },
+            { x: 76, y: 32 },
+            { x: 62, y: 32 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
+        // Hangar bays.
+        strokeNeonLine(g, 14, 20, 24, 20, palette.hot, 1.5);
+        strokeNeonLine(g, 64, 20, 74, 20, palette.hot, 1.5);
         break;
       case 'maelstrom':
-        g.fillStyle(palette.base, 1);
+        fillNeonPolygon(
+          g,
+          [
+            { x: 44, y: 3 },
+            { x: 65, y: 11 },
+            { x: 76, y: 24 },
+            { x: 67, y: 49 },
+            { x: 21, y: 52 },
+            { x: 10, y: 34 },
+            { x: 15, y: 15 },
+          ],
+          palette,
+          { haloScale: 1.06 }
+        );
+        g.lineStyle(2.5, palette.outline, 0.28);
         g.beginPath();
-        g.moveTo(44, 2);
-        g.lineTo(66, 10);
-        g.lineTo(78, 24);
-        g.lineTo(68, 50);
-        g.lineTo(20, 54);
-        g.lineTo(8, 34);
-        g.lineTo(14, 14);
-        g.closePath();
-        g.fillPath();
-        g.fillStyle(palette.mid, 0.95);
+        g.arc(44, 28, 19, -0.5, 3.6);
+        g.strokePath();
+        g.lineStyle(1.25, palette.outline, 0.8);
         g.beginPath();
-        g.moveTo(44, 4);
-        g.lineTo(56, 18);
-        g.lineTo(50, 40);
-        g.lineTo(38, 44);
-        g.lineTo(28, 28);
-        g.lineTo(32, 14);
-        g.closePath();
-        g.fillPath();
-        g.lineStyle(3, palette.accent, 0.35);
-        g.beginPath();
-        g.arc(44, 28, 18, -0.5, 3.6);
+        g.arc(44, 28, 19, -0.5, 3.6);
         g.strokePath();
         break;
       case 'pressure':
-        g.fillStyle(palette.base, 1);
-        g.beginPath();
-        g.moveTo(44, 0);
-        g.lineTo(70, 14);
-        g.lineTo(74, 30);
-        g.lineTo(60, 52);
-        g.lineTo(28, 52);
-        g.lineTo(14, 30);
-        g.lineTo(18, 14);
-        g.closePath();
-        g.fillPath();
-        g.fillStyle(palette.mid, 0.95);
-        g.fillTriangle(44, 4, 56, 24, 32, 24);
-        g.fillStyle(palette.mid, 0.88);
-        g.fillRect(8, 26, 14, 10);
-        g.fillRect(66, 26, 14, 10);
+        fillNeonPolygon(
+          g,
+          [
+            { x: 44, y: 2 },
+            { x: 69, y: 15 },
+            { x: 72, y: 30 },
+            { x: 59, y: 50 },
+            { x: 29, y: 50 },
+            { x: 16, y: 30 },
+            { x: 19, y: 15 },
+          ],
+          palette,
+          { haloScale: 1.06 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 10, y: 26 },
+            { x: 22, y: 26 },
+            { x: 22, y: 36 },
+            { x: 10, y: 36 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 66, y: 26 },
+            { x: 78, y: 26 },
+            { x: 78, y: 36 },
+            { x: 66, y: 36 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
         break;
       case 'barrage':
       default:
-        g.fillStyle(palette.base, 1);
-        g.beginPath();
-        g.moveTo(44, 0);
-        g.lineTo(68, 12);
-        g.lineTo(76, 28);
-        g.lineTo(80, 44);
-        g.lineTo(72, 56);
-        g.lineTo(16, 56);
-        g.lineTo(8, 44);
-        g.lineTo(12, 28);
-        g.lineTo(20, 12);
-        g.closePath();
-        g.fillPath();
-        g.fillStyle(palette.mid, 1);
-        g.beginPath();
-        g.moveTo(44, 2);
-        g.lineTo(62, 12);
-        g.lineTo(66, 30);
-        g.lineTo(44, 28);
-        g.lineTo(22, 30);
-        g.lineTo(26, 12);
-        g.closePath();
-        g.fillPath();
-        g.fillStyle(palette.mid, 0.9);
-        g.fillTriangle(20, 12, 4, 36, 24, 20);
-        g.fillTriangle(68, 12, 84, 36, 64, 20);
+        fillNeonPolygon(
+          g,
+          [
+            { x: 44, y: 2 },
+            { x: 67, y: 13 },
+            { x: 75, y: 28 },
+            { x: 78, y: 43 },
+            { x: 71, y: 54 },
+            { x: 17, y: 54 },
+            { x: 10, y: 43 },
+            { x: 13, y: 28 },
+            { x: 21, y: 13 },
+          ],
+          palette,
+          { haloScale: 1.06 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 22, y: 13 },
+            { x: 6, y: 35 },
+            { x: 25, y: 21 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
+        fillNeonPolygon(
+          g,
+          [
+            { x: 66, y: 13 },
+            { x: 82, y: 35 },
+            { x: 63, y: 21 },
+          ],
+          palette,
+          { haloScale: 1.08, outlineWidth: 1 }
+        );
         break;
     }
 
-    g.fillStyle(palette.accent, 0.92);
-    g.fillRoundedRect(38, 6, 12, 10, 3);
-    g.fillStyle(0xffffff, 0.7);
-    g.fillRect(40, 8, 3, 3);
-    g.fillRect(45, 8, 3, 3);
+    // Command core: hot slit flanked by sensor dots.
+    strokeNeonLine(g, 38, 9, 50, 9, palette.outline, 2);
+    fillHotCore(g, 40, 12, 1.4, palette.hot);
+    fillHotCore(g, 48, 12, 1.4, palette.hot);
 
     if (motifVariant === 0) {
-      g.lineStyle(2, palette.accent, 0.28);
-      g.lineBetween(24, 22, 64, 22);
-      g.lineBetween(30, 36, 58, 36);
+      strokeNeonLine(g, 26, 22, 62, 22, palette.outline, 1.5);
+      strokeNeonLine(g, 32, 36, 56, 36, palette.outline, 1.5);
     } else if (motifVariant === 1) {
-      g.lineStyle(2, palette.accent, 0.28);
+      g.lineStyle(2.5, palette.outline, 0.2);
       g.strokeCircle(44, 28, 10);
-      g.strokeCircle(44, 28, 17);
+      g.strokeCircle(44, 28, 16);
+      g.lineStyle(1.25, palette.outline, 0.7);
+      g.strokeCircle(44, 28, 10);
+      g.strokeCircle(44, 28, 16);
     } else {
-      g.lineStyle(2, palette.accent, 0.28);
-      g.lineBetween(44, 6, 44, 48);
-      g.lineBetween(34, 18, 54, 30);
-      g.lineBetween(54, 18, 34, 30);
+      strokeNeonLine(g, 44, 8, 44, 46, palette.outline, 1.5);
+      strokeNeonLine(g, 34, 18, 54, 30, palette.outline, 1.5);
+      strokeNeonLine(g, 54, 18, 34, 30, palette.outline, 1.5);
     }
 
-    g.fillStyle(motifVariant === 1 ? palette.panel : 0x1b1028, 0.9);
-    g.fillRect(28, 50, 8, 6);
-    g.fillRect(40, 50, 8, 6);
-    g.fillRect(52, 50, 8, 6);
-    g.fillStyle(palette.accent, 0.72);
-    g.fillCircle(32, 54, 3);
-    g.fillCircle(44, 54, 3);
-    g.fillCircle(56, 54, 3);
+    // Engine row.
+    fillNeonCircle(g, 32, 52, 2.4, palette, { haloScale: 1.6, midScale: 1.3, outlineWidth: 0 });
+    fillNeonCircle(g, 44, 52, 2.4, palette, { haloScale: 1.6, midScale: 1.3, outlineWidth: 0 });
+    fillNeonCircle(g, 56, 52, 2.4, palette, { haloScale: 1.6, midScale: 1.3, outlineWidth: 0 });
+    fillHotCore(g, 32, 52, 1, palette.hot);
+    fillHotCore(g, 44, 52, 1, palette.hot);
+    fillHotCore(g, 56, 52, 1, palette.hot);
 
-    g.lineStyle(1, palette.panel, 0.4);
-    g.lineBetween(44, 4, 44, 52);
-    g.lineBetween(24, 24, 64, 24);
-    g.lineBetween(28, 38, 60, 38);
+    // Hull seams.
+    strokeNeonLine(g, 26, 24, 62, 24, palette.glow, 1);
+    strokeNeonLine(g, 30, 38, 58, 38, palette.glow, 1);
   });
 }

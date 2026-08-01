@@ -13,10 +13,12 @@ interface HudSyncInput {
 interface HudUpdateInput {
   hud: HUD;
   player: Pick<Player, 'hp' | 'maxHp' | 'shields'>;
-  scoreManager: Pick<ScoreManager, 'getScore'>;
+  scoreManager: Pick<ScoreManager, 'getScore' | 'getChainState'>;
   levelManager: Pick<LevelManager, 'progress'>;
   flow: Pick<GameSceneFlowController, 'getRemainingLives'>;
   lastHudShieldCount: number | null;
+  now: number;
+  surgeRatio: number;
 }
 
 export function syncHudShields(input: HudSyncInput): number | null {
@@ -36,6 +38,8 @@ export function updateHud(input: HudUpdateInput): number | null {
     input.levelManager.progress,
     input.flow.getRemainingLives()
   );
+  input.hud.updateChainMeter(input.scoreManager.getChainState(input.now));
+  input.hud.updateSurge(input.surgeRatio);
 
   return syncHudShields({
     hud: input.hud,

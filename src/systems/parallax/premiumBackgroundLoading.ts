@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 
+import { ensureNeonBackgroundTextures } from './neonBackgroundGenerator';
 import {
   getPremiumBackgroundKeysOutsideLevelWindow,
-  getPremiumBackgroundPreloadQueueForLevelWindow,
-  type PremiumBackgroundAsset,
+  getPremiumBackgroundLevelWindow,
 } from './premiumBackgroundManifest';
 
 interface EnsurePremiumBackgroundAssetsOptions {
@@ -15,20 +15,6 @@ interface EnsurePremiumBackgroundAssetsOptions {
    * via {@link releasePremiumBackgroundTexturesOutsideWindow}.
    */
   releaseOutsideWindow?: boolean;
-}
-
-function queueMissingPremiumBackgroundAssets(
-  loader: Phaser.Loader.LoaderPlugin,
-  textures: Phaser.Textures.TextureManager,
-  assets: readonly PremiumBackgroundAsset[]
-): PremiumBackgroundAsset[] {
-  const missing = assets.filter((asset) => !textures.exists(asset.key));
-
-  for (const asset of missing) {
-    loader.image(asset.key, asset.url);
-  }
-
-  return missing;
 }
 
 export function releasePremiumBackgroundTexturesOutsideWindow(
@@ -47,11 +33,8 @@ export function releasePremiumBackgroundTexturesOutsideWindow(
 
 /**
  * Ensure the active level window's premium backgrounds are in the texture cache.
- * Calls onReady when ready (or when the load attempt finishes, even if a file failed —
- * Game falls back to procedural starfield for missing keys).
- *
- * Aborts without calling onReady if the scene shuts down mid-load, so resize/restart
- * cannot orphan a late COMPLETE into startRegisteredScene.
+ * Neon vector backgrounds are generated procedurally, so this is synchronous:
+ * layers are drawn once per texture key and onReady fires immediately.
  */
 export function ensurePremiumBackgroundAssets(
   scene: Phaser.Scene,
@@ -60,68 +43,14 @@ export function ensurePremiumBackgroundAssets(
   options: EnsurePremiumBackgroundAssetsOptions = {}
 ): void {
   const lookAhead = options.lookAhead ?? 1;
-  const releaseOutsideWindow = options.releaseOutsideWindow ?? false;
-  const assets = getPremiumBackgroundPreloadQueueForLevelWindow(levelNumber, { lookAhead });
-  const missing = queueMissingPremiumBackgroundAssets(scene.load, scene.textures, assets);
 
-  let settled = false;
-  let guardsAttached = false;
-
-  const onComplete = (): void => {
-    finish();
-  };
-
-  const onFileLoadError = (file: { key?: string } | undefined): void => {
-    const key = file && typeof file === 'object' && 'key' in file ? file.key : undefined;
-    console.warn(
-      `[premiumBackground] failed to load ${key ?? 'asset'}; continuing with starfield fallback if needed`
-    );
-  };
-
-  const onSceneInvalidated = (): void => {
-    if (settled) {
-      return;
-    }
-    settled = true;
-    detachLifecycleGuards();
-  };
-
-  const detachLifecycleGuards = (): void => {
-    if (!guardsAttached) {
-      return;
-    }
-    guardsAttached = false;
-    scene.load.off(Phaser.Loader.Events.COMPLETE, onComplete);
-    scene.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onFileLoadError);
-    scene.events.off(Phaser.Scenes.Events.SHUTDOWN, onSceneInvalidated);
-    scene.events.off(Phaser.Scenes.Events.DESTROY, onSceneInvalidated);
-  };
-
-  const finish = (): void => {
-    if (settled) {
-      return;
-    }
-    settled = true;
-    detachLifecycleGuards();
-
-    if (releaseOutsideWindow) {
-      releasePremiumBackgroundTexturesOutsideWindow(scene, levelNumber, { lookAhead });
-    }
-    onReady();
-  };
-
-  if (missing.length === 0) {
-    finish();
-    return;
+  for (const windowLevel of getPremiumBackgroundLevelWindow(levelNumber, { lookAhead })) {
+    ensureNeonBackgroundTextures(scene, windowLevel);
   }
 
-  guardsAttached = true;
-  scene.load.once(Phaser.Loader.Events.COMPLETE, onComplete);
-  scene.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onFileLoadError);
-  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, onSceneInvalidated);
-  scene.events.once(Phaser.Scenes.Events.DESTROY, onSceneInvalidated);
-
-  if (!scene.load.isLoading()) {
-    scene.load.start();
+  if (options.releaseOutsideWindow ?? false) {
+    releasePremiumBackgroundTexturesOutsideWindow(scene, levelNumber, { lookAhead });
   }
+
+  onReady();
 }

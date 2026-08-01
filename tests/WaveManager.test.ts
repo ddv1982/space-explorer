@@ -133,7 +133,7 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
   const enemyPool = {
     spawnEnemy: (type: string, x: number, y: number) => {
       spawnedEnemies.push({ type, x, y });
-      return { active: true };
+      return { active: true, getDefeatCount: () => 0 };
     },
   };
 
@@ -247,6 +247,106 @@ describe('WaveManager', () => {
     expect(harness.emittedEvents).toEqual([`${GAME_SCENE_EVENTS.enemySpawnWarning}:120`]);
   });
 
+  test('update routes solar-flare and laser-lattice hazards to the hazard beam system', () => {
+    const activeSection = createSection({
+      id: 'beam-section',
+      hazardEvents: [
+        { type: 'solar-flare', intensity: 0.6, cadenceMs: 400 },
+        { type: 'laser-lattice', intensity: 0.4, cadenceMs: 400 },
+      ],
+    });
+    const levelConfig = createLevelConfig({ sections: [activeSection] });
+    const harness = createWaveManagerHarness(levelConfig);
+
+    const beamCalls: Array<{ kind: string; intensity: number }> = [];
+    harness.manager.setHazardBeamSystem({
+      spawnSolarFlare: (intensity: number) => beamCalls.push({ kind: 'solar-flare', intensity }),
+      spawnLaserLattice: (intensity: number) => beamCalls.push({ kind: 'laser-lattice', intensity }),
+    } as never);
+
+    harness.manager.update(0, 16, 0.2);
+    harness.manager.update(500, 16, 0.2);
+
+    expect(beamCalls).toEqual([
+      { kind: 'solar-flare', intensity: 0.6 },
+      { kind: 'laser-lattice', intensity: 0.4 },
+    ]);
+  });
+
+  test('update telegraphs wormhole-spawn portals and materializes the configured pack', () => {
+    const activeSection = createSection({
+      id: 'wormhole-section',
+      hazardEvents: [
+        { type: 'wormhole-spawn', intensity: 0.5, cadenceMs: 500, enemyTypes: ['dodger'] },
+      ],
+      enemyFocus: [
+        { type: 'scout', weight: 1 },
+        { type: 'dodger', weight: 1 },
+      ],
+    });
+    const levelConfig = createLevelConfig({
+      enemies: activeSection.enemyFocus ?? [],
+      sections: [activeSection],
+    });
+    const harness = createWaveManagerHarness(levelConfig);
+
+    harness.manager.update(0, 16, 0.2);
+    harness.manager.update(600, 16, 0.2);
+
+    expect(harness.emittedEvents).toEqual([
+      `${GAME_SCENE_EVENTS.wormholeTelegraph}:160`,
+      `${GAME_SCENE_EVENTS.wormholeTelegraph}:160`,
+    ]);
+    expect(harness.spawnedEnemies).toEqual([]);
+
+    // Wall-clock jumps do not advance the portal: only active gameplay delta does.
+    harness.manager.update(600, 599, 0.2);
+    expect(harness.spawnedEnemies).toEqual([]);
+    harness.manager.update(600, 1, 0.2);
+
+    expect(harness.spawnedEnemies).toEqual([
+      { type: 'dodger', x: 130, y: 150 },
+      { type: 'dodger', x: 160, y: 150 },
+      { type: 'dodger', x: 190, y: 150 },
+      { type: 'dodger', x: 130, y: 150 },
+      { type: 'dodger', x: 160, y: 150 },
+      { type: 'dodger', x: 190, y: 150 },
+    ]);
+  });
+
+  test('section changes cancel pending wormhole packs', () => {
+    const wormholeSection = createSection({
+      id: 'wormhole-section',
+      startProgress: 0,
+      endProgress: 0.5,
+      hazardEvents: [{ type: 'wormhole-spawn', intensity: 0, cadenceMs: 500 }],
+    });
+    const nextSection = createSection({ id: 'next-section', startProgress: 0.5, endProgress: 1 });
+    const harness = createWaveManagerHarness(createLevelConfig({
+      sections: [wormholeSection, nextSection],
+    }));
+
+    harness.manager.update(0, 16, 0.2);
+    harness.manager.update(600, 16, 0.2);
+    harness.manager.update(1200, 600, 0.8);
+
+    expect(harness.spawnedEnemies).toEqual([]);
+  });
+
+  test('death relief cancels pending wormhole packs', () => {
+    const activeSection = createSection({
+      hazardEvents: [{ type: 'wormhole-spawn', intensity: 0, cadenceMs: 500 }],
+    });
+    const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection] }));
+
+    harness.manager.update(0, 16, 0.2);
+    harness.manager.update(600, 16, 0.2);
+    harness.manager.applyDeathRelief();
+    harness.manager.update(600, 600, 0.2);
+
+    expect(harness.spawnedEnemies).toEqual([]);
+  });
+
   test('update triggers lane-based signature waves once when section progress crosses the threshold', () => {
     const activeSection = createSection({
       signatureWaves: [
@@ -299,5 +399,72 @@ describe('WaveManager', () => {
     expect(harness.spawnedPowerUps).toEqual([
       { x: 400, y: -40, type: 'shield' },
     ]);
+  });
+
+  test('update fires choreographed section waves on accumulated gameplay delta, ignoring wall-clock jumps', () => {
+    const activeSection = createSection({
+      waves: [
+        { id: 'opening-line', atMs: 300, formation: 'line', type: 'scout', count: 3, lane: 3 },
+      ],
+    });
+    const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection], enemies: [] }));
+
+    harness.manager.update(0, 100, 0.1);
+    // A wall-clock jump with an ordinary frame delta (e.g. resuming after a
+    // pause) must not compress the wave schedule into a burst.
+    harness.manager.update(50000, 100, 0.2);
+    expect(harness.spawnedEnemies).toEqual([]);
+
+    harness.manager.update(50100, 100, 0.3);
+    expect(harness.spawnedEnemies).toEqual([
+      { type: 'scout', x: 344, y: -60 },
+      { type: 'scout', x: 400, y: -60 },
+      { type: 'scout', x: 456, y: -60 },
+    ]);
+    expect(harness.emittedEvents).toEqual([
+      `${GAME_SCENE_EVENTS.enemySpawnWarning}:344`,
+      `${GAME_SCENE_EVENTS.enemySpawnWarning}:400`,
+      `${GAME_SCENE_EVENTS.enemySpawnWarning}:456`,
+    ]);
+  });
+
+  test('updateBossAdds trickles scout lines on the configured interval when the level enables them', () => {
+    const harness = createWaveManagerHarness(createLevelConfig({ bossAddWaves: true }));
+
+    harness.manager.updateBossAdds(13000);
+    expect(harness.spawnedEnemies).toEqual([
+      { type: 'scout', x: 60, y: -50 },
+      { type: 'scout', x: 112, y: -50 },
+      { type: 'scout', x: 164, y: -50 },
+    ]);
+
+    harness.manager.updateBossAdds(20000);
+    expect(harness.spawnedEnemies).toHaveLength(3);
+
+    harness.manager.updateBossAdds(26000);
+    expect(harness.spawnedEnemies).toHaveLength(6);
+  });
+
+  test('updateBossAdds is a no-op when the level does not enable boss add-waves', () => {
+    const harness = createWaveManagerHarness(createLevelConfig());
+
+    harness.manager.updateBossAdds(13000);
+
+    expect(harness.spawnedEnemies).toEqual([]);
+  });
+
+  test('applyDeathRelief stretches the encounter interval while relief is active', () => {
+    const harness = createWaveManagerHarness(createLevelConfig());
+
+    harness.manager.applyDeathRelief();
+    harness.manager.update(100_000, 16, 0.4);
+    expect(harness.spawnedEnemies).toHaveLength(1);
+
+    // A large scene-clock advance with only one gameplay frame does not consume relief.
+    harness.manager.update(102_100, 16, 0.4);
+    expect(harness.spawnedEnemies).toHaveLength(1);
+
+    harness.manager.update(102_100, 8000, 0.4);
+    expect(harness.spawnedEnemies).toHaveLength(2);
   });
 });

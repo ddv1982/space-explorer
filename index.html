@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Space Explorer</title>
   <style>
+    @font-face {
+      font-family: 'Orbitron';
+      src: url('/fonts/orbitron.woff2') format('woff2');
+      font-weight: 400 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Share Tech Mono';
+      src: url('/fonts/share-tech-mono.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       width: 100%;
@@ -29,26 +43,6 @@
     }
     #game-root > canvas {
       display: block;
-    }
-    #rotate-device-overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: rgba(2, 4, 13, 0.96);
-      color: #f4f7ff;
-      text-align: center;
-      z-index: 10;
-    }
-    #rotate-device-overlay p {
-      max-width: 18rem;
-      font: 600 1.1rem/1.5 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      letter-spacing: 0.02em;
-    }
-    #rotate-device-overlay[hidden] {
-      display: none;
     }
     #webgl-unsupported {
       position: fixed;
@@ -84,23 +78,11 @@
       font-size: 1rem;
       line-height: 1.6;
     }
-    @media (orientation: portrait) and (pointer: coarse) {
-      #rotate-device-overlay {
-        display: flex;
-      }
-      #game-root > canvas {
-        visibility: hidden;
-        pointer-events: none;
-      }
-    }
   </style>
 </head>
 <body>
   <div id="game-shell">
     <div id="game-root"></div>
-  </div>
-  <div id="rotate-device-overlay" role="dialog" aria-live="polite">
-    <p>Rotate your device to landscape to keep playing.</p>
   </div>
   <main id="webgl-unsupported" role="alert" hidden>
     <div>

@@ -38,6 +38,8 @@ export class Boss extends EnemyBase {
   private phase2MoveSpeed = DEFAULT_BOSS_CONFIG.phase2MoveSpeed;
   private phaseTransitionPauseMs = DEFAULT_BOSS_CONFIG.phaseTransitionPauseMs ?? 320;
   private attackStyle: BossAttackStyle = DEFAULT_BOSS_CONFIG.attackStyle;
+  private phase2AttackStyle: BossAttackStyle | null = null;
+  private bossName: string = DEFAULT_BOSS_CONFIG.name;
   private phase1SpreadShotCount = DEFAULT_BOSS_CONFIG.phase1SpreadShotCount;
   private phase1SpreadArcDegrees = DEFAULT_BOSS_CONFIG.phase1SpreadArcDegrees;
   private phase1BulletSpeedScale = DEFAULT_BOSS_CONFIG.phase1BulletSpeedScale;
@@ -161,6 +163,10 @@ export class Boss extends EnemyBase {
     this.moveSpeed = this.phase2MoveSpeed;
     this.phaseStartedAt = time;
     this.lastFireTime = time + this.phaseTransitionPauseMs;
+    if (this.phase2AttackStyle && this.phase2AttackStyle !== this.attackStyle) {
+      this.attackStyle = this.phase2AttackStyle;
+      this.setTexture(ensureBossTextureVariant(this.scene, this.attackStyle, this.bossName));
+    }
     this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
     this.flashPhaseChange();
   }
@@ -307,6 +313,8 @@ export class Boss extends EnemyBase {
     this.phase2MoveSpeed = config.phase2MoveSpeed;
     this.phaseTransitionPauseMs = config.phaseTransitionPauseMs ?? DEFAULT_BOSS_CONFIG.phaseTransitionPauseMs ?? 320;
     this.attackStyle = config.attackStyle;
+    this.phase2AttackStyle = config.phase2AttackStyle ?? null;
+    this.bossName = config.name;
     this.phase1SpreadShotCount = config.phase1SpreadShotCount;
     this.phase1SpreadArcDegrees = config.phase1SpreadArcDegrees;
     this.phase1BulletSpeedScale = config.phase1BulletSpeedScale;

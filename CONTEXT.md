@@ -23,3 +23,11 @@ _Avoid_: dodging, movement showcase
 **Ambush Anticipation**:
 The player skill of recognizing when an apparently safe space is likely to change because of delayed enemy entries, visibility pressure, or repeated setup cues.
 _Avoid_: surprise, cheap shot
+
+## Decisions
+
+**Both orientations on touch devices (2026-08)**:
+Phones and tablets are playable in portrait and landscape; there is no rotate block. Portrait is the preferred phone experience because a taller viewport gives the player more vertical runway to read incoming threats, which serves Lane-Reading and Ambush Anticipation. Late-level formations were audited at phone-portrait width (390px) and needed no geometry retuning.
+
+**Gameplay clocks freeze on pause (2026-08)**:
+Pause suspends only the arcade physics world; the scene clock keeps running. Systems that schedule gameplay consequences therefore count accumulated gameplay delta instead of reading scene time: choreographed waves (`WaveChoreographer`) and hazard beams (`HazardBeam`) freeze their telegraph/fire/expire windows while paused, so a pause can never compress wave schedules into a burst or let a beam expire for free. This protects Lane-Reading: telegraph lead times survive pauses intact.

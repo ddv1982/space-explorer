@@ -37,8 +37,12 @@ interface GameSceneGameplayFrameDelegate {
   getLastLifeHelperWing(): {
     update(time: number, delta: number): void;
   } | null;
+  grazeSurge: {
+    update(): void;
+  };
   waveManager: {
     update(time: number, delta: number, progress: number): void;
+    updateBossAdds(time: number): void;
   };
   levelManager: {
     progress: number;
@@ -147,6 +151,8 @@ export function createGameSceneGameplayFrameBehavior(
   const updateEncounterAndLevelProgress = (time: number, delta: number): void => {
     if (!delegate.levelManager.hasBossSpawned()) {
       delegate.waveManager.update(time, delta, delegate.levelManager.progress);
+    } else if (delegate.levelManager.getLevelConfig().bossAddWaves) {
+      delegate.waveManager.updateBossAdds(time);
     }
 
     const prevComplete = delegate.levelManager.isComplete();
@@ -168,6 +174,7 @@ export function createGameSceneGameplayFrameBehavior(
     delegate.parallax.update(delta);
     delegate.player.update(delegate.inputManager, delta);
     delegate.getLastLifeHelperWing()?.update(time, delta);
+    delegate.grazeSurge.update();
 
     updatePlayerFiring(time);
     updateEncounterAndLevelProgress(time, delta);

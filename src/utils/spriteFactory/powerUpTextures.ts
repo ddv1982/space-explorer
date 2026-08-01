@@ -1,100 +1,76 @@
 import Phaser from 'phaser';
 import { withGeneratedTexture } from '../generatedTexture';
+import { fillHotCore, strokeNeonLine, type NeonPalette } from './neonStyle';
+
+const POWERUP_PALETTES = {
+  health: { body: 0x0a3317, outline: 0x44ff88, glow: 0x00b84d, hot: 0xd8ffe8 },
+  shield: { body: 0x0a1e44, outline: 0x88ccff, glow: 0x2f6ed8, hot: 0xd8ecff },
+  rapidfire: { body: 0x44330a, outline: 0xffdd55, glow: 0xd8a400, hot: 0xfff6d8 },
+} as const satisfies Record<string, NeonPalette>;
+
+/** Shared capsule: halo, dark cell, neon rim, then the glyph on top. */
+function drawPowerUpCapsule(g: Phaser.GameObjects.Graphics, palette: NeonPalette): void {
+  g.fillStyle(palette.glow, 0.18);
+  g.fillCircle(10, 10, 10);
+  g.fillStyle(palette.glow, 0.3);
+  g.fillCircle(10, 10, 8.8);
+
+  g.fillStyle(palette.body, 0.95);
+  g.fillCircle(10, 10, 8);
+
+  g.lineStyle(1.5, palette.outline, 0.95);
+  g.strokeCircle(10, 10, 8);
+}
 
 export function ensurePowerUpTextures(scene: Phaser.Scene): void {
   withGeneratedTexture(scene, 'powerup-health', 20, 20, (g) => {
-    g.fillStyle(0x00ff44, 0.15);
-    g.fillCircle(10, 10, 10);
+    const palette = POWERUP_PALETTES.health;
+    drawPowerUpCapsule(g, palette);
 
-    g.fillStyle(0x003311, 0.8);
-    g.fillCircle(10, 10, 8);
-
-    g.lineStyle(1.5, 0x00ff44, 0.6);
-    g.strokeCircle(10, 10, 8);
-
-    g.fillStyle(0x00ff44, 1);
-    g.fillRect(8, 3, 4, 14);
-    g.fillRect(3, 8, 14, 4);
-
-    g.fillStyle(0x44ff88, 0.7);
-    g.fillRect(9, 4, 2, 12);
-    g.fillRect(4, 9, 12, 2);
-
-    g.fillStyle(0x88ffaa, 0.8);
-    g.fillCircle(10, 10, 2);
+    // Cross glyph.
+    strokeNeonLine(g, 10, 4, 10, 16, palette.outline, 2.5);
+    strokeNeonLine(g, 4, 10, 16, 10, palette.outline, 2.5);
+    fillHotCore(g, 10, 10, 1.4, palette.hot);
   });
 
   withGeneratedTexture(scene, 'powerup-shield', 20, 20, (g) => {
-    g.fillStyle(0x4488ff, 0.15);
-    g.fillCircle(10, 10, 10);
+    const palette = POWERUP_PALETTES.shield;
+    drawPowerUpCapsule(g, palette);
 
-    g.fillStyle(0x112244, 0.8);
-    g.fillCircle(10, 10, 8);
-
-    g.lineStyle(1.5, 0x4488ff, 0.6);
-    g.strokeCircle(10, 10, 8);
-
-    g.fillStyle(0x4488ff, 0.9);
-    g.beginPath();
-    g.moveTo(10, 2);
-    g.lineTo(16, 5);
-    g.lineTo(16, 11);
-    g.lineTo(10, 18);
-    g.lineTo(4, 11);
-    g.lineTo(4, 5);
-    g.closePath();
-    g.fillPath();
-
-    g.fillStyle(0x88ccff, 0.6);
+    // Shield glyph.
+    g.lineStyle(2, palette.outline, 0.9);
     g.beginPath();
     g.moveTo(10, 3);
-    g.lineTo(14, 6);
-    g.lineTo(14, 10);
-    g.lineTo(10, 14);
-    g.lineTo(7, 10);
-    g.lineTo(7, 6);
+    g.lineTo(16, 6);
+    g.lineTo(15, 11);
+    g.lineTo(10, 17);
+    g.lineTo(5, 11);
+    g.lineTo(4, 6);
     g.closePath();
+    g.strokePath();
+    g.fillStyle(palette.outline, 0.25);
     g.fillPath();
 
-    g.fillStyle(0xaaddff, 0.4);
-    g.fillCircle(10, 9, 3);
+    fillHotCore(g, 10, 9, 1.4, palette.hot);
   });
 
   withGeneratedTexture(scene, 'powerup-rapidfire', 20, 20, (g) => {
-    g.fillStyle(0xffcc00, 0.15);
-    g.fillCircle(10, 10, 10);
+    const palette = POWERUP_PALETTES.rapidfire;
+    drawPowerUpCapsule(g, palette);
 
-    g.fillStyle(0x332200, 0.8);
-    g.fillCircle(10, 10, 8);
-
-    g.lineStyle(1.5, 0xffcc00, 0.6);
-    g.strokeCircle(10, 10, 8);
-
-    g.fillStyle(0xffcc00, 1);
+    // Lightning glyph.
+    g.fillStyle(palette.outline, 0.95);
     g.beginPath();
-    g.moveTo(11, 1);
-    g.lineTo(7, 9);
-    g.lineTo(10, 9);
-    g.lineTo(8, 19);
-    g.lineTo(14, 8);
-    g.lineTo(11, 8);
-    g.lineTo(13, 1);
+    g.moveTo(12, 2);
+    g.lineTo(6, 10);
+    g.lineTo(9.5, 10);
+    g.lineTo(8, 18);
+    g.lineTo(14, 9);
+    g.lineTo(10.5, 9);
+    g.lineTo(13, 2);
     g.closePath();
     g.fillPath();
 
-    g.fillStyle(0xffff88, 0.7);
-    g.beginPath();
-    g.moveTo(11, 2);
-    g.lineTo(8, 8);
-    g.lineTo(10, 8);
-    g.lineTo(9, 14);
-    g.lineTo(12, 9);
-    g.lineTo(10, 9);
-    g.closePath();
-    g.fillPath();
-
-    g.fillStyle(0xffffff, 0.5);
-    g.fillCircle(11, 2, 1);
-    g.fillCircle(8, 19, 1);
+    fillHotCore(g, 11, 10, 1.2, palette.hot);
   });
 }

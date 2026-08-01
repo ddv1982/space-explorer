@@ -61,9 +61,6 @@ function createRuntimeLifecycleHarness() {
       pauseStateController: null,
       clampPlayerToViewport: () => {},
     }),
-    destroyMobileViewportGuard: () => {
-      log.push('destroyMobileViewportGuard');
-    },
     destroyPauseStateController: () => {
       log.push('destroyPauseStateController');
     },
@@ -103,7 +100,6 @@ describe('createGameSceneRuntimeLifecycle', () => {
       'off:enemy-death',
       'off:boss-death',
       'scaleOff:resize',
-      'destroyMobileViewportGuard',
       'destroyPauseStateController',
       'destroyMobileControls',
       'persistHelperWingState',

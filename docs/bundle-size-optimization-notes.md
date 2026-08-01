@@ -75,3 +75,9 @@
 - Intermission warms the next level window without releasing textures. Menu blocks resize-restart while a Game transition load is queued.
 - On-disk `public/assets/backgrounds/*.png` pack is unchanged (still ~26 MB). Bundle/guardrail totals still count all packaged assets; the win is startup download/decode and runtime texture residency, not dist footprint.
 - Empty unused WebP scaffolding directories were removed (`webp_desktop_1024x2048`, `webp_mobile_768x1536`); delivery remains PNG until WebP variants are authored.
+
+## Procedural Background Rebaseline (2026-08-01)
+
+- Release 1.3.0 replaces the ten packaged premium PNGs with five procedurally generated neon layers per level.
+- `public/assets/backgrounds/*.png` is removed from the distribution; the earlier PNG size and delivery notes above remain as historical baselines only.
+- Game creation retains only the active level plus one look-ahead level and releases obsolete generated textures after the new parallax has claimed its layers.

@@ -1,29 +1,49 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '@/utils/layout';
+import { UI_FONT_MONO } from '@/utils/uiFonts';
+import {
+  isHardwareKeyboardDetected,
+  onHardwareKeyboardDetected,
+} from '@/systems/hardwareKeyboardDetection';
+
+const MOBILE_TITLE = 'Use the joystick to move';
+const MOBILE_FIRE_HINT = 'Tap the right side to shoot';
+const KEYBOARD_TITLE = 'WASD / Arrows to Move';
+const KEYBOARD_FIRE_HINT = 'SPACE / Click to Fire';
 
 type ShowControlsHintOptions = {
   mobile?: boolean;
 };
 
 export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintOptions = {}): void {
-  const mobile = options.mobile === true;
+  let mobile = options.mobile === true && !isHardwareKeyboardDetected();
   const hintWidth = 320;
   const hintHeight = 80;
 
   const bg = scene.add.graphics();
   bg.setDepth(200).setScrollFactor(0);
 
-  const title = scene.add.text(0, 0, mobile ? 'Use the joystick to move' : 'WASD / Arrows to Move', {
+  const title = scene.add.text(0, 0, mobile ? MOBILE_TITLE : KEYBOARD_TITLE, {
     fontSize: '16px',
     color: '#88ccff',
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
   }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
 
-  const fireHint = scene.add.text(0, 0, mobile ? 'Tap the right side to shoot' : 'SPACE / Click to Fire', {
+  const fireHint = scene.add.text(0, 0, mobile ? MOBILE_FIRE_HINT : KEYBOARD_FIRE_HINT, {
     fontSize: '16px',
     color: '#88ccff',
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
   }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+  const stopKeyboardWatch = onHardwareKeyboardDetected(() => {
+    if (!mobile) {
+      return;
+    }
+
+    mobile = false;
+    title.setText(KEYBOARD_TITLE);
+    fireHint.setText(KEYBOARD_FIRE_HINT);
+  });
 
   const relayout = (): void => {
     const layout = getViewportLayout(scene);
@@ -38,6 +58,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
   };
 
   const cleanup = (): void => {
+    stopKeyboardWatch();
     scene.scale.off(Phaser.Scale.Events.RESIZE, relayout);
   };
 

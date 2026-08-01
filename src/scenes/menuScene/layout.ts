@@ -81,7 +81,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const tileTopMinY = topBandBottom + tileTopPadding;
   const tileBottomLimit = outerFrameY + outerFrameHeight - frameBottomPadding - statusHeight - statusGap;
 
-  const compactTargetTileHeight = veryShortCompact ? 96 : 120;
+  const compactTargetTileHeight = veryShortCompact ? 96 : layout.height >= 780 ? 160 : 120;
   let compactMaxTileHeight = Math.floor(
     (Math.max(0, tileBottomLimit - tileTopMinY) - (tileRows - 1) * tileRowGap) / tileRows
   );

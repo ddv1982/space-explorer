@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { getLayoutMetrics } from './statusBarLayout';
+import { UI_FONT_MONO } from '../../utils/uiFonts';
+import { getLayoutMetrics, SURGE_BAR_HEIGHT } from './statusBarLayout';
 
 interface CreateHudWidgetsParams {
   scene: Phaser.Scene;
@@ -25,6 +26,9 @@ interface HudWidgets {
   bossBarFill: Phaser.GameObjects.Graphics;
   bossNameText: Phaser.GameObjects.Text;
   announcementText: Phaser.GameObjects.Text;
+  chainText: Phaser.GameObjects.Text;
+  surgeBg: Phaser.GameObjects.Graphics;
+  surgeFill: Phaser.GameObjects.Graphics;
 }
 
 export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }: CreateHudWidgetsParams): HudWidgets {
@@ -38,7 +42,7 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     .text(0, 0, '', {
       fontSize: '14px',
       color: '#ffffff',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
@@ -49,7 +53,7 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     .text(0, 0, '0', {
       fontSize: '18px',
       color: '#ffffff',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
@@ -62,7 +66,7 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     .text(0, 0, '', {
       fontSize: '10px',
       color: sectorColor,
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
@@ -75,7 +79,7 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     .text(0, 0, '', {
       fontSize: '13px',
       color: '#eefaff',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 2,
@@ -90,7 +94,7 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     .text(0, 0, '', {
       fontSize: '28px',
       color: '#ffffff',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#040b12',
       strokeThickness: 4,
@@ -104,7 +108,7 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     .text(0, 0, 'BOSS', {
       fontSize: '14px',
       color: '#ff8c8c',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
       stroke: '#140406',
       strokeThickness: 3,
@@ -112,6 +116,23 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     .setOrigin(0.5)
     .setDepth(100)
     .setVisible(false);
+
+  const chainText = scene.add
+    .text(0, 0, '', {
+      fontSize: '12px',
+      color: '#ffd76a',
+      fontFamily: UI_FONT_MONO,
+      fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 2,
+    })
+    .setOrigin(1, 0)
+    .setDepth(100)
+    .setVisible(false);
+  chainText.setLetterSpacing(1.5);
+
+  const surgeBg = scene.add.graphics().setDepth(100);
+  const surgeFill = scene.add.graphics().setDepth(101);
 
   return {
     topBarPanel,
@@ -130,6 +151,9 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     bossBarBg,
     bossBarFill,
     bossNameText,
+    chainText,
+    surgeBg,
+    surgeFill,
   };
 }
 
@@ -150,6 +174,8 @@ interface RelayoutHudWidgetsParams {
   progressBg: Phaser.GameObjects.Graphics;
   announcementText: Phaser.GameObjects.Text;
   bossNameText: Phaser.GameObjects.Text;
+  chainText: Phaser.GameObjects.Text;
+  surgeBg: Phaser.GameObjects.Graphics;
   hpBarHeight: number;
   progressHeight: number;
   panelStrokeColor: number;
@@ -176,6 +202,8 @@ export function relayoutHudWidgets({
   progressBg,
   announcementText,
   bossNameText,
+  chainText,
+  surgeBg,
   hpBarHeight,
   progressHeight,
   panelStrokeColor,
@@ -207,6 +235,13 @@ export function relayoutHudWidgets({
   scoreText.setPosition(layout.topBarRight, layout.hpBarY - 3);
   sectorText.setPosition(layout.topBarRight, layout.hpBarY + 18);
   levelText.setPosition(layout.topBarRight, layout.hpBarY + 30);
+  chainText.setPosition(layout.topBarRight, layout.hpBarY + 43);
+
+  surgeBg.clear();
+  surgeBg.fillStyle(0x08141f, 0.82);
+  surgeBg.fillRect(layout.hpBarX + 22, layout.hpBarY + hpBarHeight + 5, layout.hpBarWidth - 22, SURGE_BAR_HEIGHT);
+  surgeBg.lineStyle(1, progressBorderColor, 0.3);
+  surgeBg.strokeRect(layout.hpBarX + 22, layout.hpBarY + hpBarHeight + 5, layout.hpBarWidth - 22, SURGE_BAR_HEIGHT);
 
   progressBg.clear();
   progressBg.fillStyle(0x08141f, 0.82);

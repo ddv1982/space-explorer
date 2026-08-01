@@ -129,6 +129,41 @@ export function renderProgressBar(params: {
   }
 }
 
+export const SURGE_BAR_HEIGHT = 5;
+
+export function renderSurgeBar(params: {
+  surgeFill: Phaser.GameObjects.Graphics;
+  currentSurgeRatio: number | null;
+  hpBarHeight: number;
+  layout: HudLayoutMetrics;
+}): void {
+  const { surgeFill, currentSurgeRatio, hpBarHeight, layout } = params;
+
+  surgeFill.clear();
+
+  if (currentSurgeRatio === null || currentSurgeRatio <= 0) {
+    return;
+  }
+
+  const barWidth = layout.hpBarWidth - 26;
+  const fillWidth = barWidth * Math.min(1, currentSurgeRatio);
+  const barX = layout.hpBarX + 24;
+  const barY = layout.hpBarY + hpBarHeight + 6;
+
+  const surgeColor = 0x9be8ff;
+  const darkFill = mixColor(surgeColor, 0x000000, 0.4);
+  surgeFill.fillStyle(darkFill, 0.95);
+  surgeFill.fillRect(barX, barY, fillWidth, SURGE_BAR_HEIGHT);
+
+  surgeFill.fillStyle(surgeColor, 0.95);
+  surgeFill.fillRect(barX, barY, fillWidth, SURGE_BAR_HEIGHT * 0.6);
+
+  if (currentSurgeRatio >= 1) {
+    surgeFill.fillStyle(0xffffff, 0.85);
+    surgeFill.fillRect(barX, barY - 1, fillWidth, 1);
+  }
+}
+
 export function renderBossBar(params: {
   bossBarBg: Phaser.GameObjects.Graphics;
   bossBarFill: Phaser.GameObjects.Graphics;

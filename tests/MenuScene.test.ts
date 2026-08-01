@@ -24,6 +24,7 @@ mock.module('../src/scenes/sceneRegistry', () => ({
 }));
 
 mock.module('../src/systems/PlayerState', () => ({
+  getPlayerMaxHp: mock(() => 5),
   getPlayerState: () => ({ level: currentLevel }),
   resetPlayerState: mock(),
   resetRunSummary: mock(),

@@ -19,7 +19,6 @@ import type { InputManager } from '@/systems/InputManager';
 import type { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { MobileControls } from '@/systems/MobileControls';
-import type { MobileViewportGuard } from '@/systems/MobileViewportGuard';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
 import {
   getPlayerState,
@@ -28,6 +27,7 @@ import {
   type PersistentHelperWingState,
   type PlayerStateData,
 } from '@/systems/PlayerState';
+import type { GrazeSurgeSystem } from '@/systems/GrazeSurgeSystem';
 import type { ScoreManager } from '@/systems/ScoreManager';
 import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
 import type { WarpTransition } from '@/systems/WarpTransition';
@@ -75,11 +75,11 @@ export class GameScene extends Phaser.Scene {
   private collisionManager!: CollisionManager;
   private waveManager!: WaveManager;
   private scoreManager!: ScoreManager;
+  private grazeSurge!: GrazeSurgeSystem;
   private hud!: HUD;
   private levelManager!: LevelManager;
   private effectsManager!: EffectsManager;
   private warpTransition!: WarpTransition;
-  private mobileViewportGuard: MobileViewportGuard | null = null;
   private pauseStateController: PauseStateController | null = null;
   private mobileControls: MobileControls | null = null;
   private scaledBossConfig: BossConfig | null = null;
@@ -147,6 +147,8 @@ export class GameScene extends Phaser.Scene {
       set collisionManager(value) { owner().collisionManager = value; },
       get scoreManager() { return owner().scoreManager; },
       set scoreManager(value) { owner().scoreManager = value; },
+      get grazeSurge() { return owner().grazeSurge; },
+      set grazeSurge(value) { owner().grazeSurge = value; },
       get powerUpGroup() { return owner().powerUpGroup; },
       set powerUpGroup(value) { owner().powerUpGroup = value; },
       get hud() { return owner().hud; },
@@ -160,8 +162,6 @@ export class GameScene extends Phaser.Scene {
       canSaveCurrentRun: () => owner().canSaveCurrentRun(),
       get pauseStateController() { return owner().pauseStateController; },
       set pauseStateController(value) { owner().pauseStateController = value; },
-      get mobileViewportGuard() { return owner().mobileViewportGuard; },
-      set mobileViewportGuard(value) { owner().mobileViewportGuard = value; },
     };
   }
 
@@ -192,6 +192,8 @@ export class GameScene extends Phaser.Scene {
       getFlowContext: () => this.getFlowContext(),
       levelManager: () => this.levelManager,
       collisionManager: () => this.collisionManager,
+      waveManager: () => this.waveManager,
+      grazeSurge: () => this.grazeSurge,
       enemyPool: () => this.enemyPool,
       hud: () => this.hud,
       getBoss: () => this.boss,
@@ -223,6 +225,8 @@ export class GameScene extends Phaser.Scene {
       { event: GAME_SCENE_EVENTS.playerHit, handler: this.combatFeedbackHandlers.handlePlayerHit },
       { event: GAME_SCENE_EVENTS.playerExhaust, handler: this.combatFeedbackHandlers.handlePlayerExhaust },
       { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: this.combatFeedbackHandlers.handleEnemySpawnWarning },
+      { event: GAME_SCENE_EVENTS.wormholeTelegraph, handler: this.combatFeedbackHandlers.handleWormholeTelegraph },
+      { event: GAME_SCENE_EVENTS.eliteWave, handler: this.combatFeedbackHandlers.handleEliteWave },
       { event: GAME_SCENE_EVENTS.bossDeath, handler: this.combatFeedbackHandlers.handleBossDeath },
       { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.combatFeedbackHandlers.handleBossPhaseChange },
       { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.combatFeedbackHandlers.handleHelperWingActivated },
@@ -238,10 +242,6 @@ export class GameScene extends Phaser.Scene {
       sceneEventBindings: this.sceneEventBindings,
       syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
       getScaleResizeContext: () => this.getScaleResizeContext(),
-      destroyMobileViewportGuard: () => {
-        this.mobileViewportGuard?.destroy();
-        this.mobileViewportGuard = null;
-      },
       destroyPauseStateController: () => {
         this.pauseStateController?.destroy();
         this.pauseStateController = null;
@@ -398,6 +398,8 @@ export class GameScene extends Phaser.Scene {
       levelManager: this.levelManager,
       flow: this.flow,
       lastHudShieldCount: this.lastHudShieldCount,
+      now: this.time.now,
+      surgeRatio: this.grazeSurge?.getGaugeRatio() ?? 0,
     });
   }
 
@@ -409,6 +411,7 @@ export class GameScene extends Phaser.Scene {
       parallax: this.parallax,
       player: this.player,
       getLastLifeHelperWing: () => this.lastLifeHelperWing,
+      grazeSurge: this.grazeSurge,
       waveManager: this.waveManager,
       levelManager: this.levelManager,
       events: this.events,

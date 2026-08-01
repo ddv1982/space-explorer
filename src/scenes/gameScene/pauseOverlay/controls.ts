@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
+import { UI_FONT_MONO } from '@/utils/uiFonts';
 import { createActionButtonControl, type ActionButtonControl } from '../../shared/actionButtonControl';
 import { setSingleLineTextWithEllipsis } from '../../shared/textFit';
 import {
@@ -78,18 +79,18 @@ export function createPauseSaveSlotRows(
       title: scene.add.text(0, 0, `SLOT ${index + 1}`, {
         fontSize: '14px',
         color: '#e9f8ff',
-        fontFamily: 'monospace',
+        fontFamily: UI_FONT_MONO,
         fontStyle: 'bold',
       }),
       subtitle: scene.add.text(0, 0, 'EMPTY', {
         fontSize: '12px',
         color: '#9eb9d3',
-        fontFamily: 'monospace',
+        fontFamily: UI_FONT_MONO,
       }),
       savedAt: scene.add.text(0, 0, 'NO CHECKPOINT', {
         fontSize: '10px',
         color: '#6f8aa6',
-        fontFamily: 'monospace',
+        fontFamily: UI_FONT_MONO,
       }),
       saveButton: createActionButtonControl(scene, {
         label: '+ SAVE',

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { UI_FONT_MONO } from '../utils/uiFonts';
 import { Player } from '../entities/Player';
 import { PowerUp, PowerUpType } from '../entities/PowerUp';
 import { EffectsManager } from './EffectsManager';
@@ -13,6 +14,8 @@ export const GAME_SCENE_EVENTS = {
   playerHit: 'player-hit',
   playerExhaust: 'player-exhaust',
   enemySpawnWarning: 'enemy-spawn-warning',
+  wormholeTelegraph: 'wormhole-telegraph',
+  eliteWave: 'elite-wave',
   bossDeath: 'boss-death',
   bossPhaseChange: 'boss-phase-change',
   helperWingActivated: 'helper-wing-activated',
@@ -30,6 +33,8 @@ type GameSceneEventPayloads = {
   [GAME_SCENE_EVENTS.playerHit]: [];
   [GAME_SCENE_EVENTS.playerExhaust]: [x: number, y: number, intensity: number];
   [GAME_SCENE_EVENTS.enemySpawnWarning]: [x: number];
+  [GAME_SCENE_EVENTS.wormholeTelegraph]: [x: number, y: number];
+  [GAME_SCENE_EVENTS.eliteWave]: [];
   [GAME_SCENE_EVENTS.bossDeath]: [score: number, x: number, y: number];
   [GAME_SCENE_EVENTS.bossPhaseChange]: [phase: number];
   [GAME_SCENE_EVENTS.helperWingActivated]: [helperCount: number];
@@ -126,7 +131,7 @@ export function applyPowerUpPickup(
   const text = scene.add.text(player.x, player.y - 40, POWER_UP_LABELS[type], {
     fontSize: '14px',
     color: POWER_UP_COLORS[type],
-    fontFamily: 'monospace',
+    fontFamily: UI_FONT_MONO,
     fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(50);
 

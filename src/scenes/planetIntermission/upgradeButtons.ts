@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { UpgradeBlockReason, UpgradeEvaluation } from '../../config/UpgradesConfig';
+import { UI_FONT_MONO } from '../../utils/uiFonts';
 import type { UpgradeButton, UpgradeGridLayout } from './shared';
 
 export function createUpgradeButton(
@@ -18,7 +19,7 @@ export function createUpgradeButton(
     .text(x + layout.textInsetX, y + layout.titleOffsetY, evaluation.upgrade.name, {
       fontSize: layout.titleFontSize,
       color: evaluation.canPurchase ? '#ffffff' : '#999999',
-      fontFamily: 'monospace',
+      fontFamily: UI_FONT_MONO,
     })
     .setDepth(3);
 
@@ -30,7 +31,7 @@ export function createUpgradeButton(
       {
         fontSize: layout.descriptionFontSize,
         color: evaluation.canPurchase ? '#aaaaaa' : '#777777',
-        fontFamily: 'monospace',
+        fontFamily: UI_FONT_MONO,
       }
     )
     .setDepth(3);
@@ -43,7 +44,7 @@ export function createUpgradeButton(
       {
         fontSize: layout.costFontSize,
         color: getCostColor(evaluation.blockReason),
-        fontFamily: 'monospace',
+        fontFamily: UI_FONT_MONO,
       }
     )
     .setOrigin(1, 0.5)
