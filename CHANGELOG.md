@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Isolated CI browser lanes on separate runners and limited each software-WebGL runner to one Playwright worker, preventing parallel Phaser navigation stalls while retaining job-level parallelism.
 - Bounded software-rendered frame sampling in CI and kept real-time cadence and movement assertions on hardware-backed local runs, avoiding false failures below two delivered frames per second.
+- Coalesced sub-threshold music-intensity changes during action-section ramps, removing per-frame audio-context pressure in Chrome while preserving continuous atmosphere animation and authored section transitions.
+
+### Quality
+- Added a Level 9 action-scene regression that bounds music requests across 240 continuously animated frames.
 
 ## [1.3.2] - 2026-08-01
 

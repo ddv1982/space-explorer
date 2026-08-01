@@ -9,6 +9,8 @@ import { audioManager } from '@/systems/AudioManager';
 import { GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
 import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
 
+const MUSIC_INTENSITY_UPDATE_THRESHOLD = 0.01;
+
 interface GameSceneGameplayFrameDelegate {
   inputManager: {
     consumePauseToggleRequest(): boolean;
@@ -89,6 +91,8 @@ export function createGameSceneGameplayFrameBehavior(
   let lastPresentedSection: ActiveSection | undefined;
   let lastPresentedSectionProgress: number | undefined;
   let lastMusicIntensity: number | undefined;
+  let lastMusicSection: ActiveSection | undefined;
+  let lastBossSpawned: boolean | undefined;
 
   const handlePauseInput = (): void => {
     if (delegate.inputManager.consumePauseToggleRequest()) {
@@ -147,13 +151,19 @@ export function createGameSceneGameplayFrameBehavior(
     const sectionProgress = activeSection
       ? getSectionProgress(activeSection, progress)
       : 0;
-    const musicIntensity = delegate.levelManager.hasBossSpawned()
+    const bossSpawned = delegate.levelManager.hasBossSpawned();
+    const musicIntensity = bossSpawned
       ? 1.1
       : resolveSectionMusicIntensity(activeSection, sectionProgress);
 
-    if (musicIntensity !== lastMusicIntensity) {
+    const musicContextChanged = activeSection !== lastMusicSection || bossSpawned !== lastBossSpawned;
+    const musicIntensityChanged = lastMusicIntensity === undefined
+      || Math.abs(musicIntensity - lastMusicIntensity) >= MUSIC_INTENSITY_UPDATE_THRESHOLD;
+    if (musicContextChanged || musicIntensityChanged) {
       audioManager.setMusicIntensity(musicIntensity);
       lastMusicIntensity = musicIntensity;
+      lastMusicSection = activeSection;
+      lastBossSpawned = bossSpawned;
     }
 
     if (activeSection !== lastPresentedSection || sectionProgress !== lastPresentedSectionProgress) {

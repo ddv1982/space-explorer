@@ -29,13 +29,13 @@ const { createGameSceneGameplayFrameBehavior } = await import(
 
 type GameplayDelegate = Parameters<typeof createGameSceneGameplayFrameBehavior>[0];
 
-function createHarness(): {
+function createHarness(level = 1): {
   behavior: ReturnType<typeof createGameSceneGameplayFrameBehavior>;
   atmosphereCalls: Array<{ sectionId: string | null; progress: number }>;
   setProgress(progress: number): void;
   setBossSpawned(spawned: boolean): void;
 } {
-  const levelConfig = getLevelConfig(1);
+  const levelConfig = getLevelConfig(level);
   const atmosphereCalls: Array<{ sectionId: string | null; progress: number }> = [];
   let progress = 0;
   let bossSpawned = false;
@@ -139,7 +139,7 @@ describe('gameplay frame presentation deduplication', () => {
     expect(harness.atmosphereCalls.at(-1)?.sectionId).not.toBe(firstSectionId);
 
     const intensityAtSectionEntry = musicIntensities.at(-1);
-    harness.setProgress(0.31);
+    harness.setProgress(0.34);
     harness.behavior.updateGameplayFrame(24, 16);
     expect(musicIntensities.at(-1)).not.toBe(intensityAtSectionEntry);
 
@@ -154,5 +154,19 @@ describe('gameplay frame presentation deduplication', () => {
     harness.behavior.updateGameplayFrame(64, 16);
 
     expect(musicIntensities.at(-1)).not.toBe(1.1);
+  });
+
+  test('bounds gradual action-scene music requests while preserving continuous atmosphere', () => {
+    musicIntensities.length = 0;
+    const harness = createHarness(9);
+
+    for (let frame = 0; frame < 240; frame += 1) {
+      harness.setProgress(0.14 + frame * 0.00025);
+      harness.behavior.updateGameplayFrame(frame * 16, 16);
+    }
+
+    expect(harness.atmosphereCalls).toHaveLength(240);
+    expect(musicIntensities.length).toBeGreaterThan(1);
+    expect(musicIntensities.length).toBeLessThan(12);
   });
 });
