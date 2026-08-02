@@ -201,7 +201,7 @@ for an explicit loadout, or `&upgrades=0` for a stock ship.
 
 ## Release notes
 
-- [Latest release notes](docs/releases/1.4.0.md)
+- [Latest release notes](docs/releases/1.4.1.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

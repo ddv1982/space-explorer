@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.4.1`](./1.4.1.md) - upgrades all ten arrival planets with higher-resolution spherical lighting, atmospheric depth, and complete campaign visual evidence
 - [`1.4.0`](./1.4.0.md) - charts ten cinematic planetary arrivals across every screen size while keeping Chrome action scenes and browser gates steady
 - [`1.3.2`](./1.3.2.md) - preserves the procedural neon skies while collapsing Chrome's full-screen compositor load and parallelizing safe browser checks
 - [`1.3.1`](./1.3.1.md) - quiets redundant frame work and splits fast browser checks from isolated visual/performance evidence

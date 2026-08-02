@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2026-08-03
+
+### Changed
+- Rebuilt all ten planet-arrival worlds at 512×512 with soft spherical lighting, directional neon rims, atmospheric halos, shadow-side detail, and motif-specific surface treatments.
+- Added curved aurora and ember geography, inhabited-world night lights, split front/back orbital rings, and reduced-motion-aware ambient animation.
+- Released generated planet textures when the intermission scene shuts down so the higher-resolution artwork does not accumulate across the campaign.
+
+### Quality
+- Captured individual visual evidence for every campaign planet and hardened the portrait-resize assertion against asynchronous scene rendering.
+- Preserved the existing planet profiles, responsive layouts, upgrade flow, texture-key contracts, Canvas fallback, and bundle budgets.
+
 ## [1.4.0] - 2026-08-02
 
 ### Changed

@@ -94,6 +94,16 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
       hasPlanetTitle: true,
       hasPlanetVisual: true,
     });
+
+    const projectName = test.info().project.name;
+    const levelPath = test.info().outputPath(
+      `planet-arrival-${String(level).padStart(2, '0')}-${projectName}.png`
+    );
+    await page.screenshot({ path: levelPath });
+    await test.info().attach(
+      `planet-arrival-${String(level).padStart(2, '0')}-${staged.planetName}-${projectName}`,
+      { path: levelPath, contentType: 'image/png' }
+    );
   }
 
   const projectName = test.info().project.name;
@@ -112,10 +122,18 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
   });
   await waitForScene(page, 'PlanetIntermission');
   await expect.poll(async () => (await snapshot(page)).gameSize).toEqual({ width: 390, height: 844 });
+  await expect.poll(async () => {
+    const portrait = await snapshot(page);
+    return {
+      hasPlanetTitle: portrait.texts.some((text) => text.text === 'KORRA VALE'),
+      hasContinuePrompt: portrait.texts.some((text) => text.text.includes('CONTINUE TO')),
+    };
+  }, {
+    message: 'wait for the resized portrait intermission to finish rendering',
+    timeout: 10_000,
+  }).toEqual({ hasPlanetTitle: true, hasContinuePrompt: true });
   const portrait = await snapshot(page);
   expect(portrait.gameSize).toEqual({ width: 390, height: 844 });
-  expect(portrait.texts.some((text) => text.text === 'KORRA VALE')).toBe(true);
-  expect(portrait.texts.some((text) => text.text.includes('CONTINUE TO'))).toBe(true);
 
   const portraitPath = test.info().outputPath(`planet-arrival-portrait-${projectName}.png`);
   await page.screenshot({ path: portraitPath });

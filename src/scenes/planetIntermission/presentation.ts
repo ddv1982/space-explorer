@@ -20,7 +20,6 @@ export interface IntermissionLayoutMetrics {
   showOrbitLabels: boolean;
   planetX: number;
   planetY: number;
-  planetScale: number;
   planetDiameter: number;
   contentX: number;
   contentWidth: number;
@@ -190,7 +189,6 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
     showOrbitLabels: mode === 'desktop' || mode === 'landscape',
     planetX,
     planetY,
-    planetScale: planetDiameter / 320,
     planetDiameter,
     contentX,
     contentWidth,
