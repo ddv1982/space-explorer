@@ -4,6 +4,7 @@ import { ensureSceneRegistered } from './scenes/sceneRegistry';
 import { audioManager, type AudioManager, type AudioPauseReason } from './systems/AudioManager';
 import { GAME_SCENE_EVENTS } from './systems/GameplayFlow';
 import type { ParallaxBackground } from './systems/ParallaxBackground';
+import { getPlayerState, setPlayerState } from './systems/PlayerState';
 
 const HARNESS_GLOBAL = '__SPACE_EXPLORER_BROWSER_HARNESS__';
 const ROUTABLE_SCENES = new Set(['PlanetIntermission', 'GameOver', 'Victory']);
@@ -115,6 +116,7 @@ export interface BrowserHarnessApi {
   probeFrameDelivery: (sampleCount?: number) => Promise<BrowserHarnessFrameDeliveryProbe>;
   showLaneReadingPilot: (glowEnabled?: boolean) => { filterCount: number; sectionId: string };
   measureLaneReadingPilotRenderCost: () => Promise<BrowserHarnessVisualPilotMetrics>;
+  showPlanetIntermission: (level: number) => Promise<{ level: number; planetName: string }>;
   route: (key: string) => Promise<void>;
 }
 
@@ -831,6 +833,26 @@ export function installBrowserHarness(game: Phaser.Game): void {
         averageRegressionMs: glow.averageMs - baseline.averageMs,
         p95RegressionMs: glow.p95Ms - baseline.p95Ms,
       });
+    },
+    showPlanetIntermission: async (level: number) => {
+      const normalizedLevel = Math.floor(level);
+      const levelConfig = getLevelConfig(normalizedLevel);
+      const activeScene = game.scene.getScenes(true)[0];
+      if (!activeScene) {
+        throw new Error('Browser harness cannot stage a planet intermission without an active scene');
+      }
+
+      const state = getPlayerState(activeScene.registry);
+      setPlayerState(activeScene.registry, {
+        ...state,
+        level: normalizedLevel,
+        score: Math.max(state.score, 8_000),
+        currentHp: Math.max(state.currentHp, 5),
+      });
+      await ensureSceneRegistered(activeScene, 'PlanetIntermission');
+      activeScene.scene.start('PlanetIntermission');
+
+      return { level: normalizedLevel, planetName: levelConfig.planetName };
     },
     route: async (key: string) => {
       if (!ROUTABLE_SCENES.has(key)) {

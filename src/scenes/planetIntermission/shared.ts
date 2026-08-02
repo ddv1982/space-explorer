@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { UpgradeKey } from '../../config/UpgradesConfig';
 
+export type IntermissionViewportMode = 'desktop' | 'landscape' | 'portrait' | 'ultra-compact';
+
 export interface UpgradeGridLayout {
   top: number;
   columns: number;
@@ -16,80 +18,113 @@ export interface UpgradeGridLayout {
   titleFontSize: string;
   descriptionFontSize: string;
   costFontSize: string;
+  iconSize: number;
+  showDescription: boolean;
 }
 
-const DEFAULT_UPGRADE_GRID_LAYOUT: UpgradeGridLayout = {
-  top: 380,
-  columns: 2,
-  buttonWidth: 240,
-  buttonHeight: 60,
-  spacingX: 32,
-  spacingY: 16,
-  textInsetX: 10,
-  titleOffsetY: 8,
-  descriptionOffsetY: 28,
-  costInsetX: 10,
-  borderRadius: 8,
-  titleFontSize: '14px',
-  descriptionFontSize: '11px',
-  costFontSize: '16px',
-};
+interface UpgradeGridLayoutOptions {
+  availableWidth?: number;
+  columns?: number;
+  mode?: IntermissionViewportMode;
+}
 
-function fitGridToViewport(layout: UpgradeGridLayout, viewportWidth: number, compact: boolean): UpgradeGridLayout {
-  const horizontalMargin = compact ? 20 : 32;
-  const maxGridWidth = Math.max(180, viewportWidth - horizontalMargin);
-  const gridWidth = layout.buttonWidth * layout.columns + layout.spacingX * (layout.columns - 1);
+export function getUpgradeGridLayout(
+  viewportHeight: number,
+  viewportWidth = Number.POSITIVE_INFINITY,
+  options: UpgradeGridLayoutOptions = {}
+): UpgradeGridLayout {
+  const mode = options.mode ?? (viewportHeight < 430 ? 'landscape' : 'desktop');
+  const availableWidth = Math.max(220, Math.min(options.availableWidth ?? viewportWidth, viewportWidth));
+  const columns = options.columns ?? (mode === 'portrait' ? 1 : 2);
+  const spacingX = mode === 'desktop' ? 14 : 8;
+  const maxButtonWidth = mode === 'desktop' ? 286 : mode === 'portrait' ? 420 : 248;
+  const buttonWidth = Math.min(
+    maxButtonWidth,
+    Math.floor((availableWidth - spacingX * (columns - 1)) / columns)
+  );
 
-  if (gridWidth <= maxGridWidth) {
-    return layout;
+  if (mode === 'ultra-compact') {
+    return {
+      top: 0,
+      columns,
+      buttonWidth,
+      buttonHeight: 44,
+      spacingX,
+      spacingY: 6,
+      textInsetX: 34,
+      titleOffsetY: 7,
+      descriptionOffsetY: 25,
+      costInsetX: 8,
+      borderRadius: 8,
+      titleFontSize: '11px',
+      descriptionFontSize: '9px',
+      costFontSize: '11px',
+      iconSize: 24,
+      showDescription: false,
+    };
+  }
+
+  if (mode === 'landscape') {
+    return {
+      top: 0,
+      columns,
+      buttonWidth,
+      buttonHeight: 54,
+      spacingX,
+      spacingY: 8,
+      textInsetX: 42,
+      titleOffsetY: 8,
+      descriptionOffsetY: 29,
+      costInsetX: 9,
+      borderRadius: 9,
+      titleFontSize: '12px',
+      descriptionFontSize: '9px',
+      costFontSize: '12px',
+      iconSize: 30,
+      showDescription: true,
+    };
+  }
+
+  if (mode === 'portrait') {
+    const roomy = viewportHeight >= 760;
+    return {
+      top: 0,
+      columns,
+      buttonWidth,
+      buttonHeight: roomy ? 60 : 52,
+      spacingX: 0,
+      spacingY: 7,
+      textInsetX: 44,
+      titleOffsetY: roomy ? 10 : 7,
+      descriptionOffsetY: roomy ? 33 : 28,
+      costInsetX: 10,
+      borderRadius: 10,
+      titleFontSize: '12px',
+      descriptionFontSize: '10px',
+      costFontSize: '12px',
+      iconSize: 30,
+      showDescription: true,
+    };
   }
 
   return {
-    ...layout,
-    columns: 1,
-    buttonWidth: Math.min(layout.buttonWidth, maxGridWidth),
-    buttonHeight: compact ? Math.min(layout.buttonHeight, 35) : Math.min(layout.buttonHeight, 44),
-    spacingX: 0,
-    spacingY: compact ? Math.min(layout.spacingY, 6) : Math.min(layout.spacingY, 8),
-    titleOffsetY: compact ? Math.min(layout.titleOffsetY, 5) : layout.titleOffsetY,
-    descriptionOffsetY: compact ? Math.min(layout.descriptionOffsetY, 19) : Math.min(layout.descriptionOffsetY, 22),
-    costFontSize: compact ? '12px' : layout.costFontSize,
+    top: 0,
+    columns,
+    buttonWidth,
+    buttonHeight: 72,
+    spacingX,
+    spacingY: 12,
+    textInsetX: 54,
+    titleOffsetY: 12,
+    descriptionOffsetY: 39,
+    costInsetX: 12,
+    borderRadius: 12,
+    titleFontSize: '14px',
+    descriptionFontSize: '11px',
+    costFontSize: '14px',
+    iconSize: 36,
+    showDescription: true,
   };
-}
-
-export function getUpgradeGridLayout(viewportHeight: number, viewportWidth = Number.POSITIVE_INFINITY): UpgradeGridLayout {
-  if (viewportHeight < 430) {
-    return fitGridToViewport({
-      ...DEFAULT_UPGRADE_GRID_LAYOUT,
-      buttonWidth: 210,
-      buttonHeight: 44,
-      spacingX: 24,
-      spacingY: 8,
-      textInsetX: 8,
-      titleOffsetY: 5,
-      descriptionOffsetY: 20,
-      costInsetX: 8,
-      borderRadius: 7,
-      titleFontSize: '12px',
-      descriptionFontSize: '10px',
-      costFontSize: '13px',
-    }, viewportWidth, true);
-  }
-
-  if (viewportHeight < 520) {
-    return fitGridToViewport({
-      ...DEFAULT_UPGRADE_GRID_LAYOUT,
-      buttonWidth: 220,
-      buttonHeight: 52,
-      spacingX: 28,
-      spacingY: 12,
-      titleFontSize: '13px',
-      descriptionFontSize: '10px',
-      costFontSize: '14px',
-    }, viewportWidth, true);
-  }
-
-  return fitGridToViewport(DEFAULT_UPGRADE_GRID_LAYOUT, viewportWidth, false);
 }
 
 export interface UpgradeButton {

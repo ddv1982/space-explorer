@@ -45,7 +45,7 @@ const {
   PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
 } = await import('../src/scenes/gameScene/pauseOverlay/view');
 const { createMenuLayoutPlan } = await import('../src/scenes/menuScene/layout');
-const { getIntermissionLayout, getUpgradeGridStartX } = await import('../src/scenes/planetIntermission/presentation');
+const { getIntermissionLayout } = await import('../src/scenes/planetIntermission/presentation');
 
 type SceneLike = {
   scale: {
@@ -198,7 +198,7 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
 function assertIntermissionUpgradeButtonsFit(viewport: { width: number; height: number }, buttonCount: number): void {
   const scene = createScene(viewport.width, viewport.height) as never;
   const layout = getIntermissionLayout(scene, buttonCount);
-  const startX = getUpgradeGridStartX(scene, layout.gridLayout);
+  const startX = layout.gridLeft;
   const rows = Math.ceil(buttonCount / layout.gridLayout.columns);
   const gridHeight = rows * layout.gridLayout.buttonHeight + Math.max(0, rows - 1) * layout.gridLayout.spacingY;
   const gridWidth =
@@ -207,8 +207,9 @@ function assertIntermissionUpgradeButtonsFit(viewport: { width: number; height: 
 
   expect(startX).toBeGreaterThanOrEqual(0);
   expect(startX + gridWidth).toBeLessThanOrEqual(viewport.width);
-  expect(layout.gridTop).toBeGreaterThan(layout.planetY);
+  expect(layout.gridTop).toBeGreaterThanOrEqual(0);
   expect(layout.gridTop + gridHeight).toBeLessThanOrEqual(layout.promptY - 12);
+  expect(layout.gridLayout.buttonHeight).toBeGreaterThanOrEqual(44);
 
   for (let i = 0; i < buttonCount; i++) {
     const col = i % layout.gridLayout.columns;
@@ -422,11 +423,33 @@ describe('responsive save-slot layouts', () => {
   });
 
   test.each([
+    { width: 1280, height: 800 },
+    { width: 844, height: 390 },
+    { width: 390, height: 844 },
     { width: 360, height: 640 },
     { width: 320, height: 640 },
     { width: 280, height: 360 },
     { width: 480, height: 320 },
-  ])('planet intermission keeps upgrade buttons inside narrow viewports', (viewport) => {
+  ])('planet intermission keeps touch-sized upgrade buttons inside responsive viewports', (viewport) => {
     assertIntermissionUpgradeButtonsFit(viewport, 4);
+  });
+
+  test('planet intermission reflows instead of shrinking the desktop composition', () => {
+    const desktop = getIntermissionLayout(createScene(1280, 800) as never, 4);
+    const landscape = getIntermissionLayout(createScene(844, 390) as never, 4);
+    const portrait = getIntermissionLayout(createScene(390, 844) as never, 4);
+
+    expect(desktop.mode).toBe('desktop');
+    expect(desktop.contentX).toBeGreaterThan(desktop.planetX);
+    expect(desktop.gridLayout.columns).toBe(2);
+
+    expect(landscape.mode).toBe('landscape');
+    expect(landscape.contentX).toBeGreaterThan(landscape.planetX);
+    expect(landscape.gridLayout.columns).toBe(2);
+
+    expect(portrait.mode).toBe('portrait');
+    expect(portrait.planetX).toBe(195);
+    expect(portrait.gridLayout.columns).toBe(1);
+    expect(portrait.gridTop).toBeGreaterThan(portrait.planetY);
   });
 });

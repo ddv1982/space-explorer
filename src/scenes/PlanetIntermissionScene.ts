@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { getLevelConfig, isLastLevel } from '@/config/LevelsConfig';
+import { getLevelConfig, getTotalLevels, isLastLevel } from '@/config/LevelsConfig';
 import {
   evaluateUpgrade,
   evaluateUpgrades,
@@ -19,7 +19,6 @@ import {
 } from '@/systems/PlayerState';
 import { WarpTransition } from '@/systems/WarpTransition';
 import { ensurePremiumBackgroundAssets } from '@/systems/parallax/premiumBackgroundLoading';
-import { getViewportLayout } from '@/utils/layout';
 import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
 
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
@@ -28,9 +27,13 @@ import {
   createIntermissionHeader,
   createIntermissionPrompt,
   getIntermissionLayout,
-  getUpgradeGridStartX,
   type IntermissionLayoutMetrics,
 } from './planetIntermission/presentation';
+import { getPlanetIntermissionProfile } from './planetIntermission/planetProfiles';
+import {
+  createIntermissionBackdrop,
+  createPlanetArrivalVisual,
+} from './planetIntermission/planetVisuals';
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
 import type { UpgradeButton } from './planetIntermission/shared';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
@@ -57,12 +60,25 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.initializeSceneLifecycle();
     const intermissionLayout = this.initializeIntermissionState();
     const completedLevelConfig = getLevelConfig(this.state.level);
+    const profile = getPlanetIntermissionProfile(this.state.level);
     this.warmNextLevelBackgroundAssets();
-    this.generatePlanetTexture(completedLevelConfig.planetPalette, intermissionLayout.planetY, intermissionLayout.planetScale);
+    createIntermissionBackdrop(this, completedLevelConfig, this.state.level, intermissionLayout);
+    createPlanetArrivalVisual(
+      this,
+      completedLevelConfig,
+      this.state.level,
+      profile,
+      intermissionLayout
+    );
     this.scoreText = createIntermissionHeader(this, intermissionLayout, {
-      planetName: completedLevelConfig.planetName,
+      levelConfig: completedLevelConfig,
+      profile,
       level: this.state.level,
+      totalLevels: getTotalLevels(),
       score: this.state.score,
+      nextLevelName: this.isFinalMissionComplete
+        ? null
+        : getLevelConfig(this.state.level + 1).name,
     });
     this.initializeOverlayGraphics();
     this.initializeUpgradeFlow(intermissionLayout);
@@ -145,16 +161,21 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private createContinuePrompt(intermissionLayout: IntermissionLayoutMetrics): void {
-    createIntermissionPrompt(this, intermissionLayout, this.getContinueLabel());
+    createIntermissionPrompt(
+      this,
+      intermissionLayout,
+      this.getContinueLabel(),
+      getLevelConfig(this.state.level).planetPalette[1]
+    );
   }
 
   private getContinueLabel(): string {
     if (this.isFinalMissionComplete) {
-      return 'CAMPAIGN COMPLETE - Click, Tap, or Press Any Key';
+      return 'Review campaign record';
     }
 
     const nextLevelLabel = getLevelConfig(this.state.level + 1).name;
-    return `NEXT: ${nextLevelLabel} - Click, Tap, or Press a Key`;
+    return `Continue to ${nextLevelLabel}`;
   }
 
   private bindContinueInputs(): void {
@@ -199,60 +220,10 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.transitioning = false;
   }
 
-  private generatePlanetTexture(colorPair: [number, number], y: number, scale: number): void {
-    const layout = getViewportLayout(this);
-    const key = `planet-level-${this.state.level}`;
-
-    if (!this.textures.exists(key)) {
-      const g = this.add.graphics();
-      const cx = 60;
-      const cy = 60;
-      const r = 46;
-
-      // Atmospheric halo.
-      g.fillStyle(colorPair[1], 0.06);
-      g.fillCircle(cx, cy, r + 14);
-      g.fillStyle(colorPair[1], 0.1);
-      g.fillCircle(cx, cy, r + 7);
-
-      // Dark sphere body with a soft lit crescent.
-      g.fillStyle(0x060a18, 1);
-      g.fillCircle(cx, cy, r);
-      g.fillStyle(colorPair[0], 0.55);
-      g.fillCircle(cx - 9, cy - 7, r * 0.72);
-      g.fillStyle(colorPair[1], 0.35);
-      g.fillCircle(cx - 14, cy - 11, r * 0.42);
-      g.fillStyle(0x060a18, 0.8);
-      g.fillCircle(cx + 16, cy + 9, r * 0.62);
-
-      // Wireframe latitude/longitude grid.
-      g.lineStyle(1, colorPair[1], 0.22);
-      for (let i = -1; i <= 1; i++) {
-        g.strokeEllipse(cx, cy + i * 16, r * 2 - 4, (r * 2 - 4) * 0.34);
-      }
-      g.strokeEllipse(cx, cy, (r * 2 - 4) * 0.36, r * 2 - 4);
-
-      // Neon limb.
-      g.lineStyle(3, colorPair[1], 0.14);
-      g.strokeCircle(cx, cy, r);
-      g.lineStyle(1.25, colorPair[1], 0.85);
-      g.strokeCircle(cx, cy, r);
-
-      // Hot glint on the lit limb.
-      g.fillStyle(0xffffff, 0.85);
-      g.fillCircle(cx - r * 0.62, cy - r * 0.62, 1.6);
-
-      g.generateTexture(key, 120, 120);
-      g.destroy();
-    }
-
-    this.add.image(layout.centerX, y, key).setScale(scale).setDepth(1);
-  }
-
   private createUpgradeButtons(intermissionLayout: IntermissionLayoutMetrics): void {
     const evaluations = evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades);
     const gridLayout = intermissionLayout.gridLayout;
-    const startX = getUpgradeGridStartX(this, gridLayout);
+    const startX = intermissionLayout.gridLeft;
 
     for (let i = 0; i < evaluations.length; i++) {
       const evaluation = evaluations[i];
@@ -297,7 +268,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
     audioManager.playPowerUp();
 
-    this.scoreText.setText(`CREDITS: ${this.state.score}`);
+    this.scoreText.setText(`CREDITS ${this.state.score}`);
     this.refreshButtons();
     this.handlePostPurchaseFocus(button, upgradeKey);
 

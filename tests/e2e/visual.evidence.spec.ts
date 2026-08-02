@@ -1,4 +1,4 @@
-import { expect, openMenu, startNewRun, test } from './fixtures';
+import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
 
 test('crossfire telegraph glow preserves readable gameplay lanes', async ({
   page,
@@ -59,5 +59,58 @@ test('crossfire telegraph glow preserves readable gameplay lanes', async ({
     });
     console.info(`crossfire render cost ${test.info().project.name}: ${JSON.stringify(renderCost)}`);
   }
+  assertNoBrowserErrors();
+});
+
+test('all planet arrivals share a responsive cinematic system with distinct identities', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(60_000);
+  await openMenu(page);
+
+  for (let level = 1; level <= 10; level += 1) {
+    const staged = await page.evaluate(async (targetLevel) => {
+      const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+      if (!harness) throw new Error('Browser harness is not installed');
+      return harness.showPlanetIntermission(targetLevel);
+    }, level);
+    await waitForScene(page, 'PlanetIntermission');
+    const arrival = await snapshot(page);
+
+    expect(arrival.texts.some((text) => text.text === staged.planetName.toUpperCase())).toBe(true);
+    expect(arrival.texts.some((text) => text.text.includes('ARRIVAL CONFIRMED'))).toBe(true);
+    expect(arrival.objects.some((object) =>
+      object.active && object.textureKey.startsWith(`planet-arrival-${String(level).padStart(2, '0')}-`)
+    )).toBe(true);
+  }
+
+  const projectName = test.info().project.name;
+  const campaignPath = test.info().outputPath(`planet-arrival-campaign-${projectName}.png`);
+  await page.screenshot({ path: campaignPath });
+  await test.info().attach(`planet-arrival-campaign-${projectName}`, {
+    path: campaignPath,
+    contentType: 'image/png',
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(async () => {
+    const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+    if (!harness) throw new Error('Browser harness is not installed');
+    await harness.showPlanetIntermission(5);
+  });
+  await waitForScene(page, 'PlanetIntermission');
+  await expect.poll(async () => (await snapshot(page)).gameSize).toEqual({ width: 390, height: 844 });
+  const portrait = await snapshot(page);
+  expect(portrait.gameSize).toEqual({ width: 390, height: 844 });
+  expect(portrait.texts.some((text) => text.text === 'KORRA VALE')).toBe(true);
+  expect(portrait.texts.some((text) => text.text.includes('CONTINUE TO'))).toBe(true);
+
+  const portraitPath = test.info().outputPath(`planet-arrival-portrait-${projectName}.png`);
+  await page.screenshot({ path: portraitPath });
+  await test.info().attach(`planet-arrival-portrait-${projectName}`, {
+    path: portraitPath,
+    contentType: 'image/png',
+  });
   assertNoBrowserErrors();
 });
