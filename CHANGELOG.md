@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.4.0] - 2026-08-02
 
 ### Changed
 - Reimagined all ten planet-arrival screens as a shared cinematic navigation system with a unique procedural world, orbital motif, signal identity, and destination briefing for every campaign level.
@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Isolated CI browser lanes on separate runners and limited each software-WebGL runner to one Playwright worker, preventing parallel Phaser navigation stalls while retaining job-level parallelism.
 - Bounded software-rendered frame sampling in CI and kept real-time cadence and movement assertions on hardware-backed local runs, avoiding false failures below two delivered frames per second.
 - Coalesced sub-threshold music-intensity changes during action-section ramps, removing per-frame audio-context pressure in Chrome while preserving continuous atmosphere animation and authored section transitions.
+- Waited for each staged planet's rendered title and procedural world before collecting campaign-wide browser evidence, removing a slow-runner scene-restart race.
 
 ### Quality
 - Added a Level 9 action-scene regression that bounds music requests across 240 continuously animated frames.

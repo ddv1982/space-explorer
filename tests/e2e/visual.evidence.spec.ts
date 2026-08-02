@@ -76,13 +76,24 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
       return harness.showPlanetIntermission(targetLevel);
     }, level);
     await waitForScene(page, 'PlanetIntermission');
-    const arrival = await snapshot(page);
-
-    expect(arrival.texts.some((text) => text.text === staged.planetName.toUpperCase())).toBe(true);
-    expect(arrival.texts.some((text) => text.text.includes('ARRIVAL CONFIRMED'))).toBe(true);
-    expect(arrival.objects.some((object) =>
-      object.active && object.textureKey.startsWith(`planet-arrival-${String(level).padStart(2, '0')}-`)
-    )).toBe(true);
+    await expect.poll(async () => {
+      const arrival = await snapshot(page);
+      return {
+        hasArrivalConfirmation: arrival.texts.some((text) => text.text.includes('ARRIVAL CONFIRMED')),
+        hasPlanetTitle: arrival.texts.some((text) => text.text === staged.planetName.toUpperCase()),
+        hasPlanetVisual: arrival.objects.some((object) =>
+          object.active
+          && object.textureKey.startsWith(`planet-arrival-${String(level).padStart(2, '0')}-`)
+        ),
+      };
+    }, {
+      message: `wait for level ${level} planet arrival to finish rendering`,
+      timeout: 10_000,
+    }).toEqual({
+      hasArrivalConfirmation: true,
+      hasPlanetTitle: true,
+      hasPlanetVisual: true,
+    });
   }
 
   const projectName = test.info().project.name;
