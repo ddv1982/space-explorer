@@ -26,6 +26,8 @@ interface UpgradeGridLayoutOptions {
   availableWidth?: number;
   columns?: number;
   mode?: IntermissionViewportMode;
+  /** Tighter button metrics so a five-item grid fits short landscape/portrait viewports. */
+  compact?: boolean;
 }
 
 export function getUpgradeGridLayout(
@@ -36,6 +38,7 @@ export function getUpgradeGridLayout(
   const mode = options.mode ?? (viewportHeight < 430 ? 'landscape' : 'desktop');
   const availableWidth = Math.max(220, Math.min(options.availableWidth ?? viewportWidth, viewportWidth));
   const columns = options.columns ?? (mode === 'portrait' ? 1 : 2);
+  const compact = options.compact ?? false;
   const spacingX = mode === 'desktop' ? 14 : 8;
   const maxButtonWidth = mode === 'desktop' ? 286 : mode === 'portrait' ? 420 : 248;
   const buttonWidth = Math.min(
@@ -69,40 +72,40 @@ export function getUpgradeGridLayout(
       top: 0,
       columns,
       buttonWidth,
-      buttonHeight: 54,
+      buttonHeight: compact ? 48 : 54,
       spacingX,
-      spacingY: 8,
-      textInsetX: 42,
-      titleOffsetY: 8,
-      descriptionOffsetY: 29,
+      spacingY: compact ? 6 : 8,
+      textInsetX: compact ? 38 : 42,
+      titleOffsetY: compact ? 7 : 8,
+      descriptionOffsetY: compact ? 27 : 29,
       costInsetX: 9,
       borderRadius: 9,
-      titleFontSize: '12px',
+      titleFontSize: compact ? '11px' : '12px',
       descriptionFontSize: '9px',
-      costFontSize: '12px',
-      iconSize: 30,
+      costFontSize: compact ? '11px' : '12px',
+      iconSize: compact ? 26 : 30,
       showDescription: true,
     };
   }
 
   if (mode === 'portrait') {
-    const roomy = viewportHeight >= 760;
+    const roomy = viewportHeight >= 760 && !compact;
     return {
       top: 0,
       columns,
       buttonWidth,
-      buttonHeight: roomy ? 60 : 52,
+      buttonHeight: roomy ? 60 : compact ? 48 : 52,
       spacingX: 0,
-      spacingY: 7,
-      textInsetX: 44,
+      spacingY: compact ? 6 : 7,
+      textInsetX: compact ? 40 : 44,
       titleOffsetY: roomy ? 10 : 7,
-      descriptionOffsetY: roomy ? 33 : 28,
+      descriptionOffsetY: roomy ? 33 : compact ? 27 : 28,
       costInsetX: 10,
       borderRadius: 10,
-      titleFontSize: '12px',
-      descriptionFontSize: '10px',
-      costFontSize: '12px',
-      iconSize: 30,
+      titleFontSize: compact ? '11px' : '12px',
+      descriptionFontSize: compact ? '9px' : '10px',
+      costFontSize: compact ? '11px' : '12px',
+      iconSize: compact ? 26 : 30,
       showDescription: true,
     };
   }

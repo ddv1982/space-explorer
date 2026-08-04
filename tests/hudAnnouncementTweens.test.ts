@@ -179,4 +179,28 @@ describe('HudAnnouncementTweens', () => {
     expect(fixture.announcementText.state.x).toBe(512);
     expect(fixture.announcementText.state.y).toBe(296);
   });
+
+  test('showPicketOnlineAnnouncement uses a restrained amber drift', () => {
+    const fixture = createFixture();
+
+    fixture.helper.showPicketOnlineAnnouncement();
+
+    expect(fixture.announcementText.state.text).toBe('PICKET ONLINE');
+    expect(fixture.announcementText.state.color).toBe('#ffcf7a');
+    expect(fixture.announcementText.state.alpha).toBe(1);
+    expect(fixture.announcementText.state.x).toBe(512);
+    expect(fixture.announcementText.state.y).toBe(294);
+    expect(fixture.getPriorTweenStopCalls()).toBe(1);
+
+    expect(fixture.tweenConfigs).toHaveLength(1);
+    expect(fixture.tweenConfigs[0]).toMatchObject({
+      duration: 1500,
+      ease: 'Power2',
+      alpha: { from: 1, to: 0 },
+      y: { from: 294, to: 272 },
+    });
+
+    fixture.tweenConfigs[0].onComplete();
+    expect(fixture.getCurrentTween()).toBeNull();
+  });
 });

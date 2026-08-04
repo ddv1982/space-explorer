@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { getViewportLayout } from '../utils/layout';
+import { queueAllPlanetPortraits } from './planetIntermission/planetPortraits';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class PreloadScene extends Phaser.Scene {
@@ -53,6 +54,12 @@ export class PreloadScene extends Phaser.Scene {
     // Neon backgrounds are generated procedurally: warm Level 1 only; later
     // levels generate just-in-time during the preceding intermission.
     ensurePremiumBackgroundAssets(this, 1, () => {});
+
+    // Authored planet portraits are real raster files (~18 kB each): cache
+    // the full campaign set now so intermissions never hit the network
+    // mid-run. The intermission scene re-queues its own portrait on direct
+    // starts or after the texture has been released.
+    queueAllPlanetPortraits(this);
 
     // Kick off the bundled UI faces so the Menu transition can wait for them.
     const fontFaceSet = typeof document !== 'undefined' ? document.fonts : undefined;

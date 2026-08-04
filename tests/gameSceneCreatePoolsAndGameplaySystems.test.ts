@@ -80,6 +80,14 @@ describe('createPoolsAndGameplaySystems', () => {
         expect(args.persistentState).toEqual({ grantedSlots: 0, slots: [] });
       },
     };
+    const picketTurrets = {
+      create: (args: { tier: number; enemyPool: unknown; effectsManager: unknown }) => {
+        callLog.push('picketTurrets.create');
+        expect(args.tier).toBe(2);
+        expect(args.enemyPool).toBe(enemyPool);
+        expect(args.effectsManager).toBe(effectsManager);
+      },
+    };
     const asteroidGroup = { id: 'asteroids' };
     const hazardBeamSystem = {
       create: () => { callLog.push('hazardBeamSystem.create'); },
@@ -123,12 +131,13 @@ describe('createPoolsAndGameplaySystems', () => {
       player: player as never,
       effectsManager: effectsManager as never,
       levelConfig: { lastLifeHelperWing: { shipCount: 1 } } as never,
-      state: { level: 4, score: 123, upgrades: [] } as never,
+      state: { level: 4, score: 123, upgrades: { turrets: 2 } } as never,
       isTerminalTransitionActive: () => false,
       applyPowerUp,
       createBulletPool: () => bulletPool as never,
       createEnemyPool: () => enemyPool as never,
       createLastLifeHelperWing: () => helperWing as never,
+      createPicketTurretSystem: () => picketTurrets as never,
       createWaveManager: () => waveManager as never,
       createCollisionManager: () => collisionManager as never,
       createScoreManager: () => scoreManager as never,
@@ -140,6 +149,7 @@ describe('createPoolsAndGameplaySystems', () => {
       'enemyPool.create',
       'enemyPool.setTargetProvider',
       'helperWing.create',
+      'picketTurrets.create',
       'hazardBeamSystem.create',
       'waveManager.create',
       'waveManager.setLevelConfig:4',
@@ -153,6 +163,7 @@ describe('createPoolsAndGameplaySystems', () => {
     ]);
 
     expect(result.powerUpGroup).toBeDefined();
+    expect(result.picketTurrets).toBe(picketTurrets as never);
     expect(overlapCallback).not.toBeNull();
 
     const powerUp = {

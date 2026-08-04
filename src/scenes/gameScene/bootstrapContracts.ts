@@ -15,6 +15,7 @@ import type { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { MobileControls } from '@/systems/MobileControls';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
+import type { PicketTurretSystem } from '@/systems/PicketTurretSystem';
 import type { getPlayerState, PlayerStateData } from '@/systems/PlayerState';
 import type { ScoreManager } from '@/systems/ScoreManager';
 import type { WarpTransition } from '@/systems/WarpTransition';
@@ -65,6 +66,7 @@ export type GameSceneCreateGameplayBridge = {
   bulletPool: BulletPool;
   enemyPool: EnemyPool;
   lastLifeHelperWing: LastLifeHelperWing | null;
+  picketTurrets: PicketTurretSystem | null;
   waveManager: WaveManager;
   collisionManager: CollisionManager;
   scoreManager: ScoreManager;

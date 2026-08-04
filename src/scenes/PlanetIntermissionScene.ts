@@ -23,6 +23,7 @@ import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
 
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { findButtonIndexAtPoint } from './planetIntermission/navigation';
+import { queuePlanetPortrait } from './planetIntermission/planetPortraits';
 import {
   createIntermissionHeader,
   createIntermissionPrompt,
@@ -54,6 +55,13 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'PlanetIntermission' });
+  }
+
+  preload(): void {
+    // The boot preload caches every portrait, but direct/dev starts and
+    // post-shutdown restarts can reach this scene with the texture already
+    // released: queue it here so Phaser finishes the load before create.
+    queuePlanetPortrait(this, getPlayerState(this.registry).level);
   }
 
   create(): void {

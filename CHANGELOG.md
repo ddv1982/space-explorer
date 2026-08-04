@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-08-04
+
+### Added
+- Added the two-tier AEGIS Picket upgrade after Level 4, deploying responsive automatic flank turrets with a bounded projectile pool, dedicated effects, audio, persistence, and desktop/mobile coverage.
+- Added sparse Marked Aces to Levels 5–10 with gilded identification, doubled durability, quadrupled base score, guaranteed power-up drops, and pool-safe state restoration.
+- Added x5 Chain Overdrive, reducing the main gun cooldown by 15% while the maximum score chain remains active.
+- Added Guard Break encounters to bosses in Levels 5–10, with sustained-player-damage guard pressure, delayed decay, a 2.5-second stagger, double player damage during the break, HUD feedback, and sublinear difficulty scaling.
+
+### Changed
+- Replaced the procedural vector-like arrival discs with ten authored and optimized WebP planet portraits while retaining the responsive neon navigation chrome, reduced-motion behavior, and campaign-specific identities.
+- Updated the campaign roster, art direction, level-design notes, upgrade interface, development level jump, save normalization, and release documentation for the expanded late-game systems.
+
+### Quality
+- Added level validation and focused unit/browser coverage for planet assets, AEGIS purchase and deployment, Marked Ace choreography and pooling, Guard Break behavior, Overdrive cooldown/readout behavior, persistence, lifecycle teardown, and responsive layouts.
+- Hardened boss hit/tint lifecycle behavior, shifted-camera turret targeting and projectile bounds, nonzero-origin intermission rendering, and finite Guard Break configuration validation through two complete code-review rounds.
+- Passed both TypeScript compilers, lint, unit tests, level validation, Knip, production build, bundle budgets, desktop/mobile functional and visual browser gates, and performance evidence.
+
 ## [1.4.1] - 2026-08-03
 
 ### Changed

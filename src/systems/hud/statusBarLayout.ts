@@ -193,9 +193,21 @@ export function renderBossBar(params: {
   currentBossHp: number | null;
   currentBossMaxHp: number | null;
   bossBarHeight: number;
+  guardRatio?: number;
+  guardBroken?: boolean;
   layout: HudLayoutMetrics;
 }): void {
-  const { bossBarBg, bossBarFill, bossVisible, currentBossHp, currentBossMaxHp, bossBarHeight, layout } = params;
+  const {
+    bossBarBg,
+    bossBarFill,
+    bossVisible,
+    currentBossHp,
+    currentBossMaxHp,
+    bossBarHeight,
+    guardRatio,
+    guardBroken,
+    layout,
+  } = params;
 
   bossBarBg.clear();
   bossBarFill.clear();
@@ -231,5 +243,16 @@ export function renderBossBar(params: {
   if (fillWidth > 4) {
     bossBarFill.fillStyle(0xffffff, 0.25);
     bossBarFill.fillRect(layout.bossBarX + 1 + fillWidth - 3, layout.bossBarY + 1, 3, bossBarHeight - 2);
+  }
+
+  if (guardRatio !== undefined) {
+    const guardY = layout.bossBarY + bossBarHeight + 3;
+    const clampedGuard = Math.max(0, Math.min(1, guardRatio));
+    bossBarBg.fillStyle(0x201a2a, 0.88);
+    bossBarBg.fillRect(layout.bossBarX, guardY, layout.bossBarWidth, 4);
+    bossBarBg.lineStyle(1, guardBroken ? 0xffd76a : 0x8a6cb8, 0.9);
+    bossBarBg.strokeRect(layout.bossBarX, guardY, layout.bossBarWidth, 4);
+    bossBarFill.fillStyle(guardBroken ? 0xffd76a : 0xb792ff, 0.95);
+    bossBarFill.fillRect(layout.bossBarX + 1, guardY + 1, (layout.bossBarWidth - 2) * clampedGuard, 2);
   }
 }

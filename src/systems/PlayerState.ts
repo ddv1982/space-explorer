@@ -1,4 +1,4 @@
-import { PlayerUpgradeLevels } from '../config/UpgradesConfig';
+import { getUpgradeByKey, PlayerUpgradeLevels } from '../config/UpgradesConfig';
 
 export interface PlayerStateData {
   level: number;
@@ -66,6 +66,7 @@ function getDefaultPlayerState(): PlayerStateData {
       damage: 0,
       fireRate: 0,
       shield: 0,
+      turrets: 0,
     },
     helperWing: {
       slots: [],
@@ -127,6 +128,7 @@ function normalizePlayerState(value: unknown): PlayerStateData {
     damage: normalizeNonNegativeInteger(upgradesInput.damage, defaultState.upgrades.damage),
     fireRate: normalizeNonNegativeInteger(upgradesInput.fireRate, defaultState.upgrades.fireRate),
     shield: normalizeNonNegativeInteger(upgradesInput.shield, defaultState.upgrades.shield),
+    turrets: normalizeNonNegativeInteger(upgradesInput.turrets, defaultState.upgrades.turrets),
   };
   const maxShields = upgrades.shield;
   const currentShieldsInput = normalizeFiniteNumber(value.currentShields, maxShields);
@@ -204,6 +206,13 @@ export function getPlayerFireRate(state: PlayerStateData): number {
 
 function getPlayerShieldCount(state: PlayerStateData): number {
   return state.upgrades.shield;
+}
+
+export function getPlayerTurretTier(state: PlayerStateData): number {
+  const maxTier = getUpgradeByKey('turrets').maxLevel;
+  const rawTier = state.upgrades.turrets;
+  const tier = Number.isFinite(rawTier) ? Math.floor(rawTier) : 0;
+  return Math.min(maxTier, Math.max(0, tier));
 }
 
 export function advanceToNextLevel(registry: PlayerStateRegistry): void {

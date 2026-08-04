@@ -17,7 +17,7 @@ import type {
 } from './GameSceneFlowController';
 import { getViewportBounds } from '@/utils/layout';
 import { runBestEffort } from '@/utils/runBestEffort';
-import { trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
+import { spawnGuaranteedPowerUp, trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
 
 export { runBestEffort };
 
@@ -46,6 +46,7 @@ interface GameSceneCombatFeedbackDeps {
   setBoss: (boss: Boss | null) => void;
   getScaledBossConfig: () => BossConfig | null;
   getLastLifeHelperWing: () => { suspendForTransition(): void } | null;
+  getPicketTurrets: () => { suspendForTransition(): void } | null;
   powerUpGroup: () => Phaser.Physics.Arcade.Group;
   persistHelperWingState: () => void;
   syncLastLifeHelperWingState: () => void;
@@ -53,7 +54,7 @@ interface GameSceneCombatFeedbackDeps {
 }
 
 interface GameSceneCombatFeedbackHandlers {
-  handleEnemyDeath: (score: number, x: number, y: number) => void;
+  handleEnemyDeath: (score: number, x: number, y: number, isAce?: boolean) => void;
   handlePlayerDeath: () => void;
   handlePlayerFatalHit: () => void;
   handleLevelComplete: () => void;
@@ -68,8 +69,10 @@ interface GameSceneCombatFeedbackHandlers {
   handleEliteWave: () => void;
   handleBossDeath: () => void;
   handleBossPhaseChange: (phase: number) => void;
+  handleBossGuardBreak: () => void;
   handleHelperWingActivated: (helperCount: number) => void;
   handleHelperWingDepleted: () => void;
+  handlePicketOnline: () => void;
   spawnBoss: () => void;
 }
 
@@ -83,6 +86,7 @@ export function createGameSceneCombatFeedbackHandlers(
   const queueLevelCompleteTransition = (): void => {
     deps.persistHelperWingState();
     deps.getLastLifeHelperWing()?.suspendForTransition();
+    deps.getPicketTurrets()?.suspendForTransition();
     deps.flow().queueLevelComplete(deps.getFlowContext());
   };
 
@@ -99,6 +103,10 @@ export function createGameSceneCombatFeedbackHandlers(
 
   const tryDropPowerUp = (x: number, y: number): void => {
     trySpawnRandomPowerUp(deps.powerUpGroup(), x, y);
+  };
+
+  const dropGuaranteedPowerUp = (x: number, y: number): void => {
+    spawnGuaranteedPowerUp(deps.powerUpGroup(), x, y);
   };
 
   const hideEnemyForBossIntro = (enemy: {
@@ -193,11 +201,17 @@ export function createGameSceneCombatFeedbackHandlers(
   };
 
   return {
-    handleEnemyDeath: (score, x, y): void => {
+    handleEnemyDeath: (score, x, y, isAce): void => {
       const awarded = deps.scoreManager().registerKill(score, deps.scene.time.now);
       deps.effectsManager().createScorePopup(x, y, awarded);
       audioManager.playExplosion(0.5);
-      tryDropPowerUp(x, y);
+      // Aces always drop exactly one power-up; the normal roll is skipped so
+      // it can never duplicate the guaranteed reward.
+      if (isAce) {
+        dropGuaranteedPowerUp(x, y);
+      } else {
+        tryDropPowerUp(x, y);
+      }
     },
 
     handlePlayerDeath: (): void => {
@@ -290,6 +304,13 @@ export function createGameSceneCombatFeedbackHandlers(
       playBossPhaseChangeEffects();
     },
 
+    handleBossGuardBreak: (): void => {
+      deps.hud().showBossGuardBreakAnnouncement();
+      runBestEffort(() => deps.scene.cameras.main.flash(100, 255, 215, 106, false));
+      runBestEffort(() => deps.scene.cameras.main.shake(120, 0.005));
+      runBestEffort(() => audioManager.playPowerUpPickup());
+    },
+
     handleHelperWingActivated: (helperCount): void => {
       deps.hud().showHelperWingAnnouncement(helperCount);
       playHelperWingActivatedEffects();
@@ -298,6 +319,10 @@ export function createGameSceneCombatFeedbackHandlers(
     handleHelperWingDepleted: (): void => {
       deps.hud().showHelperWingDepletedAnnouncement();
       runBestEffort(() => deps.scene.cameras.main.shake(120, 0.006));
+    },
+
+    handlePicketOnline: (): void => {
+      deps.hud().showPicketOnlineAnnouncement();
     },
 
     spawnBoss,

@@ -54,6 +54,14 @@ export class Boss extends EnemyBase {
   private phaseStartedAt = 0;
   private playerRef: Player | null = null;
   private bossFlashToken = 0;
+  private guardCapacity = 0;
+  private guardValue = 0;
+  private guardDecayDelayMs = 1500;
+  private guardDecayPerSecond = 0;
+  private guardBreakDurationMs = 2500;
+  private guardLastHitAt = Number.NEGATIVE_INFINITY;
+  private guardBrokenUntil = 0;
+  private guardBroken = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     const textureKey = ensureBossTextureVariant(scene, DEFAULT_BOSS_CONFIG.attackStyle, DEFAULT_BOSS_CONFIG.name);
@@ -74,6 +82,38 @@ export class Boss extends EnemyBase {
     }
 
     super.takeDamage(amount);
+  }
+
+  takePlayerDamage(amount: number, time: number = this.scene.time.now): void {
+    if (amount <= 0 || !this.active) {
+      return;
+    }
+
+    if (this.shieldActive) {
+      this.takeDamage(amount);
+      return;
+    }
+
+    const damage = this.guardBroken ? amount * 2 : amount;
+    super.takeDamage(damage);
+
+    if (!this.active || this.guardCapacity <= 0 || this.guardBroken) {
+      return;
+    }
+
+    this.guardValue = Math.min(this.guardCapacity, this.guardValue + amount);
+    this.guardLastHitAt = time;
+    if (this.guardValue >= this.guardCapacity) {
+      this.startGuardBreak(time);
+    }
+  }
+
+  getGuardState(): { enabled: boolean; ratio: number; broken: boolean } {
+    return {
+      enabled: this.guardCapacity > 0,
+      ratio: this.guardCapacity > 0 ? Math.min(1, this.guardValue / this.guardCapacity) : 0,
+      broken: this.guardBroken,
+    };
   }
 
   setEnemyBulletGroup(group: Phaser.Physics.Arcade.Group): void {
@@ -102,6 +142,10 @@ export class Boss extends EnemyBase {
       return;
     }
 
+    if (this.updateGuardState(time, delta)) {
+      return;
+    }
+
     this.updateMovement(time, delta);
     this.updatePhaseState(time);
     this.updateShieldState(time);
@@ -118,6 +162,10 @@ export class Boss extends EnemyBase {
     this.moveSpeed = 80;
     this.shieldActive = false;
     this.phaseStartedAt = 0;
+    this.guardValue = 0;
+    this.guardLastHitAt = Number.NEGATIVE_INFINITY;
+    this.guardBrokenUntil = 0;
+    this.guardBroken = false;
     this.setVelocityY(60);
     this.clearTint();
   }
@@ -321,6 +369,64 @@ export class Boss extends EnemyBase {
     this.phase2SpiralShotCount = config.phase2SpiralShotCount;
     this.phase2SpiralTurnRate = config.phase2SpiralTurnRate;
     this.phase2BulletSpeedScale = config.phase2BulletSpeedScale;
+    this.guardCapacity = Math.max(0, config.guardCapacity ?? 0);
+    this.guardDecayDelayMs = Math.max(0, config.guardDecayDelayMs ?? 1500);
+    this.guardDecayPerSecond = Math.max(0, config.guardDecayPerSecond ?? this.guardCapacity / 3);
+    this.guardBreakDurationMs = Math.max(0, config.guardBreakDurationMs ?? 2500);
+  }
+
+  private updateGuardState(time: number, delta: number): boolean {
+    if (this.guardBroken) {
+      if (time < this.guardBrokenUntil) {
+        this.setVelocity(0, 0);
+        return true;
+      }
+
+      this.guardBroken = false;
+      this.guardValue = 0;
+      this.guardLastHitAt = Number.NEGATIVE_INFINITY;
+      this.lastFireTime = time;
+      this.phaseStartedAt = time;
+      this.restoreBaseTint();
+    }
+
+    if (
+      this.guardCapacity > 0 &&
+      this.guardValue > 0 &&
+      time > this.guardLastHitAt + this.guardDecayDelayMs
+    ) {
+      this.guardValue = Math.max(0, this.guardValue - this.guardDecayPerSecond * (delta / 1000));
+    }
+
+    return false;
+  }
+
+  private startGuardBreak(time: number): void {
+    this.guardBroken = true;
+    this.guardBrokenUntil = time + this.guardBreakDurationMs;
+    this.lastFireTime = this.guardBrokenUntil;
+    this.setVelocity(0, 0);
+    this.invalidateHitFlash();
+    this.bossFlashToken += 1;
+    this.setTint(0xffd76a);
+    this.setTintMode(Phaser.TintModes.FILL);
+    this.scene.events.emit(GAME_SCENE_EVENTS.bossGuardBreak);
+  }
+
+  protected override restoreBaseTint(): void {
+    if (this.guardBroken) {
+      this.setTint(0xffd76a);
+      this.setTintMode(Phaser.TintModes.FILL);
+      return;
+    }
+
+    if (this.shieldActive) {
+      this.setTint(0x77ccff);
+      this.setTintMode(Phaser.TintModes.MULTIPLY);
+      return;
+    }
+
+    super.restoreBaseTint();
   }
 
   private flashShieldImpact(): void {
@@ -351,18 +457,15 @@ export class Boss extends EnemyBase {
       return;
     }
 
-    if (this.shieldActive) {
-      this.setTint(0x77ccff);
-      this.setTintMode(Phaser.TintModes.MULTIPLY);
-    } else {
-      this.clearTint();
-    }
+    this.restoreBaseTint();
   }
 
   override die(): void {
     this.scene.events.emit(GAME_SCENE_EVENTS.bossDeath, this.scoreValue, this.x, this.y);
     this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.shieldActive = false;
+    this.guardValue = 0;
+    this.guardBroken = false;
     this.clearTint();
     this.despawn();
   }

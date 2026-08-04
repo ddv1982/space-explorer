@@ -84,6 +84,7 @@ describe('SaveSlotStorage', () => {
           damage: 2,
           fireRate: 1,
           shield: 2,
+          turrets: 1,
         },
         helperWing: {
           grantedSlots: 1,
@@ -129,7 +130,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
       { finalScore: 500, levelReached: 2 },
@@ -164,7 +165,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
       { finalScore: 100, levelReached: 1 },
@@ -188,7 +189,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
       { finalScore: 100, levelReached: totalLevels + 99 },
@@ -231,7 +232,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
       { finalScore: 100, levelReached: 2 },
@@ -272,7 +273,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
       { finalScore: 100, levelReached: 2 },
@@ -307,7 +308,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
       { finalScore: 100, levelReached: -5 },
@@ -331,7 +332,7 @@ describe('SaveSlotStorage', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: {
           grantedSlots: 1_000_000,
           slots: Array.from({ length: 10 }, () => ({ remainingLives: 1, hp: 1 })),
@@ -396,6 +397,45 @@ describe('SaveSlotStorage', () => {
     );
 
     expect(readSaveSlot('slot-1')?.playerState.currentShields).toBe(3);
+    expect(readSaveSlot('slot-1')?.playerState.upgrades.turrets).toBe(0);
+  });
+
+  test('normalizes corrupt saved turret tiers during slot reads', () => {
+    const storage = new MemoryStorage();
+    installWindow(storage);
+
+    const record = createSaveSlotRecord(
+      'slot-1',
+      {
+        level: 5,
+        score: 3200,
+        currentHp: 5,
+        currentShields: 0,
+        remainingLives: 3,
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1 },
+        helperWing: { grantedSlots: 0, slots: [] },
+      },
+      { finalScore: 3200, levelReached: 5 },
+      new Date('2026-04-27T10:30:00.000Z')
+    );
+
+    storage.setItem(
+      SAVE_SLOT_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        slots: {
+          'slot-1': {
+            ...record,
+            playerState: {
+              ...record.playerState,
+              upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1.9 },
+            },
+          },
+        },
+      })
+    );
+
+    expect(readSaveSlot('slot-1')?.playerState.upgrades.turrets).toBe(1);
   });
 
   test('returns graceful failures when writes are not allowed', () => {
@@ -414,6 +454,7 @@ describe('SaveSlotStorage', () => {
           damage: 0,
           fireRate: 0,
           shield: 0,
+          turrets: 0,
         },
         helperWing: {
           grantedSlots: 0,

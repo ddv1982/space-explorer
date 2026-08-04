@@ -25,12 +25,14 @@ describe('resolveDevLevelJump', () => {
       damage: 4,
       fireRate: 4,
       shield: 3,
+      turrets: 2,
     });
     expect(resolveDevLevelJump('?startLevel=2')?.upgrades).toEqual({
       hp: 3,
       damage: 2,
       fireRate: 1,
       shield: 0,
+      turrets: 0,
     });
   });
 
@@ -40,6 +42,7 @@ describe('resolveDevLevelJump', () => {
       damage: 0,
       fireRate: 0,
       shield: 0,
+      turrets: 0,
     });
     expect(resolveDevLevelJump('?startLevel=9&upgrades=fresh')?.upgrades.hp).toBe(0);
   });
@@ -50,7 +53,19 @@ describe('resolveDevLevelJump', () => {
       damage: 4,
       fireRate: 1,
       shield: 1,
+      turrets: 0,
     });
+  });
+
+  test('accepts an optional fifth turret value and clamps it to the turret max', () => {
+    expect(resolveDevLevelJump('?startLevel=9&upgrades=2,9,1,1,7')?.upgrades).toEqual({
+      hp: 2,
+      damage: 4,
+      fireRate: 1,
+      shield: 1,
+      turrets: 2,
+    });
+    expect(resolveDevLevelJump('?startLevel=9&upgrades=3,3,3,2,1')?.upgrades.turrets).toBe(1);
   });
 
   test('falls back to the default loadout for malformed upgrade lists', () => {
@@ -59,6 +74,7 @@ describe('resolveDevLevelJump', () => {
       damage: 4,
       fireRate: 4,
       shield: 3,
+      turrets: 2,
     });
   });
 });

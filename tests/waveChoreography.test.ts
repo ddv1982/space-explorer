@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { ChoreographedWaveConfig, EnemyType } from '@/config/LevelsConfig';
+import type { ChoreographedSpawnOptions } from '../src/systems/wave/waveChoreography';
 
 const {
   CHOREO_LANE_COUNT,
@@ -16,15 +17,15 @@ type FakeMember = {
 };
 
 function createDeps(viewportWidth = 800) {
-  const spawns: Array<{ type: EnemyType; x: number; y: number }> = [];
+  const spawns: Array<{ type: EnemyType; x: number; y: number; options?: ChoreographedSpawnOptions }> = [];
   const warnings: number[] = [];
   const wormholes: Array<{ x: number; y: number }> = [];
   let eliteCount = 0;
   const members: FakeMember[] = [];
 
   const deps = {
-    spawn: (type: EnemyType, x: number, y: number): FakeMember => {
-      spawns.push({ type, x, y });
+    spawn: (type: EnemyType, x: number, y: number, options?: ChoreographedSpawnOptions): FakeMember => {
+      spawns.push({ type, x, y, options });
       const member: FakeMember = {
         active: true,
         defeatCount: 0,

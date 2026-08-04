@@ -23,3 +23,4 @@ export {
   ensurePlayerBulletTexture,
 } from './spriteFactory/projectileTextures';
 export { ensurePowerUpTextures } from './spriteFactory/powerUpTextures';
+export { ensurePicketBoltTexture, ensurePicketTurretTexture } from './spriteFactory/turretTextures';

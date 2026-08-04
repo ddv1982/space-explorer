@@ -5,6 +5,7 @@ mock.module('phaser', () => ({ default: {} }));
 const {
   advanceToNextLevel,
   getPlayerState,
+  getPlayerTurretTier,
   getRunSummary,
   resetRunSummary,
   saveCurrentShields,
@@ -42,7 +43,7 @@ describe('PlayerState schema behavior', () => {
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0 },
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { slots: [], grantedSlots: 0 },
       });
       expect(registry.get('playerState')).toEqual(state);
@@ -62,6 +63,7 @@ describe('PlayerState schema behavior', () => {
         damage: Number.POSITIVE_INFINITY,
         fireRate: '3',
         shield: 2.9,
+        turrets: 1.9,
       },
       helperWing: {
         grantedSlots: Number.POSITIVE_INFINITY,
@@ -75,7 +77,7 @@ describe('PlayerState schema behavior', () => {
       currentHp: 5,
       currentShields: 2,
       remainingLives: 0,
-      upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 2 },
+      upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 2, turrets: 1 },
       helperWing: {
         grantedSlots: 3,
         slots: [
@@ -96,7 +98,7 @@ describe('PlayerState schema behavior', () => {
     });
 
     const state = getPlayerState(registry);
-    expect(state.upgrades).toEqual({ hp: 0, damage: 0, fireRate: 0, shield: 0 });
+    expect(state.upgrades).toEqual({ hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 });
     expect(state.helperWing).toEqual({ slots: [], grantedSlots: 0 });
   });
 
@@ -170,6 +172,7 @@ describe('PlayerState schema behavior', () => {
         damage: 0,
         fireRate: 0,
         shield: 2,
+        turrets: 0,
       },
       helperWing: {
         grantedSlots: 0,
@@ -194,6 +197,7 @@ describe('PlayerState schema behavior', () => {
         damage: 0,
         fireRate: 0,
         shield: 1,
+        turrets: 0,
       },
       helperWing: {
         grantedSlots: 0,
@@ -222,6 +226,7 @@ describe('PlayerState schema behavior', () => {
         damage: 1,
         fireRate: 0,
         shield: 3,
+        turrets: 1,
       },
       helperWing: {
         grantedSlots: 0,
@@ -235,6 +240,34 @@ describe('PlayerState schema behavior', () => {
     expect(state.level).toBe(3);
     expect(state.currentHp).toBe(9);
     expect(state.currentShields).toBe(3);
+  });
+
+  test('getPlayerTurretTier floors and clamps the turret upgrade level', () => {
+    const registry = createRegistry();
+
+    expect(getPlayerTurretTier(getPlayerState(registry))).toBe(0);
+
+    setPlayerState(registry, {
+      level: 5,
+      score: 0,
+      currentHp: 5,
+      currentShields: 0,
+      remainingLives: 3,
+      upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1 },
+      helperWing: { slots: [], grantedSlots: 0 },
+    });
+    expect(getPlayerTurretTier(getPlayerState(registry))).toBe(1);
+
+    setPlayerState(registry, {
+      level: 5,
+      score: 0,
+      currentHp: 5,
+      currentShields: 0,
+      remainingLives: 3,
+      upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 99 },
+      helperWing: { slots: [], grantedSlots: 0 },
+    });
+    expect(getPlayerTurretTier(getPlayerState(registry))).toBe(2);
   });
 
   test('resetRunSummary restores default summary values', () => {

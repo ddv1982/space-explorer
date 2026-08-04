@@ -6,7 +6,9 @@ import {
 } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
 import { audioManager } from '@/systems/AudioManager';
+import { resolvePlayerFireCooldownMs } from '@/systems/chainOverdrive';
 import { GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
+import type { ChainState } from '@/systems/ScoreManager';
 import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
 
 const MUSIC_INTENSITY_UPDATE_THRESHOLD = 0.01;
@@ -39,6 +41,9 @@ interface GameSceneGameplayFrameDelegate {
   getLastLifeHelperWing(): {
     update(time: number, delta: number): void;
   } | null;
+  getPicketTurrets(): {
+    update(time: number): void;
+  } | null;
   grazeSurge: {
     update(): void;
   };
@@ -54,11 +59,15 @@ interface GameSceneGameplayFrameDelegate {
     getLevelConfig(): Parameters<typeof getActiveSection>[0];
     shouldSpawnBoss(): boolean;
   };
+  scoreManager: {
+    getChainState(time: number): ChainState;
+  };
   events: {
     emit(event: string): void;
   };
   hud: {
     updateBossHp(hp: number, maxHp: number): void;
+    updateBossGuard(ratio: number | null, broken: boolean): void;
   };
   bulletPool: {
     fire(x: number, y: number, velocityX: number, velocityY: number): void;
@@ -114,7 +123,13 @@ export function createGameSceneGameplayFrameBehavior(
       return;
     }
 
-    if (time <= delegate.getLastFireTime() + delegate.player.fireRate) {
+    // Max-chain Overdrive tightens the cooldown while the chain sits at its
+    // cap; the live chain read drops the benefit the moment the chain falls.
+    const fireCooldown = resolvePlayerFireCooldownMs(
+      delegate.player.fireRate,
+      delegate.scoreManager.getChainState(time).multiplier
+    );
+    if (time <= delegate.getLastFireTime() + fireCooldown) {
       return;
     }
 
@@ -206,6 +221,8 @@ export function createGameSceneGameplayFrameBehavior(
 
     if (boss && boss.active) {
       delegate.hud.updateBossHp(boss.hp, boss.maxHp);
+      const guard = boss.getGuardState();
+      delegate.hud.updateBossGuard(guard.enabled ? guard.ratio : null, guard.broken);
     }
   };
 
@@ -213,6 +230,7 @@ export function createGameSceneGameplayFrameBehavior(
     delegate.parallax.update(delta);
     delegate.player.update(delegate.inputManager, delta);
     delegate.getLastLifeHelperWing()?.update(time, delta);
+    delegate.getPicketTurrets()?.update(time);
     delegate.grazeSurge.update();
 
     updatePlayerFiring(time);

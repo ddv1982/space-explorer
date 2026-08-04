@@ -4,6 +4,7 @@ import { colorToHexString, mixColor } from '../utils/colorUtils';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import type { ChainState } from './ScoreManager';
 import { HudAnnouncementTweens } from './hud/announcementTweens';
+import { resolveChainReadout } from './hud/chainReadout';
 import {
   getLayoutMetrics,
   renderBossBar,
@@ -59,6 +60,8 @@ export class HUD {
   private currentProgress: number | null = null;
   private currentBossHp: number | null = null;
   private currentBossMaxHp: number | null = null;
+  private currentBossGuardRatio: number | null = null;
+  private currentBossGuardBroken = false;
   private panelStrokeColor = 0x3f6b8b;
   private hpBorderColor = 0x8ee8ff;
   private progressBorderColor = 0x7fdcff;
@@ -74,6 +77,8 @@ export class HUD {
     this.currentProgress = null;
     this.currentBossHp = null;
     this.currentBossMaxHp = null;
+    this.currentBossGuardRatio = null;
+    this.currentBossGuardBroken = false;
     this.bossVisible = false;
     this.announcementTween = null;
     this.currentChainLabel = null;
@@ -235,6 +240,8 @@ export class HUD {
     this.bossVisible = false;
     this.currentBossHp = null;
     this.currentBossMaxHp = null;
+    this.currentBossGuardRatio = null;
+    this.currentBossGuardBroken = false;
     this.bossBarBg.clear();
     this.bossBarFill.clear();
     this.bossBarBg.setVisible(false);
@@ -251,6 +258,19 @@ export class HUD {
 
     this.currentBossHp = hp;
     this.currentBossMaxHp = maxHp;
+    this.renderBossBar();
+  }
+
+  updateBossGuard(ratio: number | null, broken: boolean): void {
+    if (!this.bossVisible) return;
+
+    const nextRatio = ratio === null ? null : Math.max(0, Math.min(1, ratio));
+    if (this.currentBossGuardRatio === nextRatio && this.currentBossGuardBroken === broken) {
+      return;
+    }
+
+    this.currentBossGuardRatio = nextRatio;
+    this.currentBossGuardBroken = broken;
     this.renderBossBar();
   }
 
@@ -291,16 +311,16 @@ export class HUD {
   }
 
   updateChainMeter(chainState: ChainState): void {
-    const label =
-      chainState.multiplier > 1 ? `x${chainState.multiplier} CHAIN ${chainState.chain}` : '';
+    const readout = resolveChainReadout(chainState);
 
-    if (label === this.currentChainLabel) {
+    if (readout.label === this.currentChainLabel) {
       return;
     }
 
-    this.currentChainLabel = label;
-    this.chainText.setText(label);
-    this.chainText.setVisible(label !== '');
+    this.currentChainLabel = readout.label;
+    this.chainText.setText(readout.label);
+    this.chainText.setColor(readout.color);
+    this.chainText.setVisible(readout.label !== '');
   }
 
   updateSurge(ratio: number): void {
@@ -333,8 +353,16 @@ export class HUD {
     this.announcementTweens.showBossPhaseAnnouncement(phase);
   }
 
+  showBossGuardBreakAnnouncement(): void {
+    this.announcementTweens.showBossGuardBreakAnnouncement();
+  }
+
   showHelperWingAnnouncement(helperCount: number): void {
     this.announcementTweens.showHelperWingAnnouncement(helperCount);
+  }
+
+  showPicketOnlineAnnouncement(): void {
+    this.announcementTweens.showPicketOnlineAnnouncement();
   }
 
   showEliteWaveAnnouncement(): void {
@@ -382,6 +410,8 @@ export class HUD {
       currentBossHp: this.currentBossHp,
       currentBossMaxHp: this.currentBossMaxHp,
       bossBarHeight: this.bossBarHeight,
+      guardRatio: this.currentBossGuardRatio ?? undefined,
+      guardBroken: this.currentBossGuardBroken,
       layout: getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth),
     });
   }

@@ -109,13 +109,23 @@ interface ChoreographedSpawnedMember {
   getDefeatCount(): number;
 }
 
+export interface ChoreographedSpawnOptions {
+  /** Spawn this member as a gilded Marked Ace (from the wave's aceCount). */
+  ace?: boolean;
+}
+
 interface TrackedWaveMember {
   member: ChoreographedSpawnedMember;
   defeatCountAtSpawn: number;
 }
 
 export interface WaveChoreographerDeps {
-  spawn: (type: EnemyType, x: number, y: number) => ChoreographedSpawnedMember | null;
+  spawn: (
+    type: EnemyType,
+    x: number,
+    y: number,
+    options?: ChoreographedSpawnOptions
+  ) => ChoreographedSpawnedMember | null;
   emitWarning: (x: number) => void;
   emitWormhole: (x: number, y: number) => void;
   emitEliteWave: () => void;
@@ -196,9 +206,17 @@ export class WaveChoreographer {
     wave.fired = true;
     wave.firedAt = time;
 
+    const aceCount = Math.max(0, wave.config.aceCount ?? 0);
     const warned = new Set<number>();
-    for (const position of this.getPositions(wave.config)) {
-      const member = this.deps.spawn(wave.config.type, position.x, position.y);
+    const positions = this.getPositions(wave.config);
+    for (const [index, position] of positions.entries()) {
+      // Lead members carry the authored ace marks.
+      const member = this.deps.spawn(
+        wave.config.type,
+        position.x,
+        position.y,
+        index < aceCount ? { ace: true } : undefined
+      );
       if (!member) {
         continue;
       }

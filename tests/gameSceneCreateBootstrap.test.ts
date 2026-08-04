@@ -53,6 +53,7 @@ describe('runGameSceneCreateBootstrap', () => {
     const bulletPool = { id: 'bullet-pool' };
     const enemyPool = { id: 'enemy-pool' };
     const lastLifeHelperWing = { id: 'helper-wing' };
+    const picketTurrets = { id: 'picket-turrets' };
     const waveManager = { id: 'wave-manager' };
     const collisionManager = { id: 'collision-manager' };
     const scoreManager = { id: 'score-manager' };
@@ -146,6 +147,7 @@ describe('runGameSceneCreateBootstrap', () => {
           bulletPool,
           enemyPool,
           lastLifeHelperWing,
+          picketTurrets,
           waveManager,
           collisionManager,
           scoreManager,
@@ -225,6 +227,7 @@ describe('runGameSceneCreateBootstrap', () => {
       bulletPool: null as never,
       enemyPool: null as never,
       lastLifeHelperWing: null,
+      picketTurrets: null,
       waveManager: null as never,
       collisionManager: null as never,
       scoreManager: null as never,
@@ -310,6 +313,7 @@ describe('runGameSceneCreateBootstrap', () => {
       bulletPool,
       enemyPool,
       lastLifeHelperWing,
+      picketTurrets,
       waveManager,
       collisionManager,
       scoreManager,

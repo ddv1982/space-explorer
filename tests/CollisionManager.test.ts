@@ -11,6 +11,7 @@ const { HazardBeam } = await import('../src/entities/HazardBeam');
 const { Bullet } = await import('../src/entities/Bullet');
 const { Asteroid } = await import('../src/entities/Asteroid');
 const { EnemyBase } = await import('../src/entities/enemies/EnemyBase');
+const { Boss } = await import('../src/entities/enemies/Boss');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
 
 type DamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
@@ -41,6 +42,7 @@ type CollisionHarness = {
     kamikaze: object;
     impact: object;
     none: object;
+    boss: object;
   };
   setTime: (now: number) => void;
   getOverlap: (a: unknown, b: unknown) => OverlapCallback;
@@ -72,6 +74,7 @@ function createCollisionHarness(outcomes: DamageOutcome[]): CollisionHarness {
     kamikaze: { id: 'kamikaze-group' },
     impact: { id: 'impact-group' },
     none: { id: 'none-group' },
+    boss: { id: 'boss-group' },
   };
 
   const scene = {
@@ -136,6 +139,7 @@ function createCollisionHarness(outcomes: DamageOutcome[]): CollisionHarness {
       { key: 'kamikaze', group: groups.kamikaze, playerCollisionBehavior: 'kamikaze' as const },
       { key: 'impact', group: groups.impact, playerCollisionBehavior: 'impact' as const },
       { key: 'none', group: groups.none, playerCollisionBehavior: 'none' as const },
+      { key: 'boss', group: groups.boss, playerCollisionBehavior: 'none' as const },
     ],
   };
 
@@ -174,6 +178,32 @@ function createCollisionHarness(outcomes: DamageOutcome[]): CollisionHarness {
     callLog,
   };
 }
+
+describe('CollisionManager boss damage sources', () => {
+  test('routes main-player bullets through the Guard Break-aware boss path with gameplay time', () => {
+    const harness = createCollisionHarness(['damaged']);
+    const bulletVsBoss = harness.getOverlap(harness.groups.bullet, harness.groups.boss);
+    const playerDamage: Array<{ amount: number; time: number }> = [];
+
+    const bullet = createInstance(Bullet, {
+      active: true,
+      kill: () => harness.callLog.push('bullet.kill'),
+    });
+    const boss = createInstance(Boss, {
+      active: true,
+      x: 100,
+      y: 120,
+      takePlayerDamage: (amount: number, time: number) => playerDamage.push({ amount, time }),
+    });
+
+    harness.manager.setBulletDamage(3);
+    harness.setTime(640);
+    bulletVsBoss(bullet, boss);
+
+    expect(playerDamage).toEqual([{ amount: 3, time: 640 }]);
+    expect(harness.callLog).toContain('bullet.kill');
+  });
+});
 
 describe('CollisionManager player damage dedupe regression coverage', () => {
   test('enemy bullet collision is gated by canProcessPlayerCollision checks', () => {

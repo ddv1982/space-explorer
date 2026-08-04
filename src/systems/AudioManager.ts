@@ -44,6 +44,10 @@ export class AudioManager {
     this.sfxManager.playLaser();
   }
 
+  playPicketShot(): void {
+    this.sfxManager.playPicketShot();
+  }
+
   playExplosion(intensity = 1): void {
     this.sfxManager.playExplosion(intensity);
   }

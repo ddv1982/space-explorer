@@ -1,10 +1,11 @@
-export type UpgradeKey = 'hp' | 'damage' | 'fireRate' | 'shield';
+export type UpgradeKey = 'hp' | 'damage' | 'fireRate' | 'shield' | 'turrets';
 
 export interface PlayerUpgradeLevels {
   hp: number;
   damage: number;
   fireRate: number;
   shield: number;
+  turrets: number;
 }
 
 interface UpgradeUnlockRequirement {
@@ -21,6 +22,8 @@ export interface UpgradeDef {
   baseCost: number;
   costMultiplier: number;
   unlock?: UpgradeUnlockRequirement;
+  /** Optional per-tier labels; tierNames[currentLevel] names the tier being purchased. */
+  tierNames?: readonly string[];
 }
 
 export type UpgradeBlockReason = 'maxed' | 'locked' | 'progression' | 'credits' | null;
@@ -87,6 +90,19 @@ const UPGRADES: UpgradeDef[] = [
         hp: 2,
       },
     },
+  },
+  {
+    key: 'turrets',
+    name: 'AEGIS PICKET',
+    description: 'Edge turret mounts',
+    maxLevel: 2,
+    progressionCaps: [0, 0, 0, 1, 2],
+    baseCost: 1500,
+    costMultiplier: 2.0,
+    unlock: {
+      minPlayerLevel: 4,
+    },
+    tierNames: ['PICKET INSTALLATION', 'PICKET OVERCLOCK'],
   },
 ];
 

@@ -158,6 +158,7 @@ function bootstrapGameplaySystems(
   gameScene.bulletPool = gameplaySystems.bulletPool;
   gameScene.enemyPool = gameplaySystems.enemyPool;
   gameScene.lastLifeHelperWing = gameplaySystems.lastLifeHelperWing;
+  gameScene.picketTurrets = gameplaySystems.picketTurrets;
   gameScene.waveManager = gameplaySystems.waveManager;
   gameScene.collisionManager = gameplaySystems.collisionManager;
   gameScene.scoreManager = gameplaySystems.scoreManager;

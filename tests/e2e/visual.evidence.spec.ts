@@ -83,7 +83,7 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
         hasPlanetTitle: arrival.texts.some((text) => text.text === staged.planetName.toUpperCase()),
         hasPlanetVisual: arrival.objects.some((object) =>
           object.active
-          && object.textureKey.startsWith(`planet-arrival-${String(level).padStart(2, '0')}-`)
+          && object.textureKey === `planet-portrait-${String(level).padStart(2, '0')}`
         ),
       };
     }, {

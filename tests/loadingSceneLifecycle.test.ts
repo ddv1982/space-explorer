@@ -67,6 +67,7 @@ mock.module('../src/scenes/shared/registerRestartOnResize', () => ({
 
 const { BootScene } = await import('../src/scenes/BootScene');
 const { PreloadScene } = await import('../src/scenes/PreloadScene');
+const { getTotalLevels } = await import('../src/config/LevelsConfig');
 
 type PreloadHarness = {
   scene: InstanceType<typeof PreloadScene>;
@@ -74,6 +75,7 @@ type PreloadHarness = {
   lifecycleEvents: MockEmitter;
   displayedText: string[];
   startCalls: string[];
+  queuedImages: Array<{ key: string; url: string }>;
 };
 
 function createPreloadHarness(): PreloadHarness {
@@ -82,6 +84,7 @@ function createPreloadHarness(): PreloadHarness {
   const lifecycleEvents = new MockEmitter();
   const displayedText: string[] = [];
   const startCalls: string[] = [];
+  const queuedImages: Array<{ key: string; url: string }> = [];
   const text = {
     setOrigin: () => text,
     setText: (value: string) => {
@@ -89,6 +92,12 @@ function createPreloadHarness(): PreloadHarness {
       return text;
     },
   };
+
+  Object.assign(loadEvents, {
+    image: (key: string, url: string) => {
+      queuedImages.push({ key, url });
+    },
+  });
 
   Object.assign(scene, {
     add: {
@@ -99,10 +108,11 @@ function createPreloadHarness(): PreloadHarness {
     },
     events: lifecycleEvents,
     load: loadEvents,
+    textures: { exists: () => false },
     scene: { start: (key: string) => startCalls.push(key) },
   });
 
-  return { scene, loadEvents, lifecycleEvents, displayedText, startCalls };
+  return { scene, loadEvents, lifecycleEvents, displayedText, startCalls, queuedImages };
 }
 
 describe('boot and preload loader lifecycle', () => {
@@ -142,6 +152,26 @@ describe('boot and preload loader lifecycle', () => {
     harness.scene.create();
     expect(harness.startCalls).toEqual(['Menu']);
     expect(harness.loadEvents.listenerCount('progress')).toBe(0);
+  });
+
+  test('queues the authored planet portrait set for intermissions', () => {
+    const harness = createPreloadHarness();
+
+    harness.scene.init();
+    harness.scene.preload();
+
+    const totalLevels = getTotalLevels();
+    expect(harness.queuedImages).toHaveLength(totalLevels);
+    expect(harness.queuedImages.map((image) => image.key)).toEqual(
+      Array.from(
+        { length: totalLevels },
+        (_, index) => `planet-portrait-${String(index + 1).padStart(2, '0')}`
+      )
+    );
+    expect(harness.queuedImages[0].url).toBe('/assets/planets/planet-01.webp');
+    expect(harness.queuedImages.at(-1)?.url).toBe(
+      `/assets/planets/planet-${String(totalLevels).padStart(2, '0')}.webp`
+    );
   });
 
   test('create completes the transition without requiring loader progress', () => {

@@ -31,6 +31,7 @@ export interface BrowserHarnessSnapshot {
     hasBody: boolean;
     rotation: number;
     tintMode: number | null;
+    tintTopLeft: number | null;
   }>[];
   arcs: readonly Readonly<{ x: number; y: number; radius: number; visible: boolean }>[];
 }
@@ -143,6 +144,7 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
     hasBody: boolean;
     rotation: number;
     tintMode: number | null;
+    tintTopLeft: number | null;
   }> = [];
   const arcs: Array<{ x: number; y: number; radius: number; visible: boolean }> = [];
   let cameraFilterCount = 0;
@@ -179,6 +181,7 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
         body?: unknown;
         rotation?: number;
         tintMode?: number;
+        tintTopLeft?: number;
       };
       const textureKey = texturedChild.texture?.key;
       if (textureKey) {
@@ -190,6 +193,7 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
           hasBody: Boolean(texturedChild.body),
           rotation: texturedChild.rotation ?? 0,
           tintMode: texturedChild.tintMode ?? null,
+          tintTopLeft: texturedChild.tintTopLeft ?? null,
         });
       }
     }

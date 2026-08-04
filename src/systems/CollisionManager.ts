@@ -3,6 +3,7 @@ import { Player, type PlayerDamageOutcome } from '../entities/Player';
 import { Bullet } from '../entities/Bullet';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
+import { Boss } from '../entities/enemies/Boss';
 import { Asteroid } from '../entities/Asteroid';
 import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
 import { runBestEffort } from '../utils/runBestEffort';
@@ -225,7 +226,11 @@ export class CollisionManager {
 
     if (bullet?.active && enemy?.active) {
       bullet.kill();
-      enemy.takeDamage(this.bulletDamage);
+      if (enemy instanceof Boss) {
+        enemy.takePlayerDamage(this.bulletDamage, this.scene.time.now);
+      } else {
+        enemy.takeDamage(this.bulletDamage);
+      }
       this.onEnemyHit(enemy);
     }
   }

@@ -52,16 +52,16 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 
 | Level | Name | Highlights | Boss |
 |------:|------|------------|------|
-| 1 | Solar Slipstream | high-contrast onboarding, rhythmic telegraphs | No |
-| 2 | Prism Reef | visibility pressure + ambush timing | No |
-| 3 | Magnetar Foundry | storm-and-gravity pressure, first wall | Arc Warden Khepri |
-| 4 | Fracture Convoy | frontal lane control and convoy choke points | Marshal Bront |
-| 5 | Cinder Vault | attrition gauntlet through ember hazards | Pyre Leviathan |
-| 6 | Graveyard Lattice | collapsing salvage corridors | Reliquary Crown |
-| 7 | Mirage Archive | deceptive calm, memory-fog ambushes | Archivist Shade |
-| 8 | Halo Cartography | fast orbital pattern prediction | Orbital Cantor |
-| 9 | Glass Rift Narrows | claustrophobic canyon precision flying | Rift Basilisk |
-| 10 | Eventide Singularity | full-system anomaly finale | Axiom Null |
+| 1 | Aurora Threshold | gentle lane-reading opener with clean diver telegraphs | No |
+| 2 | Tideglass Shallows | slow, telegraphed wormhole arrivals and dodger debut | No |
+| 3 | Ember Monsoon | drifting minefields and ember-storm lane commitments | Pyre Herald |
+| 4 | Clockwork Causeway | beat-timed waves and telegraphed lancer duels | Marshal Vectra |
+| 5 | Shatter Reef | splitter target-priority exam and reef pressure | Reef Stalker |
+| 6 | Debris Gauntlet | solar-flare and laser-lattice set-piece gauntlet | Bastion Bulwark |
+| 7 | Hollow Choir | elite lancer/gunship remix with wormhole telegraphs | Choir Regent |
+| 8 | Eclipse Narrows | bomber and gunship pincers through tight corridors | Umbral Ark |
+| 9 | Swarmfront | peak-density swarm survival and returning splitters | Hive Maelstrom |
+| 10 | Eventide Engine | six-section final exam reprising the campaign's systems | Omega Null |
 
 ### Enemy roster
 
@@ -80,6 +80,10 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 - **Adaptive boss scaling** — boss durability scales with player upgrade investment and campaign progression
 - **Per-level procedural music** — each level and boss has its own Web Audio-driven music identity
 - **Power-up drops** — temporary pickups such as health, shield, and rapid-fire boosts
+- **AEGIS Picket turrets** — a two-tier screen-edge support upgrade available for Level 5 onward
+- **Marked Aces** — sparse gilded priority targets in Levels 5–10 with stronger rewards
+- **Guard Break** — sustained main-gun pressure staggers later bosses into short damage windows
+- **Max-chain Overdrive** — maintaining the x5 chain briefly accelerates the main gun
 - **Lives + respawn flow** — the run continues after death if lives remain
 - **Upgrade progression** — intermission upgrades unlock over time and obey progression caps
 
@@ -91,6 +95,7 @@ Bought during the planet intermission screen using score as currency:
 - **Weapons** — increases damage
 - **Fire Rate** — improves firing speed
 - **Shield** — increases hit absorption
+- **AEGIS Picket** — installs and overclocks automatic flank-defense turrets
 
 Some upgrades unlock later in the campaign and use progression caps so the run scales in a controlled way.
 
@@ -201,7 +206,8 @@ for an explicit loadout, or `&upgrades=0` for a stock ship.
 
 ## Release notes
 
-- [Latest release notes](docs/releases/1.4.1.md)
+- [Unreleased changes](docs/releases/unreleased.md)
+- [Latest release notes](docs/releases/1.5.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

@@ -1,5 +1,12 @@
 import { LEVELS } from '../src/config/levels/registry';
 import { CORE_CAMPAIGN } from '../src/config/levels/definitions/coreCampaign';
+import {
+  ACE_MAX_LEVEL,
+  ACE_MAX_PER_LEVEL,
+  ACE_MAX_PER_WAVE,
+  ACE_MIN_LEVEL,
+  isAceEligibleType,
+} from '../src/config/aceConfig';
 import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../src/config/levels/types';
 
 interface ValidationIssue {
@@ -451,12 +458,92 @@ function validatePacingGuardrails(level: LevelConfig): void {
   }
 }
 
+function validateMarkedAces(level: LevelConfig, levelNumber: number): void {
+  const name = levelLabel(level);
+  let levelAceCount = 0;
+
+  for (const section of level.sections) {
+    section.signatureWaves?.forEach((wave) => {
+      const prefix = `${section.id} signatureWaves[${wave.id}]`;
+      const aceEnemies = wave.enemies.filter((enemy) => enemy.ace === true);
+
+      aceEnemies.forEach((enemy) => {
+        if (!isAceEligibleType(enemy.type)) {
+          pushError(name, `${prefix}: ace type '${enemy.type}' is not an eligible Marked Ace target`);
+        }
+      });
+
+      if (aceEnemies.length > ACE_MAX_PER_WAVE) {
+        pushError(name, `${prefix}: ${aceEnemies.length} aces exceed the per-wave limit of ${ACE_MAX_PER_WAVE}`);
+      }
+
+      levelAceCount += aceEnemies.length;
+    });
+
+    section.waves?.forEach((wave) => {
+      const prefix = `${section.id} waves[${wave.id}]`;
+      const aceCount = wave.aceCount ?? 0;
+
+      if (!Number.isInteger(aceCount) || aceCount < 0) {
+        pushError(name, `${prefix}: aceCount must be a non-negative integer`);
+        return;
+      }
+
+      if (aceCount === 0) {
+        return;
+      }
+
+      if (!isAceEligibleType(wave.type)) {
+        pushError(name, `${prefix}: aceCount on type '${wave.type}' is not an eligible Marked Ace target`);
+      }
+
+      if (aceCount > ACE_MAX_PER_WAVE) {
+        pushError(name, `${prefix}: aceCount ${aceCount} exceeds the per-wave limit of ${ACE_MAX_PER_WAVE}`);
+      }
+
+      if (aceCount > wave.count) {
+        pushError(name, `${prefix}: aceCount ${aceCount} exceeds the wave size ${wave.count}`);
+      }
+
+      levelAceCount += aceCount;
+    });
+  }
+
+  if (levelAceCount === 0) {
+    return;
+  }
+
+  if (levelNumber < ACE_MIN_LEVEL || levelNumber > ACE_MAX_LEVEL) {
+    pushError(name, `marked aces are gated to levels ${ACE_MIN_LEVEL}-${ACE_MAX_LEVEL}; found ${levelAceCount} on level ${levelNumber}`);
+  }
+
+  if (levelAceCount > ACE_MAX_PER_LEVEL) {
+    pushError(name, `${levelAceCount} aces exceed the per-level limit of ${ACE_MAX_PER_LEVEL}; keep placements sparse enough to read as priority targets`);
+  }
+}
+
 function validateBossConfig(level: LevelConfig): void {
   const name = levelLabel(level);
 
   if (level.hasBoss) {
     if (!level.boss) {
       pushError(name, 'hasBoss=true requires a boss config');
+    } else if (level.boss.guardCapacity !== undefined) {
+      if (!Number.isFinite(level.boss.guardCapacity) || level.boss.guardCapacity <= 0) {
+        pushError(name, 'boss guardCapacity must be a finite positive number');
+      }
+      const guardDecayDelayMs = level.boss.guardDecayDelayMs ?? 0;
+      if (!Number.isFinite(guardDecayDelayMs) || guardDecayDelayMs <= 0) {
+        pushError(name, 'Guard Break bosses require a finite guardDecayDelayMs > 0');
+      }
+      const guardDecayPerSecond = level.boss.guardDecayPerSecond ?? 0;
+      if (!Number.isFinite(guardDecayPerSecond) || guardDecayPerSecond <= 0) {
+        pushError(name, 'Guard Break bosses require a finite guardDecayPerSecond > 0');
+      }
+      const guardBreakDurationMs = level.boss.guardBreakDurationMs ?? 0;
+      if (!Number.isFinite(guardBreakDurationMs) || guardBreakDurationMs <= 0) {
+        pushError(name, 'Guard Break bosses require a finite guardBreakDurationMs > 0');
+      }
     }
 
     if (level.bossTriggerProgress <= 0 || level.bossTriggerProgress >= 1) {
@@ -673,7 +760,7 @@ function validateMusicTrack(level: LevelConfig, trackName: 'stage' | 'boss'): vo
   validateEarlyLevelRhythmGuardrails(level, trackName);
 }
 
-for (const level of LEVELS) {
+for (const [levelIndex, level] of LEVELS.entries()) {
   const name = levelLabel(level);
 
   if (level.spawnRateMultiplier <= 0) {
@@ -694,6 +781,7 @@ for (const level of LEVELS) {
 
   validateSectionSequence(level);
   validatePacingGuardrails(level);
+  validateMarkedAces(level, levelIndex + 1);
   validateBossConfig(level);
   validateMusicTrack(level, 'stage');
   validateMusicTrack(level, 'boss');

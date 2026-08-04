@@ -1,5 +1,16 @@
 # Level & Arcade Systems Design Bible: "Neon Frontier" Campaign
 
+## Late-campaign combat texture
+
+Levels 5–10 add payoff without adding player inputs:
+
+- **AEGIS Picket** becomes purchasable after Level 4. Its fixed flank turrets trim chaff with flat-damage bolts while the main gun remains the dominant damage source. Pickets never target bosses and do not contribute to Guard Break.
+- **Marked Aces** are sparse authored variants of existing enemies. Their gilded treatment signals 2× durability, 4× score, and exactly one guaranteed power-up.
+- **Guard Break** rewards sustained main-gun pressure against bosses from Level 5 onward. Guard begins decaying after 1.5 seconds without a player hit; filling it interrupts attacks for 2.5 seconds and doubles main-player damage during the opening.
+- **Max-chain Overdrive** reduces the main-gun cooldown by 15% while the existing chain multiplier remains at x5. It adds no input and ends immediately when the chain falls.
+
+These systems must preserve Lane-Reading, avoid persistent HUD panels, and remain independently removable through upgrade/config gates.
+
 This is the master spec for the complete level overhaul. It replaces all 10 level definitions with a
 re-themed sequel campaign and adds the arcade systems that make it feel like a new game. It builds on
 the neon-vector art direction in `docs/art-direction.md`.

@@ -59,6 +59,7 @@ function createRuntimeLifecycleHarness() {
       hud: null,
       warpTransition: null,
       pauseStateController: null,
+      picketTurrets: null,
       clampPlayerToViewport: () => {},
     }),
     destroyPauseStateController: () => {
@@ -72,6 +73,9 @@ function createRuntimeLifecycleHarness() {
     },
     destroyLastLifeHelperWing: () => {
       log.push('destroyLastLifeHelperWing');
+    },
+    destroyPicketTurrets: () => {
+      log.push('destroyPicketTurrets');
     },
     destroyParallax: () => {
       log.push('destroyParallax');
@@ -104,6 +108,7 @@ describe('createGameSceneRuntimeLifecycle', () => {
       'destroyMobileControls',
       'persistHelperWingState',
       'destroyLastLifeHelperWing',
+      'destroyPicketTurrets',
       'destroyParallax',
       'destroyEffectsManager',
       'shutdownFlow',

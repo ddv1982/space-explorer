@@ -11,12 +11,14 @@ Object.assign(audioManager, {
   playPowerUpPickup: mock(),
 });
 const trySpawnRandomPowerUp = mock();
+const spawnGuaranteedPowerUp = mock();
 const spawnPowerUp = mock((group: { getFirstDead?: (createIfNull: boolean) => unknown; get?: (x: number, y: number) => unknown }, x: number, y: number, type: string) => {
   const powerUp = (group.getFirstDead?.(false) ?? group.get?.(x, y)) as { spawn?: (spawnX: number, spawnY: number, powerUpType: string) => void } | null;
   powerUp?.spawn?.(x, y, type);
 });
 mock.module('../src/systems/GameplayFlow', () => ({
   trySpawnRandomPowerUp,
+  spawnGuaranteedPowerUp,
   spawnPowerUp,
   applyPowerUpPickup: mock(),
   GAME_SCENE_EVENTS: {
@@ -34,6 +36,7 @@ mock.module('../src/systems/GameplayFlow', () => ({
     helperWingDepleted: 'helper-wing-depleted',
     playerBulletTrail: 'player-bullet-trail',
     enemyBulletTrail: 'enemy-bullet-trail',
+    picketOnline: 'picket-online',
   },
   TERMINAL_TRANSITIONS: {
     none: 'none',
@@ -96,6 +99,7 @@ function createCombatFeedbackHarness(options: {
   boss?: { x: number; y: number } | null;
   persistHelperWingState?: () => void;
   suspendForTransition?: () => void;
+  suspendPicketsForTransition?: () => void;
   queueLevelComplete?: () => void;
 } = {}) {
   const player = {
@@ -120,6 +124,8 @@ function createCombatFeedbackHarness(options: {
   const setBoss = mock();
   const persistHelperWingState = mock(() => options.persistHelperWingState?.());
   const suspendForTransition = mock(() => options.suspendForTransition?.());
+  const suspendPicketsForTransition = mock(() => options.suspendPicketsForTransition?.());
+  const showPicketOnlineAnnouncement = mock();
   const syncLastLifeHelperWingState = mock();
 
   const handlers = createGameSceneCombatFeedbackHandlers({
@@ -168,11 +174,13 @@ function createCombatFeedbackHarness(options: {
       showHelperWingAnnouncement: mock(),
       showHelperWingDepletedAnnouncement: mock(),
       showEliteWaveAnnouncement,
+      showPicketOnlineAnnouncement,
     } as never),
     getBoss: () => (options.boss ?? null) as never,
     setBoss,
     getScaledBossConfig: () => null,
     getLastLifeHelperWing: () => ({ suspendForTransition } as never),
+    getPicketTurrets: () => ({ suspendForTransition: suspendPicketsForTransition } as never),
     powerUpGroup: () => ({ id: 'powerups' } as never),
     persistHelperWingState,
     syncLastLifeHelperWingState,
@@ -199,6 +207,8 @@ function createCombatFeedbackHarness(options: {
     setBoss,
     persistHelperWingState,
     suspendForTransition,
+    suspendPicketsForTransition,
+    showPicketOnlineAnnouncement,
     syncLastLifeHelperWingState,
   };
 }
@@ -231,6 +241,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       setBoss: mock(),
       getScaledBossConfig: () => null,
       getLastLifeHelperWing: () => null,
+      getPicketTurrets: () => null,
       powerUpGroup: () => ({ id: 'powerups' } as never),
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
@@ -249,6 +260,57 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(createScorePopup).toHaveBeenCalledWith(12, 34, 500);
     expect(playExplosion).toHaveBeenCalledWith(0.5);
     expect(trySpawnRandomPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
+    expect(spawnGuaranteedPowerUp).not.toHaveBeenCalled();
+  });
+
+  test('handleEnemyDeath grants a marked ace exactly one guaranteed drop and skips the random roll', () => {
+    playExplosion.mockClear();
+    trySpawnRandomPowerUp.mockClear();
+    spawnGuaranteedPowerUp.mockClear();
+    const registerKill = mock((score: number) => score * 4);
+    const createScorePopup = mock();
+
+    const handlers = createGameSceneCombatFeedbackHandlers({
+      scene: { cameras: { main: {} }, time: { now: 1000 } } as never,
+      player: () => ({ x: 0, y: 0 } as never),
+      scoreManager: () => ({ registerKill } as never),
+      effectsManager: () => ({ createScorePopup } as never),
+      flow: () => ({
+        handlePlayerDeath: mock(),
+        isPlayerDeathTransitionActive: mock(() => false),
+        queueLevelComplete: mock(),
+      } as never),
+      getFlowContext: () => ({}) as never,
+      levelManager: () => ({ getLevelConfig: () => ({ music: { boss: 'boss-track' } }) } as never),
+      collisionManager: () => ({ clearPlayerHazards: mock() } as never),
+      waveManager: () => ({ applyDeathRelief: mock() } as never),
+      grazeSurge: () => null,
+      enemyPool: () => ({ getAllEnemies: (): never[] => [] } as never),
+      hud: () => ({ showBossWarning: mock(), hideBossBar: mock() } as never),
+      getBoss: () => null,
+      setBoss: mock(),
+      getScaledBossConfig: () => null,
+      getLastLifeHelperWing: () => null,
+      getPicketTurrets: () => null,
+      powerUpGroup: () => ({ id: 'powerups' } as never),
+      persistHelperWingState: mock(),
+      syncLastLifeHelperWingState: mock(),
+      constants: {
+        bossExplosionVisualIntensity: 3,
+        bossExplosionAudioIntensity: 2,
+        playerDeathExplosionVisualIntensity: 2.2,
+        playerDeathExplosionAudioIntensity: 1.4,
+        playerDeathParticleBudgetScale: 0.6,
+      },
+    });
+
+    handlers.handleEnemyDeath(1000, 12, 34, true);
+
+    expect(registerKill).toHaveBeenCalledWith(1000, 1000);
+    expect(createScorePopup).toHaveBeenCalledWith(12, 34, 4000);
+    expect(spawnGuaranteedPowerUp).toHaveBeenCalledTimes(1);
+    expect(spawnGuaranteedPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
+    expect(trySpawnRandomPowerUp).not.toHaveBeenCalled();
   });
 
   test('handlePlayerDeath syncs helper wing after an ordinary gameplay respawn starts', () => {
@@ -320,6 +382,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       boss: { x: 320, y: 96 },
       persistHelperWingState: () => order.push('persist'),
       suspendForTransition: () => order.push('suspend'),
+      suspendPicketsForTransition: () => order.push('suspend-pickets'),
       queueLevelComplete: () => order.push('queue'),
     });
 
@@ -330,9 +393,10 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(harness.hideBossBar).toHaveBeenCalledTimes(1);
     expect(harness.setBoss).toHaveBeenCalledWith(null);
     expect(harness.markBossDefeated).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(['persist', 'suspend', 'queue']);
+    expect(order).toEqual(['persist', 'suspend', 'suspend-pickets', 'queue']);
     expect(harness.persistHelperWingState).toHaveBeenCalledTimes(1);
     expect(harness.suspendForTransition).toHaveBeenCalledTimes(1);
+    expect(harness.suspendPicketsForTransition).toHaveBeenCalledTimes(1);
     expect(harness.queueLevelComplete).toHaveBeenCalledWith(harness.flowContext);
   });
 
@@ -394,6 +458,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       setBoss,
       getScaledBossConfig: () => ({ name: 'Scaled Boss' } as never),
       getLastLifeHelperWing: () => null,
+      getPicketTurrets: () => null,
       powerUpGroup: () => ({ id: 'powerups' } as never),
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
@@ -438,5 +503,13 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     harness.handlers.handleEliteWave();
 
     expect(harness.showEliteWaveAnnouncement).toHaveBeenCalledTimes(1);
+  });
+
+  test('handlePicketOnline shows the picket announcement', () => {
+    const harness = createCombatFeedbackHarness({});
+
+    harness.handlers.handlePicketOnline();
+
+    expect(harness.showPicketOnlineAnnouncement).toHaveBeenCalledTimes(1);
   });
 });

@@ -41,6 +41,31 @@ export class SFXManager {
     osc.stop(now + 0.14);
   }
 
+  playPicketShot(): void {
+    // Restrained picket report: quieter, lower, and shorter than the main cannon.
+    const output = this.getAudioOutput();
+    if (!output) return;
+
+    const { ctx, masterGain } = output;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(460, now);
+    osc.frequency.exponentialRampToValueAtTime(400, now + 0.07);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.02, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+
   playExplosion(intensity = 1): void {
     const output = this.getAudioOutput();
     if (!output) return;

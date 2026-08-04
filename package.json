@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -38,6 +38,9 @@
       "tests/**/*.ts",
       "tests/**/*.d.ts",
       "scripts/**/*.ts"
+    ],
+    "ignoreBinaries": [
+      "cwebp"
     ]
   },
   "dependencies": {

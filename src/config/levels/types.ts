@@ -46,6 +46,11 @@ export interface BossConfig {
   phase2SpiralShotCount: number;
   phase2SpiralTurnRate: number;
   phase2BulletSpeedScale: number;
+  /** Main-player damage required to trigger Guard Break. Omit to disable. */
+  guardCapacity?: number;
+  guardDecayDelayMs?: number;
+  guardDecayPerSecond?: number;
+  guardBreakDurationMs?: number;
 }
 
 export interface LastLifeHelperWingConfig {
@@ -106,6 +111,8 @@ interface SignatureWaveEnemyConfig {
   type: EnemyType;
   lane: AuthoredLaneAnchor;
   y?: number;
+  /** Flags this enemy as a gilded Marked Ace (levels 5-10 only; see aceConfig). */
+  ace?: boolean;
 }
 
 export interface SignatureWaveConfig {
@@ -128,6 +135,8 @@ export interface ChoreographedWaveConfig {
   lane?: number;
   spacing?: number;
   telegraph?: WaveTelegraph;
+  /** Number of lead members spawned as Marked Aces (levels 5-10 only; see aceConfig). */
+  aceCount?: number;
   bonusOnClearMs?: number;
   bonusWave?: { type: EnemyType; count: number };
   midBossBeat?: boolean;

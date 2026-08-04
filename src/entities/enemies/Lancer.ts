@@ -72,7 +72,8 @@ export class Lancer extends EnemyBase {
 
     this.setAlpha(time % 160 < 80 ? 0.55 : 1);
     if (time > this.telegraphStart + LANCER_TELEGRAPH_MS) {
-      this.clearTint();
+      // Ace lancers return to their gilded sheen instead of a bare clearTint.
+      this.restoreBaseTint();
       this.setAlpha(1);
       this.fireBolt();
       this.phase = 'idle';

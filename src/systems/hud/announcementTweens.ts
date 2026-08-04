@@ -84,6 +84,25 @@ export class HudAnnouncementTweens {
     }));
   }
 
+  showBossGuardBreakAnnouncement(): void {
+    const layout = this.deps.getLayoutMetrics();
+
+    this.deps.announcementText.setText('GUARD BREAK');
+    this.deps.announcementText.setColor('#ffd76a');
+    this.deps.announcementText.setAlpha(1);
+    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 8);
+    this.deps.getAnnouncementTween()?.stop();
+
+    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
+      targets: this.deps.announcementText,
+      alpha: { from: 1, to: 0 },
+      y: { from: layout.announcementY - 8, to: layout.announcementY - 30 },
+      duration: 1300,
+      ease: 'Power2',
+      onComplete: () => this.deps.setAnnouncementTween(null),
+    }));
+  }
+
   showHelperWingAnnouncement(helperCount: number): void {
     const layout = this.deps.getLayoutMetrics();
 
@@ -118,6 +137,27 @@ export class HudAnnouncementTweens {
       targets: this.deps.announcementText,
       alpha: { from: 1, to: 0 },
       y: { from: layout.announcementY - 6, to: layout.announcementY - 30 },
+      duration: 1500,
+      ease: 'Power2',
+      onComplete: () => {
+        this.deps.setAnnouncementTween(null);
+      },
+    }));
+  }
+
+  showPicketOnlineAnnouncement(): void {
+    const layout = this.deps.getLayoutMetrics();
+
+    this.deps.announcementText.setText('PICKET ONLINE');
+    this.deps.announcementText.setColor('#ffcf7a');
+    this.deps.announcementText.setAlpha(1);
+    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
+    this.deps.getAnnouncementTween()?.stop();
+
+    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
+      targets: this.deps.announcementText,
+      alpha: { from: 1, to: 0 },
+      y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
       duration: 1500,
       ease: 'Power2',
       onComplete: () => {

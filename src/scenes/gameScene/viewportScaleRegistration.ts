@@ -13,6 +13,7 @@ export type ViewportScaleResizeContext = {
   hud: HUD | null | undefined;
   warpTransition: WarpTransition | null | undefined;
   pauseStateController: PauseStateController | null | undefined;
+  picketTurrets: { relayout(): void } | null | undefined;
   clampPlayerToViewport: () => void;
 };
 
@@ -33,5 +34,6 @@ export function handleScaleResize(context: ViewportScaleResizeContext): void {
   context.hud?.relayout();
   context.warpTransition?.resize();
   context.pauseStateController?.relayout();
+  context.picketTurrets?.relayout();
   context.clampPlayerToViewport();
 }

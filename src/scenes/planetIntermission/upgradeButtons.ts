@@ -13,6 +13,7 @@ const UPGRADE_COLORS: Record<UpgradeKey, number> = {
   damage: 0xff7d9a,
   fireRate: 0x62d9ff,
   shield: 0xb78cff,
+  turrets: 0xffb85c,
 };
 
 export function createUpgradeButton(
@@ -115,6 +116,14 @@ function drawUpgradeIcon(
     case 'shield':
       graphics.strokeTriangle(centerX, centerY + 9, centerX - 8, centerY - 7, centerX + 8, centerY - 7);
       break;
+    case 'turrets':
+      // Picket mount: barrel rising from a domed housing on a base plate.
+      graphics.lineBetween(centerX, centerY + 1, centerX, centerY - 8);
+      graphics.lineBetween(centerX - 5, centerY + 1, centerX + 5, centerY + 1);
+      graphics.lineBetween(centerX - 5, centerY + 1, centerX - 5, centerY + 7);
+      graphics.lineBetween(centerX + 5, centerY + 1, centerX + 5, centerY + 7);
+      graphics.lineBetween(centerX - 9, centerY + 7, centerX + 9, centerY + 7);
+      break;
   }
 }
 
@@ -160,7 +169,9 @@ function getLevelText(evaluation: UpgradeEvaluation, showDescription: boolean): 
     return `LVL ${evaluation.currentLevel}/${evaluation.upgrade.maxLevel}`;
   }
 
-  const baseText = `${evaluation.upgrade.description.toUpperCase()}  ·  ${evaluation.currentLevel}/${evaluation.upgrade.maxLevel}`;
+  const tierName = evaluation.upgrade.tierNames?.[evaluation.currentLevel];
+  const description = (tierName ?? evaluation.upgrade.description).toUpperCase();
+  const baseText = `${description}  ·  ${evaluation.currentLevel}/${evaluation.upgrade.maxLevel}`;
 
   if (evaluation.blockReason === 'locked' && evaluation.unlockReason) {
     return `UNLOCK: ${evaluation.unlockReason.toUpperCase()}`;

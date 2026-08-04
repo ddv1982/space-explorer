@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PLAYER_CONFIG } from '../config/playerConfig';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import { Player } from '../entities/Player';
 import { PowerUp, PowerUpType } from '../entities/PowerUp';
@@ -18,14 +19,16 @@ export const GAME_SCENE_EVENTS = {
   eliteWave: 'elite-wave',
   bossDeath: 'boss-death',
   bossPhaseChange: 'boss-phase-change',
+  bossGuardBreak: 'boss-guard-break',
   helperWingActivated: 'helper-wing-activated',
   helperWingDepleted: 'helper-wing-depleted',
   playerBulletTrail: 'player-bullet-trail',
   enemyBulletTrail: 'enemy-bullet-trail',
+  picketOnline: 'picket-online',
 } as const;
 
 type GameSceneEventPayloads = {
-  [GAME_SCENE_EVENTS.enemyDeath]: [score: number, x: number, y: number];
+  [GAME_SCENE_EVENTS.enemyDeath]: [score: number, x: number, y: number, isAce?: boolean];
   [GAME_SCENE_EVENTS.playerDeath]: [];
   [GAME_SCENE_EVENTS.playerFatalHit]: [];
   [GAME_SCENE_EVENTS.levelComplete]: [];
@@ -37,10 +40,12 @@ type GameSceneEventPayloads = {
   [GAME_SCENE_EVENTS.eliteWave]: [];
   [GAME_SCENE_EVENTS.bossDeath]: [score: number, x: number, y: number];
   [GAME_SCENE_EVENTS.bossPhaseChange]: [phase: number];
+  [GAME_SCENE_EVENTS.bossGuardBreak]: [];
   [GAME_SCENE_EVENTS.helperWingActivated]: [helperCount: number];
   [GAME_SCENE_EVENTS.helperWingDepleted]: [];
   [GAME_SCENE_EVENTS.playerBulletTrail]: [x: number, y: number];
   [GAME_SCENE_EVENTS.enemyBulletTrail]: [x: number, y: number];
+  [GAME_SCENE_EVENTS.picketOnline]: [];
 };
 
 export type GameSceneEventName = keyof GameSceneEventPayloads;
@@ -92,6 +97,20 @@ export function trySpawnRandomPowerUp(
   spawnPowerUp(group, x, y, type);
 }
 
+/**
+ * Marked Ace reward: always spawns a power-up. Callers must branch on the ace
+ * flag instead of also rolling trySpawnRandomPowerUp, so the guaranteed drop
+ * is never duplicated by the normal drop roll.
+ */
+export function spawnGuaranteedPowerUp(
+  group: Phaser.Physics.Arcade.Group,
+  x: number,
+  y: number
+): void {
+  const type = Phaser.Utils.Array.GetRandom(POWER_UP_TYPES);
+  spawnPowerUp(group, x, y, type);
+}
+
 export function spawnPowerUp(
   group: Phaser.Physics.Arcade.Group,
   x: number,
@@ -121,7 +140,7 @@ export function applyPowerUpPickup(
       player.shields += 1;
       break;
     case 'rapidfire':
-      player.fireRate = Math.max(40, player.fireRate - 20);
+      player.fireRate = Math.max(PLAYER_CONFIG.absoluteMinFireRate, player.fireRate - 20);
       break;
   }
 

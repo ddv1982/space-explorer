@@ -93,6 +93,9 @@ type GameSceneTestState = {
   lastLifeHelperWing: {
     update: (time: number) => void;
   } | null;
+  picketTurrets: {
+    update: (time: number) => void;
+  } | null;
   grazeSurge: {
     update: () => void;
   };
@@ -135,6 +138,7 @@ const GAMEPLAY_SYSTEM_CALLS = [
   'parallax.update',
   'player.update',
   'lastLifeHelperWing.update',
+  'picketTurrets.update',
   'grazeSurge.update',
   'waveManager.update',
   'levelManager.update',
@@ -230,6 +234,12 @@ function createUpdateHarness(): UpdateHarness {
   state.lastLifeHelperWing = {
     update: (_time: number) => {
       calls.push('lastLifeHelperWing.update');
+    },
+  };
+
+  state.picketTurrets = {
+    update: (_time: number) => {
+      calls.push('picketTurrets.update');
     },
   };
 
@@ -372,6 +382,7 @@ describe('GameScene update gate regression coverage', () => {
 
     expect(harness.calls.indexOf('parallax.update')).toBeLessThan(harness.calls.indexOf('player.update'));
     expect(harness.calls.indexOf('player.update')).toBeLessThan(harness.calls.indexOf('lastLifeHelperWing.update'));
+    expect(harness.calls.indexOf('lastLifeHelperWing.update')).toBeLessThan(harness.calls.indexOf('picketTurrets.update'));
     expect(harness.calls).toContain('waveManager.update');
 
     const levelUpdateIndex = harness.calls.indexOf('levelManager.update');

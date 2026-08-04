@@ -66,6 +66,7 @@ function createHarness(level = 1): {
       update: () => {},
     },
     getLastLifeHelperWing: () => null,
+    getPicketTurrets: () => null,
     grazeSurge: { update: () => {} },
     waveManager: {
       update: () => {},
@@ -81,8 +82,11 @@ function createHarness(level = 1): {
       getLevelConfig: () => levelConfig,
       shouldSpawnBoss: () => false,
     },
+    scoreManager: {
+      getChainState: () => ({ chain: 0, multiplier: 1 }),
+    },
     events: { emit: () => {} },
-    hud: { updateBossHp: () => {} },
+    hud: { updateBossHp: () => {}, updateBossGuard: () => {} },
     bulletPool: { fire: () => {} },
     effectsManager: { createMuzzleFlash: () => {} },
     getBoss: () => null,

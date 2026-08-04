@@ -1,22 +1,9 @@
-export type PlanetIntermissionMotif =
-  | 'aurora'
-  | 'tideglass'
-  | 'ember'
-  | 'clockwork'
-  | 'reef'
-  | 'wreckage'
-  | 'cathedral'
-  | 'eclipse'
-  | 'hive'
-  | 'singularity';
-
 export interface PlanetIntermissionProfile {
   level: number;
   levelName: string;
   approachCode: string;
   classification: string;
   signalLabel: string;
-  motif: PlanetIntermissionMotif;
   orbitTilt: number;
   satelliteCount: number;
 }
@@ -28,7 +15,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'AURORA RELAY',
     classification: 'LUMINOUS GATEWORLD',
     signalLabel: 'CURRENT STABLE',
-    motif: 'aurora',
     orbitTilt: -12,
     satelliteCount: 1,
   },
@@ -38,7 +24,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'PRISM SHOAL',
     classification: 'GLASS-TIDE OCEAN',
     signalLabel: 'PORTALS ECHOING',
-    motif: 'tideglass',
     orbitTilt: 8,
     satelliteCount: 2,
   },
@@ -48,7 +33,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'EMBER FRONT',
     classification: 'VOLCANIC STORMWORLD',
     signalLabel: 'PYRE SIGNATURE',
-    motif: 'ember',
     orbitTilt: -18,
     satelliteCount: 1,
   },
@@ -58,7 +42,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'CHRONO HUB',
     classification: 'MECHANIZED ORBIT',
     signalLabel: 'GEARS SYNCHRONIZED',
-    motif: 'clockwork',
     orbitTilt: 4,
     satelliteCount: 3,
   },
@@ -68,7 +51,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'CORAL BREACH',
     classification: 'SHATTERED REEF WORLD',
     signalLabel: 'BROOD MULTIPLYING',
-    motif: 'reef',
     orbitTilt: 15,
     satelliteCount: 2,
   },
@@ -78,7 +60,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'FALLEN BASTION',
     classification: 'WRECK-FORTRESS',
     signalLabel: 'GAUNTLET CLEARED',
-    motif: 'wreckage',
     orbitTilt: -7,
     satelliteCount: 3,
   },
@@ -88,7 +69,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'GHOSTLIGHT VAULT',
     classification: 'CATHEDRAL MOON',
     signalLabel: 'CHOIR RESONANT',
-    motif: 'cathedral',
     orbitTilt: 11,
     satelliteCount: 1,
   },
@@ -98,7 +78,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'ECLIPSE KEEP',
     classification: 'UMBRAL CITADEL',
     signalLabel: 'CONVOY IN SHADOW',
-    motif: 'eclipse',
     orbitTilt: -3,
     satelliteCount: 2,
   },
@@ -108,7 +87,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'HIVE FOUNDRY',
     classification: 'INDUSTRIAL BROODWORLD',
     signalLabel: 'HIVE STILL ACTIVE',
-    motif: 'hive',
     orbitTilt: 17,
     satelliteCount: 3,
   },
@@ -118,7 +96,6 @@ export const PLANET_INTERMISSION_PROFILES: readonly PlanetIntermissionProfile[] 
     approachCode: 'EVENTIDE CORE',
     classification: 'SINGULARITY ENGINE',
     signalLabel: 'CORE POWERING DOWN',
-    motif: 'singularity',
     orbitTilt: -9,
     satelliteCount: 0,
   },

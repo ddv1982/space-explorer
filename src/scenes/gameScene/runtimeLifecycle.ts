@@ -28,6 +28,7 @@ interface CreateGameSceneRuntimeLifecycleOptions {
   destroyMobileControls: () => void;
   persistHelperWingState: () => void;
   destroyLastLifeHelperWing: () => void;
+  destroyPicketTurrets: () => void;
   destroyParallax: () => void;
   destroyEffectsManager: () => void;
   shutdownFlow: () => void;
@@ -76,6 +77,7 @@ export function createGameSceneRuntimeLifecycle(
     options.destroyMobileControls();
     options.persistHelperWingState();
     options.destroyLastLifeHelperWing();
+    options.destroyPicketTurrets();
     options.destroyParallax();
     options.destroyEffectsManager();
     options.shutdownFlow();

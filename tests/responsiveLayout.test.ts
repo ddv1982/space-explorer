@@ -434,6 +434,36 @@ describe('responsive save-slot layouts', () => {
     assertIntermissionUpgradeButtonsFit(viewport, 4);
   });
 
+  test.each([
+    { width: 1280, height: 800 },
+    { width: 844, height: 390 },
+    { width: 390, height: 844 },
+    { width: 360, height: 640 },
+    { width: 320, height: 640 },
+    { width: 280, height: 360 },
+    { width: 480, height: 320 },
+  ])('planet intermission keeps five upgrade buttons inside responsive viewports', (viewport) => {
+    assertIntermissionUpgradeButtonsFit(viewport, 5);
+  });
+
+  test('planet intermission compresses the five-card grid on short landscape viewports', () => {
+    const landscape = getIntermissionLayout(createScene(844, 390) as never, 5);
+    const portrait = getIntermissionLayout(createScene(360, 640) as never, 5);
+    const desktop = getIntermissionLayout(createScene(1280, 800) as never, 5);
+
+    expect(landscape.mode).toBe('landscape');
+    expect(landscape.gridLayout.buttonHeight).toBe(48);
+    expect(landscape.showJourneyNote).toBe(false);
+
+    expect(portrait.mode).toBe('portrait');
+    expect(portrait.gridLayout.buttonHeight).toBe(48);
+    expect(portrait.showJourneyNote).toBe(false);
+
+    expect(desktop.mode).toBe('desktop');
+    expect(desktop.gridLayout.buttonHeight).toBe(72);
+    expect(desktop.showJourneyNote).toBe(true);
+  });
+
   test('planet intermission reflows instead of shrinking the desktop composition', () => {
     const desktop = getIntermissionLayout(createScene(1280, 800) as never, 4);
     const landscape = getIntermissionLayout(createScene(844, 390) as never, 4);

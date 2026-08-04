@@ -11,7 +11,8 @@ import { GrazeSurgeSystem, SURGE_SCORE_PER_BULLET, type GrazeSurgeBullet } from 
 import { HazardBeamSystem } from '@/systems/HazardBeamSystem';
 import { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
 import type { LevelManager } from '@/systems/LevelManager';
-import { getHelperWingState } from '@/systems/PlayerState';
+import { PicketTurretSystem } from '@/systems/PicketTurretSystem';
+import { getHelperWingState, getPlayerTurretTier } from '@/systems/PlayerState';
 import type { getPlayerState } from '@/systems/PlayerState';
 import { ScoreManager } from '@/systems/ScoreManager';
 import { WaveManager } from '@/systems/WaveManager';
@@ -23,6 +24,7 @@ type PoolsAndGameplaySystems = {
   bulletPool: BulletPool;
   enemyPool: EnemyPool;
   lastLifeHelperWing: LastLifeHelperWing;
+  picketTurrets: PicketTurretSystem;
   waveManager: WaveManager;
   collisionManager: CollisionManager;
   scoreManager: ScoreManager;
@@ -41,6 +43,7 @@ type CreatePoolsAndGameplaySystemsParams = {
   createBulletPool?: () => BulletPool;
   createEnemyPool?: () => EnemyPool;
   createLastLifeHelperWing?: () => LastLifeHelperWing;
+  createPicketTurretSystem?: () => PicketTurretSystem;
   createWaveManager?: () => WaveManager;
   createCollisionManager?: () => CollisionManager;
   createScoreManager?: () => ScoreManager;
@@ -90,6 +93,27 @@ function createHelperWing({
   });
 
   return lastLifeHelperWing;
+}
+
+function createPicketTurrets({
+  scene,
+  effectsManager,
+  state,
+  enemyPool,
+  createPicketTurretSystem,
+}: Pick<CreatePoolsAndGameplaySystemsParams, 'scene' | 'effectsManager' | 'state'> & {
+  enemyPool: EnemyPool;
+  createPicketTurretSystem: () => PicketTurretSystem;
+}): PicketTurretSystem {
+  const picketTurrets = createPicketTurretSystem();
+  picketTurrets.create({
+    scene,
+    enemyPool,
+    effectsManager,
+    tier: getPlayerTurretTier(state),
+  });
+
+  return picketTurrets;
 }
 
 function createCollisionSystem({
@@ -153,6 +177,7 @@ export function createPoolsAndGameplaySystems(
     createBulletPool = () => new BulletPool(),
     createEnemyPool = () => new EnemyPool(),
     createLastLifeHelperWing = () => new LastLifeHelperWing(),
+    createPicketTurretSystem = () => new PicketTurretSystem(),
     createWaveManager = () => new WaveManager(),
     createCollisionManager = () => new CollisionManager(),
     createScoreManager = () => new ScoreManager(),
@@ -174,6 +199,14 @@ export function createPoolsAndGameplaySystems(
     bulletPool,
     enemyPool,
     createLastLifeHelperWing,
+  });
+
+  const picketTurrets = createPicketTurrets({
+    scene,
+    effectsManager,
+    state,
+    enemyPool,
+    createPicketTurretSystem,
   });
 
   const hazardBeamSystem = createHazardBeamSystem();
@@ -223,6 +256,7 @@ export function createPoolsAndGameplaySystems(
     bulletPool,
     enemyPool,
     lastLifeHelperWing,
+    picketTurrets,
     waveManager,
     collisionManager,
     scoreManager,

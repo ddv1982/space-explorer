@@ -133,6 +133,7 @@ function normalizePlayerStateData(value: unknown): PlayerStateData | null {
     damage: normalizeNonNegativeInteger(value.upgrades.damage, 0),
     fireRate: normalizeNonNegativeInteger(value.upgrades.fireRate, 0),
     shield: normalizeNonNegativeInteger(value.upgrades.shield, 0),
+    turrets: normalizeNonNegativeInteger(value.upgrades.turrets, 0),
   };
   const maxShields = Math.max(0, upgrades.shield);
   const rawCurrentShields = normalizeFiniteNumber(value.currentShields, maxShields);

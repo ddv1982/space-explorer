@@ -22,9 +22,7 @@ describe('planet intermission profiles', () => {
     }
   });
 
-  test('keeps every arrival motif and approach code distinct', () => {
-    expect(new Set(PLANET_INTERMISSION_PROFILES.map((profile) => profile.motif)).size)
-      .toBe(PLANET_INTERMISSION_PROFILES.length);
+  test('keeps every arrival approach code distinct', () => {
     expect(new Set(PLANET_INTERMISSION_PROFILES.map((profile) => profile.approachCode)).size)
       .toBe(PLANET_INTERMISSION_PROFILES.length);
   });

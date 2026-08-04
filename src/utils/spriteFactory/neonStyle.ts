@@ -38,6 +38,8 @@ export const NEON_ENTITY = {
   mine: { body: 0x330f0a, outline: 0xff6a3d, glow: 0xb83a1d, hot: 0xffd0b8 },
   enemyFire: { body: 0x3d0a24, outline: 0xff4d8d, glow: 0xc2205c, hot: 0xffe0ee },
   asteroid: { body: 0x17141f, outline: 0x9d8fc7, glow: 0x4a3f6e, hot: 0xe8e2ff },
+  picket: { body: 0x33260a, outline: 0xffc25d, glow: 0xb8811d, hot: 0xfff3d8 },
+  picketFire: { body: 0x3d2a0a, outline: 0xffd07a, glow: 0xc29220, hot: 0xfff8e8 },
 } as const satisfies Record<string, NeonPalette>;
 
 function tracePolygon(g: Phaser.GameObjects.Graphics, points: readonly NeonPoint[]): void {

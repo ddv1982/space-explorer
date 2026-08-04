@@ -20,6 +20,7 @@ import type { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { MobileControls } from '@/systems/MobileControls';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
+import type { PicketTurretSystem } from '@/systems/PicketTurretSystem';
 import {
   getPlayerState,
   setPlayerState,
@@ -88,6 +89,7 @@ export class GameScene extends Phaser.Scene {
   private lastFireTime: number = 0;
   private boss: Boss | null = null;
   private lastLifeHelperWing: LastLifeHelperWing | null = null;
+  private picketTurrets: PicketTurretSystem | null = null;
   private lastHudShieldCount: number | null = null;
   private readonly shotDirection = new Phaser.Math.Vector2();
   private readonly shotOrigin = new Phaser.Math.Vector2();
@@ -141,6 +143,8 @@ export class GameScene extends Phaser.Scene {
       set enemyPool(value) { owner().enemyPool = value; },
       get lastLifeHelperWing() { return owner().lastLifeHelperWing; },
       set lastLifeHelperWing(value) { owner().lastLifeHelperWing = value; },
+      get picketTurrets() { return owner().picketTurrets; },
+      set picketTurrets(value) { owner().picketTurrets = value; },
       get waveManager() { return owner().waveManager; },
       set waveManager(value) { owner().waveManager = value; },
       get collisionManager() { return owner().collisionManager; },
@@ -169,6 +173,7 @@ export class GameScene extends Phaser.Scene {
     this.lastFireTime = 0;
     this.boss = null;
     this.lastLifeHelperWing = null;
+    this.picketTurrets = null;
     this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
     this.gameplayFrameBehavior = null;
@@ -202,6 +207,7 @@ export class GameScene extends Phaser.Scene {
       },
       getScaledBossConfig: () => this.scaledBossConfig,
       getLastLifeHelperWing: () => this.lastLifeHelperWing,
+      getPicketTurrets: () => this.picketTurrets,
       powerUpGroup: () => this.powerUpGroup,
       persistHelperWingState: () => this.persistHelperWingState(),
       syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
@@ -229,10 +235,12 @@ export class GameScene extends Phaser.Scene {
       { event: GAME_SCENE_EVENTS.eliteWave, handler: this.combatFeedbackHandlers.handleEliteWave },
       { event: GAME_SCENE_EVENTS.bossDeath, handler: this.combatFeedbackHandlers.handleBossDeath },
       { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.combatFeedbackHandlers.handleBossPhaseChange },
+      { event: GAME_SCENE_EVENTS.bossGuardBreak, handler: this.combatFeedbackHandlers.handleBossGuardBreak },
       { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.combatFeedbackHandlers.handleHelperWingActivated },
       { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: this.combatFeedbackHandlers.handleHelperWingDepleted },
       { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: this.combatFeedbackHandlers.handlePlayerBulletTrail },
       { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: this.combatFeedbackHandlers.handleEnemyBulletTrail },
+      { event: GAME_SCENE_EVENTS.picketOnline, handler: this.combatFeedbackHandlers.handlePicketOnline },
     ];
   }
 
@@ -254,6 +262,10 @@ export class GameScene extends Phaser.Scene {
       destroyLastLifeHelperWing: () => {
         this.lastLifeHelperWing?.destroy();
         this.lastLifeHelperWing = null;
+      },
+      destroyPicketTurrets: () => {
+        this.picketTurrets?.destroy();
+        this.picketTurrets = null;
       },
       destroyParallax: () => {
         this.parallax?.destroy();
@@ -280,6 +292,7 @@ export class GameScene extends Phaser.Scene {
       hud: this.hud,
       warpTransition: this.warpTransition,
       pauseStateController: this.pauseStateController,
+      picketTurrets: this.picketTurrets,
       clampPlayerToViewport: () => this.clampPlayerToViewport(),
     };
   }
@@ -411,9 +424,11 @@ export class GameScene extends Phaser.Scene {
       parallax: this.parallax,
       player: this.player,
       getLastLifeHelperWing: () => this.lastLifeHelperWing,
+      getPicketTurrets: () => this.picketTurrets,
       grazeSurge: this.grazeSurge,
       waveManager: this.waveManager,
       levelManager: this.levelManager,
+      scoreManager: this.scoreManager,
       events: this.events,
       hud: this.hud,
       bulletPool: this.bulletPool,

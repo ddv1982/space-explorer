@@ -90,5 +90,8 @@ export function createScaledBossConfig(
   return {
     ...baseConfig,
     maxHp: Math.max(1, Math.round(baseConfig.maxHp * tunedMultiplier)),
+    guardCapacity: baseConfig.guardCapacity === undefined
+      ? undefined
+      : Math.max(1, Math.round(baseConfig.guardCapacity * Math.sqrt(multiplier))),
   };
 }

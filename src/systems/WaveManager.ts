@@ -169,7 +169,13 @@ export class WaveManager {
     this.asteroidSpawner = new WaveAsteroidSpawner(scene, this.asteroidGroup);
 
     this.choreographer = new WaveChoreographer({
-      spawn: (type, x, y) => this.enemyPool.spawnEnemy(type, x, y),
+      spawn: (type, x, y, options) => {
+        const enemy = this.enemyPool.spawnEnemy(type, x, y);
+        if (enemy && options?.ace) {
+          enemy.markAsAce();
+        }
+        return enemy;
+      },
       emitWarning: (x) => this.emitSpawnWarning(x),
       emitWormhole: (x, y) => this.scene.events.emit(GAME_SCENE_EVENTS.wormholeTelegraph, x, y),
       emitEliteWave: () => this.scene.events.emit(GAME_SCENE_EVENTS.eliteWave),
@@ -316,6 +322,9 @@ export class WaveManager {
       const x = this.getLaneAnchorX(entry.lane, 80);
       const enemy = this.enemyPool.spawnEnemy(entry.type, x, entry.y ?? -80);
       if (enemy) {
+        if (entry.ace) {
+          enemy.markAsAce();
+        }
         warningLanes.add(x);
       }
     });

@@ -104,6 +104,7 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
   const emittedEvents: string[] = [];
   const spawnedEnemies: Array<{ type: string; x: number; y: number }> = [];
   const spawnedPowerUps: Array<{ x: number; y: number; type: string }> = [];
+  const markedAces: Array<{ type: string; x: number; y: number }> = [];
   const asteroidGroup = { id: 'asteroid-group' };
   const powerUpGroup = {
     getFirstDead: () => ({
@@ -133,7 +134,13 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
   const enemyPool = {
     spawnEnemy: (type: string, x: number, y: number) => {
       spawnedEnemies.push({ type, x, y });
-      return { active: true, getDefeatCount: () => 0 };
+      return {
+        active: true,
+        getDefeatCount: () => 0,
+        markAsAce: () => {
+          markedAces.push({ type, x, y });
+        },
+      };
     },
   };
 
@@ -178,6 +185,7 @@ function createWaveManagerHarness(levelConfig: LevelConfig) {
     emittedEvents,
     spawnedEnemies,
     spawnedPowerUps,
+    markedAces,
     spawnerCalls,
   };
 }
@@ -377,6 +385,57 @@ describe('WaveManager', () => {
       `${GAME_SCENE_EVENTS.enemySpawnWarning}:400`,
       `${GAME_SCENE_EVENTS.enemySpawnWarning}:720`,
     ]);
+  });
+
+  test('update gilds only the authored ace entries of a signature wave', () => {
+    const activeSection = createSection({
+      signatureWaves: [
+        {
+          id: 'ace-priority-check',
+          triggerProgress: 0.5,
+          enemies: [
+            { type: 'splitter', lane: 'left', ace: true },
+            { type: 'gunship', lane: 'right' },
+          ],
+        },
+      ],
+    });
+    const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection] }));
+
+    harness.manager.update(100, 16, 0.4);
+    harness.manager.update(200, 16, 0.6);
+
+    expect(harness.spawnedEnemies).toEqual([
+      { type: 'splitter', x: 80, y: -80 },
+      { type: 'gunship', x: 720, y: -80 },
+    ]);
+    expect(harness.markedAces).toEqual([{ type: 'splitter', x: 80, y: -80 }]);
+  });
+
+  test('update gilds the lead members of a choreographed wave up to its aceCount', () => {
+    const activeSection = createSection({
+      waves: [
+        {
+          id: 'ace-vee',
+          atMs: 300,
+          formation: 'line',
+          type: 'gunship',
+          count: 3,
+          lane: 3,
+          aceCount: 1,
+        },
+      ],
+    });
+    const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection], enemies: [] }));
+
+    harness.manager.update(0, 300, 0.1);
+
+    expect(harness.spawnedEnemies).toEqual([
+      { type: 'gunship', x: 344, y: -60 },
+      { type: 'gunship', x: 400, y: -60 },
+      { type: 'gunship', x: 456, y: -60 },
+    ]);
+    expect(harness.markedAces).toEqual([{ type: 'gunship', x: 344, y: -60 }]);
   });
 
   test('update triggers authored recovery drops once through the configured power-up group', () => {

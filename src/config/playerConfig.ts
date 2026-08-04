@@ -7,6 +7,8 @@ export const PLAYER_CONFIG = {
   hpPerUpgrade: 2,
   fireRateReductionPerUpgrade: 15,
   minFireRate: 60,
+  // Hard floor for any fire-rate reduction (rapidfire pickups, max-chain Overdrive).
+  absoluteMinFireRate: 40,
   baseDamage: 1,
   damagePerUpgrade: 1,
 };

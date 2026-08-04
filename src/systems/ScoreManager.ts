@@ -1,6 +1,6 @@
 const CHAIN_WINDOW_MS = 2500;
 const CHAIN_TIER_KILLS = 8;
-const CHAIN_MAX_MULTIPLIER = 5;
+export const CHAIN_MAX_MULTIPLIER = 5;
 
 export interface ChainState {
   chain: number;

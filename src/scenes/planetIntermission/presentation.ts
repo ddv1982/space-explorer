@@ -73,6 +73,12 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
   const tight = mode === 'landscape' || mode === 'ultra-compact';
   const margin = mode === 'desktop' ? Math.max(36, viewport.width * 0.035) : mode === 'landscape' ? 18 : 14;
   const stackedUltra = mode === 'ultra-compact' && viewport.width < 400;
+  // Five upgrade cards need a tighter stack on short viewports: compress the
+  // header, drop the journey note, and shrink buttons so the grid never clamps
+  // up into the status band.
+  const compactGrid =
+    buttonCount >= 5
+    && (mode === 'landscape' || (mode === 'portrait' && viewport.height < 760));
 
   let planetX: number;
   let planetY: number;
@@ -113,25 +119,25 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
     eyebrowY = viewport.top + 18;
     planetNameY = eyebrowY + 24;
     destinationY = planetNameY + 34;
-    journeyNoteY = destinationY + 26;
-    statusY = journeyNoteY + 48;
-    upgradeLabelY = statusY + 30;
-    gridTop = upgradeLabelY + 20;
+    journeyNoteY = compactGrid ? destinationY : destinationY + 26;
+    statusY = compactGrid ? destinationY + 30 : journeyNoteY + 48;
+    upgradeLabelY = statusY + (compactGrid ? 26 : 30);
+    gridTop = upgradeLabelY + (compactGrid ? 18 : 20);
     columns = 2;
   } else if (mode === 'portrait') {
-    const roomy = viewport.height >= 760;
+    const roomy = viewport.height >= 760 && !compactGrid;
     planetX = viewport.centerX;
-    planetY = viewport.top + (roomy ? 132 : 104);
-    planetDiameter = Math.min(viewport.width * 0.59, roomy ? 220 : 174);
+    planetY = viewport.top + (roomy ? 132 : compactGrid ? 96 : 104);
+    planetDiameter = Math.min(viewport.width * 0.59, roomy ? 220 : compactGrid ? 150 : 174);
     contentX = viewport.left + margin;
     contentWidth = viewport.width - margin * 2;
     eyebrowY = viewport.top + 18;
     planetNameY = planetY + planetDiameter * 0.55;
-    destinationY = planetNameY + (roomy ? 40 : 32);
-    journeyNoteY = destinationY + (roomy ? 30 : 25);
-    statusY = journeyNoteY + (roomy ? 66 : 50);
-    upgradeLabelY = statusY + 28;
-    gridTop = upgradeLabelY + 20;
+    destinationY = planetNameY + (roomy ? 40 : compactGrid ? 28 : 32);
+    journeyNoteY = compactGrid ? destinationY : destinationY + (roomy ? 30 : 25);
+    statusY = compactGrid ? destinationY + 40 : journeyNoteY + (roomy ? 66 : 50);
+    upgradeLabelY = statusY + (compactGrid ? 24 : 28);
+    gridTop = upgradeLabelY + (compactGrid ? 18 : 20);
     columns = 1;
   } else if (stackedUltra) {
     planetX = viewport.centerX;
@@ -168,6 +174,7 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
     availableWidth: contentWidth,
     columns,
     mode,
+    compact: compactGrid,
   });
   const gridWidth = gridLayout.buttonWidth * gridLayout.columns
     + gridLayout.spacingX * (gridLayout.columns - 1);
@@ -185,7 +192,9 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
     tight,
     portrait,
     showDestination: mode !== 'ultra-compact',
-    showJourneyNote: mode === 'desktop' || mode === 'portrait' || (mode === 'landscape' && viewport.width >= 700),
+    showJourneyNote:
+      !compactGrid
+      && (mode === 'desktop' || mode === 'portrait' || (mode === 'landscape' && viewport.width >= 700)),
     showOrbitLabels: mode === 'desktop' || mode === 'landscape',
     planetX,
     planetY,

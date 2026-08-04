@@ -1,11 +1,11 @@
 # Space Explorer Art Direction — Neon Vector
 
-This document is the master visual bible for the neon vector redesign. It supersedes the painterly direction in `background-art-bible.md` (kept for history) and extends the scope to ships, projectiles, VFX, backgrounds, and UI. Everything is produced procedurally in code: zero downloaded art assets.
+This document is the master visual bible for the neon vector redesign. It supersedes the painterly direction in `background-art-bible.md` (kept for history) and extends the scope to ships, projectiles, VFX, backgrounds, and UI. Everything is produced procedurally in code, with one approved exception: the ten authored planet-arrival portraits (see below).
 
 ## Pillars
 
 1. **Neon vector** — clean geometric silhouettes, hot cores, layered glow halos, crisp outlines. Geometry Wars readability with a modern space-opera palette.
-2. **Procedural only** — every texture is generated at runtime via Phaser Graphics (`withGeneratedTexture`). No raster downloads; the former 25 MB of painterly background PNGs is retired.
+2. **Procedural only** — every texture is generated at runtime via Phaser Graphics (`withGeneratedTexture`). No raster downloads; the former 25 MB of painterly background PNGs is retired. **Approved exception (2026-08):** the ten planet-arrival portraits are committed authored WebP rasters, documented under [Planet arrival portraits](#planet-arrival-portraits-approved-raster-exception).
 3. **Readable pressure** — the center gameplay lane stays dark and calm. Bullets, enemies, hazards, and pickups win attention with saturated neon cores; scenery never crosses their luminance in the lane.
 
 ## Palette System
@@ -69,7 +69,17 @@ Rules: center 45–55% of the lane stays under ~20% luminance; scroll speeds inc
 
 - Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles.
 - Typography: bundled display font (Orbitron) with system fallback stack; mono for numeric readouts.
-- Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planets become neon-limb wireframe spheres.
+- Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planet bodies are the authored raster portraits (exception below), framed by the existing neon halo, orbit, route, and satellite chrome.
+
+## Planet arrival portraits (approved raster exception)
+
+Approved 2026-08 as a scoped exception to the procedural-only rule. The ten planet-intermission hero worlds are committed authored raster assets, replacing the retired runtime-generated vector disc:
+
+- **Assets**: `public/assets/planets/planet-01.webp` … `planet-10.webp` — 512×512 RGBA WebP, transparent background, ~18 kB each (~175 kB total). One painterly world per campaign level: teal aurora gas giant with thin ring, luminous ocean world, volcanic fracture world, industrial machine world, violet reef-ocean world, shattered fortress with debris, pale cathedral moon, eclipsed black planet, ochre hive world, singularity engine with accretion ring.
+- **Look**: painterly/textural surface detail, realistic spherical lighting, soft terminators, limb shading, atmospheric glow, and world-specific features baked in — deliberately not SVG-like, contrasting the surrounding neon vector chrome which stays procedural.
+- **Authoring**: rendered offline and deterministically by `scripts/generatePlanetPortraits.ts` (seeded value-noise surfaces; no runtime cost, no `Math.random`, no wall-clock input). Regenerate only with explicit art-direction sign-off; the committed WebPs are the source of truth at runtime.
+- **Loading**: queued during the boot preload (`queueAllPlanetPortraits`) and re-queued by the intermission scene's own preload when the texture is not cached (direct/dev starts, restarts after release). The displayed texture is released from the cache on intermission shutdown, matching the previous generated-texture lifecycle.
+- **Composition**: each portrait shares the retired disc's 512 px frame and planet radius, so halo, orbit tilt, satellites, route line, labels, animations, responsive layouts, and reduced-motion behavior are unchanged.
 
 ## Performance Rules
 

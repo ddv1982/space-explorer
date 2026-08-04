@@ -23,7 +23,7 @@ describe('initializeLevelRuntime', () => {
 
     const state = {
       level: 3,
-      upgrades: { hp: 1, damage: 2, fireRate: 3, shield: 4 },
+      upgrades: { hp: 1, damage: 2, fireRate: 3, shield: 4, turrets: 0 },
     };
 
     const result = initializeLevelRuntime(state, {

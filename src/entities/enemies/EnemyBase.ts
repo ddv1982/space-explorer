@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ACE_HP_MULTIPLIER, ACE_SCORE_MULTIPLIER, ACE_TINT } from '../../config/aceConfig';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../../utils/entityUtils';
 
@@ -11,6 +12,9 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   despawnOffscreen: boolean = true;
   private visualFlashToken = 0;
   private defeatCount = 0;
+  private aceMarked = false;
+  private baseMaxHp: number | null = null;
+  private baseScoreValue: number | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string) {
     super(scene, x, y, textureKey);
@@ -38,8 +42,61 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
 
   private clearTintIfActive(flashToken: number): void {
     if (this.active && flashToken === this.visualFlashToken) {
-      this.clearTint();
+      this.restoreBaseTint();
     }
+  }
+
+  /**
+   * Restores the resting tint after a flash or telegraph: aces keep their
+   * gilded sheen instead of returning to an untinted sprite.
+   */
+  protected restoreBaseTint(): void {
+    if (this.aceMarked) {
+      this.setTint(ACE_TINT);
+      this.setTintMode(Phaser.TintModes.MULTIPLY);
+      return;
+    }
+
+    this.clearTint();
+  }
+
+  isAce(): boolean {
+    return this.aceMarked;
+  }
+
+  /**
+   * Gilds this enemy as a Marked Ace: ~2x HP, 4x score, guaranteed power-up
+   * drop on defeat (granted by the enemy-death handler via the ace flag).
+   * Base stats are captured so pooled reuse can restore them exactly.
+   */
+  markAsAce(): void {
+    if (this.aceMarked) {
+      return;
+    }
+
+    this.aceMarked = true;
+    this.baseMaxHp = this.maxHp;
+    this.baseScoreValue = this.scoreValue;
+    this.maxHp = Math.max(1, Math.round(this.maxHp * ACE_HP_MULTIPLIER));
+    this.hp = this.maxHp;
+    this.scoreValue = Math.max(1, Math.round(this.scoreValue * ACE_SCORE_MULTIPLIER));
+    this.restoreBaseTint();
+  }
+
+  private clearAceMark(): void {
+    if (!this.aceMarked) {
+      return;
+    }
+
+    this.aceMarked = false;
+    if (this.baseMaxHp !== null) {
+      this.maxHp = this.baseMaxHp;
+    }
+    if (this.baseScoreValue !== null) {
+      this.scoreValue = this.baseScoreValue;
+    }
+    this.baseMaxHp = null;
+    this.baseScoreValue = null;
   }
 
   protected invalidateHitFlash(): void {
@@ -48,7 +105,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
 
   die(): void {
     this.defeatCount += 1;
-    this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
+    this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y, this.aceMarked);
     this.despawn();
   }
 
@@ -63,11 +120,15 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   despawn(): void {
     this.invalidateHitFlash();
     despawnEntity(this);
+    this.clearAceMark();
     this.clearTint();
   }
 
   spawn(x: number, y: number): void {
     this.invalidateHitFlash();
+    // Pooled reuse must never inherit ace tint/stats/drop state from a
+    // previous life; restore base stats before hp is refilled below.
+    this.clearAceMark();
     spawnEntity(this, x, y);
     this.hp = this.maxHp;
     this.clearTint();
