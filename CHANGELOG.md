@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 2026-08-04
+
+### Changed
+- Raised Guard capacity by 25% across Levels 5–10, preserving a clear progression from 30 pressure on the first guarded boss to 60 at Terminus Black.
+- Reduced the no-hit decay delay from 1.5 seconds to 1.2 seconds and increased decay rates across the late-game curve, requiring more consistent main-gun pressure.
+- Shortened Guard Break from 2.5 seconds to 1.8 seconds while retaining the readable interruption and double-damage reward.
+
+### Quality
+- Added a campaign-level balance regression covering every authored Guard threshold, decay rate, delay, and break duration.
+- Passed level validation and the complete static, unit, build, bundle, browser, visual, and performance release corridor.
+
 ## [1.5.0] - 2026-08-04
 
 ### Added

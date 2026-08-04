@@ -123,6 +123,15 @@ describe('Boss Guard Break', () => {
     expect(LEVELS.slice(4).every((level) => (level.boss?.guardCapacity ?? 0) > 0)).toBe(true);
   });
 
+  test('keeps late-game breaks demanding, brief, and progressively tougher', () => {
+    const guardBosses = LEVELS.slice(4).map((level) => level.boss!);
+
+    expect(guardBosses.map((boss) => boss.guardCapacity)).toEqual([30, 35, 40, 45, 50, 60]);
+    expect(guardBosses.every((boss) => boss.guardDecayDelayMs === 1200)).toBe(true);
+    expect(guardBosses.map((boss) => boss.guardDecayPerSecond)).toEqual([10, 12, 14, 16, 18, 21]);
+    expect(guardBosses.every((boss) => boss.guardBreakDurationMs === 1800)).toBe(true);
+  });
+
   test('scales guard capacity sublinearly while preserving disabled bosses', () => {
     const upgrades = { hp: 3, damage: 3, fireRate: 3, shield: 2, turrets: 2 };
     const enabled = createScaledBossConfig(LEVELS[4].boss!, {

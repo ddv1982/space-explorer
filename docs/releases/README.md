@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.5.1`](./1.5.1.md) - tempers Guard Break with tougher thresholds, faster decay, and shorter openings across the late-game fleet
 - [`1.5.0`](./1.5.0.md) - arms the late-game frontier with AEGIS pickets, Marked Aces, Guard Breaks, Overdrive, and authored raster worlds
 - [`1.4.1`](./1.4.1.md) - upgrades all ten arrival planets with higher-resolution spherical lighting, atmospheric depth, and complete campaign visual evidence
 - [`1.4.0`](./1.4.0.md) - charts ten cinematic planetary arrivals across every screen size while keeping Chrome action scenes and browser gates steady
