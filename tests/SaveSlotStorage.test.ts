@@ -76,7 +76,7 @@ describe('SaveSlotStorage', () => {
       {
         level: 3,
         score: 12400,
-        currentHp: 6,
+        currentHp: 6.25,
         currentShields: 1,
         remainingLives: 2,
         upgrades: {
@@ -117,7 +117,7 @@ describe('SaveSlotStorage', () => {
       {
         level: 3,
         score: 12400,
-        currentHp: 6,
+        currentHp: 6.25,
         currentShields: 1,
         remainingLives: 2,
         upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
@@ -129,6 +129,7 @@ describe('SaveSlotStorage', () => {
 
     expect(writeSaveSlot(record)).toEqual(record);
     expect(readSaveSlot('slot-1')).toEqual(record);
+    expect(readSaveSlot('slot-1')?.playerState.currentHp).toBe(6.25);
   });
 
   test('gracefully falls back to empty state for corrupt JSON payloads', () => {

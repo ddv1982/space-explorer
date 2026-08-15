@@ -1,16 +1,16 @@
 import type Phaser from 'phaser';
 import { ROW_HEIGHT } from '../shared/musicSliderControl';
+import type { SettingsPanelLayout } from '../shared/settingsPanel';
 import { centerHorizontally, getViewportLayout } from '../../utils/layout';
 
 const MENU_COMPACT_HEIGHT_BREAKPOINT = 720;
 const MENU_COMPACT_WIDTH_BREAKPOINT = 800;
-const MENU_MUSIC_VISIBLE_MIN_HEIGHT = 600;
-const MENU_COMPACT_MUSIC_VISIBLE_MIN_HEIGHT = 680;
 const MENU_COMPACT_VERY_SHORT_HEIGHT = 420;
 
 export interface MenuLayoutPlan {
   compact: boolean;
   veryShortCompact: boolean;
+  shortLandscape: boolean;
   centerX: number;
   outerFrameX: number;
   outerFrameY: number;
@@ -38,6 +38,7 @@ export interface MenuLayoutPlan {
   qualityHeight: number;
   statusY: number;
   statusHeight: number;
+  settingsLayout: SettingsPanelLayout;
 }
 
 export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
@@ -49,7 +50,8 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const safeViewportWidth = Math.max(280, layout.width);
 
   const outerFrameWidth = Math.min(safeViewportWidth - 32, compact ? 840 : 1100);
-  const outerFrameHeight = Math.min(layout.height - 32, compact ? layout.height - 32 : 740);
+  const shortFrameInset = veryShortCompact && layout.width >= 460 ? 8 : 32;
+  const outerFrameHeight = Math.min(layout.height - shortFrameInset, compact ? layout.height - shortFrameInset : 740);
   const outerFrameX = centerHorizontally(layout, outerFrameWidth);
   const outerFrameY = layout.top + (layout.height - outerFrameHeight) / 2;
 
@@ -61,29 +63,43 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const tileWidth = Math.max(100, Math.min(defaultTileWidth, maxTileWidth));
 
   const musicPanelWidth = Math.min(outerFrameWidth - 64, 880);
-  const musicVisible =
-    layout.height > MENU_MUSIC_VISIBLE_MIN_HEIGHT &&
-    (layout.width >= MENU_COMPACT_WIDTH_BREAKPOINT || layout.height >= MENU_COMPACT_MUSIC_VISIBLE_MIN_HEIGHT);
-
   // Give each slider row proper breathing room:
   // 8px gap compact, 16px gap desktop
   const sliderSpacing = ROW_HEIGHT + (compact ? 8 : 16);
-  const musicPanelHeight = musicVisible ? (ROW_HEIGHT + sliderSpacing * 3) : 0;
+  const shortLandscape = veryShortCompact && layout.width >= 460;
 
-  const titleY = outerFrameY + (compact ? (veryShortCompact ? 42 : 52) : 100);
-  const subtitleY = outerFrameY + (compact ? (veryShortCompact ? 96 : 112) : 170);
-  const qualityWidth = Math.min(outerFrameWidth - 48, 600);
-  const qualityHeight = compact ? 28 : 34;
-  const qualityY = subtitleY + (compact ? (veryShortCompact ? 14 : 20) : 30);
-  const sliderStartY = qualityY + qualityHeight + (compact ? 10 : 16);
+  const titleY = outerFrameY + (shortLandscape ? 25 : compact ? (veryShortCompact ? 34 : 52) : 82);
+  const subtitleY = outerFrameY + (shortLandscape ? 54 : compact ? (veryShortCompact ? 72 : 112) : 136);
+  const qualityWidth = Math.min(330, shortLandscape ? (outerFrameWidth - 30) / 2 : outerFrameWidth - 48);
+  const qualityHeight = compact ? (shortLandscape ? 24 : 28) : 34;
+  const qualityY = subtitleY + (compact ? (veryShortCompact ? 12 : 20) : 22);
+  const difficultyY = qualityY;
+  const visualQualityY = difficultyY + qualityHeight + (compact ? 5 : 8);
+  const sliderStartY = visualQualityY + qualityHeight + (shortLandscape ? 0 : compact ? 8 : 12);
+  const twoColumnSettings = layout.width >= 460;
+  const settingsSliderWidth = twoColumnSettings
+    ? Math.min(330, (outerFrameWidth - 20) / 2)
+    : qualityWidth;
+  const settingsSliderSpacing = shortLandscape ? 52 : compact ? 54 : 62;
+  const sliderPositions = twoColumnSettings
+    ? [
+        { x: layout.centerX - settingsSliderWidth - (shortLandscape ? 5 : 10), y: sliderStartY },
+        { x: layout.centerX + (shortLandscape ? 5 : 10), y: sliderStartY },
+        { x: layout.centerX - settingsSliderWidth - (shortLandscape ? 5 : 10), y: sliderStartY + settingsSliderSpacing },
+        { x: layout.centerX + (shortLandscape ? 5 : 10), y: sliderStartY + settingsSliderSpacing },
+      ]
+    : [0, 1, 2, 3].map((index) => ({
+        x: centerHorizontally(layout, qualityWidth),
+        y: sliderStartY + index * settingsSliderSpacing,
+      }));
+  const settingsBottom = Math.max(...sliderPositions.map((position) => position.y + ROW_HEIGHT));
+  const musicPanelHeight = settingsBottom - qualityY;
 
   const tileRows = Math.ceil(4 / tileColumns);
   const statusHeight = 14;
-  const statusGap = compact ? (veryShortCompact ? 12 : 20) : 24;
+  const statusGap = compact ? (shortLandscape ? 8 : veryShortCompact ? 12 : 20) : 24;
   const frameBottomPadding = compact ? (veryShortCompact ? 10 : 14) : 16;
-  const topBandBottom = musicVisible
-    ? sliderStartY + musicPanelHeight
-    : qualityY + qualityHeight + (compact ? 8 : 12);
+  const topBandBottom = settingsBottom;
   const tileTopPadding = compact ? (veryShortCompact ? 10 : 16) : 10;
   const tileTopMinY = topBandBottom + tileTopPadding;
   const tileBottomLimit = outerFrameY + outerFrameHeight - frameBottomPadding - statusHeight - statusGap;
@@ -98,22 +114,25 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
       (Math.max(0, tileBottomLimit - tileTopMinY) - (tileRows - 1) * tileRowGap) / tileRows
     );
   }
-  const tileHeight = compact
-    ? Math.max(72, Math.min(compactTargetTileHeight, compactMaxTileHeight))
+  let tileHeight = compact
+    ? Math.max(52, Math.min(compactTargetTileHeight, compactMaxTileHeight))
     : 180;
 
-  const tileBlockHeight = tileRows * tileHeight + (tileRows - 1) * tileRowGap;
+  if (shortLandscape) tileHeight = 72;
+  const tileBlockHeight = shortLandscape ? tileHeight : tileRows * tileHeight + (tileRows - 1) * tileRowGap;
   const desiredTileRowY = tileTopMinY;
   const maxTileRowY = tileBottomLimit - tileBlockHeight;
-  const tileRowY = Math.max(tileTopMinY, Math.min(desiredTileRowY, maxTileRowY));
+  const tileRowY = shortLandscape
+    ? outerFrameY + outerFrameHeight - statusHeight - statusGap - tileHeight + 6
+    : Math.max(tileTopMinY, Math.min(desiredTileRowY, maxTileRowY));
   const tileGridWidth = tileColumns * tileWidth + (tileColumns - 1) * tileGap;
   const tileStartX = layout.centerX - tileGridWidth / 2;
   const tilePositions = Array.from({ length: 4 }, (_, index) => {
-    const column = index % tileColumns;
-    const row = Math.floor(index / tileColumns);
+    const column = shortLandscape ? index : index % tileColumns;
+    const row = shortLandscape ? 0 : Math.floor(index / tileColumns);
 
     return {
-      x: tileStartX + column * (tileWidth + tileGap),
+      x: (shortLandscape ? layout.centerX - (4 * tileWidth + 3 * tileGap) / 2 : tileStartX) + column * (tileWidth + tileGap),
       y: tileRowY + row * (tileHeight + tileRowGap),
     };
   });
@@ -122,6 +141,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   return {
     compact,
     veryShortCompact,
+    shortLandscape,
     centerX: layout.centerX,
     outerFrameX,
     outerFrameY,
@@ -149,5 +169,15 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
     qualityHeight,
     statusY,
     statusHeight,
+    settingsLayout: {
+      x: centerHorizontally(layout, qualityWidth),
+      width: qualityWidth,
+      sliderWidth: settingsSliderWidth,
+      difficultyY,
+      qualityY: visualQualityY,
+      tierHeight: qualityHeight,
+      compact,
+      sliderPositions,
+    },
   };
 }

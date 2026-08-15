@@ -153,9 +153,9 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
   const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
   const titleRect = {
     x: 0,
-    y: plan.titleY - (plan.veryShortCompact ? 28 : plan.compact ? 34 : 44),
+    y: plan.titleY - (plan.shortLandscape ? 18 : plan.veryShortCompact ? 28 : plan.compact ? 34 : 44),
     width: viewport.width,
-    height: plan.veryShortCompact ? 56 : plan.compact ? 68 : 88,
+    height: plan.shortLandscape ? 36 : plan.veryShortCompact ? 56 : plan.compact ? 68 : 88,
   };
   const subtitleRect = {
     x: 0,
@@ -180,16 +180,13 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
   expectNoOverlap(subtitleRect, tileRect);
   expectNoOverlap(tileRect, statusRect);
 
-  if (plan.musicPanelHeight > 0) {
-    const musicRect = {
-      x: plan.sliderX,
-      y: plan.musicPanelY,
-      width: plan.musicPanelWidth,
-      height: plan.musicPanelHeight,
-    };
-    expectNoOverlap(subtitleRect, musicRect);
-    expectNoOverlap(musicRect, tileRect);
-    expectNoOverlap(musicRect, statusRect);
+  for (const position of plan.settingsLayout.sliderPositions) {
+    const sliderRect = { x: position.x, y: position.y, width: plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width, height: 52 };
+    expectNoOverlap(subtitleRect, sliderRect);
+    expectNoOverlap(sliderRect, tileRect);
+    expectNoOverlap(sliderRect, statusRect);
+    expect(position.x).toBeGreaterThanOrEqual(0);
+    expect(position.x + (plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width)).toBeLessThanOrEqual(viewport.width);
   }
 
   expect(statusRect.y + statusRect.height).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
@@ -269,6 +266,7 @@ describe('responsive save-slot layouts', () => {
 
   test.each([
     { width: 360, height: 640 },
+    { width: 360, height: 360 },
     { width: 320, height: 360 },
     { width: 280, height: 360 },
   ])('pause overlay compact save-slot rows keep text bands clear of SAVE/LOAD/DEL buttons', (viewport) => {
@@ -296,7 +294,6 @@ describe('responsive save-slot layouts', () => {
 
   test.each([
     { width: 360, height: 640 },
-    { width: 360, height: 360 },
     { width: 320, height: 360 },
     { width: 280, height: 360 },
     { width: 480, height: 520 },
@@ -312,7 +309,6 @@ describe('responsive save-slot layouts', () => {
     { width: 1024, height: 768 },
     { width: 1280, height: 800 },
     { width: 1366, height: 768 },
-    { width: 360, height: 360 },
     { width: 360, height: 640 },
     { width: 320, height: 640 },
     { width: 480, height: 320 },
@@ -331,17 +327,18 @@ describe('responsive save-slot layouts', () => {
   test.each([
     { width: 360, height: 600 },
     { width: 480, height: 500 },
-  ])('menu layout hides the music panel when screens are too short', (viewport) => {
+  ])('menu layout keeps the shared settings panel available when screens are short', (viewport) => {
     const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
 
-    expect(plan.musicPanelHeight).toBe(0);
+    expect(plan.musicPanelHeight).toBeGreaterThan(0);
+    expect(plan.settingsLayout.sliderPositions).toHaveLength(4);
   });
 
-  test('menu music visibility stays pinned to the 600px height threshold', () => {
+  test('menu settings visibility is independent of the old music height threshold', () => {
     const hiddenPlan = createMenuLayoutPlan(createScene(1024, 600) as never);
     const visiblePlan = createMenuLayoutPlan(createScene(1024, 601) as never);
 
-    expect(hiddenPlan.musicPanelHeight).toBe(0);
+    expect(hiddenPlan.musicPanelHeight).toBeGreaterThan(0);
     expect(visiblePlan.musicPanelHeight).toBeGreaterThan(0);
   });
 
@@ -402,7 +399,6 @@ describe('responsive save-slot layouts', () => {
   test.each([
     { width: 812, height: 375 },
     { width: 360, height: 640 },
-    { width: 360, height: 360 },
     { width: 480, height: 320 },
     { width: 480, height: 500 },
     { width: 640, height: 360 },
@@ -419,7 +415,24 @@ describe('responsive save-slot layouts', () => {
 
     expect(plan.musicPanelY).toBeGreaterThanOrEqual(0);
     expect(plan.musicPanelY + plan.musicPanelHeight).toBeLessThanOrEqual(viewport.height);
-    expect(plan.sliderStartY + plan.sliderSpacing * 3 + 32).toBeLessThanOrEqual(viewport.height);
+    expect(Math.max(...plan.settingsLayout.sliderPositions.map((position) => position.y + 52))).toBeLessThanOrEqual(viewport.height);
+  });
+
+  test.each([
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+  ])('pause settings controls fit portrait and landscape phone viewports', (viewport) => {
+    const layout = getPauseOverlayLayout(createScene(viewport.width, viewport.height) as never);
+    const settings = layout.settingsLayout;
+    const sliderWidth = settings.sliderWidth ?? settings.width;
+    expect(settings.x).toBeGreaterThanOrEqual(0);
+    expect(settings.x + settings.width).toBeLessThanOrEqual(viewport.width);
+    for (const position of settings.sliderPositions) {
+      expect(position.x).toBeGreaterThanOrEqual(0);
+      expect(position.x + sliderWidth).toBeLessThanOrEqual(viewport.width);
+      expect(position.y).toBeGreaterThanOrEqual(layout.panelY);
+      expect(position.y + 52).toBeLessThanOrEqual(layout.statusY - 10);
+    }
   });
 
   test.each([

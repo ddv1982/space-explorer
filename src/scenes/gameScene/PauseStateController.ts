@@ -1,4 +1,6 @@
 import type Phaser from 'phaser';
+import { setGameplayDifficultyTier, type GameplayDifficultyTier } from '@/config/gameplayDifficulty';
+import { setVisualQualityTier, type VisualQualityTier } from '@/config/visualQuality';
 import { audioManager } from '@/systems/AudioManager';
 import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { PauseOverlay } from './PauseOverlay';
@@ -85,6 +87,8 @@ export class PauseStateController {
       onSaveSlot: (slotId) => this.handleSaveSlotRequested(slotId),
       onLoadSlot: (slotId) => this.handleLoadSlotRequested(slotId),
       onDeleteSlot: (slotId) => this.handleDeleteSlotRequested(slotId),
+      onSelectDifficulty: (tier) => this.handleDifficultyRequested(tier),
+      onSelectQuality: (tier) => this.handleQualityRequested(tier),
     });
 
     this.syncGameplayPauseState();
@@ -128,6 +132,7 @@ export class PauseStateController {
     this.manualPauseRequested = !this.manualPauseRequested;
     if (this.manualPauseRequested) {
       this.statusMessage = '';
+      this.statusOk = true;
     }
     this.playClick?.();
     this.syncGameplayPauseState();
@@ -202,6 +207,28 @@ export class PauseStateController {
     this.statusMessage = result.message;
     this.statusOk = result.ok;
     this.syncGameplayPauseState();
+  }
+
+  private handleDifficultyRequested(tier: GameplayDifficultyTier): boolean {
+    this.playClick?.();
+    const ok = setGameplayDifficultyTier(tier);
+    this.statusMessage = ok
+      ? `Difficulty set to ${tier.toUpperCase()}.`
+      : 'Unable to save difficulty in this browser context.';
+    this.statusOk = ok;
+    this.syncGameplayPauseState();
+    return ok;
+  }
+
+  private handleQualityRequested(tier: VisualQualityTier): boolean {
+    this.playClick?.();
+    const ok = setVisualQualityTier(tier);
+    this.statusMessage = ok
+      ? `Quality: ${tier.toUpperCase()}. Restart required.`
+      : 'Unable to save visual quality in this browser context.';
+    this.statusOk = ok;
+    this.syncGameplayPauseState();
+    return ok;
   }
 
   private syncGameplayPauseState(): void {

@@ -31,3 +31,6 @@ Phones and tablets are playable in portrait and landscape; there is no rotate bl
 
 **Gameplay clocks freeze on pause (2026-08)**:
 Pause suspends only the arcade physics world; the scene clock keeps running. Systems that schedule gameplay consequences therefore count accumulated gameplay delta instead of reading scene time: choreographed waves (`WaveChoreographer`) and hazard beams (`HazardBeam`) freeze their telegraph/fire/expire windows while paused, so a pause can never compress wave schedules into a burst or let a beam expire for free. This protects Lane-Reading: telegraph lead times survive pauses intact.
+
+**Difficulty changes forgiveness, not encounter grammar (2026-08)**:
+The campaign's original balance is Normal difficulty. Low, Normal, and High multiply accepted hull damage by `0.75`, `1.0`, and `1.25` respectively. Difficulty never changes formations, spawn schedules, movement or projectile speeds, telegraph windows, hazard geometry, boss phase thresholds, or the one-hit shield contract. This keeps the authored Within-Level Pacing, Lane-Reading, and Ambush Anticipation lessons stable while changing how many mistakes a player can recover from.

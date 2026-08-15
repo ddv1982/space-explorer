@@ -105,6 +105,7 @@ export interface BrowserHarnessApi {
   snapshot: () => BrowserHarnessSnapshot;
   probeArcadeOverlap: () => Promise<boolean>;
   probePlayerHitTint: () => Promise<{ duringMode: number; afterMode: number }>;
+  probeAcceptedPlayerDamage: (amount?: number) => { beforeHp: number; afterHp: number; damage: number };
   getFrameMetrics: () => BrowserHarnessFrameMetrics;
   resetFrameMetrics: () => void;
   setFpsLimit: (limit: number) => void;
@@ -786,6 +787,38 @@ export function installBrowserHarness(game: Phaser.Game): void {
       const duringMode = player.tintMode;
       await new Promise<void>((resolve) => activeScene.time.delayedCall(200, resolve));
       return { duringMode, afterMode: player.tintMode };
+    },
+    probeAcceptedPlayerDamage: (amount = 1) => {
+      const activeScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game') as (
+        Phaser.Scene & {
+          collisionManager?: {
+            processAcceptedPlayerDamage: (options: { amount: number }) => void;
+          };
+        }
+      ) | undefined;
+      const player = activeScene?.children.list.find((child) => {
+        const candidate = child as Phaser.GameObjects.GameObject & { texture?: Phaser.Textures.Texture };
+        return candidate.texture?.key === 'player-ship';
+      }) as (Phaser.GameObjects.GameObject & {
+        hp: number;
+        maxHp: number;
+        shields: number;
+        invulnerable: boolean;
+        deathStarted: boolean;
+      }) | undefined;
+      const collisionManager = activeScene?.collisionManager;
+      if (!player || !collisionManager) {
+        throw new Error('Browser harness cannot probe accepted player damage without active gameplay');
+      }
+
+      player.hp = player.maxHp;
+      player.shields = 0;
+      player.invulnerable = false;
+      player.deathStarted = false;
+      const beforeHp = player.hp;
+      collisionManager.processAcceptedPlayerDamage({ amount });
+      const afterHp = player.hp;
+      return { beforeHp, afterHp, damage: beforeHp - afterHp };
     },
     showLaneReadingPilot: (glowEnabled = true) => {
       const gameScene = game.scene.getScene('Game') as (

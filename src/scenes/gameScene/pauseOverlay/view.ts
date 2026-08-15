@@ -131,10 +131,10 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     ? panelWidth - contentInset * 2
     : Math.min(310, panelX + panelWidth - contentRight - 42);
   const slotBlockHeight = slotRowHeight * 3 + slotRowGap * 2;
-  const titleFontSize = veryShortViewport ? 64 : shortViewport ? 72 : 86;
+  const titleFontSize = shortViewport ? 42 : 86;
   const subtitleFontSize = veryShortViewport ? 14 : 16;
   const hintFontSize = veryShortViewport ? 12 : 14;
-  const titleY = panelY + (veryShortViewport ? 60 : shortViewport ? 38 : 96);
+  const titleY = panelY + (shortViewport ? 30 : 96);
   const baseSubtitleY = panelY + (veryShortViewport ? 94 : shortViewport ? 72 : 176);
   const baseHintY = panelY + (veryShortViewport ? 118 : shortViewport ? 96 : 216);
   let musicHeaderY = panelY + (shortViewport ? 96 : compact ? 148 : 252);
@@ -217,6 +217,30 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const compactMenuX = buttonsStacked
     ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2
     : viewport.centerX - twoButtonsWidth / 2 + PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP;
+  const tabWidth = Math.min(150, (panelWidth - 54) / 2);
+  const tabHeight = shortViewport ? 26 : 32;
+  const tabY = panelY + (shortViewport ? 62 : 226);
+  const settingsWidth = Math.min(330, panelWidth - 48);
+  const settingsX = viewport.centerX - settingsWidth / 2;
+  const settingsDifficultyY = panelY + (shortViewport ? 94 : 270);
+  const settingsQualityY = settingsDifficultyY + (shortViewport ? 29 : 38);
+  const settingsSliderY = settingsQualityY + (shortViewport || compact ? 34 : 48);
+  const settingsTwoColumns = viewport.width >= 390;
+  const settingsColumnGap = 20;
+  const settingsSliderWidth = settingsTwoColumns
+    ? Math.min(settingsWidth, (panelWidth - settingsColumnGap - 24) / 2)
+    : settingsWidth;
+  const settingsLeftX = settingsTwoColumns ? viewport.centerX - settingsSliderWidth - settingsColumnGap / 2 : settingsX;
+  const settingsRightX = viewport.centerX + settingsColumnGap / 2;
+  const settingsRowGap = shortViewport ? 56 : 62;
+  const settingsSliderPositions = settingsTwoColumns
+    ? [
+        { x: settingsLeftX, y: settingsSliderY },
+        { x: settingsRightX, y: settingsSliderY },
+        { x: settingsLeftX, y: settingsSliderY + settingsRowGap },
+        { x: settingsRightX, y: settingsSliderY + settingsRowGap },
+      ]
+    : [0, 1, 2, 3].map((index) => ({ x: settingsX, y: settingsSliderY + index * settingsRowGap }));
 
   return {
     left: viewport.left,
@@ -262,6 +286,21 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     menuButtonX: actionButtonsVisible ? actionStartX + (PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP) * 3 : compactMenuX,
     menuButtonY,
     buttonY: footerTop,
+    checkpointTabX: viewport.centerX - tabWidth - 5,
+    settingsTabX: viewport.centerX + 5,
+    tabY,
+    tabWidth,
+    tabHeight,
+    settingsLayout: {
+      x: settingsX,
+      width: settingsWidth,
+      sliderWidth: settingsSliderWidth,
+      difficultyY: settingsDifficultyY,
+      qualityY: settingsQualityY,
+      tierHeight: 24,
+      compact: compact || shortViewport,
+      sliderPositions: settingsSliderPositions,
+    },
   };
 }
 

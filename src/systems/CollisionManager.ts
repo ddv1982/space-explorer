@@ -15,6 +15,7 @@ import { Mine } from '../entities/Mine';
 import { HazardBeam } from '../entities/HazardBeam';
 import type { HazardBeamSystem } from './HazardBeamSystem';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
+import { getGameplayDifficultyProfile } from '../config/gameplayDifficulty';
 
 export class CollisionManager {
   private scene!: Phaser.Scene;
@@ -28,6 +29,7 @@ export class CollisionManager {
   private respawnInProgress: boolean = false;
   private lastPlayerHitFeedbackTime: number = Number.NEGATIVE_INFINITY;
   private readonly playerHitFeedbackCooldownMs: number = 75;
+  private getHullDamageMultiplier: () => number = () => getGameplayDifficultyProfile().hullDamageMultiplier;
 
   setup(
     scene: Phaser.Scene,
@@ -35,10 +37,12 @@ export class CollisionManager {
     bulletPool: BulletPool,
     enemyPool: EnemyPool,
     asteroidGroup: Phaser.Physics.Arcade.Group,
-    hazardBeamSystem?: HazardBeamSystem
+    hazardBeamSystem?: HazardBeamSystem,
+    getHullDamageMultiplier: () => number = () => getGameplayDifficultyProfile().hullDamageMultiplier
   ): void {
     this.assignSetupContext(scene, player, enemyPool, asteroidGroup);
     this.hazardBeamSystem = hazardBeamSystem ?? null;
+    this.getHullDamageMultiplier = getHullDamageMultiplier;
 
     const bulletGroup = bulletPool.getGroup();
     const enemyGroups = enemyPool.getEnemyGroupRegistry();
@@ -444,7 +448,7 @@ export class CollisionManager {
   }): void {
     options.beforeDamage?.();
 
-    const damageOutcome = this.player.takeDamage(options.amount);
+    const damageOutcome = this.player.takeDamage(options.amount * this.getHullDamageMultiplier());
 
     options.afterDamage?.();
 

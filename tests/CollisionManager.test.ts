@@ -55,7 +55,7 @@ function createInstance<T>(Ctor: abstract new (...args: never[]) => T, propertie
   return Object.assign(Object.create(Ctor.prototype), properties) as T;
 }
 
-function createCollisionHarness(outcomes: DamageOutcome[]): CollisionHarness {
+function createCollisionHarness(outcomes: DamageOutcome[], hullDamageMultiplier = 1): CollisionHarness {
   const overlaps: OverlapRegistration[] = [];
   const emittedEvents: string[] = [];
   const damageAmounts: number[] = [];
@@ -155,7 +155,8 @@ function createCollisionHarness(outcomes: DamageOutcome[]): CollisionHarness {
     bulletPool as never,
     enemyPool as never,
     groups.asteroid as never,
-    hazardBeamSystem as never
+    hazardBeamSystem as never,
+    () => hullDamageMultiplier
   );
 
   return {
@@ -206,6 +207,34 @@ describe('CollisionManager boss damage sources', () => {
 });
 
 describe('CollisionManager player damage dedupe regression coverage', () => {
+  test('scales accepted player hull damage for low, normal, and high without changing hazard damage', () => {
+    for (const [multiplier, expectedDamage] of [[0.75, 1.5], [1, 2], [1.25, 2.5]] as const) {
+      const harness = createCollisionHarness(['damaged'], multiplier);
+      const bombVsPlayer = harness.getOverlap(harness.groups.bomb, harness.player);
+      const bomb = createInstance(BomberBomb, {
+        active: true,
+        x: 40,
+        y: 60,
+        kill: () => {},
+      });
+
+      bombVsPlayer(bomb, harness.player);
+
+      expect(harness.damageAmounts).toEqual([expectedDamage]);
+    }
+  });
+
+  test('keeps shield outcomes one hit per accepted collision at high difficulty', () => {
+    const harness = createCollisionHarness(['absorbed'], 1.25);
+    const enemyBulletVsPlayer = harness.getOverlap(harness.groups.enemyBullet, harness.player);
+    const bullet = createInstance(EnemyBullet, { active: true, kill: () => {} });
+
+    enemyBulletVsPlayer(bullet, harness.player);
+
+    expect(harness.damageAmounts).toEqual([1.25]);
+    expect(harness.emittedEvents).toEqual([GAME_SCENE_EVENTS.playerHit]);
+  });
+
   test('enemy bullet collision is gated by canProcessPlayerCollision checks', () => {
     const harness = createCollisionHarness(['damaged']);
     const enemyBulletVsPlayer = harness.getOverlap(harness.groups.enemyBullet, harness.player);

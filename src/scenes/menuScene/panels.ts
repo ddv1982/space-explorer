@@ -1,19 +1,9 @@
 import Phaser from 'phaser';
-import type { VisualQualityTier } from '../../config/visualQuality';
 import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
-import {
-  createMusicSliderCluster,
-  destroyMusicSliderCluster,
-  setMusicSliderClusterDepth,
-  setMusicSliderClusterPosition,
-  type MusicSliderCluster,
-} from '../shared/musicSliderCluster';
 import { addNeonTitle, drawNeonDivider, drawNeonFrame, fitNeonTitleFontSize, NEON, NEON_FONT, NEON_TEXT } from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
 import type { MenuLayoutPlan } from './layout';
-
-export type MenuMusicSliders = MusicSliderCluster;
 
 interface MenuSaveSlotHandlers {
   onNewRun: () => void;
@@ -24,10 +14,6 @@ interface MenuSaveSlotHandlers {
 export interface MenuSaveSlotPanel {
   refresh: (slots: SaveSlotViewModel[]) => void;
   setStatus: (message: string, isError?: boolean) => void;
-  destroy: () => void;
-}
-
-export interface MenuQualitySelector {
   destroy: () => void;
 }
 
@@ -58,7 +44,7 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
 }
 
 export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void {
-  const desiredTitleSize = plan.veryShortCompact ? 48 : plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
+  const desiredTitleSize = plan.shortLandscape ? 30 : plan.veryShortCompact ? 48 : plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
   const titleSize = fitNeonTitleFontSize(scene, 'SPACE EXPLORER', desiredTitleSize, Math.max(180, plan.outerFrameWidth - 96));
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
 
@@ -95,6 +81,7 @@ export function createSaveSlotEntryPanel(
 ): MenuSaveSlotPanel {
   const tileTextMaxWidth = Math.max(12, plan.tileWidth - 20);
   const compact = plan.tileHeight < 150;
+  const veryCompact = plan.tileHeight <= 76;
 
   const tiles = [0, 1, 2, 3].map((i) => {
     const isNewRun = i === 0;
@@ -119,9 +106,9 @@ export function createSaveSlotEntryPanel(
     button.setDepth(11);
 
     // Vertical layout inside tile: icon → label → subtext
-    const iconY = ty + (compact ? 32 : 48);
-    const labelY = ty + (compact ? 62 : 90);
-    const subtextY = ty + (compact ? 80 : 118);
+    const iconY = ty + (veryCompact ? 17 : compact ? 32 : 48);
+    const labelY = ty + (veryCompact ? 40 : compact ? 62 : 90);
+    const subtextY = ty + (veryCompact ? 57 : compact ? 80 : 118);
 
     const iconG = scene.add.graphics();
     const cx = tx + plan.tileWidth / 2;
@@ -240,75 +227,4 @@ export function createSaveSlotEntryPanel(
       statusText.destroy();
     },
   };
-}
-
-export function createMusicLabPanel(
-  scene: Phaser.Scene,
-  plan: MenuLayoutPlan,
-  _accentColor: number,
-  getSliders: () => MenuMusicSliders | null
-): MenuMusicSliders | null {
-  if (plan.musicPanelHeight <= 0) {
-    return null;
-  }
-
-  const sliders = createMusicSliderCluster(scene, {
-    width: plan.sliderWidth,
-    getSliders,
-  });
-
-  setMusicSliderClusterPosition(sliders, plan.sliderX, plan.sliderStartY, plan.sliderSpacing);
-  setMusicSliderClusterDepth(sliders, 11);
-
-  return sliders;
-}
-
-export function createQualitySelector(
-  scene: Phaser.Scene,
-  plan: MenuLayoutPlan,
-  activeTier: VisualQualityTier,
-  onSelect: (tier: VisualQualityTier) => void
-): MenuQualitySelector {
-  const compact = plan.qualityHeight < 32;
-  const labelWidth = compact ? 86 : 138;
-  const gap = compact ? 4 : 6;
-  const buttonWidth = (plan.qualityWidth - labelWidth - gap * 3) / 3;
-  const label = scene.add
-    .text(plan.qualityX, plan.qualityY + plan.qualityHeight / 2, `QUALITY: ${activeTier.toUpperCase()}`, {
-      fontSize: compact ? '10px' : '12px',
-      color: NEON_TEXT.secondary,
-      fontFamily: NEON_FONT.mono,
-      fontStyle: 'bold',
-    })
-    .setOrigin(0, 0.5)
-    .setDepth(12);
-
-  const tiers: VisualQualityTier[] = ['low', 'standard', 'high'];
-  const buttons = tiers.map((tier, index) => {
-    const button = createActionButtonControl(scene, {
-      label: tier.toUpperCase(),
-      width: buttonWidth,
-      height: plan.qualityHeight,
-      variant: tier === activeTier ? 'primary' : 'secondary',
-      fontSize: compact ? '9px' : '11px',
-      onClick: () => onSelect(tier),
-    });
-    button.setPosition(
-      plan.qualityX + labelWidth + gap + index * (buttonWidth + gap),
-      plan.qualityY
-    );
-    button.setDepth(11);
-    return button;
-  });
-
-  return {
-    destroy: () => {
-      label.destroy();
-      buttons.forEach((button) => button.destroy());
-    },
-  };
-}
-
-export function destroyMenuMusicSliders(sliders: MenuMusicSliders | null): void {
-  destroyMusicSliderCluster(sliders);
 }

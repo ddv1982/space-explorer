@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-08-16
+
+### Added
+- Added persistent Low, Normal, and High difficulty settings, with the original campaign balance preserved exactly as Normal.
+- Added the complete settings surface to the pause menu through dedicated Checkpoints and Settings views.
+
+### Changed
+- Low, Normal, and High now multiply accepted hull damage by `0.75`, `1.0`, and `1.25` without changing formations, spawn schedules, movement, projectile speed, telegraphs, hazard geometry, boss phases, or one-hit shields.
+- Consolidated difficulty, visual quality, creativity, energy, ambience, and music volume into shared controls used by both the main and pause menus.
+- Kept pause-menu quality changes safe for active runs by persisting them for restart instead of reloading gameplay.
+- Reflowed settings across desktop, phone portrait, and phone landscape, including live orientation changes while paused.
+
+### Fixed
+- Preserved fractional hull values through checkpoints and manual save/load so Low and High damage remain exact across persistence boundaries.
+- Recreated responsive slider clusters when their width changes, preventing overlap or clipping after orientation changes.
+
+### Quality
+- Added focused storage, collision, save-state, shared-panel, pause-controller, responsive-layout, and desktop/mobile browser coverage.
+- Proved a paused Low selection affects the next active-run hull hit with an exact `5.0` to `4.25` browser-observed change.
+- Passed both TypeScript compilers, lint, unit tests, desktop/mobile functional and visual browser gates, performance evidence, level validation, Knip, production build, and bundle budgets.
+
 ## [1.6.0] - 2026-08-15
 
 ### Added

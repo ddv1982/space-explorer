@@ -1,4 +1,7 @@
 import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
+import type { GameplayDifficultyTier } from '@/config/gameplayDifficulty';
+import type { VisualQualityTier } from '@/config/visualQuality';
+import type { SettingsPanelLayout } from '../../shared/settingsPanel';
 
 export interface PauseOverlayHandlers {
   onResume: () => void;
@@ -6,6 +9,8 @@ export interface PauseOverlayHandlers {
   onSaveSlot: (slotId: SaveSlotId) => void;
   onLoadSlot: (slotId: SaveSlotId) => void;
   onDeleteSlot: (slotId: SaveSlotId) => void;
+  onSelectDifficulty: (tier: GameplayDifficultyTier) => boolean;
+  onSelectQuality: (tier: VisualQualityTier) => boolean;
 }
 
 export interface PauseOverlayState {
@@ -71,4 +76,10 @@ export interface PauseOverlayLayout {
   menuButtonX: number;
   menuButtonY: number;
   buttonY: number;
+  checkpointTabX: number;
+  settingsTabX: number;
+  tabY: number;
+  tabWidth: number;
+  tabHeight: number;
+  settingsLayout: SettingsPanelLayout;
 }

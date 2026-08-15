@@ -1,14 +1,9 @@
 import Phaser from 'phaser';
+import { getGameplayDifficultyTier } from '../../config/gameplayDifficulty';
+import { getVisualQualityTier } from '../../config/visualQuality';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
-import {
-  createMusicSliderCluster,
-  destroyMusicSliderCluster,
-  setMusicSliderClusterDepth,
-  setMusicSliderClusterPosition,
-  setMusicSliderClusterVisible,
-  type MusicSliderCluster,
-} from '../shared/musicSliderCluster';
+import { createSettingsPanel, type SettingsPanel } from '../shared/settingsPanel';
 import {
   createPauseSaveSlotRows,
   destroyPauseSaveSlotRows,
@@ -25,8 +20,6 @@ import {
   getPauseOverlayMessage,
   PAUSE_OVERLAY_BUTTON_HEIGHT,
   PAUSE_OVERLAY_BUTTON_WIDTH,
-  PAUSE_OVERLAY_SLIDER_SPACING,
-  PAUSE_OVERLAY_SLIDER_WIDTH,
 } from './pauseOverlay/view';
 
 function createDefaultPauseOverlayState(): PauseOverlayState {
@@ -51,20 +44,21 @@ export class PauseOverlay {
   private titleText: Phaser.GameObjects.Text | null = null;
   private subtitleText: Phaser.GameObjects.Text | null = null;
   private hintText: Phaser.GameObjects.Text | null = null;
-  private musicHeaderText: Phaser.GameObjects.Text | null = null;
   private savesHeaderText: Phaser.GameObjects.Text | null = null;
   private statusText: Phaser.GameObjects.Text | null = null;
   private resumeButton: ActionButtonControl | null = null;
   private saveButton: ActionButtonControl | null = null;
   private loadButton: ActionButtonControl | null = null;
   private menuButton: ActionButtonControl | null = null;
-  private musicSliders: MusicSliderCluster | null = null;
+  private checkpointTab: ActionButtonControl | null = null;
+  private settingsTab: ActionButtonControl | null = null;
+  private settingsPanel: SettingsPanel | null = null;
   private saveSlotRows: PauseSaveSlotRows | null = null;
-  private musicVisible = true;
   private saveSlotsVisible = true;
   private actionButtonsVisible = false;
   private subtitleVisible = true;
   private hintVisible = true;
+  private activeSubview: 'checkpoints' | 'settings' = 'checkpoints';
 
   static create(scene: Phaser.Scene, handlers: PauseOverlayHandlers): PauseOverlay {
     return new PauseOverlay().create(scene, handlers);
@@ -104,12 +98,6 @@ export class PauseOverlay {
       align: 'center',
       wordWrap: { width: 650 },
     }).setOrigin(0.5);
-    this.musicHeaderText = scene.add.text(0, 0, 'TUNE MUSIC + VOLUME', {
-      fontSize: '14px',
-      color: '#7fa8df',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-    });
     this.savesHeaderText = scene.add.text(0, 0, 'CHECKPOINT GRID', {
       fontSize: '14px',
       color: '#ffbf6b',
@@ -124,9 +112,13 @@ export class PauseOverlay {
       wordWrap: { width: 620 },
     }).setOrigin(0.5);
 
-    this.musicSliders = createMusicSliderCluster(scene, {
-      width: PAUSE_OVERLAY_SLIDER_WIDTH,
-      getSliders: () => this.musicSliders,
+    const initialLayout = getPauseOverlayLayout(scene);
+    this.settingsPanel = createSettingsPanel(scene, {
+      layout: initialLayout.settingsLayout,
+      difficulty: getGameplayDifficultyTier(),
+      quality: getVisualQualityTier(),
+      onSelectDifficulty: (tier) => this.handlers?.onSelectDifficulty(tier) ?? false,
+      onSelectQuality: (tier) => this.handlers?.onSelectQuality(tier) ?? false,
     });
     this.saveSlotRows = createPauseSaveSlotRows(scene, {
       onSaveSlot: (slotId) => this.handlers?.onSaveSlot(slotId),
@@ -161,6 +153,14 @@ export class PauseOverlay {
       onClick: () => this.handlers?.onMainMenu(),
       variant: 'secondary',
     });
+    this.checkpointTab = createActionButtonControl(scene, {
+      label: 'CHECKPOINTS', width: initialLayout.tabWidth, height: initialLayout.tabHeight,
+      onClick: () => this.selectSubview('checkpoints'), variant: 'primary', fontSize: '11px',
+    });
+    this.settingsTab = createActionButtonControl(scene, {
+      label: 'SETTINGS', width: initialLayout.tabWidth, height: initialLayout.tabHeight,
+      onClick: () => this.selectSubview('settings'), variant: 'secondary', fontSize: '11px',
+    });
 
     this.setDepth(900);
 
@@ -174,6 +174,7 @@ export class PauseOverlay {
   }
 
   setState(nextState: Partial<PauseOverlayState>): void {
+    if (nextState.visible === true && !this.state.visible) this.activeSubview = 'checkpoints';
     this.state.visible = nextState.visible ?? this.state.visible;
     this.state.canResume = nextState.canResume ?? this.state.canResume;
     this.state.canSave = nextState.canSave ?? this.state.canSave;
@@ -194,14 +195,15 @@ export class PauseOverlay {
       !this.titleText ||
       !this.subtitleText ||
       !this.hintText ||
-      !this.musicHeaderText ||
       !this.savesHeaderText ||
       !this.statusText ||
       !this.resumeButton ||
       !this.saveButton ||
       !this.loadButton ||
       !this.menuButton ||
-      !this.musicSliders ||
+      !this.settingsPanel ||
+      !this.checkpointTab ||
+      !this.settingsTab ||
       !this.saveSlotRows
     ) {
       return;
@@ -225,22 +227,22 @@ export class PauseOverlay {
     this.subtitleText.setPosition(layout.centerX, layout.subtitleY);
     this.hintText.setPosition(layout.centerX, layout.hintY);
     this.hintText.setWordWrapWidth(Math.max(280, layout.panelWidth - 88));
-    this.musicVisible = layout.musicVisible;
     this.saveSlotsVisible = layout.saveSlotsVisible;
     this.actionButtonsVisible = layout.actionButtonsVisible;
     this.subtitleVisible = layout.subtitleVisible;
     this.hintVisible = layout.hintVisible;
-    this.musicHeaderText.setPosition(layout.musicHeaderX, layout.musicHeaderY);
     this.savesHeaderText.setPosition(layout.saveHeaderX, layout.saveHeaderY);
     this.statusText.setPosition(layout.statusX, layout.statusY);
     this.statusText.setWordWrapWidth(Math.max(280, layout.panelWidth - 96));
 
-    setMusicSliderClusterPosition(this.musicSliders, layout.sliderX, layout.sliderStartY, PAUSE_OVERLAY_SLIDER_SPACING);
+    this.settingsPanel.setLayout(layout.settingsLayout);
     setPauseSaveSlotRowsPosition(this.saveSlotRows, layout.slotRows);
     this.resumeButton.setPosition(layout.resumeButtonX, layout.resumeButtonY);
     this.saveButton.setPosition(layout.saveButtonX, layout.saveButtonY);
     this.loadButton.setPosition(layout.loadButtonX, layout.loadButtonY);
     this.menuButton.setPosition(layout.menuButtonX, layout.menuButtonY);
+    this.checkpointTab.setPosition(layout.checkpointTabX, layout.tabY);
+    this.settingsTab.setPosition(layout.settingsTabX, layout.tabY);
     this.applyState();
   }
 
@@ -255,7 +257,9 @@ export class PauseOverlay {
     this.saveButton?.destroy();
     this.loadButton?.destroy();
     this.menuButton?.destroy();
-    destroyMusicSliderCluster(this.musicSliders);
+    this.checkpointTab?.destroy();
+    this.settingsTab?.destroy();
+    this.settingsPanel?.destroy();
     destroyPauseSaveSlotRows(this.saveSlotRows);
 
     this.blocker?.destroy();
@@ -264,7 +268,6 @@ export class PauseOverlay {
     this.titleText?.destroy();
     this.subtitleText?.destroy();
     this.hintText?.destroy();
-    this.musicHeaderText?.destroy();
     this.savesHeaderText?.destroy();
     this.statusText?.destroy();
 
@@ -274,14 +277,15 @@ export class PauseOverlay {
     this.titleText = null;
     this.subtitleText = null;
     this.hintText = null;
-    this.musicHeaderText = null;
     this.savesHeaderText = null;
     this.statusText = null;
     this.resumeButton = null;
     this.saveButton = null;
     this.loadButton = null;
     this.menuButton = null;
-    this.musicSliders = null;
+    this.checkpointTab = null;
+    this.settingsTab = null;
+    this.settingsPanel = null;
     this.saveSlotRows = null;
     this.handlers = null;
     this.scene = null;
@@ -294,7 +298,6 @@ export class PauseOverlay {
     this.titleText?.setDepth(depth + 3);
     this.subtitleText?.setDepth(depth + 3);
     this.hintText?.setDepth(depth + 3);
-    this.musicHeaderText?.setDepth(depth + 3);
     this.savesHeaderText?.setDepth(depth + 3);
     this.statusText?.setDepth(depth + 3);
     if (this.resumeButton) {
@@ -309,9 +312,9 @@ export class PauseOverlay {
     if (this.menuButton) {
       this.menuButton.setDepth(depth + 3);
     }
-    if (this.musicSliders) {
-      setMusicSliderClusterDepth(this.musicSliders, depth + 3);
-    }
+    this.checkpointTab?.setDepth(depth + 3);
+    this.settingsTab?.setDepth(depth + 3);
+    this.settingsPanel?.setDepth(depth + 3);
     if (this.saveSlotRows) {
       setPauseSaveSlotRowsDepth(this.saveSlotRows, depth + 3);
     }
@@ -322,7 +325,6 @@ export class PauseOverlay {
       !this.titleText ||
       !this.subtitleText ||
       !this.hintText ||
-      !this.musicHeaderText ||
       !this.savesHeaderText ||
       !this.statusText ||
       !this.resumeButton ||
@@ -332,7 +334,9 @@ export class PauseOverlay {
       !this.blocker ||
       !this.dimmer ||
       !this.panel ||
-      !this.musicSliders ||
+      !this.settingsPanel ||
+      !this.checkpointTab ||
+      !this.settingsTab ||
       !this.saveSlotRows
     ) {
       return;
@@ -341,15 +345,16 @@ export class PauseOverlay {
     const shouldShow = this.state.visible;
     const canResume = this.state.canResume;
     const message = getPauseOverlayMessage();
-    const statusMessage = this.state.statusMessage ||
-      (this.state.storageAvailable ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.' : 'Checkpoint storage unavailable in this browser.');
+    const statusMessage = this.state.statusMessage || (this.activeSubview === 'settings'
+      ? 'Quality applies after restart.'
+      : this.state.storageAvailable ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.' : 'Checkpoint storage unavailable in this browser.');
 
     this.titleText.setText(message.title);
     this.subtitleText.setText(message.subtitle);
     this.hintText.setText(message.hint);
     this.resumeButton.setLabel(message.resumeLabel);
     this.statusText.setText(statusMessage);
-    this.statusText.setColor(this.state.statusOk === false || !this.state.storageAvailable ? '#ff9c7f' : '#72ecff');
+    this.statusText.setColor(this.state.statusOk === false || (this.activeSubview === 'checkpoints' && !this.state.storageAvailable) ? '#ff9c7f' : '#72ecff');
 
     this.resumeButton.setEnabled(canResume);
     this.saveButton.setEnabled(this.state.storageAvailable && this.state.canSave);
@@ -363,15 +368,26 @@ export class PauseOverlay {
     this.titleText.setVisible(shouldShow);
     this.subtitleText.setVisible(shouldShow && this.subtitleVisible);
     this.hintText.setVisible(shouldShow && this.hintVisible);
-    this.musicHeaderText.setVisible(shouldShow && this.musicVisible);
-    this.savesHeaderText.setVisible(shouldShow && this.saveSlotsVisible);
+    const checkpointsVisible = shouldShow && this.activeSubview === 'checkpoints';
+    const settingsVisible = shouldShow && this.activeSubview === 'settings';
+    this.savesHeaderText.setVisible(checkpointsVisible && this.saveSlotsVisible);
     this.statusText.setVisible(shouldShow);
     this.resumeButton.setVisible(shouldShow);
-    this.saveButton.setVisible(shouldShow && this.actionButtonsVisible);
-    this.loadButton.setVisible(shouldShow && this.actionButtonsVisible);
+    this.saveButton.setVisible(checkpointsVisible && this.actionButtonsVisible);
+    this.loadButton.setVisible(checkpointsVisible && this.actionButtonsVisible);
     this.menuButton.setVisible(shouldShow);
-    setMusicSliderClusterVisible(this.musicSliders, shouldShow && this.musicVisible);
-    setPauseSaveSlotRowsVisible(this.saveSlotRows, shouldShow && this.saveSlotsVisible);
+    this.checkpointTab.setVisible(shouldShow);
+    this.settingsTab.setVisible(shouldShow);
+    this.checkpointTab.setVariant(this.activeSubview === 'checkpoints' ? 'primary' : 'secondary');
+    this.settingsTab.setVariant(this.activeSubview === 'settings' ? 'primary' : 'secondary');
+    this.settingsPanel.setVisible(settingsVisible);
+    setPauseSaveSlotRowsVisible(this.saveSlotRows, checkpointsVisible && this.saveSlotsVisible);
+  }
+
+  private selectSubview(subview: 'checkpoints' | 'settings'): void {
+    if (subview === this.activeSubview) return;
+    this.activeSubview = subview;
+    this.applyState();
   }
 
   private getPreferredLoadSlotId(): 'slot-1' | 'slot-2' | 'slot-3' {

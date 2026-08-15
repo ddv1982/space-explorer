@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
 import { getLevelConfig } from '../config/LevelsConfig';
 import {
+  getGameplayDifficultyTier,
+  setGameplayDifficultyTier,
+  type GameplayDifficultyTier,
+} from '../config/gameplayDifficulty';
+import {
   getVisualQualityTier,
   setVisualQualityTier,
   type VisualQualityTier,
@@ -26,26 +31,21 @@ import { audioManager } from '../systems/AudioManager';
 import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
+import { createSettingsPanel, type SettingsPanel } from './shared/settingsPanel';
 import { createMenuLayoutPlan } from './menuScene/layout';
 import { resolveDevLevelJump } from './menuScene/devLevelJump';
 import { startRegisteredScene } from './sceneRegistry';
 import {
   createMenuBackdrop,
   createMenuTitle,
-  createMusicLabPanel,
-  createQualitySelector,
   createSaveSlotEntryPanel,
-  destroyMenuMusicSliders,
-  type MenuMusicSliders,
-  type MenuQualitySelector,
   type MenuSaveSlotPanel,
 } from './menuScene/panels';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
-  private musicSliders: MenuMusicSliders | null = null;
   private saveSlotPanel: MenuSaveSlotPanel | null = null;
-  private qualitySelector: MenuQualitySelector | null = null;
+  private settingsPanel: SettingsPanel | null = null;
   private gameTransitionQueued = false;
 
   constructor() {
@@ -127,27 +127,48 @@ export class MenuScene extends Phaser.Scene {
       this.createSaveSlotPanelHandlers(),
       isSaveStorageAvailable(),
     );
-    this.qualitySelector = createQualitySelector(
-      this,
-      layoutPlan,
-      this.getCurrentVisualQualityTier(),
-      (tier) => this.selectVisualQualityTier(tier)
-    );
-    this.musicSliders = createMusicLabPanel(this, layoutPlan, accentColor, () => this.musicSliders);
+    this.settingsPanel = createSettingsPanel(this, {
+      layout: layoutPlan.settingsLayout,
+      difficulty: this.getCurrentGameplayDifficultyTier(),
+      quality: this.getCurrentVisualQualityTier(),
+      onSelectDifficulty: (tier) => this.selectGameplayDifficultyTier(tier),
+      onSelectQuality: (tier) => this.selectVisualQualityTier(tier),
+    });
+    this.settingsPanel.setDepth(11);
   }
 
-  private selectVisualQualityTier(tier: VisualQualityTier): void {
+  private selectGameplayDifficultyTier(tier: GameplayDifficultyTier): boolean {
+    if (tier === this.getCurrentGameplayDifficultyTier()) return false;
+    this.playMenuClick();
+    if (!this.persistGameplayDifficultyTier(tier)) {
+      this.showSaveSlotError('Unable to save difficulty in this browser context.');
+      return false;
+    }
+    this.refreshSaveSlots(`Difficulty set to ${tier.toUpperCase()}.`);
+    return true;
+  }
+
+  private getCurrentGameplayDifficultyTier(): GameplayDifficultyTier {
+    return getGameplayDifficultyTier();
+  }
+
+  private persistGameplayDifficultyTier(tier: GameplayDifficultyTier): boolean {
+    return setGameplayDifficultyTier(tier);
+  }
+
+  private selectVisualQualityTier(tier: VisualQualityTier): boolean {
     if (tier === this.getCurrentVisualQualityTier()) {
-      return;
+      return false;
     }
 
     this.playMenuClick();
     if (!this.persistVisualQualityTier(tier)) {
       this.showSaveSlotError('Unable to save visual quality in this browser context.');
-      return;
+      return false;
     }
 
     this.reloadForVisualQualityChange();
+    return true;
   }
 
   private getCurrentVisualQualityTier(): VisualQualityTier {
@@ -288,11 +309,9 @@ export class MenuScene extends Phaser.Scene {
 
   private handleSceneShutdown(): void {
     this.parallax?.destroy();
-    destroyMenuMusicSliders(this.musicSliders);
-    this.musicSliders = null;
     this.saveSlotPanel?.destroy();
     this.saveSlotPanel = null;
-    this.qualitySelector?.destroy();
-    this.qualitySelector = null;
+    this.settingsPanel?.destroy();
+    this.settingsPanel = null;
   }
 }

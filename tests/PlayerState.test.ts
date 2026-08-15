@@ -8,6 +8,7 @@ const {
   getPlayerTurretTier,
   getRunSummary,
   resetRunSummary,
+  saveCurrentHp,
   saveCurrentShields,
   setPlayerState,
   setRunSummary,
@@ -193,12 +194,12 @@ describe('PlayerState schema behavior', () => {
     });
   });
 
-  test('floors persisted integer resources and rejects negative escalation', () => {
+  test('preserves fractional hull damage while flooring integer resources', () => {
     const registry = createRegistry();
     registry.set('playerState', {
       level: 2,
       score: 12.9,
-      currentHp: -4.2,
+      currentHp: 4.25,
       currentShields: 2.9,
       remainingLives: 2.9,
       upgrades: { hp: 1.9, damage: 2.9, fireRate: 3.9, shield: 2.9, turrets: 1.9 },
@@ -207,12 +208,25 @@ describe('PlayerState schema behavior', () => {
 
     expect(getPlayerState(registry)).toMatchObject({
       score: 12,
-      currentHp: 0,
+      currentHp: 4.25,
       currentShields: 2,
       remainingLives: 2,
       upgrades: { hp: 1, damage: 2, fireRate: 3, shield: 2, turrets: 1 },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 6 }] },
     });
+  });
+
+  test('saveCurrentHp preserves bounded fractional difficulty damage', () => {
+    const registry = createRegistry();
+
+    saveCurrentHp(registry, 3.75);
+    expect(getPlayerState(registry).currentHp).toBe(3.75);
+
+    saveCurrentHp(registry, -0.25);
+    expect(getPlayerState(registry).currentHp).toBe(0);
+
+    saveCurrentHp(registry, Number.MAX_VALUE);
+    expect(getPlayerState(registry).currentHp).toBe(5);
   });
 
   test('clamps currentShields to upgrade max when setting state', () => {

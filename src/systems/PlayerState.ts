@@ -59,6 +59,10 @@ function normalizeBoundedInteger(value: unknown, fallback: number, maximum: numb
   return Math.min(maximum, normalizeNonNegativeInteger(value, fallback));
 }
 
+function normalizeBoundedNumber(value: unknown, fallback: number, maximum: number): number {
+  return Math.min(maximum, Math.max(0, normalizeFiniteNumber(value, fallback)));
+}
+
 export function normalizePersistedScore(value: unknown, fallback: number): number {
   return normalizeBoundedInteger(value, fallback, Number.MAX_SAFE_INTEGER);
 }
@@ -150,7 +154,7 @@ export function normalizePersistedPlayerState(value: unknown): PlayerStateData {
   return {
     level: normalizeFiniteNumber(value.level, defaultState.level),
     score: normalizePersistedScore(value.score, defaultState.score),
-    currentHp: normalizeBoundedInteger(value.currentHp, defaultState.currentHp, maxHp),
+    currentHp: normalizeBoundedNumber(value.currentHp, defaultState.currentHp, maxHp),
     currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), maxShields)),
     remainingLives: normalizeBoundedInteger(
       value.remainingLives,

@@ -62,6 +62,7 @@ type StubButton = {
   setPosition: (_x: number, _y: number) => void;
   setEnabled: (enabled: boolean) => void;
   setLabel: (_label: string) => void;
+  setVariant: (_variant: string) => void;
   destroy: () => void;
 };
 
@@ -89,6 +90,7 @@ mock.module('../src/scenes/shared/actionButtonControl', () => ({
         this.enabled = enabled;
       },
       setLabel() {},
+      setVariant() {},
       destroy() {},
     };
 
@@ -102,6 +104,16 @@ mock.module('../src/scenes/shared/musicSliderCluster', () => ({
   setMusicSliderClusterDepth: () => {},
   setMusicSliderClusterPosition: () => {},
   setMusicSliderClusterVisible: () => {},
+}));
+
+mock.module('../src/scenes/shared/settingsPanel', () => ({
+  createSettingsPanel: () => ({
+    visible: true,
+    setLayout() {},
+    setDepth() {},
+    setVisible(visible: boolean) { this.visible = visible; },
+    destroy() {},
+  }),
 }));
 
 mock.module('../src/utils/layout', () => ({
@@ -194,6 +206,8 @@ describe('PauseOverlay relayout regression', () => {
       onLoadSlot: () => {},
       onDeleteSlot: () => {},
       onMainMenu: () => {},
+      onSelectDifficulty: () => true,
+      onSelectQuality: () => true,
     });
 
     overlay.setState({ visible: false, saveSlots: [] });
@@ -203,5 +217,26 @@ describe('PauseOverlay relayout regression', () => {
     expect(saveSlotRows?.rows[0]?.title.visible).toBe(false);
     expect(saveSlotRows?.rows[0]?.subtitle.visible).toBe(false);
     expect(saveSlotRows?.rows[0]?.savedAt.visible).toBe(false);
+  });
+
+  test('switches between checkpoint and settings controls without hiding the pause shell', () => {
+    const overlay = PauseOverlay.create(createScene() as never, {
+      onResume: () => {}, onSaveSlot: () => {}, onLoadSlot: () => {}, onDeleteSlot: () => {},
+      onMainMenu: () => {}, onSelectDifficulty: () => true, onSelectQuality: () => true,
+    });
+    overlay.setState({ visible: true, saveSlots: [] });
+    (overlay as unknown as { selectSubview: (view: 'settings' | 'checkpoints') => void }).selectSubview('settings');
+
+    const internals = overlay as unknown as {
+      settingsPanel: { visible: boolean };
+      saveSlotRows: { rows: Array<{ title: StubText }> };
+      blocker: StubZone;
+    };
+    expect(internals.settingsPanel.visible).toBe(true);
+    expect(internals.saveSlotRows.rows[0]?.title.visible).toBe(false);
+    expect(internals.blocker.visible).toBe(true);
+
+    (overlay as unknown as { selectSubview: (view: 'settings' | 'checkpoints') => void }).selectSubview('checkpoints');
+    expect(internals.settingsPanel.visible).toBe(false);
   });
 });

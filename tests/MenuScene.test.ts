@@ -39,6 +39,25 @@ const { MenuScene } = await import('../src/scenes/MenuScene');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
 describe('MenuScene', () => {
+  test('difficulty active clicks are no-ops and storage failures do not change selection', () => {
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
+    const persist = mock(() => false);
+    const showSaveSlotError = mock(() => undefined);
+    const playMenuClick = mock(() => undefined);
+    (scene as unknown as Record<string, unknown>).getCurrentGameplayDifficultyTier = () => 'normal';
+    (scene as unknown as Record<string, unknown>).persistGameplayDifficultyTier = persist;
+    (scene as unknown as Record<string, unknown>).showSaveSlotError = showSaveSlotError;
+    (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
+
+    expect((scene as unknown as { selectGameplayDifficultyTier: (tier: string) => boolean })
+      .selectGameplayDifficultyTier('normal')).toBe(false);
+    expect(persist).not.toHaveBeenCalled();
+    expect((scene as unknown as { selectGameplayDifficultyTier: (tier: string) => boolean })
+      .selectGameplayDifficultyTier('high')).toBe(false);
+    expect(playMenuClick).toHaveBeenCalledTimes(1);
+    expect(showSaveSlotError).toHaveBeenCalledWith('Unable to save difficulty in this browser context.');
+  });
+
   test('selecting the active visual quality is a no-op', () => {
     const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
     const persistVisualQualityTier = mock(() => true);

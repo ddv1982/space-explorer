@@ -5,6 +5,16 @@ import type { PauseSaveSlotAdapter } from '../src/scenes/gameScene/PauseStateCon
 import type { PauseOverlayHandlers, PauseOverlayState } from '../src/scenes/gameScene/pauseOverlay/types';
 
 mock.module('phaser', () => ({ default: {} }));
+const setGameplayDifficultyTier = mock(() => true);
+const setVisualQualityTier = mock(() => true);
+mock.module('../src/config/gameplayDifficulty', () => ({
+  getGameplayDifficultyTier: () => 'normal',
+  setGameplayDifficultyTier,
+}));
+mock.module('../src/config/visualQuality', () => ({
+  getVisualQualityTier: () => 'standard',
+  setVisualQualityTier,
+}));
 
 const { PauseStateController } = await import('../src/scenes/gameScene/PauseStateController');
 
@@ -315,6 +325,42 @@ describe('PauseStateController regression coverage', () => {
       canSave: false,
       storageAvailable: true,
       statusMessage: 'Cannot save during transitions or while the ship is offline.',
+    });
+  });
+
+  test('pause settings persist without changing pause state or reloading', () => {
+    setGameplayDifficultyTier.mockClear();
+    setVisualQualityTier.mockClear();
+    const harness = createPauseHarness();
+    harness.controller.togglePauseRequest(false);
+
+    expect(harness.handlers.onSelectDifficulty('high')).toBe(true);
+    expect(harness.handlers.onSelectQuality('low')).toBe(true);
+
+    expect(setGameplayDifficultyTier).toHaveBeenCalledWith('high');
+    expect(setVisualQualityTier).toHaveBeenCalledWith('low');
+    expect(harness.controller.isGameplayPaused()).toBe(true);
+    expect(harness.physicsActions).toEqual(['pause']);
+    expect(harness.audioPauseStates).toEqual([true]);
+    expect(harness.overlayStates.at(-1)).toMatchObject({
+      visible: true,
+      statusMessage: expect.stringContaining('Restart required'),
+      statusOk: true,
+    });
+  });
+
+  test('pause setting persistence failure reports an error and remains paused', () => {
+    setGameplayDifficultyTier.mockImplementationOnce(() => false);
+    const harness = createPauseHarness();
+    harness.controller.togglePauseRequest(false);
+
+    expect(harness.handlers.onSelectDifficulty('low')).toBe(false);
+    expect(harness.controller.isGameplayPaused()).toBe(true);
+    expect(harness.physicsActions).toEqual(['pause']);
+    expect(harness.audioPauseStates).toEqual([true]);
+    expect(harness.overlayStates.at(-1)).toMatchObject({
+      statusMessage: 'Unable to save difficulty in this browser context.',
+      statusOk: false,
     });
   });
 });

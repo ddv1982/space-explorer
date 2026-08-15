@@ -82,11 +82,16 @@ export function createMusicSliderControl(
 
   // Track geometry calculated relative to pill interior
   const compact = totalWidth < 520;
+  const ultraCompact = totalWidth < 260;
   const iconSize = compact ? 0 : ICON_BOX_SIZE;
-  const labelWidth = compact ? Math.max(96, Math.min(132, totalWidth * 0.32)) : LABEL_WIDTH;
-  const valueBoxWidth = compact ? 58 : VALUE_BOX_WIDTH;
-  const trackLeft = ROW_PADDING_X + iconSize + (compact ? 0 : ICON_TO_LABEL_GAP) + labelWidth + LABEL_TO_TRACK_GAP;
-  const trackRight = totalWidth - ROW_PADDING_X - valueBoxWidth - VALUE_BOX_GAP;
+  const labelWidth = ultraCompact ? 0 : compact ? Math.max(96, Math.min(132, totalWidth * 0.32)) : LABEL_WIDTH;
+  const valueBoxWidth = ultraCompact ? 0 : compact ? 58 : VALUE_BOX_WIDTH;
+  const trackLeft = ultraCompact
+    ? 12
+    : ROW_PADDING_X + iconSize + (compact ? 0 : ICON_TO_LABEL_GAP) + labelWidth + LABEL_TO_TRACK_GAP;
+  const trackRight = ultraCompact
+    ? totalWidth - 12
+    : totalWidth - ROW_PADDING_X - valueBoxWidth - VALUE_BOX_GAP;
   const trackWidth = Math.max(30, trackRight - trackLeft);
 
   const hitArea = scene.add
@@ -137,7 +142,11 @@ export function createMusicSliderControl(
     }
 
     // ----- Label -----
-    labelText.setPosition(originX + ROW_PADDING_X + iconSize + (compact ? 0 : ICON_TO_LABEL_GAP), rowCenterY - 9);
+    labelText.setPosition(
+      originX + (ultraCompact ? 12 : ROW_PADDING_X + iconSize + (compact ? 0 : ICON_TO_LABEL_GAP)),
+      ultraCompact ? originY + 5 : rowCenterY - 9
+    );
+    labelText.setFontSize(ultraCompact ? '10px' : '15px');
 
     // ----- Track backing -----
     trackBackground.clear();
@@ -178,14 +187,18 @@ export function createMusicSliderControl(
 
     // ----- Value capsule -----
     valueBox.clear();
-    const vbx = originX + totalWidth - ROW_PADDING_X - valueBoxWidth;
-    const vby = rowCenterY - VALUE_BOX_HEIGHT / 2;
-    valueBox.fillStyle(COLOR_ICON_BG, 0.82);
-    valueBox.fillRoundedRect(vbx, vby, valueBoxWidth, VALUE_BOX_HEIGHT, 6);
-    valueBox.lineStyle(1, COLOR_PILL_STROKE, 0.85);
-    valueBox.strokeRoundedRect(vbx, vby, valueBoxWidth, VALUE_BOX_HEIGHT, 6);
+    const vbx = ultraCompact ? originX + totalWidth - 12 : originX + totalWidth - ROW_PADDING_X - valueBoxWidth;
+    const vby = ultraCompact ? originY + 10 : rowCenterY - VALUE_BOX_HEIGHT / 2;
+    if (!ultraCompact) {
+      valueBox.fillStyle(COLOR_ICON_BG, 0.82);
+      valueBox.fillRoundedRect(vbx, vby, valueBoxWidth, VALUE_BOX_HEIGHT, 6);
+      valueBox.lineStyle(1, COLOR_PILL_STROKE, 0.85);
+      valueBox.strokeRoundedRect(vbx, vby, valueBoxWidth, VALUE_BOX_HEIGHT, 6);
+    }
 
-    valueText.setPosition(vbx + valueBoxWidth / 2, vby + VALUE_BOX_HEIGHT / 2);
+    valueText.setOrigin(ultraCompact ? 1 : 0.5, 0.5);
+    valueText.setPosition(ultraCompact ? vbx : vbx + valueBoxWidth / 2, ultraCompact ? vby : vby + VALUE_BOX_HEIGHT / 2);
+    valueText.setFontSize(ultraCompact ? '10px' : '13px');
     valueText.setText(formatValue(value));
 
     // Hit zone spans the track
