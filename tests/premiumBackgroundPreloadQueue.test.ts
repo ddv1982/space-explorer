@@ -8,7 +8,16 @@ import {
   getStartupPremiumBackgroundPreloadQueue,
 } from '../src/systems/parallax/premiumBackgroundManifest';
 
-const LEVEL_LAYER_SUFFIXES = ['', '_nebula', '_mid', '_near', '_overlay', '_composite'];
+const LEVEL_LAYER_SUFFIXES = [
+  '',
+  '_nebula',
+  '_mid',
+  '_near',
+  '_overlay',
+  '_composite',
+  '_motif',
+  '_atmosphere',
+];
 
 function levelKeys(...levelNumbers: number[]): string[] {
   return levelNumbers.flatMap((levelNumber) => {
@@ -50,8 +59,8 @@ describe('premium background preload queues', () => {
   test('full campaign queue still lists all ten background sets', () => {
     const all = getAllPremiumBackgroundPreloadQueue();
 
-    expect(all).toHaveLength(60);
+    expect(all).toHaveLength(80);
     expect(all[0]).toBe('bg_level01');
-    expect(all[59]).toBe('bg_level10_composite');
+    expect(all[79]).toBe('bg_level10_atmosphere');
   });
 });

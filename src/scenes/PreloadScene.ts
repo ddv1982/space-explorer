@@ -8,6 +8,7 @@ export class PreloadScene extends Phaser.Scene {
   private menuTransitionStarted = false;
   private cleanupLoaderProgress?: () => void;
   private fontsReady: Promise<unknown> | null = null;
+  private lifecycleGeneration = 0;
 
   constructor() {
     super({ key: 'Preload' });
@@ -17,6 +18,7 @@ export class PreloadScene extends Phaser.Scene {
     // Defensive cleanup also covers an interrupted run that is re-initialized
     // without the normal shutdown notification.
     this.cleanupLoaderProgress?.();
+    this.lifecycleGeneration += 1;
     this.menuTransitionStarted = false;
     this.cleanupLoaderProgress = undefined;
     this.fontsReady = null;
@@ -81,6 +83,14 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     this.menuTransitionStarted = true;
+    const lifecycleGeneration = this.lifecycleGeneration;
+    const invalidateLifecycle = (): void => {
+      if (this.lifecycleGeneration === lifecycleGeneration) {
+        this.lifecycleGeneration += 1;
+      }
+    };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, invalidateLifecycle);
+    this.events.once(Phaser.Scenes.Events.DESTROY, invalidateLifecycle);
 
     // Hold the transition briefly for the bundled UI faces so menus never
     // flash fallback fonts; the timeout keeps us moving if loading stalls.
@@ -91,7 +101,7 @@ export class PreloadScene extends Phaser.Scene {
 
     let advanced = false;
     const advance = (): void => {
-      if (advanced) {
+      if (advanced || this.lifecycleGeneration !== lifecycleGeneration) {
         return;
       }
       advanced = true;

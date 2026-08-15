@@ -48,7 +48,7 @@ Per-level identity: each level keeps its `accentColor` / `nebulaColor` from the 
 
 ## Backgrounds
 
-Per level, five procedurally generated tile layers (vertically seamless), replacing the old PNG backplate:
+Per level, five procedurally generated authoring layers (vertically seamless) replace the old PNG backplate:
 
 1. `far` — deep vertical gradient (navy → black), sparse dim stars. Opaque.
 2. `nebula` — large soft radial glow blobs in the level's `nebulaColor`, weighted to edges.
@@ -56,11 +56,13 @@ Per level, five procedurally generated tile layers (vertically seamless), replac
 4. `near` — rare dark silhouette flecks near edges. Transparent.
 5. `overlay` — tiny bright motes, additive blend, very sparse.
 
-Rules: center 45–55% of the lane stays under ~20% luminance; scroll speeds increase far → overlay; layers are generated per level window and released outside it (existing window logic). The procedural starfield/twinkle/debris/planet extras remain as enhancement layers.
+At generation time those five canvases are collapsed into three bounded runtime planes: `deep` (`far + nebula`), `motif` (`mid + near`), and additive `atmosphere` (`overlay`). Each plane retains independent vertical speed, alpha response, pulse, and subtle horizontal drift. The low quality tier omits the atmosphere plane; standard/high retain all three.
+
+Rules: center 45–55% of the lane stays under ~20% luminance; scroll speeds increase deep → atmosphere; textures are generated per level window and released outside it (existing window logic). The procedural starfield/twinkle/debris/planet extras remain as enhancement layers.
 
 ## VFX
 
-- Explosions: white-hot flash → expanding neon ring → line-burst sparks → shard debris (additive).
+- Explosions: white-hot flash → expanding neon ring → line-burst sparks → shard debris (additive). Enemy classes apply their own palette and shockwave aspect (wide dodger, tall lancer/diver, heavy bomber, yellow swarm) without changing particle budgets.
 - Muzzle flash: four-point star flare. Exhaust: soft glow orbs. Bullet trails: small glow dots.
 - Hit splash: sharp cross flare. Power-up burst: halo ring + sparks in pickup color.
 - Warp transition: vertical speed-line streaks in cyan/white.
@@ -69,20 +71,23 @@ Rules: center 45–55% of the lane stays under ~20% luminance; scroll speeds inc
 
 - Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles.
 - Typography: bundled display font (Orbitron) with system fallback stack; mono for numeric readouts.
+- Gameplay hierarchy: `HULL` and `RES` anchor the left status cluster, score/sector anchor the right, and the center `FLIGHT VECTOR` is a ten-segment continuous progress readout. The compact layout moves progress to the lower edge of the panel to avoid overlap at phone widths.
 - Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planet bodies are the authored raster portraits (exception below), framed by the existing neon halo, orbit, route, and satellite chrome.
 
 ## Planet arrival portraits (approved raster exception)
 
 Approved 2026-08 as a scoped exception to the procedural-only rule. The ten planet-intermission hero worlds are committed authored raster assets, replacing the retired runtime-generated vector disc:
 
-- **Assets**: `public/assets/planets/planet-01.webp` … `planet-10.webp` — 512×512 RGBA WebP, transparent background, ~18 kB each (~175 kB total). One painterly world per campaign level: teal aurora gas giant with thin ring, luminous ocean world, volcanic fracture world, industrial machine world, violet reef-ocean world, shattered fortress with debris, pale cathedral moon, eclipsed black planet, ochre hive world, singularity engine with accretion ring.
+- **Assets**: `public/assets/planets/planet-01.webp` … `planet-10.webp` — 1024×1024 RGBA WebP, transparent background. One painterly world per campaign level: teal aurora gas giant with thin ring, luminous ocean world, volcanic fracture world, industrial machine world, violet reef-ocean world, shattered fortress with debris, pale cathedral moon, eclipsed black planet, ochre hive world, singularity engine with accretion ring.
 - **Look**: painterly/textural surface detail, realistic spherical lighting, soft terminators, limb shading, atmospheric glow, and world-specific features baked in — deliberately not SVG-like, contrasting the surrounding neon vector chrome which stays procedural.
 - **Authoring**: rendered offline and deterministically by `scripts/generatePlanetPortraits.ts` (seeded value-noise surfaces; no runtime cost, no `Math.random`, no wall-clock input). Regenerate only with explicit art-direction sign-off; the committed WebPs are the source of truth at runtime.
 - **Loading**: queued during the boot preload (`queueAllPlanetPortraits`) and re-queued by the intermission scene's own preload when the texture is not cached (direct/dev starts, restarts after release). The displayed texture is released from the cache on intermission shutdown, matching the previous generated-texture lifecycle.
-- **Composition**: each portrait shares the retired disc's 512 px frame and planet radius, so halo, orbit tilt, satellites, route line, labels, animations, responsive layouts, and reduced-motion behavior are unchanged.
+- **Composition**: each portrait doubles the retired disc's source frame and planet radius while preserving its normalized composition, so halo, orbit tilt, satellites, route line, labels, animations, responsive layouts, and reduced-motion behavior are unchanged.
 
 ## Performance Rules
 
+- Entity, projectile, pickup, and particle textures are density-supersampled while retaining their authored logical frame metadata. Standard uses 2× entity/particle sources; high uses 3× entities and 2× particles; low remains 1×. This must never change sprite display dimensions or Arcade Physics bodies.
+- Players select low, standard, or high quality from the main menu. The device-level choice is persisted locally and reloads the game so all generated textures and background layers use one consistent profile; standard is the safe default when no valid preference is available.
 - Additive glow is expensive: cap simultaneous ADD-blend layers, keep halos inside texture canvases, prefer texture-baked glow over runtime filters for pooled objects.
-- Camera glow filter stays subtle (existing baseline). Per-object glow filters are reserved for the player, bosses, and telegraphs.
+- Camera glow filter stays subtle (existing baseline). Per-object glow filters are reserved for the player and telegraphs; bosses use non-physical pooled shape rigs for cores, hardpoints, aura, shield, and guard-break state.
 - Generated textures are power-of-two where practical and reused via stable keys.

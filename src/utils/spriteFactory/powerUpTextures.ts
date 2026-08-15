@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { withGeneratedTexture } from '../generatedTexture';
+import { withGeneratedEntityTexture } from '../generatedTexture';
 import { fillHotCore, strokeNeonLine, type NeonPalette } from './neonStyle';
 
 const POWERUP_PALETTES = {
@@ -23,7 +23,7 @@ function drawPowerUpCapsule(g: Phaser.GameObjects.Graphics, palette: NeonPalette
 }
 
 export function ensurePowerUpTextures(scene: Phaser.Scene): void {
-  withGeneratedTexture(scene, 'powerup-health', 20, 20, (g) => {
+  withGeneratedEntityTexture(scene, 'powerup-health', 20, 20, (g) => {
     const palette = POWERUP_PALETTES.health;
     drawPowerUpCapsule(g, palette);
 
@@ -33,7 +33,7 @@ export function ensurePowerUpTextures(scene: Phaser.Scene): void {
     fillHotCore(g, 10, 10, 1.4, palette.hot);
   });
 
-  withGeneratedTexture(scene, 'powerup-shield', 20, 20, (g) => {
+  withGeneratedEntityTexture(scene, 'powerup-shield', 20, 20, (g) => {
     const palette = POWERUP_PALETTES.shield;
     drawPowerUpCapsule(g, palette);
 
@@ -54,7 +54,7 @@ export function ensurePowerUpTextures(scene: Phaser.Scene): void {
     fillHotCore(g, 10, 9, 1.4, palette.hot);
   });
 
-  withGeneratedTexture(scene, 'powerup-rapidfire', 20, 20, (g) => {
+  withGeneratedEntityTexture(scene, 'powerup-rapidfire', 20, 20, (g) => {
     const palette = POWERUP_PALETTES.rapidfire;
     drawPowerUpCapsule(g, palette);
 

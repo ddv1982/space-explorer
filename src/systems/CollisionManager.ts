@@ -421,7 +421,7 @@ export class CollisionManager {
 
   private onEnemyHit(enemy: EnemyBase): void {
     if (!enemy.active) {
-      this.effectsManager.createExplosion(enemy.x, enemy.y, 1.0);
+      this.effectsManager.createEnemyExplosion(enemy.x, enemy.y, enemy.enemyType, 1.0);
     } else {
       this.effectsManager.createSparkBurst(enemy.x, enemy.y);
       this.effectsManager.createHitSplash(enemy.x, enemy.y);

@@ -24,6 +24,7 @@ mock.module('phaser', () => ({
 
 const { WaveManager } = await import('../src/systems/WaveManager');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
+const { runGameSceneUpdateFrame } = await import('../src/scenes/gameScene/updateFrame');
 
 type FakeSpawner = {
   resetCorridorGapCenter: () => void;
@@ -195,7 +196,7 @@ describe('WaveManager', () => {
     const levelConfig = createLevelConfig();
     const harness = createWaveManagerHarness(levelConfig);
 
-    harness.manager.update(2500, 16, 0.4);
+    harness.manager.update(2500, 2500, 0.4);
 
     expect(harness.returnedAsteroidGroup as unknown).toBe(harness.asteroidGroup);
     expect(harness.spawnerCalls.resetCorridorGapCenter).toBe(0);
@@ -238,8 +239,8 @@ describe('WaveManager', () => {
     });
     const harness = createWaveManagerHarness(levelConfig);
 
-    harness.manager.update(0, 16, 0.2);
-    harness.manager.update(600, 16, 0.2);
+    harness.manager.update(0, 0, 0.2);
+    harness.manager.update(600, 600, 0.2);
 
     expect(harness.spawnerCalls.spawnMirroredAsteroids).toEqual([
       {
@@ -272,8 +273,8 @@ describe('WaveManager', () => {
       spawnLaserLattice: (intensity: number) => beamCalls.push({ kind: 'laser-lattice', intensity }),
     } as never);
 
-    harness.manager.update(0, 16, 0.2);
-    harness.manager.update(500, 16, 0.2);
+    harness.manager.update(0, 0, 0.2);
+    harness.manager.update(500, 500, 0.2);
 
     expect(beamCalls).toEqual([
       { kind: 'solar-flare', intensity: 0.6 },
@@ -285,7 +286,7 @@ describe('WaveManager', () => {
     const activeSection = createSection({
       id: 'wormhole-section',
       hazardEvents: [
-        { type: 'wormhole-spawn', intensity: 0.5, cadenceMs: 500, enemyTypes: ['dodger'] },
+        { type: 'wormhole-spawn', intensity: 0.5, cadenceMs: 500, durationMs: 600, enemyTypes: ['dodger'] },
       ],
       enemyFocus: [
         { type: 'scout', weight: 1 },
@@ -298,8 +299,8 @@ describe('WaveManager', () => {
     });
     const harness = createWaveManagerHarness(levelConfig);
 
-    harness.manager.update(0, 16, 0.2);
-    harness.manager.update(600, 16, 0.2);
+    harness.manager.update(0, 0, 0.2);
+    harness.manager.update(600, 600, 0.2);
 
     expect(harness.emittedEvents).toEqual([
       `${GAME_SCENE_EVENTS.wormholeTelegraph}:160`,
@@ -334,8 +335,8 @@ describe('WaveManager', () => {
       sections: [wormholeSection, nextSection],
     }));
 
-    harness.manager.update(0, 16, 0.2);
-    harness.manager.update(600, 16, 0.2);
+    harness.manager.update(0, 0, 0.2);
+    harness.manager.update(600, 600, 0.2);
     harness.manager.update(1200, 600, 0.8);
 
     expect(harness.spawnedEnemies).toEqual([]);
@@ -347,8 +348,8 @@ describe('WaveManager', () => {
     });
     const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection] }));
 
-    harness.manager.update(0, 16, 0.2);
-    harness.manager.update(600, 16, 0.2);
+    harness.manager.update(0, 0, 0.2);
+    harness.manager.update(600, 600, 0.2);
     harness.manager.applyDeathRelief();
     harness.manager.update(600, 600, 0.2);
 
@@ -487,6 +488,47 @@ describe('WaveManager', () => {
     ]);
   });
 
+  test('encounter and hazard cadence receive only accumulated gameplay time across pause', () => {
+    const activeSection = createSection({
+      hazardEvents: [{ type: 'ambient-asteroids', cadenceMs: 500, durationMs: 1200 }],
+    });
+    const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection] }));
+    let paused = false;
+    const delegate = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => paused,
+      updatePausedFrame: () => {},
+      updateGameplayFrame: (time: number, delta: number) => harness.manager.update(time, delta, 0.2),
+      updateHud: () => {},
+    };
+
+    runGameSceneUpdateFrame(delegate, 0, 0);
+    runGameSceneUpdateFrame(delegate, 400, 400);
+    paused = true;
+    runGameSceneUpdateFrame(delegate, 50_000, 49_600);
+    paused = false;
+    runGameSceneUpdateFrame(delegate, 50_100, 100);
+
+    expect(harness.spawnerCalls.spawnAsteroidBurst).toEqual([]);
+    expect(harness.spawnedEnemies).toEqual([]);
+
+    runGameSceneUpdateFrame(delegate, 50_101, 1);
+    expect(harness.spawnerCalls.spawnAsteroidBurst).toHaveLength(1);
+
+    runGameSceneUpdateFrame(delegate, 50_601, 500);
+    expect(harness.spawnerCalls.spawnAsteroidBurst).toHaveLength(1);
+    runGameSceneUpdateFrame(delegate, 50_602, 1);
+    expect(harness.spawnerCalls.spawnAsteroidBurst).toHaveLength(2);
+
+    // The duration window also excludes paused wall time, then closes on gameplay time.
+    runGameSceneUpdateFrame(delegate, 50_802, 200);
+    runGameSceneUpdateFrame(delegate, 51_303, 501);
+    expect(harness.spawnerCalls.spawnAsteroidBurst).toHaveLength(2);
+    expect(harness.spawnerCalls.spawnAsteroids.map((call) => call.time)).toEqual([
+      0, 400, 500, 501, 1001, 1002, 1202, 1703,
+    ]);
+  });
+
   test('updateBossAdds trickles scout lines on the configured interval when the level enables them', () => {
     const harness = createWaveManagerHarness(createLevelConfig({ bossAddWaves: true }));
 
@@ -497,10 +539,10 @@ describe('WaveManager', () => {
       { type: 'scout', x: 164, y: -50 },
     ]);
 
-    harness.manager.updateBossAdds(20000);
+    harness.manager.updateBossAdds(7000);
     expect(harness.spawnedEnemies).toHaveLength(3);
 
-    harness.manager.updateBossAdds(26000);
+    harness.manager.updateBossAdds(6000);
     expect(harness.spawnedEnemies).toHaveLength(6);
   });
 

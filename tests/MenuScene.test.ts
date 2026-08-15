@@ -26,6 +26,9 @@ mock.module('../src/scenes/sceneRegistry', () => ({
 mock.module('../src/systems/PlayerState', () => ({
   getPlayerMaxHp: mock(() => 5),
   getPlayerState: () => ({ level: currentLevel }),
+  normalizePersistedPlayerState: (value: unknown) => value,
+  normalizePersistedScore: (value: unknown, fallback: number) =>
+    typeof value === 'number' ? value : fallback,
   resetPlayerState: mock(),
   resetRunSummary: mock(),
   setPlayerState: mock(),
@@ -36,6 +39,60 @@ const { MenuScene } = await import('../src/scenes/MenuScene');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
 describe('MenuScene', () => {
+  test('selecting the active visual quality is a no-op', () => {
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
+    const persistVisualQualityTier = mock(() => true);
+    const reloadForVisualQualityChange = mock(() => undefined);
+    const playMenuClick = mock(() => undefined);
+    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'standard';
+    (scene as unknown as Record<string, unknown>).persistVisualQualityTier = persistVisualQualityTier;
+    (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = reloadForVisualQualityChange;
+    (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
+
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void })
+      .selectVisualQualityTier('standard');
+
+    expect(playMenuClick).not.toHaveBeenCalled();
+    expect(persistVisualQualityTier).not.toHaveBeenCalled();
+    expect(reloadForVisualQualityChange).not.toHaveBeenCalled();
+  });
+
+  test('persists a changed visual quality before reloading', () => {
+    const events: string[] = [];
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
+    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'standard';
+    (scene as unknown as Record<string, unknown>).playMenuClick = () => events.push('click');
+    (scene as unknown as Record<string, unknown>).persistVisualQualityTier = (tier: string) => {
+      events.push(`persist:${tier}`);
+      return true;
+    };
+    (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = () => events.push('reload');
+
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void })
+      .selectVisualQualityTier('high');
+
+    expect(events).toEqual(['click', 'persist:high', 'reload']);
+  });
+
+  test('reports a storage failure without reloading', () => {
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
+    const showSaveSlotError = mock(() => undefined);
+    const reloadForVisualQualityChange = mock(() => undefined);
+    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'standard';
+    (scene as unknown as Record<string, unknown>).playMenuClick = (): void => {};
+    (scene as unknown as Record<string, unknown>).persistVisualQualityTier = () => false;
+    (scene as unknown as Record<string, unknown>).showSaveSlotError = showSaveSlotError;
+    (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = reloadForVisualQualityChange;
+
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void })
+      .selectVisualQualityTier('low');
+
+    expect(showSaveSlotError).toHaveBeenCalledWith(
+      'Unable to save visual quality in this browser context.'
+    );
+    expect(reloadForVisualQualityChange).not.toHaveBeenCalled();
+  });
+
   test('waits for the saved level premium background window before starting Game', () => {
     currentLevel = 7;
     ensurePremiumBackgroundAssets.mockClear();

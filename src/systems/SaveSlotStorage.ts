@@ -1,10 +1,9 @@
 import { getLevelConfig, getTotalLevels } from '../config/LevelsConfig';
 import type {
-  PersistentHelperWingSlotState,
-  PersistentHelperWingState,
   PlayerStateData,
   RunSummaryData,
 } from './PlayerState';
+import { normalizePersistedPlayerState, normalizePersistedScore } from './PlayerState';
 
 export const SAVE_SLOT_STORAGE_KEY = 'space-explorer.saveSlots.v1';
 const SAVE_SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
@@ -42,7 +41,6 @@ export interface SaveSlotViewModel {
 }
 
 const SAVE_SLOTS_VERSION = 1 as const;
-const MAX_HELPER_WING_SAVE_SLOTS = 4;
 
 function getDefaultEnvelope(): SaveSlotsEnvelopeV1 {
   return {
@@ -59,48 +57,8 @@ function isSaveSlotId(value: unknown): value is SaveSlotId {
   return typeof value === 'string' && SAVE_SLOT_IDS.includes(value as SaveSlotId);
 }
 
-function normalizeHelperWingSlotState(slot: unknown): PersistentHelperWingSlotState {
-  if (!isObjectRecord(slot)) {
-    return { remainingLives: 0, hp: 0 };
-  }
-
-  const remainingLives =
-    typeof slot.remainingLives === 'number' ? Math.max(0, Math.floor(slot.remainingLives)) : 0;
-  const hp = typeof slot.hp === 'number' ? Math.max(0, Math.round(slot.hp)) : 0;
-
-  return { remainingLives, hp };
-}
-
-function normalizeHelperWingState(value: unknown): PersistentHelperWingState {
-  if (!isObjectRecord(value)) {
-    return { slots: [], grantedSlots: 0 };
-  }
-
-  const slotsInput = Array.isArray(value.slots) ? value.slots.slice(0, MAX_HELPER_WING_SAVE_SLOTS) : [];
-  const normalizedSlots = slotsInput.map((slot) => normalizeHelperWingSlotState(slot));
-  const rawGrantedSlots =
-    typeof value.grantedSlots === 'number'
-      ? Math.min(MAX_HELPER_WING_SAVE_SLOTS, Math.max(0, Math.floor(value.grantedSlots)))
-      : normalizedSlots.length;
-  const grantedSlots = Math.min(MAX_HELPER_WING_SAVE_SLOTS, Math.max(rawGrantedSlots, normalizedSlots.length));
-  const slots = normalizedSlots.slice(0, grantedSlots);
-
-  while (slots.length < grantedSlots) {
-    slots.push({ remainingLives: 0, hp: 0 });
-  }
-
-  return {
-    slots,
-    grantedSlots,
-  };
-}
-
 function normalizeFiniteNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function normalizeNonNegativeInteger(value: unknown, fallback: number): number {
-  return Math.max(0, Math.floor(normalizeFiniteNumber(value, fallback)));
 }
 
 function normalizePositiveInteger(value: unknown, fallback: number): number {
@@ -128,25 +86,10 @@ function normalizePlayerStateData(value: unknown): PlayerStateData | null {
     return null;
   }
 
-  const upgrades = {
-    hp: normalizeNonNegativeInteger(value.upgrades.hp, 0),
-    damage: normalizeNonNegativeInteger(value.upgrades.damage, 0),
-    fireRate: normalizeNonNegativeInteger(value.upgrades.fireRate, 0),
-    shield: normalizeNonNegativeInteger(value.upgrades.shield, 0),
-    turrets: normalizeNonNegativeInteger(value.upgrades.turrets, 0),
-  };
-  const maxShields = Math.max(0, upgrades.shield);
-  const rawCurrentShields = normalizeFiniteNumber(value.currentShields, maxShields);
-
-  return {
+  return normalizePersistedPlayerState({
+    ...value,
     level: normalizeKnownLevel(value.level, 1),
-    score: normalizeFiniteNumber(value.score, 0),
-    currentHp: normalizeFiniteNumber(value.currentHp, 5),
-    currentShields: Math.max(0, Math.min(Math.floor(rawCurrentShields), maxShields)),
-    remainingLives: normalizeNonNegativeInteger(value.remainingLives, 3),
-    upgrades,
-    helperWing: normalizeHelperWingState(value.helperWing),
-  };
+  });
 }
 
 function normalizeRunSummaryData(value: unknown, fallbackLevel: number, fallbackScore: number): RunSummaryData {
@@ -158,7 +101,7 @@ function normalizeRunSummaryData(value: unknown, fallbackLevel: number, fallback
   }
 
   return {
-    finalScore: typeof value.finalScore === 'number' ? value.finalScore : fallbackScore,
+    finalScore: normalizePersistedScore(value.finalScore, fallbackScore),
     levelReached: normalizeKnownLevel(value.levelReached, fallbackLevel),
   };
 }

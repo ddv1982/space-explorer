@@ -58,4 +58,25 @@ describe('runGameSceneUpdateFrame', () => {
       'updateHud',
     ]);
   });
+
+  test('preserves the scene-time contract after a paused wall-clock jump', () => {
+    const calls: string[] = [];
+    let paused = false;
+    const delegate: GameSceneFrameDelegate = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => paused,
+      updatePausedFrame: () => {},
+      updateGameplayFrame: (time, delta) => calls.push(`${time}:${delta}`),
+      updateHud: () => {},
+    };
+
+    runGameSceneUpdateFrame(delegate, 100, 40);
+    paused = true;
+    runGameSceneUpdateFrame(delegate, 50_000, 49_900);
+    paused = false;
+    runGameSceneUpdateFrame(delegate, 50_020, 20);
+    runGameSceneUpdateFrame(delegate, 50_050, 30);
+
+    expect(calls).toEqual(['100:40', '50020:20', '50050:30']);
+  });
 });

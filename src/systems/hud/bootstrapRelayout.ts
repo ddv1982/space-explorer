@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { UI_FONT_MONO } from '../../utils/uiFonts';
-import { getLayoutMetrics, SURGE_BAR_HEIGHT } from './statusBarLayout';
+import { getLayoutMetrics, HP_BAR_TRACK_OFFSET, SURGE_BAR_HEIGHT } from './statusBarLayout';
 
 interface CreateHudWidgetsParams {
   scene: Phaser.Scene;
@@ -22,6 +22,7 @@ interface HudWidgets {
   levelText: Phaser.GameObjects.Text;
   progressBg: Phaser.GameObjects.Graphics;
   progressFill: Phaser.GameObjects.Graphics;
+  progressLabel: Phaser.GameObjects.Text;
   bossBarBg: Phaser.GameObjects.Graphics;
   bossBarFill: Phaser.GameObjects.Graphics;
   bossNameText: Phaser.GameObjects.Text;
@@ -35,9 +36,9 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
   const topBarPanel = scene.add.graphics().setDepth(99);
   const hpBarBg = scene.add.graphics().setDepth(100);
   const hpBarFill = scene.add.graphics().setDepth(101);
-  const hpLabel = scene.add.text(0, 0, 'HP', labelStyle).setDepth(100);
+  const hpLabel = scene.add.text(0, 0, 'HULL', labelStyle).setDepth(100);
   const hpText = scene.add.text(0, 0, '', valueStyle).setDepth(100);
-  const livesLabel = scene.add.text(0, 0, 'LIVES', labelStyle).setDepth(100);
+  const livesLabel = scene.add.text(0, 0, 'RES', labelStyle).setDepth(100);
   const livesText = scene.add
     .text(0, 0, '', {
       fontSize: '14px',
@@ -90,6 +91,18 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
 
   const progressBg = scene.add.graphics().setDepth(100);
   const progressFill = scene.add.graphics().setDepth(101);
+  const progressLabel = scene.add
+    .text(0, 0, 'FLIGHT VECTOR', {
+      fontSize: '9px',
+      color: sectorColor,
+      fontFamily: UI_FONT_MONO,
+      fontStyle: 'bold',
+      stroke: '#040b12',
+      strokeThickness: 2,
+    })
+    .setOrigin(0.5, 0)
+    .setDepth(100);
+  progressLabel.setLetterSpacing(1.4);
   const announcementText = scene.add
     .text(0, 0, '', {
       fontSize: '28px',
@@ -147,6 +160,7 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
     levelText,
     progressBg,
     progressFill,
+    progressLabel,
     announcementText,
     bossBarBg,
     bossBarFill,
@@ -172,6 +186,7 @@ interface RelayoutHudWidgetsParams {
   sectorText: Phaser.GameObjects.Text;
   levelText: Phaser.GameObjects.Text;
   progressBg: Phaser.GameObjects.Graphics;
+  progressLabel: Phaser.GameObjects.Text;
   announcementText: Phaser.GameObjects.Text;
   bossNameText: Phaser.GameObjects.Text;
   chainText: Phaser.GameObjects.Text;
@@ -200,6 +215,7 @@ export function relayoutHudWidgets({
   sectorText,
   levelText,
   progressBg,
+  progressLabel,
   announcementText,
   bossNameText,
   chainText,
@@ -216,17 +232,31 @@ export function relayoutHudWidgets({
 
   topBarPanel.clear();
   topBarPanel.fillStyle(0x030915, 0.58);
-  topBarPanel.fillRoundedRect(layout.left + 10, layout.top + 6, layout.topBarWidth, 60, 10);
+  topBarPanel.fillRoundedRect(layout.left + 10, layout.top + 6, layout.topBarWidth, layout.topBarHeight, 10);
+  topBarPanel.fillStyle(panelStrokeColor, 0.08);
+  topBarPanel.fillRect(layout.left + 18, layout.top + 10, layout.topBarWidth - 16, 1);
   topBarPanel.lineStyle(1, panelStrokeColor, 0.34);
-  topBarPanel.strokeRoundedRect(layout.left + 10, layout.top + 6, layout.topBarWidth, 60, 10);
+  topBarPanel.strokeRoundedRect(layout.left + 10, layout.top + 6, layout.topBarWidth, layout.topBarHeight, 10);
 
   hpLabel.setPosition(layout.hpBarX, layout.hpBarY - 2);
 
   hpBarBg.clear();
   hpBarBg.fillStyle(0x091521, 0.92);
-  hpBarBg.fillRoundedRect(layout.hpBarX + 22, layout.hpBarY, layout.hpBarWidth - 22, hpBarHeight, 3);
+  hpBarBg.fillRoundedRect(
+    layout.hpBarX + HP_BAR_TRACK_OFFSET,
+    layout.hpBarY,
+    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
+    hpBarHeight,
+    3
+  );
   hpBarBg.lineStyle(1, hpBorderColor, 0.35);
-  hpBarBg.strokeRoundedRect(layout.hpBarX + 22, layout.hpBarY, layout.hpBarWidth - 22, hpBarHeight, 3);
+  hpBarBg.strokeRoundedRect(
+    layout.hpBarX + HP_BAR_TRACK_OFFSET,
+    layout.hpBarY,
+    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
+    hpBarHeight,
+    3
+  );
 
   hpText.setPosition(layout.hpBarX + layout.hpBarWidth + 6, layout.hpBarY);
   livesLabel.setPosition(layout.hpBarX + layout.hpBarWidth + 6, layout.hpBarY + 24);
@@ -239,15 +269,30 @@ export function relayoutHudWidgets({
 
   surgeBg.clear();
   surgeBg.fillStyle(0x08141f, 0.82);
-  surgeBg.fillRect(layout.hpBarX + 22, layout.hpBarY + hpBarHeight + 5, layout.hpBarWidth - 22, SURGE_BAR_HEIGHT);
+  surgeBg.fillRect(
+    layout.hpBarX + HP_BAR_TRACK_OFFSET,
+    layout.hpBarY + hpBarHeight + 5,
+    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
+    SURGE_BAR_HEIGHT
+  );
   surgeBg.lineStyle(1, progressBorderColor, 0.3);
-  surgeBg.strokeRect(layout.hpBarX + 22, layout.hpBarY + hpBarHeight + 5, layout.hpBarWidth - 22, SURGE_BAR_HEIGHT);
+  surgeBg.strokeRect(
+    layout.hpBarX + HP_BAR_TRACK_OFFSET,
+    layout.hpBarY + hpBarHeight + 5,
+    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
+    SURGE_BAR_HEIGHT
+  );
 
   progressBg.clear();
   progressBg.fillStyle(0x08141f, 0.82);
   progressBg.fillRect(layout.progressX, layout.progressY, layout.progressWidth, progressHeight);
   progressBg.lineStyle(1, progressBorderColor, 0.36);
   progressBg.strokeRect(layout.progressX, layout.progressY, layout.progressWidth, progressHeight);
+  for (let index = 1; index < 10; index += 1) {
+    progressBg.fillStyle(progressBorderColor, 0.2);
+    progressBg.fillRect(layout.progressX + layout.progressWidth * (index / 10), layout.progressY, 1, progressHeight);
+  }
+  progressLabel.setPosition(layout.centerX, layout.progressLabelY);
 
   announcementText.setPosition(layout.centerX, layout.announcementY);
   if (announcementTween && announcementText.alpha > 0) {

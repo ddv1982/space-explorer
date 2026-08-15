@@ -131,6 +131,12 @@ export function getUpgradeByKey(key: UpgradeKey): UpgradeDef {
   return upgrade;
 }
 
+/** Clamp an untrusted persisted upgrade tier to its authored configuration. */
+export function normalizeUpgradeLevel(key: UpgradeKey, value: unknown, fallback = 0): number {
+  const finiteValue = typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  return Math.min(getUpgradeByKey(key).maxLevel, Math.max(0, Math.floor(finiteValue)));
+}
+
 export function getUpgradeProgressionLimit(upgrade: UpgradeDef, playerLevel: number): number {
   const cappedLevel = Math.max(1, playerLevel);
   const configuredCap = upgrade.progressionCaps[cappedLevel - 1] ?? upgrade.progressionCaps[upgrade.progressionCaps.length - 1];

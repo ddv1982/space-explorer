@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-08-15
+
+### Added
+- Added persistent Low, Standard, and High visual-quality controls to the main menu, with safe local-storage fallback and a clean reload boundary for generated assets.
+- Added supersampled entity and particle textures that preserve authored display dimensions and Arcade Physics geometry.
+- Added independent deep, motif, and atmosphere background planes with quality-aware layer counts, horizontal drift, and per-level motion.
+- Added non-physical boss aura, shield, command-core, and hardpoint rigs for stronger phase and Guard Break readability.
+
+### Changed
+- Rebuilt all ten planet-arrival portraits at 1024×1024 with richer surface detail while retaining responsive composition and lifecycle ownership.
+- Expanded impact, projectile, exhaust, and boss effects while keeping particle pressure bounded by the selected quality profile.
+- Refined the top HUD presentation and separated the HULL label from its meter for cleaner readability.
+
+### Fixed
+- Froze wave, hazard, enemy-cycle, and Guard Break schedules across physics-only pauses so telegraphs and attack windows cannot collapse or expire during pause.
+- Guarded preload completion against stale font promises and timeout callbacks across shutdown and restart.
+- Bounded persisted upgrades, scores, health, shields, lives, and helper resources to configured safe limits.
+- Prevented duplicate portrait loads, retained cached portraits through resize restarts, and reduced resize settling to one premium visual rebuild.
+
+### Quality
+- Added focused regression coverage for generated-texture density, quality persistence, responsive menu selection, pause-safe clocks, preload ownership, save normalization, portrait deduplication, resize orchestration, and HUD spacing.
+- Passed both TypeScript compilers, lint, unit tests, desktop/mobile functional and visual browser gates, performance evidence, level validation, Knip, production build, and bundle budgets.
+
 ## [1.5.1] - 2026-08-04
 
 ### Changed

@@ -1,5 +1,49 @@
 import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
 
+test('visual quality is selectable, responsive, and persists without a URL setting', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(120_000);
+  const viewports = [
+    { width: 1280, height: 720 },
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+  ];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await openMenu(page);
+    const menu = await snapshot(page);
+    const qualityLabel = menu.texts.find((item) => item.text === 'QUALITY: STANDARD');
+    const highButton = menu.texts.find((item) => item.text === 'HIGH');
+    expect(qualityLabel).toBeDefined();
+    expect(highButton).toBeDefined();
+    expect(highButton?.x).toBeGreaterThan(0);
+    expect(highButton?.x).toBeLessThan(viewport.width);
+    expect(highButton?.y).toBeGreaterThan(0);
+    expect(highButton?.y).toBeLessThan(viewport.height);
+
+    await Promise.all([
+      page.waitForEvent('load'),
+      page.mouse.click(highButton?.x ?? 0, highButton?.y ?? 0),
+    ]);
+    await waitForScene(page, 'Menu');
+    await expect.poll(async () => (await snapshot(page)).texts.some(
+      (item) => item.text === 'QUALITY: HIGH'
+    )).toBe(true);
+    expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.visualQuality.v1')))
+      .toBe('high');
+    expect(new URL(page.url()).searchParams.has('visualQuality')).toBe(false);
+
+    await page.evaluate(() => window.localStorage.removeItem('space-explorer.visualQuality.v1'));
+    await page.reload();
+    await waitForScene(page, 'Menu');
+  }
+
+  assertNoBrowserErrors();
+});
+
 test('resizes, pauses, resumes, restores visibility, and lazy-routes scenes', async ({
   page,
   assertNoBrowserErrors,

@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
-import { withGeneratedTexture } from '../generatedTexture';
+import { withGeneratedEntityTexture } from '../generatedTexture';
 import { NEON_ENTITY, fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine } from './neonStyle';
 
 export function ensurePicketTurretTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'picket-turret', 24, 24, (g) => {
+  return withGeneratedEntityTexture(scene, 'picket-turret', 24, 24, (g) => {
     const palette = NEON_ENTITY.picket;
 
     // Octagonal hardpoint housing.
@@ -31,7 +31,7 @@ export function ensurePicketTurretTexture(scene: Phaser.Scene): string {
 }
 
 export function ensurePicketBoltTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'picket-bolt', 6, 12, (g) => {
+  return withGeneratedEntityTexture(scene, 'picket-bolt', 6, 12, (g) => {
     const palette = NEON_ENTITY.picketFire;
 
     // Slim glow capsule, deliberately smaller and dimmer than the player bullet.

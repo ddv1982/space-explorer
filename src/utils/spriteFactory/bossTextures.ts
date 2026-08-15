@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { BossAttackStyle } from '../../config/levels/types';
-import { withGeneratedTexture } from '../generatedTexture';
+import { withGeneratedEntityTexture } from '../generatedTexture';
 import {
   fillHotCore,
   fillNeonCircle,
@@ -26,7 +26,7 @@ export function ensureBossTextureVariant(
   const motifVariant = Array.from(bossName).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 3;
   const textureKey = `boss-texture-${attackStyle}-${motifVariant}`;
 
-  return withGeneratedTexture(scene, textureKey, 88, 56, (g) => {
+  return withGeneratedEntityTexture(scene, textureKey, 88, 56, (g) => {
     const palette = BOSS_PALETTES[attackStyle];
 
     switch (attackStyle) {

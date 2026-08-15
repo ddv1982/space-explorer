@@ -8,6 +8,7 @@ import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from './boss/behavior';
 import { getViewportBounds } from '../../utils/layout';
 import { ensureBossTextureVariant } from '../../utils/SpriteFactory';
+import { BossVisualRig } from './boss/BossVisualRig';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -62,6 +63,7 @@ export class Boss extends EnemyBase {
   private guardLastHitAt = Number.NEGATIVE_INFINITY;
   private guardBrokenUntil = 0;
   private guardBroken = false;
+  private readonly visualRig: BossVisualRig;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     const textureKey = ensureBossTextureVariant(scene, DEFAULT_BOSS_CONFIG.attackStyle, DEFAULT_BOSS_CONFIG.name);
@@ -73,6 +75,7 @@ export class Boss extends EnemyBase {
     this.scoreValue = 2000;
     this.enemyType = 'boss';
     this.despawnOffscreen = false;
+    this.visualRig = new BossVisualRig(scene);
   }
 
   override takeDamage(amount: number): void {
@@ -84,7 +87,7 @@ export class Boss extends EnemyBase {
     super.takeDamage(amount);
   }
 
-  takePlayerDamage(amount: number, time: number = this.scene.time.now): void {
+  takePlayerDamage(amount: number, _time?: number): void {
     if (amount <= 0 || !this.active) {
       return;
     }
@@ -94,6 +97,7 @@ export class Boss extends EnemyBase {
       return;
     }
 
+    const gameplayTime = this.getGameplayTime();
     const damage = this.guardBroken ? amount * 2 : amount;
     super.takeDamage(damage);
 
@@ -102,9 +106,9 @@ export class Boss extends EnemyBase {
     }
 
     this.guardValue = Math.min(this.guardCapacity, this.guardValue + amount);
-    this.guardLastHitAt = time;
+    this.guardLastHitAt = gameplayTime;
     if (this.guardValue >= this.guardCapacity) {
-      this.startGuardBreak(time);
+      this.startGuardBreak(gameplayTime);
     }
   }
 
@@ -134,6 +138,24 @@ export class Boss extends EnemyBase {
     this.setTexture(ensureBossTextureVariant(this.scene, config.attackStyle, config.name));
     super.spawn(x, y);
     this.resetCombatState();
+  }
+
+  override preUpdate(time: number, delta: number): void {
+    super.preUpdate(time, delta);
+    this.visualRig.update({
+      active: this.active,
+      x: this.x,
+      y: this.y,
+      time,
+      phase: this.phase,
+      shieldActive: this.shieldActive,
+      guardBroken: this.guardBroken,
+    });
+  }
+
+  override despawn(): void {
+    this.visualRig?.hide();
+    super.despawn();
   }
 
   updateBehavior(time: number, delta: number): void {

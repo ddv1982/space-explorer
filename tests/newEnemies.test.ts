@@ -25,7 +25,9 @@ const {
 
 type EntityStub = Record<string, unknown> & {
   spawn: (x: number, y: number) => void;
+  despawn: () => void;
   updateBehavior: (time: number, delta: number) => void;
+  preUpdate: (time: number, delta: number) => void;
   die: () => void;
   takeDamage: (amount: number) => void;
   launch: (x: number, y: number) => void;
@@ -250,6 +252,75 @@ describe('Lancer', () => {
     lancer.updateBehavior(LANCER_TELEGRAPH_MS + 1, 16);
 
     expect(bullet.fireAimed).toHaveBeenCalledWith(80, 138, 80, 520);
+  });
+
+  test('preserves idle and telegraph windows across a physics-only pause', () => {
+    const lancer = stubEntity(Lancer.prototype);
+    const bullet = { fireAimed: mock() };
+    const world = { isPaused: false };
+    Object.assign(lancer, {
+      active: true,
+      despawnOffscreen: false,
+      gameplayTime: 0,
+      scene: { physics: { world } },
+      phase: 'idle',
+      cycleStart: 0,
+      bulletGroup: { getFirstDead: () => bullet, get: mock() },
+      targetProvider: null,
+      x: 80,
+      y: 120,
+    });
+
+    lancer.preUpdate(1000, LANCER_FIRE_RATE - 1);
+    world.isPaused = true;
+    lancer.preUpdate(50_000, 49_000);
+    world.isPaused = false;
+    lancer.preUpdate(50_002, 2);
+    expect(lancer.phase).toBe('telegraph');
+
+    lancer.preUpdate(50_002 + LANCER_TELEGRAPH_MS - 1, LANCER_TELEGRAPH_MS - 1);
+    world.isPaused = true;
+    lancer.preUpdate(90_000, 39_000);
+    world.isPaused = false;
+    lancer.preUpdate(90_002, 2);
+
+    expect(bullet.fireAimed).toHaveBeenCalledTimes(1);
+    expect(lancer.phase).toBe('idle');
+  });
+
+  test('restarts the gameplay clock and first fire cycle on pooled reuse', () => {
+    const lancer = stubEntity(Lancer.prototype);
+    const bullet = { fireAimed: mock() };
+    Object.assign(lancer, {
+      active: true,
+      despawnOffscreen: false,
+      gameplayTime: 0,
+      scene: { physics: { world: { isPaused: false } } },
+      phase: 'idle',
+      cycleStart: 0,
+      bulletGroup: { getFirstDead: () => bullet, get: mock() },
+      targetProvider: null,
+      x: 80,
+      y: 120,
+      maxHp: 3,
+      speed: 100,
+    });
+
+    lancer.preUpdate(10_000, 10_000);
+    lancer.despawn();
+    lancer.spawn(80, -40);
+    lancer.active = true;
+    lancer.y = lancer.holdY;
+
+    lancer.preUpdate(20_000, 16);
+    expect(lancer.phase).toBe('idle');
+    expect(lancer.cycleStart).toBe(20_000);
+
+    lancer.preUpdate(20_000 + LANCER_FIRE_RATE, LANCER_FIRE_RATE);
+    expect(lancer.phase).toBe('idle');
+    lancer.preUpdate(20_001 + LANCER_FIRE_RATE, 1);
+    expect(lancer.phase).toBe('telegraph');
+    expect(bullet.fireAimed).not.toHaveBeenCalled();
   });
 });
 

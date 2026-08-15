@@ -33,6 +33,7 @@ export class HUD {
   private levelText!: Phaser.GameObjects.Text;
   private progressBg!: Phaser.GameObjects.Graphics;
   private progressFill!: Phaser.GameObjects.Graphics;
+  private progressLabel!: Phaser.GameObjects.Text;
   private bossBarBg!: Phaser.GameObjects.Graphics;
   private bossBarFill!: Phaser.GameObjects.Graphics;
   private bossNameText!: Phaser.GameObjects.Text;
@@ -122,6 +123,7 @@ export class HUD {
       levelText: this.levelText,
       progressBg: this.progressBg,
       progressFill: this.progressFill,
+      progressLabel: this.progressLabel,
       announcementText: this.announcementText,
       bossBarBg: this.bossBarBg,
       bossBarFill: this.bossBarFill,
@@ -173,6 +175,7 @@ export class HUD {
       sectorText: this.sectorText,
       levelText: this.levelText,
       progressBg: this.progressBg,
+      progressLabel: this.progressLabel,
       announcementText: this.announcementText,
       bossNameText: this.bossNameText,
       chainText: this.chainText,
@@ -216,6 +219,7 @@ export class HUD {
     this.levelText.setScrollFactor(factor);
     this.progressBg.setScrollFactor(factor);
     this.progressFill.setScrollFactor(factor);
+    this.progressLabel.setScrollFactor(factor);
     this.bossBarBg.setScrollFactor(factor);
     this.bossBarFill.setScrollFactor(factor);
     this.bossNameText.setScrollFactor(factor);

@@ -82,7 +82,7 @@ describe('PlayerState schema behavior', () => {
         grantedSlots: 3,
         slots: [
           { remainingLives: 0, hp: 0 },
-          { remainingLives: 0, hp: 3 },
+          { remainingLives: 0, hp: 2 },
           { remainingLives: 0, hp: 0 },
         ],
       },
@@ -156,6 +156,63 @@ describe('PlayerState schema behavior', () => {
 
     expect(second).toEqual(first);
     expect(registry.get('playerState')).toEqual(first);
+  });
+
+  test('bounds persisted upgrades and runtime resources to configured safe maxima', () => {
+    const registry = createRegistry();
+    registry.set('playerState', {
+      level: 4.5,
+      score: Number.MAX_VALUE,
+      currentHp: Number.MAX_VALUE,
+      currentShields: Number.MAX_VALUE,
+      remainingLives: Number.MAX_VALUE,
+      upgrades: {
+        hp: Number.MAX_VALUE,
+        damage: Number.MAX_VALUE,
+        fireRate: Number.MAX_VALUE,
+        shield: Number.MAX_VALUE,
+        turrets: Number.MAX_VALUE,
+      },
+      helperWing: {
+        grantedSlots: 1,
+        slots: [{ remainingLives: Number.MAX_VALUE, hp: Number.MAX_VALUE }],
+      },
+    });
+
+    expect(getPlayerState(registry)).toEqual({
+      level: 4.5,
+      score: Number.MAX_SAFE_INTEGER,
+      currentHp: 15,
+      currentShields: 3,
+      remainingLives: 3,
+      upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
+      helperWing: {
+        grantedSlots: 1,
+        slots: [{ remainingLives: 3, hp: 15 }],
+      },
+    });
+  });
+
+  test('floors persisted integer resources and rejects negative escalation', () => {
+    const registry = createRegistry();
+    registry.set('playerState', {
+      level: 2,
+      score: 12.9,
+      currentHp: -4.2,
+      currentShields: 2.9,
+      remainingLives: 2.9,
+      upgrades: { hp: 1.9, damage: 2.9, fireRate: 3.9, shield: 2.9, turrets: 1.9 },
+      helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2.9, hp: 6.9 }] },
+    });
+
+    expect(getPlayerState(registry)).toMatchObject({
+      score: 12,
+      currentHp: 0,
+      currentShields: 2,
+      remainingLives: 2,
+      upgrades: { hp: 1, damage: 2, fireRate: 3, shield: 2, turrets: 1 },
+      helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 6 }] },
+    });
   });
 
   test('clamps currentShields to upgrade max when setting state', () => {
@@ -302,5 +359,14 @@ describe('PlayerState schema behavior', () => {
       })
     ).toEqual({ finalScore: 20, levelReached: 3 });
     expect(getRunSummary(registry)).toEqual({ finalScore: 20, levelReached: 3 });
+  });
+
+  test('run summary score is a bounded nonnegative integer', () => {
+    const registry = createRegistry();
+    setRunSummary(registry, { finalScore: Number.MAX_VALUE, levelReached: 3 });
+    expect(getRunSummary(registry).finalScore).toBe(Number.MAX_SAFE_INTEGER);
+
+    setRunSummary(registry, { finalScore: -10.8 });
+    expect(getRunSummary(registry).finalScore).toBe(0);
   });
 });

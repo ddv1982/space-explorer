@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { withGeneratedTexture } from '../../utils/generatedTexture';
+import { withGeneratedParticleTexture } from '../../utils/generatedTexture';
 
 type Point = { x: number; y: number };
 
@@ -17,7 +17,7 @@ function fillPolygonFromCenter(
 
 /** Sharp irregular flash shard: bright core with jagged luminous edges. */
 function generateExplosionTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2;
@@ -47,7 +47,7 @@ function generateExplosionTexture(scene: Phaser.Scene, key: string, size: number
 
 /** Tapered horizontal light streak (rotated at runtime by emitter angle). */
 function generateSparkTexture(scene: Phaser.Scene, key: string, width: number, height: number): void {
-  withGeneratedTexture(scene, key, width, height, (g) => {
+  withGeneratedParticleTexture(scene, key, width, height, (g) => {
     const cy = height / 2;
 
     g.fillStyle(0xffffff, 0.25);
@@ -69,7 +69,7 @@ function generateSparkTexture(scene: Phaser.Scene, key: string, width: number, h
 
 /** Four-point star flare. */
 function generateMuzzleTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2;
@@ -97,7 +97,7 @@ function generateMuzzleTexture(scene: Phaser.Scene, key: string, size: number): 
 
 /** Soft round puff for engine exhaust. */
 function generateSmokeTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
 
@@ -116,7 +116,7 @@ function generateSmokeTexture(scene: Phaser.Scene, key: string, size: number): v
 
 /** Tight glow dot for trails. */
 function generateGlowTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2;
@@ -134,7 +134,7 @@ function generateGlowTexture(scene: Phaser.Scene, key: string, size: number): vo
 
 /** Sharp cross flare for impacts. */
 function generateHitTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2;
@@ -162,7 +162,7 @@ function generateHitTexture(scene: Phaser.Scene, key: string, size: number): voi
 
 /** Eight-point starburst for ambient sparkles. */
 function generateStarBurstTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2;
@@ -183,7 +183,7 @@ function generateStarBurstTexture(scene: Phaser.Scene, key: string, size: number
 
 /** Glow orb ringed by a thin halo, used for pickup bursts and flash pops. */
 function generateBurstTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2;
@@ -204,7 +204,7 @@ function generateBurstTexture(scene: Phaser.Scene, key: string, size: number): v
 
 /** Small luminous shard for debris. */
 function generateDebrisTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2;
@@ -225,7 +225,7 @@ function generateDebrisTexture(scene: Phaser.Scene, key: string, size: number): 
 
 /** Thin expanding shockwave ring. */
 function generateRingTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2 - 2;
@@ -240,7 +240,7 @@ function generateRingTexture(scene: Phaser.Scene, key: string, size: number): vo
 }
 
 function generateSquareTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedTexture(scene, key, size, size, (g) => {
+  withGeneratedParticleTexture(scene, key, size, size, (g) => {
     g.fillStyle(0xffffff, 1);
     g.fillRect(0, 0, size, size);
   });

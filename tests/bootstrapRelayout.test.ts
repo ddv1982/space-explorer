@@ -163,18 +163,19 @@ describe('bootstrapRelayout', () => {
 
     expect(widgets.topBarPanel).toBeDefined();
     expect(graphics).toHaveLength(9);
-    expect(texts).toHaveLength(10);
+    expect(texts).toHaveLength(11);
     expect(graphics[0]?.graphics.depth).toBe(99);
     expect(graphics[5]?.graphics.visible).toBe(false);
     expect(graphics[6]?.graphics.visible).toBe(false);
-    expect(texts[8]?.state.visible).toBe(false);
     expect(texts[9]?.state.visible).toBe(false);
+    expect(texts[10]?.state.visible).toBe(false);
   });
 
   test('relayoutHudWidgets repositions widgets and restarts announcement fade tween when visible', () => {
     const topBarPanel = createGraphicsStub();
     const hpBarBg = createGraphicsStub();
     const progressBg = createGraphicsStub();
+    const progressLabel = createTextStub('FLIGHT VECTOR');
     const hpLabel = createTextStub('HP');
     const hpText = createTextStub('');
     const livesLabel = createTextStub('LIVES');
@@ -206,6 +207,7 @@ describe('bootstrapRelayout', () => {
       sectorText: sectorText.text,
       levelText: levelText.text,
       progressBg: progressBg.graphics,
+      progressLabel: progressLabel.text,
       announcementText: announcementText.text,
       bossNameText: bossNameText.text,
       chainText: chainText.text,
@@ -223,6 +225,8 @@ describe('bootstrapRelayout', () => {
 
     expect(hpLabel.state.x).toBe(16);
     expect(hpLabel.state.y).toBe(14);
+    expect(hpBarBg.calls.find((call) => call.method === 'fillRoundedRect')?.args)
+      .toEqual([46, 16, 146, 16, 3]);
     expect(scoreText.state.x).toBe(784);
     expect(scoreText.state.y).toBe(13);
     expect(announcementText.state.x).toBe(400);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { VisualQualityTier } from '../../config/visualQuality';
 import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
 import {
@@ -23,6 +24,10 @@ interface MenuSaveSlotHandlers {
 export interface MenuSaveSlotPanel {
   refresh: (slots: SaveSlotViewModel[]) => void;
   setStatus: (message: string, isError?: boolean) => void;
+  destroy: () => void;
+}
+
+export interface MenuQualitySelector {
   destroy: () => void;
 }
 
@@ -256,6 +261,52 @@ export function createMusicLabPanel(
   setMusicSliderClusterDepth(sliders, 11);
 
   return sliders;
+}
+
+export function createQualitySelector(
+  scene: Phaser.Scene,
+  plan: MenuLayoutPlan,
+  activeTier: VisualQualityTier,
+  onSelect: (tier: VisualQualityTier) => void
+): MenuQualitySelector {
+  const compact = plan.qualityHeight < 32;
+  const labelWidth = compact ? 86 : 138;
+  const gap = compact ? 4 : 6;
+  const buttonWidth = (plan.qualityWidth - labelWidth - gap * 3) / 3;
+  const label = scene.add
+    .text(plan.qualityX, plan.qualityY + plan.qualityHeight / 2, `QUALITY: ${activeTier.toUpperCase()}`, {
+      fontSize: compact ? '10px' : '12px',
+      color: NEON_TEXT.secondary,
+      fontFamily: NEON_FONT.mono,
+      fontStyle: 'bold',
+    })
+    .setOrigin(0, 0.5)
+    .setDepth(12);
+
+  const tiers: VisualQualityTier[] = ['low', 'standard', 'high'];
+  const buttons = tiers.map((tier, index) => {
+    const button = createActionButtonControl(scene, {
+      label: tier.toUpperCase(),
+      width: buttonWidth,
+      height: plan.qualityHeight,
+      variant: tier === activeTier ? 'primary' : 'secondary',
+      fontSize: compact ? '9px' : '11px',
+      onClick: () => onSelect(tier),
+    });
+    button.setPosition(
+      plan.qualityX + labelWidth + gap + index * (buttonWidth + gap),
+      plan.qualityY
+    );
+    button.setDepth(11);
+    return button;
+  });
+
+  return {
+    destroy: () => {
+      label.destroy();
+      buttons.forEach((button) => button.destroy());
+    },
+  };
 }
 
 export function destroyMenuMusicSliders(sliders: MenuMusicSliders | null): void {

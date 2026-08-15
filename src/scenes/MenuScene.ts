@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
 import { getLevelConfig } from '../config/LevelsConfig';
+import {
+  getVisualQualityTier,
+  setVisualQualityTier,
+  type VisualQualityTier,
+} from '../config/visualQuality';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import {
   deleteSaveSlot,
@@ -28,9 +33,11 @@ import {
   createMenuBackdrop,
   createMenuTitle,
   createMusicLabPanel,
+  createQualitySelector,
   createSaveSlotEntryPanel,
   destroyMenuMusicSliders,
   type MenuMusicSliders,
+  type MenuQualitySelector,
   type MenuSaveSlotPanel,
 } from './menuScene/panels';
 
@@ -38,6 +45,7 @@ export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
   private musicSliders: MenuMusicSliders | null = null;
   private saveSlotPanel: MenuSaveSlotPanel | null = null;
+  private qualitySelector: MenuQualitySelector | null = null;
   private gameTransitionQueued = false;
 
   constructor() {
@@ -119,7 +127,39 @@ export class MenuScene extends Phaser.Scene {
       this.createSaveSlotPanelHandlers(),
       isSaveStorageAvailable(),
     );
+    this.qualitySelector = createQualitySelector(
+      this,
+      layoutPlan,
+      this.getCurrentVisualQualityTier(),
+      (tier) => this.selectVisualQualityTier(tier)
+    );
     this.musicSliders = createMusicLabPanel(this, layoutPlan, accentColor, () => this.musicSliders);
+  }
+
+  private selectVisualQualityTier(tier: VisualQualityTier): void {
+    if (tier === this.getCurrentVisualQualityTier()) {
+      return;
+    }
+
+    this.playMenuClick();
+    if (!this.persistVisualQualityTier(tier)) {
+      this.showSaveSlotError('Unable to save visual quality in this browser context.');
+      return;
+    }
+
+    this.reloadForVisualQualityChange();
+  }
+
+  private getCurrentVisualQualityTier(): VisualQualityTier {
+    return getVisualQualityTier();
+  }
+
+  private persistVisualQualityTier(tier: VisualQualityTier): boolean {
+    return setVisualQualityTier(tier);
+  }
+
+  private reloadForVisualQualityChange(): void {
+    window.location.reload();
   }
 
   private createSaveSlotPanelHandlers(): {
@@ -252,5 +292,7 @@ export class MenuScene extends Phaser.Scene {
     this.musicSliders = null;
     this.saveSlotPanel?.destroy();
     this.saveSlotPanel = null;
+    this.qualitySelector?.destroy();
+    this.qualitySelector = null;
   }
 }

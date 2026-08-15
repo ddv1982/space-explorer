@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
+import { getLevelConfig } from '../config/LevelsConfig';
 import { audioManager } from '../systems/AudioManager';
+import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { UI_FONT_MONO } from '../utils/uiFonts';
@@ -9,6 +11,8 @@ import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_TEXT } from '.
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class GameOverScene extends Phaser.Scene {
+  private parallax!: ParallaxBackground;
+
   constructor() {
     super({ key: 'GameOver' });
   }
@@ -18,8 +22,23 @@ export class GameOverScene extends Phaser.Scene {
     registerRestartOnResize(this);
 
     const layout = getViewportLayout(this);
+    const runSummary = getRunSummary(this.registry);
 
     this.cameras.main.setBackgroundColor('#0a0308');
+    this.parallax = new ParallaxBackground();
+    this.parallax.create(this, getLevelConfig(runSummary.levelReached));
+
+    const telemetry = this.add.graphics().setDepth(0);
+    telemetry.fillStyle(0x120109, 0.48);
+    telemetry.fillRect(layout.left, layout.top, layout.width, layout.height);
+    telemetry.lineStyle(1, NEON.red, 0.06);
+    for (let y = layout.top + 28; y < layout.bottom; y += 54) {
+      telemetry.lineBetween(layout.left, y, layout.right, y);
+    }
+    telemetry.lineStyle(2, NEON.red, 0.13);
+    telemetry.strokeCircle(layout.centerX, layout.centerY, Math.min(layout.width, layout.height) * 0.31);
+    telemetry.lineStyle(1, NEON.red, 0.09);
+    telemetry.strokeCircle(layout.centerX, layout.centerY, Math.min(layout.width, layout.height) * 0.38);
 
     const frameWidth = Math.min(560, layout.width - 48);
     const frameHeight = 300;
@@ -43,7 +62,6 @@ export class GameOverScene extends Phaser.Scene {
       glowBright: '#ff756f',
     });
 
-    const runSummary = getRunSummary(this.registry);
     this.add.text(layout.centerX, layout.centerY - 6, `SCORE: ${runSummary.finalScore}`, {
       fontSize: '30px',
       color: NEON_TEXT.primary,
@@ -65,5 +83,11 @@ export class GameOverScene extends Phaser.Scene {
       audioManager.playClick();
       this.scene.start('Menu');
     });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.parallax.destroy());
+  }
+
+  update(_time: number, delta: number): void {
+    this.parallax?.update(delta * 0.45);
   }
 }

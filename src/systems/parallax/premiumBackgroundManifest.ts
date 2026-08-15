@@ -18,6 +18,7 @@ interface PremiumBackgroundManifest {
   levelName: string;
   assetPrefix: string;
   compositeKey: string;
+  runtimeLayers: PremiumBackgroundLayerConfig[];
   baseSize: { width: number; height: number };
   layers: PremiumBackgroundLayerConfig[];
 }
@@ -89,13 +90,34 @@ function createLayers(assetPrefix: string): PremiumBackgroundLayerConfig[] {
 
 function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManifest {
   const assetPrefix = `bg_level${String(level.index).padStart(2, '0')}`;
+  const layers = createLayers(assetPrefix);
 
   return {
     levelName: level.name,
     assetPrefix,
     compositeKey: `${assetPrefix}_composite`,
     baseSize: { ...BASE_SIZE },
-    layers: createLayers(assetPrefix),
+    layers,
+    runtimeLayers: [
+      {
+        ...layers[0],
+        key: `${assetPrefix}_composite`,
+        alpha: 1,
+        scrollSpeed: 0.07,
+      },
+      {
+        ...layers[2],
+        key: `${assetPrefix}_motif`,
+        alpha: 0.92,
+        scrollSpeed: 0.18,
+      },
+      {
+        ...layers[4],
+        key: `${assetPrefix}_atmosphere`,
+        alpha: 0.7,
+        scrollSpeed: 0.34,
+      },
+    ],
   };
 }
 
@@ -114,7 +136,7 @@ export function getPremiumBackgroundManifest(levelName: string | undefined): Pre
 /**
  * Level numbers to keep warm for gameplay. By default only the active level is
  * retained; PlanetIntermission explicitly generates the next level before the
- * transition, avoiding permanent double residency for five 1024px textures.
+ * transition, avoiding permanent double residency for three 1024px textures.
  */
 export function getPremiumBackgroundLevelWindow(
   levelNumber: number,
@@ -154,7 +176,9 @@ function getPremiumBackgroundKeysForLevels(levelNumbers: readonly number[]): str
     for (const layer of manifest.layers) {
       keys.push(layer.key);
     }
-    keys.push(manifest.compositeKey);
+    for (const layer of manifest.runtimeLayers) {
+      keys.push(layer.key);
+    }
   }
 
   return keys;

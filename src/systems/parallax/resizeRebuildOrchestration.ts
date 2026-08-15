@@ -41,12 +41,7 @@ export function resizeParallaxBackground(
   }
 
   if (sizeChanged) {
-    if (context.getPremiumBackgroundLayerCount() > 0) {
-      context.rebuildPremiumBackgroundLayers(scene, levelConfig);
-    } else {
-      context.layoutPremiumBackgroundLayers();
-    }
-
+    context.layoutPremiumBackgroundLayers();
     scheduleLevelVisualRebuild(context);
     return;
   }

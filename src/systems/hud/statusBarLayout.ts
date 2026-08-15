@@ -13,11 +13,13 @@ export interface HudLayoutMetrics {
   centerY: number;
   topBarRight: number;
   topBarWidth: number;
+  topBarHeight: number;
   hpBarX: number;
   hpBarY: number;
   hpBarWidth: number;
   progressX: number;
   progressY: number;
+  progressLabelY: number;
   progressWidth: number;
   bossBarX: number;
   bossBarY: number;
@@ -26,6 +28,8 @@ export interface HudLayoutMetrics {
   announcementY: number;
   announcementExitY: number;
 }
+
+export const HP_BAR_TRACK_OFFSET = 30;
 
 export function getLayoutMetrics(
   scene: Phaser.Scene,
@@ -37,16 +41,19 @@ export function getLayoutMetrics(
   const hpBarWidth = Math.round(Phaser.Math.Clamp(viewport.width * 0.22, 150, baseHpBarWidth));
   const progressWidth = Math.round(Phaser.Math.Clamp(viewport.width * 0.24, 160, baseProgressWidth));
   const bossBarWidth = Math.round(Phaser.Math.Clamp(viewport.width - 80, 220, baseBossBarWidth));
+  const compact = viewport.width < 600;
 
   return {
     ...viewport,
     topBarRight: viewport.right - 16,
     topBarWidth: Math.max(0, viewport.width - 20),
+    topBarHeight: compact ? 68 : 60,
     hpBarX: viewport.left + 16,
     hpBarY: viewport.top + 16,
     hpBarWidth,
     progressX: viewport.left + (viewport.width - progressWidth) / 2,
-    progressY: viewport.top + 8,
+    progressY: viewport.top + (compact ? 58 : 8),
+    progressLabelY: viewport.top + (compact ? 43 : 18),
     progressWidth,
     bossBarX: viewport.left + (viewport.width - bossBarWidth) / 2,
     bossBarY: viewport.bottom - 28,
@@ -73,8 +80,8 @@ export function renderHpBar(params: {
   }
 
   const hpRatio = currentHp / currentMaxHp;
-  const barWidth = (layout.hpBarWidth - 26) * hpRatio;
-  const barX = layout.hpBarX + 24;
+  const barWidth = (layout.hpBarWidth - HP_BAR_TRACK_OFFSET - 4) * hpRatio;
+  const barX = layout.hpBarX + HP_BAR_TRACK_OFFSET + 2;
   const barY = layout.hpBarY + 2;
   const barH = hpBarHeight - 4;
 
@@ -123,6 +130,16 @@ export function renderProgressBar(params: {
   progressFill.fillStyle(highlightColor, 0.5);
   progressFill.fillRect(layout.progressX + 1, layout.progressY, Math.max(0, fillWidth - 2), 1);
 
+  // Section ticks make progress readable at a glance without changing the
+  // continuous underlying value or any level pacing.
+  for (let index = 1; index < 10; index += 1) {
+    const tickX = layout.progressX + layout.progressWidth * (index / 10);
+    if (tickX < layout.progressX + fillWidth) {
+      progressFill.fillStyle(0x020812, 0.52);
+      progressFill.fillRect(tickX, layout.progressY, 1, progressHeight);
+    }
+  }
+
   if (fillWidth > 4) {
     progressFill.fillStyle(0xffffff, 0.3);
     progressFill.fillRect(layout.progressX + fillWidth - 3, layout.progressY, 3, progressHeight);
@@ -167,9 +184,9 @@ export function renderSurgeBar(params: {
     return;
   }
 
-  const barWidth = layout.hpBarWidth - 26;
+  const barWidth = layout.hpBarWidth - HP_BAR_TRACK_OFFSET - 4;
   const fillWidth = barWidth * Math.min(1, currentSurgeRatio);
-  const barX = layout.hpBarX + 24;
+  const barX = layout.hpBarX + HP_BAR_TRACK_OFFSET + 2;
   const barY = layout.hpBarY + hpBarHeight + 6;
 
   const surgeColor = 0x9be8ff;

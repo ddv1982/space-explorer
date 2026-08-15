@@ -131,7 +131,7 @@ describe('statusBarLayout helpers', () => {
     });
 
     const hpFillRect = hp.calls.find((call) => call.method === 'fillRoundedRect');
-    expect(hpFillRect?.args.slice(0, 4)).toEqual([40, 18, 75, 12]);
+    expect(hpFillRect?.args.slice(0, 4)).toEqual([48, 18, 71, 12]);
 
     const progressRects = progress.calls.filter((call) => call.method === 'fillRect');
     expect(progressRects[0]?.args).toEqual([304, 8, 96, 6]);

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../../config/LevelsConfig';
+import { getVisualQualityProfile } from '../../config/visualQuality';
 import { SCROLL_SPEED } from '../../utils/constants';
 import { getPremiumBackgroundManifest, type PremiumBackgroundLayerConfig } from './premiumBackgroundManifest';
 import {
@@ -12,11 +13,13 @@ export interface PremiumBackgroundLayerState {
   config: PremiumBackgroundLayerConfig;
   baseAlpha: number;
   currentAlpha: number;
+  scrollOffsetX: number;
   scrollOffsetY: number;
 }
 
 interface PremiumBackgroundScrollSnapshot {
   key: string;
+  scrollOffsetX: number;
   scrollOffsetY: number;
 }
 
@@ -31,23 +34,7 @@ function getRuntimeLayerConfigs(config: LevelConfig): PremiumBackgroundLayerConf
     return null;
   }
 
-  const far = manifest.layers.find((layer) => layer.role === 'far');
-  const mid = manifest.layers.find((layer) => layer.role === 'mid');
-  if (!far || !mid) {
-    return null;
-  }
-
-  // All five generated art layers are baked into this texture once at level
-  // load. The surrounding planets, twinkles, and debris retain visible depth
-  // and independent motion without another full-screen compositor pass.
-  const composite: PremiumBackgroundLayerConfig = {
-    ...far,
-    key: manifest.compositeKey,
-    alpha: 1,
-    scrollSpeed: mid.scrollSpeed,
-  };
-
-  return [composite];
+  return manifest.runtimeLayers.slice(0, getVisualQualityProfile().backgroundLayerCount);
 }
 
 function setAlphaIfChanged(sprite: Phaser.GameObjects.TileSprite, alpha: number): void {
@@ -88,6 +75,7 @@ export function createPremiumBackgroundLayers(
       config: layer,
       baseAlpha: layer.alpha,
       currentAlpha: layer.alpha,
+      scrollOffsetX: 0,
       scrollOffsetY: 0,
     });
   }
@@ -110,6 +98,7 @@ function capturePremiumBackgroundScrollOffsets(
 ): PremiumBackgroundScrollSnapshot[] {
   return premiumBackgroundLayers.map((layer) => ({
     key: layer.config.key,
+    scrollOffsetX: layer.scrollOffsetX,
     scrollOffsetY: layer.scrollOffsetY,
   }));
 }
@@ -123,6 +112,7 @@ function restorePremiumBackgroundScrollOffsets(
 
     if (snapshot) {
       layer.scrollOffsetY = snapshot.scrollOffsetY;
+      layer.scrollOffsetX = snapshot.scrollOffsetX;
     }
   }
 }
@@ -173,6 +163,9 @@ export function scrollPremiumBackgroundLayers(params: {
       layer.sprite.tileScaleY,
       layer.scrollOffsetY,
     );
+    const roleDrift = layer.config.role === 'far' ? 4 : layer.config.role === 'mid' ? 10 : 16;
+    layer.scrollOffsetX = Math.sin(params.elapsed * (0.00008 + layer.config.scrollSpeed * 0.00012)) * roleDrift;
+    layer.sprite.tilePositionX = layer.scrollOffsetX;
 
     const nextAlpha = layer.config.pulse
       ? Phaser.Math.Clamp(

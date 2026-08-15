@@ -200,4 +200,35 @@ describe('Boss', () => {
     expect(setTintMode).toHaveBeenCalledWith(0);
     expect(setTint).toHaveBeenCalledWith(0x77ccff);
   });
+
+  test('feeds phase, shield, and fire schedules gameplay time after pause', () => {
+    const world = { isPaused: false };
+    const updatePhaseState = mock();
+    const updateShieldState = mock();
+    const tryFirePattern = mock();
+    const boss = Object.create(Boss.prototype) as BossInstance;
+    Object.assign(boss as unknown as Record<string, unknown>, {
+      active: true,
+      despawnOffscreen: false,
+      gameplayTime: 0,
+      arrived: true,
+      scene: { physics: { world } },
+      visualRig: { update: mock() },
+      updateGuardState: () => false,
+      updateMovement: mock(),
+      updatePhaseState,
+      updateShieldState,
+      tryFirePattern,
+    });
+
+    boss.preUpdate(1000, 100);
+    world.isPaused = true;
+    boss.preUpdate(50_000, 49_000);
+    world.isPaused = false;
+    boss.preUpdate(50_025, 25);
+
+    expect(updatePhaseState.mock.calls.map((call) => call[0])).toEqual([100, 125]);
+    expect(updateShieldState.mock.calls.map((call) => call[0])).toEqual([100, 125]);
+    expect(tryFirePattern.mock.calls.map((call) => call[0])).toEqual([100, 125]);
+  });
 });

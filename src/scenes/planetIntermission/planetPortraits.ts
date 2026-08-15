@@ -4,7 +4,7 @@ import { getTotalLevels } from '../../config/LevelsConfig';
 
 /**
  * Authored raster planet portraits (approved art-direction exception; see
- * docs/art-direction.md). Ten painterly 512x512 WebP worlds live under
+ * docs/art-direction.md). Ten painterly 1024x1024 WebP worlds live under
  * public/assets/planets and are loaded as regular image textures instead of
  * the retired procedural intermission disc.
  */
@@ -27,6 +27,12 @@ export function hasPlanetPortrait(scene: Phaser.Scene, level: number): boolean {
   return isPortraitLevel(level) && scene.textures.exists(getPlanetPortraitKey(level));
 }
 
+function hasQueuedPortrait(scene: Phaser.Scene, key: string): boolean {
+  return [scene.load.list, scene.load.inflight, scene.load.queue].some((files) =>
+    Array.from(files).some((file) => file.type === 'image' && file.key === key)
+  );
+}
+
 /**
  * Queue the portrait for `level` unless it is already cached. Returns true
  * when a file was queued. Call from a scene's preload() so Phaser runs the
@@ -34,11 +40,16 @@ export function hasPlanetPortrait(scene: Phaser.Scene, level: number): boolean {
  * and resize restarts as robust as the normal boot-preload flow.
  */
 export function queuePlanetPortrait(scene: Phaser.Scene, level: number): boolean {
-  if (!isPortraitLevel(level) || hasPlanetPortrait(scene, level)) {
+  if (!isPortraitLevel(level)) {
     return false;
   }
 
-  scene.load.image(getPlanetPortraitKey(level), getPlanetPortraitUrl(level));
+  const key = getPlanetPortraitKey(level);
+  if (hasPlanetPortrait(scene, level) || hasQueuedPortrait(scene, key)) {
+    return false;
+  }
+
+  scene.load.image(key, getPlanetPortraitUrl(level));
   return true;
 }
 

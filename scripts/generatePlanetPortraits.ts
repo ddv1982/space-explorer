@@ -2,7 +2,7 @@
 
 /**
  * Deterministic offline authoring pipeline for the ten campaign planet
- * portraits. Renders painterly 512x512 RGBA rasters (value-noise surfaces,
+ * portraits. Renders painterly 1024x1024 RGBA rasters (value-noise surfaces,
  * spherical lighting, soft terminators, limb shading, world-specific
  * features), writes PNG intermediates, then encodes committed WebP assets via
  * the locally installed `cwebp` binary.
@@ -18,9 +18,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { deflateSync } from 'node:zlib';
 
-const SIZE = 512;
+const SIZE = 1024;
 const CENTER = SIZE / 2;
-const PLANET_RADIUS = 180;
+const PLANET_RADIUS = 360;
+const ART_SCALE = SIZE / 512;
 const WEBP_QUALITY = 80;
 const OUTPUT_DIR = path.resolve(process.cwd(), 'public/assets/planets');
 const PNG_DIR = path.resolve(process.cwd(), 'test-results/planet-portraits-src');
@@ -700,7 +701,7 @@ function renderDebris(buffer: PixelBuffer, art: PlanetArt): void {
     const orbit = PLANET_RADIUS * (1.08 + random() * 0.5);
     const cx = CENTER + Math.cos(angle) * orbit;
     const cy = CENTER + Math.sin(angle) * orbit * 0.42 + PLANET_RADIUS * 0.05;
-    const size = 1.2 + random() * 3.8;
+    const size = (1.2 + random() * 3.8) * ART_SCALE;
     const stretch = random() > 0.72 ? 1.9 : 1;
     const spin = random() * Math.PI;
     const shade = random();
@@ -741,7 +742,7 @@ function renderMist(buffer: PixelBuffer, art: PlanetArt): void {
     const radius = PLANET_RADIUS * (0.55 + random() * 0.62);
     const cx = CENTER + Math.cos(angle) * radius;
     const cy = CENTER + Math.sin(angle) * radius;
-    const blobRadius = 22 + random() * 58;
+    const blobRadius = (22 + random() * 58) * ART_SCALE;
     const alpha = mist.alpha * (0.6 + random() * 0.7);
     const stretch = 1.4 + random() * 1.6;
 

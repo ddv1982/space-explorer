@@ -35,11 +35,15 @@ export function createIntermissionBackdrop(
   const viewport = getViewportLayout(scene);
   const manifest = getPremiumBackgroundManifest(levelConfig.name);
 
-  if (manifest && scene.textures.exists(manifest.compositeKey)) {
-    scene.add.image(viewport.centerX, viewport.centerY, manifest.compositeKey)
-      .setDisplaySize(viewport.width, viewport.height)
-      .setAlpha(layout.mode === 'desktop' ? 0.43 : 0.34)
-      .setDepth(-10);
+  if (manifest) {
+    const backdropLayers = manifest.runtimeLayers.filter((layer) => scene.textures.exists(layer.key));
+    backdropLayers.forEach((layer, index) => {
+      scene.add.image(viewport.centerX, viewport.centerY, layer.key)
+        .setDisplaySize(viewport.width, viewport.height)
+        .setAlpha((layout.mode === 'desktop' ? 0.43 : 0.34) * (index === 0 ? 1 : 0.72))
+        .setBlendMode(layer.blendMode ?? Phaser.BlendModes.NORMAL)
+        .setDepth(-12 + index);
+    });
   }
 
   const backdrop = scene.add.graphics().setDepth(-9);
@@ -76,8 +80,8 @@ export function createIntermissionBackdrop(
  * chrome (halo, orbit, route, satellites, labels) still renders and the
  * planet body is skipped rather than showing a missing-texture placeholder.
  *
- * The displayed texture is released from the cache when the scene shuts down;
- * the next visit re-queues it through the scene preload.
+ * Portraits stay in the global texture cache after boot. Keeping this small,
+ * fixed campaign set avoids remove/reload races when a resize restarts the scene.
  */
 export function createPlanetArrivalVisual(
   scene: Phaser.Scene,
@@ -93,9 +97,6 @@ export function createPlanetArrivalVisual(
     console.warn(`[planetIntermission] Planet portrait "${textureKey}" is not loaded; rendering the arrival chrome without the planet body.`);
   }
 
-  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-    if (scene.textures.exists(textureKey)) scene.textures.remove(textureKey);
-  });
   const halo = scene.add.ellipse(
     layout.planetX,
     layout.planetY,
@@ -133,9 +134,8 @@ export function createPlanetArrivalVisual(
     route.fillCircle(satelliteX, satelliteY, index === 0 ? 2.5 : 1.8);
   }
 
-  // The authored portraits share the retired disc's 512px frame and planet
-  // radius, so the historical display size preserves the exact composition
-  // footprint around the raster world.
+  // Portraits use a 1024px source while preserving the historical composition
+  // footprint, so large desktop presentation stays crisp without layout drift.
   const planet = hasPortrait
     ? scene.add.image(layout.planetX, layout.planetY, textureKey)
       .setDisplaySize(layout.planetDiameter * 1.43, layout.planetDiameter * 1.43)

@@ -53,6 +53,7 @@ type ParallaxTestState = {
   activeHazards: ScriptedHazardConfig[];
   layoutTileSprites: () => void;
   layoutPremiumBackgroundLayers: () => void;
+  layoutLevelVisualLayers: () => void;
   rebuildPremiumBackgroundLayers: () => void;
   rebuildLevelVisualLayers: () => void;
   layoutPlanetLayer: () => void;
@@ -130,6 +131,9 @@ function createResizeHarness(options?: { withLevelConfig?: boolean; withPremiumL
   state.layoutPremiumBackgroundLayers = () => {
     calls.push('layoutPremiumBackgroundLayers');
   };
+  state.layoutLevelVisualLayers = () => {
+    calls.push('layoutLevelVisualLayers');
+  };
   state.rebuildPremiumBackgroundLayers = () => {
     calls.push('rebuildPremiumBackgroundLayers');
   };
@@ -190,9 +194,13 @@ describe('ParallaxBackground premium-background presentation regression coverage
       accentColor: 0x52f7a6,
     });
 
-    expect(tileSpriteCalls).toEqual(['bg_level03_composite']);
+    expect(tileSpriteCalls).toEqual([
+      'bg_level03_composite',
+      'bg_level03_motif',
+      'bg_level03_atmosphere',
+    ]);
     expect(state.tileSprites).toEqual([]);
-    expect(state.premiumBackgroundLayers.length).toBe(1);
+    expect(state.premiumBackgroundLayers.length).toBe(3);
   });
 });
 
@@ -334,14 +342,28 @@ describe('ParallaxBackground resize debounce regression coverage', () => {
     expect(delayedCalls[1]?.removeCalls).toEqual([]);
   });
 
+  test('unchanged dimensions perform layout only without scheduling rebuilds', () => {
+    const { parallax, calls, delayedCalls } = createResizeHarness({ withLevelConfig: true, withPremiumLayers: true });
+
+    parallax.resize(800, 600);
+
+    expect(calls).toEqual([
+      'layoutTileSprites',
+      'layoutPremiumBackgroundLayers',
+      'layoutLevelVisualLayers',
+    ]);
+    expect(delayedCalls).toEqual([]);
+  });
+
   test('debounced callback rebuilds only when dimensions still match target', () => {
     const { parallax, calls, delayedCalls } = createResizeHarness({ withLevelConfig: true, withPremiumLayers: true });
 
     parallax.resize(900, 700);
+    expect(calls).toEqual(['layoutTileSprites', 'layoutPremiumBackgroundLayers']);
     delayedCalls[0]?.callback();
 
-    expect(calls).toContain('rebuildPremiumBackgroundLayers');
-    expect(calls).toContain('rebuildLevelVisualLayers');
+    expect(calls.filter((call) => call === 'rebuildPremiumBackgroundLayers')).toHaveLength(1);
+    expect(calls.filter((call) => call === 'rebuildLevelVisualLayers')).toHaveLength(1);
   });
 
   test('debounced callback no-ops if dimensions changed again before callback', () => {

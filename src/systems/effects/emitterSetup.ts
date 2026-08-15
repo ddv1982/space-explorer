@@ -20,7 +20,8 @@ export function createPooledEmitter(
 
 export function getExplosionConfig(
   intensity: number,
-  quantity: number
+  quantity: number,
+  tint: number[] = [0xff4444, 0xff8800, 0xffcc00, 0xffff44]
 ): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
   return {
     speed: { min: 50, max: 200 * intensity },
@@ -29,7 +30,7 @@ export function getExplosionConfig(
     lifespan: { min: 300, max: 600 },
     blendMode: Phaser.BlendModes.ADD,
     quantity,
-    tint: [0xff4444, 0xff8800, 0xffcc00, 0xffff44],
+    tint,
   };
 }
 

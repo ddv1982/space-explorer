@@ -76,6 +76,7 @@ type PreloadHarness = {
   displayedText: string[];
   startCalls: string[];
   queuedImages: Array<{ key: string; url: string }>;
+  delayedCalls: Array<() => void>;
 };
 
 function createPreloadHarness(): PreloadHarness {
@@ -85,6 +86,7 @@ function createPreloadHarness(): PreloadHarness {
   const displayedText: string[] = [];
   const startCalls: string[] = [];
   const queuedImages: Array<{ key: string; url: string }> = [];
+  const delayedCalls: Array<() => void> = [];
   const text = {
     setOrigin: () => text,
     setText: (value: string) => {
@@ -94,12 +96,16 @@ function createPreloadHarness(): PreloadHarness {
   };
 
   Object.assign(loadEvents, {
+    list: new Set(),
+    inflight: new Set(),
+    queue: new Set(),
     image: (key: string, url: string) => {
       queuedImages.push({ key, url });
     },
   });
 
   Object.assign(scene, {
+    lifecycleGeneration: 0,
     add: {
       text: (_x: number, _y: number, value: string) => {
         displayedText.push(value);
@@ -110,9 +116,14 @@ function createPreloadHarness(): PreloadHarness {
     load: loadEvents,
     textures: { exists: () => false },
     scene: { start: (key: string) => startCalls.push(key) },
+    time: {
+      delayedCall: (_delay: number, callback: () => void) => {
+        delayedCalls.push(callback);
+      },
+    },
   });
 
-  return { scene, loadEvents, lifecycleEvents, displayedText, startCalls, queuedImages };
+  return { scene, loadEvents, lifecycleEvents, displayedText, startCalls, queuedImages, delayedCalls };
 }
 
 describe('boot and preload loader lifecycle', () => {
@@ -203,5 +214,72 @@ describe('boot and preload loader lifecycle', () => {
     expect(harness.loadEvents.listenerCount('progress')).toBe(1);
     harness.loadEvents.emit('progress', 0.5);
     expect(harness.displayedText.at(-1)).toBe('LOADING... 50%');
+  });
+
+  test('ignores font completion from an obsolete preload lifecycle', async () => {
+    const harness = createPreloadHarness();
+    let resolveFirstFonts!: () => void;
+    const firstFonts = new Promise<void>((resolve) => {
+      resolveFirstFonts = resolve;
+    });
+
+    harness.scene.init();
+    Object.assign(harness.scene, { fontsReady: firstFonts });
+    harness.scene.create();
+    harness.lifecycleEvents.emit('shutdown');
+
+    harness.scene.init();
+    Object.assign(harness.scene, { fontsReady: null });
+    harness.scene.create();
+    resolveFirstFonts();
+    await firstFonts;
+    await Promise.resolve();
+
+    expect(harness.startCalls).toEqual(['Menu']);
+  });
+
+  test('ignores timeout completion from an obsolete preload lifecycle', () => {
+    const harness = createPreloadHarness();
+
+    harness.scene.init();
+    Object.assign(harness.scene, { fontsReady: new Promise<void>(() => {}) });
+    harness.scene.create();
+    const staleTimeout = harness.delayedCalls[0];
+    harness.lifecycleEvents.emit('shutdown');
+
+    harness.scene.init();
+    Object.assign(harness.scene, { fontsReady: null });
+    harness.scene.create();
+    staleTimeout();
+
+    expect(harness.startCalls).toEqual(['Menu']);
+  });
+
+  test('starts Menu exactly once whether timeout or font completion wins', async () => {
+    for (const winner of ['timeout', 'fonts'] as const) {
+      const harness = createPreloadHarness();
+      let resolveFonts!: () => void;
+      const fontsReady = new Promise<void>((resolve) => {
+        resolveFonts = resolve;
+      });
+
+      harness.scene.init();
+      Object.assign(harness.scene, { fontsReady });
+      harness.scene.create();
+
+      if (winner === 'timeout') {
+        harness.delayedCalls[0]();
+        resolveFonts();
+        await fontsReady;
+        await Promise.resolve();
+      } else {
+        resolveFonts();
+        await fontsReady;
+        await Promise.resolve();
+        harness.delayedCalls[0]();
+      }
+
+      expect(harness.startCalls).toEqual(['Menu']);
+    }
   });
 });

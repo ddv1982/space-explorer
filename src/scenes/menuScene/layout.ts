@@ -32,6 +32,10 @@ export interface MenuLayoutPlan {
   sliderStartY: number;
   sliderSpacing: number;
   sliderWidth: number;
+  qualityX: number;
+  qualityY: number;
+  qualityWidth: number;
+  qualityHeight: number;
   statusY: number;
   statusHeight: number;
 }
@@ -52,7 +56,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const tileGap = compact ? 10 : 20;
   let tileRowGap = compact ? (veryShortCompact ? 8 : 12) : 0;
   const defaultTileWidth = compact ? 120 : 180;
-  const tileColumns = compact && defaultTileWidth * 4 + tileGap * 3 > outerFrameWidth ? 2 : 4;
+  const tileColumns = compact && 100 * 4 + tileGap * 3 > outerFrameWidth ? 2 : 4;
   const maxTileWidth = Math.floor((outerFrameWidth - tileGap * (tileColumns - 1)) / tileColumns);
   const tileWidth = Math.max(100, Math.min(defaultTileWidth, maxTileWidth));
 
@@ -68,7 +72,10 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
 
   const titleY = outerFrameY + (compact ? (veryShortCompact ? 42 : 52) : 100);
   const subtitleY = outerFrameY + (compact ? (veryShortCompact ? 96 : 112) : 170);
-  const sliderStartY = subtitleY + (compact ? (veryShortCompact ? 18 : 30) : 50);
+  const qualityWidth = Math.min(outerFrameWidth - 48, 600);
+  const qualityHeight = compact ? 28 : 34;
+  const qualityY = subtitleY + (compact ? (veryShortCompact ? 14 : 20) : 30);
+  const sliderStartY = qualityY + qualityHeight + (compact ? 10 : 16);
 
   const tileRows = Math.ceil(4 / tileColumns);
   const statusHeight = 14;
@@ -76,7 +83,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const frameBottomPadding = compact ? (veryShortCompact ? 10 : 14) : 16;
   const topBandBottom = musicVisible
     ? sliderStartY + musicPanelHeight
-    : subtitleY + (compact ? (veryShortCompact ? 12 : 18) : 24);
+    : qualityY + qualityHeight + (compact ? 8 : 12);
   const tileTopPadding = compact ? (veryShortCompact ? 10 : 16) : 10;
   const tileTopMinY = topBandBottom + tileTopPadding;
   const tileBottomLimit = outerFrameY + outerFrameHeight - frameBottomPadding - statusHeight - statusGap;
@@ -136,6 +143,10 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
     sliderStartY,
     sliderSpacing,
     sliderWidth: musicPanelWidth,
+    qualityX: centerHorizontally(layout, qualityWidth),
+    qualityY,
+    qualityWidth,
+    qualityHeight,
     statusY,
     statusHeight,
   };

@@ -1,4 +1,5 @@
-import { getUpgradeByKey, PlayerUpgradeLevels } from '../config/UpgradesConfig';
+import { getUpgradeByKey, normalizeUpgradeLevel, PlayerUpgradeLevels } from '../config/UpgradesConfig';
+import { PLAYER_CONFIG } from '../config/playerConfig';
 
 export interface PlayerStateData {
   level: number;
@@ -31,7 +32,7 @@ interface PlayerStateRegistry {
 }
 
 const PLAYER_STATE_KEY = 'playerState';
-const DEFAULT_REMAINING_LIVES = 3;
+const DEFAULT_REMAINING_LIVES = PLAYER_CONFIG.startingLives;
 const RUN_SUMMARY_KEYS = {
   finalScore: 'finalScore',
   levelReached: 'levelReached',
@@ -54,11 +55,23 @@ function normalizeNonNegativeInteger(value: unknown, fallback: number): number {
   return Math.max(0, Math.floor(normalizeFiniteNumber(value, fallback)));
 }
 
+function normalizeBoundedInteger(value: unknown, fallback: number, maximum: number): number {
+  return Math.min(maximum, normalizeNonNegativeInteger(value, fallback));
+}
+
+export function normalizePersistedScore(value: unknown, fallback: number): number {
+  return normalizeBoundedInteger(value, fallback, Number.MAX_SAFE_INTEGER);
+}
+
+function getMaxHpForHullTier(hullTier: number): number {
+  return PLAYER_CONFIG.baseMaxHp + hullTier * PLAYER_CONFIG.hpPerUpgrade;
+}
+
 function getDefaultPlayerState(): PlayerStateData {
   return {
     level: 1,
     score: 0,
-    currentHp: 5,
+    currentHp: PLAYER_CONFIG.baseMaxHp,
     remainingLives: DEFAULT_REMAINING_LIVES,
     currentShields: 0,
     upgrades: {
@@ -75,7 +88,7 @@ function getDefaultPlayerState(): PlayerStateData {
   };
 }
 
-function normalizeHelperWingState(state: unknown): PersistentHelperWingState {
+function normalizeHelperWingState(state: unknown, maxPlayerHp: number): PersistentHelperWingState {
   if (!isObjectRecord(state)) {
     return { slots: [], grantedSlots: 0 };
   }
@@ -89,8 +102,8 @@ function normalizeHelperWingState(state: unknown): PersistentHelperWingState {
           }
 
           return {
-            remainingLives: normalizeNonNegativeInteger(slot.remainingLives, 0),
-            hp: Math.max(0, Math.round(normalizeFiniteNumber(slot.hp, 0))),
+            remainingLives: normalizeBoundedInteger(slot.remainingLives, 0, PLAYER_CONFIG.startingLives),
+            hp: normalizeBoundedInteger(slot.hp, 0, maxPlayerHp),
           };
         })
     : [];
@@ -116,7 +129,7 @@ function normalizeHelperWingState(state: unknown): PersistentHelperWingState {
   };
 }
 
-function normalizePlayerState(value: unknown): PlayerStateData {
+export function normalizePersistedPlayerState(value: unknown): PlayerStateData {
   const defaultState = getDefaultPlayerState();
   if (!isObjectRecord(value)) {
     return defaultState;
@@ -124,34 +137,39 @@ function normalizePlayerState(value: unknown): PlayerStateData {
 
   const upgradesInput = isObjectRecord(value.upgrades) ? value.upgrades : {};
   const upgrades = {
-    hp: normalizeNonNegativeInteger(upgradesInput.hp, defaultState.upgrades.hp),
-    damage: normalizeNonNegativeInteger(upgradesInput.damage, defaultState.upgrades.damage),
-    fireRate: normalizeNonNegativeInteger(upgradesInput.fireRate, defaultState.upgrades.fireRate),
-    shield: normalizeNonNegativeInteger(upgradesInput.shield, defaultState.upgrades.shield),
-    turrets: normalizeNonNegativeInteger(upgradesInput.turrets, defaultState.upgrades.turrets),
+    hp: normalizeUpgradeLevel('hp', upgradesInput.hp, defaultState.upgrades.hp),
+    damage: normalizeUpgradeLevel('damage', upgradesInput.damage, defaultState.upgrades.damage),
+    fireRate: normalizeUpgradeLevel('fireRate', upgradesInput.fireRate, defaultState.upgrades.fireRate),
+    shield: normalizeUpgradeLevel('shield', upgradesInput.shield, defaultState.upgrades.shield),
+    turrets: normalizeUpgradeLevel('turrets', upgradesInput.turrets, defaultState.upgrades.turrets),
   };
+  const maxHp = getMaxHpForHullTier(upgrades.hp);
   const maxShields = upgrades.shield;
   const currentShieldsInput = normalizeFiniteNumber(value.currentShields, maxShields);
 
   return {
     level: normalizeFiniteNumber(value.level, defaultState.level),
-    score: normalizeFiniteNumber(value.score, defaultState.score),
-    currentHp: normalizeFiniteNumber(value.currentHp, defaultState.currentHp),
+    score: normalizePersistedScore(value.score, defaultState.score),
+    currentHp: normalizeBoundedInteger(value.currentHp, defaultState.currentHp, maxHp),
     currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), maxShields)),
-    remainingLives: normalizeNonNegativeInteger(value.remainingLives, defaultState.remainingLives),
+    remainingLives: normalizeBoundedInteger(
+      value.remainingLives,
+      defaultState.remainingLives,
+      PLAYER_CONFIG.startingLives
+    ),
     upgrades,
-    helperWing: normalizeHelperWingState(value.helperWing),
+    helperWing: normalizeHelperWingState(value.helperWing, maxHp),
   };
 }
 
 export function getPlayerState(registry: PlayerStateRegistry): PlayerStateData {
-  const normalizedState = normalizePlayerState(registry.get(PLAYER_STATE_KEY) as unknown);
+  const normalizedState = normalizePersistedPlayerState(registry.get(PLAYER_STATE_KEY) as unknown);
   registry.set(PLAYER_STATE_KEY, normalizedState);
   return normalizedState;
 }
 
 export function setPlayerState(registry: PlayerStateRegistry, state: PlayerStateData): void {
-  registry.set(PLAYER_STATE_KEY, normalizePlayerState(state));
+  registry.set(PLAYER_STATE_KEY, normalizePersistedPlayerState(state));
 }
 
 export function resetPlayerState(registry: PlayerStateRegistry): void {
@@ -160,7 +178,7 @@ export function resetPlayerState(registry: PlayerStateRegistry): void {
 
 export function getRunSummary(registry: PlayerStateRegistry): RunSummaryData {
   return {
-    finalScore: normalizeFiniteNumber(
+    finalScore: normalizePersistedScore(
       registry.get(RUN_SUMMARY_KEYS.finalScore) as unknown,
       DEFAULT_RUN_SUMMARY.finalScore
     ),
@@ -177,7 +195,7 @@ export function setRunSummary(
 ): RunSummaryData {
   const currentSummary = getRunSummary(registry);
   const nextSummary: RunSummaryData = {
-    finalScore: normalizeFiniteNumber(summary.finalScore, currentSummary.finalScore),
+    finalScore: normalizePersistedScore(summary.finalScore, currentSummary.finalScore),
     levelReached: normalizeFiniteNumber(summary.levelReached, currentSummary.levelReached),
   };
 
@@ -193,7 +211,7 @@ export function resetRunSummary(registry: PlayerStateRegistry): void {
 }
 
 export function getPlayerMaxHp(state: PlayerStateData): number {
-  return 5 + state.upgrades.hp * 2;
+  return getMaxHpForHullTier(normalizeUpgradeLevel('hp', state.upgrades.hp));
 }
 
 export function getPlayerDamage(state: PlayerStateData): number {
@@ -257,6 +275,6 @@ export function saveHelperWingState(
   helperWing: PersistentHelperWingState | null | undefined
 ): void {
   const state = getPlayerState(registry);
-  state.helperWing = normalizeHelperWingState(helperWing);
+  state.helperWing = normalizeHelperWingState(helperWing, getPlayerMaxHp(state));
   setPlayerState(registry, state);
 }

@@ -17,6 +17,9 @@ interface QueuedImage {
 
 function createSceneHarness(cachedKeys: readonly string[] = []) {
   const queuedImages: QueuedImage[] = [];
+  const list = new Set<{ key: string; type: string }>();
+  const inflight = new Set<{ key: string; type: string }>();
+  const queue = new Set<{ key: string; type: string }>();
   const scene = {
     textures: {
       exists: (key: string) => cachedKeys.includes(key),
@@ -24,11 +27,15 @@ function createSceneHarness(cachedKeys: readonly string[] = []) {
     load: {
       image: (key: string, url: string) => {
         queuedImages.push({ key, url });
+        list.add({ key, type: 'image' });
       },
+      list,
+      inflight,
+      queue,
     },
   } as unknown as Phaser.Scene;
 
-  return { scene, queuedImages };
+  return { scene, queuedImages, list, inflight, queue };
 }
 
 describe('planet portrait assets', () => {
@@ -63,6 +70,40 @@ describe('planet portrait assets', () => {
     const cached = createSceneHarness(['planet-portrait-04']);
     expect(queuePlanetPortrait(cached.scene, 4)).toBe(false);
     expect(cached.queuedImages).toEqual([]);
+  });
+
+  test('does not queue a portrait already pending or in flight', () => {
+    const pending = createSceneHarness();
+    expect(queuePlanetPortrait(pending.scene, 5)).toBe(true);
+    expect(queuePlanetPortrait(pending.scene, 5)).toBe(false);
+    expect(pending.queuedImages).toHaveLength(1);
+
+    const inflight = createSceneHarness();
+    inflight.inflight.add({ key: 'planet-portrait-05', type: 'image' });
+    expect(queuePlanetPortrait(inflight.scene, 5)).toBe(false);
+
+    const processing = createSceneHarness();
+    processing.queue.add({ key: 'planet-portrait-05', type: 'image' });
+    expect(queuePlanetPortrait(processing.scene, 5)).toBe(false);
+  });
+
+  test('does not requeue a cached portrait after loader state resets', () => {
+    const harness = createSceneHarness(['planet-portrait-05']);
+    harness.list.clear();
+    harness.inflight.clear();
+    harness.queue.clear();
+
+    expect(queuePlanetPortrait(harness.scene, 5)).toBe(false);
+    expect(harness.queuedImages).toEqual([]);
+  });
+
+  test('allows retry after a failed or aborted loader entry is removed', () => {
+    const harness = createSceneHarness();
+    expect(queuePlanetPortrait(harness.scene, 5)).toBe(true);
+    harness.list.clear();
+
+    expect(queuePlanetPortrait(harness.scene, 5)).toBe(true);
+    expect(harness.queuedImages).toHaveLength(2);
   });
 
   test('refuses to queue portraits for levels outside the campaign', () => {

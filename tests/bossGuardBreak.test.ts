@@ -44,6 +44,7 @@ function createGuardBoss(): {
     visualFlashToken: 0,
     phase: 1,
     scene: {
+      physics: { world: { isPaused: false } },
       time: {
         now: 0,
         delayedCall: () => {},
@@ -59,6 +60,8 @@ function createGuardBoss(): {
     updatePhaseState: mock(),
     updateShieldState: mock(),
     tryFirePattern,
+    visualRig: { update: mock() },
+    gameplayTime: 0,
     die: mock(),
   });
 
@@ -90,6 +93,7 @@ describe('Boss Guard Break', () => {
 
   test('freezes attacks during the break and resets timers on recovery', () => {
     const { boss, setVelocity, updateMovement, tryFirePattern } = createGuardBoss();
+    (boss as unknown as Record<string, unknown>).gameplayTime = 100;
     boss.takePlayerDamage(4, 100);
 
     boss.updateBehavior(2599, 16);
@@ -116,6 +120,31 @@ describe('Boss Guard Break', () => {
     (boss as unknown as { updateGuardState(time: number, delta: number): boolean })
       .updateGuardState(1600, 100);
     expect(boss.getGuardState().ratio).toBe(0.25);
+  });
+
+  test('preserves the remaining Guard Break window across a physics-only pause', () => {
+    const { boss, updateMovement } = createGuardBoss();
+    const state = boss as unknown as Record<string, unknown>;
+
+    boss.preUpdate(1000, 100);
+    boss.takePlayerDamage(2, 1000);
+
+    const world = (state.scene as { physics: { world: { isPaused: boolean } } }).physics.world;
+    world.isPaused = true;
+    boss.preUpdate(50_000, 49_000);
+    world.isPaused = false;
+
+    // Collision processing may precede the first resumed preUpdate. The wall
+    // timestamp must not leak into the Guard Break deadline.
+    boss.takePlayerDamage(2, 50_000);
+    expect(boss.getGuardState().broken).toBe(true);
+
+    boss.preUpdate(52_499, 2499);
+    expect(boss.getGuardState().broken).toBe(true);
+
+    boss.preUpdate(52_500, 1);
+    expect(boss.getGuardState().broken).toBe(false);
+    expect(updateMovement).toHaveBeenLastCalledWith(2600, 1);
   });
 
   test('is absent from levels 1-4 and configured for every boss from level 5 onward', () => {

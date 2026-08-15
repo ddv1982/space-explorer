@@ -65,6 +65,7 @@ describe('background motion render-property writes', () => {
         config: { role: 'overlay', key: 'overlay', alpha: 0.75, depth: -16, scrollSpeed: 0.34 },
         baseAlpha: 0.75,
         currentAlpha: 0.75,
+        scrollOffsetX: 0,
         scrollOffsetY: 0,
       }],
       delta: 0,

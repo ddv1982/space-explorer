@@ -192,7 +192,7 @@ export class EffectsManager {
 
     this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount));
     this.explosionEmitter.explode(particleCount, x, y);
-    this.createExplosionShockwave(x, y, intensity);
+    this.createExplosionShockwave(x, y, intensity, 0xffb066);
 
     // Add debris for larger explosions
     if (intensity >= 1.0 && this.debrisEmitter) {
@@ -201,8 +201,58 @@ export class EffectsManager {
     }
   }
 
+  createEnemyExplosion(x: number, y: number, enemyType: string, intensity: number = 1): void {
+    if (!this.explosionEmitter) {
+      return;
+    }
+
+    const style = this.getEnemyExplosionStyle(enemyType);
+    const particleCount = Math.max(1, Math.floor(20 * intensity));
+    this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount, style.palette));
+    this.explosionEmitter.explode(particleCount, x, y);
+    this.createExplosionShockwave(x, y, intensity, style.ringTint, style.ringScaleX, style.ringScaleY);
+
+    if (this.debrisEmitter && ['bomber', 'gunship', 'sower', 'lancer'].includes(enemyType)) {
+      this.debrisEmitter.explode(6, x, y);
+    }
+  }
+
+  private getEnemyExplosionStyle(enemyType: string): {
+    palette: number[];
+    ringTint: number;
+    ringScaleX: number;
+    ringScaleY: number;
+  } {
+    if (enemyType === 'swarm' || enemyType === 'swarmling') {
+      return { palette: [0xffff5d, 0xffd73d, 0xffffff], ringTint: 0xffff73, ringScaleX: 1, ringScaleY: 0.72 };
+    }
+    if (enemyType === 'diver' || enemyType === 'splitter') {
+      return { palette: [0xff5df0, 0xff5d9e, 0xffffff], ringTint: 0xff73df, ringScaleX: 0.72, ringScaleY: 1.2 };
+    }
+    if (enemyType === 'dodger' || enemyType === 'gunship') {
+      return { palette: [0x4bf0ff, 0x63a4ff, 0xffffff], ringTint: 0x63dfff, ringScaleX: 1.3, ringScaleY: 0.7 };
+    }
+    if (enemyType === 'bomber' || enemyType === 'sower') {
+      return { palette: [0xffb14b, 0xff6a3d, 0xfff0c4], ringTint: 0xffa45d, ringScaleX: 1.18, ringScaleY: 1.18 };
+    }
+    if (enemyType === 'lancer') {
+      return { palette: [0xd8e9ff, 0x8bb9ff, 0xffffff], ringTint: 0xc9e3ff, ringScaleX: 0.58, ringScaleY: 1.45 };
+    }
+    if (enemyType === 'fighter') {
+      return { palette: [0x52f28e, 0x2fbd70, 0xe2ffed], ringTint: 0x69f6a1, ringScaleX: 1, ringScaleY: 1 };
+    }
+    return { palette: [0xff5d73, 0xff8c52, 0xffe0e5], ringTint: 0xff6f82, ringScaleX: 1, ringScaleY: 1 };
+  }
+
   /** White-hot flash pop followed by an expanding neon shockwave ring. */
-  private createExplosionShockwave(x: number, y: number, intensity: number): void {
+  private createExplosionShockwave(
+    x: number,
+    y: number,
+    intensity: number,
+    ringTint: number,
+    ringScaleX: number = 1,
+    ringScaleY: number = 1
+  ): void {
     const flash = this.scene.add
       .image(x, y, 'particle-burst')
       .setDepth(7)
@@ -223,12 +273,13 @@ export class EffectsManager {
       .image(x, y, 'particle-ring')
       .setDepth(7)
       .setBlendMode(Phaser.BlendModes.ADD)
-      .setTint(0xffb066)
-      .setScale(0.25 * intensity);
+      .setTint(ringTint)
+      .setScale(0.25 * intensity * ringScaleX, 0.25 * intensity * ringScaleY);
 
     this.scene.tweens.add({
       targets: ring,
-      scale: 2.4 * intensity,
+      scaleX: 2.4 * intensity * ringScaleX,
+      scaleY: 2.4 * intensity * ringScaleY,
       alpha: 0,
       duration: 320,
       ease: 'Cubic.easeOut',

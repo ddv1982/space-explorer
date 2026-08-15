@@ -534,7 +534,7 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
     return;
   }
 
-  if (scene.textures.exists(manifest.compositeKey)) {
+  if (manifest.runtimeLayers.every((layer) => scene.textures.exists(layer.key))) {
     return;
   }
 
@@ -567,32 +567,40 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
     });
   }
 
-  if (scene.textures.exists(manifest.compositeKey)) {
-    return;
+  // Preserve three independently moving depth planes while still collapsing
+  // the five authored canvases into a bounded runtime set.
+  const groups = [
+    { runtime: manifest.runtimeLayers[0], sourceRoles: ['far', 'nebula'] },
+    { runtime: manifest.runtimeLayers[1], sourceRoles: ['mid', 'near'] },
+    { runtime: manifest.runtimeLayers[2], sourceRoles: ['overlay'] },
+  ] as const;
+
+  for (const group of groups) {
+    if (scene.textures.exists(group.runtime.key)) {
+      continue;
+    }
+    const composite = scene.textures.createCanvas(group.runtime.key, size, size);
+    if (!composite) {
+      continue;
+    }
+    const context = composite.context;
+    context.clearRect(0, 0, size, size);
+    for (const layer of manifest.layers) {
+      if (!(group.sourceRoles as readonly string[]).includes(layer.role)) {
+        continue;
+      }
+      const source = scene.textures.get(layer.key).getSourceImage() as CanvasImageSource;
+      context.globalAlpha = layer.alpha;
+      context.globalCompositeOperation = layer.blendMode === 'ADD' ? 'lighter' : 'source-over';
+      context.drawImage(source, 0, 0);
+    }
+    context.globalAlpha = 1;
+    context.globalCompositeOperation = 'source-over';
+    composite.refresh();
   }
 
-  // Graphics.generateTexture produces CanvasTextures. Merge all five authored
-  // canvases with the browser's 2D compositor, then upload one ordinary
-  // texture. Unlike a framebuffer-backed DynamicTexture, this follows the
-  // same fast sampling path as the previous known-good single PNG backplate.
-  const composite = scene.textures.createCanvas(manifest.compositeKey, size, size);
-  if (!composite) {
-    return;
-  }
-  const context = composite.context;
-  context.clearRect(0, 0, size, size);
-  for (const layer of manifest.layers) {
-    const source = scene.textures.get(layer.key).getSourceImage() as CanvasImageSource;
-    context.globalAlpha = layer.alpha;
-    context.globalCompositeOperation = layer.blendMode === 'ADD' ? 'lighter' : 'source-over';
-    context.drawImage(source, 0, 0);
-  }
-  context.globalAlpha = 1;
-  context.globalCompositeOperation = 'source-over';
-  composite.refresh();
-
-  // The gameplay presentation now needs only the baked result. Release every
-  // source canvas immediately so the active level keeps one 1024px texture.
+  // Release the five authoring canvases; gameplay keeps only three 1024px
+  // planes (two on the low tier) instead of five full-screen textures.
   for (const layer of manifest.layers) {
     if (scene.textures.exists(layer.key)) {
       scene.textures.remove(layer.key);

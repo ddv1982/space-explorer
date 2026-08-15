@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { withGeneratedTexture } from '../generatedTexture';
+import { withGeneratedEntityTexture } from '../generatedTexture';
 import {
   NEON_ENTITY,
   fillHotCore,
@@ -9,7 +9,7 @@ import {
 } from './neonStyle';
 
 export function ensurePlayerTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'player-ship', 36, 44, (g) => {
+  return withGeneratedEntityTexture(scene, 'player-ship', 36, 44, (g) => {
     const palette = NEON_ENTITY.player;
 
     // Sleek forward dart hull with swept wings.
@@ -47,7 +47,7 @@ export function ensurePlayerTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureHelperShipTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'helper-ship', 24, 30, (g) => {
+  return withGeneratedEntityTexture(scene, 'helper-ship', 24, 30, (g) => {
     const palette = NEON_ENTITY.helper;
 
     fillNeonPolygon(
@@ -77,7 +77,7 @@ export function ensureHelperShipTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureScoutTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'scout-texture', 26, 28, (g) => {
+  return withGeneratedEntityTexture(scene, 'scout-texture', 26, 28, (g) => {
     const palette = NEON_ENTITY.scout;
 
     // Narrow aggressive arrow hull.
@@ -124,7 +124,7 @@ export function ensureScoutTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureFighterTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'fighter-texture', 36, 36, (g) => {
+  return withGeneratedEntityTexture(scene, 'fighter-texture', 36, 36, (g) => {
     const palette = NEON_ENTITY.fighter;
 
     // Broad chevron hull.
@@ -158,7 +158,7 @@ export function ensureFighterTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureBomberTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'bomber-texture', 44, 38, (g) => {
+  return withGeneratedEntityTexture(scene, 'bomber-texture', 44, 38, (g) => {
     const palette = NEON_ENTITY.bomber;
 
     // Heavy armored hex hull.
@@ -195,7 +195,7 @@ export function ensureBomberTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureGunshipTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'gunship-texture', 40, 40, (g) => {
+  return withGeneratedEntityTexture(scene, 'gunship-texture', 40, 40, (g) => {
     const palette = NEON_ENTITY.gunship;
 
     // Twin long prongs.
@@ -251,7 +251,7 @@ export function ensureGunshipTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureSwarmTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'swarm-texture', 20, 20, (g) => {
+  return withGeneratedEntityTexture(scene, 'swarm-texture', 20, 20, (g) => {
     const palette = NEON_ENTITY.swarm;
 
     // Tri-shard arrowhead.
@@ -273,7 +273,7 @@ export function ensureSwarmTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureDiverTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'diver-texture', 24, 30, (g) => {
+  return withGeneratedEntityTexture(scene, 'diver-texture', 24, 30, (g) => {
     const palette = NEON_ENTITY.diver;
 
     // Swept crescent hull built for dive runs.
@@ -303,7 +303,7 @@ export function ensureDiverTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureDodgerTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'dodger-texture', 30, 24, (g) => {
+  return withGeneratedEntityTexture(scene, 'dodger-texture', 30, 24, (g) => {
     const palette = NEON_ENTITY.dodger;
 
     // Wide slim wing built for lateral evasion.
@@ -333,7 +333,7 @@ export function ensureDodgerTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureSowerTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'sower-texture', 34, 34, (g) => {
+  return withGeneratedEntityTexture(scene, 'sower-texture', 34, 34, (g) => {
     const palette = NEON_ENTITY.sower;
 
     // Bulbous minelayer pod.
@@ -364,7 +364,7 @@ export function ensureSowerTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureLancerTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'lancer-texture', 22, 40, (g) => {
+  return withGeneratedEntityTexture(scene, 'lancer-texture', 22, 40, (g) => {
     const palette = NEON_ENTITY.lancer;
 
     // Long needle hull with a charged lance tip.
@@ -411,7 +411,7 @@ export function ensureLancerTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureSplitterTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'splitter-texture', 30, 26, (g) => {
+  return withGeneratedEntityTexture(scene, 'splitter-texture', 30, 26, (g) => {
     const palette = NEON_ENTITY.splitter;
 
     // Twin-lobed pod held by a light bridge.
@@ -426,7 +426,7 @@ export function ensureSplitterTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureSwarmlingTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'swarmling-texture', 14, 14, (g) => {
+  return withGeneratedEntityTexture(scene, 'swarmling-texture', 14, 14, (g) => {
     const palette = NEON_ENTITY.swarmling;
 
     // Tiny shard spawned by the splitter.

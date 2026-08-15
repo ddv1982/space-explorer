@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
-import { withGeneratedTexture } from '../generatedTexture';
+import { withGeneratedEntityTexture } from '../generatedTexture';
 import { NEON_ENTITY, fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine } from './neonStyle';
 
 export function ensurePlayerBulletTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'player-bullet', 8, 18, (g) => {
+  return withGeneratedEntityTexture(scene, 'player-bullet', 8, 18, (g) => {
     const palette = NEON_ENTITY.player;
 
     // Layered glow capsule with a hot tip.
@@ -21,7 +21,7 @@ export function ensurePlayerBulletTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureEnemyBulletTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'enemy-bullet', 8, 8, (g) => {
+  return withGeneratedEntityTexture(scene, 'enemy-bullet', 8, 8, (g) => {
     const palette = NEON_ENTITY.enemyFire;
 
     fillNeonCircle(g, 4, 4, 2.2, palette, {
@@ -35,7 +35,7 @@ export function ensureEnemyBulletTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureBomberBombTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'bomber-bomb', 14, 18, (g) => {
+  return withGeneratedEntityTexture(scene, 'bomber-bomb', 14, 18, (g) => {
     const palette = NEON_ENTITY.bomber;
 
     // Faceted ordnance shell.
@@ -63,7 +63,7 @@ export function ensureBomberBombTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureMineTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'sower-mine', 16, 16, (g) => {
+  return withGeneratedEntityTexture(scene, 'sower-mine', 16, 16, (g) => {
     const palette = NEON_ENTITY.mine;
 
     // Spiked proximity orb.
@@ -83,7 +83,7 @@ export function ensureMineTexture(scene: Phaser.Scene): string {
 }
 
 export function ensureBeamTexture(scene: Phaser.Scene): string {
-  return withGeneratedTexture(scene, 'hazard-beam', 32, 128, (g) => {
+  return withGeneratedEntityTexture(scene, 'hazard-beam', 32, 128, (g) => {
     // Soft beam bar tinted at runtime: wide glow falloff with a hot core.
     g.fillStyle(0xffffff, 0.1);
     g.fillRect(0, 0, 32, 128);

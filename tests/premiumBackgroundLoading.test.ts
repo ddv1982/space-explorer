@@ -116,8 +116,10 @@ describe('premium background loading helpers', () => {
       { source: 'bg_level05_near', alpha: 0.9, operation: 'source-over' },
       { source: 'bg_level05_overlay', alpha: 0.75, operation: 'lighter' },
     ]);
-    expect(harness.getCompositeRefreshCount()).toBe(1);
+    expect(harness.getCompositeRefreshCount()).toBe(3);
     expect(harness.hasTexture('bg_level05_composite')).toBe(true);
+    expect(harness.hasTexture('bg_level05_motif')).toBe(true);
+    expect(harness.hasTexture('bg_level05_atmosphere')).toBe(true);
     expect(harness.hasTexture('bg_level05_overlay')).toBe(false);
     expect(harness.hasTexture('bg_level05')).toBe(false);
     expect(harness.hasTexture('bg_level05_nebula')).toBe(false);

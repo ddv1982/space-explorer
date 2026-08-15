@@ -49,7 +49,7 @@ interface GameSceneGameplayFrameDelegate {
   };
   waveManager: {
     update(time: number, delta: number, progress: number): void;
-    updateBossAdds(time: number): void;
+    updateBossAdds(delta: number): void;
   };
   levelManager: {
     progress: number;
@@ -206,7 +206,7 @@ export function createGameSceneGameplayFrameBehavior(
     if (!delegate.levelManager.hasBossSpawned()) {
       delegate.waveManager.update(time, delta, delegate.levelManager.progress);
     } else if (delegate.levelManager.getLevelConfig().bossAddWaves) {
-      delegate.waveManager.updateBossAdds(time);
+      delegate.waveManager.updateBossAdds(delta);
     }
 
     const prevComplete = delegate.levelManager.isComplete();

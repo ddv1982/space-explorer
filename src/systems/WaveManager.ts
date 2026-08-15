@@ -75,6 +75,7 @@ export class WaveManager {
   private hazardBeamSystem: HazardBeamSystem | null = null;
   private choreographer: WaveChoreographer | null = null;
   private lastBossAddSpawn = 0;
+  private gameplayTime: number | null = null;
   private deathReliefRemainingMs = 0;
   private pendingWormholePacks: PendingWormholePack[] = [];
   private readonly hazardLastTriggered = new Map<string, number>();
@@ -193,16 +194,22 @@ export class WaveManager {
     this.setEnemySpawnFocus(this.levelConfig.enemies);
   }
 
-  update(time: number, delta: number, progress: number): void {
+  update(_time: number, delta: number, progress: number): void {
     if (!this.levelConfig) {
       return;
     }
 
-    this.updateDeathRelief(delta);
+    const gameplayDelta = Math.max(0, delta);
+    this.gameplayTime = this.gameplayTime === null
+      ? Math.max(0, _time)
+      : this.gameplayTime + gameplayDelta;
+    const time = this.gameplayTime;
+
+    this.updateDeathRelief(gameplayDelta);
     const sectionState = this.resolveEncounterSectionState(progress, time);
-    this.decayHazardPressure(delta);
-    this.choreographer?.update(delta);
-    this.updatePendingWormholePacks(delta);
+    this.decayHazardPressure(gameplayDelta);
+    this.choreographer?.update(gameplayDelta);
+    this.updatePendingWormholePacks(gameplayDelta);
     this.spawnAuthoredSectionContent(sectionState.activeSection, sectionState.sectionProgress);
     this.spawnSectionHazards(time, sectionState.activeSection);
     this.spawnEnemiesByConfig(time, sectionState.rateMultiplier, sectionState.activeSection);
@@ -213,10 +220,13 @@ export class WaveManager {
     return this.asteroidGroup;
   }
 
-  updateBossAdds(time: number): void {
+  updateBossAdds(delta: number): void {
     if (!this.levelConfig?.bossAddWaves) {
       return;
     }
+
+    this.gameplayTime = (this.gameplayTime ?? 0) + Math.max(0, delta);
+    const time = this.gameplayTime;
 
     if (time <= this.lastBossAddSpawn + BOSS_ADD_WAVE_INTERVAL_MS) {
       return;
@@ -249,6 +259,7 @@ export class WaveManager {
   }
 
   private resetLevelState(): void {
+    this.gameplayTime = null;
     this.lastEncounterSpawn = 0;
     this.lastAsteroidSpawn = 0;
     this.lastBossAddSpawn = 0;
