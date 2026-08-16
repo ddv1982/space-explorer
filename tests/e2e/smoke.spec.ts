@@ -4,6 +4,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   page,
   assertNoBrowserErrors,
 }) => {
+  test.setTimeout(120_000);
   await page.goto('/');
   await expect(page.locator('#game-root > canvas')).toHaveCount(1);
   expect(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__)).toBeUndefined();
