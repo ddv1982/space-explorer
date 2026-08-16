@@ -59,8 +59,8 @@ describe('createHudAndTransitions', () => {
       'warp.create',
       'warp.setAccentColor',
     ]);
-    expect(hudCreateArgs).toEqual({ scene, levelConfig });
-    expect(hudAnnouncementArgs).toEqual({ levelName: 'Nebula Pass', level: 3 });
+    expect(hudCreateArgs as { scene: unknown; levelConfig: unknown } | null).toEqual({ scene, levelConfig });
+    expect(hudAnnouncementArgs as { levelName: string; level: number } | null).toEqual({ levelName: 'Nebula Pass', level: 3 });
     expect(warpCreateScene).toBe(scene);
     expect(warpAccentColor).toBe(0x55aaff);
     expect(result.lastHudShieldCount).toBe(2);

@@ -8,7 +8,7 @@ type FakeBullet = GrazeSurgeBullet & { killCalls: number };
 
 function createHarness(options: { playerAlive?: boolean; bullets?: Array<{ x: number; y: number }> } = {}) {
   const bullets: FakeBullet[] = (options.bullets ?? []).map((bullet) => ({
-    active: true,
+    active: true as boolean,
     x: bullet.x,
     y: bullet.y,
     killCalls: 0,

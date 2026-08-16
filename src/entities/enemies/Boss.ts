@@ -9,6 +9,7 @@ import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from
 import { getViewportBounds } from '../../utils/layout';
 import { ensureBossTextureVariant } from '../../utils/SpriteFactory';
 import { BossVisualRig } from './boss/BossVisualRig';
+import { advanceBossGuard, applyBossGuardHit } from './boss/BossGuardController';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -105,9 +106,16 @@ export class Boss extends EnemyBase {
       return;
     }
 
-    this.guardValue = Math.min(this.guardCapacity, this.guardValue + amount);
-    this.guardLastHitAt = gameplayTime;
-    if (this.guardValue >= this.guardCapacity) {
+    const nextGuard = applyBossGuardHit({
+      capacity: this.guardCapacity,
+      value: this.guardValue,
+      lastHitAt: this.guardLastHitAt,
+      broken: this.guardBroken,
+      brokenUntil: this.guardBrokenUntil,
+    }, amount, gameplayTime);
+    this.guardValue = nextGuard.value;
+    this.guardLastHitAt = nextGuard.lastHitAt;
+    if (nextGuard.shouldBreak) {
       this.startGuardBreak(gameplayTime);
     }
   }
@@ -398,26 +406,31 @@ export class Boss extends EnemyBase {
   }
 
   private updateGuardState(time: number, delta: number): boolean {
-    if (this.guardBroken) {
-      if (time < this.guardBrokenUntil) {
-        this.setVelocity(0, 0);
-        return true;
-      }
+    const nextGuard = advanceBossGuard({
+      capacity: this.guardCapacity,
+      value: this.guardValue,
+      lastHitAt: this.guardLastHitAt,
+      broken: this.guardBroken,
+      brokenUntil: this.guardBrokenUntil,
+    }, {
+      time,
+      delta,
+      decayDelayMs: this.guardDecayDelayMs,
+      decayPerSecond: this.guardDecayPerSecond,
+    });
+    this.guardValue = nextGuard.value;
+    this.guardLastHitAt = nextGuard.lastHitAt;
+    this.guardBroken = nextGuard.broken;
 
-      this.guardBroken = false;
-      this.guardValue = 0;
-      this.guardLastHitAt = Number.NEGATIVE_INFINITY;
+    if (nextGuard.frozen) {
+      this.setVelocity(0, 0);
+      return true;
+    }
+
+    if (nextGuard.recovered) {
       this.lastFireTime = time;
       this.phaseStartedAt = time;
       this.restoreBaseTint();
-    }
-
-    if (
-      this.guardCapacity > 0 &&
-      this.guardValue > 0 &&
-      time > this.guardLastHitAt + this.guardDecayDelayMs
-    ) {
-      this.guardValue = Math.max(0, this.guardValue - this.guardDecayPerSecond * (delta / 1000));
     }
 
     return false;

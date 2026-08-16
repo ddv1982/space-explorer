@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.9.0`](./1.9.0.md) - charts the engine-room constellations with strict sentries, separated combat instruments, and ratcheted structural boundaries
 - [`1.8.1`](./1.8.1.md) - cools the command-deck engines with lighter skies, disciplined particle wings, and visual sentries that inspect the light itself
 - [`1.8.0`](./1.8.0.md) - relights the neon command deck with cinematic stations, hotter silhouettes, and louder edge skies while the campaign grammar holds
 - [`1.7.2`](./1.7.2.md) - jettisons unused holds and silent wiring so the flight deck carries only live commands

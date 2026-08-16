@@ -327,18 +327,18 @@ describe('runGameSceneCreateBootstrap', () => {
     expect(showControlsHintArgs).toEqual([phaserScene, { mobile: false }]);
     expect(pauseHandler).not.toBeNull();
 
-    expect(shutdownEventName).toBe('shutdown');
+    expect(shutdownEventName as string | null).toBe('shutdown');
     expect(keyboardDetectedHandler).not.toBeNull();
-    keyboardDetectedHandler?.();
+    (keyboardDetectedHandler as (() => void) | null)?.();
     expect(suppressedValues).toEqual([true]);
-    shutdownUnsubscribe?.();
+    (shutdownUnsubscribe as (() => void) | null)?.();
     expect(callLog.slice(-1)).toEqual(['unsubscribeHardwareKeyboardDetected']);
 
-    pauseHandler?.();
+    (pauseHandler as (() => void) | null)?.();
     expect(callLog.slice(-2)).toEqual([
       'flow.isGameplayLocked',
       'pauseStateController.togglePauseRequest',
     ]);
-    expect(pauseToggleArg).toBe(true);
+    expect(pauseToggleArg as boolean | null).toBe(true);
   });
 });

@@ -95,7 +95,7 @@ describe('sceneRegistry', () => {
     expect(state.addCalls).toEqual([]);
 
     const SceneClass = class {} as unknown as new () => Phaser.Scene;
-    resolveLoader?.(SceneClass);
+    (resolveLoader as ((sceneClass: new () => Phaser.Scene) => void) | null)?.(SceneClass);
     await Promise.all([first, second]);
 
     expect(state.addCalls).toEqual(['TestSceneDedupe']);
@@ -116,7 +116,7 @@ describe('sceneRegistry', () => {
     expect(state.callOrder).toEqual([]);
 
     const SceneClass = class {} as unknown as new () => Phaser.Scene;
-    resolveLoader?.(SceneClass);
+    (resolveLoader as ((sceneClass: new () => Phaser.Scene) => void) | null)?.(SceneClass);
     await flushMicrotasks();
 
     expect(state.callOrder).toEqual(['add:TestSceneStartOrder', 'start:TestSceneStartOrder']);

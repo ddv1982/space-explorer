@@ -222,7 +222,7 @@ describe('PauseStateController regression coverage', () => {
     harness.controller.togglePauseRequest(false);
     harness.handlers.onSaveSlot('slot-1');
 
-    expect(savedSlot).toBe('slot-1');
+    expect(String(savedSlot)).toBe('slot-1');
     expect(harness.playClickCalls).toBe(2);
     expect(harness.overlayStates.at(-1)).toEqual(createOverlayState({
       visible: true,
@@ -250,7 +250,7 @@ describe('PauseStateController regression coverage', () => {
     harness.controller.togglePauseRequest(false);
     harness.handlers.onLoadSlot('slot-1');
 
-    expect(loadedSlot).toBe('slot-1');
+    expect(String(loadedSlot)).toBe('slot-1');
     expect(harness.controller.isGameplayPaused()).toBe(true);
     expect(harness.physicsActions).toEqual(['pause']);
     expect(harness.overlayStates.at(-1)).toMatchObject({
@@ -304,7 +304,7 @@ describe('PauseStateController regression coverage', () => {
     harness.controller.togglePauseRequest(false);
     harness.handlers.onDeleteSlot('slot-1');
 
-    expect(deletedSlot).toBe('slot-1');
+    expect(String(deletedSlot)).toBe('slot-1');
     expect(harness.overlayStates.at(-1)).toEqual(createOverlayState({
       visible: true,
       canResume: true,

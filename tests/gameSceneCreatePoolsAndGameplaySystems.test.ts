@@ -24,7 +24,7 @@ mock.module('@/entities/PowerUp', () => ({
   resolvePowerUpOverlap: (...values: unknown[]) => {
     return values.find(
       (value): value is { active: boolean; powerUpType: string; kill: () => void } =>
-        Boolean(value) && typeof value === 'object' && 'powerUpType' in value
+        value !== null && typeof value === 'object' && 'powerUpType' in value
     ) ?? null;
   },
 }));
@@ -171,12 +171,12 @@ describe('createPoolsAndGameplaySystems', () => {
       powerUpType: 'shield',
       kill: mock(),
     };
-    overlapCallback?.(powerUp, player);
+    (overlapCallback as ((a: unknown, b: unknown) => void) | null)?.(powerUp, player);
     expect(applyPowerUp).toHaveBeenCalledWith('shield');
     expect(powerUp.kill).toHaveBeenCalledTimes(1);
 
-    expect(capturedTargetProvider?.()).toEqual({ x: 111, y: 222 });
+    expect((capturedTargetProvider as (() => { x: number; y: number } | null) | null)?.()).toEqual({ x: 111, y: 222 });
     player.isAlive = false;
-    expect(capturedTargetProvider?.()).toBeNull();
+    expect((capturedTargetProvider as (() => { x: number; y: number } | null) | null)?.()).toBeNull();
   });
 });

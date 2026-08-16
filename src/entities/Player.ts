@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
-import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
+import { GAME_SCENE_EVENTS } from '../systems/GameSceneEvents';
 import { ensurePlayerTexture } from '../utils/SpriteFactory';
 import { applyGameObjectGlow } from '../utils/renderingCompat';
 

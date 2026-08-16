@@ -355,8 +355,8 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
       active: true,
       x: 30,
       y: 50,
-      hp: 1,
-      takeDamage(amount: number) {
+      hp: 1 as number,
+      takeDamage(this: { hp: number; active: boolean }, amount: number) {
         harness.callLog.push(`mine.takeDamage:${amount}`);
         this.hp -= amount;
         if (this.hp <= 0) {

@@ -69,3 +69,11 @@ This document describes the scene boundaries, system contracts, and coding rules
 - After enemy roster changes, check `LevelsConfig`, `WaveManager`, `EnemyPool`, and `CollisionManager` together.
 - After adding terminal UI data, check both `GameOverScene` and `VictoryScene`.
 - Keep `README.md` high level and update this document when the internal architecture changes in a meaningful way.
+
+## Structural guardrails
+
+- `bun run architecture:check` rejects dependency cycles between `src` modules.
+- Modules above 500 lines or 25 internal imports are reported as concentration warnings, not automatic failures. These warnings identify extraction candidates without forcing arbitrary file slicing.
+- Intentional composition and procedural-generation hotspots have explicit, near-current budgets in `checkArchitecture.ts`. They stay listed in the report, and any growth beyond the budget becomes a warning; reduce a budget whenever an extraction lands so the improvement cannot silently regress.
+- Current budgeted hotspots are the browser diagnostics facade, `GameScene`, the neon background recipe collection, `WaveManager`, and the boss entity facade. New files must use the default limits rather than joining this list without an architectural review.
+- Scene classes remain lifecycle and composition roots; scheduling belongs in focused controllers, and Phaser callback normalization belongs at adapter boundaries.

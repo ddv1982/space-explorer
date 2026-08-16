@@ -223,11 +223,11 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
           // noop
         },
         setEnemyBulletGroupArgs: [] as unknown[],
-        summonHandler: null as EnemyPoolHarness['lastBoss']['summonHandler'],
+        summonHandler: null as NonNullable<EnemyPoolHarness['lastBoss']>['summonHandler'],
         setEnemyBulletGroup(group: unknown) {
           this.setEnemyBulletGroupArgs.push(group);
         },
-        setSummonHandler(handler: EnemyPoolHarness['lastBoss']['summonHandler']) {
+        setSummonHandler(handler: NonNullable<EnemyPoolHarness['lastBoss']>['summonHandler']) {
           this.summonHandler = handler;
         },
       };
@@ -331,9 +331,9 @@ describe('EnemyPool regression coverage', () => {
     ]);
 
     expect(harness.groupCreateCalls).toEqual([
-      EXPECTED_GROUP_CONFIGS.get(Scout),
-      EXPECTED_GROUP_CONFIGS.get(Fighter),
-      EXPECTED_GROUP_CONFIGS.get(EnemyBullet),
+      EXPECTED_GROUP_CONFIGS.get(Scout)!,
+      EXPECTED_GROUP_CONFIGS.get(Fighter)!,
+      EXPECTED_GROUP_CONFIGS.get(EnemyBullet)!,
     ]);
 
     expect(harness.pool.getScoutGroup() as unknown).toBe(harness.groupsByClassType.get(Scout));
@@ -399,7 +399,7 @@ describe('EnemyPool regression coverage', () => {
     expect(classTypeCalls.filter(type => type === EnemyBullet).length).toBe(1);
 
     for (const call of harness.groupCreateCalls) {
-      expect(call).toEqual(EXPECTED_GROUP_CONFIGS.get(call.classType));
+      expect(call).toEqual(EXPECTED_GROUP_CONFIGS.get(call.classType)!);
     }
   });
 
@@ -524,6 +524,6 @@ describe('EnemyPool regression coverage', () => {
     };
 
     expect(() => harness.pool.getAllEnemies()).not.toThrow();
-    expect(harness.pool.getAllEnemies()).toEqual([scout, fighter]);
+    expect(harness.pool.getAllEnemies()).toEqual([scout!, fighter!]);
   });
 });

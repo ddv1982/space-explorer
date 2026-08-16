@@ -86,9 +86,9 @@ describe('createWorldPresentation', () => {
       'effects.setup',
       'effects.applyLevelColorGrade',
     ]);
-    expect(releasedLevel).toBe(4);
-    expect(parallaxCreateArgs).toEqual({ scene, levelConfig });
-    expect(parallaxAtmosphereArgs).toEqual({ section: initialSection, progress: 0.4 });
+    expect(releasedLevel as number | null).toBe(4);
+    expect(parallaxCreateArgs as { scene: unknown; levelConfig: unknown } | null).toEqual({ scene, levelConfig });
+    expect(parallaxAtmosphereArgs as { section: unknown; progress: number } | null).toEqual({ section: initialSection, progress: 0.4 });
     expect(effectsSetupScene).toBe(scene);
     expect(effectsColorGradeConfig).toBe(levelConfig);
     expect(result.playerSpawnPoint).toEqual({ x: 120, y: 340 });

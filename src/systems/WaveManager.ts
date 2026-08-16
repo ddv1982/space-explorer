@@ -21,29 +21,21 @@ import type { HazardBeamSystem } from './HazardBeamSystem';
 import { GAME_SCENE_EVENTS, spawnPowerUp } from './GameplayFlow';
 import { resolveSectionSpawnRateScale } from './sectionIdentity';
 import { WaveAsteroidSpawner } from './wave/WaveAsteroidSpawner';
+import { EnemySpawnTable } from './wave/EnemySpawnTable';
+import { createEnemySpawnHandlers } from './wave/createEnemySpawnHandlers';
+import { HazardCadenceController } from './wave/HazardCadenceController';
+import { WormholePackController } from './wave/WormholePackController';
 import {
   CHOREO_LANE_COUNT,
   getLaneCenterX,
   resolveFormationPositions,
   WaveChoreographer,
 } from './wave/waveChoreography';
-import {
-  canTriggerHazard,
-  consumeHazardPressure,
-  decayHazardPressure,
-  getEncounterCountPressureScale,
-  getEncounterIntervalPressureScale,
-  isHazardWithinDuration,
-} from './wave/hazardPressurePolicy';
+import { getEncounterCountPressureScale, getEncounterIntervalPressureScale } from './wave/hazardPressurePolicy';
 
 const BOSS_ADD_WAVE_INTERVAL_MS = 12000;
 const DEATH_RELIEF_DURATION_MS = 8000;
 const DEATH_RELIEF_SPAWN_RATE_SCALE = 0.75;
-
-interface SpawnEntry {
-  type: EnemyType;
-  cumulativeWeight: number;
-}
 
 type EncounterSectionState = {
   activeSection: LevelSectionConfig | null;
@@ -51,111 +43,30 @@ type EncounterSectionState = {
   rateMultiplier: number;
 };
 
-interface PendingWormholePack {
-  hazard: ScriptedHazardConfig;
-  x: number;
-  y: number;
-  remainingMs: number;
-}
-
 export class WaveManager {
   private scene!: Phaser.Scene;
   private enemyPool!: EnemyPool;
   private asteroidGroup!: Phaser.Physics.Arcade.Group;
   private asteroidSpawner!: WaveAsteroidSpawner;
-  private spawnEntries: SpawnEntry[] = [];
-  private totalEnemyWeight = 0;
+  private readonly spawnTable = new EnemySpawnTable();
   private lastEncounterSpawn = 0;
   private lastAsteroidSpawn = 0;
   private levelConfig!: LevelConfig;
   private activeSection: LevelSectionConfig | null = null;
-  private activeSectionStartedAt = 0;
-  private hazardPressure = 0;
+  private readonly hazardCadence = new HazardCadenceController();
   private powerUpGroup: Phaser.Physics.Arcade.Group | null = null;
   private hazardBeamSystem: HazardBeamSystem | null = null;
   private choreographer: WaveChoreographer | null = null;
   private lastBossAddSpawn = 0;
   private gameplayTime: number | null = null;
   private deathReliefRemainingMs = 0;
-  private pendingWormholePacks: PendingWormholePack[] = [];
-  private readonly hazardLastTriggered = new Map<string, number>();
+  private readonly wormholePacks = new WormholePackController();
   private readonly triggeredAuthoredEvents = new Set<string>();
-  private readonly enemySpawnHandlers: Record<EnemyType, (anchorX: number) => boolean> = {
-    scout: (anchorX) => this.spawnRepeatedEnemies(
-      'scout',
-      Phaser.Math.Between(1, 2),
-      () => this.getEncounterSpawnX(anchorX, 50),
-      () => Phaser.Math.Between(-100, -30)
-    ),
-    fighter: (anchorX) => this.spawnRepeatedEnemies(
-      'fighter',
-      1,
-      () => this.getEncounterSpawnX(anchorX, 100),
-      () => Phaser.Math.Between(-80, -30)
-    ),
-    bomber: (anchorX) => this.spawnRepeatedEnemies(
-      'bomber',
-      1,
-      () => this.getEncounterSpawnX(anchorX, 80),
-      () => Phaser.Math.Between(-80, -30)
-    ),
-    swarm: (anchorX) => {
-      const baseX = this.getEncounterSpawnX(anchorX, 100);
-
-      return this.spawnRepeatedEnemies(
-        'swarm',
-        Phaser.Math.Between(3, 5),
-        () => this.clampEncounterX(baseX + Phaser.Math.Between(-60, 60), 50),
-        () => Phaser.Math.Between(-120, -30)
-      );
-    },
-    gunship: (anchorX) => this.spawnRepeatedEnemies(
-      'gunship',
-      1,
-      () => this.getEncounterSpawnX(anchorX, 120),
-      () => Phaser.Math.Between(-80, -30)
-    ),
-    diver: (anchorX) => this.spawnRepeatedEnemies(
-      'diver',
-      Phaser.Math.Between(1, 2),
-      () => this.getEncounterSpawnX(anchorX, 60),
-      () => Phaser.Math.Between(-100, -40)
-    ),
-    dodger: (anchorX) => this.spawnRepeatedEnemies(
-      'dodger',
-      1,
-      () => this.getEncounterSpawnX(anchorX, 90),
-      () => Phaser.Math.Between(-80, -30)
-    ),
-    sower: (anchorX) => this.spawnRepeatedEnemies(
-      'sower',
-      1,
-      () => this.getEncounterSpawnX(anchorX, 100),
-      () => Phaser.Math.Between(-80, -30)
-    ),
-    lancer: (anchorX) => this.spawnRepeatedEnemies(
-      'lancer',
-      1,
-      () => this.getEncounterSpawnX(anchorX, 80),
-      () => Phaser.Math.Between(-80, -30)
-    ),
-    splitter: (anchorX) => this.spawnRepeatedEnemies(
-      'splitter',
-      Phaser.Math.Between(1, 2),
-      () => this.getEncounterSpawnX(anchorX, 80),
-      () => Phaser.Math.Between(-90, -30)
-    ),
-    swarmling: (anchorX) => {
-      const baseX = this.getEncounterSpawnX(anchorX, 60);
-
-      return this.spawnRepeatedEnemies(
-        'swarmling',
-        Phaser.Math.Between(2, 3),
-        () => this.clampEncounterX(baseX + Phaser.Math.Between(-40, 40), 40),
-        () => Phaser.Math.Between(-120, -30)
-      );
-    },
-  };
+  private readonly enemySpawnHandlers = createEnemySpawnHandlers({
+    spawnRepeated: (type, count, getX, getY) => this.spawnRepeatedEnemies(type, count, getX, getY),
+    getSpawnX: (anchorX, padding) => this.getEncounterSpawnX(anchorX, padding),
+    clampX: (x, padding) => this.clampEncounterX(x, padding),
+  });
 
   create(scene: Phaser.Scene, enemyPool: EnemyPool): Phaser.Physics.Arcade.Group {
     this.scene = scene;
@@ -207,9 +118,9 @@ export class WaveManager {
 
     this.updateDeathRelief(gameplayDelta);
     const sectionState = this.resolveEncounterSectionState(progress, time);
-    this.decayHazardPressure(gameplayDelta);
+    this.hazardCadence.decay(gameplayDelta);
     this.choreographer?.update(gameplayDelta);
-    this.updatePendingWormholePacks(gameplayDelta);
+    this.wormholePacks.update(gameplayDelta, (hazard, x, y) => this.materializeWormholePack(hazard, x, y));
     this.spawnAuthoredSectionContent(sectionState.activeSection, sectionState.sectionProgress);
     this.spawnSectionHazards(time, sectionState.activeSection);
     this.spawnEnemiesByConfig(time, sectionState.rateMultiplier, sectionState.activeSection);
@@ -266,9 +177,8 @@ export class WaveManager {
   }
 
   private resetHazardState(): void {
-    this.hazardPressure = 0;
-    this.hazardLastTriggered.clear();
-    this.pendingWormholePacks = [];
+    this.hazardCadence.reset();
+    this.wormholePacks.reset();
   }
 
   private setEnemySpawnFocus(enemyEntries: EnemySpawnConfig[]): void {
@@ -362,8 +272,8 @@ export class WaveManager {
     }
 
     this.activeSection = section;
-    this.activeSectionStartedAt = time;
     this.resetHazardState();
+    this.hazardCadence.reset(time);
     this.choreographer?.setSection(section?.waves);
     this.setEnemySpawnFocus(section?.enemyFocus ?? this.levelConfig.enemies);
   }
@@ -373,29 +283,11 @@ export class WaveManager {
   }
 
   private buildSpawnTable(enemyEntries: EnemySpawnConfig[]): void {
-    let cumulativeWeight = 0;
-
-    this.spawnEntries = enemyEntries
-      .filter((entry) => entry.weight > 0)
-      .map((entry) => {
-        cumulativeWeight += entry.weight;
-        return {
-          type: entry.type,
-          cumulativeWeight,
-        };
-      });
-
-    this.totalEnemyWeight = cumulativeWeight;
+    this.spawnTable.rebuild(enemyEntries);
   }
 
   private pickEnemyType(): EnemyType | null {
-    if (this.totalEnemyWeight <= 0) {
-      return null;
-    }
-
-    const roll = Phaser.Math.Between(1, this.totalEnemyWeight);
-    const match = this.spawnEntries.find((entry) => roll <= entry.cumulativeWeight);
-    return match?.type ?? this.spawnEntries[this.spawnEntries.length - 1]?.type ?? null;
+    return this.spawnTable.pick();
   }
 
   private getEncounterSpawnX(anchorX: number, padding: number): number {
@@ -468,7 +360,7 @@ export class WaveManager {
   }
 
   private shouldSpawnEncounter(time: number, rateMultiplier: number): boolean {
-    const encounterInterval = (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardPressure);
+    const encounterInterval = (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardCadence.getPressure());
     if (time <= this.lastEncounterSpawn + encounterInterval) {
       return false;
     }
@@ -479,7 +371,7 @@ export class WaveManager {
 
   private getEncounterCount(activeSection: LevelSectionConfig | null): number {
     const encounterSize = activeSection?.encounterSizeOverride ?? this.levelConfig.encounterSize;
-    const pressureScale = getEncounterCountPressureScale(this.hazardPressure);
+    const pressureScale = getEncounterCountPressureScale(this.hazardCadence.getPressure());
     const minCount = Math.max(1, Math.round(encounterSize.min * pressureScale));
     const maxCount = Math.max(minCount, Math.round(encounterSize.max * pressureScale));
 
@@ -509,42 +401,11 @@ export class WaveManager {
       const hazard = activeSection.hazardEvents[index];
       const key = `${activeSection.id}:${hazard.type}:${index}`;
 
-      if (!this.shouldTriggerHazard(time, hazard, key)) {
+      if (!this.hazardCadence.tryTrigger(time, hazard, key)) {
         continue;
       }
-
-      this.recordHazardTrigger(key, time);
       this.triggerHazardEvent(hazard);
-      this.consumeHazardPressure(hazard);
     }
-  }
-
-  private shouldTriggerHazard(time: number, hazard: ScriptedHazardConfig, key: string): boolean {
-    const cadence = hazard.cadenceMs ?? 2000;
-    const lastTriggered = this.hazardLastTriggered.get(key) ?? this.activeSectionStartedAt;
-    const sectionElapsedMs = Math.max(0, time - this.activeSectionStartedAt);
-
-    if (!isHazardWithinDuration(hazard, sectionElapsedMs)) {
-      return false;
-    }
-
-    if (time <= lastTriggered + cadence) {
-      return false;
-    }
-
-    return canTriggerHazard(this.hazardPressure, hazard);
-  }
-
-  private recordHazardTrigger(key: string, time: number): void {
-    this.hazardLastTriggered.set(key, time);
-  }
-
-  private consumeHazardPressure(hazard: ScriptedHazardConfig): void {
-    this.hazardPressure = consumeHazardPressure(this.hazardPressure, hazard);
-  }
-
-  private decayHazardPressure(delta: number): void {
-    this.hazardPressure = decayHazardPressure(this.hazardPressure, delta);
   }
 
   private spawnMirroredHazardAsteroids(minSpeed: number, maxSpeed: number): void {
@@ -593,43 +454,14 @@ export class WaveManager {
 
   private spawnWormholePack(hazard: ScriptedHazardConfig): void {
     const viewport = getViewportBounds(this.scene);
-    const portalCount = 1 + Math.round(hazard.intensity ?? 0.5);
-
-    for (let index = 0; index < portalCount; index++) {
-      const x = Phaser.Math.Between(
-        Math.round(viewport.left + viewport.width * 0.2),
-        Math.round(viewport.right - viewport.width * 0.2)
-      );
-      const y = Phaser.Math.Between(150, 280);
-
+    this.wormholePacks.schedule(hazard, viewport, (x, y) => {
       this.scene.events.emit(GAME_SCENE_EVENTS.wormholeTelegraph, x, y);
-      this.pendingWormholePacks.push({ hazard, x, y, remainingMs: 600 });
-    }
-  }
-
-  private updatePendingWormholePacks(delta: number): void {
-    if (this.pendingWormholePacks.length === 0) {
-      return;
-    }
-
-    const elapsed = Math.max(0, delta);
-    const stillPending: PendingWormholePack[] = [];
-
-    for (const pending of this.pendingWormholePacks) {
-      pending.remainingMs -= elapsed;
-      if (pending.remainingMs <= 0) {
-        this.materializeWormholePack(pending.hazard, pending.x, pending.y);
-      } else {
-        stillPending.push(pending);
-      }
-    }
-
-    this.pendingWormholePacks = stillPending;
+    });
   }
 
   private materializeWormholePack(hazard: ScriptedHazardConfig, x: number, y: number): void {
     const preferredTypes = hazard.enemyTypes ?? ['scout', 'fighter'];
-    const allowedTypes = preferredTypes.filter((type) => this.spawnEntries.some((entry) => entry.type === type));
+    const allowedTypes = preferredTypes.filter((type) => this.spawnTable.includes(type));
     const intensity = hazard.intensity ?? 0.5;
     const spawnCount = Phaser.Math.Clamp(2 + Math.round(intensity * 2), 2, 4);
 
@@ -645,7 +477,7 @@ export class WaveManager {
   }
 
   private spawnHazardEncounter(preferredTypes: EnemyType[], intensity: number): void {
-    const allowedTypes = preferredTypes.filter((type) => this.spawnEntries.some((entry) => entry.type === type));
+    const allowedTypes = preferredTypes.filter((type) => this.spawnTable.includes(type));
     const anchorX = this.getEncounterRandomX(120);
     const spawnCount = Phaser.Math.Clamp(Math.round(1 + intensity * 2), 1, 3);
 

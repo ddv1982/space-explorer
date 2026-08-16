@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
-import { Player, type PlayerDamageOutcome } from '../entities/Player';
+import { Player } from '../entities/Player';
 import { Bullet } from '../entities/Bullet';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { Boss } from '../entities/enemies/Boss';
 import { Asteroid } from '../entities/Asteroid';
 import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
+import { routePlayerDamageOutcome } from './collision/playerDamagePolicy';
+import { clearHazardGroup } from './collision/clearHazardGroup';
 import { runBestEffort } from '../utils/runBestEffort';
 import { BulletPool } from './BulletPool';
 import { EnemyPool } from './EnemyPool';
@@ -437,10 +439,6 @@ export class CollisionManager {
     return !this.terminalTransitionActive && !this.respawnInProgress && this.player.isAlive && !!body && body.enable;
   }
 
-  private shouldEmitPlayerHit(damageOutcome: PlayerDamageOutcome): boolean {
-    return damageOutcome === 'absorbed' || damageOutcome === 'damaged';
-  }
-
   private processAcceptedPlayerDamage(options: {
     amount: number;
     beforeDamage?: () => void;
@@ -452,12 +450,13 @@ export class CollisionManager {
 
     options.afterDamage?.();
 
-    if (damageOutcome === 'fatal') {
+    const route = routePlayerDamageOutcome(damageOutcome);
+    if (route === 'fatal-transition') {
       this.onPlayerFatalHit();
       return;
     }
 
-    if (this.shouldEmitPlayerHit(damageOutcome)) {
+    if (route === 'hit-feedback') {
       this.onPlayerHit();
     }
   }
@@ -487,32 +486,6 @@ export class CollisionManager {
   }
 
   private clearHazardGroup(group: Phaser.Physics.Arcade.Group): void {
-    this.getHazardChildrenSafely(group).forEach(child => {
-      if (!(child instanceof Phaser.GameObjects.GameObject)) {
-        return;
-      }
-
-      if ('kill' in child && typeof child.kill === 'function') {
-        const sprite = child as EnemyBullet | BomberBomb | Mine;
-        if (sprite.active) {
-          sprite.kill();
-        }
-        return;
-      }
-
-      if (child instanceof Asteroid && child.active) {
-        child.clear();
-      }
-    });
+    clearHazardGroup(group);
   }
-
-  private getHazardChildrenSafely(group: Phaser.Physics.Arcade.Group): Phaser.GameObjects.GameObject[] {
-    try {
-      return group.getChildren();
-    } catch (_error) {
-      // Hazard groups may already be invalidated during terminal scene cleanup.
-      return [];
-    }
-  }
-
 }

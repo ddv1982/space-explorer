@@ -39,6 +39,9 @@ jobs:
       - name: Check unused code
         run: bun run knip
 
+      - name: Check architecture boundaries
+        run: bun run architecture:check
+
       - name: Build
         run: bun run build
 
