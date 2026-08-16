@@ -20,6 +20,7 @@ import {
 import { WarpTransition } from '@/systems/WarpTransition';
 import { ensurePremiumBackgroundAssets } from '@/systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
+import { sharpenSceneText } from '@/utils/uiTextRendering';
 
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { findButtonIndexAtPoint } from './planetIntermission/navigation';
@@ -92,6 +93,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.initializeUpgradeFlow(intermissionLayout);
     this.initializeWarpTransition();
     this.createContinuePrompt(intermissionLayout);
+    sharpenSceneText(this);
     this.bindContinueInputs();
   }
 

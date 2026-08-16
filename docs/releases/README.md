@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.10.1`](./1.10.1.md) - focuses the Glass-Tide lens with Retina-sharp arrival instruments and collision-proof refit readouts
 - [`1.10.0`](./1.10.0.md) - teaches the starship to breathe under pressure with adaptive High visuals, disciplined recovery, and leaner production cargo
 - [`1.9.0`](./1.9.0.md) - charts the engine-room constellations with strict sentries, separated combat instruments, and ratcheted structural boundaries
 - [`1.8.1`](./1.8.1.md) - cools the command-deck engines with lighter skies, disciplined particle wings, and visual sentries that inspect the light itself

@@ -47,6 +47,14 @@ export function createUpgradeButton(
     }
   ).setDepth(3);
 
+  // The status is a fixed right-hand column. Crop descriptive copy at its
+  // boundary so localized or unusually long labels can never collide with it.
+  const descriptionWidth = Math.max(
+    1,
+    layout.buttonWidth - layout.textInsetX - layout.statusColumnWidth
+  );
+  levelText.setCrop(0, 0, descriptionWidth, levelText.height);
+
   const costText = scene.add.text(
     x + layout.buttonWidth - layout.costInsetX,
     y + (layout.showDescription ? layout.buttonHeight / 2 : layout.buttonHeight - 10),
@@ -185,10 +193,6 @@ function getLevelText(evaluation: UpgradeEvaluation, showDescription: boolean): 
 
   if (evaluation.blockReason === 'locked' && evaluation.unlockReason) {
     return `UNLOCK: ${evaluation.unlockReason.toUpperCase()}`;
-  }
-
-  if (evaluation.blockReason === 'progression') {
-    return `${baseText}  ·  CAP ${evaluation.progressionLimit}`;
   }
 
   return baseText;

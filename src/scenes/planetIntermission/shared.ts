@@ -13,6 +13,7 @@ export interface UpgradeGridLayout {
   titleOffsetY: number;
   descriptionOffsetY: number;
   costInsetX: number;
+  statusColumnWidth: number;
   borderRadius: number;
   titleFontSize: string;
   descriptionFontSize: string;
@@ -56,6 +57,7 @@ export function getUpgradeGridLayout(
       titleOffsetY: 7,
       descriptionOffsetY: 25,
       costInsetX: 8,
+      statusColumnWidth: 48,
       borderRadius: 8,
       titleFontSize: '11px',
       descriptionFontSize: '9px',
@@ -76,6 +78,7 @@ export function getUpgradeGridLayout(
       titleOffsetY: compact ? 7 : 8,
       descriptionOffsetY: compact ? 27 : 29,
       costInsetX: 9,
+      statusColumnWidth: 52,
       borderRadius: 9,
       titleFontSize: compact ? '11px' : '12px',
       descriptionFontSize: '9px',
@@ -97,6 +100,7 @@ export function getUpgradeGridLayout(
       titleOffsetY: roomy ? 10 : 7,
       descriptionOffsetY: roomy ? 33 : compact ? 27 : 28,
       costInsetX: 10,
+      statusColumnWidth: 56,
       borderRadius: 10,
       titleFontSize: compact ? '11px' : '12px',
       descriptionFontSize: compact ? '9px' : '10px',
@@ -116,9 +120,10 @@ export function getUpgradeGridLayout(
     titleOffsetY: 12,
     descriptionOffsetY: 39,
     costInsetX: 12,
+    statusColumnWidth: 68,
     borderRadius: 12,
     titleFontSize: '14px',
-    descriptionFontSize: '11px',
+    descriptionFontSize: '12px',
     costFontSize: '14px',
     iconSize: 36,
     showDescription: true,
