@@ -233,10 +233,6 @@ export class WarpTransition {
     this.onCompleteCallback = null;
   }
 
-  cancel(): void {
-    this.cleanup();
-  }
-
   destroy(): void {
     this.cleanup();
 
@@ -250,9 +246,5 @@ export class WarpTransition {
       context: this,
     });
     this.scene = null;
-  }
-
-  isRunning(): boolean {
-    return this.running;
   }
 }

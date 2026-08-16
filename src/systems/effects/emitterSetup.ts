@@ -119,19 +119,6 @@ export function getHitSplashConfig(): Phaser.Types.GameObjects.Particles.Particl
   };
 }
 
-export function getAmbientSparkleConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 5, max: 20 },
-    angle: { min: 0, max: 360 },
-    scale: { start: 0.2, end: 0 },
-    lifespan: { min: 500, max: 1500 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: 1,
-    alpha: { start: 0.3, end: 0 },
-    tint: [0xaaccff, 0xffffff, 0xffddaa],
-  };
-}
-
 export function getPowerUpBurstConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
   return {
     speed: { min: 60, max: 160 },

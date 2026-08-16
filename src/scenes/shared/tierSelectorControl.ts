@@ -11,7 +11,6 @@ export interface TierSelectorLayout {
 }
 
 export interface TierSelectorControl<T extends string> {
-  getValue: () => T;
   setValue: (value: T) => void;
   setLayout: (layout: TierSelectorLayout) => void;
   setDepth: (depth: number) => void;
@@ -46,7 +45,6 @@ export function createTierSelectorControl<T extends string>(
   };
 
   const control: TierSelectorControl<T> = {
-    getValue: () => value,
     setValue(nextValue) {
       value = nextValue;
       refresh();

@@ -20,7 +20,6 @@ mock.module('../src/scenes/shared/musicSliderCluster', () => ({
       setDepth() {},
       setVisible() {},
       setValue() {},
-      getValue: () => 0,
       destroy() {},
     });
     return {

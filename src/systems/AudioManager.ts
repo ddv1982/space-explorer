@@ -52,10 +52,6 @@ export class AudioManager {
     this.sfxManager.playExplosion(intensity);
   }
 
-  playEnemyFire(): void {
-    this.sfxManager.playEnemyFire();
-  }
-
   playPowerUp(): void {
     this.sfxManager.playPowerUp();
   }

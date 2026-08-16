@@ -5,7 +5,6 @@ export const PLAYER_CONFIG = {
   // The campaign has no reserve-life upgrades, so this is also the persisted-state maximum.
   startingLives: 3,
   baseFireRate: 150,
-  bulletSpeed: -600,
   hpPerUpgrade: 2,
   fireRateReductionPerUpgrade: 15,
   minFireRate: 60,

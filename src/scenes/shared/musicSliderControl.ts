@@ -13,7 +13,6 @@ export interface MusicSliderControl {
   setDepth: (depth: number) => void;
   setVisible: (visible: boolean) => void;
   setValue: (value: number) => void;
-  getValue: () => number;
   destroy: () => void;
 }
 
@@ -21,7 +20,6 @@ interface CreateMusicSliderControlConfig {
   label: string;
   value: number;
   width?: number;
-  formatValue?: (value: number) => string;
   onChange: (value: number) => void;
   icon?: MusicSliderIconDrawer;
 }
@@ -54,7 +52,7 @@ export function createMusicSliderControl(
   config: CreateMusicSliderControlConfig
 ): MusicSliderControl {
   const totalWidth = config.width ?? 260;
-  const formatValue = config.formatValue ?? ((value) => `${Math.round(value * 100)}%`);
+  const formatValue = (nextValue: number) => `${Math.round(nextValue * 100)}%`;
 
   // Layering: pill background → icon box → track bg → track fill → knob → value box → texts → hit zone
   const pillFrame = scene.add.graphics();
@@ -287,9 +285,6 @@ export function createMusicSliderControl(
     },
     setValue(nextValue) {
       setValue(nextValue, false);
-    },
-    getValue() {
-      return value;
     },
     destroy() {
       scene.input.off('pointermove', handlePointerMove);

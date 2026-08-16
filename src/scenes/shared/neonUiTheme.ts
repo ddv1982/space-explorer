@@ -6,15 +6,12 @@ export const NEON = {
   cyanBright: 0xbff6ff,
   blue: 0x2f94ff,
   blueDeep: 0x0a2d5c,
-  navy: 0x020816,
   navySoft: 0x061529,
   panel: 0x030a18,
-  panelSoft: 0x071a32,
   purple: 0x8f6bff,
   teal: 0x58f0d8,
   red: 0xff756f,
   amber: 0xffc36e,
-  white: 0xf4fdff,
 } as const;
 
 export const NEON_TEXT = {
@@ -37,7 +34,6 @@ interface NeonFrameOptions {
   strokeAlpha?: number;
   cornerCut?: number;
   accentColor?: number;
-  inner?: boolean;
   glow?: boolean;
 }
 

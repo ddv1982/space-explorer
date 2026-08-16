@@ -54,13 +54,6 @@ export function createMusicSliderCluster(
   };
 }
 
-export function setMusicSliderClusterPosition(sliders: MusicSliderCluster, x: number, y: number, spacing: number): void {
-  sliders.creativity.setPosition(x, y);
-  sliders.energy.setPosition(x, y + spacing);
-  sliders.ambience.setPosition(x, y + spacing * 2);
-  sliders.volume.setPosition(x, y + spacing * 3);
-}
-
 export function setMusicSliderClusterDepth(sliders: MusicSliderCluster, depth: number): void {
   sliders.creativity.setDepth(depth);
   sliders.energy.setDepth(depth);

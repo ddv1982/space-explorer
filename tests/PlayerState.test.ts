@@ -9,7 +9,6 @@ const {
   getRunSummary,
   resetRunSummary,
   saveCurrentHp,
-  saveCurrentShields,
   setPlayerState,
   setRunSummary,
 } = await import('../src/systems/PlayerState');
@@ -252,35 +251,6 @@ describe('PlayerState schema behavior', () => {
     });
 
     expect(getPlayerState(registry).currentShields).toBe(2);
-  });
-
-  test('saveCurrentShields clamps to valid range', () => {
-    const registry = createRegistry();
-
-    setPlayerState(registry, {
-      level: 1,
-      score: 0,
-      currentHp: 5,
-      currentShields: 0,
-      remainingLives: 3,
-      upgrades: {
-        hp: 0,
-        damage: 0,
-        fireRate: 0,
-        shield: 1,
-        turrets: 0,
-      },
-      helperWing: {
-        grantedSlots: 0,
-        slots: [],
-      },
-    });
-
-    saveCurrentShields(registry, 4);
-    expect(getPlayerState(registry).currentShields).toBe(1);
-
-    saveCurrentShields(registry, -9);
-    expect(getPlayerState(registry).currentShields).toBe(0);
   });
 
   test('advanceToNextLevel resets hp and shields for next run', () => {

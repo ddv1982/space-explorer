@@ -13,7 +13,6 @@ import {
 } from './effects/ephemeralOverlayTweens';
 import {
   createPooledEmitter,
-  getAmbientSparkleConfig,
   getBulletTrailConfig,
   getDebrisConfig,
   getEnemyBulletTrailConfig,
@@ -42,7 +41,6 @@ export class EffectsManager {
   private bulletTrailEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private enemyBulletTrailEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private hitSplashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private ambientSparkleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private powerUpBurstEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private debrisEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private exhaustConfigIntensityTenths = -1;
@@ -127,13 +125,6 @@ export class EffectsManager {
       48
     );
     this.hitSplashEmitter = createPooledEmitter(this.scene, 'particle-hit', getHitSplashConfig(), 7, 32);
-    this.ambientSparkleEmitter = createPooledEmitter(
-      this.scene,
-      'particle-sparkle',
-      getAmbientSparkleConfig(),
-      1,
-      24
-    );
     this.powerUpBurstEmitter = createPooledEmitter(this.scene, 'particle-burst', getPowerUpBurstConfig(), 8, 32);
     this.debrisEmitter = createPooledEmitter(this.scene, 'particle-debris', getDebrisConfig(), 5, 48);
   }
@@ -155,7 +146,6 @@ export class EffectsManager {
     this.bulletTrailEmitter?.destroy();
     this.enemyBulletTrailEmitter?.destroy();
     this.hitSplashEmitter?.destroy();
-    this.ambientSparkleEmitter?.destroy();
     this.powerUpBurstEmitter?.destroy();
     this.debrisEmitter?.destroy();
 
@@ -166,7 +156,6 @@ export class EffectsManager {
     this.bulletTrailEmitter = null;
     this.enemyBulletTrailEmitter = null;
     this.hitSplashEmitter = null;
-    this.ambientSparkleEmitter = null;
     this.powerUpBurstEmitter = null;
     this.debrisEmitter = null;
     this.exhaustConfigIntensityTenths = -1;
@@ -406,10 +395,6 @@ export class EffectsManager {
 
   createHitSplash(x: number, y: number): void {
     this.hitSplashEmitter?.explode(10, x, y);
-  }
-
-  createAmbientSparkle(x: number, y: number): void {
-    this.ambientSparkleEmitter?.explode(1, x, y);
   }
 
   createPowerUpBurst(x: number, y: number, color?: number): void {

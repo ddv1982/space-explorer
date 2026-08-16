@@ -12,8 +12,6 @@ import {
 
 export interface IntermissionLayoutMetrics {
   mode: IntermissionViewportMode;
-  compact: boolean;
-  tight: boolean;
   portrait: boolean;
   showDestination: boolean;
   showJourneyNote: boolean;
@@ -69,8 +67,6 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
       : desktop
         ? 'desktop'
         : 'landscape';
-  const compact = mode !== 'desktop';
-  const tight = mode === 'landscape' || mode === 'ultra-compact';
   const margin = mode === 'desktop' ? Math.max(36, viewport.width * 0.035) : mode === 'landscape' ? 18 : 14;
   const stackedUltra = mode === 'ultra-compact' && viewport.width < 400;
   // Five upgrade cards need a tighter stack on short viewports: compress the
@@ -188,8 +184,6 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
 
   return {
     mode,
-    compact,
-    tight,
     portrait,
     showDestination: mode !== 'ultra-compact',
     showJourneyNote:

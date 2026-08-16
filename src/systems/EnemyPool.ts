@@ -300,14 +300,6 @@ export class EnemyPool {
     });
   }
 
-  fireEnemyBullet(x: number, y: number): EnemyBullet | null {
-    const bullet = this.acquireFromGroup<EnemyBullet>(this.ensureGroup('enemyBullet'), x, y);
-    if (bullet) {
-      bullet.fire(x, y);
-    }
-    return bullet;
-  }
-
   getScoutGroup(): Phaser.Physics.Arcade.Group {
     return this.ensureGroup('scout');
   }

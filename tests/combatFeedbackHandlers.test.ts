@@ -61,7 +61,8 @@ mock.module('phaser', () => ({
   },
 }));
 
-const { createGameSceneCombatFeedbackHandlers, runBestEffort } = await import('../src/scenes/gameScene/combatFeedbackHandlers');
+const { createGameSceneCombatFeedbackHandlers } = await import('../src/scenes/gameScene/combatFeedbackHandlers');
+const { runBestEffort } = await import('../src/utils/runBestEffort');
 
 describe('runBestEffort', () => {
   test('runs the provided effect', () => {

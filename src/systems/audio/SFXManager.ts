@@ -93,28 +93,6 @@ export class SFXManager {
     source.start(ctx.currentTime);
   }
 
-  playEnemyFire(): void {
-    const output = this.getAudioOutput();
-    if (!output) return;
-
-    const { ctx, masterGain } = output;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(300, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.1);
-
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-
-    osc.connect(gain);
-    gain.connect(masterGain);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.12);
-  }
-
   playPowerUp(): void {
     const output = this.getAudioOutput();
     if (!output) return;

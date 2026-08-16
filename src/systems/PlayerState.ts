@@ -257,13 +257,6 @@ export function saveCurrentHp(registry: PlayerStateRegistry, hp: number): void {
   setPlayerState(registry, state);
 }
 
-export function saveCurrentShields(registry: PlayerStateRegistry, shields: number): void {
-  const state = getPlayerState(registry);
-  const maxShields = getPlayerShieldCount(state);
-  state.currentShields = Math.max(0, Math.min(Math.floor(shields), maxShields));
-  setPlayerState(registry, state);
-}
-
 export function saveRemainingLives(registry: PlayerStateRegistry, remainingLives: number): void {
   const state = getPlayerState(registry);
   state.remainingLives = Math.max(0, remainingLives);

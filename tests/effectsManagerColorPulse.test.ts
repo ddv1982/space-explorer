@@ -28,7 +28,6 @@ mock.module('../src/systems/effects/ephemeralOverlayTweens', () => ({
 
 mock.module('../src/systems/effects/emitterSetup', () => ({
   createPooledEmitter: mock(),
-  getAmbientSparkleConfig: mock(() => ({})),
   getBulletTrailConfig: mock(() => ({})),
   getDebrisConfig: mock(() => ({})),
   getEnemyBulletTrailConfig: mock(() => ({})),

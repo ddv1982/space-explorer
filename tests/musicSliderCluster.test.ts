@@ -16,7 +16,6 @@ type SliderStub = {
   setDepth: (depth: number) => void;
   setVisible: (visible: boolean) => void;
   setValue: (value: number) => void;
-  getValue: () => number;
   destroy: () => void;
 };
 
@@ -65,9 +64,6 @@ mock.module('../src/scenes/shared/musicSliderControl', () => ({
       setValue(value) {
         this.setValueCalls.push(value);
       },
-      getValue() {
-        return 0;
-      },
       destroy() {
         this.destroyCalls += 1;
       },
@@ -82,7 +78,6 @@ const {
   createMusicSliderCluster,
   destroyMusicSliderCluster,
   setMusicSliderClusterDepth,
-  setMusicSliderClusterPosition,
   setMusicSliderClusterVisible,
 } = await import('../src/scenes/shared/musicSliderCluster');
 
@@ -112,21 +107,16 @@ describe('musicSliderCluster', () => {
     expect(createdSliders.get('MUSIC VOLUME')?.setValueCalls).toEqual([0.42]);
   });
 
-  test('destroys all four sliders and supports shared position/depth/visible helpers', () => {
+  test('destroys all four sliders and supports shared depth/visible helpers', () => {
     let sliders: ReturnType<typeof createMusicSliderCluster> | null = null;
     sliders = createMusicSliderCluster({} as never, {
       width: 280,
       getSliders: () => sliders,
     });
 
-    setMusicSliderClusterPosition(sliders, 10, 20, 30);
     setMusicSliderClusterDepth(sliders, 99);
     setMusicSliderClusterVisible(sliders, false);
 
-    expect(createdSliders.get('CREATIVITY')?.setPositionCalls.at(-1)).toEqual({ x: 10, y: 20 });
-    expect(createdSliders.get('ENERGY')?.setPositionCalls.at(-1)).toEqual({ x: 10, y: 50 });
-    expect(createdSliders.get('AMBIENCE')?.setPositionCalls.at(-1)).toEqual({ x: 10, y: 80 });
-    expect(createdSliders.get('MUSIC VOLUME')?.setPositionCalls.at(-1)).toEqual({ x: 10, y: 110 });
     expect(createdSliders.get('MUSIC VOLUME')?.setDepthCalls.at(-1)).toBe(99);
     expect(createdSliders.get('MUSIC VOLUME')?.setVisibleCalls.at(-1)).toBe(false);
 

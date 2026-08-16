@@ -45,18 +45,6 @@ export class LevelManager {
     return this.progress >= this.levelConfig.bossTriggerProgress;
   }
 
-  getEncounterProgress(): number {
-    const encounterGoal = this.levelConfig.hasBoss
-      ? this.levelConfig.bossTriggerProgress
-      : 1.0;
-
-    if (encounterGoal <= 0) {
-      return 1.0;
-    }
-
-    return Math.min(Math.max(this.progress / encounterGoal, 0), 1);
-  }
-
   hasBossSpawned(): boolean {
     return this.bossSpawned;
   }
@@ -72,12 +60,5 @@ export class LevelManager {
 
   getLevelConfig(): LevelConfig {
     return this.levelConfig;
-  }
-
-  reset(): void {
-    this.distance = 0;
-    this.progress = 0;
-    this.bossSpawned = false;
-    this.bossDefeated = false;
   }
 }

@@ -4,7 +4,6 @@ import type { UpgradeKey } from '../../config/UpgradesConfig';
 export type IntermissionViewportMode = 'desktop' | 'landscape' | 'portrait' | 'ultra-compact';
 
 export interface UpgradeGridLayout {
-  top: number;
   columns: number;
   buttonWidth: number;
   buttonHeight: number;
@@ -48,7 +47,6 @@ export function getUpgradeGridLayout(
 
   if (mode === 'ultra-compact') {
     return {
-      top: 0,
       columns,
       buttonWidth,
       buttonHeight: 44,
@@ -69,7 +67,6 @@ export function getUpgradeGridLayout(
 
   if (mode === 'landscape') {
     return {
-      top: 0,
       columns,
       buttonWidth,
       buttonHeight: compact ? 48 : 54,
@@ -91,7 +88,6 @@ export function getUpgradeGridLayout(
   if (mode === 'portrait') {
     const roomy = viewportHeight >= 760 && !compact;
     return {
-      top: 0,
       columns,
       buttonWidth,
       buttonHeight: roomy ? 60 : compact ? 48 : 52,
@@ -111,7 +107,6 @@ export function getUpgradeGridLayout(
   }
 
   return {
-    top: 0,
     columns,
     buttonWidth,
     buttonHeight: 72,

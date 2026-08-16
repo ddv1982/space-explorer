@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.7.2`](./1.7.2.md) - jettisons unused holds and silent wiring so the flight deck carries only live commands
 - [`1.7.1`](./1.7.1.md) - balances the silent command deck with centered checkpoints, explicit slot actions, clearer hierarchy, and collision-free responsive stations
 - [`1.7.0`](./1.7.0.md) - tunes the starbound helm with persistent difficulty, one shared settings deck, pause-safe choices, and orientation-proof controls
 - [`1.6.0`](./1.6.0.md) - kindles a denser celestial forge with sharper ships, layered skies, persistent quality controls, stronger boss presence, and hardened runtime boundaries

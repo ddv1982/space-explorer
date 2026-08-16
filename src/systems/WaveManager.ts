@@ -216,10 +216,6 @@ export class WaveManager {
     this.updateAsteroids(time, sectionState.activeSection);
   }
 
-  getAsteroidGroup(): Phaser.Physics.Arcade.Group {
-    return this.asteroidGroup;
-  }
-
   updateBossAdds(delta: number): void {
     if (!this.levelConfig?.bossAddWaves) {
       return;

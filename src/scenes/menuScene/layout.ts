@@ -21,21 +21,10 @@ export interface MenuLayoutPlan {
   tileRowY: number;
   tileWidth: number;
   tileHeight: number;
-  tileGap: number;
-  tileRowGap: number;
   tilePositions: Array<{ x: number; y: number }>;
   tileBlockHeight: number;
   musicPanelY: number;
-  musicPanelWidth: number;
   musicPanelHeight: number;
-  sliderX: number;
-  sliderStartY: number;
-  sliderSpacing: number;
-  sliderWidth: number;
-  qualityX: number;
-  qualityY: number;
-  qualityWidth: number;
-  qualityHeight: number;
   statusY: number;
   statusHeight: number;
   settingsLayout: SettingsPanelLayout;
@@ -62,10 +51,6 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const maxTileWidth = Math.floor((outerFrameWidth - tileGap * (tileColumns - 1)) / tileColumns);
   const tileWidth = Math.max(100, Math.min(defaultTileWidth, maxTileWidth));
 
-  const musicPanelWidth = Math.min(outerFrameWidth - 64, 880);
-  // Give each slider row proper breathing room:
-  // 8px gap compact, 16px gap desktop
-  const sliderSpacing = ROW_HEIGHT + (compact ? 8 : 16);
   const shortLandscape = veryShortCompact && layout.width >= 460;
 
   const titleY = outerFrameY + (shortLandscape ? 25 : compact ? (veryShortCompact ? 34 : 52) : 82);
@@ -152,21 +137,10 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
     tileRowY,
     tileWidth,
     tileHeight,
-    tileGap,
-    tileRowGap,
     tilePositions,
     tileBlockHeight,
     musicPanelY: sliderStartY - 10,
-    musicPanelWidth,
     musicPanelHeight,
-    sliderX: centerHorizontally(layout, musicPanelWidth),
-    sliderStartY,
-    sliderSpacing,
-    sliderWidth: musicPanelWidth,
-    qualityX: centerHorizontally(layout, qualityWidth),
-    qualityY,
-    qualityWidth,
-    qualityHeight,
     statusY,
     statusHeight,
     settingsLayout: {

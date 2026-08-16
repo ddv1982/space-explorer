@@ -23,6 +23,7 @@ import type { ParallaxBackground } from '@/systems/ParallaxBackground';
 import type { PicketTurretSystem } from '@/systems/PicketTurretSystem';
 import {
   getPlayerState,
+  saveHelperWingState,
   setPlayerState,
   setRunSummary,
   type PersistentHelperWingState,
@@ -33,18 +34,14 @@ import type { ScoreManager } from '@/systems/ScoreManager';
 import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
 import type { WarpTransition } from '@/systems/WarpTransition';
 import type { WaveManager } from '@/systems/WaveManager';
+import { runBestEffort } from '@/utils/runBestEffort';
 
-import { createGameSceneCombatFeedbackHandlers, runBestEffort } from './gameScene/combatFeedbackHandlers';
-import { createGameSceneFlowContext } from './gameScene/flowContextBridge';
+import { createGameSceneCombatFeedbackHandlers } from './gameScene/combatFeedbackHandlers';
 import { GameSceneFlowController, type GameSceneFlowContext } from './gameScene/GameSceneFlowController';
 import {
   createGameSceneGameplayFrameBehavior,
   type GameSceneGameplayFrameBehavior,
 } from './gameScene/gameplayFrameBehavior';
-import {
-  persistHelperWingState,
-  syncLastLifeHelperWingState,
-} from './gameScene/helperWingStateBridge';
 import { updateHud as updateHudOrchestration } from './gameScene/hudSyncOrchestration';
 import { PauseStateController } from './gameScene/PauseStateController';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
@@ -60,6 +57,7 @@ import {
   getPlayerSpawnPoint,
   syncSceneViewport,
 } from './gameScene/viewport';
+import { startRegisteredScene } from './sceneRegistry';
 
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
@@ -298,11 +296,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   private persistHelperWingState(): void {
-    persistHelperWingState(this.registry, this.lastLifeHelperWing);
+    if (!this.lastLifeHelperWing) {
+      saveHelperWingState(this.registry, { slots: [], grantedSlots: 0 });
+      return;
+    }
+
+    saveHelperWingState(this.registry, this.lastLifeHelperWing.capturePersistentState());
   }
 
   private syncLastLifeHelperWingState(): void {
-    syncLastLifeHelperWingState(this.lastLifeHelperWing, this.flow.getRemainingLives());
+    this.lastLifeHelperWing?.updateLastLifeState(this.flow.getRemainingLives());
   }
 
   private initializeAudioForLevel(levelConfig: ReturnType<LevelManager['getLevelConfig']>): {
@@ -383,7 +386,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private getFlowContext(): GameSceneFlowContext {
-    return createGameSceneFlowContext({
+    return {
       scene: this,
       registry: this.registry,
       player: this.player,
@@ -393,6 +396,7 @@ export class GameScene extends Phaser.Scene {
       warpTransition: this.warpTransition,
       stopPlayerMotion: () => this.stopPlayerMotion(),
       runBestEffort,
+      startScene: (key) => startRegisteredScene(this, key),
       pauseScene: () => this.physics.world.pause(),
       resumeScene: () => {
         if (!this.pauseStateController?.isGameplayPaused()) {
@@ -400,7 +404,7 @@ export class GameScene extends Phaser.Scene {
         }
       },
       getPlayerRespawnPosition: () => this.getPlayerSpawnPoint(),
-    });
+    };
   }
 
   private updateHud(): void {

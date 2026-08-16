@@ -67,10 +67,6 @@ export class InputManager {
     return this.space.isDown || this.scene.input.activePointer.isDown;
   }
 
-  getPointer(): Phaser.Input.Pointer {
-    return this.scene.input.activePointer;
-  }
-
   consumePauseToggleRequest(): boolean {
     return Phaser.Input.Keyboard.JustDown(this.escape);
   }

@@ -102,7 +102,6 @@ mock.module('../src/scenes/shared/musicSliderCluster', () => ({
   createMusicSliderCluster: () => ({ visible: true }),
   destroyMusicSliderCluster: () => {},
   setMusicSliderClusterDepth: () => {},
-  setMusicSliderClusterPosition: () => {},
   setMusicSliderClusterVisible: () => {},
 }));
 

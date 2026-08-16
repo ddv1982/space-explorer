@@ -37,7 +37,7 @@ export interface GameSceneFlowContext {
   getPlayerRespawnPosition: () => { x: number; y: number };
 }
 
-export type PlayerDeathFlowOutcomeStatus =
+type PlayerDeathFlowOutcomeStatus =
   | 'respawn-started'
   | 'game-over-started'
   | 'ignored-terminal-active';
@@ -126,14 +126,6 @@ export class GameSceneFlowController {
     this.scheduleGameOverTransition(context);
     this.persistGameOverState(context, finalScore, level);
     return this.createPlayerDeathOutcome('game-over-started');
-  }
-
-  handlePlayerFatalHit(scene: Phaser.Scene): void {
-    if (!this.isPlayerDeathTransitionActive()) {
-      return;
-    }
-
-    scene.cameras.main.flash(120, 255, 96, 96, false);
   }
 
   queueLevelComplete(context: GameSceneFlowContext): void {

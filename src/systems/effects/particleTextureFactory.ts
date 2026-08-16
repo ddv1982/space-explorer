@@ -160,27 +160,6 @@ function generateHitTexture(scene: Phaser.Scene, key: string, size: number): voi
   });
 }
 
-/** Eight-point starburst for ambient sparkles. */
-function generateStarBurstTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedParticleTexture(scene, key, size, size, (g) => {
-    const cx = size / 2;
-    const cy = size / 2;
-    const r = size / 2;
-
-    g.fillStyle(0xffffff, 0.4);
-    const points: Point[] = [];
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2 - Math.PI / 4;
-      const dist = i % 2 === 0 ? r * 0.9 : r * 0.25;
-      points.push({ x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist });
-    }
-    fillPolygonFromCenter(g, cx, cy, points);
-
-    g.fillStyle(0xffffff, 0.8);
-    g.fillCircle(cx, cy, r * 0.15);
-  });
-}
-
 /** Glow orb ringed by a thin halo, used for pickup bursts and flash pops. */
 function generateBurstTexture(scene: Phaser.Scene, key: string, size: number): void {
   withGeneratedParticleTexture(scene, key, size, size, (g) => {
@@ -239,13 +218,6 @@ function generateRingTexture(scene: Phaser.Scene, key: string, size: number): vo
   });
 }
 
-function generateSquareTexture(scene: Phaser.Scene, key: string, size: number): void {
-  withGeneratedParticleTexture(scene, key, size, size, (g) => {
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(0, 0, size, size);
-  });
-}
-
 export function generateEffectsParticleTextures(scene: Phaser.Scene): void {
   generateExplosionTexture(scene, 'particle-explosion', 20);
   generateSparkTexture(scene, 'particle-spark', 12, 4);
@@ -253,9 +225,7 @@ export function generateEffectsParticleTextures(scene: Phaser.Scene): void {
   generateSmokeTexture(scene, 'particle-exhaust', 8);
   generateGlowTexture(scene, 'particle-trail', 6);
   generateHitTexture(scene, 'particle-hit', 12);
-  generateStarBurstTexture(scene, 'particle-sparkle', 8);
   generateBurstTexture(scene, 'particle-burst', 14);
   generateDebrisTexture(scene, 'particle-debris', 6);
   generateRingTexture(scene, 'particle-ring', 32);
-  generateSquareTexture(scene, 'particle-ember', 3);
 }

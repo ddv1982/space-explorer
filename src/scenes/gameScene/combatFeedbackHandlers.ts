@@ -19,8 +19,6 @@ import { getViewportBounds } from '@/utils/layout';
 import { runBestEffort } from '@/utils/runBestEffort';
 import { spawnGuaranteedPowerUp, trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
 
-export { runBestEffort };
-
 interface CombatFeedbackConstants {
   bossExplosionVisualIntensity: number;
   bossExplosionAudioIntensity: number;

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.2] - 2026-08-16
+
+### Removed
+- Deleted unused public methods and helpers with no production callers, including encounter-progress, asteroid-group, pointer, joystick-pointer, warp cancel/is-running, enemy-bullet fire, and test-only shield persist APIs.
+- Removed the unused ambient-sparkle and ember particle chain plus the unused enemy-fire SFX path.
+- Stripped unread UI, theme, layout, and player-config fields that were never consumed at runtime.
+
+### Changed
+- Inlined the GameScene flow-context and helper-wing forwarding modules so persist, scene start, and best-effort cleanup call their owning helpers directly.
+- Left unused music catalogs, VAT/theme prose, and the GameScene bootstrap stack in place as reserved authoring and orchestration surface.
+
+### Quality
+- Folded forwarding-only tests into owning-module coverage and kept fatal-hit flash, helper-wing persist, and terminal-transition precedence unchanged.
+- Passed both TypeScript compilers' unit corridor via typecheck, lint, Knip, and the complete isolated unit suite.
+
 ## [1.7.1] - 2026-08-16
 
 ### Changed

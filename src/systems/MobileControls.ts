@@ -200,14 +200,6 @@ export class MobileControls {
     return out.copy(this.movementVector);
   }
 
-  isJoystickPointer(pointer: Phaser.Input.Pointer): boolean {
-    if (!this.isEnabled()) {
-      return false;
-    }
-
-    return pointer.id === this.joystickPointerId;
-  }
-
   isControlPointer(pointer: Phaser.Input.Pointer): boolean {
     if (!this.enabledForTouchDevice) {
       return false;

@@ -25,7 +25,6 @@ interface CreateActionButtonConfig {
   onClick: () => void;
   variant?: ActionButtonVariant;
   fontSize?: string;
-  icon?: string;
 }
 
 const BUTTON_PALETTE: Record<Exclude<ActionButtonVariant, 'disabled'>, {
@@ -33,7 +32,6 @@ const BUTTON_PALETTE: Record<Exclude<ActionButtonVariant, 'disabled'>, {
   hoverBackground: number;
   border: number;
   hoverBorder: number;
-  accent: number;
   glow: number;
   text: string;
 }> = {
@@ -42,7 +40,6 @@ const BUTTON_PALETTE: Record<Exclude<ActionButtonVariant, 'disabled'>, {
     hoverBackground: 0x0b3f7d,
     border: NEON.cyan,
     hoverBorder: NEON.cyanBright,
-    accent: NEON.blue,
     glow: NEON.cyan,
     text: '#f2fbff',
   },
@@ -51,7 +48,6 @@ const BUTTON_PALETTE: Record<Exclude<ActionButtonVariant, 'disabled'>, {
     hoverBackground: 0x17275e,
     border: NEON.purple,
     hoverBorder: NEON.cyanBright,
-    accent: NEON.cyan,
     glow: NEON.purple,
     text: '#e2f3ff',
   },
@@ -60,7 +56,6 @@ const BUTTON_PALETTE: Record<Exclude<ActionButtonVariant, 'disabled'>, {
     hoverBackground: 0x5a1f2a,
     border: NEON.red,
     hoverBorder: 0xffc0bd,
-    accent: 0xff9d8a,
     glow: NEON.red,
     text: '#fff4ef',
   },
