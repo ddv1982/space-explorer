@@ -551,8 +551,16 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
   const motif = LEVEL_MOTIFS[levelNumber] ?? 'aurora';
   const size = manifest.baseSize.width;
 
+  const groups = [
+    { runtime: manifest.runtimeLayers[0], sourceRoles: ['far', 'nebula'] },
+    { runtime: manifest.runtimeLayers[1], sourceRoles: ['mid', 'near'] },
+    { runtime: manifest.runtimeLayers[2], sourceRoles: ['overlay'] },
+  ] as const;
+  const runtimeGroups = groups.slice(0, getVisualQualityProfile().backgroundLayerCount);
+  const requiredSourceRoles = new Set(runtimeGroups.flatMap((group) => group.sourceRoles));
+
   for (const layer of manifest.layers) {
-    if (scene.textures.exists(layer.key)) {
+    if (!requiredSourceRoles.has(layer.role) || scene.textures.exists(layer.key)) {
       continue;
     }
 
@@ -577,15 +585,9 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
     });
   }
 
-  // Preserve three independently moving depth planes while still collapsing
-  // the five authored canvases into a bounded runtime set.
-  const groups = [
-    { runtime: manifest.runtimeLayers[0], sourceRoles: ['far', 'nebula'] },
-    { runtime: manifest.runtimeLayers[1], sourceRoles: ['mid', 'near'] },
-    { runtime: manifest.runtimeLayers[2], sourceRoles: ['overlay'] },
-  ] as const;
-
-  for (const group of groups) {
+  // Preserve independently moving depth planes while still collapsing the
+  // authored canvases into the number of runtime layers allowed by the tier.
+  for (const group of runtimeGroups) {
     if (scene.textures.exists(group.runtime.key)) {
       continue;
     }
@@ -604,13 +606,22 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
       context.globalCompositeOperation = layer.blendMode === 'ADD' ? 'lighter' : 'source-over';
       context.drawImage(source, 0, 0);
     }
+    if (group.runtime.role === 'far') {
+      const shadeStrips = 32;
+      const stripWidth = Math.ceil(size / shadeStrips);
+      for (let strip = 0; strip < shadeStrips; strip += 1) {
+        const normalizedX = (strip + 0.5) / shadeStrips;
+        const laneProximity = Math.max(0, 1 - Math.abs(normalizedX - 0.5) / 0.16);
+        context.fillStyle = `rgba(0, 0, 0, ${0.2 * laneProximity})`;
+        context.fillRect(strip * stripWidth, 0, stripWidth, size);
+      }
+    }
     context.globalAlpha = 1;
     context.globalCompositeOperation = 'source-over';
     composite.refresh();
   }
 
-  // Release the five authoring canvases; gameplay keeps only three 1024px
-  // planes (two on the low tier) instead of five full-screen textures.
+  // Release authoring canvases; gameplay keeps only its tier's runtime planes.
   for (const layer of manifest.layers) {
     if (scene.textures.exists(layer.key)) {
       scene.textures.remove(layer.key);

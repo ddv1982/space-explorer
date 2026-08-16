@@ -5,6 +5,10 @@ function burstScale(value: number): number {
   return value * getVisualQualityProfile().particleBurstScale;
 }
 
+function burstQuantity(value: number): number {
+  return Math.max(1, Math.round(value * getVisualQualityProfile().particleQuantityScale));
+}
+
 export function createPooledEmitter(
   scene: Phaser.Scene,
   textureKey: string,
@@ -34,7 +38,7 @@ export function getExplosionConfig(
     scale: { start: burstScale(0.8 * intensity), end: 0 },
     lifespan: { min: 300, max: 600 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity,
+    quantity: burstQuantity(quantity),
     tint,
   };
 }
@@ -46,7 +50,7 @@ export function getSparkConfig(): Phaser.Types.GameObjects.Particles.ParticleEmi
     scale: { start: burstScale(0.5), end: 0 },
     lifespan: { min: 100, max: 300 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity: 8,
+    quantity: burstQuantity(8),
     rotate: {
       // Phaser runs rotate.onEmit before assigning the particle's velocity, so
       // aligning on emit would read stale (or zero) velocity. onUpdate runs after
@@ -65,7 +69,7 @@ export function getMuzzleConfig(): Phaser.Types.GameObjects.Particles.ParticleEm
     scale: { start: burstScale(0.6), end: 0 },
     lifespan: { min: 60, max: 120 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity: 5,
+    quantity: burstQuantity(5),
     tint: [0x5bd8ff, 0xbff6ff, 0xffffff, 0x2f94ff],
   };
 }
@@ -80,7 +84,7 @@ export function getExhaustConfig(
     scale: { start: burstScale(0.4), end: 0 },
     lifespan: { min: 80, max: 200 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity,
+    quantity: burstQuantity(quantity),
     alpha: { start: 0.7, end: 0 },
     tint: [0x2f94ff, 0x5bd8ff, 0x58f0d8, 0xbff6ff],
   };
@@ -93,7 +97,7 @@ export function getBulletTrailConfig(): Phaser.Types.GameObjects.Particles.Parti
     scale: { start: burstScale(0.3), end: 0 },
     lifespan: { min: 100, max: 200 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity: 1,
+    quantity: burstQuantity(1),
     tint: [0x5bd8ff, 0xbff6ff],
     alpha: { start: 0.5, end: 0 },
   };
@@ -106,7 +110,7 @@ export function getEnemyBulletTrailConfig(): Phaser.Types.GameObjects.Particles.
     scale: { start: burstScale(0.25), end: 0 },
     lifespan: { min: 80, max: 150 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity: 1,
+    quantity: burstQuantity(1),
     tint: [0xff4d8d, 0xff9bc4, 0xffe0ee],
     alpha: { start: 0.7, end: 0 },
   };
@@ -119,7 +123,7 @@ export function getHitSplashConfig(): Phaser.Types.GameObjects.Particles.Particl
     scale: { start: burstScale(0.5), end: 0 },
     lifespan: { min: 150, max: 350 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity: 10,
+    quantity: burstQuantity(10),
     tint: [0xffffff, 0xffcc44, 0xff8800],
   };
 }
@@ -131,7 +135,7 @@ export function getPowerUpBurstConfig(): Phaser.Types.GameObjects.Particles.Part
     scale: { start: burstScale(0.5), end: 0 },
     lifespan: { min: 300, max: 600 },
     blendMode: Phaser.BlendModes.ADD,
-    quantity: 14,
+    quantity: burstQuantity(14),
     tint: [0xffffff, 0xffee88],
   };
 }
@@ -143,7 +147,7 @@ export function getDebrisConfig(): Phaser.Types.GameObjects.Particles.ParticleEm
     scale: { start: burstScale(0.4), end: 0.1 },
     lifespan: { min: 400, max: 800 },
     blendMode: Phaser.BlendModes.NORMAL,
-    quantity: 12,
+    quantity: burstQuantity(12),
     rotate: { min: 0, max: 360 },
     tint: [0x886644, 0x665533, 0x998866],
   };

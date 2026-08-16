@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.8.1`](./1.8.1.md) - cools the command-deck engines with lighter skies, disciplined particle wings, and visual sentries that inspect the light itself
 - [`1.8.0`](./1.8.0.md) - relights the neon command deck with cinematic stations, hotter silhouettes, and louder edge skies while the campaign grammar holds
 - [`1.7.2`](./1.7.2.md) - jettisons unused holds and silent wiring so the flight deck carries only live commands
 - [`1.7.1`](./1.7.1.md) - balances the silent command deck with centered checkpoints, explicit slot actions, clearer hierarchy, and collision-free responsive stations

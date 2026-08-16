@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 2026-08-16
+
+### Changed
+- Rebalanced Standard quality for fanless Retina-class laptops with two full-screen background planes, 1x particle textures, 80% particle quantities, and slightly tighter burst scale.
+- Added a dedicated particle-quantity budget across Low, Standard, and High while keeping High as the full three-plane, full-particle spectacle tier.
+- Generates and retains only the procedural background authoring and runtime planes required by the selected quality tier.
+- Baked a darker center flight lane into the far background composite without adding per-frame draw work.
+
+### Quality
+- Replaced screenshot-only corridor evidence with sampled luminance assertions over real browser captures.
+- Strengthened game-over and victory evidence with viewport and title-spacing assertions.
+- Passed TypeScript, lint, the complete unit suite, production build, and desktop/mobile visual browser gates.
+
 ## [1.8.0] - 2026-08-16
 
 ### Added

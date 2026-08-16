@@ -197,10 +197,9 @@ describe('ParallaxBackground premium-background presentation regression coverage
     expect(tileSpriteCalls).toEqual([
       'bg_level03_composite',
       'bg_level03_motif',
-      'bg_level03_atmosphere',
     ]);
     expect(state.tileSprites).toEqual([]);
-    expect(state.premiumBackgroundLayers.length).toBe(3);
+    expect(state.premiumBackgroundLayers.length).toBe(2);
   });
 });
 

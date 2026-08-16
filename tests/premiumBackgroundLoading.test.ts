@@ -63,7 +63,9 @@ function createSceneHarness(existingKeys: string[] = []) {
         const context = {
           globalAlpha: 1,
           globalCompositeOperation: 'source-over',
+          fillStyle: '',
           clearRect: (): void => undefined,
+          fillRect: (): void => undefined,
           drawImage: (source: { key: string }): void => {
             compositeDraws.push({
               source: source.key,
@@ -106,7 +108,6 @@ describe('premium background loading helpers', () => {
       'bg_level05_nebula',
       'bg_level05_mid',
       'bg_level05_near',
-      'bg_level05_overlay',
     ]);
     expect(onReady).toHaveBeenCalledTimes(1);
     expect(harness.compositeDraws).toEqual([
@@ -114,12 +115,11 @@ describe('premium background loading helpers', () => {
       { source: 'bg_level05_nebula', alpha: 0.9, operation: 'source-over' },
       { source: 'bg_level05_mid', alpha: 0.85, operation: 'source-over' },
       { source: 'bg_level05_near', alpha: 0.9, operation: 'source-over' },
-      { source: 'bg_level05_overlay', alpha: 0.75, operation: 'lighter' },
     ]);
-    expect(harness.getCompositeRefreshCount()).toBe(3);
+    expect(harness.getCompositeRefreshCount()).toBe(2);
     expect(harness.hasTexture('bg_level05_composite')).toBe(true);
     expect(harness.hasTexture('bg_level05_motif')).toBe(true);
-    expect(harness.hasTexture('bg_level05_atmosphere')).toBe(true);
+    expect(harness.hasTexture('bg_level05_atmosphere')).toBe(false);
     expect(harness.hasTexture('bg_level05_overlay')).toBe(false);
     expect(harness.hasTexture('bg_level05')).toBe(false);
     expect(harness.hasTexture('bg_level05_nebula')).toBe(false);

@@ -51,11 +51,12 @@ describe('visual quality profiles', () => {
     expect(getVisualQualityProfile(null)).toEqual({
       tier: 'standard',
       entityTextureResolution: 2,
-      particleTextureResolution: 2,
-      backgroundLayerCount: 3,
+      particleTextureResolution: 1,
+      backgroundLayerCount: 2,
       uiGlowStrength: 0.8,
       motifDensity: 1,
-      particleBurstScale: 1,
+      particleBurstScale: 0.9,
+      particleQuantityScale: 0.8,
       menuAtmosphere: 2,
     });
   });
@@ -67,18 +68,21 @@ describe('visual quality profiles', () => {
         uiGlowStrength: 0.4,
         motifDensity: 0.6,
         particleBurstScale: 0.75,
+        particleQuantityScale: 0.6,
         menuAtmosphere: 1,
       },
       standard: {
         uiGlowStrength: 0.8,
         motifDensity: 1,
-        particleBurstScale: 1,
+        particleBurstScale: 0.9,
+        particleQuantityScale: 0.8,
         menuAtmosphere: 2,
       },
       high: {
         uiGlowStrength: 1,
         motifDensity: 1.25,
         particleBurstScale: 1.15,
+        particleQuantityScale: 1,
         menuAtmosphere: 3,
       },
     } as const;
@@ -117,7 +121,8 @@ describe('visual quality profiles', () => {
       tier: 'standard',
       uiGlowStrength: 0.8,
       motifDensity: 1,
-      particleBurstScale: 1,
+      particleBurstScale: 0.9,
+      particleQuantityScale: 0.8,
       menuAtmosphere: 2,
     });
     expect(setVisualQualityTier('high', storage)).toBe(false);

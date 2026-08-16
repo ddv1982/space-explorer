@@ -1,5 +1,44 @@
 import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
 
+async function sampleGameplayLaneLuminance(page: import('@playwright/test').Page): Promise<{
+  center: number;
+  edges: number;
+}> {
+  const screenshot = await page.screenshot();
+  return page.evaluate(async (base64) => {
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Screenshot sampling canvas is unavailable');
+    context.drawImage(bitmap, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    bitmap.close();
+
+    const average = (ranges: ReadonlyArray<readonly [number, number]>): number => {
+      let luminance = 0;
+      let samples = 0;
+      const step = Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 160));
+      for (let y = Math.floor(canvas.height * 0.15); y < canvas.height * 0.85; y += step) {
+        for (const [start, end] of ranges) {
+          for (let x = Math.floor(canvas.width * start); x < canvas.width * end; x += step) {
+            const offset = (y * canvas.width + x) * 4;
+            luminance += pixels[offset] * 0.2126 + pixels[offset + 1] * 0.7152 + pixels[offset + 2] * 0.0722;
+            samples += 1;
+          }
+        }
+      }
+      return luminance / Math.max(1, samples);
+    };
+
+    return {
+      center: average([[0.38, 0.62]]),
+      edges: average([[0.05, 0.29], [0.71, 0.95]]),
+    };
+  }, screenshot.toString('base64'));
+}
+
 test('pause command deck stays balanced across checkpoints and settings', async ({
   page,
   assertNoBrowserErrors,
@@ -200,7 +239,7 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
   assertNoBrowserErrors();
 });
 
-test('gameplay center corridor stays darker than the neon edges', async ({
+test('gameplay corridor preserves a dark field with brighter desktop edges', async ({
   page,
   assertNoBrowserErrors,
 }) => {
@@ -210,6 +249,16 @@ test('gameplay center corridor stays darker than the neon edges', async ({
   await startNewRun(page);
   const shot = await snapshot(page);
   expect(shot.objects.some((object) => object.textureKey === 'player-ship' && object.active)).toBe(true);
+  const luminance = await sampleGameplayLaneLuminance(page);
+  expect(luminance.center).toBeGreaterThan(5);
+  expect(luminance.edges).toBeGreaterThan(5);
+  expect(luminance.center).toBeLessThan(45);
+  expect(luminance.edges).toBeLessThan(45);
+  if (!mobile) {
+    expect(luminance.edges).toBeGreaterThan(luminance.center);
+  } else {
+    expect(Math.abs(luminance.edges - luminance.center)).toBeLessThan(15);
+  }
   const name = `gameplay-corridor-${mobile ? 'portrait' : 'desktop'}.png`;
   const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
   const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);
@@ -235,7 +284,15 @@ test('game over and victory command decks stay readable', async ({
     }, sceneKey);
     await waitForScene(page, sceneKey);
     const shot = await snapshot(page);
-    expect(shot.texts.some((text) => text.text === (sceneKey === 'GameOver' ? 'GAME OVER' : 'MISSION COMPLETE'))).toBe(true);
+    const title = shot.texts.find((text) => text.text === (sceneKey === 'GameOver' ? 'GAME OVER' : 'MISSION COMPLETE'));
+    const eyebrow = shot.texts.find((text) => text.text === (sceneKey === 'GameOver' ? 'COMMAND LOSS' : 'COMMAND DECK'));
+    expect(title).toBeDefined();
+    expect(eyebrow).toBeDefined();
+    expect(title?.x ?? -1).toBeGreaterThan(0);
+    expect(title?.x ?? Infinity).toBeLessThan(shot.gameSize.width);
+    expect(title?.y ?? -1).toBeGreaterThan(0);
+    expect(title?.y ?? Infinity).toBeLessThan(shot.gameSize.height);
+    expect((title?.y ?? 0) - (eyebrow?.y ?? 0)).toBeGreaterThanOrEqual(28);
     const name = `${sceneKey.toLowerCase()}-${mobile ? 'portrait' : 'desktop'}.png`;
     const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
     const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);

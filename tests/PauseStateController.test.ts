@@ -22,6 +22,7 @@ mock.module('../src/config/visualQuality', () => ({
     uiGlowStrength: 0.8,
     motifDensity: 1,
     particleBurstScale: 1,
+    particleQuantityScale: 1,
     menuAtmosphere: 2,
   }),
 }));
