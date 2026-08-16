@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.12.0`](./1.12.0.md) - opens the Cartographer's Ledger with named diagnostics, explicit runtime berths, focused encounter law, and ratcheted structural charts
 - [`1.11.0`](./1.11.0.md) - charts the Shipwright's Atlas with explicit runtime ownership, readable domain rules, deterministic formatting, and structural sentries
 - [`1.10.1`](./1.10.1.md) - focuses the Glass-Tide lens with Retina-sharp arrival instruments and collision-proof refit readouts
 - [`1.10.0`](./1.10.0.md) - teaches the starship to breathe under pressure with adaptive High visuals, disciplined recovery, and leaner production cargo

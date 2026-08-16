@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
-import { EnemyBullet } from '../EnemyBullet';
 import { Player } from '../Player';
 import type { BossAttackStyle, BossConfig, EnemyType } from '../../config/LevelsConfig';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
@@ -11,6 +10,7 @@ import { getViewportBounds } from '../../utils/layout';
 import { ensureBossTextureVariant } from '../../utils/SpriteFactory';
 import { BossVisualRig } from './boss/BossVisualRig';
 import { advanceBossGuard, applyBossGuardHit } from './boss/BossGuardController';
+import { BossAttackRuntime } from './boss/BossAttackRuntime';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -49,13 +49,10 @@ export class Boss extends EnemyBase {
   private phase2SpiralShotCount = DEFAULT_BOSS_CONFIG.phase2SpiralShotCount;
   private phase2SpiralTurnRate = DEFAULT_BOSS_CONFIG.phase2SpiralTurnRate;
   private phase2BulletSpeedScale = DEFAULT_BOSS_CONFIG.phase2BulletSpeedScale;
-  private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
   private arrived = false;
   private attackCycle = 0;
   private shieldActive = false;
-  private summonHandler: BossSummonHandler | null = null;
   private phaseStartedAt = 0;
-  private playerRef: Player | null = null;
   private bossFlashToken = 0;
   private guardCapacity = 0;
   private guardValue = 0;
@@ -66,6 +63,7 @@ export class Boss extends EnemyBase {
   private guardBrokenUntil = 0;
   private guardBroken = false;
   private readonly visualRig: BossVisualRig;
+  private attackRuntime!: BossAttackRuntime;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     const textureKey = ensureBossTextureVariant(scene, DEFAULT_BOSS_CONFIG.attackStyle, DEFAULT_BOSS_CONFIG.name);
@@ -78,6 +76,7 @@ export class Boss extends EnemyBase {
     this.enemyType = 'boss';
     this.despawnOffscreen = false;
     this.visualRig = new BossVisualRig(scene);
+    this.attackRuntime = new BossAttackRuntime(scene, () => ({ x: this.x, y: this.y }));
   }
 
   override takeDamage(amount: number): void {
@@ -134,15 +133,15 @@ export class Boss extends EnemyBase {
   }
 
   setEnemyBulletGroup(group: Phaser.Physics.Arcade.Group): void {
-    this.bulletGroup = group;
+    this.getAttackRuntime().setBulletGroup(group);
   }
 
   setSummonHandler(handler: BossSummonHandler): void {
-    this.summonHandler = handler;
+    this.getAttackRuntime().setSummonHandler(handler);
   }
 
   setPlayer(player: Player | null): void {
-    this.playerRef = player;
+    this.getAttackRuntime().setPlayer(player);
   }
 
   spawn(x: number, y: number, config: BossConfig = DEFAULT_BOSS_CONFIG): void {
@@ -225,7 +224,7 @@ export class Boss extends EnemyBase {
       moveSpeed: this.moveSpeed,
       time,
       delta,
-      playerX: this.getPlayer()?.x,
+      playerX: this.getAttackRuntime().getPlayer()?.x,
       minX: viewport.left,
       maxX: viewport.right,
     });
@@ -291,7 +290,7 @@ export class Boss extends EnemyBase {
   }
 
   private canFirePattern(time: number): boolean {
-    if (!this.bulletGroup) {
+    if (!this.getAttackRuntime().hasBulletGroup()) {
       return false;
     }
 
@@ -318,80 +317,15 @@ export class Boss extends EnemyBase {
       phase2SpiralTurnRate: this.phase2SpiralTurnRate,
       phase2BulletSpeedScale: this.phase2BulletSpeedScale,
       time,
-      fireBullet: (x, y, velocityX, velocityY) => this.fireBullet(x, y, velocityX, velocityY),
-      summonEscorts: (types) => this.summonEscorts(types),
-      getPlayerAimAngle: () => this.getPlayerAimAngle(),
+      fireBullet: (x, y, velocityX, velocityY) => this.getAttackRuntime().fireBullet(x, y, velocityX, velocityY),
+      summonEscorts: (types) => this.getAttackRuntime().summonEscorts(types),
+      getPlayerAimAngle: () => this.getAttackRuntime().getPlayerAimAngle(),
     });
   }
 
-  private summonEscorts(types: EnemyType[]): void {
-    const summonHandler = this.summonHandler;
-    if (!summonHandler) {
-      return;
-    }
-
-    const summonBounds = this.getSummonBounds();
-
-    types.forEach((type, index) => {
-      const offset = index === 0 ? -36 : 36;
-      const summonX = Phaser.Math.Clamp(this.x + offset, summonBounds.minX, summonBounds.maxX);
-      summonHandler(type, summonX, this.y + 10);
-    });
-  }
-
-  private getSummonBounds(): { minX: number; maxX: number } {
-    const viewport = getViewportBounds(this.scene);
-    const effectivePadding = Math.min(50, viewport.width / 2);
-    const minX = viewport.left + effectivePadding;
-
-    return {
-      minX,
-      maxX: Math.max(minX, viewport.right - effectivePadding),
-    };
-  }
-
-  private fireBullet(x: number, y: number, velocityX: number, velocityY: number): void {
-    const bullet = this.getAvailableBullet(x, y);
-    if (!bullet) {
-      return;
-    }
-
-    bullet.fire(x, y);
-    bullet.setVelocity(velocityX, velocityY);
-  }
-
-  private getAvailableBullet(x: number, y: number): EnemyBullet | null {
-    if (!this.bulletGroup) {
-      return null;
-    }
-
-    return (
-      (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ?? (this.bulletGroup.get(x, y) as EnemyBullet | null)
-    );
-  }
-
-  private getPlayer(): Player | null {
-    const cachedPlayer = this.playerRef;
-    if (this.isValidCachedPlayer(cachedPlayer)) {
-      return cachedPlayer;
-    }
-
-    this.playerRef = this.findActivePlayer();
-    return this.playerRef;
-  }
-
-  private isValidCachedPlayer(player: Player | null): player is Player {
-    return Boolean(player && player.scene === this.scene && player.active);
-  }
-
-  private findActivePlayer(): Player | null {
-    const match = this.scene.children.list.find((child) => child instanceof Player && child.active);
-    return (match as Player | undefined) ?? null;
-  }
-
-  private getPlayerAimAngle(): number {
-    const player = this.getPlayer();
-    return player ? Phaser.Math.RadToDeg(Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y)) : 90;
+  private getAttackRuntime(): BossAttackRuntime {
+    this.attackRuntime ??= new BossAttackRuntime(this.scene, () => ({ x: this.x, y: this.y }));
+    return this.attackRuntime;
   }
 
   private applyConfig(config: BossConfig): void {

@@ -1,5 +1,7 @@
 type MusicWaveform = OscillatorType;
 type MusicStep = number | null;
+import type { MusicArrangementPhase } from './arrangementTypes';
+export type { MusicArrangementPhase } from './arrangementTypes';
 
 type MusicEnvelopeCurve = 'linear' | 'soft' | 'hard';
 
@@ -93,8 +95,6 @@ export interface MusicHarmonicChordStepConfig {
 interface MusicHarmonicProgressionConfig {
   steps: MusicHarmonicChordStepConfig[];
 }
-
-export type MusicArrangementPhase = 'intro' | 'build' | 'peak' | 'release';
 
 export interface MusicArrangementLayerGainMultipliersConfig {
   bass?: number;

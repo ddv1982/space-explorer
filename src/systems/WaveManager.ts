@@ -19,24 +19,32 @@ import { getViewportBounds } from '@/utils/layout';
 import type { EnemyPool } from './EnemyPool';
 import type { HazardBeamSystem } from './HazardBeamSystem';
 import { GAME_SCENE_EVENTS, spawnPowerUp } from './GameplayFlow';
-import { resolveSectionSpawnRateScale } from './sectionIdentity';
 import { WaveAsteroidSpawner } from './wave/WaveAsteroidSpawner';
 import { EnemySpawnTable } from './wave/EnemySpawnTable';
 import { createEnemySpawnHandlers } from './wave/createEnemySpawnHandlers';
 import { HazardCadenceController } from './wave/HazardCadenceController';
 import { WormholePackController } from './wave/WormholePackController';
-import { AuthoredEventTracker } from './wave/AuthoredEventTracker';
+import { AuthoredSectionCoordinator } from './wave/AuthoredSectionCoordinator';
 import {
   CHOREO_LANE_COUNT,
   getLaneCenterX,
   resolveFormationPositions,
   WaveChoreographer,
 } from './wave/waveChoreography';
-import { getEncounterCountPressureScale, getEncounterIntervalPressureScale } from './wave/hazardPressurePolicy';
+import {
+  resolveEncounterCount,
+  resolveEncounterInterval,
+  resolveEncounterRateMultiplier,
+} from './wave/encounterPolicy';
+import { triggerWaveHazard } from './wave/triggerWaveHazard';
+import {
+  clampEncounterX as clampWaveEncounterX,
+  getEncounterHorizontalRange,
+  getLaneAnchorX as getWaveLaneAnchorX,
+} from './wave/waveGeometry';
 
 const BOSS_ADD_WAVE_INTERVAL_MS = 12000;
 const DEATH_RELIEF_DURATION_MS = 8000;
-const DEATH_RELIEF_SPAWN_RATE_SCALE = 0.75;
 
 type EncounterSectionState = {
   activeSection: LevelSectionConfig | null;
@@ -62,7 +70,7 @@ export class WaveManager {
   private gameplayTime: number | null = null;
   private deathReliefRemainingMs = 0;
   private readonly wormholePacks = new WormholePackController();
-  private readonly authoredEvents = new AuthoredEventTracker();
+  private readonly authoredSections = new AuthoredSectionCoordinator();
   private readonly enemySpawnHandlers = createEnemySpawnHandlers({
     spawnRepeated: (type, count, getX, getY) => this.spawnRepeatedEnemies(type, count, getX, getY),
     getSpawnX: (anchorX, padding) => this.getEncounterSpawnX(anchorX, padding),
@@ -171,7 +179,7 @@ export class WaveManager {
     this.lastBossAddSpawn = 0;
     this.deathReliefRemainingMs = 0;
     this.activeSection = null;
-    this.authoredEvents.reset();
+    this.authoredSections.reset();
     this.choreographer?.setSection(undefined);
   }
 
@@ -198,20 +206,9 @@ export class WaveManager {
   }
 
   private spawnAuthoredSectionContent(section: LevelSectionConfig | null, sectionProgress: number): void {
-    if (!section) {
-      return;
-    }
-
-    section.signatureWaves?.forEach((wave) => {
-      if (this.authoredEvents.claim(section.id, 'wave', wave.id, wave.triggerProgress, sectionProgress)) {
-        this.spawnSignatureWave(wave);
-      }
-    });
-
-    section.recoveryDrops?.forEach((drop) => {
-      if (this.authoredEvents.claim(section.id, 'drop', drop.id, drop.triggerProgress, sectionProgress)) {
-        this.spawnRecoveryDrop(drop);
-      }
+    this.authoredSections.update(section, sectionProgress, {
+      spawnWave: (wave) => this.spawnSignatureWave(wave),
+      spawnDrop: (drop) => this.spawnRecoveryDrop(drop),
     });
   }
 
@@ -282,14 +279,13 @@ export class WaveManager {
     activeSection: LevelSectionConfig | null,
     sectionProgress: number
   ): number {
-    const clampedProgress = Phaser.Math.Clamp(progress, 0, 1);
-    const rampProgress = Phaser.Math.Easing.Cubic.In(clampedProgress);
-    const intensityMultiplier = Phaser.Math.Linear(1, 1.5, rampProgress);
-    const sectionMultiplier = activeSection?.spawnRateMultiplier ?? this.levelConfig.spawnRateMultiplier;
-    const sectionArcMultiplier = resolveSectionSpawnRateScale(activeSection, sectionProgress);
-    const reliefScale = this.deathReliefRemainingMs > 0 ? DEATH_RELIEF_SPAWN_RATE_SCALE : 1;
-
-    return sectionMultiplier * intensityMultiplier * sectionArcMultiplier * reliefScale;
+    return resolveEncounterRateMultiplier({
+      progress,
+      section: activeSection,
+      sectionProgress,
+      defaultMultiplier: this.levelConfig.spawnRateMultiplier,
+      deathReliefActive: this.deathReliefRemainingMs > 0,
+    });
   }
 
   applyDeathRelief(): void {
@@ -343,8 +339,7 @@ export class WaveManager {
   }
 
   private shouldSpawnEncounter(time: number, rateMultiplier: number): boolean {
-    const encounterInterval =
-      (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardCadence.getPressure());
+    const encounterInterval = resolveEncounterInterval(rateMultiplier, this.hazardCadence.getPressure());
     if (time <= this.lastEncounterSpawn + encounterInterval) {
       return false;
     }
@@ -354,12 +349,7 @@ export class WaveManager {
   }
 
   private getEncounterCount(activeSection: LevelSectionConfig | null): number {
-    const encounterSize = activeSection?.encounterSizeOverride ?? this.levelConfig.encounterSize;
-    const pressureScale = getEncounterCountPressureScale(this.hazardCadence.getPressure());
-    const minCount = Math.max(1, Math.round(encounterSize.min * pressureScale));
-    const maxCount = Math.max(minCount, Math.round(encounterSize.max * pressureScale));
-
-    return Phaser.Math.Between(minCount, maxCount);
+    return resolveEncounterCount(activeSection, this.levelConfig.encounterSize, this.hazardCadence.getPressure());
   }
 
   private spawnEnemiesByConfig(time: number, rateMultiplier: number, activeSection: LevelSectionConfig | null): void {
@@ -396,40 +386,16 @@ export class WaveManager {
   }
 
   private triggerHazardEvent(hazard: ScriptedHazardConfig): void {
-    switch (hazard.type) {
-      case 'ambient-asteroids':
-      case 'debris-surge':
-        this.asteroidSpawner.spawnAsteroidBurst(2 + Math.round((hazard.intensity ?? 0.5) * 2), 65, 130);
-        return;
-      case 'minefield':
-        this.asteroidSpawner.spawnAsteroidBurst(2, 40, 70, 80);
-        return;
-      case 'ring-crossfire':
-        this.spawnMirroredHazardAsteroids(90, 150);
-        return;
-      case 'rock-corridor':
-        this.asteroidSpawner.spawnEdgeAsteroids(hazard);
-        return;
-      case 'energy-storm':
-        this.spawnHazardEncounter(['fighter', 'gunship', 'swarm'], hazard.intensity ?? 0.6);
-        return;
-      case 'nebula-ambush':
-        this.spawnHazardEncounter(['fighter', 'bomber', 'swarm'], hazard.intensity ?? 0.6);
-        return;
-      case 'gravity-well':
-        this.spawnMirroredHazardAsteroids(110, 160);
-        this.spawnHazardEncounter(['fighter', 'gunship'], hazard.intensity ?? 0.75);
-        return;
-      case 'solar-flare':
-        this.hazardBeamSystem?.spawnSolarFlare(hazard.intensity ?? 0.5);
-        return;
-      case 'laser-lattice':
-        this.hazardBeamSystem?.spawnLaserLattice(hazard.intensity ?? 0.5);
-        return;
-      case 'wormhole-spawn':
-        this.spawnWormholePack(hazard);
-        return;
-    }
+    triggerWaveHazard(hazard, {
+      spawnAsteroidBurst: (count, minSpeed, maxSpeed, padding) =>
+        this.asteroidSpawner.spawnAsteroidBurst(count, minSpeed, maxSpeed, padding),
+      spawnMirroredAsteroids: (minSpeed, maxSpeed) => this.spawnMirroredHazardAsteroids(minSpeed, maxSpeed),
+      spawnEdgeAsteroids: (event) => this.asteroidSpawner.spawnEdgeAsteroids(event),
+      spawnEncounter: (types, intensity) => this.spawnHazardEncounter(types, intensity),
+      spawnSolarFlare: (intensity) => this.hazardBeamSystem?.spawnSolarFlare(intensity),
+      spawnLaserLattice: (intensity) => this.hazardBeamSystem?.spawnLaserLattice(intensity),
+      spawnWormholePack: (event) => this.spawnWormholePack(event),
+    });
   }
 
   private spawnWormholePack(hazard: ScriptedHazardConfig): void {
@@ -472,31 +438,14 @@ export class WaveManager {
   }
 
   private clampEncounterX(x: number, padding: number): number {
-    const { min, max } = this.getEncounterHorizontalRange(padding);
-    return Phaser.Math.Clamp(x, min, max);
+    return clampWaveEncounterX(getViewportBounds(this.scene).width, x, padding);
   }
 
   private getLaneAnchorX(lane: AuthoredLaneAnchor, padding: number): number {
-    const { min, max } = this.getEncounterHorizontalRange(padding);
-    const center = (min + max) / 2;
-
-    switch (lane) {
-      case 'left':
-        return min;
-      case 'center':
-        return center;
-      case 'right':
-        return max;
-    }
+    return getWaveLaneAnchorX(getViewportBounds(this.scene).width, lane, padding);
   }
 
   private getEncounterHorizontalRange(padding: number): { min: number; max: number } {
-    const viewportWidth = getViewportBounds(this.scene).width;
-    const effectivePadding = Math.min(padding, viewportWidth / 2);
-
-    return {
-      min: effectivePadding,
-      max: Math.max(effectivePadding, viewportWidth - effectivePadding),
-    };
+    return getEncounterHorizontalRange(getViewportBounds(this.scene).width, padding);
   }
 }

@@ -42,7 +42,7 @@ import { updateHud as updateHudOrchestration } from './gameScene/hudSyncOrchestr
 import { PauseStateController } from './gameScene/PauseStateController';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
-import { runGameSceneCreateBootstrap } from './gameScene/runGameSceneCreateBootstrap';
+import { runGameSceneCreateBootstrap, type GameSceneBootstrapRuntime } from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
 import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
@@ -113,8 +113,27 @@ export class GameScene extends Phaser.Scene {
     this.updateFrameDelegate = this.createUpdateFrameDelegate();
   }
 
-  private installBootstrapRuntime(runtime: ReturnType<typeof runGameSceneCreateBootstrap>): void {
-    Object.assign(this, runtime);
+  private installBootstrapRuntime(runtime: GameSceneBootstrapRuntime): void {
+    this.levelManager = runtime.levelManager;
+    this.scaledBossConfig = runtime.scaledBossConfig;
+    this.parallax = runtime.parallax;
+    this.effectsManager = runtime.effectsManager;
+    this.mobileControls = runtime.mobileControls;
+    this.inputManager = runtime.inputManager;
+    this.player = runtime.player;
+    this.bulletPool = runtime.bulletPool;
+    this.enemyPool = runtime.enemyPool;
+    this.lastLifeHelperWing = runtime.lastLifeHelperWing;
+    this.picketTurrets = runtime.picketTurrets;
+    this.waveManager = runtime.waveManager;
+    this.collisionManager = runtime.collisionManager;
+    this.scoreManager = runtime.scoreManager;
+    this.grazeSurge = runtime.grazeSurge;
+    this.powerUpGroup = runtime.powerUpGroup;
+    this.hud = runtime.hud;
+    this.warpTransition = runtime.warpTransition;
+    this.lastHudShieldCount = runtime.lastHudShieldCount;
+    this.pauseStateController = runtime.pauseStateController;
   }
 
   private resetRuntimeState(): void {

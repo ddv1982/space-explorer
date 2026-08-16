@@ -1,30 +1,8 @@
-import { getUpgradeByKey, normalizeUpgradeLevel, PlayerUpgradeLevels } from '../config/UpgradesConfig';
+import { getUpgradeByKey, normalizeUpgradeLevel } from '../config/UpgradesConfig';
 import { PLAYER_CONFIG } from '../config/playerConfig';
+import type { PersistentHelperWingState, PlayerStateData, RunSummaryData } from './playerState/types';
 
-export interface PlayerStateData {
-  level: number;
-  score: number;
-  currentHp: number;
-  currentShields: number;
-  remainingLives: number;
-  upgrades: PlayerUpgradeLevels;
-  helperWing: PersistentHelperWingState;
-}
-
-export interface PersistentHelperWingSlotState {
-  remainingLives: number;
-  hp: number;
-}
-
-export interface PersistentHelperWingState {
-  slots: PersistentHelperWingSlotState[];
-  grantedSlots: number;
-}
-
-export interface RunSummaryData {
-  finalScore: number;
-  levelReached: number;
-}
+export type * from './playerState/types';
 
 interface PlayerStateRegistry {
   get(key: string): unknown;

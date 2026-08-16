@@ -6,6 +6,7 @@ import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 import { drawNeonFrame } from '../shared/neonUiTheme';
 import type { PlanetIntermissionProfile } from './planetProfiles';
 import { getUpgradeGridLayout, type IntermissionViewportMode, type UpgradeGridLayout } from './shared';
+import { classifyIntermissionViewport } from '../shared/responsiveViewport';
 
 export interface IntermissionLayoutMetrics {
   mode: IntermissionViewportMode;
@@ -52,16 +53,8 @@ function getGridHeight(buttonCount: number, gridLayout: UpgradeGridLayout): numb
 
 export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number): IntermissionLayoutMetrics {
   const viewport = getViewportLayout(scene);
-  const portrait = viewport.width < 700 && viewport.height >= viewport.width * 1.12;
-  const ultraCompact = viewport.height < 370 && viewport.width < 560;
-  const desktop = !portrait && !ultraCompact && viewport.width >= 900 && viewport.height >= 560;
-  const mode: IntermissionViewportMode = ultraCompact
-    ? 'ultra-compact'
-    : portrait
-      ? 'portrait'
-      : desktop
-        ? 'desktop'
-        : 'landscape';
+  const mode: IntermissionViewportMode = classifyIntermissionViewport(viewport);
+  const portrait = mode === 'portrait';
   const margin = mode === 'desktop' ? Math.max(36, viewport.width * 0.035) : mode === 'landscape' ? 18 : 14;
   const stackedUltra = mode === 'ultra-compact' && viewport.width < 400;
   // Five upgrade cards need a tighter stack on short viewports: compress the

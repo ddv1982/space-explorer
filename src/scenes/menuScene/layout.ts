@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { ROW_HEIGHT } from '../shared/musicSliderControl';
 import type { SettingsPanelLayout } from '../shared/settingsPanel';
 import { centerHorizontally, getViewportLayout } from '../../utils/layout';
+import { isNarrowViewport, isShortViewport } from '../shared/responsiveViewport';
 
 const MENU_COMPACT_HEIGHT_BREAKPOINT = 720;
 const MENU_COMPACT_WIDTH_BREAKPOINT = 800;
@@ -33,7 +34,9 @@ export interface MenuLayoutPlan {
 
 export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const layout = getViewportLayout(scene);
-  const compact = layout.height < MENU_COMPACT_HEIGHT_BREAKPOINT || layout.width < MENU_COMPACT_WIDTH_BREAKPOINT;
+  const compact =
+    isShortViewport(layout, MENU_COMPACT_HEIGHT_BREAKPOINT - 1) ||
+    isNarrowViewport(layout, MENU_COMPACT_WIDTH_BREAKPOINT);
   const veryShortCompact = compact && layout.height < MENU_COMPACT_VERY_SHORT_HEIGHT;
   const safeViewportWidth = Math.max(280, layout.width);
 

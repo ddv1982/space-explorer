@@ -4,6 +4,7 @@ import { getVisualQualityProfile } from '../../../config/visualQuality';
 import { scaleUiGlowAlpha } from '../../../utils/renderingCompat';
 import { drawNeonDivider, drawNeonFrame, NEON } from '../../shared/neonUiTheme';
 import type { PauseOverlayLayout, PauseOverlayMessage } from './types';
+import { isNarrowViewport, isShortViewport } from '../../shared/responsiveViewport';
 
 const PAUSE_OVERLAY_PANEL_WIDTH = 940;
 const PAUSE_OVERLAY_PANEL_HEIGHT = 700;
@@ -23,6 +24,32 @@ const PAUSE_BREAKPOINT_SHORT_HEIGHT = 520;
 const PAUSE_BREAKPOINT_VERY_SHORT_HEIGHT = 400;
 const PAUSE_BREAKPOINT_ULTRA_COMPACT_WIDTH = 340;
 const PAUSE_BREAKPOINT_ULTRA_COMPACT_HEIGHT = 380;
+
+interface PauseLayoutFlags {
+  short: boolean;
+  veryShort: boolean;
+  compact: boolean;
+  compressedPortrait: boolean;
+  ultraCompact: boolean;
+  buttonsStacked: boolean;
+}
+
+function resolvePauseFooterMargin(flags: PauseLayoutFlags): number {
+  if (flags.ultraCompact) return 4;
+  if (flags.buttonsStacked) return 10;
+  if (flags.short) return 6;
+  if (flags.compact) return 20;
+  return 36;
+}
+
+function resolvePauseSlotMetrics(flags: PauseLayoutFlags): { height: number; gap: number } {
+  if (flags.ultraCompact) return { height: 32, gap: 0 };
+  if (flags.veryShort) return { height: 36, gap: 2 };
+  if (flags.compressedPortrait) return { height: 60, gap: 4 };
+  if (flags.short) return { height: 44, gap: 4 };
+  if (flags.buttonsStacked || flags.compact) return { height: PAUSE_OVERLAY_SLOT_ROW_HEIGHT, gap: 4 };
+  return { height: PAUSE_OVERLAY_SLOT_ROW_HEIGHT, gap: 10 };
+}
 
 interface PauseSaveSlotRowControlLayout {
   title: { x: number; y: number; width: number; height: number; visible: boolean };
@@ -120,29 +147,14 @@ export function getPauseSaveSlotRowControlLayout(
   };
 }
 
-function isPauseShortViewport(height: number): boolean {
-  return height <= PAUSE_BREAKPOINT_SHORT_HEIGHT;
-}
-
-function isPauseVeryShortViewport(height: number): boolean {
-  return height < PAUSE_BREAKPOINT_VERY_SHORT_HEIGHT;
-}
-
-function isPauseNarrowViewport(width: number): boolean {
-  return width < PAUSE_BREAKPOINT_NARROW_WIDTH;
-}
-
-function isPauseUltraCompactViewport(width: number, height: number): boolean {
-  return width <= PAUSE_BREAKPOINT_ULTRA_COMPACT_WIDTH && height <= PAUSE_BREAKPOINT_ULTRA_COMPACT_HEIGHT;
-}
-
 export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const viewport = getViewportLayout(scene);
-  const shortViewport = isPauseShortViewport(viewport.height);
-  const veryShortViewport = isPauseVeryShortViewport(viewport.height);
-  const compact = isPauseNarrowViewport(viewport.width);
+  const shortViewport = isShortViewport(viewport, PAUSE_BREAKPOINT_SHORT_HEIGHT);
+  const veryShortViewport = viewport.height < PAUSE_BREAKPOINT_VERY_SHORT_HEIGHT;
+  const compact = isNarrowViewport(viewport, PAUSE_BREAKPOINT_NARROW_WIDTH);
   const stackedLayout = compact || shortViewport;
-  const ultraCompactViewport = isPauseUltraCompactViewport(viewport.width, viewport.height);
+  const ultraCompactViewport =
+    viewport.width <= PAUSE_BREAKPOINT_ULTRA_COMPACT_WIDTH && viewport.height <= PAUSE_BREAKPOINT_ULTRA_COMPACT_HEIGHT;
   const safeViewportWidth = Math.max(280, viewport.width);
   const widePanelWidth = Math.min(PAUSE_OVERLAY_PANEL_WIDTH, safeViewportWidth - 32);
   const panelWidth = stackedLayout
@@ -163,34 +175,23 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const contentInset = ultraCompactViewport ? 12 : shortViewport || compact ? 22 : 42;
   const twoButtonsWidth = PAUSE_OVERLAY_BUTTON_WIDTH * 2 + PAUSE_OVERLAY_BUTTON_GAP;
   const buttonsStacked = panelWidth < twoButtonsWidth + 8;
+  const flags: PauseLayoutFlags = {
+    short: shortViewport,
+    veryShort: veryShortViewport,
+    compact,
+    compressedPortrait,
+    ultraCompact: ultraCompactViewport,
+    buttonsStacked,
+  };
   const saveSlotsVisible = true;
-  const footerBottomMargin = ultraCompactViewport ? 4 : buttonsStacked ? 10 : shortViewport ? 6 : compact ? 20 : 36;
+  const footerBottomMargin = resolvePauseFooterMargin(flags);
   const footerButtonGap = ultraCompactViewport ? 6 : PAUSE_OVERLAY_BUTTON_GAP;
   const menuButtonY = panelBottom - PAUSE_OVERLAY_BUTTON_HEIGHT - footerBottomMargin;
   const footerTop = buttonsStacked ? menuButtonY - footerButtonGap - PAUSE_OVERLAY_BUTTON_HEIGHT : menuButtonY;
   const resumeButtonY = footerTop;
   const statusTextHeight = 20;
   const statusY = footerTop - 8 - statusTextHeight / 2;
-  const slotRowHeight = ultraCompactViewport
-    ? 32
-    : veryShortViewport
-      ? 36
-      : compressedPortrait
-        ? 60
-        : buttonsStacked
-          ? shortViewport
-            ? 44
-            : PAUSE_OVERLAY_SLOT_ROW_HEIGHT
-          : shortViewport
-            ? 44
-            : PAUSE_OVERLAY_SLOT_ROW_HEIGHT;
-  const slotRowGap = ultraCompactViewport
-    ? 0
-    : veryShortViewport
-      ? 2
-      : compressedPortrait || buttonsStacked || shortViewport || compact
-        ? 4
-        : 10;
+  const { height: slotRowHeight, gap: slotRowGap } = resolvePauseSlotMetrics(flags);
   const slotRowWidth = Math.min(PAUSE_OVERLAY_SLOT_ROW_MAX_WIDTH, panelWidth - contentInset * 2);
   const slotBlockHeight = slotRowHeight * 3 + slotRowGap * 2;
   const titleFontSize = shortViewport ? 42 : 74;

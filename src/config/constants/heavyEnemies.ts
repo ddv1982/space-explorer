@@ -1,0 +1,11 @@
+export const LANCER_HP = 4;
+export const LANCER_SPEED = 55;
+export const LANCER_SCORE = 500;
+export const LANCER_FIRE_RATE = 3000;
+export const LANCER_TELEGRAPH_MS = 800;
+export const SPLITTER_HP = 2;
+export const SPLITTER_SPEED = 120;
+export const SPLITTER_SCORE = 250;
+export const SWARMLING_HP = 1;
+export const SWARMLING_SPEED = 300;
+export const SWARMLING_SCORE = 50;

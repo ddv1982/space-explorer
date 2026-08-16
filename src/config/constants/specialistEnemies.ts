@@ -1,0 +1,14 @@
+export const DIVER_HP = 1;
+export const DIVER_SPEED = 160;
+export const DIVER_SCORE = 150;
+export const DIVER_DIVE_SPEED = 420;
+export const DODGER_HP = 2;
+export const DODGER_SPEED = 90;
+export const DODGER_SCORE = 300;
+export const DODGER_FIRE_RATE = 2600;
+export const DODGER_STRAFE_SPEED = 240;
+export const DODGER_STRAFE_FLIP_MS = 900;
+export const SOWER_HP = 3;
+export const SOWER_SPEED = 45;
+export const SOWER_SCORE = 350;
+export const SOWER_MINE_COOLDOWN = 2600;

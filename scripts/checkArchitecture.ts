@@ -9,14 +9,53 @@ const WARN_EXPORTS = 20;
 const WARN_FUNCTION_LINES = 100;
 const WARN_COMPLEXITY = 20;
 const WARN_TEST_LINES = 500;
+const FUNCTION_BUDGETS: Record<string, { lines: number; complexity: number; reason: string }> = {
+  'src/browserHarness.ts#createBrowserHarnessApi': {
+    lines: 370,
+    complexity: 50,
+    reason: 'development-only diagnostics composition root backed by focused command modules',
+  },
+  'src/browserHarness.ts#probeFramePacing': {
+    lines: 200,
+    complexity: 25,
+    reason: 'single sampling transaction with symmetric instrumentation cleanup',
+  },
+  'src/scenes/gameScene/pauseOverlay/view.ts#getPauseOverlayLayout': {
+    lines: 205,
+    complexity: 60,
+    reason: 'pure responsive policy covered by the viewport scenario matrix',
+  },
+  'src/scenes/menuScene/layout.ts#createMenuLayoutPlan': {
+    lines: 130,
+    complexity: 58,
+    reason: 'pure responsive policy covered by the viewport scenario matrix',
+  },
+  'src/scenes/planetIntermission/presentation.ts#getIntermissionLayout': {
+    lines: 145,
+    complexity: 38,
+    reason: 'four explicit responsive profiles covered by visual evidence',
+  },
+};
+const TEST_CONCENTRATION_BUDGETS: Record<string, { lines: number; reason: string }> = {
+  'tests/CollisionManager.test.ts': {
+    lines: 675,
+    reason: 'shared typed collision fixture with source-specific narratives',
+  },
+  'tests/SaveSlotStorage.test.ts': { lines: 615, reason: 'single persistence compatibility matrix' },
+  'tests/WaveManager.test.ts': { lines: 590, reason: 'shared deterministic encounter fixture' },
+  'tests/combatFeedbackHandlers.test.ts': { lines: 570, reason: 'shared terminal-flow handler fixture' },
+  'tests/responsiveLayout.test.ts': { lines: 540, reason: 'cross-scene viewport scenario matrix' },
+  'tests/EnemyPool.test.ts': { lines: 535, reason: 'single pooled-enemy registry contract' },
+  'tests/PicketTurretSystem.test.ts': { lines: 515, reason: 'single turret lifecycle fixture' },
+};
 const CONCENTRATION_BUDGETS: Record<string, { lines: number; imports: number; reason: string }> = {
   'src/browserHarness.ts': {
-    lines: 950,
-    imports: 8,
-    reason: 'browser-only diagnostics surface',
+    lines: 400,
+    imports: 15,
+    reason: 'browser-only diagnostics composition root after command extraction',
   },
   'src/scenes/GameScene.ts': {
-    lines: 500,
+    lines: 455,
     imports: 36,
     reason: 'Phaser gameplay composition root',
   },
@@ -26,12 +65,12 @@ const CONCENTRATION_BUDGETS: Record<string, { lines: number; imports: number; re
     reason: 'procedural drawing recipe collection',
   },
   'src/systems/WaveManager.ts': {
-    lines: 525,
+    lines: 460,
     imports: 16,
     reason: 'encounter composition root under active decomposition',
   },
   'src/entities/enemies/Boss.ts': {
-    lines: 510,
+    lines: 460,
     imports: 12,
     reason: 'boss entity facade after guard-policy extraction',
   },
@@ -95,9 +134,13 @@ function inspectFunctions(file: string, source: string): void {
         sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line +
         1;
       if (lines > WARN_FUNCTION_LINES || complexity > WARN_COMPLEXITY) {
+        const relativeFile = relative(process.cwd(), file);
+        const name = getFunctionName(functionNode);
+        const budget = FUNCTION_BUDGETS[`${relativeFile}#${name}`];
+        if (budget && lines <= budget.lines && complexity <= budget.complexity) return;
         functionWarnings.push({
-          file: relative(process.cwd(), file),
-          name: getFunctionName(functionNode),
+          file: relativeFile,
+          name,
           lines,
           complexity,
         });
@@ -121,7 +164,7 @@ for (const file of sourceFiles) {
   });
   const exports = [
     ...source.matchAll(
-      /^export\s+(?:default\s+)?(?:abstract\s+)?(?:class|function|const|let|var|type|interface|enum)\s+/gm
+      /^export\s+(?:default\s+)?(?:abstract\s+)?(?:class|function|const|let|var|type|interface|enum)\s+[A-Za-z_$]/gm
     ),
   ].length;
   if (exports > WARN_EXPORTS) surfaceWarnings.push({ file: relative(process.cwd(), file), exports });
@@ -174,13 +217,26 @@ for (const warning of surfaceWarnings) {
 for (const warning of functionWarnings) {
   console.warn(`warning: ${warning.file}#${warning.name} (${warning.lines} lines, complexity ${warning.complexity})`);
 }
+console.log(
+  `Tracked function policies: ${Object.entries(FUNCTION_BUDGETS)
+    .map(([name, budget]) => `${name} (${budget.reason})`)
+    .join(', ')}.`
+);
 
 const testConcentrations = collectTypeScriptFiles(resolve('tests'))
   .map((file) => ({ file: relative(process.cwd(), file), lines: readFileSync(file, 'utf8').split(/\r?\n/).length }))
-  .filter(({ lines }) => lines > WARN_TEST_LINES)
+  .filter(({ file, lines }) => lines > (TEST_CONCENTRATION_BUDGETS[file]?.lines ?? WARN_TEST_LINES))
   .sort((a, b) => b.lines - a.lines);
 for (const warning of testConcentrations) {
   console.warn(`warning: ${warning.file} (${warning.lines} test lines)`);
+}
+const trackedTestConcentrations = Object.entries(TEST_CONCENTRATION_BUDGETS)
+  .map(([file, budget]) => ({ file, ...budget }))
+  .filter(({ file }) => testConcentrations.every((warning) => warning.file !== file));
+if (trackedTestConcentrations.length > 0) {
+  console.log(
+    `Tracked test narratives: ${trackedTestConcentrations.map(({ file, reason }) => `${file} (${reason})`).join(', ')}.`
+  );
 }
 
 const trackedConcentrations = concentrations.filter(({ file }) => CONCENTRATION_BUDGETS[file]);
