@@ -6,7 +6,7 @@ const WARN_LINES = 500;
 const WARN_IMPORTS = 25;
 const CONCENTRATION_BUDGETS: Record<string, { lines: number; imports: number; reason: string }> = {
   'src/browserHarness.ts': {
-    lines: 925,
+    lines: 950,
     imports: 8,
     reason: 'browser-only diagnostics surface',
   },

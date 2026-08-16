@@ -77,3 +77,12 @@ This document describes the scene boundaries, system contracts, and coding rules
 - Intentional composition and procedural-generation hotspots have explicit, near-current budgets in `checkArchitecture.ts`. They stay listed in the report, and any growth beyond the budget becomes a warning; reduce a budget whenever an extraction lands so the improvement cannot silently regress.
 - Current budgeted hotspots are the browser diagnostics facade, `GameScene`, the neon background recipe collection, `WaveManager`, and the boss entity facade. New files must use the default limits rather than joining this list without an architectural review.
 - Scene classes remain lifecycle and composition roots; scheduling belongs in focused controllers, and Phaser callback normalization belongs at adapter boundaries.
+
+## Runtime performance adaptation
+
+- `RuntimePerformanceBudget` is the single owner of adaptive visual pressure. It is active only when the player selects Auto quality.
+- Adaptation may change particle quantity, projectile-trail cadence, optional glow filters, premium-background plane visibility, and the recommended render scale. It must never change simulation delta, physics, firing cadence, damage, encounter timing, or input behavior.
+- Pressure changes use sampled windows and asymmetric recovery hysteresis. Do not react to isolated slow frames, tab restoration deltas, pauses, or debugger stalls.
+- High remains a fixed presentation tier. Auto begins with the High profile and sheds optional work in a documented order.
+- Browser performance evidence should record canvas backing/CSS dimensions, device-pixel ratio, the active adaptive pressure level, effect-event counts, particles, bodies, tweens, and update/render-submission cost.
+- The browser harness is development-only instrumentation. Keep its dynamic import behind `import.meta.env.DEV` so diagnostic APIs and probes are excluded from production bundles.

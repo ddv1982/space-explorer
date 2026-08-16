@@ -4,6 +4,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
 import { audioManager } from './systems/AudioManager';
 import { initHardwareKeyboardDetection } from './systems/hardwareKeyboardDetection';
+import { runtimePerformanceBudget } from './systems/RuntimePerformanceBudget';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -46,6 +47,7 @@ if (!game && typeof document !== 'undefined') {
 }
 
 if (
+  import.meta.env.DEV &&
   game &&
   typeof window !== 'undefined' &&
   new URLSearchParams(window.location.search).get('browserHarness') === '1'
@@ -63,6 +65,10 @@ if (game && typeof window !== 'undefined') {
   const recoveryTimeouts = new Set<number>();
   const visualViewport = window.visualViewport;
   const gameRoot = document.getElementById('game-root');
+  const sampleRuntimePerformance = (_time: number, delta: number): void => {
+    if (!document.hidden) runtimePerformanceBudget.sampleFrame(delta);
+  };
+  game.events.on(Phaser.Core.Events.STEP, sampleRuntimePerformance);
   let lastViewportWidth = 0;
   let lastViewportHeight = 0;
   let queuedViewportWidth = 0;
@@ -114,6 +120,10 @@ if (game && typeof window !== 'undefined') {
       lastViewportWidth = queuedViewportWidth;
       lastViewportHeight = queuedViewportHeight;
       game.scale.refresh();
+      runtimePerformanceBudget.primeForEnvironment({
+        backingPixelCount: game.canvas.width * game.canvas.height,
+        reducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+      });
     });
   };
 
@@ -171,6 +181,8 @@ if (game && typeof window !== 'undefined') {
     for (const timeout of recoveryTimeouts) window.clearTimeout(timeout);
     recoveryTimeouts.clear();
     audioManager.destroy();
+    game.events.off(Phaser.Core.Events.STEP, sampleRuntimePerformance);
+    runtimePerformanceBudget.reset();
   });
 
   scheduleScaleRefresh();

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../../config/LevelsConfig';
 import { getVisualQualityProfile } from '../../config/visualQuality';
+import { runtimePerformanceBudget } from '../RuntimePerformanceBudget';
 import { SCROLL_SPEED } from '../../utils/constants';
 import { getPremiumBackgroundManifest, type PremiumBackgroundLayerConfig } from './premiumBackgroundManifest';
 import {
@@ -34,7 +35,11 @@ function getRuntimeLayerConfigs(config: LevelConfig): PremiumBackgroundLayerConf
     return null;
   }
 
-  return manifest.runtimeLayers.slice(0, getVisualQualityProfile().backgroundLayerCount);
+  const layerLimit = Math.min(
+    getVisualQualityProfile().backgroundLayerCount,
+    runtimePerformanceBudget.getSnapshot().backgroundLayerLimit,
+  );
+  return manifest.runtimeLayers.slice(0, layerLimit);
 }
 
 function setAlphaIfChanged(sprite: Phaser.GameObjects.TileSprite, alpha: number): void {

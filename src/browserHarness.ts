@@ -5,6 +5,10 @@ import { audioManager, type AudioManager, type AudioPauseReason } from './system
 import { GAME_SCENE_EVENTS } from './systems/GameplayFlow';
 import type { ParallaxBackground } from './systems/ParallaxBackground';
 import { getPlayerState, setPlayerState } from './systems/PlayerState';
+import {
+  runtimePerformanceBudget,
+  type RuntimePerformanceSnapshot,
+} from './systems/RuntimePerformanceBudget';
 
 const HARNESS_GLOBAL = '__SPACE_EXPLORER_BROWSER_HARNESS__';
 const ROUTABLE_SCENES = new Set(['PlanetIntermission', 'GameOver', 'Victory']);
@@ -13,6 +17,15 @@ export interface BrowserHarnessSnapshot {
   activeScenes: readonly string[];
   registeredScenes: readonly string[];
   gameSize: Readonly<{ width: number; height: number }>;
+  canvas: Readonly<{
+    backingWidth: number;
+    backingHeight: number;
+    cssWidth: number;
+    cssHeight: number;
+    devicePixelRatio: number;
+    backingScale: number;
+  }>;
+  runtimePerformance: RuntimePerformanceSnapshot;
   physicsPaused: boolean | null;
   physicsBodyCount: number;
   cameraFilterCount: number;
@@ -116,6 +129,7 @@ export interface BrowserHarnessApi {
   setLaserSfxEnabled: (enabled: boolean) => void;
   probeFramePacing: (sampleCount?: number) => Promise<BrowserHarnessFramePacingProbe>;
   probeFrameDelivery: (sampleCount?: number) => Promise<BrowserHarnessFrameDeliveryProbe>;
+  getRuntimePerformanceSnapshot: () => RuntimePerformanceSnapshot;
   showLaneReadingPilot: (glowEnabled?: boolean) => { filterCount: number; sectionId: string };
   measureLaneReadingPilotRenderCost: () => Promise<BrowserHarnessVisualPilotMetrics>;
   showPlanetIntermission: (level: number) => Promise<{ level: number; planetName: string }>;
@@ -208,11 +222,21 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
   const preloadTexts = preloadScene.children.list
     .filter((child): child is Phaser.GameObjects.Text => child instanceof Phaser.GameObjects.Text)
     .map((text) => text.text);
+  const canvasBounds = game.canvas.getBoundingClientRect();
 
   return Object.freeze({
     activeScenes: Object.freeze(activeScenes.map((scene) => scene.scene.key)),
     registeredScenes: Object.freeze(Object.keys(sceneManager.keys ?? {}).sort()),
     gameSize: Object.freeze({ width: Number(game.scale.width), height: Number(game.scale.height) }),
+    canvas: Object.freeze({
+      backingWidth: game.canvas.width,
+      backingHeight: game.canvas.height,
+      cssWidth: canvasBounds.width,
+      cssHeight: canvasBounds.height,
+      devicePixelRatio: window.devicePixelRatio,
+      backingScale: canvasBounds.width > 0 ? game.canvas.width / canvasBounds.width : 1,
+    }),
+    runtimePerformance: runtimePerformanceBudget.getSnapshot(),
     physicsPaused: physicsWorld ? physicsWorld.isPaused : null,
     physicsBodyCount: physicsWorld?.bodies.size ?? 0,
     cameraFilterCount,
@@ -733,6 +757,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
     },
     probeFramePacing,
     probeFrameDelivery,
+    getRuntimePerformanceSnapshot: () => runtimePerformanceBudget.getSnapshot(),
     probeArcadeOverlap: async () => {
       const activeScene = game.scene.getScenes(true)[0];
       if (!activeScene) {

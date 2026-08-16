@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.10.0`](./1.10.0.md) - teaches the starship to breathe under pressure with adaptive High visuals, disciplined recovery, and leaner production cargo
 - [`1.9.0`](./1.9.0.md) - charts the engine-room constellations with strict sentries, separated combat instruments, and ratcheted structural boundaries
 - [`1.8.1`](./1.8.1.md) - cools the command-deck engines with lighter skies, disciplined particle wings, and visual sentries that inspect the light itself
 - [`1.8.0`](./1.8.0.md) - relights the neon command deck with cinematic stations, hotter silhouettes, and louder edge skies while the campaign grammar holds

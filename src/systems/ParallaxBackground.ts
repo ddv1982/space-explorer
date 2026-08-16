@@ -52,6 +52,7 @@ import {
   rebuildLevelVisualLayers,
   type LevelVisualLayerLifecycleContext,
 } from './parallax/levelVisualLayerLifecycle';
+import { runtimePerformanceBudget, type RuntimePerformanceSnapshot } from './RuntimePerformanceBudget';
 
 const PASSING_PLANET_RESPAWN_MIN_X = 100;
 const PASSING_PLANET_RESPAWN_MAX_X = 400;
@@ -82,6 +83,7 @@ export class ParallaxBackground {
   private activeHazards: ScriptedHazardConfig[] = [];
   private hazardOverlay: Phaser.GameObjects.Graphics | null = null;
   private premiumBackgroundLayers: PremiumBackgroundLayerState[] = [];
+  private unsubscribePerformanceBudget: (() => void) | null = null;
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.destroy();
@@ -89,6 +91,10 @@ export class ParallaxBackground {
     this.createSceneLayers(scene, levelConfig);
     this.createHazardOverlay(scene, levelConfig?.accentColor ?? 0x88c8ff);
     this.layoutSceneLayers();
+    this.unsubscribePerformanceBudget = runtimePerformanceBudget.subscribe((snapshot) => {
+      this.applyRuntimePerformanceBudget(snapshot);
+    });
+    this.applyRuntimePerformanceBudget(runtimePerformanceBudget.getSnapshot());
 
     // The seamless image backgrounds are a low-depth art backplate. The normal
     // committed Phaser background stack remains in front of it.
@@ -231,6 +237,8 @@ export class ParallaxBackground {
   }
 
   destroy(): void {
+    this.unsubscribePerformanceBudget?.();
+    this.unsubscribePerformanceBudget = null;
     this.clearPendingRebuildEvent();
     this.destroyLevelVisualLayers();
     this.destroyPremiumBackgroundLayers();
@@ -240,6 +248,15 @@ export class ParallaxBackground {
     this.resetRuntimeFieldState(0, 0);
     this.hazardOverlay?.destroy();
     this.hazardOverlay = null;
+  }
+
+  private applyRuntimePerformanceBudget(snapshot: RuntimePerformanceSnapshot): void {
+    this.premiumBackgroundLayers.forEach((layer, index) => {
+      layer.sprite.setVisible(index < snapshot.backgroundLayerLimit);
+    });
+    for (const filter of this.hazardOverlay?.filters?.internal.list ?? []) {
+      filter.setActive(snapshot.glowEnabled);
+    }
   }
 
   private clearPendingRebuildEvent(): void {

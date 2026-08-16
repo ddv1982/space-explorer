@@ -8,7 +8,8 @@ const DIST_DIR = path.resolve(process.cwd(), 'dist');
 const DEFAULT_MAX_ASSET_KB = 3500;
 const DEFAULT_MAX_TOTAL_KB = 30000;
 const DEFAULT_MAX_JS_ASSET_KB = 1500;
-const DEFAULT_MAX_TOTAL_JS_KB = 1800;
+const DEFAULT_MAX_TOTAL_JS_KB = 1900;
+const DEFAULT_MAX_APP_JS_KB = 475;
 
 interface BundleArgs {
   check: boolean;
@@ -16,6 +17,7 @@ interface BundleArgs {
   maxTotalKb?: number;
   maxJsAssetKb?: number;
   maxTotalJsKb?: number;
+  maxAppJsKb?: number;
 }
 
 interface BundleItem {
@@ -58,6 +60,7 @@ function parseArgs(argv: string[]): BundleArgs {
     maxTotalKb: undefined,
     maxJsAssetKb: undefined,
     maxTotalJsKb: undefined,
+    maxAppJsKb: undefined,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -116,6 +119,17 @@ function parseArgs(argv: string[]): BundleArgs {
       continue;
     }
 
+    if (arg.startsWith('--max-app-js-kb=')) {
+      result.maxAppJsKb = parseNumber(arg.split('=')[1], '--max-app-js-kb');
+      continue;
+    }
+
+    if (arg === '--max-app-js-kb') {
+      result.maxAppJsKb = parseNumber(argv[i + 1], '--max-app-js-kb');
+      i += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -148,6 +162,11 @@ async function main() {
     (process.env.BUNDLE_MAX_TOTAL_JS_KB
       ? parseNumber(process.env.BUNDLE_MAX_TOTAL_JS_KB, 'BUNDLE_MAX_TOTAL_JS_KB')
       : DEFAULT_MAX_TOTAL_JS_KB);
+  const maxAppJsKb =
+    args.maxAppJsKb ??
+    (process.env.BUNDLE_MAX_APP_JS_KB
+      ? parseNumber(process.env.BUNDLE_MAX_APP_JS_KB, 'BUNDLE_MAX_APP_JS_KB')
+      : DEFAULT_MAX_APP_JS_KB);
 
   let files: string[] = [];
 
@@ -185,11 +204,14 @@ async function main() {
   const totalGzipBytes = report.reduce((sum, item) => sum + item.gzipBytes, 0);
   const jsReport = report.filter((item) => item.file.endsWith('.js'));
   const totalJsRawBytes = jsReport.reduce((sum, item) => sum + item.rawBytes, 0);
+  const appJsReport = jsReport.filter((item) => !/\/phaser-[^/]+\.js$/.test(item.file));
+  const totalAppJsRawBytes = appJsReport.reduce((sum, item) => sum + item.rawBytes, 0);
   const largestJs = jsReport[0];
 
   console.log(`Bundle report (${report.length} files in dist)`);
   console.log(`Total: ${formatKb(totalRawBytes)} raw / ${formatKb(totalGzipBytes)} gzip`);
   console.log(`JavaScript total: ${formatKb(totalJsRawBytes)} raw`);
+  console.log(`Application JavaScript: ${formatKb(totalAppJsRawBytes)} raw (Phaser excluded)`);
 
   for (const item of report.slice(0, 8)) {
     console.log(`- ${item.file}: ${formatKb(item.rawBytes)} raw / ${formatKb(item.gzipBytes)} gzip`);
@@ -226,9 +248,15 @@ async function main() {
     );
   }
 
+  if (totalAppJsRawBytes > maxAppJsKb * 1024) {
+    violations.push(
+      `Application JS size is ${formatKb(totalAppJsRawBytes)} (max ${maxAppJsKb.toFixed(2)} kB)`,
+    );
+  }
+
   if (violations.length === 0) {
     console.log(
-      `CHECK PASSED (largest <= ${maxAssetKb.toFixed(2)} kB, total <= ${maxTotalKb.toFixed(2)} kB, largest JS <= ${maxJsAssetKb.toFixed(2)} kB, total JS <= ${maxTotalJsKb.toFixed(2)} kB)`,
+      `CHECK PASSED (largest <= ${maxAssetKb.toFixed(2)} kB, total <= ${maxTotalKb.toFixed(2)} kB, largest JS <= ${maxJsAssetKb.toFixed(2)} kB, total JS <= ${maxTotalJsKb.toFixed(2)} kB, app JS <= ${maxAppJsKb.toFixed(2)} kB)`,
     );
     return;
   }

@@ -48,7 +48,7 @@ export function createSettingsPanel(scene: Phaser.Scene, config: {
   });
   const quality: TierSelectorControl<VisualQualityTier> = createTierSelectorControl(scene, {
     label: 'QUALITY',
-    tiers: ['low', 'standard', 'high'],
+    tiers: ['low', 'standard', 'high', 'auto'],
     value: config.quality,
     layout: { x: config.layout.x, y: config.layout.qualityY, width: config.layout.width, height: config.layout.tierHeight, compact: config.layout.compact },
     onSelect: config.onSelectQuality,

@@ -1,4 +1,4 @@
-export type VisualQualityTier = 'low' | 'standard' | 'high';
+export type VisualQualityTier = 'low' | 'standard' | 'high' | 'auto';
 
 export interface VisualQualityProfile {
   tier: VisualQualityTier;
@@ -50,10 +50,21 @@ const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
     particleQuantityScale: 1,
     menuAtmosphere: 3,
   },
+  auto: {
+    tier: 'auto',
+    entityTextureResolution: 3,
+    particleTextureResolution: 2,
+    backgroundLayerCount: 3,
+    uiGlowStrength: 1,
+    motifDensity: 1.25,
+    particleBurstScale: 1.15,
+    particleQuantityScale: 1,
+    menuAtmosphere: 3,
+  },
 };
 
 function isVisualQualityTier(value: unknown): value is VisualQualityTier {
-  return value === 'low' || value === 'standard' || value === 'high';
+  return value === 'low' || value === 'standard' || value === 'high' || value === 'auto';
 }
 
 function getVisualQualityStorage(): VisualQualityStorage | null {

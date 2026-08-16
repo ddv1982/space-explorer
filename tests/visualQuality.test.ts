@@ -85,9 +85,16 @@ describe('visual quality profiles', () => {
         particleQuantityScale: 1,
         menuAtmosphere: 3,
       },
+      auto: {
+        uiGlowStrength: 1,
+        motifDensity: 1.25,
+        particleBurstScale: 1.15,
+        particleQuantityScale: 1,
+        menuAtmosphere: 3,
+      },
     } as const;
 
-    for (const tier of ['low', 'standard', 'high'] as const) {
+    for (const tier of ['low', 'standard', 'high', 'auto'] as const) {
       expect(setVisualQualityTier(tier, storage)).toBe(true);
       expect(getVisualQualityProfile(storage)).toMatchObject(expected[tier]);
     }
@@ -96,7 +103,7 @@ describe('visual quality profiles', () => {
   test('persists and restores every supported tier', () => {
     const storage = new MemoryStorage();
 
-    for (const tier of ['low', 'standard', 'high'] as const) {
+    for (const tier of ['low', 'standard', 'high', 'auto'] as const) {
       expect(setVisualQualityTier(tier, storage)).toBe(true);
       expect(storage.getItem(VISUAL_QUALITY_STORAGE_KEY)).toBe(tier);
       expect(getVisualQualityTier(storage)).toBe(tier);

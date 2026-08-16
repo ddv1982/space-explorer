@@ -3,6 +3,7 @@ import { BULLET_SPEED } from '../utils/constants';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { ensurePlayerBulletTexture } from '../utils/SpriteFactory';
+import { getRuntimeTrailInterval } from '../systems/RuntimePerformanceBudget';
 
 export class Bullet extends Phaser.Physics.Arcade.Sprite {
   private static trailIntervalMs = 150;
@@ -45,7 +46,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    if (this.active && time >= this.lastTrailTime + Bullet.trailIntervalMs) {
+    if (this.active && time >= this.lastTrailTime + getRuntimeTrailInterval(Bullet.trailIntervalMs)) {
       this.lastTrailTime = time;
       this.scene.events.emit(GAME_SCENE_EVENTS.playerBulletTrail, this.x, this.y + 6);
     }

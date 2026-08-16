@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { getVisualQualityProfile } from '../../config/visualQuality';
+import { scaleRuntimeParticleQuantity } from '../RuntimePerformanceBudget';
 
 function burstScale(value: number): number {
   return value * getVisualQualityProfile().particleBurstScale;
 }
 
 function burstQuantity(value: number): number {
-  return Math.max(1, Math.round(value * getVisualQualityProfile().particleQuantityScale));
+  return scaleRuntimeParticleQuantity(value * getVisualQualityProfile().particleQuantityScale);
 }
 
 export function createPooledEmitter(

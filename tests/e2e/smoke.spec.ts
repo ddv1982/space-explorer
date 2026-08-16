@@ -35,6 +35,11 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   expect(initial.cameraFilterCount).toBeGreaterThan(0);
   expect(initial.particleEmitterCount).toBeGreaterThan(0);
   expect(initial.tweenCount).toBeGreaterThan(0);
+  expect(initial.canvas.backingWidth).toBeGreaterThan(0);
+  expect(initial.canvas.backingHeight).toBeGreaterThan(0);
+  expect(initial.canvas.backingScale).toBeGreaterThanOrEqual(0.95);
+  expect(initial.canvas.backingScale).toBeLessThanOrEqual(1.05);
+  expect(initial.runtimePerformance).toMatchObject({ enabled: false, pressureLevel: 0 });
   expect(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeArcadeOverlap())).toBe(
     true,
   );

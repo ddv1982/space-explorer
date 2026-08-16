@@ -190,7 +190,16 @@ bun run knip     # unused-code analysis
 bun run levels:validate # config validation for level authoring
 bun run bundle:report   # report dist asset sizes after a build
 bun run bundle:check    # enforce bundle guardrail thresholds after a build
+bun run architecture:check # reject dependency cycles and report concentration growth
 ```
+
+Visual quality offers Low, Standard, High, and Auto. Auto starts with the High
+presentation and adapts nonessential effects only after sustained frame-delivery
+pressure. It restores quality gradually after stable delivery returns; gameplay
+timing, physics, damage, and encounter pacing are never changed.
+
+Production bundle checks separately guard the Phaser engine chunk and application
+JavaScript. Development-only browser diagnostics are tree-shaken from releases.
 
 Playtest shortcut (dev server only, stripped from production builds): open
 `http://localhost:5173/?startLevel=9` to skip the menu into any level with that level's
@@ -207,7 +216,7 @@ for an explicit loadout, or `&upgrades=0` for a stock ship.
 ## Release notes
 
 - [Unreleased changes](docs/releases/unreleased.md)
-- [Latest release notes](docs/releases/1.9.0.md)
+- [Latest release notes](docs/releases/1.10.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

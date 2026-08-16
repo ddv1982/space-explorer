@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
+import { getVisualQualityProfile } from '../config/visualQuality';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import {
   applyCameraColorGrade,
@@ -23,6 +24,10 @@ import {
   getPowerUpBurstConfig,
   getSparkConfig,
 } from './effects/emitterSetup';
+import {
+  scaleRuntimeParticleQuantity,
+  shouldRenderRuntimeSecondaryEffects,
+} from './RuntimePerformanceBudget';
 
 export class EffectsManager {
   private static readonly SCORE_POPUP_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -47,6 +52,10 @@ export class EffectsManager {
   private exhaustConfigCount = -1;
   private currentLevelConfig: LevelConfig | null = null;
   private colorPulseToken = 0;
+
+  private getParticleQuantity(quantity: number): number {
+    return scaleRuntimeParticleQuantity(quantity * getVisualQualityProfile().particleQuantityScale);
+  }
 
   setup(scene: Phaser.Scene): void {
     this.scene = scene;
@@ -180,13 +189,13 @@ export class EffectsManager {
     const particleCount = Math.max(1, Math.floor(20 * intensity * burstScale));
 
     this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount));
-    this.explosionEmitter.explode(particleCount, x, y);
+    this.explosionEmitter.explode(this.getParticleQuantity(particleCount), x, y);
     this.createExplosionShockwave(x, y, intensity, 0xffb066);
 
     // Add debris for larger explosions
     if (intensity >= 1.0 && this.debrisEmitter) {
       const debrisCount = Math.max(1, Math.floor(8 * intensity * burstScale));
-      this.debrisEmitter.explode(debrisCount, x, y);
+      this.debrisEmitter.explode(this.getParticleQuantity(debrisCount), x, y);
     }
   }
 
@@ -198,11 +207,11 @@ export class EffectsManager {
     const style = this.getEnemyExplosionStyle(enemyType);
     const particleCount = Math.max(1, Math.floor(20 * intensity));
     this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount, style.palette));
-    this.explosionEmitter.explode(particleCount, x, y);
+    this.explosionEmitter.explode(this.getParticleQuantity(particleCount), x, y);
     this.createExplosionShockwave(x, y, intensity, style.ringTint, style.ringScaleX, style.ringScaleY);
 
     if (this.debrisEmitter && ['bomber', 'gunship', 'sower', 'lancer'].includes(enemyType)) {
-      this.debrisEmitter.explode(6, x, y);
+      this.debrisEmitter.explode(this.getParticleQuantity(6), x, y);
     }
   }
 
@@ -242,6 +251,7 @@ export class EffectsManager {
     ringScaleX: number = 1,
     ringScaleY: number = 1
   ): void {
+    if (!shouldRenderRuntimeSecondaryEffects()) return;
     const flash = this.scene.add
       .image(x, y, 'particle-burst')
       .setDepth(7)
@@ -277,11 +287,11 @@ export class EffectsManager {
   }
 
   createSparkBurst(x: number, y: number): void {
-    this.sparkEmitter?.explode(8, x, y);
+    this.sparkEmitter?.explode(this.getParticleQuantity(8), x, y);
   }
 
   createGrazeSpark(x: number, y: number): void {
-    this.sparkEmitter?.explode(3, x, y);
+    this.sparkEmitter?.explode(this.getParticleQuantity(3), x, y);
   }
 
   /** Cyan Surge Pulse: soft flash pop plus a wide expanding neon ring. */
@@ -320,7 +330,7 @@ export class EffectsManager {
   }
 
   createMuzzleFlash(x: number, y: number): void {
-    this.muzzleEmitter?.explode(5, x, y);
+    this.muzzleEmitter?.explode(this.getParticleQuantity(5), x, y);
   }
 
   createEngineExhaust(x: number, y: number, intensity: number): void {
@@ -337,7 +347,7 @@ export class EffectsManager {
       this.exhaustConfigCount = count;
     }
 
-    this.exhaustEmitter.explode(count, x, y);
+    this.exhaustEmitter.explode(this.getParticleQuantity(count), x, y);
   }
 
   createSpawnWarning(x: number): void {
@@ -394,7 +404,7 @@ export class EffectsManager {
   }
 
   createHitSplash(x: number, y: number): void {
-    this.hitSplashEmitter?.explode(10, x, y);
+    this.hitSplashEmitter?.explode(this.getParticleQuantity(10), x, y);
   }
 
   createPowerUpBurst(x: number, y: number, color?: number): void {
@@ -407,10 +417,10 @@ export class EffectsManager {
       });
     }
 
-    this.powerUpBurstEmitter.explode(14, x, y);
+    this.powerUpBurstEmitter.explode(this.getParticleQuantity(14), x, y);
   }
 
   createAsteroidDebris(x: number, y: number): void {
-    this.debrisEmitter?.explode(10, x, y);
+    this.debrisEmitter?.explode(this.getParticleQuantity(10), x, y);
   }
 }
