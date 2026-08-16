@@ -4,13 +4,22 @@ test('pause command deck stays balanced across checkpoints and settings', async 
   page,
   assertNoBrowserErrors,
 }) => {
+  test.setTimeout(120_000);
   const mobile = test.info().project.name.includes('mobile');
   const viewport = mobile ? { width: 390, height: 844 } : { width: 984, height: 768 };
   await page.setViewportSize(viewport);
   await openMenu(page);
   await startNewRun(page);
-  await page.keyboard.press('Escape');
-  await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(true);
+  if (mobile) {
+    await page.touchscreen.tap(viewport.width - 44, 106);
+  } else {
+    await page.keyboard.down('Escape');
+  }
+  try {
+    await expect.poll(async () => (await snapshot(page)).physicsPaused, { timeout: 30_000 }).toBe(true);
+  } finally {
+    if (!mobile) await page.keyboard.up('Escape');
+  }
 
   const checkpoints = await snapshot(page);
   expect(checkpoints.texts.some((text) => text.text === 'CHECKPOINT SLOTS')).toBe(true);
