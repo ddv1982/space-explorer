@@ -26,7 +26,8 @@ export interface PauseOverlayState {
 export interface PauseOverlayMessage {
   title: string;
   subtitle: string;
-  hint: string;
+  checkpointHint: string;
+  settingsHint: string;
   resumeLabel: string;
 }
 
@@ -55,13 +56,8 @@ export interface PauseOverlayLayout {
   subtitleVisible: boolean;
   hintY: number;
   hintVisible: boolean;
-  musicHeaderX: number;
-  musicHeaderY: number;
-  musicVisible: boolean;
   saveSlotsVisible: boolean;
-  actionButtonsVisible: boolean;
-  sliderX: number;
-  sliderStartY: number;
+  saveHeaderVisible: boolean;
   saveHeaderX: number;
   saveHeaderY: number;
   slotRows: PauseSaveSlotRowLayout[];
@@ -69,10 +65,6 @@ export interface PauseOverlayLayout {
   statusY: number;
   resumeButtonX: number;
   resumeButtonY: number;
-  saveButtonX: number;
-  saveButtonY: number;
-  loadButtonX: number;
-  loadButtonY: number;
   menuButtonX: number;
   menuButtonY: number;
   buttonY: number;

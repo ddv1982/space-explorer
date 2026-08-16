@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2026-08-16
+
+### Changed
+- Rebuilt the pause menu around one centered checkpoint deck instead of reserving an empty legacy music column.
+- Simplified the global footer to Resume and Main Menu, leaving save, load, and delete actions attached to their explicit checkpoint slots.
+- Added view-specific guidance for Checkpoints and Settings, widened the mode tabs, and reduced the title scale for a clearer command hierarchy.
+- Reflowed checkpoint metadata, controls, status copy, and footer actions across desktop, phone portrait, phone landscape, and ultra-compact frames.
+
+### Fixed
+- Prevented pause tabs, checkpoint headers, rows, status text, and footer controls from colliding at compact viewport boundaries.
+- Removed ambiguous global save/load shortcuts that silently selected an implicit slot while duplicating the visible slot actions.
+
+### Quality
+- Added pause-menu visual evidence at `984x768` desktop and `390x844` phone portrait sizes for both Checkpoints and Settings.
+- Expanded responsive geometry coverage to enforce centered desktop cards and non-overlapping content bands through short and ultra-compact layouts.
+- Passed both TypeScript compilers, lint, the complete unit suite, production build, and desktop/mobile pause interaction and visual browser checks.
+
 ## [1.7.0] - 2026-08-16
 
 ### Added

@@ -231,12 +231,15 @@ describe('PauseOverlay relayout regression', () => {
       settingsPanel: { visible: boolean };
       saveSlotRows: { rows: Array<{ title: StubText }> };
       blocker: StubZone;
+      hintText: StubText;
     };
     expect(internals.settingsPanel.visible).toBe(true);
     expect(internals.saveSlotRows.rows[0]?.title.visible).toBe(false);
     expect(internals.blocker.visible).toBe(true);
+    expect(internals.hintText.text).toBe('Tune difficulty, quality, and music for this run.');
 
     (overlay as unknown as { selectSubview: (view: 'settings' | 'checkpoints') => void }).selectSubview('checkpoints');
     expect(internals.settingsPanel.visible).toBe(false);
+    expect(internals.hintText.text).toBe('Choose a slot to save, restore, or clear your run.');
   });
 });

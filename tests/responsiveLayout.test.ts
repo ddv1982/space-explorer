@@ -38,8 +38,6 @@ const {
   getPauseSaveSlotRowControlLayout,
   PAUSE_OVERLAY_BUTTON_HEIGHT,
   PAUSE_OVERLAY_BUTTON_WIDTH,
-  PAUSE_OVERLAY_SLIDER_SPACING,
-  PAUSE_OVERLAY_SLIDER_WIDTH,
   PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
   PAUSE_OVERLAY_SLOT_BUTTON_GAP,
   PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
@@ -67,8 +65,10 @@ function rectsOverlap(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-function expectNoOverlap(a: Rect, b: Rect): void {
-  expect(rectsOverlap(a, b)).toBe(false);
+function expectNoOverlap(a: Rect, b: Rect, context = 'layout rectangles'): void {
+  if (rectsOverlap(a, b)) {
+    throw new Error(`${context} overlap: ${JSON.stringify({ a, b })}`);
+  }
 }
 
 function getPauseFooterRects(layout: ReturnType<typeof getPauseOverlayLayout>): Rect[] {
@@ -114,38 +114,43 @@ function assertPauseRequiredControlsDoNotOverlap(viewport: { width: number; heig
     width: viewport.width,
     height: 20,
   };
+  const tabRect = {
+    x: layout.checkpointTabX,
+    y: layout.tabY,
+    width: layout.tabWidth * 2 + 10,
+    height: layout.tabHeight,
+  };
   const footerRects = getPauseFooterRects(layout);
-  const sliderBand = layout.musicVisible
-    ? {
-        x: layout.sliderX,
-        y: layout.sliderStartY,
-        width: PAUSE_OVERLAY_SLIDER_WIDTH,
-        height: PAUSE_OVERLAY_SLIDER_SPACING * 3 + 38,
-      }
-    : null;
+
+  if (layout.saveHeaderVisible) {
+    expectNoOverlap(tabRect, saveHeaderRect, `${viewport.width}x${viewport.height} tabs/header`);
+  }
+  if (layout.subtitleVisible) {
+    expectNoOverlap(subtitleRect, tabRect);
+  }
+  if (layout.hintVisible) {
+    expectNoOverlap(hintRect, tabRect);
+  }
 
   for (const row of layout.slotRows) {
     expectNoOverlap(row, statusRect);
-    expectNoOverlap(row, saveHeaderRect);
+    if (layout.saveHeaderVisible) {
+      expectNoOverlap(row, saveHeaderRect);
+    }
     if (layout.subtitleVisible) {
       expectNoOverlap(row, subtitleRect);
     }
     if (layout.hintVisible) {
       expectNoOverlap(row, hintRect);
     }
+    expectNoOverlap(row, tabRect, `${viewport.width}x${viewport.height} row/tabs`);
     for (const footerRect of footerRects) {
       expectNoOverlap(row, footerRect);
-    }
-    if (sliderBand) {
-      expectNoOverlap(row, sliderBand);
     }
   }
 
   for (const footerRect of footerRects) {
     expectNoOverlap(statusRect, footerRect);
-    if (sliderBand) {
-      expectNoOverlap(footerRect, sliderBand);
-    }
   }
 }
 
@@ -251,7 +256,7 @@ describe('responsive save-slot layouts', () => {
     assertPauseRequiredControlsDoNotOverlap(viewport);
   });
 
-  test('pause overlay stacks footer actions on narrow viewports instead of pushing them off-screen', () => {
+  test('pause overlay keeps footer actions side by side when a narrow frame can contain them', () => {
     const viewport = { width: 360, height: 640 };
     const layout = getPauseOverlayLayout(createScene(viewport.width, viewport.height) as never);
 
@@ -259,7 +264,8 @@ describe('responsive save-slot layouts', () => {
     expect(layout.resumeButtonX + PAUSE_OVERLAY_BUTTON_WIDTH).toBeLessThanOrEqual(viewport.width);
     expect(layout.menuButtonX).toBeGreaterThanOrEqual(0);
     expect(layout.menuButtonX + PAUSE_OVERLAY_BUTTON_WIDTH).toBeLessThanOrEqual(viewport.width);
-    expect(layout.menuButtonY).toBeGreaterThan(layout.resumeButtonY);
+    expect(layout.menuButtonY).toBe(layout.resumeButtonY);
+    expect(layout.menuButtonX).toBeGreaterThan(layout.resumeButtonX);
     expect(layout.menuButtonY + PAUSE_OVERLAY_BUTTON_HEIGHT).toBeLessThanOrEqual(viewport.height);
     assertPauseRequiredControlsDoNotOverlap(viewport);
   });
@@ -299,9 +305,6 @@ describe('responsive save-slot layouts', () => {
     { width: 480, height: 520 },
     { width: 640, height: 480 },
   ])('pause overlay reserves separate vertical bands for compact controls, status, and footer', (viewport) => {
-    const layout = getPauseOverlayLayout(createScene(viewport.width, viewport.height) as never);
-
-    expect(layout.musicVisible).toBe(false);
     assertPauseRequiredControlsDoNotOverlap(viewport);
   });
 
@@ -354,11 +357,12 @@ describe('responsive save-slot layouts', () => {
     expect(compactByWidth.compact).toBe(true);
   });
 
-  test('pause overlay hides wide music sliders when the frame cannot fit them', () => {
+  test('pause overlay centers checkpoint slots when the frame narrows', () => {
     const layout = getPauseOverlayLayout(createScene(720, 720) as never);
+    const row = layout.slotRows[0];
 
-    expect(layout.musicVisible).toBe(false);
-    expect(layout.slotRows[0]?.width).toBeGreaterThan(400);
+    expect(row?.width).toBeGreaterThan(400);
+    expect((row?.x ?? 0) + (row?.width ?? 0) / 2).toBe(layout.centerX);
   });
 
   test('pause overlay drops subtitle and hint bands on ultra-short phone landscape viewports', () => {
@@ -371,15 +375,19 @@ describe('responsive save-slot layouts', () => {
   });
 
   test.each([
+    { width: 984, height: 768 },
     { width: 1024, height: 768 },
+    { width: 1280, height: 720 },
     { width: 1280, height: 800 },
     { width: 1366, height: 768 },
-  ])('pause overlay keeps save-slot rows reachable when wide action buttons are visible', (viewport) => {
+  ])('pause overlay keeps a centered checkpoint stack clear of the footer', (viewport) => {
     const layout = getPauseOverlayLayout(createScene(viewport.width, viewport.height) as never);
+    const row = layout.slotRows[0];
 
-    expect(layout.actionButtonsVisible).toBe(true);
-    expect(layout.musicVisible).toBe(true);
     expect(layout.saveSlotsVisible).toBe(true);
+    expect(row?.width).toBe(640);
+    expect((row?.x ?? 0) + (row?.width ?? 0) / 2).toBe(layout.centerX);
+    expect(layout.resumeButtonX + PAUSE_OVERLAY_BUTTON_WIDTH + 22).toBe(layout.menuButtonX);
     expect(layout.saveHeaderY).toBeGreaterThan(layout.hintY + 20);
     expect((layout.slotRows[0]?.y ?? 0) - layout.saveHeaderY).toBeGreaterThanOrEqual(28);
     assertPauseRequiredControlsDoNotOverlap(viewport);

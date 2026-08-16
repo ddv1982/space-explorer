@@ -14,8 +14,7 @@ export const PAUSE_OVERLAY_SLOT_BUTTON_WIDTH = 68;
 export const PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT = 30;
 export const PAUSE_OVERLAY_SLOT_BUTTON_GAP = 8;
 export const PAUSE_OVERLAY_SLOT_ROW_HEIGHT = 72;
-export const PAUSE_OVERLAY_SLIDER_WIDTH = 500;
-export const PAUSE_OVERLAY_SLIDER_SPACING = 68;
+const PAUSE_OVERLAY_SLOT_ROW_MAX_WIDTH = 640;
 
 const PAUSE_BREAKPOINT_NARROW_WIDTH = 720;
 const PAUSE_BREAKPOINT_SHORT_HEIGHT = 520;
@@ -42,12 +41,12 @@ export function getPauseSaveSlotRowControlLayout(row: PauseOverlayLayout['slotRo
   const textX = row.x + 14;
 
   if (narrowRow) {
-    const buttonY = row.y + Math.max(4, Math.floor((row.height - PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT) / 2));
-    const titleY = buttonY + PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT + 6;
-    const titleVisible = !ultraCompactRow && titleY + 14 <= row.y + row.height - 6;
+    const buttonY = row.y + Math.max(1, row.height - PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT - 1);
+    const titleY = row.y + 8;
+    const titleVisible = !compactRow && !ultraCompactRow;
 
     return {
-      title: { x: textX, y: titleY, width: 56, height: 14, visible: titleVisible },
+      title: { x: textX, y: titleY, width: row.width - 28, height: 14, visible: titleVisible },
       subtitle: { x: textX, y: titleY, width: 0, height: 0, visible: false },
       savedAt: { x: textX, y: titleY, width: 0, height: 0, visible: false },
       saveButton: { x: saveX, y: buttonY, width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT },
@@ -70,7 +69,7 @@ export function getPauseSaveSlotRowControlLayout(row: PauseOverlayLayout['slotRo
 }
 
 function isPauseShortViewport(height: number): boolean {
-  return height < PAUSE_BREAKPOINT_SHORT_HEIGHT;
+  return height <= PAUSE_BREAKPOINT_SHORT_HEIGHT;
 }
 
 function isPauseVeryShortViewport(height: number): boolean {
@@ -101,17 +100,12 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const panelX = centerHorizontally(viewport, panelWidth);
   const panelY = viewport.centerY - panelHeight / 2;
   const panelBottom = panelY + panelHeight;
-  const contentInset = ultraCompactViewport ? 12 : shortViewport ? 22 : 42;
-  const contentLeft = panelX + contentInset;
-  const contentRight = stackedLayout ? contentLeft : panelX + Math.max(410, panelWidth - 350);
-  const desktopMusicColumnWidth = stackedLayout ? 0 : Math.max(0, contentRight - contentLeft - 24);
-  const totalButtonsWidth = PAUSE_OVERLAY_BUTTON_WIDTH * 4 + PAUSE_OVERLAY_BUTTON_GAP * 3;
+  const compressedPortrait = compact && !shortViewport && panelWidth < 322;
+  const contentInset = ultraCompactViewport ? 12 : shortViewport || compact ? 22 : 42;
   const twoButtonsWidth = PAUSE_OVERLAY_BUTTON_WIDTH * 2 + PAUSE_OVERLAY_BUTTON_GAP;
-  const actionButtonsVisible = !stackedLayout && !shortViewport && panelWidth >= totalButtonsWidth + 48;
-  const buttonsStacked = panelWidth < twoButtonsWidth + (shortViewport ? 16 : 48);
-  const musicVisible = !stackedLayout && !veryShortViewport && desktopMusicColumnWidth >= PAUSE_OVERLAY_SLIDER_WIDTH;
+  const buttonsStacked = panelWidth < twoButtonsWidth + 8;
   const saveSlotsVisible = true;
-  const footerBottomMargin = ultraCompactViewport ? 4 : buttonsStacked ? 10 : shortViewport ? 6 : 36;
+  const footerBottomMargin = ultraCompactViewport ? 4 : buttonsStacked ? 10 : shortViewport ? 6 : compact ? 20 : 36;
   const footerButtonGap = ultraCompactViewport ? 6 : PAUSE_OVERLAY_BUTTON_GAP;
   const menuButtonY = panelBottom - PAUSE_OVERLAY_BUTTON_HEIGHT - footerBottomMargin;
   const footerTop = buttonsStacked
@@ -120,35 +114,40 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const resumeButtonY = footerTop;
   const statusTextHeight = 20;
   const statusY = footerTop - 8 - statusTextHeight / 2;
-  const slotRowHeight = ultraCompactViewport || veryShortViewport
-    ? 38
+  const slotRowHeight = ultraCompactViewport
+    ? 32
+    : veryShortViewport
+      ? 36
+    : compressedPortrait
+      ? 60
     : buttonsStacked
       ? (shortViewport ? 44 : PAUSE_OVERLAY_SLOT_ROW_HEIGHT)
       : shortViewport ? 44 : PAUSE_OVERLAY_SLOT_ROW_HEIGHT;
-  const slotRowGap = ultraCompactViewport || veryShortViewport ? 2 : buttonsStacked || shortViewport ? 4 : 10;
-  const splitColumns = !stackedLayout && musicVisible;
-  const slotRowWidth = stackedLayout || !splitColumns
-    ? panelWidth - contentInset * 2
-    : Math.min(310, panelX + panelWidth - contentRight - 42);
+  const slotRowGap = ultraCompactViewport ? 0 : veryShortViewport ? 2 : compressedPortrait || buttonsStacked || shortViewport || compact ? 4 : 10;
+  const slotRowWidth = Math.min(PAUSE_OVERLAY_SLOT_ROW_MAX_WIDTH, panelWidth - contentInset * 2);
   const slotBlockHeight = slotRowHeight * 3 + slotRowGap * 2;
-  const titleFontSize = shortViewport ? 42 : 86;
+  const titleFontSize = shortViewport ? 42 : 74;
   const subtitleFontSize = veryShortViewport ? 14 : 16;
   const hintFontSize = veryShortViewport ? 12 : 14;
-  const titleY = panelY + (shortViewport ? 30 : 96);
-  const baseSubtitleY = panelY + (veryShortViewport ? 94 : shortViewport ? 72 : 176);
-  const baseHintY = panelY + (veryShortViewport ? 118 : shortViewport ? 96 : 216);
-  let musicHeaderY = panelY + (shortViewport ? 96 : compact ? 148 : 252);
-  let sliderStartY = panelY + (shortViewport ? 126 : compact ? 176 : 284);
+  const titleY = panelY + (shortViewport ? 30 : 88);
+  const baseSubtitleY = panelY + (veryShortViewport ? 94 : shortViewport ? 72 : 164);
+  const baseHintY = panelY + (veryShortViewport ? 118 : shortViewport ? 96 : 202);
+  const tabWidth = Math.min(180, (panelWidth - 54) / 2);
+  const tabHeight = shortViewport ? 26 : 32;
+  const tabY = panelY + (shortViewport ? 62 : compressedPortrait ? 140 : compact ? 222 : 230);
+  const saveHeaderGap = stackedLayout ? (ultraCompactViewport ? 16 : veryShortViewport ? 18 : 22) : 28;
+  const tabContentStartY = tabY + tabHeight + saveHeaderGap + 8;
   const desiredSlotStartY = stackedLayout
-    ? panelY + (ultraCompactViewport ? 68 : veryShortViewport ? 104 : shortViewport ? 118 : 170)
-    : splitColumns
-      ? panelY + 286
-      : panelY + 198;
+    ? Math.max(
+        panelY + (ultraCompactViewport ? 68 : veryShortViewport ? 104 : shortViewport ? 118 : 170),
+        tabContentStartY
+      )
+    : panelY + 300;
   const earliestSlotStartY = panelY + (ultraCompactViewport ? 34 : veryShortViewport ? 36 : shortViewport ? 24 : stackedLayout ? 130 : 150);
   const latestSlotStartY = statusY - statusTextHeight / 2 - 8 - slotBlockHeight;
 
-  let subtitleVisible = !ultraCompactViewport && !veryShortViewport;
-  let hintVisible = !ultraCompactViewport && !veryShortViewport;
+  let subtitleVisible = !shortViewport && !compressedPortrait;
+  let hintVisible = !shortViewport && !compressedPortrait;
   let subtitleY = baseSubtitleY;
   let hintY = baseHintY;
   const textToSlotsGap = stackedLayout ? 10 : 14;
@@ -181,45 +180,28 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     return Math.max(earliestSlotStartY, getTopBandBottom() + textToSlotsGap);
   };
 
-  let minimumSlotStartY = recomputeTextBand();
+  let minimumSlotStartY = Math.max(recomputeTextBand(), tabContentStartY);
   if (minimumSlotStartY > latestSlotStartY && hintVisible) {
     hintVisible = false;
     hintY = baseHintY;
-    minimumSlotStartY = recomputeTextBand();
+    minimumSlotStartY = Math.max(recomputeTextBand(), tabContentStartY);
   }
   if (minimumSlotStartY > latestSlotStartY && subtitleVisible) {
     subtitleVisible = false;
     subtitleY = baseSubtitleY;
-    minimumSlotStartY = recomputeTextBand();
+    minimumSlotStartY = Math.max(recomputeTextBand(), tabContentStartY);
   }
 
   minimumSlotStartY = Math.min(minimumSlotStartY, latestSlotStartY);
   const slotStartY = Math.max(minimumSlotStartY, Math.min(desiredSlotStartY, latestSlotStartY));
 
-  let saveHeaderY = slotStartY - (stackedLayout ? (ultraCompactViewport ? 16 : veryShortViewport ? 18 : 22) : splitColumns ? 34 : 28);
-  saveHeaderY = Math.min(saveHeaderY, slotStartY - (splitColumns ? 28 : 20));
-  if (splitColumns) {
-    saveHeaderY = Math.min(musicHeaderY, saveHeaderY);
-  }
-  if (splitColumns) {
-    musicHeaderY = saveHeaderY;
-    sliderStartY = musicHeaderY + 36;
-  }
-
-  const slotX = splitColumns ? contentRight : contentLeft;
-  const sliderWidth = Math.min(
-    PAUSE_OVERLAY_SLIDER_WIDTH,
-    stackedLayout ? panelWidth - contentInset * 2 : desktopMusicColumnWidth
-  );
-  const sliderX = stackedLayout ? panelX + (panelWidth - sliderWidth) / 2 : contentLeft;
-  const actionStartX = panelX + (panelWidth - totalButtonsWidth) / 2;
+  const saveHeaderY = slotStartY - saveHeaderGap;
+  const saveHeaderVisible = !shortViewport;
+  const slotX = viewport.centerX - slotRowWidth / 2;
   const compactResumeX = buttonsStacked ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2 : viewport.centerX - twoButtonsWidth / 2;
   const compactMenuX = buttonsStacked
     ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2
     : viewport.centerX - twoButtonsWidth / 2 + PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP;
-  const tabWidth = Math.min(150, (panelWidth - 54) / 2);
-  const tabHeight = shortViewport ? 26 : 32;
-  const tabY = panelY + (shortViewport ? 62 : 226);
   const settingsWidth = Math.min(330, panelWidth - 48);
   const settingsX = viewport.centerX - settingsWidth / 2;
   const settingsDifficultyY = panelY + (shortViewport ? 94 : 270);
@@ -260,13 +242,8 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     subtitleVisible,
     hintY,
     hintVisible,
-    musicHeaderX: contentLeft,
-    musicHeaderY,
-    musicVisible,
     saveSlotsVisible,
-    actionButtonsVisible,
-    sliderX,
-    sliderStartY,
+    saveHeaderVisible,
     saveHeaderX: slotX,
     saveHeaderY,
     slotRows: [0, 1, 2].map((index) => ({
@@ -277,13 +254,9 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     })),
     statusX: viewport.centerX,
     statusY,
-    resumeButtonX: actionButtonsVisible ? actionStartX : compactResumeX,
+    resumeButtonX: compactResumeX,
     resumeButtonY,
-    saveButtonX: actionStartX + PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP,
-    saveButtonY: footerTop,
-    loadButtonX: actionStartX + (PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP) * 2,
-    loadButtonY: footerTop,
-    menuButtonX: actionButtonsVisible ? actionStartX + (PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP) * 3 : compactMenuX,
+    menuButtonX: compactMenuX,
     menuButtonY,
     buttonY: footerTop,
     checkpointTabX: viewport.centerX - tabWidth - 5,
@@ -349,7 +322,8 @@ export function getPauseOverlayMessage(): PauseOverlayMessage {
   return {
     title: 'PAUSED',
     subtitle: 'Press ESC or tap RESUME to continue.',
-    hint: 'Tune music + volume for this run.',
+    checkpointHint: 'Choose a slot to save, restore, or clear your run.',
+    settingsHint: 'Tune difficulty, quality, and music for this run.',
     resumeLabel: '▶\nRESUME',
   };
 }

@@ -47,15 +47,13 @@ export class PauseOverlay {
   private savesHeaderText: Phaser.GameObjects.Text | null = null;
   private statusText: Phaser.GameObjects.Text | null = null;
   private resumeButton: ActionButtonControl | null = null;
-  private saveButton: ActionButtonControl | null = null;
-  private loadButton: ActionButtonControl | null = null;
   private menuButton: ActionButtonControl | null = null;
   private checkpointTab: ActionButtonControl | null = null;
   private settingsTab: ActionButtonControl | null = null;
   private settingsPanel: SettingsPanel | null = null;
   private saveSlotRows: PauseSaveSlotRows | null = null;
   private saveSlotsVisible = true;
-  private actionButtonsVisible = false;
+  private saveHeaderVisible = true;
   private subtitleVisible = true;
   private hintVisible = true;
   private activeSubview: 'checkpoints' | 'settings' = 'checkpoints';
@@ -98,7 +96,7 @@ export class PauseOverlay {
       align: 'center',
       wordWrap: { width: 650 },
     }).setOrigin(0.5);
-    this.savesHeaderText = scene.add.text(0, 0, 'CHECKPOINT GRID', {
+    this.savesHeaderText = scene.add.text(0, 0, 'CHECKPOINT SLOTS', {
       fontSize: '14px',
       color: '#ffbf6b',
       fontFamily: UI_FONT_MONO,
@@ -131,20 +129,6 @@ export class PauseOverlay {
       height: PAUSE_OVERLAY_BUTTON_HEIGHT,
       onClick: () => this.handlers?.onResume(),
       variant: 'primary',
-    });
-    this.saveButton = createActionButtonControl(scene, {
-      label: '▣\nSAVE GAME',
-      width: PAUSE_OVERLAY_BUTTON_WIDTH,
-      height: PAUSE_OVERLAY_BUTTON_HEIGHT,
-      onClick: () => this.handlers?.onSaveSlot('slot-1'),
-      variant: 'secondary',
-    });
-    this.loadButton = createActionButtonControl(scene, {
-      label: '▰\nLOAD GAME',
-      width: PAUSE_OVERLAY_BUTTON_WIDTH,
-      height: PAUSE_OVERLAY_BUTTON_HEIGHT,
-      onClick: () => this.handlers?.onLoadSlot(this.getPreferredLoadSlotId()),
-      variant: 'secondary',
     });
     this.menuButton = createActionButtonControl(scene, {
       label: '⌂\nMAIN MENU',
@@ -198,8 +182,6 @@ export class PauseOverlay {
       !this.savesHeaderText ||
       !this.statusText ||
       !this.resumeButton ||
-      !this.saveButton ||
-      !this.loadButton ||
       !this.menuButton ||
       !this.settingsPanel ||
       !this.checkpointTab ||
@@ -228,7 +210,7 @@ export class PauseOverlay {
     this.hintText.setPosition(layout.centerX, layout.hintY);
     this.hintText.setWordWrapWidth(Math.max(280, layout.panelWidth - 88));
     this.saveSlotsVisible = layout.saveSlotsVisible;
-    this.actionButtonsVisible = layout.actionButtonsVisible;
+    this.saveHeaderVisible = layout.saveHeaderVisible;
     this.subtitleVisible = layout.subtitleVisible;
     this.hintVisible = layout.hintVisible;
     this.savesHeaderText.setPosition(layout.saveHeaderX, layout.saveHeaderY);
@@ -238,8 +220,6 @@ export class PauseOverlay {
     this.settingsPanel.setLayout(layout.settingsLayout);
     setPauseSaveSlotRowsPosition(this.saveSlotRows, layout.slotRows);
     this.resumeButton.setPosition(layout.resumeButtonX, layout.resumeButtonY);
-    this.saveButton.setPosition(layout.saveButtonX, layout.saveButtonY);
-    this.loadButton.setPosition(layout.loadButtonX, layout.loadButtonY);
     this.menuButton.setPosition(layout.menuButtonX, layout.menuButtonY);
     this.checkpointTab.setPosition(layout.checkpointTabX, layout.tabY);
     this.settingsTab.setPosition(layout.settingsTabX, layout.tabY);
@@ -254,8 +234,6 @@ export class PauseOverlay {
     this.scene.scale.off(Phaser.Scale.Events.RESIZE, this.relayout, this);
 
     this.resumeButton?.destroy();
-    this.saveButton?.destroy();
-    this.loadButton?.destroy();
     this.menuButton?.destroy();
     this.checkpointTab?.destroy();
     this.settingsTab?.destroy();
@@ -280,8 +258,6 @@ export class PauseOverlay {
     this.savesHeaderText = null;
     this.statusText = null;
     this.resumeButton = null;
-    this.saveButton = null;
-    this.loadButton = null;
     this.menuButton = null;
     this.checkpointTab = null;
     this.settingsTab = null;
@@ -303,12 +279,6 @@ export class PauseOverlay {
     if (this.resumeButton) {
       this.resumeButton.setDepth(depth + 3);
     }
-    if (this.saveButton) {
-      this.saveButton.setDepth(depth + 3);
-    }
-    if (this.loadButton) {
-      this.loadButton.setDepth(depth + 3);
-    }
     if (this.menuButton) {
       this.menuButton.setDepth(depth + 3);
     }
@@ -328,8 +298,6 @@ export class PauseOverlay {
       !this.savesHeaderText ||
       !this.statusText ||
       !this.resumeButton ||
-      !this.saveButton ||
-      !this.loadButton ||
       !this.menuButton ||
       !this.blocker ||
       !this.dimmer ||
@@ -351,14 +319,12 @@ export class PauseOverlay {
 
     this.titleText.setText(message.title);
     this.subtitleText.setText(message.subtitle);
-    this.hintText.setText(message.hint);
+    this.hintText.setText(this.activeSubview === 'settings' ? message.settingsHint : message.checkpointHint);
     this.resumeButton.setLabel(message.resumeLabel);
     this.statusText.setText(statusMessage);
     this.statusText.setColor(this.state.statusOk === false || (this.activeSubview === 'checkpoints' && !this.state.storageAvailable) ? '#ff9c7f' : '#72ecff');
 
     this.resumeButton.setEnabled(canResume);
-    this.saveButton.setEnabled(this.state.storageAvailable && this.state.canSave);
-    this.loadButton.setEnabled(this.state.storageAvailable && this.state.saveSlots.some((slot) => slot.occupied));
     this.menuButton.setEnabled(true);
     setPauseSaveSlotRowsState(this.saveSlotRows, this.state);
 
@@ -370,11 +336,9 @@ export class PauseOverlay {
     this.hintText.setVisible(shouldShow && this.hintVisible);
     const checkpointsVisible = shouldShow && this.activeSubview === 'checkpoints';
     const settingsVisible = shouldShow && this.activeSubview === 'settings';
-    this.savesHeaderText.setVisible(checkpointsVisible && this.saveSlotsVisible);
+    this.savesHeaderText.setVisible(checkpointsVisible && this.saveSlotsVisible && this.saveHeaderVisible);
     this.statusText.setVisible(shouldShow);
     this.resumeButton.setVisible(shouldShow);
-    this.saveButton.setVisible(checkpointsVisible && this.actionButtonsVisible);
-    this.loadButton.setVisible(checkpointsVisible && this.actionButtonsVisible);
     this.menuButton.setVisible(shouldShow);
     this.checkpointTab.setVisible(shouldShow);
     this.settingsTab.setVisible(shouldShow);
@@ -390,7 +354,4 @@ export class PauseOverlay {
     this.applyState();
   }
 
-  private getPreferredLoadSlotId(): 'slot-1' | 'slot-2' | 'slot-3' {
-    return this.state.saveSlots.find((slot) => slot.occupied)?.id ?? 'slot-1';
-  }
 }

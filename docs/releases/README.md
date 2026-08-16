@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.7.1`](./1.7.1.md) - balances the silent command deck with centered checkpoints, explicit slot actions, clearer hierarchy, and collision-free responsive stations
 - [`1.7.0`](./1.7.0.md) - tunes the starbound helm with persistent difficulty, one shared settings deck, pause-safe choices, and orientation-proof controls
 - [`1.6.0`](./1.6.0.md) - kindles a denser celestial forge with sharper ships, layered skies, persistent quality controls, stronger boss presence, and hardened runtime boundaries
 - [`1.5.1`](./1.5.1.md) - tempers Guard Break with tougher thresholds, faster decay, and shorter openings across the late-game fleet

@@ -1,5 +1,52 @@
 import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
 
+test('pause command deck stays balanced across checkpoints and settings', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  const mobile = test.info().project.name.includes('mobile');
+  const viewport = mobile ? { width: 390, height: 844 } : { width: 984, height: 768 };
+  await page.setViewportSize(viewport);
+  await openMenu(page);
+  await startNewRun(page);
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(true);
+
+  const checkpoints = await snapshot(page);
+  expect(checkpoints.texts.some((text) => text.text === 'CHECKPOINT SLOTS')).toBe(true);
+  expect(checkpoints.texts.filter((text) => text.text === '+ SAVE')).toHaveLength(3);
+  expect(checkpoints.texts.some((text) => text.text === 'SAVE GAME')).toBe(false);
+  expect(checkpoints.texts.some((text) => text.text === 'LOAD GAME')).toBe(false);
+
+  const mode = mobile ? 'portrait' : 'desktop';
+  const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
+  const checkpointPath = evidenceDirectory
+    ? `${evidenceDirectory}/pause-checkpoints-${mode}.png`
+    : test.info().outputPath(`pause-checkpoints-${mode}.png`);
+  await page.screenshot({ path: checkpointPath });
+  await test.info().attach(`pause-checkpoints-${mode}`, {
+    path: checkpointPath,
+    contentType: 'image/png',
+  });
+
+  const settingsTab = checkpoints.texts.find((text) => text.text === 'SETTINGS');
+  expect(settingsTab).toBeDefined();
+  await page.mouse.click(settingsTab?.x ?? 0, settingsTab?.y ?? 0);
+  await expect.poll(async () => (await snapshot(page)).texts.some(
+    (text) => text.text.startsWith('DIFFICULTY:')
+  )).toBe(true);
+
+  const settingsPath = evidenceDirectory
+    ? `${evidenceDirectory}/pause-settings-${mode}.png`
+    : test.info().outputPath(`pause-settings-${mode}.png`);
+  await page.screenshot({ path: settingsPath });
+  await test.info().attach(`pause-settings-${mode}`, {
+    path: settingsPath,
+    contentType: 'image/png',
+  });
+  assertNoBrowserErrors();
+});
+
 test('crossfire telegraph glow preserves readable gameplay lanes', async ({
   page,
   assertNoBrowserErrors,
