@@ -37,6 +37,9 @@ function traceFacets(g: Phaser.GameObjects.Graphics, scale: number): void {
 export function ensureAsteroidTexture(scene: Phaser.Scene): string {
   return withGeneratedEntityTexture(scene, 'asteroid-texture', 44, 44, (g) => {
     // Soft halo then light stone body (tint-friendly).
+    traceFacets(g, 1.12);
+    g.fillStyle(0x8f86b8, 0.18);
+    g.fillPath();
     traceFacets(g, 1.08);
     g.fillStyle(0x8f86b8, 0.14);
     g.fillPath();

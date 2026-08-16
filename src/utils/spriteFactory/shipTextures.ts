@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { withGeneratedEntityTexture } from '../generatedTexture';
 import {
   NEON_ENTITY,
+  fillCanopy,
   fillHotCore,
   fillNeonCircle,
   fillNeonPolygon,
@@ -35,8 +36,10 @@ export function ensurePlayerTexture(scene: Phaser.Scene): string {
     strokeNeonLine(g, 8, 27, 13, 15, palette.glow, 1);
     strokeNeonLine(g, 28, 27, 23, 15, palette.glow, 1);
 
-    // Cockpit hot core.
+    fillCanopy(g, 18, 13, 6, 5, palette);
     fillHotCore(g, 18, 12, 1.7, palette.hot);
+    strokeNeonLine(g, 14, 22, 16, 18, palette.hot, 1);
+    strokeNeonLine(g, 22, 22, 20, 18, palette.hot, 1);
 
     // Twin engine cores.
     fillNeonCircle(g, 11.5, 38, 2.1, palette, { haloScale: 1.5, midScale: 1.25, outlineWidth: 0 });
@@ -67,6 +70,7 @@ export function ensureHelperShipTexture(scene: Phaser.Scene): string {
     );
 
     strokeNeonLine(g, 12, 6, 12, 20, palette.outline, 1);
+    fillCanopy(g, 12, 10, 5, 4, palette);
     fillHotCore(g, 12, 9, 1.3, palette.hot);
 
     fillNeonCircle(g, 8, 26, 1.6, palette, { haloScale: 1.5, midScale: 1.25, outlineWidth: 0 });

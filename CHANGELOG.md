@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-08-16
+
+### Added
+- Extended Low / Standard / High visual profiles with remake FX budgets for UI glow, motif density, particle burst scale, and menu atmosphere.
+- Added command-deck chrome across shared UI, the main menu, pause, game over, victory, intermission frames, HUD top bar, and the mobile pause button.
+- Added gameplay-corridor visual evidence at `984x768` and `390x844`, plus command-deck screenshots for menu, pause, game over, and victory.
+
+### Changed
+- Intensified procedural neon-vector silhouettes, explosions, beams, warp, and edge-weighted level motifs without changing encounter grammar.
+- Reserved runtime Glow filters for the player and telegraphs; pickup glow stays baked into generated textures.
+- Documented the presentation remake in `CONTEXT.md`, `docs/art-direction.md`, and ADR 0002.
+
+### Quality
+- Passed both TypeScript compilers, lint, the complete unit suite, level validation, Knip, production build, bundle budgets, desktop/mobile functional and visual browser gates, and isolated performance evidence.
+
 ## [1.7.2] - 2026-08-16
 
 ### Removed

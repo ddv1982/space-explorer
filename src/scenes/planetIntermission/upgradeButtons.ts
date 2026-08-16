@@ -6,6 +6,7 @@ import type {
   UpgradeKey,
 } from '../../config/UpgradesConfig';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
+import { drawNeonFrame } from '../shared/neonUiTheme';
 import type { UpgradeButton, UpgradeGridLayout } from './shared';
 
 const UPGRADE_COLORS: Record<UpgradeKey, number> = {
@@ -143,6 +144,15 @@ function drawUpgradeButtonBackground(
   bg.fillRect(0, layout.borderRadius, 3, layout.buttonHeight - layout.borderRadius * 2);
   bg.lineStyle(evaluation.canPurchase ? 1.5 : 1, visualState.border, evaluation.canPurchase ? 0.92 : 0.5);
   bg.strokeRoundedRect(0, 0, layout.buttonWidth, layout.buttonHeight, layout.borderRadius);
+  if (evaluation.canPurchase) {
+    drawNeonFrame(bg, 0, 0, layout.buttonWidth, layout.buttonHeight, {
+      accentColor: visualState.border,
+      fillAlpha: 0,
+      strokeAlpha: 0.35,
+      cornerCut: layout.borderRadius,
+      glow: true,
+    });
+  }
   drawUpgradeIcon(bg, evaluation.upgrade.key, layout, evaluation.canPurchase ? 1 : 0.56);
 }
 

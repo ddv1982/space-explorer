@@ -79,6 +79,13 @@ function createGraphicsStub(): { graphics: Phaser.GameObjects.Graphics; calls: C
       calls.push({ method: 'strokeRoundedRect', args });
       return graphics;
     },
+    beginPath: () => graphics,
+    moveTo: () => graphics,
+    lineTo: () => graphics,
+    closePath: () => graphics,
+    fillPath: () => graphics,
+    strokePath: () => graphics,
+    lineBetween: () => graphics,
     setDepth(value: number) {
       graphics.depth = value;
       return graphics;

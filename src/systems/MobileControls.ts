@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { isTouchMobileDevice } from '../utils/device';
 import { getViewportBounds } from '../utils/layout';
+import { drawNeonFrame, NEON } from '../scenes/shared/neonUiTheme';
 
 const CONTROLS_DEPTH = 1000;
 const MAX_HORIZONTAL_INSET = 170;
@@ -337,10 +338,15 @@ export class MobileControls {
     const half = PAUSE_BUTTON_SIZE / 2;
 
     this.pauseButtonBg?.clear();
-    this.pauseButtonBg?.fillStyle(0x061222, active ? 0.82 : 0.62);
-    this.pauseButtonBg?.lineStyle(2, active ? 0xbfefff : 0x76d8ff, 0.92);
-    this.pauseButtonBg?.fillRoundedRect(x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 12);
-    this.pauseButtonBg?.strokeRoundedRect(x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 12);
+    if (this.pauseButtonBg) {
+      drawNeonFrame(this.pauseButtonBg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, {
+        accentColor: active ? NEON.cyanBright : NEON.cyan,
+        fillAlpha: active ? 0.82 : 0.62,
+        strokeAlpha: 0.92,
+        cornerCut: 12,
+        glow: true,
+      });
+    }
 
     this.pauseButtonIcon?.clear();
     this.pauseButtonIcon?.fillStyle(0xe8f9ff, active ? 1 : 0.92);

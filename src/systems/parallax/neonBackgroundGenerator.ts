@@ -1,9 +1,18 @@
 import Phaser from 'phaser';
+import { getVisualQualityProfile } from '../../config/visualQuality';
 import { getLevelConfig, type LevelConfig } from '../../config/LevelsConfig';
 import { mixColor } from '../../utils/colorUtils';
 import { withGeneratedTexture } from '../../utils/generatedTexture';
 import { getPremiumBackgroundManifest } from './premiumBackgroundManifest';
 import { drawSoftCircle } from './textureUtils';
+
+function motifCount(base: number): number {
+  return Math.max(1, Math.round(base * getVisualQualityProfile().motifDensity));
+}
+
+function motifAlpha(base: number): number {
+  return Math.min(0.22, base * getVisualQualityProfile().motifDensity);
+}
 
 type NeonMotif =
   | 'aurora'
@@ -75,10 +84,11 @@ function neonStroke(
   alpha: number,
   trace: () => void
 ): void {
-  g.lineStyle(width * 2.6, color, alpha * 0.3);
+  const scaled = motifAlpha(alpha);
+  g.lineStyle(width * 2.6, color, scaled * 0.3);
   trace();
   g.strokePath();
-  g.lineStyle(width, color, alpha);
+  g.lineStyle(width, color, scaled);
   trace();
   g.strokePath();
 }
@@ -97,7 +107,7 @@ function drawFarLayer(g: Phaser.GameObjects.Graphics, config: LevelConfig, size:
   }
 
   // Sparse dim stars, brighter toward the edges, none dominating the center lane.
-  const starCount = 150;
+  const starCount = motifCount(150);
   for (let i = 0; i < starCount; i++) {
     const x = Phaser.Math.FloatBetween(0, size);
     const y = Phaser.Math.FloatBetween(0, size);
@@ -117,7 +127,7 @@ function drawFarLayer(g: Phaser.GameObjects.Graphics, config: LevelConfig, size:
 }
 
 function drawNebulaLayer(g: Phaser.GameObjects.Graphics, config: LevelConfig, size: number): void {
-  const blobCount = 5;
+  const blobCount = motifCount(5);
   for (let i = 0; i < blobCount; i++) {
     const radius = Phaser.Math.Between(170, 330);
     const x = edgeBiasedX(size, radius * 0.4);
@@ -174,7 +184,7 @@ function tracePolygon(g: Phaser.GameObjects.Graphics, points: { x: number; y: nu
 
 function drawMotifAurora(g: Phaser.GameObjects.Graphics, size: number, accent: number): void {
   // Aurora curtains: tall shimmering ribbons hugging the edges.
-  for (let ribbon = 0; ribbon < 4; ribbon++) {
+  for (let ribbon = 0; ribbon < motifCount(4); ribbon++) {
     const baseX = edgeBiasedX(size, 70);
     const phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
     const amplitude = Phaser.Math.Between(14, 30);

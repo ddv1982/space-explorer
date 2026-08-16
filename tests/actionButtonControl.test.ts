@@ -226,4 +226,27 @@ describe('actionButtonControl', () => {
     zone.trigger('pointerdown');
     expect(clicked).toBe(2);
   });
+
+  test('hover is visual only and ignored while disabled', () => {
+    const { scene, zone } = createScene();
+    const control = createActionButtonControl(scene as never, {
+      label: 'RESUME',
+      width: 120,
+      height: 40,
+      variant: 'primary',
+      onClick: () => {},
+    });
+
+    expect(control.hovered).toBe(false);
+    zone.trigger('pointerover');
+    expect(control.hovered).toBe(true);
+    zone.trigger('pointerout');
+    expect(control.hovered).toBe(false);
+
+    control.setEnabled(false);
+    zone.trigger('pointerover');
+    expect(control.hovered).toBe(false);
+    zone.trigger('pointerdown');
+    expect(zone.interactive).toBe(false);
+  });
 });

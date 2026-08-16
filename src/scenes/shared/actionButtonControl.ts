@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { drawAngledRectPath, NEON, NEON_FONT } from './neonUiTheme';
+import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
+import { drawAngledRectPath, drawCornerTicks, NEON, NEON_FONT } from './neonUiTheme';
 
 type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'disabled';
 
@@ -87,22 +88,28 @@ function drawButtonBackground(
   const background = hovered ? palette.hoverBackground : palette.background;
   const border = hovered ? palette.hoverBorder : palette.border;
 
-  // Subtle outer glow
   if (hovered) {
-    drawAngledRectPath(graphic, -1, -1, width + 2, height + 2, cornerCut + 0.5);
-    graphic.lineStyle(1.5, palette.glow, 0.18);
+    drawAngledRectPath(graphic, -2, -2, width + 4, height + 4, cornerCut + 1);
+    graphic.lineStyle(2, palette.glow, scaleUiGlowAlpha(0.22));
     graphic.strokePath();
   }
 
-  // Fill
   drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
-  graphic.fillStyle(background, hovered ? 0.85 : 0.7);
+  graphic.fillStyle(background, hovered ? 0.9 : 0.74);
   graphic.fillPath();
 
-  // Border
-  drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
-  graphic.lineStyle(1, border, hovered ? 0.95 : 0.72);
+  const inset = Math.min(3, Math.max(1.5, Math.min(width, height) * 0.06));
+  drawAngledRectPath(graphic, inset, inset, width - inset * 2, height - inset * 2, Math.max(0, cornerCut - inset));
+  graphic.lineStyle(1, border, hovered ? 0.28 : 0.14);
   graphic.strokePath();
+
+  drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
+  graphic.lineStyle(1, border, hovered ? 0.98 : 0.78);
+  graphic.strokePath();
+
+  if (hovered) {
+    drawCornerTicks(graphic, 0, 0, width, height, palette.hoverBorder, scaleUiGlowAlpha(0.7));
+  }
 }
 
 export function createActionButtonControl(

@@ -150,6 +150,8 @@ export class WarpTransition {
       this.radialPulse.fillStyle(pulseColor, pulseAlpha);
       this.radialPulse.fillCircle(this.centerX, this.centerY, pulseRadius);
       // Inner bright ring
+      this.radialPulse.lineStyle(3, 0xffffff, (1 - progress) * 0.18);
+      this.radialPulse.strokeCircle(this.centerX, this.centerY, pulseRadius);
       this.radialPulse.lineStyle(2, 0xffffff, (1 - progress) * 0.3);
       this.radialPulse.strokeCircle(this.centerX, this.centerY, pulseRadius * 0.8);
     }

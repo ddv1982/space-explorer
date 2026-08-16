@@ -24,6 +24,7 @@ interface OptionalShapeFactory {
  */
 export class BossVisualRig {
   private readonly aura: Phaser.GameObjects.Ellipse | null;
+  private readonly corona: Phaser.GameObjects.Ellipse | null;
   private readonly shield: Phaser.GameObjects.Ellipse | null;
   private readonly core: Phaser.GameObjects.Arc | null;
   private readonly hardpoints: Phaser.GameObjects.Arc[];
@@ -32,6 +33,7 @@ export class BossVisualRig {
     const factory = scene.add as unknown as OptionalShapeFactory;
     if (!factory.circle || !factory.ellipse) {
       this.aura = null;
+      this.corona = null;
       this.shield = null;
       this.core = null;
       this.hardpoints = [];
@@ -40,6 +42,11 @@ export class BossVisualRig {
 
     this.aura = factory.ellipse(0, 0, 108, 72, 0xff5577, 0.045)
       .setStrokeStyle(2, 0xff6688, 0.12)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(2)
+      .setVisible(false);
+    this.corona = factory.ellipse(0, 0, 124, 84, 0xff335f, 0.02)
+      .setStrokeStyle(1, 0xffd7e0, 0.18)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setDepth(2)
       .setVisible(false);
@@ -69,19 +76,21 @@ export class BossVisualRig {
     shieldActive: boolean;
     guardBroken: boolean;
   }): void {
-    const objects = [this.aura, this.shield, this.core, ...this.hardpoints].filter(
+    const objects = [this.aura, this.corona, this.shield, this.core, ...this.hardpoints].filter(
       (object): object is Phaser.GameObjects.Arc | Phaser.GameObjects.Ellipse => object !== null
     );
     for (const object of objects) {
       object.setVisible(params.active);
     }
-    if (!params.active || !this.aura || !this.shield || !this.core) {
+    if (!params.active || !this.aura || !this.corona || !this.shield || !this.core) {
       return;
     }
 
     const pulse = (Math.sin(params.time * (params.phase === 2 ? 0.008 : 0.0045)) + 1) * 0.5;
     this.aura.setPosition(params.x, params.y + 2).setScale(0.98 + pulse * 0.08);
     this.aura.setAlpha(0.42 + pulse * 0.3);
+    this.corona.setPosition(params.x, params.y + 2).setScale(1.02 + pulse * 0.06);
+    this.corona.setAlpha(0.18 + pulse * 0.16);
     this.shield.setPosition(params.x, params.y).setVisible(params.shieldActive);
     this.shield.setScale(0.98 + pulse * 0.045).setAlpha(0.62 + pulse * 0.28);
     this.core.setPosition(params.x, params.y - 1).setScale(0.82 + pulse * 0.44);

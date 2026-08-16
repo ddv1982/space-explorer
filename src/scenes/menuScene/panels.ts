@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
+import { getVisualQualityProfile } from '../../config/visualQuality';
+import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
 import { addNeonTitle, drawNeonDivider, drawNeonFrame, fitNeonTitleFontSize, NEON, NEON_FONT, NEON_TEXT } from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
 import type { MenuLayoutPlan } from './layout';
@@ -20,21 +22,41 @@ export interface MenuSaveSlotPanel {
 export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, accentColor: number): void {
   const width = Number(scene.scale.width);
   const height = Number(scene.scale.height);
+  const atmosphere = getVisualQualityProfile().menuAtmosphere;
   const grid = scene.add.graphics();
 
-  grid.fillStyle(0x01040a, 0.38);
+  grid.fillStyle(0x01040a, 0.46);
   grid.fillRect(0, 0, width, height);
-  grid.lineStyle(1, NEON.blue, 0.08);
-  for (let y = 0; y < height; y += 28) {
+  grid.fillStyle(accentColor, scaleUiGlowAlpha(0.05));
+  grid.fillCircle(plan.centerX, plan.outerFrameY + plan.outerFrameHeight + 20, Math.min(220, plan.outerFrameWidth * 0.28));
+  grid.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.07));
+  const scanStep = atmosphere >= 3 ? 22 : atmosphere >= 2 ? 28 : 36;
+  for (let y = 0; y < height; y += scanStep) {
     grid.lineBetween(0, y, width, y);
   }
-  for (let x = 0; x < width; x += 56) {
+  for (let x = 0; x < width; x += scanStep * 2) {
     grid.lineBetween(x, 0, x, height);
   }
+
+  if (!plan.veryShortCompact) {
+    const dartX = plan.outerFrameX + 56;
+    const dartY = plan.outerFrameY + 58;
+    grid.lineStyle(1.5, NEON.cyan, scaleUiGlowAlpha(0.35));
+    grid.beginPath();
+    grid.moveTo(dartX, dartY - 16);
+    grid.lineTo(dartX + 12, dartY + 10);
+    grid.lineTo(dartX, dartY + 6);
+    grid.lineTo(dartX - 12, dartY + 10);
+    grid.closePath();
+    grid.strokePath();
+    grid.fillStyle(NEON.cyan, scaleUiGlowAlpha(0.08));
+    grid.fillPath();
+  }
+
   drawNeonFrame(grid, plan.outerFrameX, plan.outerFrameY, plan.outerFrameWidth, plan.outerFrameHeight, {
     accentColor,
-    fillAlpha: 0.12,
-    strokeAlpha: 0.78,
+    fillAlpha: 0.16,
+    strokeAlpha: 0.86,
     cornerCut: 28,
     glow: true,
   });
@@ -44,6 +66,18 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
 }
 
 export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void {
+  if (plan.eyebrowY > 0 && plan.eyebrowY < plan.titleY - 8) {
+    scene.add
+      .text(plan.centerX, plan.eyebrowY, 'COMMAND DECK', {
+        fontSize: plan.compact ? '10px' : '12px',
+        color: NEON_TEXT.cyan,
+        fontFamily: NEON_FONT.mono,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
+  }
+
   const desiredTitleSize = plan.shortLandscape ? 30 : plan.veryShortCompact ? 48 : plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
   const titleSize = fitNeonTitleFontSize(scene, 'SPACE EXPLORER', desiredTitleSize, Math.max(180, plan.outerFrameWidth - 96));
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
@@ -52,12 +86,15 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
   const halfTitleWidth = titleText.width / 2;
   const wingGap = plan.veryShortCompact ? 12 : 20;
   const wingSpan = plan.veryShortCompact ? 20 : plan.compact ? 40 : 60;
-  wings.lineStyle(1, NEON.cyan, 0.5);
+  wings.lineStyle(1, NEON.cyan, 0.55);
   wings.lineBetween(plan.centerX - halfTitleWidth - wingGap - wingSpan, plan.titleY, plan.centerX - halfTitleWidth - wingGap, plan.titleY);
   wings.lineBetween(plan.centerX + halfTitleWidth + wingGap, plan.titleY, plan.centerX + halfTitleWidth + wingGap + wingSpan, plan.titleY);
-  wings.lineStyle(1, NEON.blue, 0.3);
+  wings.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.4));
   wings.lineBetween(plan.centerX - halfTitleWidth - wingGap - wingSpan + 4, plan.titleY - 5, plan.centerX - halfTitleWidth - wingGap - 4, plan.titleY - 5);
   wings.lineBetween(plan.centerX + halfTitleWidth + wingGap + 4, plan.titleY - 5, plan.centerX + halfTitleWidth + wingGap + wingSpan - 4, plan.titleY - 5);
+  wings.lineStyle(1, NEON.cyanBright, scaleUiGlowAlpha(0.35));
+  wings.lineBetween(plan.centerX - halfTitleWidth - wingGap - wingSpan + 8, plan.titleY + 5, plan.centerX - halfTitleWidth - wingGap, plan.titleY + 5);
+  wings.lineBetween(plan.centerX + halfTitleWidth + wingGap, plan.titleY + 5, plan.centerX + halfTitleWidth + wingGap + wingSpan - 8, plan.titleY + 5);
   wings.setDepth(12);
 
   scene.add
@@ -112,30 +149,34 @@ export function createSaveSlotEntryPanel(
 
     const iconG = scene.add.graphics();
     const cx = tx + plan.tileWidth / 2;
+    drawNeonFrame(iconG, tx + 4, ty + 4, plan.tileWidth - 8, plan.tileHeight - 8, {
+      accentColor: isNewRun ? NEON.cyan : NEON.purple,
+      fillAlpha: 0,
+      strokeAlpha: 0.28,
+      cornerCut: 8,
+      glow: false,
+    });
     if (isNewRun) {
       const cy = iconY;
       const sz = compact ? 14 : 20;
-      iconG.lineStyle(2, NEON.cyan, 0.9);
+      iconG.lineStyle(2, NEON.cyan, 0.95);
       iconG.beginPath();
       iconG.moveTo(cx - sz, cy + sz * 0.75);
       iconG.lineTo(cx + sz * 1.1, cy);
       iconG.lineTo(cx - sz, cy - sz * 0.75);
       iconG.closePath();
       iconG.strokePath();
-      iconG.fillStyle(NEON.cyan, 0.2);
+      iconG.fillStyle(NEON.cyan, 0.22);
       iconG.fillPath();
     } else {
       const cy = iconY;
       const w = compact ? 28 : 36;
       const h = compact ? 26 : 32;
-      // Floppy-disk / save icon
       iconG.lineStyle(1.5, NEON.purple, 0.9);
       iconG.strokeRect(cx - w / 2, cy - h / 2, w, h);
-      // Metal shutter
       iconG.fillStyle(NEON.purple, 0.2);
       iconG.fillRect(cx - w * 0.35, cy - h / 2, w * 0.7, h * 0.35);
       iconG.strokeRect(cx - w * 0.35, cy - h / 2, w * 0.7, h * 0.35);
-      // Label area
       iconG.lineStyle(1, NEON.purple, 0.5);
       iconG.strokeRect(cx - w * 0.4, cy + 2, w * 0.8, h * 0.3);
     }

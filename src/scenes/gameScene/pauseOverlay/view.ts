@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '@/utils/layout';
+import { getVisualQualityProfile } from '../../../config/visualQuality';
+import { scaleUiGlowAlpha } from '../../../utils/renderingCompat';
 import { drawNeonDivider, drawNeonFrame, NEON } from '../../shared/neonUiTheme';
 import type { PauseOverlayLayout, PauseOverlayMessage } from './types';
 
@@ -287,8 +289,9 @@ export function drawPauseOverlayBackdrop(
   dimmer.fillRect(layout.left, layout.top, layout.width, layout.height);
   dimmer.fillStyle(0x071b35, 0.2);
   dimmer.fillRect(layout.left, layout.top, layout.width, layout.height * 0.26);
-  dimmer.lineStyle(1, 0x17314d, 0.22);
-  const scanlineStep = 22;
+  dimmer.lineStyle(1, 0x17314d, scaleUiGlowAlpha(0.22));
+  const atmosphere = getVisualQualityProfile().menuAtmosphere;
+  const scanlineStep = atmosphere >= 3 ? 18 : atmosphere >= 2 ? 22 : 30;
   for (let y = layout.top; y < layout.top + layout.height; y += scanlineStep) {
     dimmer.lineBetween(layout.left, y, layout.left + layout.width, y);
   }

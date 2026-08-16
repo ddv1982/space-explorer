@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { drawAngledRectPath, NEON, NEON_FONT } from './neonUiTheme';
+import { drawAngledRectPath, drawNeonFrame, NEON, NEON_FONT } from './neonUiTheme';
 
 export type MusicSliderIconDrawer = (
   graphics: Phaser.GameObjects.Graphics,
@@ -36,7 +36,6 @@ const VALUE_BOX_WIDTH = 74;
 const VALUE_BOX_HEIGHT = 34;
 const VALUE_BOX_GAP = 18;
 
-const COLOR_PILL_FILL = NEON.panel;
 const COLOR_PILL_STROKE = NEON.cyan;
 const COLOR_PILL_STROKE_SOFT = NEON.blue;
 const COLOR_ICON_BG = NEON.navySoft;
@@ -110,13 +109,13 @@ export function createMusicSliderControl(
 
     // ----- Outer framed row -----
     pillFrame.clear();
-    const cornerCut = 10;
-    drawAngledRectPath(pillFrame, originX, originY, totalWidth, ROW_HEIGHT, cornerCut);
-    pillFrame.fillStyle(COLOR_PILL_FILL, 0.78);
-    pillFrame.fillPath();
-    drawAngledRectPath(pillFrame, originX, originY, totalWidth, ROW_HEIGHT, cornerCut);
-    pillFrame.lineStyle(1, COLOR_PILL_STROKE, 0.85);
-    pillFrame.strokePath();
+    drawNeonFrame(pillFrame, originX, originY, totalWidth, ROW_HEIGHT, {
+      accentColor: COLOR_PILL_STROKE,
+      fillAlpha: 0.78,
+      strokeAlpha: 0.85,
+      cornerCut: 10,
+      glow: true,
+    });
 
     // ----- Icon box (rounded square inside pill left) -----
     iconBox.clear();

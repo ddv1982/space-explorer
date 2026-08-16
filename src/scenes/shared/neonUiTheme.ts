@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { getVisualQualityProfile } from '../../config/visualQuality';
+import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 
 export const NEON = {
@@ -28,6 +30,36 @@ export const NEON_FONT = {
   display: UI_FONT_DISPLAY,
   mono: UI_FONT_MONO,
 } as const;
+
+export function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined'
+    && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+}
+
+function getMenuAtmosphere(): number {
+  return getVisualQualityProfile().menuAtmosphere;
+}
+
+export function drawCornerTicks(
+  graphics: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  color: number,
+  alpha: number,
+): void {
+  const tick = Math.min(10, Math.max(5, Math.min(width, height) * 0.06));
+  graphics.lineStyle(1, color, alpha);
+  graphics.lineBetween(x, y + tick, x, y);
+  graphics.lineBetween(x, y, x + tick, y);
+  graphics.lineBetween(x + width - tick, y, x + width, y);
+  graphics.lineBetween(x + width, y, x + width, y + tick);
+  graphics.lineBetween(x, y + height - tick, x, y + height);
+  graphics.lineBetween(x, y + height, x + tick, y + height);
+  graphics.lineBetween(x + width - tick, y + height, x + width, y + height);
+  graphics.lineBetween(x + width, y + height - tick, x + width, y + height);
+}
 
 interface NeonFrameOptions {
   fillAlpha?: number;
@@ -72,8 +104,14 @@ export function drawNeonFrame(
   const strokeAlpha = options.strokeAlpha ?? 0.85;
 
   if (options.glow) {
+    const atmosphere = getMenuAtmosphere();
+    if (atmosphere >= 2) {
+      drawAngledRectPath(graphics, x - 3, y - 3, width + 6, height + 6, cut + 1.5);
+      graphics.lineStyle(3, accent, scaleUiGlowAlpha(0.08));
+      graphics.strokePath();
+    }
     drawAngledRectPath(graphics, x - 1, y - 1, width + 2, height + 2, cut + 0.5);
-    graphics.lineStyle(1.5, accent, 0.12);
+    graphics.lineStyle(1.5, accent, scaleUiGlowAlpha(0.16));
     graphics.strokePath();
   }
 
@@ -81,9 +119,18 @@ export function drawNeonFrame(
   graphics.fillStyle(NEON.panel, fillAlpha);
   graphics.fillPath();
 
+  const inset = Math.min(5, Math.max(2, Math.min(width, height) * 0.02));
+  drawAngledRectPath(graphics, x + inset, y + inset, width - inset * 2, height - inset * 2, Math.max(0, cut - inset));
+  graphics.lineStyle(1, accent, 0.18);
+  graphics.strokePath();
+
   drawAngledRectPath(graphics, x, y, width, height, cut);
   graphics.lineStyle(1, accent, strokeAlpha);
   graphics.strokePath();
+
+  if (getMenuAtmosphere() >= 2) {
+    drawCornerTicks(graphics, x, y, width, height, accent, scaleUiGlowAlpha(0.55));
+  }
 }
 
 export function drawNeonDivider(
@@ -98,11 +145,13 @@ export function drawNeonDivider(
   graphics.lineStyle(1, color, 0.24);
   graphics.lineBetween(centerX - wing, y, centerX - gap, y);
   graphics.lineBetween(centerX + gap, y, centerX + wing, y);
-  
-  graphics.fillStyle(NEON.cyanBright, 0.8);
+
+  graphics.fillStyle(NEON.cyanBright, scaleUiGlowAlpha(0.85));
   graphics.fillCircle(centerX, y, 2.5);
   graphics.lineStyle(1, color, 0.6);
   graphics.strokeCircle(centerX, y, 6);
+  graphics.lineStyle(1, color, scaleUiGlowAlpha(0.28));
+  graphics.strokeCircle(centerX, y, 10);
 }
 
 interface NeonTitleColors {
@@ -167,7 +216,7 @@ export function addNeonTitle(
       strokeThickness: Math.max(4, Math.round(fontSize * 0.06)),
     })
     .setOrigin(0.5)
-    .setAlpha(0.5)
+    .setAlpha(scaleUiGlowAlpha(0.5))
     .setDepth(depth);
 
   scene.add
@@ -180,7 +229,7 @@ export function addNeonTitle(
       strokeThickness: Math.max(2, Math.round(fontSize * 0.04)),
     })
     .setOrigin(0.5)
-    .setAlpha(0.35)
+    .setAlpha(scaleUiGlowAlpha(0.35))
     .setDepth(depth + 1);
 
   return scene.add

@@ -18,6 +18,13 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   const menu = await snapshot(page);
   const newRun = menu.texts.find((item) => item.text === 'NEW RUN');
   expect(newRun).toBeDefined();
+  const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
+  const menuShotName = `menu-command-deck-${test.info().project.name}.png`;
+  const menuShotPath = evidenceDirectory
+    ? `${evidenceDirectory}/${menuShotName}`
+    : test.info().outputPath(menuShotName);
+  await page.screenshot({ path: menuShotPath });
+  await test.info().attach(menuShotName, { path: menuShotPath, contentType: 'image/png' });
   await page.mouse.dblclick(newRun?.x ?? 0, newRun?.y ?? 0, { delay: 20 });
   await waitForScene(page, 'Game');
 
@@ -70,6 +77,32 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
         await page.keyboard.up('Space');
       }
     }
+  }
+  assertNoBrowserErrors();
+});
+
+test('command deck menu stays readable at desktop and phone-portrait', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  for (const viewport of [
+    { width: 984, height: 768 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await openMenu(page);
+    const menu = await snapshot(page);
+    const newRun = menu.texts.find((item) => item.text === 'NEW RUN');
+    expect(newRun).toBeDefined();
+    expect(newRun?.x ?? 0).toBeGreaterThan(0);
+    expect(newRun?.y ?? 0).toBeGreaterThan(0);
+    const shotName = `menu-command-deck-${viewport.width}x${viewport.height}.png`;
+    const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
+    const shotPath = evidenceDirectory
+      ? `${evidenceDirectory}/${shotName}`
+      : test.info().outputPath(shotName);
+    await page.screenshot({ path: shotPath });
+    await test.info().attach(shotName, { path: shotPath, contentType: 'image/png' });
   }
   assertNoBrowserErrors();
 });

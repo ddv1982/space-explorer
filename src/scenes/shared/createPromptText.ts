@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { UI_FONT_MONO } from '../../utils/uiFonts';
+import { prefersReducedMotion } from './neonUiTheme';
 
 export const CONTINUE_PROMPT = 'Click, Tap, or Press Any Key';
 
@@ -23,13 +24,15 @@ export function createPromptText(
     strokeThickness: 2,
   }).setOrigin(0.5);
 
-  scene.tweens.add({
-    targets: prompt,
-    alpha: { from: 1, to: 0.35 },
-    duration: 900,
-    yoyo: true,
-    repeat: -1,
-  });
+  if (!prefersReducedMotion()) {
+    scene.tweens.add({
+      targets: prompt,
+      alpha: { from: 1, to: 0.35 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
 
   return prompt;
 }

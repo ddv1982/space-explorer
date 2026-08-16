@@ -7,7 +7,7 @@ import { getViewportLayout } from '../utils/layout';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
-import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_TEXT } from './shared/neonUiTheme';
+import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_FONT, NEON_TEXT } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class GameOverScene extends Phaser.Scene {
@@ -55,6 +55,13 @@ export class GameOverScene extends Phaser.Scene {
     });
     drawNeonDivider(frame, layout.centerX, frameY + 30, frameWidth - 140, NEON.red);
     drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 30, frameWidth - 140, NEON.red);
+
+    this.add.text(layout.centerX, layout.centerY - 124, 'COMMAND LOSS', {
+      fontSize: '12px',
+      color: NEON_TEXT.danger,
+      fontFamily: NEON_FONT.mono,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(12);
 
     addNeonTitle(this, layout.centerX, layout.centerY - 92, 'GAME OVER', 56, 11, {
       glowDark: '#8c1f28',

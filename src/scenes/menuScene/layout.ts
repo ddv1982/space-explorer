@@ -17,6 +17,7 @@ export interface MenuLayoutPlan {
   outerFrameWidth: number;
   outerFrameHeight: number;
   titleY: number;
+  eyebrowY: number;
   subtitleY: number;
   tileRowY: number;
   tileWidth: number;
@@ -133,6 +134,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
     outerFrameWidth,
     outerFrameHeight,
     titleY,
+    eyebrowY: titleY - (shortLandscape || veryShortCompact ? 0 : compact ? 16 : 22),
     subtitleY,
     tileRowY,
     tileWidth,

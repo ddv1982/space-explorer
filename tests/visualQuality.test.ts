@@ -53,7 +53,40 @@ describe('visual quality profiles', () => {
       entityTextureResolution: 2,
       particleTextureResolution: 2,
       backgroundLayerCount: 3,
+      uiGlowStrength: 0.8,
+      motifDensity: 1,
+      particleBurstScale: 1,
+      menuAtmosphere: 2,
     });
+  });
+
+  test('exposes remake FX budgets on every quality tier', () => {
+    const storage = new MemoryStorage();
+    const expected = {
+      low: {
+        uiGlowStrength: 0.4,
+        motifDensity: 0.6,
+        particleBurstScale: 0.75,
+        menuAtmosphere: 1,
+      },
+      standard: {
+        uiGlowStrength: 0.8,
+        motifDensity: 1,
+        particleBurstScale: 1,
+        menuAtmosphere: 2,
+      },
+      high: {
+        uiGlowStrength: 1,
+        motifDensity: 1.25,
+        particleBurstScale: 1.15,
+        menuAtmosphere: 3,
+      },
+    } as const;
+
+    for (const tier of ['low', 'standard', 'high'] as const) {
+      expect(setVisualQualityTier(tier, storage)).toBe(true);
+      expect(getVisualQualityProfile(storage)).toMatchObject(expected[tier]);
+    }
   });
 
   test('persists and restores every supported tier', () => {
@@ -80,7 +113,13 @@ describe('visual quality profiles', () => {
     const storage = new ThrowingStorage();
 
     expect(getVisualQualityTier(storage)).toBe('standard');
-    expect(getVisualQualityProfile(storage).tier).toBe('standard');
+    expect(getVisualQualityProfile(storage)).toMatchObject({
+      tier: 'standard',
+      uiGlowStrength: 0.8,
+      motifDensity: 1,
+      particleBurstScale: 1,
+      menuAtmosphere: 2,
+    });
     expect(setVisualQualityTier('high', storage)).toBe(false);
   });
 

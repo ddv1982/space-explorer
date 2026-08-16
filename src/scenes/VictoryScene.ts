@@ -7,7 +7,7 @@ import { getViewportLayout } from '../utils/layout';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
-import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_TEXT } from './shared/neonUiTheme';
+import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_FONT, NEON_TEXT } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class VictoryScene extends Phaser.Scene {
@@ -47,6 +47,13 @@ export class VictoryScene extends Phaser.Scene {
     });
     drawNeonDivider(frame, layout.centerX, frameY + 32, frameWidth - 150, NEON.amber);
     drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 32, frameWidth - 150, NEON.teal);
+
+    this.add.text(layout.centerX, layout.centerY - 138, 'COMMAND DECK', {
+      fontSize: '12px',
+      color: NEON_TEXT.cyan,
+      fontFamily: NEON_FONT.mono,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(12);
 
     addNeonTitle(this, layout.centerX, layout.centerY - 108, 'MISSION COMPLETE', 44, 11, {
       glowDark: '#8c6a1f',

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { UI_FONT_MONO } from '../../utils/uiFonts';
+import { drawNeonFrame } from '../../scenes/shared/neonUiTheme';
 import { getLayoutMetrics, HP_BAR_TRACK_OFFSET, SURGE_BAR_HEIGHT } from './statusBarLayout';
 
 interface CreateHudWidgetsParams {
@@ -231,12 +232,15 @@ export function relayoutHudWidgets({
   const layout = getLayoutMetrics(scene, baseHpBarWidth, baseProgressWidth, baseBossBarWidth);
 
   topBarPanel.clear();
-  topBarPanel.fillStyle(0x030915, 0.58);
-  topBarPanel.fillRoundedRect(layout.left + 10, layout.top + 6, layout.topBarWidth, layout.topBarHeight, 10);
+  drawNeonFrame(topBarPanel, layout.left + 10, layout.top + 6, layout.topBarWidth, layout.topBarHeight, {
+    accentColor: panelStrokeColor,
+    fillAlpha: 0.58,
+    strokeAlpha: 0.42,
+    cornerCut: 10,
+    glow: true,
+  });
   topBarPanel.fillStyle(panelStrokeColor, 0.08);
   topBarPanel.fillRect(layout.left + 18, layout.top + 10, layout.topBarWidth - 16, 1);
-  topBarPanel.lineStyle(1, panelStrokeColor, 0.34);
-  topBarPanel.strokeRoundedRect(layout.left + 10, layout.top + 6, layout.topBarWidth, layout.topBarHeight, 10);
 
   hpLabel.setPosition(layout.hpBarX, layout.hpBarY - 2);
 

@@ -2,6 +2,17 @@
 
 This document is the master visual bible for the neon vector redesign. It supersedes the painterly direction in `background-art-bible.md` (kept for history) and extends the scope to ships, projectiles, VFX, backgrounds, and UI. Everything is produced procedurally in code, with one approved exception: the ten authored planet-arrival portraits (see below).
 
+The v2 presentation remake intensifies this language. It is not a new art style, not a campaign remake, and not a new encounter grammar. See [V2 remake contract](#v2-remake-contract).
+
+## V2 remake contract
+
+- **Readable pressure first.** The center 45–55% of the playfield stays darker and calmer than entities, bullets, hazards, and pickups so Lane-Reading and Ambush Anticipation stay intact. Scenery and HUD chrome never win contrast in that corridor.
+- **Gameplay clocks stay frozen on pause.** Telegraph windows, beam phases, and choreographed waves still count accumulated gameplay delta. Presentation motion may tween on the scene clock; it must not schedule combat consequences from scene time.
+- **Both orientations stay first-class.** There is no rotate block. Phone-portrait 390px remains a required layout. Decorative chrome must collapse before it clips a primary action.
+- **Procedural only, one raster exception.** Generated Phaser textures remain the source of ships, projectiles, VFX, backgrounds, and UI chrome. The only approved rasters are the ten planet-arrival WebP portraits.
+- **Quality tiers budget spectacle.** Low / standard / high stay the only player-facing quality axis. Remake FX budgets live on `VisualQualityProfile` as `uiGlowStrength`, `motifDensity`, `particleBurstScale`, and `menuAtmosphere`. Main-menu quality changes persist and reload; pause quality changes persist and report that a restart is required; storage failures stay non-fatal and keep the prior tier.
+- **Glow stays cheap.** Per-object Glow remains reserved for the player and telegraphs. Entity and pickup glow is baked into generated textures. Camera ColorMatrix stays subtle.
+
 ## Pillars
 
 1. **Neon vector** — clean geometric silhouettes, hot cores, layered glow halos, crisp outlines. Geometry Wars readability with a modern space-opera palette.
@@ -69,7 +80,7 @@ Rules: center 45–55% of the lane stays under ~20% luminance; scroll speeds inc
 
 ## UI
 
-- Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles.
+- Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles. V2 command-deck chrome (menu, pause, game over, victory, intermission frame) shares that language and scales glow with `uiGlowStrength` / `menuAtmosphere`.
 - Typography: bundled display font (Orbitron) with system fallback stack; mono for numeric readouts.
 - Gameplay hierarchy: `HULL` and `RES` anchor the left status cluster, score/sector anchor the right, and the center `FLIGHT VECTOR` is a ten-segment continuous progress readout. The compact layout moves progress to the lower edge of the panel to avoid overlap at phone widths.
 - Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planet bodies are the authored raster portraits (exception below), framed by the existing neon halo, orbit, route, and satellite chrome.

@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import type { LevelConfig } from '../../config/LevelsConfig';
 import { getViewportLayout } from '../../utils/layout';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
+import { drawNeonFrame } from '../shared/neonUiTheme';
 import type { PlanetIntermissionProfile } from './planetProfiles';
 import {
   getUpgradeGridLayout,
@@ -221,28 +222,29 @@ function drawContentFrame(
   if (layout.mode === 'desktop') {
     const top = viewport.top + 30;
     const bottom = layout.nextMissionY + 30;
-    graphics.fillStyle(0x020913, 0.58);
-    graphics.fillRoundedRect(layout.contentX - 22, top, layout.contentWidth + 44, bottom - top, 18);
-    graphics.lineStyle(1, accentColor, 0.32);
-    graphics.strokeRoundedRect(layout.contentX - 22, top, layout.contentWidth + 44, bottom - top, 18);
+    drawNeonFrame(graphics, layout.contentX - 22, top, layout.contentWidth + 44, bottom - top, {
+      accentColor,
+      fillAlpha: 0.58,
+      strokeAlpha: 0.32,
+      cornerCut: 18,
+      glow: true,
+    });
     graphics.fillStyle(accentColor, 0.65);
     graphics.fillRect(layout.contentX - 22, top + 34, 3, 64);
   } else if (layout.mode === 'portrait') {
-    graphics.fillStyle(0x020913, 0.76);
-    graphics.fillRoundedRect(
+    drawNeonFrame(
+      graphics,
       layout.contentX - 4,
       layout.planetNameY - 15,
       layout.contentWidth + 8,
       layout.gridBottom - layout.planetNameY + 24,
-      14
-    );
-    graphics.lineStyle(1, accentColor, 0.25);
-    graphics.strokeRoundedRect(
-      layout.contentX - 4,
-      layout.planetNameY - 15,
-      layout.contentWidth + 8,
-      layout.gridBottom - layout.planetNameY + 24,
-      14
+      {
+        accentColor,
+        fillAlpha: 0.76,
+        strokeAlpha: 0.25,
+        cornerCut: 14,
+        glow: true,
+      },
     );
   }
 }

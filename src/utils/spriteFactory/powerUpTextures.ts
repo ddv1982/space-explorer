@@ -10,9 +10,11 @@ const POWERUP_PALETTES = {
 
 /** Shared capsule: halo, dark cell, neon rim, then the glyph on top. */
 function drawPowerUpCapsule(g: Phaser.GameObjects.Graphics, palette: NeonPalette): void {
-  g.fillStyle(palette.glow, 0.18);
+  g.fillStyle(palette.glow, 0.12);
   g.fillCircle(10, 10, 10);
-  g.fillStyle(palette.glow, 0.3);
+  g.fillStyle(palette.glow, 0.22);
+  g.fillCircle(10, 10, 9.4);
+  g.fillStyle(palette.glow, 0.34);
   g.fillCircle(10, 10, 8.8);
 
   g.fillStyle(palette.body, 0.95);

@@ -14,6 +14,16 @@ mock.module('../src/config/gameplayDifficulty', () => ({
 mock.module('../src/config/visualQuality', () => ({
   getVisualQualityTier: () => 'standard',
   setVisualQualityTier,
+  getVisualQualityProfile: () => ({
+    tier: 'standard',
+    entityTextureResolution: 2,
+    particleTextureResolution: 2,
+    backgroundLayerCount: 3,
+    uiGlowStrength: 0.8,
+    motifDensity: 1,
+    particleBurstScale: 1,
+    menuAtmosphere: 2,
+  }),
 }));
 
 const { PauseStateController } = await import('../src/scenes/gameScene/PauseStateController');

@@ -85,13 +85,19 @@ export function ensureMineTexture(scene: Phaser.Scene): string {
 export function ensureBeamTexture(scene: Phaser.Scene): string {
   return withGeneratedEntityTexture(scene, 'hazard-beam', 32, 128, (g) => {
     // Soft beam bar tinted at runtime: wide glow falloff with a hot core.
-    g.fillStyle(0xffffff, 0.1);
+    g.fillStyle(0xffffff, 0.08);
     g.fillRect(0, 0, 32, 128);
+    g.fillStyle(0xffffff, 0.18);
+    g.fillRect(5, 0, 22, 128);
+    g.fillStyle(0xffffff, 0.36);
+    g.fillRect(10, 0, 12, 128);
+    g.fillStyle(0xffffff, 0.7);
+    g.fillRect(13, 0, 6, 128);
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(15, 0, 2, 128);
     g.fillStyle(0xffffff, 0.22);
-    g.fillRect(6, 0, 20, 128);
-    g.fillStyle(0xffffff, 0.45);
-    g.fillRect(11, 0, 10, 128);
-    g.fillStyle(0xffffff, 0.95);
-    g.fillRect(14, 0, 4, 128);
+    g.fillRect(8, 0, 1, 128);
+    g.fillStyle(0xffffff, 0.22);
+    g.fillRect(23, 0, 1, 128);
   });
 }

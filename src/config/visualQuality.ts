@@ -5,6 +5,10 @@ export interface VisualQualityProfile {
   entityTextureResolution: number;
   particleTextureResolution: number;
   backgroundLayerCount: number;
+  uiGlowStrength: number;
+  motifDensity: number;
+  particleBurstScale: number;
+  menuAtmosphere: number;
 }
 
 export const VISUAL_QUALITY_STORAGE_KEY = 'space-explorer.visualQuality.v1';
@@ -17,18 +21,30 @@ const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
     entityTextureResolution: 1,
     particleTextureResolution: 1,
     backgroundLayerCount: 2,
+    uiGlowStrength: 0.4,
+    motifDensity: 0.6,
+    particleBurstScale: 0.75,
+    menuAtmosphere: 1,
   },
   standard: {
     tier: 'standard',
     entityTextureResolution: 2,
     particleTextureResolution: 2,
     backgroundLayerCount: 3,
+    uiGlowStrength: 0.8,
+    motifDensity: 1,
+    particleBurstScale: 1,
+    menuAtmosphere: 2,
   },
   high: {
     tier: 'high',
     entityTextureResolution: 3,
     particleTextureResolution: 2,
     backgroundLayerCount: 3,
+    uiGlowStrength: 1,
+    motifDensity: 1.25,
+    particleBurstScale: 1.15,
+    menuAtmosphere: 3,
   },
 };
 

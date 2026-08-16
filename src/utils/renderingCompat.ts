@@ -1,4 +1,10 @@
 import Phaser from 'phaser';
+import { getVisualQualityProfile } from '../config/visualQuality';
+
+export function scaleUiGlowAlpha(baseAlpha: number): number {
+  const scaled = baseAlpha * getVisualQualityProfile().uiGlowStrength;
+  return scaled < 0 ? 0 : scaled > 1 ? 1 : scaled;
+}
 
 type FilterableGameObject = Phaser.GameObjects.GameObject & {
   enableFilters(): FilterableGameObject;

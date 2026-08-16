@@ -42,6 +42,8 @@ function generateExplosionTexture(scene: Phaser.Scene, key: string, size: number
 
     g.fillStyle(0xffffff, 1);
     g.fillCircle(cx, cy, r * 0.18);
+    g.lineStyle(1, 0xffffff, 0.35);
+    g.strokeCircle(cx, cy, r * 0.42);
   });
 }
 
@@ -209,12 +211,14 @@ function generateRingTexture(scene: Phaser.Scene, key: string, size: number): vo
     const cy = size / 2;
     const r = size / 2 - 2;
 
-    g.lineStyle(5, 0xffffff, 0.12);
+    g.lineStyle(6, 0xffffff, 0.1);
     g.strokeCircle(cx, cy, r);
-    g.lineStyle(2.5, 0xffffff, 0.35);
+    g.lineStyle(3, 0xffffff, 0.28);
     g.strokeCircle(cx, cy, r);
     g.lineStyle(1.25, 0xffffff, 0.95);
     g.strokeCircle(cx, cy, r);
+    g.lineStyle(1, 0xffffff, 0.4);
+    g.strokeCircle(cx, cy, r * 0.72);
   });
 }
 

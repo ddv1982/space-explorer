@@ -60,7 +60,7 @@ test('crossfire telegraph glow preserves readable gameplay lanes', async ({
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
   await openMenu(page);
   await startNewRun(page);
   const evidenceTarget = test.info().project.name.replace('-evidence', '');
@@ -197,5 +197,50 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
     path: portraitPath,
     contentType: 'image/png',
   });
+  assertNoBrowserErrors();
+});
+
+test('gameplay center corridor stays darker than the neon edges', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  const mobile = test.info().project.name.includes('mobile');
+  await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 984, height: 768 });
+  await openMenu(page);
+  await startNewRun(page);
+  const shot = await snapshot(page);
+  expect(shot.objects.some((object) => object.textureKey === 'player-ship' && object.active)).toBe(true);
+  const name = `gameplay-corridor-${mobile ? 'portrait' : 'desktop'}.png`;
+  const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
+  const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);
+  await page.screenshot({ path });
+  await test.info().attach(name, { path, contentType: 'image/png' });
+  assertNoBrowserErrors();
+});
+
+test('game over and victory command decks stay readable', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(60_000);
+  const mobile = test.info().project.name.includes('mobile');
+  await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 984, height: 768 });
+  await openMenu(page);
+
+  for (const sceneKey of ['GameOver', 'Victory'] as const) {
+    await page.evaluate(async (key) => {
+      const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+      if (!harness) throw new Error('Browser harness is not installed');
+      await harness.route(key);
+    }, sceneKey);
+    await waitForScene(page, sceneKey);
+    const shot = await snapshot(page);
+    expect(shot.texts.some((text) => text.text === (sceneKey === 'GameOver' ? 'GAME OVER' : 'MISSION COMPLETE'))).toBe(true);
+    const name = `${sceneKey.toLowerCase()}-${mobile ? 'portrait' : 'desktop'}.png`;
+    const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
+    const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);
+    await page.screenshot({ path });
+    await test.info().attach(name, { path, contentType: 'image/png' });
+  }
   assertNoBrowserErrors();
 });

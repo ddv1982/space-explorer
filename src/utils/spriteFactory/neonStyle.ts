@@ -1,4 +1,9 @@
 import Phaser from 'phaser';
+import { getVisualQualityProfile } from '../../config/visualQuality';
+
+function qualityHaloAlpha(base: number): number {
+  return Math.min(0.3, base * getVisualQualityProfile().motifDensity);
+}
 
 /**
  * Neon vector drawing helpers for procedurally generated entity textures.
@@ -98,11 +103,11 @@ export function fillNeonPolygon(
   } = options;
 
   tracePolygon(g, scalePolygon(points, haloScale));
-  g.fillStyle(palette.glow, haloAlpha);
+  g.fillStyle(palette.glow, qualityHaloAlpha(haloAlpha));
   g.fillPath();
 
   tracePolygon(g, scalePolygon(points, midScale));
-  g.fillStyle(palette.glow, midAlpha);
+  g.fillStyle(palette.glow, qualityHaloAlpha(midAlpha));
   g.fillPath();
 
   tracePolygon(g, points);
@@ -146,9 +151,9 @@ export function fillNeonCircle(
     solidCore = false,
   } = options;
 
-  g.fillStyle(palette.glow, haloAlpha);
+  g.fillStyle(palette.glow, qualityHaloAlpha(haloAlpha));
   g.fillCircle(cx, cy, radius * haloScale);
-  g.fillStyle(palette.glow, midAlpha);
+  g.fillStyle(palette.glow, qualityHaloAlpha(midAlpha));
   g.fillCircle(cx, cy, radius * midScale);
   g.fillStyle(solidCore ? palette.outline : palette.body, bodyAlpha);
   g.fillCircle(cx, cy, radius);
@@ -182,8 +187,24 @@ export function strokeNeonLine(
   color: number,
   width: number = 1
 ): void {
-  g.lineStyle(width * 2.4, color, 0.14);
+  g.lineStyle(width * 2.4, color, qualityHaloAlpha(0.14));
   g.lineBetween(x1, y1, x2, y2);
   g.lineStyle(width, color, 0.85);
   g.lineBetween(x1, y1, x2, y2);
+}
+
+export function fillCanopy(
+  g: Phaser.GameObjects.Graphics,
+  cx: number,
+  cy: number,
+  width: number,
+  height: number,
+  palette: NeonPalette,
+): void {
+  g.fillStyle(palette.hot, 0.18);
+  g.fillEllipse(cx, cy, width + 2, height + 2);
+  g.fillStyle(palette.hot, 0.55);
+  g.fillEllipse(cx, cy, width, height);
+  g.lineStyle(1, palette.outline, 0.7);
+  g.strokeEllipse(cx, cy, width, height);
 }
