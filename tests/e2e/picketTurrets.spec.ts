@@ -38,11 +38,14 @@ test('aegis picket is locked before level 4 and purchasable with tier names afte
 
   await page.mouse.click(picketButton?.x ?? 0, picketButton?.y ?? 0);
 
-  // Tier two stays progression-capped until level 5, so the button reports the cap.
+  // Tier two stays progression-capped until level 5. Detail and status remain
+  // separate so the cap cannot collide with the tier readout.
   await expect
     .poll(async () => (await snapshot(page)).texts.map((item) => item.text))
-    .toContain('PICKET OVERCLOCK  ·  1/2  ·  CAP 1');
+    .toContain('PICKET OVERCLOCK  ·  1/2');
   const purchased = (await snapshot(page)).texts.map((item) => item.text);
+  expect(purchased).toContain('CAP 1');
+  expect(purchased).not.toContain('PICKET OVERCLOCK  ·  1/2  ·  CAP 1');
   expect(purchased).toContain('CREDITS 6500');
   assertNoBrowserErrors();
 });
