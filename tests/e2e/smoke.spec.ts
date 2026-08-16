@@ -25,7 +25,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
     : test.info().outputPath(menuShotName);
   await page.screenshot({ path: menuShotPath });
   await test.info().attach(menuShotName, { path: menuShotPath, contentType: 'image/png' });
-  await page.mouse.dblclick(newRun?.x ?? 0, newRun?.y ?? 0, { delay: 20 });
+  await page.mouse.click(newRun?.x ?? 0, newRun?.y ?? 0);
   await waitForScene(page, 'Game');
 
   const initial = await snapshot(page);

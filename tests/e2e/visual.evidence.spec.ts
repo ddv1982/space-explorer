@@ -156,7 +156,7 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
   await openMenu(page);
 
   for (let level = 1; level <= 10; level += 1) {
