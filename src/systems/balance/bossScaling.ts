@@ -65,8 +65,7 @@ function getOffenseBonus(context: BossScalingContext): number {
 }
 
 function getDefenseBonus(upgrades: PlayerUpgradeLevels): number {
-  const defensePressure =
-    upgrades.hp * DEFENSE_UPGRADE_WEIGHT.hp + upgrades.shield * DEFENSE_UPGRADE_WEIGHT.shield;
+  const defensePressure = upgrades.hp * DEFENSE_UPGRADE_WEIGHT.hp + upgrades.shield * DEFENSE_UPGRADE_WEIGHT.shield;
   const normalizedDefense = clamp(defensePressure / DEFENSE_REFERENCE_SPAN, 0, 1);
 
   return normalizedDefense * MAX_DEFENSE_BONUS;
@@ -80,18 +79,16 @@ function getBossDifficultyMultiplier(context: BossScalingContext): number {
   return clamp(1 + levelBonus + offenseBonus + defenseBonus, 1, MAX_TOTAL_SCALING);
 }
 
-export function createScaledBossConfig(
-  baseConfig: BossConfig,
-  context: BossScalingContext
-): BossConfig {
+export function createScaledBossConfig(baseConfig: BossConfig, context: BossScalingContext): BossConfig {
   const multiplier = getBossDifficultyMultiplier(context);
   const tunedMultiplier = multiplier * GLOBAL_BOSS_HP_TUNING;
 
   return {
     ...baseConfig,
     maxHp: Math.max(1, Math.round(baseConfig.maxHp * tunedMultiplier)),
-    guardCapacity: baseConfig.guardCapacity === undefined
-      ? undefined
-      : Math.max(1, Math.round(baseConfig.guardCapacity * Math.sqrt(multiplier))),
+    guardCapacity:
+      baseConfig.guardCapacity === undefined
+        ? undefined
+        : Math.max(1, Math.round(baseConfig.guardCapacity * Math.sqrt(multiplier))),
   };
 }

@@ -6,9 +6,7 @@ import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { PauseOverlay } from './PauseOverlay';
 import type { PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
 
-type SaveSlotActionResult =
-  | { ok: true; message: string }
-  | { ok: false; message: string };
+type SaveSlotActionResult = { ok: true; message: string } | { ok: false; message: string };
 
 export interface PauseSaveSlotAdapter {
   isAvailable: () => boolean;
@@ -80,7 +78,9 @@ export class PauseStateController {
     this.statusMessage = '';
     this.statusOk = true;
 
-    const createOverlay = config.createOverlay ?? ((scene: Phaser.Scene, handlers: PauseOverlayHandlers) => PauseOverlay.create(scene, handlers));
+    const createOverlay =
+      config.createOverlay ??
+      ((scene: Phaser.Scene, handlers: PauseOverlayHandlers) => PauseOverlay.create(scene, handlers));
     this.pauseOverlay = createOverlay(config.scene, {
       onResume: () => this.handlePauseResumeRequested(),
       onMainMenu: () => this.handleMainMenuRequested(),

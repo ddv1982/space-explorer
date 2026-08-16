@@ -1,13 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
-import {
-  runGameSceneUpdateFrame,
-  type GameSceneFrameDelegate,
-} from '../src/scenes/gameScene/updateFrame';
+import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from '../src/scenes/gameScene/updateFrame';
 
-function createRecordingDelegate(options?: {
-  pausedOrLocked?: boolean;
-}): { calls: string[]; delegate: GameSceneFrameDelegate } {
+function createRecordingDelegate(options?: { pausedOrLocked?: boolean }): {
+  calls: string[];
+  delegate: GameSceneFrameDelegate;
+} {
   const calls: string[] = [];
   const pausedOrLocked = options?.pausedOrLocked ?? false;
 
@@ -39,11 +37,7 @@ describe('runGameSceneUpdateFrame', () => {
 
     runGameSceneUpdateFrame(delegate, 1000, 16);
 
-    expect(calls).toEqual([
-      'handlePauseInput',
-      'isPausedOrLockedFrame',
-      'updatePausedFrame:16',
-    ]);
+    expect(calls).toEqual(['handlePauseInput', 'isPausedOrLockedFrame', 'updatePausedFrame:16']);
   });
 
   test('active path: pause input → gate → gameplay → HUD', () => {
@@ -51,12 +45,7 @@ describe('runGameSceneUpdateFrame', () => {
 
     runGameSceneUpdateFrame(delegate, 2000, 16);
 
-    expect(calls).toEqual([
-      'handlePauseInput',
-      'isPausedOrLockedFrame',
-      'updateGameplayFrame:2000:16',
-      'updateHud',
-    ]);
+    expect(calls).toEqual(['handlePauseInput', 'isPausedOrLockedFrame', 'updateGameplayFrame:2000:16', 'updateHud']);
   });
 
   test('preserves the scene-time contract after a paused wall-clock jump', () => {

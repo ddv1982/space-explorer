@@ -59,7 +59,8 @@ function mergeLayerExpression(
 ): ProceduralMusicLayerExpressionConfig | undefined {
   const envelope = base?.envelope || variation?.envelope ? { ...base?.envelope, ...variation?.envelope } : undefined;
   const stereo = base?.stereo || variation?.stereo ? { ...base?.stereo, ...variation?.stereo } : undefined;
-  const modulation = base?.modulation || variation?.modulation ? { ...base?.modulation, ...variation?.modulation } : undefined;
+  const modulation =
+    base?.modulation || variation?.modulation ? { ...base?.modulation, ...variation?.modulation } : undefined;
   const accent = base?.accent || variation?.accent ? { ...base?.accent, ...variation?.accent } : undefined;
 
   if (!envelope && !stereo && !modulation && !accent) {
@@ -91,7 +92,8 @@ function mergeTrackExpression(
   variation?: Partial<ProceduralMusicTrackExpressionConfig>
 ): ProceduralMusicTrackExpressionConfig | undefined {
   const stereo = base?.stereo || variation?.stereo ? { ...base?.stereo, ...variation?.stereo } : undefined;
-  const modulation = base?.modulation || variation?.modulation ? { ...base?.modulation, ...variation?.modulation } : undefined;
+  const modulation =
+    base?.modulation || variation?.modulation ? { ...base?.modulation, ...variation?.modulation } : undefined;
   const accent = base?.accent || variation?.accent ? { ...base?.accent, ...variation?.accent } : undefined;
 
   if (!stereo && !modulation && !accent) {
@@ -123,21 +125,9 @@ function withTrackVariation(base: ProceduralMusicTrackConfig, variation: TrackVa
     ...variation,
     expression: mergeTrackExpression(base.expression, variation.expression),
     bass: variation.bass ? withLayerVariation(base.bass, variation.bass) : base.bass,
-    pulse: base.pulse
-      ? variation.pulse
-        ? withLayerVariation(base.pulse, variation.pulse)
-        : base.pulse
-      : undefined,
-    lead: base.lead
-      ? variation.lead
-        ? withLayerVariation(base.lead, variation.lead)
-        : base.lead
-      : undefined,
-    noise: base.noise
-      ? variation.noise
-        ? withNoiseVariation(base.noise, variation.noise)
-        : base.noise
-      : undefined,
+    pulse: base.pulse ? (variation.pulse ? withLayerVariation(base.pulse, variation.pulse) : base.pulse) : undefined,
+    lead: base.lead ? (variation.lead ? withLayerVariation(base.lead, variation.lead) : base.lead) : undefined,
+    noise: base.noise ? (variation.noise ? withNoiseVariation(base.noise, variation.noise) : base.noise) : undefined,
   };
 }
 

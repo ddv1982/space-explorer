@@ -19,10 +19,7 @@ const HAZARD_BASE_PRESSURE_COST: Record<ScriptedHazardConfig['type'], number> = 
   'wormhole-spawn': 0.9,
 };
 
-export function isHazardWithinDuration(
-  hazard: ScriptedHazardConfig,
-  sectionElapsedMs: number
-): boolean {
+export function isHazardWithinDuration(hazard: ScriptedHazardConfig, sectionElapsedMs: number): boolean {
   if (hazard.durationMs === undefined) {
     return true;
   }

@@ -27,29 +27,31 @@ describe('createHudAndTransitions', () => {
       level: 3,
       playerShields: 2,
       lastHudShieldCount: null,
-      createHud: () => ({
-        create(scene: unknown, levelConfig: unknown) {
-          callLog.push('hud.create');
-          hudCreateArgs = { scene, levelConfig };
-        },
-        showLevelAnnouncement(levelName: string, level: number) {
-          callLog.push('hud.showLevelAnnouncement');
-          hudAnnouncementArgs = { levelName, level };
-        },
-        updateShields(shields: number) {
-          callLog.push(`hud.updateShields:${shields}`);
-        },
-      }) as never,
-      createWarpTransition: () => ({
-        create(scene: unknown) {
-          callLog.push('warp.create');
-          warpCreateScene = scene;
-        },
-        setAccentColor(accentColor: unknown) {
-          callLog.push('warp.setAccentColor');
-          warpAccentColor = accentColor;
-        },
-      }) as never,
+      createHud: () =>
+        ({
+          create(scene: unknown, levelConfig: unknown) {
+            callLog.push('hud.create');
+            hudCreateArgs = { scene, levelConfig };
+          },
+          showLevelAnnouncement(levelName: string, level: number) {
+            callLog.push('hud.showLevelAnnouncement');
+            hudAnnouncementArgs = { levelName, level };
+          },
+          updateShields(shields: number) {
+            callLog.push(`hud.updateShields:${shields}`);
+          },
+        }) as never,
+      createWarpTransition: () =>
+        ({
+          create(scene: unknown) {
+            callLog.push('warp.create');
+            warpCreateScene = scene;
+          },
+          setAccentColor(accentColor: unknown) {
+            callLog.push('warp.setAccentColor');
+            warpAccentColor = accentColor;
+          },
+        }) as never,
     });
 
     expect(callLog).toEqual([
@@ -60,7 +62,10 @@ describe('createHudAndTransitions', () => {
       'warp.setAccentColor',
     ]);
     expect(hudCreateArgs as { scene: unknown; levelConfig: unknown } | null).toEqual({ scene, levelConfig });
-    expect(hudAnnouncementArgs as { levelName: string; level: number } | null).toEqual({ levelName: 'Nebula Pass', level: 3 });
+    expect(hudAnnouncementArgs as { levelName: string; level: number } | null).toEqual({
+      levelName: 'Nebula Pass',
+      level: 3,
+    });
     expect(warpCreateScene).toBe(scene);
     expect(warpAccentColor).toBe(0x55aaff);
     expect(result.lastHudShieldCount).toBe(2);

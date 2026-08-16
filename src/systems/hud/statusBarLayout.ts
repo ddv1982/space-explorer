@@ -35,7 +35,7 @@ export function getLayoutMetrics(
   scene: Phaser.Scene,
   baseHpBarWidth: number,
   baseProgressWidth: number,
-  baseBossBarWidth: number,
+  baseBossBarWidth: number
 ): HudLayoutMetrics {
   const viewport = getViewportBounds(scene);
   const hpBarWidth = Math.round(Phaser.Math.Clamp(viewport.width * 0.22, 150, baseHpBarWidth));
@@ -153,11 +153,7 @@ export const SURGE_BAR_HEIGHT = 5;
  * transitions exactly once. In particular, a settled empty meter must not
  * clear its Graphics object again on every gameplay frame.
  */
-export function shouldRenderMeterRatio(
-  currentRatio: number | null,
-  nextRatio: number,
-  renderStep: number,
-): boolean {
+export function shouldRenderMeterRatio(currentRatio: number | null, nextRatio: number, renderStep: number): boolean {
   if (currentRatio === null) {
     return true;
   }
@@ -165,9 +161,7 @@ export function shouldRenderMeterRatio(
     return false;
   }
 
-  return nextRatio === 0
-    || nextRatio === 1
-    || Math.abs(nextRatio - currentRatio) >= renderStep;
+  return nextRatio === 0 || nextRatio === 1 || Math.abs(nextRatio - currentRatio) >= renderStep;
 }
 
 export function renderSurgeBar(params: {

@@ -98,18 +98,16 @@ function normalizeHelperWingState(state: unknown, maxPlayerHp: number): Persiste
   }
 
   const normalizedSlots = Array.isArray(state.slots)
-    ? state.slots
-        .slice(0, MAX_HELPER_WING_SLOTS)
-        .map((slot) => {
-          if (!isObjectRecord(slot)) {
-            return { remainingLives: 0, hp: 0 };
-          }
+    ? state.slots.slice(0, MAX_HELPER_WING_SLOTS).map((slot) => {
+        if (!isObjectRecord(slot)) {
+          return { remainingLives: 0, hp: 0 };
+        }
 
-          return {
-            remainingLives: normalizeBoundedInteger(slot.remainingLives, 0, PLAYER_CONFIG.startingLives),
-            hp: normalizeBoundedInteger(slot.hp, 0, maxPlayerHp),
-          };
-        })
+        return {
+          remainingLives: normalizeBoundedInteger(slot.remainingLives, 0, PLAYER_CONFIG.startingLives),
+          hp: normalizeBoundedInteger(slot.hp, 0, maxPlayerHp),
+        };
+      })
     : [];
 
   const backwardCompatibleGrantedSlots =
@@ -193,10 +191,7 @@ export function getRunSummary(registry: PlayerStateRegistry): RunSummaryData {
   };
 }
 
-export function setRunSummary(
-  registry: PlayerStateRegistry,
-  summary: Partial<RunSummaryData>
-): RunSummaryData {
+export function setRunSummary(registry: PlayerStateRegistry, summary: Partial<RunSummaryData>): RunSummaryData {
   const currentSummary = getRunSummary(registry);
   const nextSummary: RunSummaryData = {
     finalScore: normalizePersistedScore(summary.finalScore, currentSummary.finalScore),

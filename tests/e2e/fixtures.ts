@@ -37,13 +37,16 @@ async function waitForHarness(page: Page): Promise<void> {
 }
 
 export async function waitForScene(page: Page, sceneKey: string): Promise<void> {
-  await expect.poll(() =>
-    page.evaluate((key) => {
-      const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
-      return harness?.snapshot().activeScenes.includes(key) ?? false;
-    }, sceneKey),
-    { timeout: 15_000 },
-  ).toBe(true);
+  await expect
+    .poll(
+      () =>
+        page.evaluate((key) => {
+          const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+          return harness?.snapshot().activeScenes.includes(key) ?? false;
+        }, sceneKey),
+      { timeout: 15_000 }
+    )
+    .toBe(true);
 }
 
 export async function openMenu(page: Page): Promise<void> {

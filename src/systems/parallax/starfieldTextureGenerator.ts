@@ -23,9 +23,8 @@ export function ensureStarfieldTexture(
   accentColor?: number
 ): void {
   withGeneratedTexture(scene, textureKey, tileWidth, tileHeight, (graphics) => {
-    const starColor = accentColor !== undefined
-      ? mixColor(config.baseColor, accentColor, config.accentMix)
-      : config.baseColor;
+    const starColor =
+      accentColor !== undefined ? mixColor(config.baseColor, accentColor, config.accentMix) : config.baseColor;
 
     for (let i = 0; i < config.starCount; i++) {
       const x = Phaser.Math.Between(0, tileWidth);
@@ -58,9 +57,10 @@ export function ensureStarfieldTexture(
       const x = Phaser.Math.Between(0, tileWidth);
       const y = Phaser.Math.Between(0, tileHeight);
       const accentIndex = Phaser.Math.Between(0, STAR_ACCENT_COLORS.length - 1);
-      const colorStar = accentColor !== undefined
-        ? mixColor(STAR_ACCENT_COLORS[accentIndex], accentColor, 0.3)
-        : STAR_ACCENT_COLORS[accentIndex];
+      const colorStar =
+        accentColor !== undefined
+          ? mixColor(STAR_ACCENT_COLORS[accentIndex], accentColor, 0.3)
+          : STAR_ACCENT_COLORS[accentIndex];
       const size = Phaser.Math.FloatBetween(config.starSize.min * 1.2, config.starSize.max * 1.5);
       const alpha = Phaser.Math.FloatBetween(0.4, 0.8);
 

@@ -56,10 +56,7 @@ export class GrazeSurgeSystem {
       }
 
       this.tracked.add(bullet);
-      this.gauge = Math.min(
-        SURGE_GAUGE_CAPACITY,
-        this.gauge + (this.bossActive ? BOSS_GRAZE_VALUE : 1)
-      );
+      this.gauge = Math.min(SURGE_GAUGE_CAPACITY, this.gauge + (this.bossActive ? BOSS_GRAZE_VALUE : 1));
       this.callbacks.onGraze(bullet.x, bullet.y);
 
       if (this.gauge >= SURGE_GAUGE_CAPACITY) {

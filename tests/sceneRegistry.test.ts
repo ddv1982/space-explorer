@@ -106,9 +106,10 @@ describe('sceneRegistry', () => {
 
     let resolveLoader: ((sceneClass: new () => Phaser.Scene) => void) | null = null;
     const sceneLoaders = {
-      TestSceneStartOrder: () => new Promise<new () => Phaser.Scene>((resolve) => {
-        resolveLoader = resolve;
-      }),
+      TestSceneStartOrder: () =>
+        new Promise<new () => Phaser.Scene>((resolve) => {
+          resolveLoader = resolve;
+        }),
     };
 
     startRegisteredScene(scene, 'TestSceneStartOrder', sceneLoaders);

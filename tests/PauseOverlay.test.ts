@@ -110,15 +110,36 @@ mock.module('../src/scenes/shared/settingsPanel', () => ({
     visible: true,
     setLayout() {},
     setDepth() {},
-    setVisible(visible: boolean) { this.visible = visible; },
+    setVisible(visible: boolean) {
+      this.visible = visible;
+    },
     destroy() {},
   }),
 }));
 
 mock.module('../src/utils/layout', () => ({
-  getViewportBounds: () => ({ left: 0, top: 0, width: 1280, height: 720, right: 1280, bottom: 720, centerX: 640, centerY: 360 }),
-  getViewportLayout: () => ({ left: 0, top: 0, width: 1280, height: 720, right: 1280, bottom: 720, centerX: 640, centerY: 360 }),
-  centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
+  getViewportBounds: () => ({
+    left: 0,
+    top: 0,
+    width: 1280,
+    height: 720,
+    right: 1280,
+    bottom: 720,
+    centerX: 640,
+    centerY: 360,
+  }),
+  getViewportLayout: () => ({
+    left: 0,
+    top: 0,
+    width: 1280,
+    height: 720,
+    right: 1280,
+    bottom: 720,
+    centerX: 640,
+    centerY: 360,
+  }),
+  centerHorizontally: (layout: { left: number; width: number }, width: number) =>
+    layout.left + (layout.width - width) / 2,
 }));
 
 const { PauseOverlay } = await import('../src/scenes/gameScene/PauseOverlay');
@@ -130,13 +151,32 @@ function createZone(): StubZone {
     y: 0,
     width: 0,
     height: 0,
-    setOrigin() { return this; },
-    setInteractive() { return this; },
-    on() { return this; },
-    setPosition(x, y) { this.x = x; this.y = y; return this; },
-    setSize(width, height) { this.width = width; this.height = height; return this; },
-    setVisible(visible) { this.visible = visible; return this; },
-    setDepth() { return this; },
+    setOrigin() {
+      return this;
+    },
+    setInteractive() {
+      return this;
+    },
+    on() {
+      return this;
+    },
+    setPosition(x, y) {
+      this.x = x;
+      this.y = y;
+      return this;
+    },
+    setSize(width, height) {
+      this.width = width;
+      this.height = height;
+      return this;
+    },
+    setVisible(visible) {
+      this.visible = visible;
+      return this;
+    },
+    setDepth() {
+      return this;
+    },
     destroy() {},
   };
 }
@@ -144,23 +184,58 @@ function createZone(): StubZone {
 function createGraphics(): StubGraphics {
   return {
     visible: true,
-    clear() { return this; },
-    fillStyle() { return this; },
-    fillRect() { return this; },
-    fillRoundedRect() { return this; },
-    lineStyle() { return this; },
-    strokeRoundedRect() { return this; },
-    lineBetween() { return this; },
-    beginPath() { return this; },
-    moveTo() { return this; },
-    lineTo() { return this; },
-    closePath() { return this; },
-    strokePath() { return this; },
-    fillPath() { return this; },
-    fillCircle() { return this; },
-    strokeCircle() { return this; },
-    setDepth() { return this; },
-    setVisible(visible) { this.visible = visible; return this; },
+    clear() {
+      return this;
+    },
+    fillStyle() {
+      return this;
+    },
+    fillRect() {
+      return this;
+    },
+    fillRoundedRect() {
+      return this;
+    },
+    lineStyle() {
+      return this;
+    },
+    strokeRoundedRect() {
+      return this;
+    },
+    lineBetween() {
+      return this;
+    },
+    beginPath() {
+      return this;
+    },
+    moveTo() {
+      return this;
+    },
+    lineTo() {
+      return this;
+    },
+    closePath() {
+      return this;
+    },
+    strokePath() {
+      return this;
+    },
+    fillPath() {
+      return this;
+    },
+    fillCircle() {
+      return this;
+    },
+    strokeCircle() {
+      return this;
+    },
+    setDepth() {
+      return this;
+    },
+    setVisible(visible) {
+      this.visible = visible;
+      return this;
+    },
     destroy() {},
   };
 }
@@ -171,14 +246,34 @@ function createText(initialText: string): StubText {
     text: initialText,
     x: 0,
     y: 0,
-    setOrigin() { return this; },
-    setDepth() { return this; },
-    setPosition(x, y) { this.x = x; this.y = y; return this; },
-    setWordWrapWidth() { return this; },
-    setFontSize() { return this; },
-    setVisible(visible) { this.visible = visible; return this; },
-    setText(value) { this.text = value; return this; },
-    setColor() { return this; },
+    setOrigin() {
+      return this;
+    },
+    setDepth() {
+      return this;
+    },
+    setPosition(x, y) {
+      this.x = x;
+      this.y = y;
+      return this;
+    },
+    setWordWrapWidth() {
+      return this;
+    },
+    setFontSize() {
+      return this;
+    },
+    setVisible(visible) {
+      this.visible = visible;
+      return this;
+    },
+    setText(value) {
+      this.text = value;
+      return this;
+    },
+    setColor() {
+      return this;
+    },
     destroy() {},
   };
 }
@@ -212,7 +307,11 @@ describe('PauseOverlay relayout regression', () => {
     overlay.setState({ visible: false, saveSlots: [] });
     overlay.relayout();
 
-    const saveSlotRows = (overlay as unknown as { saveSlotRows: { rows: Array<{ title: StubText; subtitle: StubText; savedAt: StubText }> } | null }).saveSlotRows;
+    const saveSlotRows = (
+      overlay as unknown as {
+        saveSlotRows: { rows: Array<{ title: StubText; subtitle: StubText; savedAt: StubText }> } | null;
+      }
+    ).saveSlotRows;
     expect(saveSlotRows?.rows[0]?.title.visible).toBe(false);
     expect(saveSlotRows?.rows[0]?.subtitle.visible).toBe(false);
     expect(saveSlotRows?.rows[0]?.savedAt.visible).toBe(false);
@@ -220,8 +319,13 @@ describe('PauseOverlay relayout regression', () => {
 
   test('switches between checkpoint and settings controls without hiding the pause shell', () => {
     const overlay = PauseOverlay.create(createScene() as never, {
-      onResume: () => {}, onSaveSlot: () => {}, onLoadSlot: () => {}, onDeleteSlot: () => {},
-      onMainMenu: () => {}, onSelectDifficulty: () => true, onSelectQuality: () => true,
+      onResume: () => {},
+      onSaveSlot: () => {},
+      onLoadSlot: () => {},
+      onDeleteSlot: () => {},
+      onMainMenu: () => {},
+      onSelectDifficulty: () => true,
+      onSelectQuality: () => true,
     });
     overlay.setState({ visible: true, saveSlots: [] });
     (overlay as unknown as { selectSubview: (view: 'settings' | 'checkpoints') => void }).selectSubview('settings');

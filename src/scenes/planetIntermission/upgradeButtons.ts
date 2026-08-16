@@ -1,10 +1,6 @@
 import Phaser from 'phaser';
 
-import type {
-  UpgradeBlockReason,
-  UpgradeEvaluation,
-  UpgradeKey,
-} from '../../config/UpgradesConfig';
+import type { UpgradeBlockReason, UpgradeEvaluation, UpgradeKey } from '../../config/UpgradesConfig';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 import { drawNeonFrame } from '../shared/neonUiTheme';
 import type { UpgradeButton, UpgradeGridLayout } from './shared';
@@ -29,43 +25,42 @@ export function createUpgradeButton(
   bg.setPosition(x, y);
   bg.setDepth(2);
 
-  const text = scene.add.text(x + layout.textInsetX, y + layout.titleOffsetY, evaluation.upgrade.name, {
-    fontSize: layout.titleFontSize,
-    color: evaluation.canPurchase ? '#f4fbff' : '#87939e',
-    fontFamily: UI_FONT_DISPLAY,
-    fontStyle: 'bold',
-  }).setDepth(3);
+  const text = scene.add
+    .text(x + layout.textInsetX, y + layout.titleOffsetY, evaluation.upgrade.name, {
+      fontSize: layout.titleFontSize,
+      color: evaluation.canPurchase ? '#f4fbff' : '#87939e',
+      fontFamily: UI_FONT_DISPLAY,
+      fontStyle: 'bold',
+    })
+    .setDepth(3);
 
-  const levelText = scene.add.text(
-    x + layout.textInsetX,
-    y + layout.descriptionOffsetY,
-    getLevelText(evaluation, layout.showDescription),
-    {
+  const levelText = scene.add
+    .text(x + layout.textInsetX, y + layout.descriptionOffsetY, getLevelText(evaluation, layout.showDescription), {
       fontSize: layout.descriptionFontSize,
       color: evaluation.canPurchase ? '#9db4c3' : '#66737d',
       fontFamily: UI_FONT_MONO,
-    }
-  ).setDepth(3);
+    })
+    .setDepth(3);
 
   // The status is a fixed right-hand column. Crop descriptive copy at its
   // boundary so localized or unusually long labels can never collide with it.
-  const descriptionWidth = Math.max(
-    1,
-    layout.buttonWidth - layout.textInsetX - layout.statusColumnWidth
-  );
+  const descriptionWidth = Math.max(1, layout.buttonWidth - layout.textInsetX - layout.statusColumnWidth);
   levelText.setCrop(0, 0, descriptionWidth, levelText.height);
 
-  const costText = scene.add.text(
-    x + layout.buttonWidth - layout.costInsetX,
-    y + (layout.showDescription ? layout.buttonHeight / 2 : layout.buttonHeight - 10),
-    getCostLabel(evaluation),
-    {
-      fontSize: layout.costFontSize,
-      color: getCostColor(evaluation.blockReason),
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-    }
-  ).setOrigin(1, 0.5).setDepth(3);
+  const costText = scene.add
+    .text(
+      x + layout.buttonWidth - layout.costInsetX,
+      y + (layout.showDescription ? layout.buttonHeight / 2 : layout.buttonHeight - 10),
+      getCostLabel(evaluation),
+      {
+        fontSize: layout.costFontSize,
+        color: getCostColor(evaluation.blockReason),
+        fontFamily: UI_FONT_MONO,
+        fontStyle: 'bold',
+      }
+    )
+    .setOrigin(1, 0.5)
+    .setDepth(3);
 
   return {
     bg,

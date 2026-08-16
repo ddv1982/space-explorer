@@ -20,6 +20,5 @@ export class Scout extends EnemyBase {
     this.setVelocityY(this.speed);
   }
 
-  updateBehavior(_time: number, _delta: number): void {
-  }
+  updateBehavior(_time: number, _delta: number): void {}
 }

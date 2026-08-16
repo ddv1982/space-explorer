@@ -72,29 +72,33 @@ export class MobileControls {
 
     this.updateControlAnchors();
 
-    this.joystickBase = scene.add.circle(this.joystickX, this.joystickY, JOYSTICK_BASE_RADIUS, 0x0b1020, 0.4)
+    this.joystickBase = scene.add
+      .circle(this.joystickX, this.joystickY, JOYSTICK_BASE_RADIUS, 0x0b1020, 0.4)
       .setStrokeStyle(5, 0x88ccff, 0.8)
       .setDepth(CONTROLS_DEPTH)
       .setScrollFactor(0);
-    this.joystickBase.setInteractive(
-      new Phaser.Geom.Circle(0, 0, JOYSTICK_HIT_RADIUS),
-      Phaser.Geom.Circle.Contains
-    );
+    this.joystickBase.setInteractive(new Phaser.Geom.Circle(0, 0, JOYSTICK_HIT_RADIUS), Phaser.Geom.Circle.Contains);
     this.joystickBase.on('pointerdown', this.handleJoystickDown, this);
 
-    this.joystickCenter = scene.add.circle(this.joystickX, this.joystickY, 11, 0xdaf3ff, 0.3)
+    this.joystickCenter = scene.add
+      .circle(this.joystickX, this.joystickY, 11, 0xdaf3ff, 0.3)
       .setStrokeStyle(2, 0xe7f8ff, 0.45)
       .setDepth(CONTROLS_DEPTH + 1)
       .setScrollFactor(0);
 
-    this.joystickThumb = scene.add.circle(this.joystickX, this.joystickY, JOYSTICK_THUMB_RADIUS, 0xa8e5ff, 0.95)
+    this.joystickThumb = scene.add
+      .circle(this.joystickX, this.joystickY, JOYSTICK_THUMB_RADIUS, 0xa8e5ff, 0.95)
       .setStrokeStyle(3, 0xe7f8ff, 0.95)
       .setDepth(CONTROLS_DEPTH + 2)
       .setScrollFactor(0);
 
     this.pauseButtonBg = scene.add.graphics().setDepth(CONTROLS_DEPTH).setScrollFactor(0);
-    this.pauseButtonIcon = scene.add.graphics().setDepth(CONTROLS_DEPTH + 1).setScrollFactor(0);
-    this.pauseButtonHitArea = scene.add.zone(0, 0, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE)
+    this.pauseButtonIcon = scene.add
+      .graphics()
+      .setDepth(CONTROLS_DEPTH + 1)
+      .setScrollFactor(0);
+    this.pauseButtonHitArea = scene.add
+      .zone(0, 0, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE)
       .setOrigin(0.5)
       .setDepth(CONTROLS_DEPTH + 2)
       .setScrollFactor(0)
@@ -256,10 +260,7 @@ export class MobileControls {
 
     this.movementVector.set((dx / distance) * magnitude, (dy / distance) * magnitude);
 
-    this.joystickThumb?.setPosition(
-      this.joystickX + dx * thumbScale,
-      this.joystickY + dy * thumbScale
-    );
+    this.joystickThumb?.setPosition(this.joystickX + dx * thumbScale, this.joystickY + dy * thumbScale);
   }
 
   private updateJoystickVisual(): void {
@@ -272,9 +273,7 @@ export class MobileControls {
     this.joystickBase
       ?.setFillStyle(0x0b1020, active ? 0.48 : 0.4)
       .setStrokeStyle(5, active ? 0xb2e4ff : 0x88ccff, active ? 0.95 : 0.8);
-    this.joystickCenter
-      ?.setAlpha(active ? 0.85 : 0.55)
-      .setScale(active ? 1.08 : 1);
+    this.joystickCenter?.setAlpha(active ? 0.85 : 0.55).setScale(active ? 1.08 : 1);
     this.joystickThumb
       ?.setFillStyle(active ? 0xc5efff : 0xa8e5ff, active ? 1 : 0.95)
       .setStrokeStyle(3, 0xe7f8ff, active ? 1 : 0.95)

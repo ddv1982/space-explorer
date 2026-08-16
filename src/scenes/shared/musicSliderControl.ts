@@ -86,15 +86,10 @@ export function createMusicSliderControl(
   const trackLeft = ultraCompact
     ? 12
     : ROW_PADDING_X + iconSize + (compact ? 0 : ICON_TO_LABEL_GAP) + labelWidth + LABEL_TO_TRACK_GAP;
-  const trackRight = ultraCompact
-    ? totalWidth - 12
-    : totalWidth - ROW_PADDING_X - valueBoxWidth - VALUE_BOX_GAP;
+  const trackRight = ultraCompact ? totalWidth - 12 : totalWidth - ROW_PADDING_X - valueBoxWidth - VALUE_BOX_GAP;
   const trackWidth = Math.max(30, trackRight - trackLeft);
 
-  const hitArea = scene.add
-    .zone(0, 0, trackWidth, ROW_HEIGHT)
-    .setOrigin(0)
-    .setInteractive({ useHandCursor: true });
+  const hitArea = scene.add.zone(0, 0, trackWidth, ROW_HEIGHT).setOrigin(0).setInteractive({ useHandCursor: true });
 
   let originX = 0;
   let originY = 0;
@@ -134,7 +129,12 @@ export function createMusicSliderControl(
       } else {
         iconOverlay.lineStyle(1.5, COLOR_PILL_STROKE, 0.8);
         iconOverlay.lineBetween(iconX + 14, rowCenterY, iconX + ICON_BOX_SIZE - 14, rowCenterY);
-        iconOverlay.lineBetween(iconX + ICON_BOX_SIZE / 2, iconY + 14, iconX + ICON_BOX_SIZE / 2, iconY + ICON_BOX_SIZE - 14);
+        iconOverlay.lineBetween(
+          iconX + ICON_BOX_SIZE / 2,
+          iconY + 14,
+          iconX + ICON_BOX_SIZE / 2,
+          iconY + ICON_BOX_SIZE - 14
+        );
       }
     }
 
@@ -194,7 +194,10 @@ export function createMusicSliderControl(
     }
 
     valueText.setOrigin(ultraCompact ? 1 : 0.5, 0.5);
-    valueText.setPosition(ultraCompact ? vbx : vbx + valueBoxWidth / 2, ultraCompact ? vby : vby + VALUE_BOX_HEIGHT / 2);
+    valueText.setPosition(
+      ultraCompact ? vbx : vbx + valueBoxWidth / 2,
+      ultraCompact ? vby : vby + VALUE_BOX_HEIGHT / 2
+    );
     valueText.setFontSize(ultraCompact ? '10px' : '13px');
     valueText.setText(formatValue(value));
 

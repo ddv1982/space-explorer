@@ -27,8 +27,7 @@ mock.module('../src/systems/PlayerState', () => ({
   getPlayerMaxHp: mock(() => 5),
   getPlayerState: () => ({ level: currentLevel }),
   normalizePersistedPlayerState: (value: unknown) => value,
-  normalizePersistedScore: (value: unknown, fallback: number) =>
-    typeof value === 'number' ? value : fallback,
+  normalizePersistedScore: (value: unknown, fallback: number) => (typeof value === 'number' ? value : fallback),
   resetPlayerState: mock(),
   resetRunSummary: mock(),
   setPlayerState: mock(),
@@ -49,11 +48,17 @@ describe('MenuScene', () => {
     (scene as unknown as Record<string, unknown>).showSaveSlotError = showSaveSlotError;
     (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
 
-    expect((scene as unknown as { selectGameplayDifficultyTier: (tier: string) => boolean })
-      .selectGameplayDifficultyTier('normal')).toBe(false);
+    expect(
+      (scene as unknown as { selectGameplayDifficultyTier: (tier: string) => boolean }).selectGameplayDifficultyTier(
+        'normal'
+      )
+    ).toBe(false);
     expect(persist).not.toHaveBeenCalled();
-    expect((scene as unknown as { selectGameplayDifficultyTier: (tier: string) => boolean })
-      .selectGameplayDifficultyTier('high')).toBe(false);
+    expect(
+      (scene as unknown as { selectGameplayDifficultyTier: (tier: string) => boolean }).selectGameplayDifficultyTier(
+        'high'
+      )
+    ).toBe(false);
     expect(playMenuClick).toHaveBeenCalledTimes(1);
     expect(showSaveSlotError).toHaveBeenCalledWith('Unable to save difficulty in this browser context.');
   });
@@ -68,8 +73,7 @@ describe('MenuScene', () => {
     (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = reloadForVisualQualityChange;
     (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
 
-    (scene as unknown as { selectVisualQualityTier: (tier: string) => void })
-      .selectVisualQualityTier('standard');
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void }).selectVisualQualityTier('standard');
 
     expect(playMenuClick).not.toHaveBeenCalled();
     expect(persistVisualQualityTier).not.toHaveBeenCalled();
@@ -87,8 +91,7 @@ describe('MenuScene', () => {
     };
     (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = () => events.push('reload');
 
-    (scene as unknown as { selectVisualQualityTier: (tier: string) => void })
-      .selectVisualQualityTier('high');
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void }).selectVisualQualityTier('high');
 
     expect(events).toEqual(['click', 'persist:high', 'reload']);
   });
@@ -103,12 +106,9 @@ describe('MenuScene', () => {
     (scene as unknown as Record<string, unknown>).showSaveSlotError = showSaveSlotError;
     (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = reloadForVisualQualityChange;
 
-    (scene as unknown as { selectVisualQualityTier: (tier: string) => void })
-      .selectVisualQualityTier('low');
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void }).selectVisualQualityTier('low');
 
-    expect(showSaveSlotError).toHaveBeenCalledWith(
-      'Unable to save visual quality in this browser context.'
-    );
+    expect(showSaveSlotError).toHaveBeenCalledWith('Unable to save visual quality in this browser context.');
     expect(reloadForVisualQualityChange).not.toHaveBeenCalled();
   });
 

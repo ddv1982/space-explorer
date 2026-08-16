@@ -28,14 +28,17 @@ interface CreateActionButtonConfig {
   fontSize?: string;
 }
 
-const BUTTON_PALETTE: Record<Exclude<ActionButtonVariant, 'disabled'>, {
-  background: number;
-  hoverBackground: number;
-  border: number;
-  hoverBorder: number;
-  glow: number;
-  text: string;
-}> = {
+const BUTTON_PALETTE: Record<
+  Exclude<ActionButtonVariant, 'disabled'>,
+  {
+    background: number;
+    hoverBackground: number;
+    border: number;
+    hoverBorder: number;
+    glow: number;
+    text: string;
+  }
+> = {
   primary: {
     background: 0x061f42,
     hoverBackground: 0x0b3f7d,
@@ -112,23 +115,22 @@ function drawButtonBackground(
   }
 }
 
-export function createActionButtonControl(
-  scene: Phaser.Scene,
-  config: CreateActionButtonConfig
-): ActionButtonControl {
+export function createActionButtonControl(scene: Phaser.Scene, config: CreateActionButtonConfig): ActionButtonControl {
   const width = config.width;
   const height = config.height;
   let variant = config.variant ?? 'secondary';
   let visible = true;
 
   const background = scene.add.graphics();
-  const label = scene.add.text(0, 0, config.label, {
-    fontSize: config.fontSize ?? '16px',
-    color: '#f7feff',
-    fontFamily: NEON_FONT.mono,
-    fontStyle: 'bold',
-    align: 'center',
-  }).setOrigin(0.5);
+  const label = scene.add
+    .text(0, 0, config.label, {
+      fontSize: config.fontSize ?? '16px',
+      color: '#f7feff',
+      fontFamily: NEON_FONT.mono,
+      fontStyle: 'bold',
+      align: 'center',
+    })
+    .setOrigin(0.5);
   const hitArea = scene.add.zone(0, 0, width, height).setOrigin(0);
 
   const control: ActionButtonControl = {

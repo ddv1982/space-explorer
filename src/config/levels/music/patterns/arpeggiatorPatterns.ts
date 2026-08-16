@@ -21,8 +21,22 @@ export const arpeggiatorPatterns = {
    * Classic ascending pattern suitable for uplifting moments
    */
   upTriad: (root: number = 0): (number | null)[] => [
-    root, null, root + 4, null, root + 7, null, root + 12, null,
-    null, null, root + 7, null, root + 4, null, null, null
+    root,
+    null,
+    root + 4,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    root + 4,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -30,8 +44,22 @@ export const arpeggiatorPatterns = {
    * Descending resolution pattern, good for cadences
    */
   downTriad: (root: number = 0): (number | null)[] => [
-    root + 12, null, root + 7, null, root + 4, null, root, null,
-    null, null, root + 4, null, root + 7, null, null, null
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root + 4,
+    null,
+    root,
+    null,
+    null,
+    null,
+    root + 4,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -39,8 +67,22 @@ export const arpeggiatorPatterns = {
    * Balanced arch-shaped contour, very musical and pleasing
    */
   upDownTriad: (root: number = 0): (number | null)[] => [
-    root, null, root + 4, null, root + 7, null, root + 12, null,
-    root + 7, null, root + 4, null, null, null, null, null
+    root,
+    null,
+    root + 4,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root + 4,
+    null,
+    null,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -48,8 +90,22 @@ export const arpeggiatorPatterns = {
    * Soft, flowing movement suitable for ambient exploration
    */
   cascade: (root: number = 0): (number | null)[] => [
-    root, null, null, root + 3, null, root + 7, null, null,
-    root + 12, null, null, root + 7, null, root + 3, null, null
+    root,
+    null,
+    null,
+    root + 3,
+    null,
+    root + 7,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    root + 7,
+    null,
+    root + 3,
+    null,
+    null,
   ],
 
   /**
@@ -57,8 +113,22 @@ export const arpeggiatorPatterns = {
    * Stepwise motion creates a smooth, meandering quality
    */
   flowing: (root: number = 0): (number | null)[] => [
-    root, null, root + 2, null, root + 4, null, root + 7, null,
-    root + 5, null, root + 4, null, root + 2, null, root, null
+    root,
+    null,
+    root + 2,
+    null,
+    root + 4,
+    null,
+    root + 7,
+    null,
+    root + 5,
+    null,
+    root + 4,
+    null,
+    root + 2,
+    null,
+    root,
+    null,
   ],
 
   /**
@@ -66,8 +136,22 @@ export const arpeggiatorPatterns = {
    * Minimal note density for atmospheric, contemplative moments
    */
   ambientSparse: (root: number = 0): (number | null)[] => [
-    root, null, null, null, root + 7, null, null, null,
-    root + 4, null, null, null, root + 12, null, null, null
+    root,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    root + 4,
+    null,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -75,8 +159,22 @@ export const arpeggiatorPatterns = {
    * Very consonant and pleasing, works across many harmonic contexts
    */
   pentatonic: (root: number = 0): (number | null)[] => [
-    root, null, root + 2, null, root + 4, null, root + 7, null,
-    root + 9, null, root + 7, null, root + 4, null, root + 2, null
+    root,
+    null,
+    root + 2,
+    null,
+    root + 4,
+    null,
+    root + 7,
+    null,
+    root + 9,
+    null,
+    root + 7,
+    null,
+    root + 4,
+    null,
+    root + 2,
+    null,
   ],
 
   // ============================================================================
@@ -89,8 +187,22 @@ export const arpeggiatorPatterns = {
    * Creates an open, modern jazz-influenced sound
    */
   quartalCascade: (root: number = 0): (number | null)[] => [
-    root, null, root + 5, null, root + 10, null, root + 17, null,
-    null, root + 10, null, root + 5, null, root, null, null
+    root,
+    null,
+    root + 5,
+    null,
+    root + 10,
+    null,
+    root + 17,
+    null,
+    null,
+    root + 10,
+    null,
+    root + 5,
+    null,
+    root,
+    null,
+    null,
   ],
 
   /**
@@ -98,8 +210,22 @@ export const arpeggiatorPatterns = {
    * Ethereal, floating quality suitable for space exploration
    */
   quartalDrift: (root: number = 0): (number | null)[] => [
-    root, null, null, root + 5, null, null, root + 10, null,
-    root + 5, null, null, root, null, root + 5, null, null
+    root,
+    null,
+    null,
+    root + 5,
+    null,
+    null,
+    root + 10,
+    null,
+    root + 5,
+    null,
+    null,
+    root,
+    null,
+    root + 5,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -112,8 +238,22 @@ export const arpeggiatorPatterns = {
    * Airy, open quality that avoids major/minor definition
    */
   suspended2: (root: number = 0): (number | null)[] => [
-    root, null, root + 2, null, root + 7, null, root + 14, null,
-    root + 7, null, root + 2, null, null, root + 7, null, null
+    root,
+    null,
+    root + 2,
+    null,
+    root + 7,
+    null,
+    root + 14,
+    null,
+    root + 7,
+    null,
+    root + 2,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
   ],
 
   /**
@@ -121,8 +261,22 @@ export const arpeggiatorPatterns = {
    * Anticipatory tension, resolves naturally to major triad
    */
   suspended4: (root: number = 0): (number | null)[] => [
-    root, null, root + 5, null, root + 7, null, root + 12, null,
-    null, root + 5, null, root + 7, null, root + 5, null, null
+    root,
+    null,
+    root + 5,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    null,
+    root + 5,
+    null,
+    root + 7,
+    null,
+    root + 5,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -135,8 +289,22 @@ export const arpeggiatorPatterns = {
    * Melancholic but with subtle brightness (jazz minor feel)
    */
   dorianFlair: (root: number = 0): (number | null)[] => [
-    root, null, root + 3, null, root + 7, null, root + 9, null,
-    root + 7, null, root + 9, null, root + 3, null, root, null
+    root,
+    null,
+    root + 3,
+    null,
+    root + 7,
+    null,
+    root + 9,
+    null,
+    root + 7,
+    null,
+    root + 9,
+    null,
+    root + 3,
+    null,
+    root,
+    null,
   ],
 
   /**
@@ -144,8 +312,22 @@ export const arpeggiatorPatterns = {
    * Dark, exotic, Spanish/flamenco-influenced quality
    */
   phrygianMystery: (root: number = 0): (number | null)[] => [
-    root, null, root + 1, null, root + 7, null, root + 12, null,
-    root + 7, null, root + 1, null, null, root + 7, null, null
+    root,
+    null,
+    root + 1,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root + 1,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
   ],
 
   /**
@@ -153,8 +335,22 @@ export const arpeggiatorPatterns = {
    * Dreamy, floating, celestial quality (favored in film scoring)
    */
   lydianDream: (root: number = 0): (number | null)[] => [
-    root, null, root + 4, null, root + 6, null, root + 11, null,
-    root + 6, null, root + 4, null, root + 6, null, null, null
+    root,
+    null,
+    root + 4,
+    null,
+    root + 6,
+    null,
+    root + 11,
+    null,
+    root + 6,
+    null,
+    root + 4,
+    null,
+    root + 6,
+    null,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -167,8 +363,22 @@ export const arpeggiatorPatterns = {
    * Creates crystalline clarity and vast spatial impression
    */
   wideLeap: (root: number = 0): (number | null)[] => [
-    root, null, null, null, root + 12, null, null, root + 7,
-    null, null, root + 19, null, null, root + 12, null, null
+    root,
+    null,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    root + 19,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
   ],
 
   /**
@@ -176,8 +386,22 @@ export const arpeggiatorPatterns = {
    * Spacious feel with clear registral separation
    */
   octaveDance: (root: number = 0): (number | null)[] => [
-    root, null, root + 12, null, root, null, root + 24, null,
-    root + 12, null, root, null, root + 12, null, root, null
+    root,
+    null,
+    root + 12,
+    null,
+    root,
+    null,
+    root + 24,
+    null,
+    root + 12,
+    null,
+    root,
+    null,
+    root + 12,
+    null,
+    root,
+    null,
   ],
 
   // ============================================================================
@@ -190,8 +414,22 @@ export const arpeggiatorPatterns = {
    * Classic antecedent-consequent phrase structure
    */
   callResponse: (root: number = 0): (number | null)[] => [
-    root, root + 4, root + 7, null, null, null, null, null,
-    root + 12, root + 7, root + 4, null, null, null, null, null
+    root,
+    root + 4,
+    root + 7,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root + 12,
+    root + 7,
+    root + 4,
+    null,
+    null,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -199,8 +437,22 @@ export const arpeggiatorPatterns = {
    * Creates the illusion of a responding voice in a different register
    */
   echoPhrase: (root: number = 0): (number | null)[] => [
-    root, null, root + 4, root + 7, null, null, null, null,
-    root + 12, null, root + 16, root + 19, null, null, null, null
+    root,
+    null,
+    root + 4,
+    root + 7,
+    null,
+    null,
+    null,
+    null,
+    root + 12,
+    null,
+    root + 16,
+    root + 19,
+    null,
+    null,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -213,8 +465,22 @@ export const arpeggiatorPatterns = {
    * Each iteration trails off like a delay effect
    */
   delayTrail: (root: number = 0): (number | null)[] => [
-    root, null, root + 7, null, root + 4, null, root + 7, null,
-    root + 3, null, root + 7, null, root + 4, null, root + 3, null
+    root,
+    null,
+    root + 7,
+    null,
+    root + 4,
+    null,
+    root + 7,
+    null,
+    root + 3,
+    null,
+    root + 7,
+    null,
+    root + 4,
+    null,
+    root + 3,
+    null,
   ],
 
   /**
@@ -222,8 +488,22 @@ export const arpeggiatorPatterns = {
    * Resonant, cathedral-like spaciousness
    */
   reverbBloom: (root: number = 0): (number | null)[] => [
-    root, null, null, null, root + 7, null, null, null,
-    null, null, root + 12, null, null, null, root + 7, null
+    root,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
   ],
 
   // ============================================================================
@@ -236,8 +516,22 @@ export const arpeggiatorPatterns = {
    * Constant motion suitable for pursuit and high-tension scenes
    */
   drivingPulse: (root: number = 0): (number | null)[] => [
-    root, null, root + 4, root + 7, null, root + 4, root, null,
-    root + 7, root + 12, null, root + 7, root + 4, null, root + 7, null
+    root,
+    null,
+    root + 4,
+    root + 7,
+    null,
+    root + 4,
+    root,
+    null,
+    root + 7,
+    root + 12,
+    null,
+    root + 7,
+    root + 4,
+    null,
+    root + 7,
+    null,
   ],
 
   /**
@@ -245,8 +539,22 @@ export const arpeggiatorPatterns = {
    * Sharp, percussive articulation for combat scenes
    */
   aggressiveAttack: (root: number = 0): (number | null)[] => [
-    root, root + 7, null, root + 12, null, root + 7, root, null,
-    null, root + 12, root + 7, null, root, null, root + 7, root + 12
+    root,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    root,
+    null,
+    null,
+    root + 12,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 7,
+    root + 12,
   ],
 
   /**
@@ -254,8 +562,22 @@ export const arpeggiatorPatterns = {
    * Heavy, driving sound inspired by rock/metal power chords
    */
   powerChordArp: (root: number = 0): (number | null)[] => [
-    root, null, root + 7, null, root + 12, null, root + 7, root,
-    null, root + 12, null, root + 7, null, root, null, root + 12
+    root,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    root,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 12,
   ],
 
   /**
@@ -263,8 +585,22 @@ export const arpeggiatorPatterns = {
    * Uses semitone dissonance to create unease and anticipation
    */
   tensionChromatic: (root: number = 0): (number | null)[] => [
-    root, root + 1, root, root + 4, root, root - 1, root, null,
-    root + 7, root + 8, root + 7, root + 4, null, root + 7, root + 6, root + 7
+    root,
+    root + 1,
+    root,
+    root + 4,
+    root,
+    root - 1,
+    root,
+    null,
+    root + 7,
+    root + 8,
+    root + 7,
+    root + 4,
+    null,
+    root + 7,
+    root + 6,
+    root + 7,
   ],
 
   /**
@@ -272,8 +608,22 @@ export const arpeggiatorPatterns = {
    * Continuous upward energy surge for rising action
    */
   forwardMomentum: (root: number = 0): (number | null)[] => [
-    root, root + 2, root + 4, root + 7, null, root + 4, root + 7, root + 12,
-    null, root + 7, root + 12, root + 16, null, root + 12, root + 7, root
+    root,
+    root + 2,
+    root + 4,
+    root + 7,
+    null,
+    root + 4,
+    root + 7,
+    root + 12,
+    null,
+    root + 7,
+    root + 12,
+    root + 16,
+    null,
+    root + 12,
+    root + 7,
+    root,
   ],
 
   /**
@@ -281,8 +631,22 @@ export const arpeggiatorPatterns = {
    * Military-inspired rhythm with strong downbeat emphasis
    */
   martialStomp: (root: number = 0): (number | null)[] => [
-    root, null, null, root + 7, root + 7, null, root + 12, null,
-    root + 7, null, root, null, root + 12, root + 7, root, null
+    root,
+    null,
+    null,
+    root + 7,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 12,
+    root + 7,
+    root,
+    null,
   ],
 
   /**
@@ -290,8 +654,22 @@ export const arpeggiatorPatterns = {
    * Fits-and-starts motion suggesting frantic activity
    */
   urgentDash: (root: number = 0): (number | null)[] => [
-    root, root + 4, root + 7, root + 12, null, null, root + 7, root + 4,
-    null, null, root + 12, root + 16, null, root + 12, root + 7, null
+    root,
+    root + 4,
+    root + 7,
+    root + 12,
+    null,
+    null,
+    root + 7,
+    root + 4,
+    null,
+    null,
+    root + 12,
+    root + 16,
+    null,
+    root + 12,
+    root + 7,
+    null,
   ],
 
   // ============================================================================
@@ -304,8 +682,22 @@ export const arpeggiatorPatterns = {
    * For canyon claustrophobia scenes (Obsidian Maw encounters)
    */
   claustrophobicTight: (root: number = 0): (number | null)[] => [
-    root, root + 1, root, root + 3, root + 1, root, root + 3, root + 1,
-    root + 6, root + 5, root + 6, root + 7, root + 6, root + 5, root + 3, root
+    root,
+    root + 1,
+    root,
+    root + 3,
+    root + 1,
+    root,
+    root + 3,
+    root + 1,
+    root + 6,
+    root + 5,
+    root + 6,
+    root + 7,
+    root + 6,
+    root + 5,
+    root + 3,
+    root,
   ],
 
   /**
@@ -313,8 +705,22 @@ export const arpeggiatorPatterns = {
    * Suggests the emptiness of space (Terminus Black approach)
    */
   cosmicVastness: (root: number = 0): (number | null)[] => [
-    root, null, null, null, null, null, root + 12, null,
-    null, null, root + 24, null, null, null, root + 12, null
+    root,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    null,
+    root + 24,
+    null,
+    null,
+    null,
+    root + 12,
+    null,
   ],
 
   /**
@@ -322,8 +728,22 @@ export const arpeggiatorPatterns = {
    * Dissonant intervals create psychological unease
    */
   darkChromatic: (root: number = 0): (number | null)[] => [
-    root, root + 1, null, root + 6, root + 7, null, root + 1, root,
-    root + 6, root + 7, root + 6, null, root + 1, root, null, null
+    root,
+    root + 1,
+    null,
+    root + 6,
+    root + 7,
+    null,
+    root + 1,
+    root,
+    root + 6,
+    root + 7,
+    root + 6,
+    null,
+    root + 1,
+    root,
+    null,
+    null,
   ],
 
   /**
@@ -331,8 +751,22 @@ export const arpeggiatorPatterns = {
    * Gradual movement toward dissonance and back
    */
   ominousDrift: (root: number = 0): (number | null)[] => [
-    root, null, null, root + 3, null, null, root + 6, null,
-    null, root + 6, null, null, root + 3, null, null, root
+    root,
+    null,
+    null,
+    root + 3,
+    null,
+    null,
+    root + 6,
+    null,
+    null,
+    root + 6,
+    null,
+    null,
+    root + 3,
+    null,
+    null,
+    root,
   ],
 
   /**
@@ -340,8 +774,22 @@ export const arpeggiatorPatterns = {
    * Unyielding forward motion suggesting predatory pursuit
    */
   stalkingPursuit: (root: number = 0): (number | null)[] => [
-    root, null, root + 7, root + 7, null, root + 12, null, root + 7,
-    root, null, root + 7, null, root + 12, root + 7, root, null
+    root,
+    null,
+    root + 7,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    root,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    root + 7,
+    root,
+    null,
   ],
 
   /**
@@ -349,8 +797,22 @@ export const arpeggiatorPatterns = {
    * Sequential semitone clusters for peak intensity
    */
   tensionMaximum: (root: number = 0): (number | null)[] => [
-    root, root + 1, root + 2, root + 3, null, root + 2, root + 1, root,
-    root + 7, root + 8, root + 7, root + 6, null, root + 7, root + 8, root + 7
+    root,
+    root + 1,
+    root + 2,
+    root + 3,
+    null,
+    root + 2,
+    root + 1,
+    root,
+    root + 7,
+    root + 8,
+    root + 7,
+    root + 6,
+    null,
+    root + 7,
+    root + 8,
+    root + 7,
   ],
 
   /**
@@ -358,8 +820,22 @@ export const arpeggiatorPatterns = {
    * Dense, powerful pattern for ultimate encounters
    */
   finalBossIntensity: (root: number = 0): (number | null)[] => [
-    root, root + 7, root + 12, root + 7, root, root + 7, root + 12, root + 19,
-    root + 12, root + 7, root, root + 7, root + 12, root + 7, root, null
+    root,
+    root + 7,
+    root + 12,
+    root + 7,
+    root,
+    root + 7,
+    root + 12,
+    root + 19,
+    root + 12,
+    root + 7,
+    root,
+    root + 7,
+    root + 12,
+    root + 7,
+    root,
+    null,
   ],
 
   /**
@@ -367,7 +843,21 @@ export const arpeggiatorPatterns = {
    * Suggests signals from an unknown source in deep space
    */
   voidBeacon: (root: number = 0): (number | null)[] => [
-    root, null, null, null, root + 7, null, null, null,
-    null, root + 12, null, null, null, root + 7, null, null
+    root,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
   ],
 };

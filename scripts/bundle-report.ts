@@ -37,7 +37,7 @@ async function walkFiles(dir: string): Promise<string[]> {
       }
 
       return [fullPath];
-    }),
+    })
   );
 
   return files.flat();
@@ -177,9 +177,7 @@ async function main() {
     process.exit(1);
   }
 
-  const relevantFiles = files
-    .filter((filePath) => !filePath.endsWith('.map'))
-    .sort((a, b) => a.localeCompare(b));
+  const relevantFiles = files.filter((filePath) => !filePath.endsWith('.map')).sort((a, b) => a.localeCompare(b));
 
   if (relevantFiles.length === 0) {
     console.error('No build files found in dist. Run "bun run build" first.');
@@ -195,7 +193,7 @@ async function main() {
         rawBytes: content.byteLength,
         gzipBytes: gzipSync(content).byteLength,
       };
-    }),
+    })
   );
 
   report.sort((a, b) => b.rawBytes - a.rawBytes);
@@ -225,38 +223,30 @@ async function main() {
   const largest = report[0];
 
   if ((largest?.rawBytes ?? 0) > maxAssetKb * 1024) {
-    violations.push(
-      `Largest asset ${largest.file} is ${formatKb(largest.rawBytes)} (max ${maxAssetKb.toFixed(2)} kB)`,
-    );
+    violations.push(`Largest asset ${largest.file} is ${formatKb(largest.rawBytes)} (max ${maxAssetKb.toFixed(2)} kB)`);
   }
 
   if (totalRawBytes > maxTotalKb * 1024) {
-    violations.push(
-      `Total dist size is ${formatKb(totalRawBytes)} (max ${maxTotalKb.toFixed(2)} kB)`,
-    );
+    violations.push(`Total dist size is ${formatKb(totalRawBytes)} (max ${maxTotalKb.toFixed(2)} kB)`);
   }
 
   if ((largestJs?.rawBytes ?? 0) > maxJsAssetKb * 1024) {
     violations.push(
-      `Largest JS asset ${largestJs.file} is ${formatKb(largestJs.rawBytes)} (max ${maxJsAssetKb.toFixed(2)} kB)`,
+      `Largest JS asset ${largestJs.file} is ${formatKb(largestJs.rawBytes)} (max ${maxJsAssetKb.toFixed(2)} kB)`
     );
   }
 
   if (totalJsRawBytes > maxTotalJsKb * 1024) {
-    violations.push(
-      `Total JS size is ${formatKb(totalJsRawBytes)} (max ${maxTotalJsKb.toFixed(2)} kB)`,
-    );
+    violations.push(`Total JS size is ${formatKb(totalJsRawBytes)} (max ${maxTotalJsKb.toFixed(2)} kB)`);
   }
 
   if (totalAppJsRawBytes > maxAppJsKb * 1024) {
-    violations.push(
-      `Application JS size is ${formatKb(totalAppJsRawBytes)} (max ${maxAppJsKb.toFixed(2)} kB)`,
-    );
+    violations.push(`Application JS size is ${formatKb(totalAppJsRawBytes)} (max ${maxAppJsKb.toFixed(2)} kB)`);
   }
 
   if (violations.length === 0) {
     console.log(
-      `CHECK PASSED (largest <= ${maxAssetKb.toFixed(2)} kB, total <= ${maxTotalKb.toFixed(2)} kB, largest JS <= ${maxJsAssetKb.toFixed(2)} kB, total JS <= ${maxTotalJsKb.toFixed(2)} kB, app JS <= ${maxAppJsKb.toFixed(2)} kB)`,
+      `CHECK PASSED (largest <= ${maxAssetKb.toFixed(2)} kB, total <= ${maxTotalKb.toFixed(2)} kB, largest JS <= ${maxJsAssetKb.toFixed(2)} kB, total JS <= ${maxTotalJsKb.toFixed(2)} kB, app JS <= ${maxAppJsKb.toFixed(2)} kB)`
     );
     return;
   }

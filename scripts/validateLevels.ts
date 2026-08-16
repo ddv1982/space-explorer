@@ -61,7 +61,12 @@ function levelLabel(level: LevelConfig): string {
   return `${level.name} (${level.planetName})`;
 }
 
-function validateHazard(levelName: string, section: LevelSectionConfig, hazard: ScriptedHazardConfig, index: number): void {
+function validateHazard(
+  levelName: string,
+  section: LevelSectionConfig,
+  hazard: ScriptedHazardConfig,
+  index: number
+): void {
   const prefix = `${section.id} hazard[${index}]`;
 
   if (hazard.cadenceMs !== undefined && hazard.cadenceMs <= 0) {
@@ -196,10 +201,7 @@ function validateSectionSequence(level: LevelConfig): void {
   }
 
   if (Math.abs(last.endProgress - expectedTerminalProgress) > 1e-6) {
-    pushError(
-      name,
-      `last section must end at progress ${expectedTerminalProgress.toFixed(2)}`
-    );
+    pushError(name, `last section must end at progress ${expectedTerminalProgress.toFixed(2)}`);
   }
 
   for (let i = 0; i < sorted.length; i++) {
@@ -343,7 +345,10 @@ function validatePacingGuardrails(level: LevelConfig): void {
   const hasBuild = sorted.some((section) => section.phase === 'build');
   const hasHazardOrClimax = sorted.some((section) => section.phase === 'hazard' || section.phase === 'climax');
   if (!hasBuild || !hasHazardOrClimax) {
-    pushWarning(name, 'section progression should include both build and hazard/climax phases to create a readable difficulty arc');
+    pushWarning(
+      name,
+      'section progression should include both build and hazard/climax phases to create a readable difficulty arc'
+    );
   }
 
   if (level.coreGameplayIdea.trim().length < 24) {
@@ -359,7 +364,10 @@ function validatePacingGuardrails(level: LevelConfig): void {
       .some((word) => summary.includes(word));
   });
   if (!motifIsReferenced) {
-    pushWarning(name, 'section summaries should echo or twist the Dominant Motif rather than reading as disconnected pressure beats');
+    pushWarning(
+      name,
+      'section summaries should echo or twist the Dominant Motif rather than reading as disconnected pressure beats'
+    );
   }
 
   const musicIntensities = sorted
@@ -380,12 +388,12 @@ function validatePacingGuardrails(level: LevelConfig): void {
   let previousIntensity: number | null = null;
   const seenHazards = new Set<ScriptedHazardConfig['type']>();
   for (const section of sorted) {
-    const cadences = section.hazardEvents
-      ?.map((hazard) => hazard.cadenceMs)
-      .filter((value): value is number => value !== undefined) ?? [];
-    const intensities = section.hazardEvents
-      ?.map((hazard) => hazard.intensity)
-      .filter((value): value is number => value !== undefined) ?? [];
+    const cadences =
+      section.hazardEvents?.map((hazard) => hazard.cadenceMs).filter((value): value is number => value !== undefined) ??
+      [];
+    const intensities =
+      section.hazardEvents?.map((hazard) => hazard.intensity).filter((value): value is number => value !== undefined) ??
+      [];
 
     const cadence = average(cadences);
     const intensity = average(intensities);
@@ -514,11 +522,17 @@ function validateMarkedAces(level: LevelConfig, levelNumber: number): void {
   }
 
   if (levelNumber < ACE_MIN_LEVEL || levelNumber > ACE_MAX_LEVEL) {
-    pushError(name, `marked aces are gated to levels ${ACE_MIN_LEVEL}-${ACE_MAX_LEVEL}; found ${levelAceCount} on level ${levelNumber}`);
+    pushError(
+      name,
+      `marked aces are gated to levels ${ACE_MIN_LEVEL}-${ACE_MAX_LEVEL}; found ${levelAceCount} on level ${levelNumber}`
+    );
   }
 
   if (levelAceCount > ACE_MAX_PER_LEVEL) {
-    pushError(name, `${levelAceCount} aces exceed the per-level limit of ${ACE_MAX_PER_LEVEL}; keep placements sparse enough to read as priority targets`);
+    pushError(
+      name,
+      `${levelAceCount} aces exceed the per-level limit of ${ACE_MAX_PER_LEVEL}; keep placements sparse enough to read as priority targets`
+    );
   }
 }
 

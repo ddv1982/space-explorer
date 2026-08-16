@@ -36,8 +36,7 @@ export class Sower extends EnemyBase {
 
     this.lastMineTime = time;
     const mine =
-      (this.mineGroup.getFirstDead(false) as Mine | null) ??
-      (this.mineGroup.get(this.x, this.y + 14) as Mine | null);
+      (this.mineGroup.getFirstDead(false) as Mine | null) ?? (this.mineGroup.get(this.x, this.y + 14) as Mine | null);
     if (mine) {
       mine.launch(this.x, this.y + 14);
     }

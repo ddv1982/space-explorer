@@ -56,12 +56,7 @@ export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
     const { main } = this.scene.cameras;
     const padding = 20;
 
-    if (
-      this.x < -padding ||
-      this.x > main.width + padding ||
-      this.y > main.height + padding ||
-      this.y < -padding
-    ) {
+    if (this.x < -padding || this.x > main.width + padding || this.y > main.height + padding || this.y < -padding) {
       this.kill();
     }
   }

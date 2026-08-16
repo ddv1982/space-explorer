@@ -229,11 +229,7 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     const nextX = Phaser.Math.Linear(this.x, targetX, followAlpha);
     const nextY = Phaser.Math.Linear(this.y, targetY, followAlpha);
     this.setPosition(nextX, nextY);
-    this.rotation = Phaser.Math.Linear(
-      this.rotation,
-      player.rotation * 0.75,
-      getFrameDampingAlpha(0.12, delta)
-    );
+    this.rotation = Phaser.Math.Linear(this.rotation, player.rotation * 0.75, getFrameDampingAlpha(0.12, delta));
   }
 
   private updateBodyFromGameObject(): void {

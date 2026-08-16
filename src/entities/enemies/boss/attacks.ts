@@ -85,7 +85,15 @@ function fireSpiral(context: BossAttackContext): void {
   const spiralAngles = context.attackStyle === 'maelstrom' ? [baseAngle, -baseAngle + angleStep / 2] : [baseAngle];
 
   for (const spiralAngle of spiralAngles) {
-    fireRadialPattern(context, context.x, context.y + 30, shotCount, spiralAngle, angleStep, context.phase2BulletSpeedScale);
+    fireRadialPattern(
+      context,
+      context.x,
+      context.y + 30,
+      shotCount,
+      spiralAngle,
+      angleStep,
+      context.phase2BulletSpeedScale
+    );
   }
 }
 
@@ -125,7 +133,15 @@ function fireBulwarkSpread(context: BossAttackContext): void {
   const shotCount = Phaser.Math.Clamp(Math.round(context.phase1SpreadShotCount / 2), 3, 6);
   const arcDegrees = Phaser.Math.Clamp(context.phase1SpreadArcDegrees * 0.3, 14, 30);
   [-28, 0, 28].forEach((offset) => {
-    fireArc(context, context.x + offset, context.y + 26, shotCount, arcDegrees, context.phase1BulletSpeedScale, offset * 0.08);
+    fireArc(
+      context,
+      context.x + offset,
+      context.y + 26,
+      shotCount,
+      arcDegrees,
+      context.phase1BulletSpeedScale,
+      offset * 0.08
+    );
   });
 }
 

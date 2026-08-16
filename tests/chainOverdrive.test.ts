@@ -11,16 +11,11 @@ mock.module('../src/systems/AudioManager', () => ({
 }));
 
 const { PLAYER_CONFIG } = await import('../src/config/playerConfig');
-const {
-  isMaxChainMultiplier,
-  OVERDRIVE_COOLDOWN_SCALE,
-  resolvePlayerFireCooldownMs,
-} = await import('../src/systems/chainOverdrive');
+const { isMaxChainMultiplier, OVERDRIVE_COOLDOWN_SCALE, resolvePlayerFireCooldownMs } =
+  await import('../src/systems/chainOverdrive');
 const { CHAIN_MAX_MULTIPLIER, ScoreManager } = await import('../src/systems/ScoreManager');
 const { getLevelConfig } = await import('../src/config/LevelsConfig');
-const { createGameSceneGameplayFrameBehavior } = await import(
-  '../src/scenes/gameScene/gameplayFrameBehavior'
-);
+const { createGameSceneGameplayFrameBehavior } = await import('../src/scenes/gameScene/gameplayFrameBehavior');
 
 describe('resolvePlayerFireCooldownMs', () => {
   test('leaves the cooldown untouched below the max chain multiplier', () => {

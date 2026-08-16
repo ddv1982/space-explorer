@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
+import { assignPrivateState, readPrivateState } from './helpers/privateState';
 
 mockPhaserModule();
 
@@ -11,18 +12,19 @@ describe('Boss', () => {
     const setVelocityY = mock();
     const updateMovement = mock();
 
-    const boss = Object.create(Boss.prototype) as BossInstance;
-    (boss as unknown as Record<string, unknown>).arrived = false;
-    (boss as unknown as Record<string, unknown>).y = 80;
-    (boss as unknown as Record<string, unknown>).targetY = 80;
-    (boss as unknown as Record<string, unknown>).phaseStartedAt = 0;
-    (boss as unknown as Record<string, unknown>).setVelocityY = setVelocityY;
-    (boss as unknown as Record<string, unknown>).updateMovement = updateMovement;
+    const boss = assignPrivateState(Object.create(Boss.prototype) as BossInstance, {
+      arrived: false,
+      y: 80,
+      targetY: 80,
+      phaseStartedAt: 0,
+      setVelocityY,
+      updateMovement,
+    });
 
     boss.updateBehavior(500, 16);
 
-    expect((boss as unknown as Record<string, unknown>).arrived).toBe(true);
-    expect((boss as unknown as Record<string, unknown>).phaseStartedAt).toBe(500);
+    expect(readPrivateState<boolean>(boss, 'arrived')).toBe(true);
+    expect(readPrivateState<number>(boss, 'phaseStartedAt')).toBe(500);
     expect(setVelocityY).toHaveBeenCalledWith(0);
     expect(updateMovement).not.toHaveBeenCalled();
   });

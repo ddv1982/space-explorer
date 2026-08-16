@@ -33,9 +33,7 @@ export interface MenuLayoutPlan {
 
 export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const layout = getViewportLayout(scene);
-  const compact =
-    layout.height < MENU_COMPACT_HEIGHT_BREAKPOINT ||
-    layout.width < MENU_COMPACT_WIDTH_BREAKPOINT;
+  const compact = layout.height < MENU_COMPACT_HEIGHT_BREAKPOINT || layout.width < MENU_COMPACT_WIDTH_BREAKPOINT;
   const veryShortCompact = compact && layout.height < MENU_COMPACT_VERY_SHORT_HEIGHT;
   const safeViewportWidth = Math.max(280, layout.width);
 
@@ -63,15 +61,16 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
   const visualQualityY = difficultyY + qualityHeight + (compact ? 5 : 8);
   const sliderStartY = visualQualityY + qualityHeight + (shortLandscape ? 0 : compact ? 8 : 12);
   const twoColumnSettings = layout.width >= 460;
-  const settingsSliderWidth = twoColumnSettings
-    ? Math.min(330, (outerFrameWidth - 20) / 2)
-    : qualityWidth;
+  const settingsSliderWidth = twoColumnSettings ? Math.min(330, (outerFrameWidth - 20) / 2) : qualityWidth;
   const settingsSliderSpacing = shortLandscape ? 52 : compact ? 54 : 62;
   const sliderPositions = twoColumnSettings
     ? [
         { x: layout.centerX - settingsSliderWidth - (shortLandscape ? 5 : 10), y: sliderStartY },
         { x: layout.centerX + (shortLandscape ? 5 : 10), y: sliderStartY },
-        { x: layout.centerX - settingsSliderWidth - (shortLandscape ? 5 : 10), y: sliderStartY + settingsSliderSpacing },
+        {
+          x: layout.centerX - settingsSliderWidth - (shortLandscape ? 5 : 10),
+          y: sliderStartY + settingsSliderSpacing,
+        },
         { x: layout.centerX + (shortLandscape ? 5 : 10), y: sliderStartY + settingsSliderSpacing },
       ]
     : [0, 1, 2, 3].map((index) => ({
@@ -100,9 +99,7 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
       (Math.max(0, tileBottomLimit - tileTopMinY) - (tileRows - 1) * tileRowGap) / tileRows
     );
   }
-  let tileHeight = compact
-    ? Math.max(52, Math.min(compactTargetTileHeight, compactMaxTileHeight))
-    : 180;
+  let tileHeight = compact ? Math.max(52, Math.min(compactTargetTileHeight, compactMaxTileHeight)) : 180;
 
   if (shortLandscape) tileHeight = 72;
   const tileBlockHeight = shortLandscape ? tileHeight : tileRows * tileHeight + (tileRows - 1) * tileRowGap;
@@ -118,7 +115,9 @@ export function createMenuLayoutPlan(scene: Phaser.Scene): MenuLayoutPlan {
     const row = shortLandscape ? 0 : Math.floor(index / tileColumns);
 
     return {
-      x: (shortLandscape ? layout.centerX - (4 * tileWidth + 3 * tileGap) / 2 : tileStartX) + column * (tileWidth + tileGap),
+      x:
+        (shortLandscape ? layout.centerX - (4 * tileWidth + 3 * tileGap) / 2 : tileStartX) +
+        column * (tileWidth + tileGap),
       y: tileRowY + row * (tileHeight + tileRowGap),
     };
   });

@@ -172,11 +172,9 @@ export class EnemyPool {
     return entity;
   }
 
-  private spawnArmedEnemy<T extends { spawn(x: number, y: number): void; setEnemyBulletGroup(group: Phaser.Physics.Arcade.Group): void }>(
-    key: PoolGroupKey,
-    x: number,
-    y: number
-  ): T | null {
+  private spawnArmedEnemy<
+    T extends { spawn(x: number, y: number): void; setEnemyBulletGroup(group: Phaser.Physics.Arcade.Group): void },
+  >(key: PoolGroupKey, x: number, y: number): T | null {
     const enemy = this.spawnFromGroup<T>(key, x, y);
     if (enemy) {
       enemy.setEnemyBulletGroup(this.ensureGroup('enemyBullet'));
@@ -282,7 +280,7 @@ export class EnemyPool {
 
   spawnBoss(x: number, y: number, config?: BossConfig): Boss | null {
     const bossGroup = this.ensureGroup('boss');
-    const activeBoss = this.getGroupChildrenSafely(bossGroup).find(c => c.active) as Boss | undefined;
+    const activeBoss = this.getGroupChildrenSafely(bossGroup).find((c) => c.active) as Boss | undefined;
     if (activeBoss) return null;
 
     const boss = this.acquireFromGroup<Boss>(bossGroup, x, y);
@@ -386,13 +384,9 @@ export class EnemyPool {
     ];
   }
 
-  private appendGroupChildren(
-    enemies: Phaser.Physics.Arcade.Sprite[],
-    key: PoolGroupKey,
-    ensure = false
-  ): void {
+  private appendGroupChildren(enemies: Phaser.Physics.Arcade.Sprite[], key: PoolGroupKey, ensure = false): void {
     const group = ensure ? this.ensureGroup(key) : this.groups[key];
-    this.getGroupChildrenSafely(group).forEach(c => enemies.push(c as Phaser.Physics.Arcade.Sprite));
+    this.getGroupChildrenSafely(group).forEach((c) => enemies.push(c as Phaser.Physics.Arcade.Sprite));
   }
 
   private getGroupChildrenSafely(group: Phaser.Physics.Arcade.Group | undefined): Phaser.GameObjects.GameObject[] {

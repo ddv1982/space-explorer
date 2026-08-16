@@ -31,17 +31,20 @@ function parseExplicitUpgrades(raw: string): PlayerUpgradeLevels | null {
   const parts = raw.split(',').map((part) => Number.parseInt(part.trim(), 10));
   // The fifth turret value is optional; a four-value legacy loadout leaves turrets stock.
   if (
-    (parts.length !== UPGRADE_KEYS.length && parts.length !== UPGRADE_KEYS.length - 1)
-    || parts.some((value) => !Number.isFinite(value))
+    (parts.length !== UPGRADE_KEYS.length && parts.length !== UPGRADE_KEYS.length - 1) ||
+    parts.some((value) => !Number.isFinite(value))
   ) {
     return null;
   }
 
-  return UPGRADE_KEYS.reduce<PlayerUpgradeLevels>((upgrades, key, index) => {
-    const maxLevel = getUpgradeByKey(key).maxLevel;
-    upgrades[key] = Math.min(maxLevel, Math.max(0, parts[index] ?? 0));
-    return upgrades;
-  }, { ...STOCK_UPGRADES });
+  return UPGRADE_KEYS.reduce<PlayerUpgradeLevels>(
+    (upgrades, key, index) => {
+      const maxLevel = getUpgradeByKey(key).maxLevel;
+      upgrades[key] = Math.min(maxLevel, Math.max(0, parts[index] ?? 0));
+      return upgrades;
+    },
+    { ...STOCK_UPGRADES }
+  );
 }
 
 function resolveJumpUpgrades(raw: string | null, level: number): PlayerUpgradeLevels {

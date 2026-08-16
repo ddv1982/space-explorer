@@ -1,48 +1,72 @@
 import Phaser from 'phaser';
 
+import type { getActiveSection } from '@/config/LevelsConfig';
+import type { PowerUpType } from '@/entities/PowerUp';
 import { isTouchMobileDevice } from '@/utils/device';
 import { onHardwareKeyboardDetected } from '@/systems/hardwareKeyboardDetection';
+import type { LevelManager } from '@/systems/LevelManager';
+import type { getPlayerState, PlayerStateData } from '@/systems/PlayerState';
 
-import type {
-  GameSceneCreateGameplayBridge,
-  GameSceneCreateHudBridge,
-  GameSceneCreateInputBridge,
-  GameSceneCreatePauseBridge,
-  GameSceneCreateRuntimeBridge,
-  GameSceneCreateWorldBridge,
-} from './bootstrapContracts';
 import { createHudAndTransitions } from './createHudAndTransitions';
 import { createInputAndPlayer } from './createInputAndPlayer';
 import { createPoolsAndGameplaySystems } from './createPoolsAndGameplaySystems';
 import { createWorldPresentation } from './createWorldPresentation';
 import { initializeLevelRuntime } from './initializeLevelRuntime';
 import { createPauseViewportWiring } from './pauseViewportWiring';
+import type { createGameSceneRuntimeLifecycle } from './runtimeLifecycle';
 import { showControlsHint } from './showControlsHint';
 
-/**
- * Create-time surface required by bootstrap orchestration.
- * GameScene exposes this as a private adapter so its owned members remain private.
- */
-export type GameSceneCreateBootstrapBridge = {
+type PlayerRunState = ReturnType<typeof getPlayerState>;
+type LevelConfig = ReturnType<LevelManager['getLevelConfig']>;
+type InitialSection = ReturnType<typeof getActiveSection>;
+type RuntimeLifecycle = Pick<
+  ReturnType<typeof createGameSceneRuntimeLifecycle>,
+  'registerLifecycleHandlers' | 'registerScaleHandlers' | 'registerRuntimeHandlers'
+>;
+
+export type GameSceneBootstrapHost = {
   scene: Phaser.Scene;
-} & GameSceneCreateRuntimeBridge
-  & GameSceneCreateWorldBridge
-  & GameSceneCreateInputBridge
-  & GameSceneCreateGameplayBridge
-  & GameSceneCreateHudBridge
-  & GameSceneCreatePauseBridge;
+  runtimeLifecycle: RuntimeLifecycle;
+  previousHudShieldCount: number | null;
+  resetRuntimeState: () => void;
+  initializePlayerRunState: () => PlayerRunState;
+  initializeAudioForLevel: (levelConfig: LevelConfig) => {
+    initialSection: InitialSection;
+    initialSectionProgress: number;
+  };
+  syncViewportBounds: () => void;
+  getPlayerSpawnPoint: () => { x: number; y: number };
+  applyPowerUp: (type: PowerUpType) => void;
+  isTerminalTransitionActive: () => boolean;
+  isGameplayLocked: () => boolean;
+  stopPlayerMotion: () => void;
+  captureCurrentRunStateForSave: () => PlayerStateData;
+  canSaveCurrentRun: () => boolean;
+};
 
-type RuntimeBootstrapScene = GameSceneCreateRuntimeBridge;
-type WorldBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateRuntimeBridge & GameSceneCreateWorldBridge;
-type InputBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateInputBridge;
-type GameplayBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateGameplayBridge & Pick<GameSceneCreateWorldBridge, 'effectsManager'> & Pick<GameSceneCreateInputBridge, 'player'>;
-type HudBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreateHudBridge & Pick<GameSceneCreateInputBridge, 'player'>;
-type PauseBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & GameSceneCreatePauseBridge & Pick<GameSceneCreateInputBridge, 'mobileControls'> & Pick<GameSceneCreateGameplayBridge, 'flow'>;
-type HardwareKeyboardBootstrapScene = Pick<GameSceneCreateBootstrapBridge, 'scene'> & Pick<GameSceneCreateInputBridge, 'mobileControls'>;
+export type GameSceneBootstrapRuntime = {
+  levelManager: ReturnType<typeof initializeLevelRuntime>['levelManager'];
+  scaledBossConfig: ReturnType<typeof initializeLevelRuntime>['scaledBossConfig'];
+  parallax: ReturnType<typeof createWorldPresentation>['parallax'];
+  effectsManager: ReturnType<typeof createWorldPresentation>['effectsManager'];
+  mobileControls: ReturnType<typeof createInputAndPlayer>['mobileControls'];
+  inputManager: ReturnType<typeof createInputAndPlayer>['inputManager'];
+  player: ReturnType<typeof createInputAndPlayer>['player'];
+  bulletPool: ReturnType<typeof createPoolsAndGameplaySystems>['bulletPool'];
+  enemyPool: ReturnType<typeof createPoolsAndGameplaySystems>['enemyPool'];
+  lastLifeHelperWing: ReturnType<typeof createPoolsAndGameplaySystems>['lastLifeHelperWing'];
+  picketTurrets: ReturnType<typeof createPoolsAndGameplaySystems>['picketTurrets'];
+  waveManager: ReturnType<typeof createPoolsAndGameplaySystems>['waveManager'];
+  collisionManager: ReturnType<typeof createPoolsAndGameplaySystems>['collisionManager'];
+  scoreManager: ReturnType<typeof createPoolsAndGameplaySystems>['scoreManager'];
+  grazeSurge: ReturnType<typeof createPoolsAndGameplaySystems>['grazeSurge'];
+  powerUpGroup: ReturnType<typeof createPoolsAndGameplaySystems>['powerUpGroup'];
+  hud: ReturnType<typeof createHudAndTransitions>['hud'];
+  warpTransition: ReturnType<typeof createHudAndTransitions>['warpTransition'];
+  lastHudShieldCount: ReturnType<typeof createHudAndTransitions>['lastHudShieldCount'];
+  pauseStateController: ReturnType<typeof createPauseViewportWiring>['pauseStateController'];
+};
 
-type BootstrapRuntimeState = ReturnType<RuntimeBootstrapScene['initializePlayerRunState']>;
-type BootstrapLevelRuntime = ReturnType<typeof initializeLevelRuntime>;
-type BootstrapAudioInitialization = ReturnType<RuntimeBootstrapScene['initializeAudioForLevel']>;
 type BootstrapDependencies = {
   isTouchMobileDevice: typeof isTouchMobileDevice;
   onHardwareKeyboardDetected: typeof onHardwareKeyboardDetected;
@@ -55,7 +79,7 @@ type BootstrapDependencies = {
   showControlsHint: typeof showControlsHint;
 };
 
-const defaultBootstrapDependencies: BootstrapDependencies = {
+const defaultDependencies: BootstrapDependencies = {
   isTouchMobileDevice,
   onHardwareKeyboardDetected,
   initializeLevelRuntime,
@@ -67,171 +91,72 @@ const defaultBootstrapDependencies: BootstrapDependencies = {
   showControlsHint,
 };
 
-function initializeRuntimeState(
-  gameScene: RuntimeBootstrapScene,
-  dependencies: Pick<BootstrapDependencies, 'initializeLevelRuntime'>
-): {
-  state: BootstrapRuntimeState;
-  levelRuntime: BootstrapLevelRuntime;
-  audioInitialization: BootstrapAudioInitialization;
-} {
-  gameScene.resetRuntimeState();
-  gameScene.runtimeLifecycle.registerLifecycleHandlers();
-
-  const state = gameScene.initializePlayerRunState();
-  const levelRuntime = dependencies.initializeLevelRuntime(state);
-  gameScene.levelManager = levelRuntime.levelManager;
-  gameScene.scaledBossConfig = levelRuntime.scaledBossConfig;
-
-  const audioInitialization = gameScene.initializeAudioForLevel(levelRuntime.levelConfig);
-
-  return {
-    state,
-    levelRuntime,
-    audioInitialization,
-  };
-}
-
-function bootstrapWorldPresentation(
-  gameScene: WorldBootstrapScene,
-  levelConfig: BootstrapLevelRuntime['levelConfig'],
-  levelNumber: number,
-  audioInitialization: BootstrapAudioInitialization,
-  dependencies: Pick<BootstrapDependencies, 'createWorldPresentation'>
-): { playerSpawnPoint: { x: number; y: number } } {
-  const worldPresentation = dependencies.createWorldPresentation({
-    scene: gameScene.scene,
-    levelConfig,
-    levelNumber,
-    initialSection: audioInitialization.initialSection,
-    initialSectionProgress: audioInitialization.initialSectionProgress,
-    syncViewportBounds: () => {
-      gameScene.syncViewportBounds();
-    },
-    getPlayerSpawnPoint: () => gameScene.getPlayerSpawnPoint(),
-    registerScaleHandlers: () => {
-      gameScene.runtimeLifecycle.registerScaleHandlers();
-    },
-  });
-
-  gameScene.parallax = worldPresentation.parallax;
-  gameScene.effectsManager = worldPresentation.effectsManager;
-
-  return {
-    playerSpawnPoint: worldPresentation.playerSpawnPoint,
-  };
-}
-
-function bootstrapInputAndPlayer(
-  gameScene: InputBootstrapScene,
-  state: BootstrapRuntimeState,
-  playerSpawnPoint: { x: number; y: number },
-  dependencies: Pick<BootstrapDependencies, 'createInputAndPlayer'>
-): void {
-  const inputAndPlayer = dependencies.createInputAndPlayer({
-    scene: gameScene.scene,
-    state,
-    playerSpawnPoint,
-  });
-
-  gameScene.mobileControls = inputAndPlayer.mobileControls;
-  gameScene.inputManager = inputAndPlayer.inputManager;
-  gameScene.player = inputAndPlayer.player;
-}
-
-function bootstrapGameplaySystems(
-  gameScene: GameplayBootstrapScene,
-  levelConfig: BootstrapLevelRuntime['levelConfig'],
-  state: BootstrapRuntimeState,
-  dependencies: Pick<BootstrapDependencies, 'createPoolsAndGameplaySystems'>
-): void {
-  const gameplaySystems = dependencies.createPoolsAndGameplaySystems({
-    scene: gameScene.scene,
-    player: gameScene.player,
-    effectsManager: gameScene.effectsManager,
-    levelConfig,
-    state,
-    isTerminalTransitionActive: () => gameScene.flow.isTerminalTransitionActive(),
-    applyPowerUp: (type) => gameScene.applyPowerUp(type),
-  });
-
-  gameScene.bulletPool = gameplaySystems.bulletPool;
-  gameScene.enemyPool = gameplaySystems.enemyPool;
-  gameScene.lastLifeHelperWing = gameplaySystems.lastLifeHelperWing;
-  gameScene.picketTurrets = gameplaySystems.picketTurrets;
-  gameScene.waveManager = gameplaySystems.waveManager;
-  gameScene.collisionManager = gameplaySystems.collisionManager;
-  gameScene.scoreManager = gameplaySystems.scoreManager;
-  gameScene.grazeSurge = gameplaySystems.grazeSurge;
-  gameScene.powerUpGroup = gameplaySystems.powerUpGroup;
-}
-
-function bootstrapHudAndTransitions(
-  gameScene: HudBootstrapScene,
-  levelConfig: BootstrapLevelRuntime['levelConfig'],
-  level: BootstrapRuntimeState['level'],
-  dependencies: Pick<BootstrapDependencies, 'createHudAndTransitions'>
-): void {
-  const hudAndTransitions = dependencies.createHudAndTransitions({
-    scene: gameScene.scene,
-    levelConfig,
-    level,
-    playerShields: gameScene.player.shields,
-    lastHudShieldCount: gameScene.lastHudShieldCount,
-  });
-
-  gameScene.hud = hudAndTransitions.hud;
-  gameScene.warpTransition = hudAndTransitions.warpTransition;
-  gameScene.lastHudShieldCount = hudAndTransitions.lastHudShieldCount;
-}
-
-function bootstrapPauseAndViewportWiring(
-  gameScene: PauseBootstrapScene,
-  dependencies: Pick<BootstrapDependencies, 'createPauseViewportWiring'>
-): void {
-  const { pauseStateController } = dependencies.createPauseViewportWiring({
-    scene: gameScene.scene,
-    stopPlayerMotion: () => gameScene.stopPlayerMotion(),
-    getMobileControls: () => gameScene.mobileControls,
-    captureCurrentRunStateForSave: () => gameScene.captureCurrentRunStateForSave(),
-    canSaveCurrentRun: () => gameScene.canSaveCurrentRun(),
-  });
-
-  gameScene.pauseStateController = pauseStateController;
-  gameScene.mobileControls?.setPauseButtonHandler(() => {
-    pauseStateController.togglePauseRequest(gameScene.flow.isGameplayLocked());
-  });
-}
-
-function bootstrapHardwareKeyboardSuppression(
-  gameScene: HardwareKeyboardBootstrapScene,
-  dependencies: Pick<BootstrapDependencies, 'onHardwareKeyboardDetected'>
-): void {
-  const unsubscribe = dependencies.onHardwareKeyboardDetected(() => {
-    gameScene.mobileControls?.setJoystickSuppressed(true);
-  });
-  gameScene.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribe);
-}
-
 export function runGameSceneCreateBootstrap(
-  scene: GameSceneCreateBootstrapBridge,
-  dependencies: BootstrapDependencies = defaultBootstrapDependencies
-): void {
-  const { state, levelRuntime, audioInitialization } = initializeRuntimeState(scene, dependencies);
-  const { playerSpawnPoint } = bootstrapWorldPresentation(
-    scene,
-    levelRuntime.levelConfig,
-    state.level,
-    audioInitialization,
-    dependencies
-  );
+  host: GameSceneBootstrapHost,
+  dependencies: BootstrapDependencies = defaultDependencies
+): GameSceneBootstrapRuntime {
+  host.resetRuntimeState();
+  host.runtimeLifecycle.registerLifecycleHandlers();
 
-  bootstrapInputAndPlayer(scene, state, playerSpawnPoint, dependencies);
-  bootstrapGameplaySystems(scene, levelRuntime.levelConfig, state, dependencies);
-  bootstrapHudAndTransitions(scene, levelRuntime.levelConfig, state.level, dependencies);
-  bootstrapPauseAndViewportWiring(scene, dependencies);
-  bootstrapHardwareKeyboardSuppression(scene, dependencies);
+  const state = host.initializePlayerRunState();
+  const levelRuntime = dependencies.initializeLevelRuntime(state);
+  const audio = host.initializeAudioForLevel(levelRuntime.levelConfig);
+  const world = dependencies.createWorldPresentation({
+    scene: host.scene,
+    levelConfig: levelRuntime.levelConfig,
+    levelNumber: state.level,
+    initialSection: audio.initialSection,
+    initialSectionProgress: audio.initialSectionProgress,
+    syncViewportBounds: host.syncViewportBounds,
+    getPlayerSpawnPoint: host.getPlayerSpawnPoint,
+    registerScaleHandlers: host.runtimeLifecycle.registerScaleHandlers,
+  });
+  const input = dependencies.createInputAndPlayer({
+    scene: host.scene,
+    state,
+    playerSpawnPoint: world.playerSpawnPoint,
+  });
+  const gameplay = dependencies.createPoolsAndGameplaySystems({
+    scene: host.scene,
+    player: input.player,
+    effectsManager: world.effectsManager,
+    levelConfig: levelRuntime.levelConfig,
+    state,
+    isTerminalTransitionActive: host.isTerminalTransitionActive,
+    applyPowerUp: host.applyPowerUp,
+  });
+  const presentation = dependencies.createHudAndTransitions({
+    scene: host.scene,
+    levelConfig: levelRuntime.levelConfig,
+    level: state.level,
+    playerShields: input.player.shields,
+    lastHudShieldCount: host.previousHudShieldCount,
+  });
+  const { pauseStateController } = dependencies.createPauseViewportWiring({
+    scene: host.scene,
+    stopPlayerMotion: host.stopPlayerMotion,
+    getMobileControls: () => input.mobileControls,
+    captureCurrentRunStateForSave: host.captureCurrentRunStateForSave,
+    canSaveCurrentRun: host.canSaveCurrentRun,
+  });
 
-  dependencies.showControlsHint(scene.scene, { mobile: dependencies.isTouchMobileDevice() });
-  scene.runtimeLifecycle.registerRuntimeHandlers();
+  input.mobileControls.setPauseButtonHandler(() => {
+    pauseStateController.togglePauseRequest(host.isGameplayLocked());
+  });
+  const unsubscribeKeyboard = dependencies.onHardwareKeyboardDetected(() => {
+    input.mobileControls.setJoystickSuppressed(true);
+  });
+  host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeKeyboard);
+  dependencies.showControlsHint(host.scene, { mobile: dependencies.isTouchMobileDevice() });
+  host.runtimeLifecycle.registerRuntimeHandlers();
+
+  return {
+    levelManager: levelRuntime.levelManager,
+    scaledBossConfig: levelRuntime.scaledBossConfig,
+    ...world,
+    ...input,
+    ...gameplay,
+    ...presentation,
+    pauseStateController,
+  };
 }

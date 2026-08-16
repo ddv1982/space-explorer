@@ -34,26 +34,28 @@ describe('createWorldPresentation', () => {
     const initialSection = { id: 'opening' };
 
     const result = createWorldPresentation({
-      createParallax: () => ({
-        create(scene: unknown, levelConfig: unknown): void {
-          callLog.push('parallax.create');
-          parallaxCreateArgs = { scene, levelConfig };
-        },
-        setSectionAtmosphere(section: unknown, progress: number): void {
-          callLog.push('parallax.setSectionAtmosphere');
-          parallaxAtmosphereArgs = { section, progress };
-        },
-      }) as never,
-      createEffectsManager: () => ({
-        setup(scene: unknown): void {
-          callLog.push('effects.setup');
-          effectsSetupScene = scene;
-        },
-        applyLevelColorGrade(levelConfig: unknown): void {
-          callLog.push('effects.applyLevelColorGrade');
-          effectsColorGradeConfig = levelConfig;
-        },
-      }) as never,
+      createParallax: () =>
+        ({
+          create(scene: unknown, levelConfig: unknown): void {
+            callLog.push('parallax.create');
+            parallaxCreateArgs = { scene, levelConfig };
+          },
+          setSectionAtmosphere(section: unknown, progress: number): void {
+            callLog.push('parallax.setSectionAtmosphere');
+            parallaxAtmosphereArgs = { section, progress };
+          },
+        }) as never,
+      createEffectsManager: () =>
+        ({
+          setup(scene: unknown): void {
+            callLog.push('effects.setup');
+            effectsSetupScene = scene;
+          },
+          applyLevelColorGrade(levelConfig: unknown): void {
+            callLog.push('effects.applyLevelColorGrade');
+            effectsColorGradeConfig = levelConfig;
+          },
+        }) as never,
       releaseOutsidePremiumWindow: (_scene, levelNumber) => {
         callLog.push('releaseOutsidePremiumWindow');
         releasedLevel = levelNumber;
@@ -88,7 +90,10 @@ describe('createWorldPresentation', () => {
     ]);
     expect(releasedLevel as number | null).toBe(4);
     expect(parallaxCreateArgs as { scene: unknown; levelConfig: unknown } | null).toEqual({ scene, levelConfig });
-    expect(parallaxAtmosphereArgs as { section: unknown; progress: number } | null).toEqual({ section: initialSection, progress: 0.4 });
+    expect(parallaxAtmosphereArgs as { section: unknown; progress: number } | null).toEqual({
+      section: initialSection,
+      progress: 0.4,
+    });
     expect(effectsSetupScene).toBe(scene);
     expect(effectsColorGradeConfig).toBe(levelConfig);
     expect(result.playerSpawnPoint).toEqual({ x: 120, y: 340 });

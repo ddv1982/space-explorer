@@ -11,11 +11,7 @@ import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
 import type { PersistentHelperWingSlotState, PersistentHelperWingState } from './PlayerState';
 import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
-import {
-  DEFAULT_HELPER_CONFIG,
-  normalizePersistedState,
-  resolveRuntimeConfig,
-} from './lastLifeHelperWingState';
+import { DEFAULT_HELPER_CONFIG, normalizePersistedState, resolveRuntimeConfig } from './lastLifeHelperWingState';
 
 interface LastLifeHelperWingContext {
   scene: Phaser.Scene;
@@ -162,14 +158,10 @@ export class LastLifeHelperWing {
     this.helpers = [];
   }
 
-  private initializeSlotState(
-    context: LastLifeHelperWingContext
-  ): PersistentHelperWingState {
+  private initializeSlotState(context: LastLifeHelperWingContext): PersistentHelperWingState {
     const persistedState = normalizePersistedState(context.persistentState);
     this.grantedSlots = persistedState.grantedSlots;
-    this.canAcquireInLevel = Boolean(
-      (context.config && context.config.shipCount > 0) || this.grantedSlots > 0
-    );
+    this.canAcquireInLevel = Boolean((context.config && context.config.shipCount > 0) || this.grantedSlots > 0);
     this.maxSlots = Math.max(this.canAcquireInLevel ? this.runtimeConfig.shipCount : 0, this.grantedSlots);
 
     return persistedState;
@@ -314,31 +306,19 @@ export class LastLifeHelperWing {
       return;
     }
 
-    this.registerOverlap(
-      this.enemyPool.getEnemyBulletGroup(),
-      (a, b) => this.handleEnemyBulletOverlap(a, b)
-    );
-    this.registerOverlap(
-      this.enemyPool.getBombGroup(),
-      (a, b) => this.handleBombOverlap(a, b)
-    );
+    this.registerOverlap(this.enemyPool.getEnemyBulletGroup(), (a, b) => this.handleEnemyBulletOverlap(a, b));
+    this.registerOverlap(this.enemyPool.getBombGroup(), (a, b) => this.handleBombOverlap(a, b));
 
     for (const { key, group } of this.enemyPool.getEnemyGroupRegistry()) {
       if (key === 'boss') {
         continue;
       }
 
-      this.registerOverlap(
-        group,
-        (a, b) => this.handleEnemyContactOverlap(a, b)
-      );
+      this.registerOverlap(group, (a, b) => this.handleEnemyContactOverlap(a, b));
     }
   }
 
-  private registerOverlap(
-    group: Phaser.Physics.Arcade.Group,
-    callback: (a: unknown, b: unknown) => void
-  ): void {
+  private registerOverlap(group: Phaser.Physics.Arcade.Group, callback: (a: unknown, b: unknown) => void): void {
     if (!this.helperGroup) {
       return;
     }
@@ -426,5 +406,4 @@ export class LastLifeHelperWing {
 
     helper.takeContactDamage(1, this.scene.time.now, this.effectsManager);
   }
-
 }

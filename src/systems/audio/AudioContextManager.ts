@@ -1,8 +1,9 @@
 import type { MusicNoiseCharacterConfig } from '../../config/LevelsConfig';
 
-type WebkitAudioWindow = Window & typeof globalThis & {
-  webkitAudioContext?: typeof AudioContext;
-};
+type WebkitAudioWindow = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  };
 
 export class AudioContextManager {
   private ctx: AudioContext | null = null;
@@ -112,7 +113,8 @@ export class AudioContextManager {
         pinkState3 = 0.8665 * pinkState3 + white * 0.3104856;
         pinkState4 = 0.55 * pinkState4 + white * 0.5329522;
         pinkState5 = -0.7616 * pinkState5 - white * 0.016898;
-        const pink = pinkState0 + pinkState1 + pinkState2 + pinkState3 + pinkState4 + pinkState5 + pinkState6 + white * 0.5362;
+        const pink =
+          pinkState0 + pinkState1 + pinkState2 + pinkState3 + pinkState4 + pinkState5 + pinkState6 + white * 0.5362;
         pinkState6 = white * 0.115926;
         data[i] = pink * 0.11;
         continue;

@@ -1,12 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
-import {
-  LANCER_FIRE_RATE,
-  LANCER_HP,
-  LANCER_SCORE,
-  LANCER_SPEED,
-  LANCER_TELEGRAPH_MS,
-} from '../../utils/constants';
+import { LANCER_FIRE_RATE, LANCER_HP, LANCER_SCORE, LANCER_SPEED, LANCER_TELEGRAPH_MS } from '../../utils/constants';
 import { EnemyBullet } from '../EnemyBullet';
 import { ensureLancerTexture } from '../../utils/SpriteFactory';
 

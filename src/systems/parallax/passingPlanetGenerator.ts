@@ -4,10 +4,7 @@ import { mixColor } from '../../utils/colorUtils';
 import { withGeneratedTexture } from '../../utils/generatedTexture';
 import { drawSoftCircle } from './textureUtils';
 
-export function generatePassingPlanetTextures(
-  scene: Phaser.Scene,
-  configs: PassingPlanetConfig[]
-): string[] {
+export function generatePassingPlanetTextures(scene: Phaser.Scene, configs: PassingPlanetConfig[]): string[] {
   const textureKeys: string[] = [];
 
   for (let i = 0; i < configs.length; i++) {
@@ -22,11 +19,7 @@ export function generatePassingPlanetTextures(
   return textureKeys;
 }
 
-function generateSinglePassingPlanet(
-  scene: Phaser.Scene,
-  textureKey: string,
-  config: PassingPlanetConfig
-): void {
+function generateSinglePassingPlanet(scene: Phaser.Scene, textureKey: string, config: PassingPlanetConfig): void {
   const padding = 40;
   const size = config.size;
   const textureSize = size + padding * 2;
@@ -47,7 +40,7 @@ function generateSinglePassingPlanet(
 
     const bandCount = Phaser.Math.Between(3, 7);
     for (let b = 0; b < bandCount; b++) {
-      const bandY = cy - r + (b + 0.5) * (r * 2 / bandCount);
+      const bandY = cy - r + (b + 0.5) * ((r * 2) / bandCount);
       const bandColor = mixColor(palette[0], palette[1], Phaser.Math.FloatBetween(0.15, 0.85));
       const bandAlpha = Phaser.Math.FloatBetween(0.06, 0.15);
 

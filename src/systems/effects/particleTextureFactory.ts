@@ -3,12 +3,7 @@ import { withGeneratedParticleTexture } from '../../utils/generatedTexture';
 
 type Point = { x: number; y: number };
 
-function fillPolygonFromCenter(
-  g: Phaser.GameObjects.Graphics,
-  cx: number,
-  cy: number,
-  points: Point[]
-): void {
+function fillPolygonFromCenter(g: Phaser.GameObjects.Graphics, cx: number, cy: number, points: Point[]): void {
   for (let i = 0; i < points.length; i++) {
     const next = points[(i + 1) % points.length];
     g.fillTriangle(cx, cy, points[i].x, points[i].y, next.x, next.y);
@@ -149,9 +144,12 @@ function generateHitTexture(scene: Phaser.Scene, key: string, size: number): voi
       const tipY = cy + Math.sin(angle) * r * 0.95;
       const baseW = r * 0.16;
       g.fillTriangle(
-        cx + Math.cos(perp) * baseW, cy + Math.sin(perp) * baseW,
-        cx - Math.cos(perp) * baseW, cy - Math.sin(perp) * baseW,
-        tipX, tipY,
+        cx + Math.cos(perp) * baseW,
+        cy + Math.sin(perp) * baseW,
+        cx - Math.cos(perp) * baseW,
+        cy - Math.sin(perp) * baseW,
+        tipX,
+        tipY
       );
     }
 

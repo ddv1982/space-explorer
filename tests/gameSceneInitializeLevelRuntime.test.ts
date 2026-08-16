@@ -27,10 +27,11 @@ describe('initializeLevelRuntime', () => {
     };
 
     const result = initializeLevelRuntime(state, {
-      createLevelManager: () => ({
-        init: initMock,
-        getLevelConfig: getLevelConfigMock,
-      }) as never,
+      createLevelManager: () =>
+        ({
+          init: initMock,
+          getLevelConfig: getLevelConfigMock,
+        }) as never,
       getTotalLevels: getTotalLevelsMock,
       createScaledBossConfig: createScaledBossConfigMock,
     });

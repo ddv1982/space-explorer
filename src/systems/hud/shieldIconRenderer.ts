@@ -25,11 +25,7 @@ export class HudShieldIconRenderer {
     this.shieldIcons = [];
   }
 
-  renderShieldIcons(params: {
-    scene: Phaser.Scene | undefined;
-    hpBarHeight: number;
-    layout: HudLayoutMetrics;
-  }): void {
+  renderShieldIcons(params: { scene: Phaser.Scene | undefined; hpBarHeight: number; layout: HudLayoutMetrics }): void {
     this.clearShieldIcons();
 
     const { scene, hpBarHeight, layout } = params;

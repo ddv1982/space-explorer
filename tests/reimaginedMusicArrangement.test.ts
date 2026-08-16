@@ -47,12 +47,14 @@ const BASE_STAGE_RHYTHM: MusicLayerRhythmConfig = {
   gate: 0.9,
 };
 
-function createSeed(overrides: {
-  arrangement?: {
-    stage?: MusicArrangementConfig;
-    boss?: MusicArrangementConfig;
-  };
-} = {}) {
+function createSeed(
+  overrides: {
+    arrangement?: {
+      stage?: MusicArrangementConfig;
+      boss?: MusicArrangementConfig;
+    };
+  } = {}
+) {
   return {
     cueName: 'test cue',
     bossCueName: 'test boss cue',

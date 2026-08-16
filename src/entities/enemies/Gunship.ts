@@ -1,13 +1,7 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { EnemyBullet } from '../EnemyBullet';
-import {
-  ENEMY_BULLET_SPEED,
-  GUNSHIP_FIRE_RATE,
-  GUNSHIP_HP,
-  GUNSHIP_SCORE,
-  GUNSHIP_SPEED,
-} from '../../utils/constants';
+import { ENEMY_BULLET_SPEED, GUNSHIP_FIRE_RATE, GUNSHIP_HP, GUNSHIP_SCORE, GUNSHIP_SPEED } from '../../utils/constants';
 import { ensureGunshipTexture } from '../../utils/SpriteFactory';
 
 export class Gunship extends EnemyBase {
@@ -67,10 +61,7 @@ export class Gunship extends EnemyBase {
       if (bullet) {
         const rad = Phaser.Math.DegToRad(angleDeg + 90);
         bullet.fire(this.x, this.y + 20);
-        bullet.setVelocity(
-          Math.cos(rad) * ENEMY_BULLET_SPEED,
-          Math.sin(rad) * ENEMY_BULLET_SPEED
-        );
+        bullet.setVelocity(Math.cos(rad) * ENEMY_BULLET_SPEED, Math.sin(rad) * ENEMY_BULLET_SPEED);
       }
     }
   }

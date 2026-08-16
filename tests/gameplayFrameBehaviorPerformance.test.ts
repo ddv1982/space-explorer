@@ -23,9 +23,7 @@ mock.module('../src/systems/AudioManager', () => ({
 }));
 
 const { getLevelConfig } = await import('../src/config/LevelsConfig');
-const { createGameSceneGameplayFrameBehavior } = await import(
-  '../src/scenes/gameScene/gameplayFrameBehavior'
-);
+const { createGameSceneGameplayFrameBehavior } = await import('../src/scenes/gameScene/gameplayFrameBehavior');
 
 type GameplayDelegate = Parameters<typeof createGameSceneGameplayFrameBehavior>[0];
 

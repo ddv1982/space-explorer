@@ -1,9 +1,6 @@
 import type Phaser from 'phaser';
 import { BULLET_SPEED } from '@/utils/constants';
-import {
-  getActiveSection,
-  getSectionProgress,
-} from '@/config/LevelsConfig';
+import { getActiveSection, getSectionProgress } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
 import { audioManager } from '@/systems/AudioManager';
 import { resolvePlayerFireCooldownMs } from '@/systems/chainOverdrive';
@@ -140,12 +137,7 @@ export function createGameSceneGameplayFrameBehavior(
     const shotOrigin = delegate.player.getMuzzlePosition(20, delegate.shotOrigin);
     const muzzleFlashOrigin = delegate.player.getMuzzlePosition(24, delegate.muzzleFlashOrigin);
 
-    delegate.bulletPool.fire(
-      shotOrigin.x,
-      shotOrigin.y,
-      shotDirection.x * shotSpeed,
-      shotDirection.y * shotSpeed
-    );
+    delegate.bulletPool.fire(shotOrigin.x, shotOrigin.y, shotDirection.x * shotSpeed, shotDirection.y * shotSpeed);
     delegate.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
     audioManager.playLaser();
   };
@@ -153,9 +145,11 @@ export function createGameSceneGameplayFrameBehavior(
   const syncSectionPresentation = (): void => {
     const levelConfig = delegate.levelManager.getLevelConfig();
     const progress = delegate.levelManager.progress;
-    const cachedSectionStillActive = cachedLevelConfig === levelConfig && cachedSection !== null
-      && progress >= cachedSection.startProgress
-      && (progress < cachedSection.endProgress || (progress === 1 && cachedSection.endProgress === 1));
+    const cachedSectionStillActive =
+      cachedLevelConfig === levelConfig &&
+      cachedSection !== null &&
+      progress >= cachedSection.startProgress &&
+      (progress < cachedSection.endProgress || (progress === 1 && cachedSection.endProgress === 1));
 
     if (!cachedSectionStillActive) {
       cachedLevelConfig = levelConfig;
@@ -163,17 +157,14 @@ export function createGameSceneGameplayFrameBehavior(
     }
 
     const activeSection = cachedSection;
-    const sectionProgress = activeSection
-      ? getSectionProgress(activeSection, progress)
-      : 0;
+    const sectionProgress = activeSection ? getSectionProgress(activeSection, progress) : 0;
     const bossSpawned = delegate.levelManager.hasBossSpawned();
-    const musicIntensity = bossSpawned
-      ? 1.1
-      : resolveSectionMusicIntensity(activeSection, sectionProgress);
+    const musicIntensity = bossSpawned ? 1.1 : resolveSectionMusicIntensity(activeSection, sectionProgress);
 
     const musicContextChanged = activeSection !== lastMusicSection || bossSpawned !== lastBossSpawned;
-    const musicIntensityChanged = lastMusicIntensity === undefined
-      || Math.abs(musicIntensity - lastMusicIntensity) >= MUSIC_INTENSITY_UPDATE_THRESHOLD;
+    const musicIntensityChanged =
+      lastMusicIntensity === undefined ||
+      Math.abs(musicIntensity - lastMusicIntensity) >= MUSIC_INTENSITY_UPDATE_THRESHOLD;
     if (musicContextChanged || musicIntensityChanged) {
       audioManager.setMusicIntensity(musicIntensity);
       lastMusicIntensity = musicIntensity;
@@ -193,11 +184,7 @@ export function createGameSceneGameplayFrameBehavior(
       delegate.events.emit(GAME_SCENE_EVENTS.bossSpawn);
     }
 
-    if (
-      !delegate.flow.isTerminalTransitionActive() &&
-      delegate.levelManager.isComplete() &&
-      !prevComplete
-    ) {
+    if (!delegate.flow.isTerminalTransitionActive() && delegate.levelManager.isComplete() && !prevComplete) {
       delegate.events.emit(GAME_SCENE_EVENTS.levelComplete);
     }
   };

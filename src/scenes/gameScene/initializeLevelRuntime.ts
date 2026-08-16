@@ -32,14 +32,13 @@ export function initializeLevelRuntime(
   levelManager.init(state.level);
 
   const levelConfig = levelManager.getLevelConfig();
-  const scaledBossConfig =
-    levelConfig.boss
-      ? createScaledBossConfigFn(levelConfig.boss, {
-          levelNumber: state.level,
-          totalLevels: getTotalLevelsFn(),
-          upgrades: state.upgrades,
-        })
-      : null;
+  const scaledBossConfig = levelConfig.boss
+    ? createScaledBossConfigFn(levelConfig.boss, {
+        levelNumber: state.level,
+        totalLevels: getTotalLevelsFn(),
+        upgrades: state.upgrades,
+      })
+    : null;
 
   return {
     levelManager,

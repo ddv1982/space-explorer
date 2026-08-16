@@ -14,12 +14,8 @@ const { PicketTurretSystem } = await import('../src/systems/PicketTurretSystem')
 const { PicketBolt } = await import('../src/entities/PicketBolt');
 const { EnemyBase } = await import('../src/entities/enemies/EnemyBase');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
-const {
-  PICKET_BOLT_DAMAGE,
-  PICKET_BOLT_SPEED,
-  PICKET_ONLINE_ANNOUNCE_DELAY_MS,
-  PICKET_TARGET_RETRY_MS,
-} = await import('../src/systems/picketTurretConfig');
+const { PICKET_BOLT_DAMAGE, PICKET_BOLT_SPEED, PICKET_ONLINE_ANNOUNCE_DELAY_MS, PICKET_TARGET_RETRY_MS } =
+  await import('../src/systems/picketTurretConfig');
 
 type PicketTurretSystemInstance = InstanceType<typeof PicketTurretSystem>;
 

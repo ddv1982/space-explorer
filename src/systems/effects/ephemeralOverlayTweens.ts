@@ -42,10 +42,7 @@ export function createScorePopup(
   score: number,
   style: Phaser.Types.GameObjects.Text.TextStyle
 ): void {
-  const text = scene.add
-    .text(x, y, `+${score}`, style)
-    .setOrigin(0.5)
-    .setDepth(50);
+  const text = scene.add.text(x, y, `+${score}`, style).setOrigin(0.5).setDepth(50);
 
   scene.tweens.add({
     targets: text,

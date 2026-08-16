@@ -26,9 +26,8 @@ mock.module('phaser', () => {
   };
 });
 
-const { PlanetIntermissionInteractionController } = await import(
-  '../src/scenes/planetIntermission/interactionController'
-);
+const { PlanetIntermissionInteractionController } =
+  await import('../src/scenes/planetIntermission/interactionController');
 
 type EventHandler<T = unknown> = (event?: T) => void;
 
@@ -151,41 +150,43 @@ function createControllerHarness(initialPurchasable: boolean[]): ControllerHarne
   const focusGraphics = createGraphicsStub();
   const hoverGraphics = createGraphicsStub();
 
-  const buttons: Array<{ bg: ButtonBgStub; upgradeKey: string; button: UpgradeButton }> = initialPurchasable.map((canPurchase, index) => {
-    const bg = new ButtonBgStub();
-    return {
-      bg,
-      upgradeKey: `upgrade-${index}`,
-      button: {
+  const buttons: Array<{ bg: ButtonBgStub; upgradeKey: string; button: UpgradeButton }> = initialPurchasable.map(
+    (canPurchase, index) => {
+      const bg = new ButtonBgStub();
+      return {
         bg,
-        text: {},
-        costText: {},
-        levelText: {},
         upgradeKey: `upgrade-${index}`,
-        x: index * 100,
-        y: 100,
-        width: 80,
-        height: 40,
-        borderRadius: 8,
-        layout: {
-          top: 100,
-          columns: 3,
-          buttonWidth: 80,
-          buttonHeight: 40,
-          spacingX: 20,
-          spacingY: 10,
-          textInsetX: 0,
-          titleOffsetY: 0,
-          descriptionOffsetY: 0,
-          costInsetX: 0,
+        button: {
+          bg,
+          text: {},
+          costText: {},
+          levelText: {},
+          upgradeKey: `upgrade-${index}`,
+          x: index * 100,
+          y: 100,
+          width: 80,
+          height: 40,
           borderRadius: 8,
-          titleFontSize: '12px',
-          descriptionFontSize: '10px',
-          costFontSize: '12px',
-        },
-      } as unknown as UpgradeButton,
-    };
-  });
+          layout: {
+            top: 100,
+            columns: 3,
+            buttonWidth: 80,
+            buttonHeight: 40,
+            spacingX: 20,
+            spacingY: 10,
+            textInsetX: 0,
+            titleOffsetY: 0,
+            descriptionOffsetY: 0,
+            costInsetX: 0,
+            borderRadius: 8,
+            titleFontSize: '12px',
+            descriptionFontSize: '10px',
+            costFontSize: '12px',
+          },
+        } as unknown as UpgradeButton,
+      };
+    }
+  );
 
   const purchaseState = new Map<string, PurchaseState>(
     buttons.map((entry, index) => [entry.upgradeKey, { canPurchase: initialPurchasable[index], cost: 100 }])
@@ -233,11 +234,7 @@ function createControllerHarness(initialPurchasable: boolean[]): ControllerHarne
   };
 }
 
-function triggerKeyboardEvent(
-  handlers: KeyboardMap,
-  eventName: string,
-  event?: Partial<KeyboardEvent>
-): void {
+function triggerKeyboardEvent(handlers: KeyboardMap, eventName: string, event?: Partial<KeyboardEvent>): void {
   const callbacks = handlers.get(eventName) ?? [];
   for (const callback of callbacks) {
     callback(event as KeyboardEvent);

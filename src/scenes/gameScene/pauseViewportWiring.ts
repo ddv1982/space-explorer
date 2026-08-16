@@ -2,12 +2,7 @@ import Phaser from 'phaser';
 import { PauseStateController, type PauseSaveSlotAdapter } from './PauseStateController';
 import { audioManager } from '@/systems/AudioManager';
 import type { MobileControls } from '@/systems/MobileControls';
-import {
-  getRunSummary,
-  setPlayerState,
-  setRunSummary,
-  type PlayerStateData,
-} from '@/systems/PlayerState';
+import { getRunSummary, setPlayerState, setRunSummary, type PlayerStateData } from '@/systems/PlayerState';
 import {
   createSaveSlotRecord,
   deleteSaveSlot,
@@ -47,7 +42,10 @@ function createPauseSaveSlotAdapter(context: PauseViewportWiringContext): PauseS
         return { ok: false, message: 'Save failed. Browser storage rejected the checkpoint.' };
       }
 
-      return { ok: true, message: `Saved ${writtenRecord.label.levelName} checkpoint to slot ${writtenRecord.id.slice(-1)}.` };
+      return {
+        ok: true,
+        message: `Saved ${writtenRecord.label.levelName} checkpoint to slot ${writtenRecord.id.slice(-1)}.`,
+      };
     },
     load: (slotId) => {
       const record = readSaveSlot(slotId);

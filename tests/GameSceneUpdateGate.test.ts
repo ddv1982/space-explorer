@@ -177,7 +177,6 @@ function createUpdateHarness(): UpdateHarness {
   let levelComplete = false;
   let bossAddWaves = false;
 
-
   state.updateHud = () => {
     calls.push('updateHud');
   };
@@ -382,7 +381,9 @@ describe('GameScene update gate regression coverage', () => {
 
     expect(harness.calls.indexOf('parallax.update')).toBeLessThan(harness.calls.indexOf('player.update'));
     expect(harness.calls.indexOf('player.update')).toBeLessThan(harness.calls.indexOf('lastLifeHelperWing.update'));
-    expect(harness.calls.indexOf('lastLifeHelperWing.update')).toBeLessThan(harness.calls.indexOf('picketTurrets.update'));
+    expect(harness.calls.indexOf('lastLifeHelperWing.update')).toBeLessThan(
+      harness.calls.indexOf('picketTurrets.update')
+    );
     expect(harness.calls).toContain('waveManager.update');
 
     const levelUpdateIndex = harness.calls.indexOf('levelManager.update');

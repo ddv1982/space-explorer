@@ -199,7 +199,7 @@ export function fillCanopy(
   cy: number,
   width: number,
   height: number,
-  palette: NeonPalette,
+  palette: NeonPalette
 ): void {
   g.fillStyle(palette.hot, 0.18);
   g.fillEllipse(cx, cy, width + 2, height + 2);

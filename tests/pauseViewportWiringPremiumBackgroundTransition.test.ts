@@ -98,11 +98,7 @@ describe('pause viewport wiring premium background transition', () => {
     expect(callLog).toEqual(['startRegisteredScene:Game']);
 
     shutdownHandler?.();
-    expect(callLog).toEqual([
-      'startRegisteredScene:Game',
-      'setPlayerState',
-      'setRunSummary',
-    ]);
+    expect(callLog).toEqual(['startRegisteredScene:Game', 'setPlayerState', 'setRunSummary']);
     expect(setPlayerState).toHaveBeenCalledWith(registry, record.playerState);
     expect(setRunSummary).toHaveBeenCalledWith(registry, record.runSummary);
   });

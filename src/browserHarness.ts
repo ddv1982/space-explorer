@@ -5,10 +5,7 @@ import { audioManager, type AudioManager, type AudioPauseReason } from './system
 import { GAME_SCENE_EVENTS } from './systems/GameplayFlow';
 import type { ParallaxBackground } from './systems/ParallaxBackground';
 import { getPlayerState, setPlayerState } from './systems/PlayerState';
-import {
-  runtimePerformanceBudget,
-  type RuntimePerformanceSnapshot,
-} from './systems/RuntimePerformanceBudget';
+import { runtimePerformanceBudget, type RuntimePerformanceSnapshot } from './systems/RuntimePerformanceBudget';
 
 const HARNESS_GLOBAL = '__SPACE_EXPLORER_BROWSER_HARNESS__';
 const ROUTABLE_SCENES = new Set(['PlanetIntermission', 'GameOver', 'Victory']);
@@ -168,9 +165,8 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
 
   for (const scene of activeScenes) {
     cameraFilterCount += scene.cameras.cameras.reduce(
-      (count, camera) =>
-        count + camera.filters.internal.list.length + camera.filters.external.list.length,
-      0,
+      (count, camera) => count + camera.filters.internal.list.length + camera.filters.external.list.length,
+      0
     );
     tweenCount += scene.tweens.getTweens().length;
 
@@ -215,9 +211,8 @@ function createSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
   }
 
   const physicsWorld = primaryScene?.physics?.world;
-  const gameScene = activeScenes.find((scene) => scene.scene.key === 'Game') as (
-    Phaser.Scene & { levelManager?: { progress: number } }
-  ) | undefined;
+  const gameScene = activeScenes.find((scene) => scene.scene.key === 'Game') as
+    (Phaser.Scene & { levelManager?: { progress: number } }) | undefined;
   const preloadScene = game.scene.getScene('Preload');
   const preloadTexts = preloadScene.children.list
     .filter((child): child is Phaser.GameObjects.Text => child instanceof Phaser.GameObjects.Text)
@@ -268,9 +263,8 @@ export function installBrowserHarness(game: Phaser.Game): void {
   let originalPlayerTrailExplode: Phaser.GameObjects.Particles.ParticleEmitter['explode'] | null = null;
   let originalLaserSfx: AudioManager['playLaser'] | null = null;
   type HarnessAudioContextManager = { resume(): void };
-  const harnessAudioContextManager = (
-    audioManager as unknown as { contextManager: HarnessAudioContextManager }
-  ).contextManager;
+  const harnessAudioContextManager = (audioManager as unknown as { contextManager: HarnessAudioContextManager })
+    .contextManager;
   let originalAudioResume: HarnessAudioContextManager['resume'] | null = null;
   let framePacingProbeActive = false;
   const recordFrame = (_time: number, delta: number): void => {
@@ -285,8 +279,8 @@ export function installBrowserHarness(game: Phaser.Game): void {
 
   const getLaneReadingPilotOverlay = (): Phaser.GameObjects.Graphics => {
     const gameScene = game.scene.getScene('Game');
-    const overlay = gameScene?.children.list.find((child) =>
-      child instanceof Phaser.GameObjects.Graphics && child.depth === -5
+    const overlay = gameScene?.children.list.find(
+      (child) => child instanceof Phaser.GameObjects.Graphics && child.depth === -5
     );
     if (!(overlay instanceof Phaser.GameObjects.Graphics)) {
       throw new Error('Browser harness cannot find the lane-reading visual pilot overlay');
@@ -302,10 +296,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
     return filters.length;
   };
 
-  const collectRenderCost = async (
-    enabled: boolean,
-    sampleCount: number
-  ): Promise<number[]> => {
+  const collectRenderCost = async (enabled: boolean, sampleCount: number): Promise<number[]> => {
     setLaneReadingPilotGlow(enabled);
     const renderer = game.renderer;
     if (!(renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) {
@@ -353,8 +344,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
 
   const summarizeFrameDelivery = (samples: number[]): BrowserHarnessFrameDeliveryProbe => {
     const sorted = [...samples].sort((a, b) => a - b);
-    const percentile = (value: number): number =>
-      sorted[Math.max(0, Math.ceil(sorted.length * value) - 1)] ?? 0;
+    const percentile = (value: number): number => sorted[Math.max(0, Math.ceil(sorted.length * value) - 1)] ?? 0;
     const p50Ms = percentile(0.5);
     // A delivered frame is considered dropped when it is much closer to two
     // refresh intervals than one. This adapts to 60/90/100/120 Hz displays.
@@ -398,7 +388,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
       let settled = false;
       const timeout = window.setTimeout(
         () => finish(new Error('Browser harness frame-delivery probe timed out')),
-        Math.max(15_000, sampleCount * 250),
+        Math.max(15_000, sampleCount * 250)
       );
 
       function cleanup(): void {
@@ -488,9 +478,15 @@ export function installBrowserHarness(game: Phaser.Game): void {
       let updateStartedAt = 0;
       let renderStartedAt = 0;
       let readyToFinish = false;
-      const countPlayerExhaust = (): void => { effectEventCount.playerExhaust += 1; };
-      const countPlayerBulletTrail = (): void => { effectEventCount.playerBulletTrail += 1; };
-      const countEnemyBulletTrail = (): void => { effectEventCount.enemyBulletTrail += 1; };
+      const countPlayerExhaust = (): void => {
+        effectEventCount.playerExhaust += 1;
+      };
+      const countPlayerBulletTrail = (): void => {
+        effectEventCount.playerBulletTrail += 1;
+      };
+      const countEnemyBulletTrail = (): void => {
+        effectEventCount.enemyBulletTrail += 1;
+      };
       let settled = false;
       let timeout: number | null = null;
       function cleanup(): void {
@@ -519,64 +515,68 @@ export function installBrowserHarness(game: Phaser.Game): void {
         }
 
         const sorted = [...samples].sort((a, b) => a - b);
-        const percentile = (value: number): number =>
-          sorted[Math.max(0, Math.ceil(sorted.length * value) - 1)] ?? 0;
+        const percentile = (value: number): number => sorted[Math.max(0, Math.ceil(sorted.length * value) - 1)] ?? 0;
         const summarizeWorkCost = (workSamples: number[]): BrowserHarnessRenderCost => {
           const sortedWorkSamples = [...workSamples].sort((a, b) => a - b);
           return Object.freeze({
-            averageMs: workSamples.length > 0
-              ? workSamples.reduce((total, sample) => total + sample, 0) / workSamples.length
-              : 0,
+            averageMs:
+              workSamples.length > 0
+                ? workSamples.reduce((total, sample) => total + sample, 0) / workSamples.length
+                : 0,
             p95Ms: sortedWorkSamples[Math.max(0, Math.ceil(sortedWorkSamples.length * 0.95) - 1)] ?? 0,
             sampleCount: workSamples.length,
           });
         };
         const currentSnapshot = createSnapshot(game);
         const activePhysicsBodyCount = currentSnapshot.objects.filter(
-          (object) => object.active && object.hasBody,
+          (object) => object.active && object.hasBody
         ).length;
-        const activeParticleCount = game.scene.getScenes(true).reduce(
-          (count, scene) => count + scene.children.list.reduce(
-            (sceneCount, child) => sceneCount + (
-              child instanceof Phaser.GameObjects.Particles.ParticleEmitter
-                ? child.getAliveParticleCount()
-                : 0
-            ),
-            0,
-          ),
-          0,
+        const activeParticleCount = game.scene
+          .getScenes(true)
+          .reduce(
+            (count, scene) =>
+              count +
+              scene.children.list.reduce(
+                (sceneCount, child) =>
+                  sceneCount +
+                  (child instanceof Phaser.GameObjects.Particles.ParticleEmitter ? child.getAliveParticleCount() : 0),
+                0
+              ),
+            0
+          );
+        resolve(
+          Object.freeze({
+            sampleCount: samples.length,
+            averageMs: samples.reduce((total, sample) => total + sample, 0) / samples.length,
+            p50Ms: percentile(0.5),
+            p95Ms: percentile(0.95),
+            p99Ms: percentile(0.99),
+            maxMs: sorted[sorted.length - 1] ?? 0,
+            over16_67MsCount: samples.filter((sample) => sample > 16.67).length,
+            over33_33MsCount: samples.filter((sample) => sample > 33.33).length,
+            workCost: Object.freeze({
+              update: summarizeWorkCost(updateSamples),
+              renderSubmission: summarizeWorkCost(renderSamples),
+            }),
+            runtimeLoad: Object.freeze({
+              activeTexturedObjectCount: currentSnapshot.objects.filter((object) => object.active).length,
+              activePhysicsBodyCount,
+              activeParticleCount,
+              activePlayerBulletCount: currentSnapshot.objects.filter(
+                (object) => object.active && object.textureKey === 'player-bullet'
+              ).length,
+              activeEnemyBulletCount: currentSnapshot.objects.filter(
+                (object) => object.active && object.textureKey === 'enemy-bullet'
+              ).length,
+              particleEmitterCount: currentSnapshot.particleEmitterCount,
+              tweenCount: currentSnapshot.tweenCount,
+              effectEventCount: Object.freeze({ ...effectEventCount }),
+              musicIntensityRequestCount,
+              audioResumeRequestCount,
+              laserRequestCount,
+            }),
+          })
         );
-        resolve(Object.freeze({
-          sampleCount: samples.length,
-          averageMs: samples.reduce((total, sample) => total + sample, 0) / samples.length,
-          p50Ms: percentile(0.5),
-          p95Ms: percentile(0.95),
-          p99Ms: percentile(0.99),
-          maxMs: sorted[sorted.length - 1] ?? 0,
-          over16_67MsCount: samples.filter((sample) => sample > 16.67).length,
-          over33_33MsCount: samples.filter((sample) => sample > 33.33).length,
-          workCost: Object.freeze({
-            update: summarizeWorkCost(updateSamples),
-            renderSubmission: summarizeWorkCost(renderSamples),
-          }),
-          runtimeLoad: Object.freeze({
-            activeTexturedObjectCount: currentSnapshot.objects.filter((object) => object.active).length,
-            activePhysicsBodyCount,
-            activeParticleCount,
-            activePlayerBulletCount: currentSnapshot.objects.filter(
-              (object) => object.active && object.textureKey === 'player-bullet',
-            ).length,
-            activeEnemyBulletCount: currentSnapshot.objects.filter(
-              (object) => object.active && object.textureKey === 'enemy-bullet',
-            ).length,
-            particleEmitterCount: currentSnapshot.particleEmitterCount,
-            tweenCount: currentSnapshot.tweenCount,
-            effectEventCount: Object.freeze({ ...effectEventCount }),
-            musicIntensityRequestCount,
-            audioResumeRequestCount,
-            laserRequestCount,
-          }),
-        }));
       }
       function onStep(): void {
         if (!activeGameScene.sys.isActive() || !game.scene.getScenes(true).includes(activeGameScene)) {
@@ -621,7 +621,7 @@ export function installBrowserHarness(game: Phaser.Game): void {
       activeGameScene.events.on(GAME_SCENE_EVENTS.enemyBulletTrail, countEnemyBulletTrail);
       timeout = window.setTimeout(
         () => finish(new Error('Browser harness frame-pacing probe timed out')),
-        Math.max(15_000, sampleCount * 750),
+        Math.max(15_000, sampleCount * 750)
       );
     });
   };
@@ -629,11 +629,12 @@ export function installBrowserHarness(game: Phaser.Game): void {
   window[HARNESS_GLOBAL] = Object.freeze({
     destroyGame: () => game.destroy(true),
     snapshot: () => createSnapshot(game),
-    getFrameMetrics: () => Object.freeze({
-      frameCount,
-      averageDelta: frameCount > 0 ? totalDelta / frameCount : 0,
-      maxDelta,
-    }),
+    getFrameMetrics: () =>
+      Object.freeze({
+        frameCount,
+        averageDelta: frameCount > 0 ? totalDelta / frameCount : 0,
+        maxDelta,
+      }),
     resetFrameMetrics: () => {
       frameCount = 0;
       totalDelta = 0;
@@ -647,9 +648,9 @@ export function installBrowserHarness(game: Phaser.Game): void {
       if (!gameScene) {
         throw new Error('Browser harness cannot configure player bullet trails without active gameplay');
       }
-      const emitters = gameScene.children.list.filter((child): child is Phaser.GameObjects.Particles.ParticleEmitter =>
-        child instanceof Phaser.GameObjects.Particles.ParticleEmitter
-        && child.texture.key === 'particle-trail'
+      const emitters = gameScene.children.list.filter(
+        (child): child is Phaser.GameObjects.Particles.ParticleEmitter =>
+          child instanceof Phaser.GameObjects.Particles.ParticleEmitter && child.texture.key === 'particle-trail'
       );
       const emitter = emitters[0];
       if (!emitter) return 0;
@@ -668,22 +669,22 @@ export function installBrowserHarness(game: Phaser.Game): void {
       return 1;
     },
     setProjectileTrailIntervals: (playerMs: number, enemyMs: number) => {
-      const gameScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game') as (
-        Phaser.Scene & {
-          bulletPool?: { getGroup(): Phaser.Physics.Arcade.Group };
-          enemyPool?: { getEnemyBulletGroup(): Phaser.Physics.Arcade.Group };
-        }
-      ) | undefined;
+      const gameScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game') as
+        | (Phaser.Scene & {
+            bulletPool?: { getGroup(): Phaser.Physics.Arcade.Group };
+            enemyPool?: { getEnemyBulletGroup(): Phaser.Physics.Arcade.Group };
+          })
+        | undefined;
       if (!gameScene?.bulletPool || !gameScene.enemyPool) {
         throw new Error('Browser harness cannot configure projectile trails without active gameplay');
       }
       const setIntervalForGroup = (group: Phaser.Physics.Arcade.Group, intervalMs: number): void => {
         const projectile = group.getChildren()[0];
-        const projectileClass = (projectile?.constructor ?? (
-          group as unknown as { classType?: unknown }
-        ).classType) as {
-          setTrailIntervalMs?: (nextIntervalMs: number) => void;
-        } | undefined;
+        const projectileClass = (projectile?.constructor ?? (group as unknown as { classType?: unknown }).classType) as
+          | {
+              setTrailIntervalMs?: (nextIntervalMs: number) => void;
+            }
+          | undefined;
         if (!projectileClass?.setTrailIntervalMs) {
           throw new Error('Browser harness cannot find a configurable projectile type');
         }
@@ -693,12 +694,12 @@ export function installBrowserHarness(game: Phaser.Game): void {
       setIntervalForGroup(gameScene.enemyPool.getEnemyBulletGroup(), enemyMs);
     },
     stageProjectileTrailEvidence: () => {
-      const gameScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game') as (
-        Phaser.Scene & {
-          bulletPool?: { getGroup(): Phaser.Physics.Arcade.Group };
-          enemyPool?: { getEnemyBulletGroup(): Phaser.Physics.Arcade.Group };
-        }
-      ) | undefined;
+      const gameScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game') as
+        | (Phaser.Scene & {
+            bulletPool?: { getGroup(): Phaser.Physics.Arcade.Group };
+            enemyPool?: { getEnemyBulletGroup(): Phaser.Physics.Arcade.Group };
+          })
+        | undefined;
       if (!gameScene?.bulletPool || !gameScene.enemyPool) {
         throw new Error('Browser harness cannot stage projectile trails without active gameplay');
       }
@@ -707,12 +708,12 @@ export function installBrowserHarness(game: Phaser.Game): void {
       const stageGroup = (
         group: Phaser.Physics.Arcade.Group,
         positions: ReadonlyArray<readonly [number, number]>,
-        fire: (projectile: Phaser.Physics.Arcade.Sprite, x: number, y: number) => void,
+        fire: (projectile: Phaser.Physics.Arcade.Sprite, x: number, y: number) => void
       ): number => {
         const existing = group.getChildren() as Phaser.Physics.Arcade.Sprite[];
         let count = 0;
         for (const [index, [x, y]] of positions.entries()) {
-          const projectile = existing[index] ?? group.get(x, y) as Phaser.Physics.Arcade.Sprite | null;
+          const projectile = existing[index] ?? (group.get(x, y) as Phaser.Physics.Arcade.Sprite | null);
           if (!projectile) break;
           fire(projectile, x, y);
           count += 1;
@@ -723,17 +724,19 @@ export function installBrowserHarness(game: Phaser.Game): void {
         gameScene.bulletPool.getGroup(),
         [0.82, 0.68, 0.54, 0.4].map((y) => [width * 0.38, height * y] as const),
         (projectile, x, y) => {
-          (projectile as Phaser.Physics.Arcade.Sprite & {
-            fire(x: number, y: number, velocityX?: number, velocityY?: number): void;
-          }).fire(x, y, 0, -180);
-        },
+          (
+            projectile as Phaser.Physics.Arcade.Sprite & {
+              fire(x: number, y: number, velocityX?: number, velocityY?: number): void;
+            }
+          ).fire(x, y, 0, -180);
+        }
       );
       const enemyCount = stageGroup(
         gameScene.enemyPool.getEnemyBulletGroup(),
         [0.18, 0.32, 0.46, 0.6].map((y) => [width * 0.62, height * y] as const),
         (projectile, x, y) => {
           (projectile as Phaser.Physics.Arcade.Sprite & { fire(x: number, y: number): void }).fire(x, y);
-        },
+        }
       );
       return { playerCount, enemyCount };
     },
@@ -792,14 +795,16 @@ export function installBrowserHarness(game: Phaser.Game): void {
       const player = activeScene?.children.list.find((child) => {
         const candidate = child as Phaser.GameObjects.GameObject & { texture?: Phaser.Textures.Texture };
         return candidate.texture?.key === 'player-ship';
-      }) as (Phaser.GameObjects.GameObject & {
-        takeDamage: (amount: number) => unknown;
-        tintMode: number;
-        invulnerable: boolean;
-        deathStarted: boolean;
-        shields: number;
-        hp: number;
-      }) | undefined;
+      }) as
+        | (Phaser.GameObjects.GameObject & {
+            takeDamage: (amount: number) => unknown;
+            tintMode: number;
+            invulnerable: boolean;
+            deathStarted: boolean;
+            shields: number;
+            hp: number;
+          })
+        | undefined;
       if (!activeScene || !player || typeof player.takeDamage !== 'function') {
         throw new Error('Browser harness cannot probe player hit tint without active gameplay');
       }
@@ -814,23 +819,25 @@ export function installBrowserHarness(game: Phaser.Game): void {
       return { duringMode, afterMode: player.tintMode };
     },
     probeAcceptedPlayerDamage: (amount = 1) => {
-      const activeScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game') as (
-        Phaser.Scene & {
-          collisionManager?: {
-            processAcceptedPlayerDamage: (options: { amount: number }) => void;
-          };
-        }
-      ) | undefined;
+      const activeScene = game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game') as
+        | (Phaser.Scene & {
+            collisionManager?: {
+              processAcceptedPlayerDamage: (options: { amount: number }) => void;
+            };
+          })
+        | undefined;
       const player = activeScene?.children.list.find((child) => {
         const candidate = child as Phaser.GameObjects.GameObject & { texture?: Phaser.Textures.Texture };
         return candidate.texture?.key === 'player-ship';
-      }) as (Phaser.GameObjects.GameObject & {
-        hp: number;
-        maxHp: number;
-        shields: number;
-        invulnerable: boolean;
-        deathStarted: boolean;
-      }) | undefined;
+      }) as
+        | (Phaser.GameObjects.GameObject & {
+            hp: number;
+            maxHp: number;
+            shields: number;
+            invulnerable: boolean;
+            deathStarted: boolean;
+          })
+        | undefined;
       const collisionManager = activeScene?.collisionManager;
       if (!player || !collisionManager) {
         throw new Error('Browser harness cannot probe accepted player damage without active gameplay');
@@ -846,9 +853,9 @@ export function installBrowserHarness(game: Phaser.Game): void {
       return { beforeHp, afterHp, damage: beforeHp - afterHp };
     },
     showLaneReadingPilot: (glowEnabled = true) => {
-      const gameScene = game.scene.getScene('Game') as (
-        Phaser.Scene & { parallax?: Pick<ParallaxBackground, 'setSectionAtmosphere' | 'update'> }
-      );
+      const gameScene = game.scene.getScene('Game') as Phaser.Scene & {
+        parallax?: Pick<ParallaxBackground, 'setSectionAtmosphere' | 'update'>;
+      };
       const levelConfig = getLevelConfig(1);
       const section = levelConfig.sections.find((candidate: LevelSectionConfig) =>
         candidate.hazardEvents?.some((hazard) => hazard.type === 'ring-crossfire')
@@ -863,9 +870,13 @@ export function installBrowserHarness(game: Phaser.Game): void {
           child.setVisible(false);
         }
         if (
-          child instanceof Phaser.GameObjects.Text
-          && (child.text === 'SECTOR 1' || child.text.includes('Move') || child.text.includes('move')
-            || child.text.includes('Fire') || child.text.includes('fire') || child.text.includes('shoot'))
+          child instanceof Phaser.GameObjects.Text &&
+          (child.text === 'SECTOR 1' ||
+            child.text.includes('Move') ||
+            child.text.includes('move') ||
+            child.text.includes('Fire') ||
+            child.text.includes('fire') ||
+            child.text.includes('shoot'))
         ) {
           child.setVisible(false);
         }
@@ -883,8 +894,8 @@ export function installBrowserHarness(game: Phaser.Game): void {
     measureLaneReadingPilotRenderCost: async () => {
       const baselineSamples = await collectRenderCost(false, 45);
       const glowSamples = await collectRenderCost(true, 45);
-      glowSamples.push(...await collectRenderCost(true, 45));
-      baselineSamples.push(...await collectRenderCost(false, 45));
+      glowSamples.push(...(await collectRenderCost(true, 45)));
+      baselineSamples.push(...(await collectRenderCost(false, 45)));
       setLaneReadingPilotGlow(true);
 
       const baseline = summarizeRenderCost(baselineSamples);

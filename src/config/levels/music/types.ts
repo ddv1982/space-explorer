@@ -81,14 +81,7 @@ export interface MusicEnergyProfileConfig {
   curve: 'steady' | 'build' | 'build-release' | 'surge';
 }
 
-type MusicChordQuality =
-  | 'major'
-  | 'minor'
-  | 'diminished'
-  | 'augmented'
-  | 'suspended2'
-  | 'suspended4'
-  | 'power';
+type MusicChordQuality = 'major' | 'minor' | 'diminished' | 'augmented' | 'suspended2' | 'suspended4' | 'power';
 
 export interface MusicHarmonicChordStepConfig {
   degree: 1 | 2 | 3 | 4 | 5 | 6 | 7;

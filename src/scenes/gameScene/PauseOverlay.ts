@@ -75,40 +75,48 @@ export class PauseOverlay {
 
     this.dimmer = scene.add.graphics();
     this.panel = scene.add.graphics();
-    this.titleText = scene.add.text(0, 0, 'PAUSED', {
-      fontSize: '86px',
-      color: '#eefbff',
-      fontStyle: 'bold',
-      fontFamily: UI_FONT_DISPLAY,
-      stroke: '#42c9ff',
-      strokeThickness: 2,
-    }).setOrigin(0.5);
-    this.subtitleText = scene.add.text(0, 0, '', {
-      fontSize: '16px',
-      color: '#d5e6f6',
-      fontFamily: UI_FONT_MONO,
-      align: 'center',
-    }).setOrigin(0.5);
-    this.hintText = scene.add.text(0, 0, '', {
-      fontSize: '14px',
-      color: '#7fa8df',
-      fontFamily: UI_FONT_MONO,
-      align: 'center',
-      wordWrap: { width: 650 },
-    }).setOrigin(0.5);
+    this.titleText = scene.add
+      .text(0, 0, 'PAUSED', {
+        fontSize: '86px',
+        color: '#eefbff',
+        fontStyle: 'bold',
+        fontFamily: UI_FONT_DISPLAY,
+        stroke: '#42c9ff',
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5);
+    this.subtitleText = scene.add
+      .text(0, 0, '', {
+        fontSize: '16px',
+        color: '#d5e6f6',
+        fontFamily: UI_FONT_MONO,
+        align: 'center',
+      })
+      .setOrigin(0.5);
+    this.hintText = scene.add
+      .text(0, 0, '', {
+        fontSize: '14px',
+        color: '#7fa8df',
+        fontFamily: UI_FONT_MONO,
+        align: 'center',
+        wordWrap: { width: 650 },
+      })
+      .setOrigin(0.5);
     this.savesHeaderText = scene.add.text(0, 0, 'CHECKPOINT SLOTS', {
       fontSize: '14px',
       color: '#ffbf6b',
       fontFamily: UI_FONT_MONO,
       fontStyle: 'bold',
     });
-    this.statusText = scene.add.text(0, 0, '', {
-      fontSize: '13px',
-      color: '#72ecff',
-      fontFamily: UI_FONT_MONO,
-      align: 'center',
-      wordWrap: { width: 620 },
-    }).setOrigin(0.5);
+    this.statusText = scene.add
+      .text(0, 0, '', {
+        fontSize: '13px',
+        color: '#72ecff',
+        fontFamily: UI_FONT_MONO,
+        align: 'center',
+        wordWrap: { width: 620 },
+      })
+      .setOrigin(0.5);
 
     const initialLayout = getPauseOverlayLayout(scene);
     this.settingsPanel = createSettingsPanel(scene, {
@@ -138,12 +146,20 @@ export class PauseOverlay {
       variant: 'secondary',
     });
     this.checkpointTab = createActionButtonControl(scene, {
-      label: 'CHECKPOINTS', width: initialLayout.tabWidth, height: initialLayout.tabHeight,
-      onClick: () => this.selectSubview('checkpoints'), variant: 'primary', fontSize: '11px',
+      label: 'CHECKPOINTS',
+      width: initialLayout.tabWidth,
+      height: initialLayout.tabHeight,
+      onClick: () => this.selectSubview('checkpoints'),
+      variant: 'primary',
+      fontSize: '11px',
     });
     this.settingsTab = createActionButtonControl(scene, {
-      label: 'SETTINGS', width: initialLayout.tabWidth, height: initialLayout.tabHeight,
-      onClick: () => this.selectSubview('settings'), variant: 'secondary', fontSize: '11px',
+      label: 'SETTINGS',
+      width: initialLayout.tabWidth,
+      height: initialLayout.tabHeight,
+      onClick: () => this.selectSubview('settings'),
+      variant: 'secondary',
+      fontSize: '11px',
     });
 
     this.setDepth(900);
@@ -164,9 +180,11 @@ export class PauseOverlay {
     this.state.canSave = nextState.canSave ?? this.state.canSave;
     this.state.storageAvailable = nextState.storageAvailable ?? this.state.storageAvailable;
     this.state.saveSlots = nextState.saveSlots ?? this.state.saveSlots;
-    const statusMessageChanged = nextState.statusMessage !== undefined && nextState.statusMessage !== this.state.statusMessage;
+    const statusMessageChanged =
+      nextState.statusMessage !== undefined && nextState.statusMessage !== this.state.statusMessage;
     this.state.statusMessage = nextState.statusMessage ?? this.state.statusMessage;
-    this.state.statusOk = nextState.statusOk ?? (nextState.statusMessage === '' || statusMessageChanged ? true : this.state.statusOk);
+    this.state.statusOk =
+      nextState.statusOk ?? (nextState.statusMessage === '' || statusMessageChanged ? true : this.state.statusOk);
     this.applyState();
   }
 
@@ -313,16 +331,24 @@ export class PauseOverlay {
     const shouldShow = this.state.visible;
     const canResume = this.state.canResume;
     const message = getPauseOverlayMessage();
-    const statusMessage = this.state.statusMessage || (this.activeSubview === 'settings'
-      ? 'Quality applies after restart.'
-      : this.state.storageAvailable ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.' : 'Checkpoint storage unavailable in this browser.');
+    const statusMessage =
+      this.state.statusMessage ||
+      (this.activeSubview === 'settings'
+        ? 'Quality applies after restart.'
+        : this.state.storageAvailable
+          ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.'
+          : 'Checkpoint storage unavailable in this browser.');
 
     this.titleText.setText(message.title);
     this.subtitleText.setText(message.subtitle);
     this.hintText.setText(this.activeSubview === 'settings' ? message.settingsHint : message.checkpointHint);
     this.resumeButton.setLabel(message.resumeLabel);
     this.statusText.setText(statusMessage);
-    this.statusText.setColor(this.state.statusOk === false || (this.activeSubview === 'checkpoints' && !this.state.storageAvailable) ? '#ff9c7f' : '#72ecff');
+    this.statusText.setColor(
+      this.state.statusOk === false || (this.activeSubview === 'checkpoints' && !this.state.storageAvailable)
+        ? '#ff9c7f'
+        : '#72ecff'
+    );
 
     this.resumeButton.setEnabled(canResume);
     this.menuButton.setEnabled(true);
@@ -353,5 +379,4 @@ export class PauseOverlay {
     this.activeSubview = subview;
     this.applyState();
   }
-
 }

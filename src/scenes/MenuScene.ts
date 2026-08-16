@@ -5,11 +5,7 @@ import {
   setGameplayDifficultyTier,
   type GameplayDifficultyTier,
 } from '../config/gameplayDifficulty';
-import {
-  getVisualQualityTier,
-  setVisualQualityTier,
-  type VisualQualityTier,
-} from '../config/visualQuality';
+import { getVisualQualityTier, setVisualQualityTier, type VisualQualityTier } from '../config/visualQuality';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import {
   deleteSaveSlot,
@@ -114,10 +110,7 @@ export class MenuScene extends Phaser.Scene {
     this.parallax.create(this, menuConfig);
   }
 
-  private createMenuPanels(
-    layoutPlan: ReturnType<typeof createMenuLayoutPlan>,
-    accentColor: number
-  ): void {
+  private createMenuPanels(layoutPlan: ReturnType<typeof createMenuLayoutPlan>, accentColor: number): void {
     createMenuBackdrop(this, layoutPlan, accentColor);
     createMenuTitle(this, layoutPlan);
     this.saveSlotPanel = createSaveSlotEntryPanel(
@@ -125,7 +118,7 @@ export class MenuScene extends Phaser.Scene {
       layoutPlan,
       accentColor,
       this.createSaveSlotPanelHandlers(),
-      isSaveStorageAvailable(),
+      isSaveStorageAvailable()
     );
     this.settingsPanel = createSettingsPanel(this, {
       layout: layoutPlan.settingsLayout,

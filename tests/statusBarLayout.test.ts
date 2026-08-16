@@ -40,12 +40,12 @@ mock.module('../src/utils/layout', () => ({
     centerX: 640,
     centerY: 360,
   }),
-  centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
+  centerHorizontally: (layout: { left: number; width: number }, width: number) =>
+    layout.left + (layout.width - width) / 2,
 }));
 
-const { getLayoutMetrics, renderHpBar, renderProgressBar, renderBossBar, shouldRenderMeterRatio } = await import(
-  '../src/systems/hud/statusBarLayout'
-);
+const { getLayoutMetrics, renderHpBar, renderProgressBar, renderBossBar, shouldRenderMeterRatio } =
+  await import('../src/systems/hud/statusBarLayout');
 
 type Call = { method: string; args: unknown[] };
 

@@ -46,7 +46,7 @@ describe('campaign helper regression coverage', () => {
       title: 'Empty Campaign',
       summary: 'No levels',
       levels: [],
-    } as (typeof CORE_CAMPAIGN);
+    } as typeof CORE_CAMPAIGN;
 
     expect(() => flattenCampaignLevels([emptyCampaign])).toThrow(
       '[levels] Campaign "empty" must include at least one level.'

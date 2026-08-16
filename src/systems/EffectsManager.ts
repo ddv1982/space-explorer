@@ -2,11 +2,7 @@ import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
 import { getVisualQualityProfile } from '../config/visualQuality';
 import { UI_FONT_MONO } from '../utils/uiFonts';
-import {
-  applyCameraColorGrade,
-  applyCameraColorPulse,
-  clearCameraFilters,
-} from '../utils/renderingCompat';
+import { applyCameraColorGrade, applyCameraColorPulse, clearCameraFilters } from '../utils/renderingCompat';
 import { generateEffectsParticleTextures } from './effects/particleTextureFactory';
 import {
   createScorePopup as createOverlayScorePopup,
@@ -24,10 +20,7 @@ import {
   getPowerUpBurstConfig,
   getSparkConfig,
 } from './effects/emitterSetup';
-import {
-  scaleRuntimeParticleQuantity,
-  shouldRenderRuntimeSecondaryEffects,
-} from './RuntimePerformanceBudget';
+import { scaleRuntimeParticleQuantity, shouldRenderRuntimeSecondaryEffects } from './RuntimePerformanceBudget';
 
 export class EffectsManager {
   private static readonly SCORE_POPUP_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -175,12 +168,7 @@ export class EffectsManager {
   // Public effect methods
   // ---------------------------------------------------------------------------
 
-  createExplosion(
-    x: number,
-    y: number,
-    intensity: number = 1,
-    particleBudgetScale: number = 1
-  ): void {
+  createExplosion(x: number, y: number, intensity: number = 1, particleBudgetScale: number = 1): void {
     if (!this.explosionEmitter) {
       return;
     }

@@ -8,16 +8,7 @@ import {
   getStartupPremiumBackgroundPreloadQueue,
 } from '../src/systems/parallax/premiumBackgroundManifest';
 
-const LEVEL_LAYER_SUFFIXES = [
-  '',
-  '_nebula',
-  '_mid',
-  '_near',
-  '_overlay',
-  '_composite',
-  '_motif',
-  '_atmosphere',
-];
+const LEVEL_LAYER_SUFFIXES = ['', '_nebula', '_mid', '_near', '_overlay', '_composite', '_motif', '_atmosphere'];
 
 function levelKeys(...levelNumbers: number[]): string[] {
   return levelNumbers.flatMap((levelNumber) => {

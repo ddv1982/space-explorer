@@ -208,6 +208,7 @@ for an explicit loadout, or `&upgrades=0` for a stock ship.
 
 ## Docs
 
+- [`docs/README.md`](docs/README.md) — current documentation map and common change paths
 - [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
 - [`docs/qa/quality-gates.md`](docs/qa/quality-gates.md) — local and CI validation gates
 - [`docs/procedural-music-system.md`](docs/procedural-music-system.md) — procedural music architecture, authoring contract, and deterministic QA workflow
@@ -216,7 +217,7 @@ for an explicit loadout, or `&upgrades=0` for a stock ship.
 ## Release notes
 
 - [Unreleased changes](docs/releases/unreleased.md)
-- [Latest release notes](docs/releases/1.10.1.md)
+- [Latest release notes](docs/releases/1.11.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

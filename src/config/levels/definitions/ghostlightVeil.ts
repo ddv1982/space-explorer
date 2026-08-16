@@ -92,7 +92,8 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
           telegraph: 'wormhole',
           bonusOnClearMs: 4000,
           bonusWave: { type: 'swarm', count: 5 },
-          notes: 'Lancer duel debut behind wormhole telegraphs; the gilded ace lead is the duel priority, and a fast clear earns a bonus popcorn verse.',
+          notes:
+            'Lancer duel debut behind wormhole telegraphs; the gilded ace lead is the duel priority, and a fast clear earns a bonus popcorn verse.',
         },
       ],
       hazardEvents: [
@@ -181,7 +182,8 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
           aceCount: 1,
           midBossBeat: true,
           telegraph: 'warning',
-          notes: 'Mid-boss elite beat at ~60%: a gunship pincer with banner and warnings conducts the crescendo peak; the gilded ace lead is the priority read.',
+          notes:
+            'Mid-boss elite beat at ~60%: a gunship pincer with banner and warnings conducts the crescendo peak; the gilded ace lead is the priority read.',
         },
       ],
       spawnRateMultiplier: 1.95,

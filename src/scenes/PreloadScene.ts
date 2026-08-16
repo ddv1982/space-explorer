@@ -28,10 +28,12 @@ export class PreloadScene extends Phaser.Scene {
     registerRestartOnResize(this);
 
     const layout = getViewportLayout(this);
-    const loadingText = this.add.text(layout.centerX, layout.centerY, 'LOADING... 0%', {
-      fontSize: '32px',
-      color: '#ffffff',
-    }).setOrigin(0.5);
+    const loadingText = this.add
+      .text(layout.centerX, layout.centerY, 'LOADING... 0%', {
+        fontSize: '32px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
 
     const updateProgress = (progress: number): void => {
       const normalizedProgress = Math.min(1, Math.max(0, progress));

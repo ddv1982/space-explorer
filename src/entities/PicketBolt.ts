@@ -39,10 +39,10 @@ export class PicketBolt extends Phaser.Physics.Arcade.Sprite {
     const viewport = getViewportBounds(this.scene);
     const padding = 24;
     if (
-      this.x < viewport.left - padding
-      || this.x > viewport.right + padding
-      || this.y < viewport.top - padding
-      || this.y > viewport.bottom + padding
+      this.x < viewport.left - padding ||
+      this.x > viewport.right + padding ||
+      this.y < viewport.top - padding ||
+      this.y > viewport.bottom + padding
     ) {
       this.kill();
     }

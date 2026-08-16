@@ -52,15 +52,7 @@ describe('applyModulation', () => {
   test('uses triangle waveform when modulation waveform is random and wires the LFO', () => {
     const { ctx, target, lfo, lfoGain, events } = createHarness();
 
-    applyModulation(
-      ctx,
-      { target: 'gain', depth: 2, rateHz: 3, waveform: 'random' },
-      target,
-      5,
-      10,
-      4,
-      0.5
-    );
+    applyModulation(ctx, { target: 'gain', depth: 2, rateHz: 3, waveform: 'random' }, target, 5, 10, 4, 0.5);
 
     expect(lfo.type).toBe('triangle');
     expect(events).toEqual([

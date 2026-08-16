@@ -78,7 +78,9 @@ describe('hazard overlay runtime damping', () => {
     const lineStyles: number[][] = [];
     const overlay = {
       clear: mock(),
-      lineStyle: (...args: number[]) => { lineStyles.push(args); },
+      lineStyle: (...args: number[]) => {
+        lineStyles.push(args);
+      },
       lineBetween: mock(),
       strokeEllipse: mock(),
       fillStyle: mock(),

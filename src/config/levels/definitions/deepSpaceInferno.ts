@@ -87,7 +87,8 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
           telegraph: 'warning',
           bonusOnClearMs: 4000,
           bonusWave: { type: 'swarm', count: 4 },
-          notes: 'Splitter debut: a telegraphed center-lane line that multiplies into swarmlings; fast clears earn a bonus popcorn wave.',
+          notes:
+            'Splitter debut: a telegraphed center-lane line that multiplies into swarmlings; fast clears earn a bonus popcorn wave.',
         },
       ],
       hazardEvents: [
@@ -155,7 +156,8 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
             { type: 'splitter', lane: 'left', ace: true },
             { type: 'gunship', lane: 'right' },
           ],
-          notes: 'Lane-reading priority check: the gilded ace splitter lane multiplies if ignored while the gunship lane pressures the route.',
+          notes:
+            'Lane-reading priority check: the gilded ace splitter lane multiplies if ignored while the gunship lane pressures the route.',
         },
       ],
       waves: [
@@ -168,7 +170,8 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
           aceCount: 1,
           midBossBeat: true,
           telegraph: 'warning',
-          notes: 'Mid-boss elite beat at ~60%: a gunship pincer with banner and warning telegraphs punctuates the mid-campaign exam; the gilded ace lead is the priority read.',
+          notes:
+            'Mid-boss elite beat at ~60%: a gunship pincer with banner and warning telegraphs punctuates the mid-campaign exam; the gilded ace lead is the priority read.',
         },
       ],
       hazardEvents: [

@@ -42,6 +42,4 @@ type GameSceneEventPayloads = {
 
 export type GameSceneEventName = keyof GameSceneEventPayloads;
 
-export type GameSceneEventHandler<Event extends GameSceneEventName> = (
-  ...args: GameSceneEventPayloads[Event]
-) => void;
+export type GameSceneEventHandler<Event extends GameSceneEventName> = (...args: GameSceneEventPayloads[Event]) => void;

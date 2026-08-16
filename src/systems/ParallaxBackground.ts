@@ -109,18 +109,11 @@ export class ParallaxBackground {
   }
 
   private createSceneLayers(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
-    const hasPremiumBackgroundLayers = levelConfig
-      ? this.createPremiumBackgroundLayers(scene, levelConfig)
-      : false;
+    const hasPremiumBackgroundLayers = levelConfig ? this.createPremiumBackgroundLayers(scene, levelConfig) : false;
 
     this.tileSprites = hasPremiumBackgroundLayers
       ? []
-      : createStarfieldTileSprites(
-          scene,
-          levelConfig,
-          this.currentWidth,
-          this.currentHeight
-        );
+      : createStarfieldTileSprites(scene, levelConfig, this.currentWidth, this.currentHeight);
 
     if (levelConfig) {
       this.createLevelVisualLayers(scene, levelConfig);
@@ -148,12 +141,7 @@ export class ParallaxBackground {
   }
 
   private createPremiumBackgroundLayers(scene: Phaser.Scene, config: LevelConfig): boolean {
-    return createPremiumBackgroundLayersHelper(
-      scene,
-      config,
-      this.getViewportSize(),
-      this.premiumBackgroundLayers
-    );
+    return createPremiumBackgroundLayersHelper(scene, config, this.getViewportSize(), this.premiumBackgroundLayers);
   }
 
   private destroyPremiumBackgroundLayers(): void {
@@ -309,12 +297,7 @@ export class ParallaxBackground {
   // ---------------------------------------------------------------------------
 
   private createDebrisMotes(scene: Phaser.Scene, config: LevelConfig): void {
-    createDebrisMotesHelper(
-      scene,
-      config,
-      this.getViewportSize(),
-      this.debrisMotes
-    );
+    createDebrisMotesHelper(scene, config, this.getViewportSize(), this.debrisMotes);
   }
 
   // ---------------------------------------------------------------------------
@@ -356,12 +339,13 @@ export class ParallaxBackground {
       this.atmosphereAlpha,
       this.landmarkAlpha,
       (sprite) => getPassingPlanetOffscreenThreshold(sprite, PASSING_PLANET_OFFSCREEN_PADDING),
-      (planet) => resetPassingPlanetPosition(
-        planet,
-        this.currentWidth,
-        PASSING_PLANET_RESPAWN_MIN_X,
-        PASSING_PLANET_RESPAWN_MAX_X
-      )
+      (planet) =>
+        resetPassingPlanetPosition(
+          planet,
+          this.currentWidth,
+          PASSING_PLANET_RESPAWN_MIN_X,
+          PASSING_PLANET_RESPAWN_MAX_X
+        )
     );
   }
 

@@ -10,11 +10,7 @@ import type { GrazeSurgeSystem } from '@/systems/GrazeSurgeSystem';
 import type { HUD } from '@/systems/HUD';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { ScoreManager } from '@/systems/ScoreManager';
-import type {
-  GameSceneFlowController,
-  GameSceneFlowContext,
-  PlayerDeathFlowOutcome,
-} from './GameSceneFlowController';
+import type { GameSceneFlowController, GameSceneFlowContext, PlayerDeathFlowOutcome } from './GameSceneFlowController';
 import { getViewportBounds } from '@/utils/layout';
 import { runBestEffort } from '@/utils/runBestEffort';
 import { spawnGuaranteedPowerUp, trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
@@ -91,12 +87,14 @@ export function createGameSceneCombatFeedbackHandlers(
   const playPlayerDeathCue = (x: number, y: number): void => {
     deps.player().playDeathAnimation();
     audioManager.playExplosion(deps.constants.playerDeathExplosionAudioIntensity);
-    deps.effectsManager().createExplosion(
-      x,
-      y,
-      deps.constants.playerDeathExplosionVisualIntensity,
-      deps.constants.playerDeathParticleBudgetScale
-    );
+    deps
+      .effectsManager()
+      .createExplosion(
+        x,
+        y,
+        deps.constants.playerDeathExplosionVisualIntensity,
+        deps.constants.playerDeathParticleBudgetScale
+      );
   };
 
   const tryDropPowerUp = (x: number, y: number): void => {
@@ -144,11 +142,7 @@ export function createGameSceneCombatFeedbackHandlers(
   const spawnBoss = (): void => {
     const viewport = getViewportBounds(deps.scene);
     const levelConfig = deps.levelManager().getLevelConfig();
-    const boss = deps.enemyPool().spawnBoss(
-      viewport.centerX,
-      -60,
-      getBossSpawnConfig()
-    );
+    const boss = deps.enemyPool().spawnBoss(viewport.centerX, -60, getBossSpawnConfig());
 
     if (!boss) {
       return;
@@ -180,11 +174,7 @@ export function createGameSceneCombatFeedbackHandlers(
 
   const handleBossDefeatCleanup = (boss: Boss | null): void => {
     if (boss) {
-      deps.effectsManager().createExplosion(
-        boss.x,
-        boss.y,
-        deps.constants.bossExplosionVisualIntensity
-      );
+      deps.effectsManager().createExplosion(boss.x, boss.y, deps.constants.bossExplosionVisualIntensity);
       runBestEffort(() => deps.effectsManager().createSurgePulse(boss.x, boss.y));
       runBestEffort(() => deps.scene.cameras.main.flash(260, 255, 255, 255, false));
       runBestEffort(() => deps.scene.cameras.main.shake(320, 0.012));

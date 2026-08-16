@@ -12,9 +12,7 @@ test('aegis picket is locked before level 4 and purchasable with tier names afte
     await harness.showPlanetIntermission(1);
   });
   await waitForScene(page, 'PlanetIntermission');
-  await expect
-    .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'AEGIS PICKET'))
-    .toBe(true);
+  await expect.poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'AEGIS PICKET')).toBe(true);
   const lockedTexts = (await snapshot(page)).texts.map((item) => item.text);
   expect(lockedTexts).toContain('UNLOCK: REACH LEVEL 4');
 
@@ -25,9 +23,7 @@ test('aegis picket is locked before level 4 and purchasable with tier names afte
   });
   await waitForScene(page, 'PlanetIntermission');
   await expect
-    .poll(async () =>
-      (await snapshot(page)).texts.some((item) => item.text === 'PICKET INSTALLATION  ·  0/2')
-    )
+    .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'PICKET INSTALLATION  ·  0/2'))
     .toBe(true);
 
   const shop = await snapshot(page);
@@ -50,10 +46,7 @@ test('aegis picket is locked before level 4 and purchasable with tier names afte
   assertNoBrowserErrors();
 });
 
-test('aegis picket mounts deploy, announce, and track the viewport edges', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
+test('aegis picket mounts deploy, announce, and track the viewport edges', async ({ page, assertNoBrowserErrors }) => {
   await page.goto('/?browserHarness=1&startLevel=5&upgrades=0,0,0,0,1');
   await expect(page.locator('#game-root > canvas')).toHaveCount(1);
   await waitForScene(page, 'Game');
@@ -61,26 +54,20 @@ test('aegis picket mounts deploy, announce, and track the viewport edges', async
   await expect
     .poll(
       async () =>
-        (await snapshot(page)).objects.filter(
-          (object) => object.textureKey === 'picket-turret' && object.active
-        ).length,
+        (await snapshot(page)).objects.filter((object) => object.textureKey === 'picket-turret' && object.active)
+          .length,
       { timeout: 10_000 }
     )
     .toBe(2);
 
   await expect
-    .poll(
-      async () => (await snapshot(page)).texts.some((item) => item.text === 'PICKET ONLINE'),
-      { timeout: 12_000 }
-    )
+    .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'PICKET ONLINE'), { timeout: 12_000 })
     .toBe(true);
 
   await page.setViewportSize({ width: 960, height: 640 });
   await expect
     .poll(async () => {
-      const mounts = (await snapshot(page)).objects.filter(
-        (object) => object.textureKey === 'picket-turret'
-      );
+      const mounts = (await snapshot(page)).objects.filter((object) => object.textureKey === 'picket-turret');
       return mounts.map((mount) => Math.round(mount.x)).sort((a, b) => a - b);
     })
     .toEqual([26, 934]);
@@ -91,9 +78,7 @@ test('aegis picket mounts deploy, announce, and track the viewport edges', async
     await expect
       .poll(
         async () =>
-          (await snapshot(page)).objects.some(
-            (object) => object.textureKey === 'picket-bolt' && object.active
-          ),
+          (await snapshot(page)).objects.some((object) => object.textureKey === 'picket-bolt' && object.active),
         { timeout: 30_000 }
       )
       .toBe(true);

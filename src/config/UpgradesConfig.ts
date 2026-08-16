@@ -139,11 +139,16 @@ export function normalizeUpgradeLevel(key: UpgradeKey, value: unknown, fallback 
 
 export function getUpgradeProgressionLimit(upgrade: UpgradeDef, playerLevel: number): number {
   const cappedLevel = Math.max(1, playerLevel);
-  const configuredCap = upgrade.progressionCaps[cappedLevel - 1] ?? upgrade.progressionCaps[upgrade.progressionCaps.length - 1];
+  const configuredCap =
+    upgrade.progressionCaps[cappedLevel - 1] ?? upgrade.progressionCaps[upgrade.progressionCaps.length - 1];
   return Math.min(upgrade.maxLevel, Math.max(0, configuredCap ?? upgrade.maxLevel));
 }
 
-function getUpgradeUnlockReason(upgrade: UpgradeDef, playerLevel: number, upgrades: PlayerUpgradeLevels): string | null {
+function getUpgradeUnlockReason(
+  upgrade: UpgradeDef,
+  playerLevel: number,
+  upgrades: PlayerUpgradeLevels
+): string | null {
   const unlock = upgrade.unlock;
   if (!unlock) {
     return null;

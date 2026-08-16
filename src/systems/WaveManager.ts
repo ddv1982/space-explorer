@@ -25,6 +25,7 @@ import { EnemySpawnTable } from './wave/EnemySpawnTable';
 import { createEnemySpawnHandlers } from './wave/createEnemySpawnHandlers';
 import { HazardCadenceController } from './wave/HazardCadenceController';
 import { WormholePackController } from './wave/WormholePackController';
+import { AuthoredEventTracker } from './wave/AuthoredEventTracker';
 import {
   CHOREO_LANE_COUNT,
   getLaneCenterX,
@@ -61,7 +62,7 @@ export class WaveManager {
   private gameplayTime: number | null = null;
   private deathReliefRemainingMs = 0;
   private readonly wormholePacks = new WormholePackController();
-  private readonly triggeredAuthoredEvents = new Set<string>();
+  private readonly authoredEvents = new AuthoredEventTracker();
   private readonly enemySpawnHandlers = createEnemySpawnHandlers({
     spawnRepeated: (type, count, getX, getY) => this.spawnRepeatedEnemies(type, count, getX, getY),
     getSpawnX: (anchorX, padding) => this.getEncounterSpawnX(anchorX, padding),
@@ -111,9 +112,7 @@ export class WaveManager {
     }
 
     const gameplayDelta = Math.max(0, delta);
-    this.gameplayTime = this.gameplayTime === null
-      ? Math.max(0, _time)
-      : this.gameplayTime + gameplayDelta;
+    this.gameplayTime = this.gameplayTime === null ? Math.max(0, _time) : this.gameplayTime + gameplayDelta;
     const time = this.gameplayTime;
 
     this.updateDeathRelief(gameplayDelta);
@@ -172,7 +171,7 @@ export class WaveManager {
     this.lastBossAddSpawn = 0;
     this.deathReliefRemainingMs = 0;
     this.activeSection = null;
-    this.triggeredAuthoredEvents.clear();
+    this.authoredEvents.reset();
     this.choreographer?.setSection(undefined);
   }
 
@@ -204,32 +203,16 @@ export class WaveManager {
     }
 
     section.signatureWaves?.forEach((wave) => {
-      if (this.shouldTriggerAuthoredEvent(section, 'wave', wave.id, wave.triggerProgress, sectionProgress)) {
+      if (this.authoredEvents.claim(section.id, 'wave', wave.id, wave.triggerProgress, sectionProgress)) {
         this.spawnSignatureWave(wave);
       }
     });
 
     section.recoveryDrops?.forEach((drop) => {
-      if (this.shouldTriggerAuthoredEvent(section, 'drop', drop.id, drop.triggerProgress, sectionProgress)) {
+      if (this.authoredEvents.claim(section.id, 'drop', drop.id, drop.triggerProgress, sectionProgress)) {
         this.spawnRecoveryDrop(drop);
       }
     });
-  }
-
-  private shouldTriggerAuthoredEvent(
-    section: LevelSectionConfig,
-    type: 'wave' | 'drop',
-    id: string,
-    triggerProgress: number,
-    sectionProgress: number
-  ): boolean {
-    const key = `${section.id}:${type}:${id}`;
-    if (this.triggeredAuthoredEvents.has(key) || sectionProgress < triggerProgress) {
-      return false;
-    }
-
-    this.triggeredAuthoredEvents.add(key);
-    return true;
   }
 
   private spawnSignatureWave(wave: SignatureWaveConfig): void {
@@ -360,7 +343,8 @@ export class WaveManager {
   }
 
   private shouldSpawnEncounter(time: number, rateMultiplier: number): boolean {
-    const encounterInterval = (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardCadence.getPressure());
+    const encounterInterval =
+      (2000 / rateMultiplier) * getEncounterIntervalPressureScale(this.hazardCadence.getPressure());
     if (time <= this.lastEncounterSpawn + encounterInterval) {
       return false;
     }
@@ -378,11 +362,7 @@ export class WaveManager {
     return Phaser.Math.Between(minCount, maxCount);
   }
 
-  private spawnEnemiesByConfig(
-    time: number,
-    rateMultiplier: number,
-    activeSection: LevelSectionConfig | null
-  ): void {
+  private spawnEnemiesByConfig(time: number, rateMultiplier: number, activeSection: LevelSectionConfig | null): void {
     if (!this.shouldSpawnEncounter(time, rateMultiplier)) {
       return;
     }

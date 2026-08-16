@@ -4,10 +4,7 @@ import { getVisualQualityProfile } from '../../config/visualQuality';
 import { runtimePerformanceBudget } from '../RuntimePerformanceBudget';
 import { SCROLL_SPEED } from '../../utils/constants';
 import { getPremiumBackgroundManifest, type PremiumBackgroundLayerConfig } from './premiumBackgroundManifest';
-import {
-  applyHeightCoverRepeatLayout,
-  getHeightCoverRepeatTilePositionY,
-} from './tileSpriteBackgroundLayout';
+import { applyHeightCoverRepeatLayout, getHeightCoverRepeatTilePositionY } from './tileSpriteBackgroundLayout';
 
 export interface PremiumBackgroundLayerState {
   sprite: Phaser.GameObjects.TileSprite;
@@ -37,7 +34,7 @@ function getRuntimeLayerConfigs(config: LevelConfig): PremiumBackgroundLayerConf
 
   const layerLimit = Math.min(
     getVisualQualityProfile().backgroundLayerCount,
-    runtimePerformanceBudget.getSnapshot().backgroundLayerLimit,
+    runtimePerformanceBudget.getSnapshot().backgroundLayerLimit
   );
   return manifest.runtimeLayers.slice(0, layerLimit);
 }
@@ -52,7 +49,7 @@ export function createPremiumBackgroundLayers(
   scene: Phaser.Scene,
   config: LevelConfig,
   viewport: ViewportSize,
-  premiumBackgroundLayers: PremiumBackgroundLayerState[],
+  premiumBackgroundLayers: PremiumBackgroundLayerState[]
 ): boolean {
   const runtimeLayers = getRuntimeLayerConfigs(config);
   if (!runtimeLayers || !runtimeLayers.every((layer) => scene.textures.exists(layer.key))) {
@@ -65,7 +62,7 @@ export function createPremiumBackgroundLayers(
       viewport.height / 2,
       viewport.width,
       viewport.height,
-      layer.key,
+      layer.key
     );
     sprite.setOrigin(0.5);
     sprite.setDepth(layer.depth);
@@ -88,9 +85,7 @@ export function createPremiumBackgroundLayers(
   return true;
 }
 
-export function destroyPremiumBackgroundLayers(
-  premiumBackgroundLayers: PremiumBackgroundLayerState[],
-): void {
+export function destroyPremiumBackgroundLayers(premiumBackgroundLayers: PremiumBackgroundLayerState[]): void {
   for (const layer of premiumBackgroundLayers) {
     layer.sprite.destroy();
   }
@@ -99,7 +94,7 @@ export function destroyPremiumBackgroundLayers(
 }
 
 function capturePremiumBackgroundScrollOffsets(
-  premiumBackgroundLayers: PremiumBackgroundLayerState[],
+  premiumBackgroundLayers: PremiumBackgroundLayerState[]
 ): PremiumBackgroundScrollSnapshot[] {
   return premiumBackgroundLayers.map((layer) => ({
     key: layer.config.key,
@@ -110,7 +105,7 @@ function capturePremiumBackgroundScrollOffsets(
 
 function restorePremiumBackgroundScrollOffsets(
   premiumBackgroundLayers: PremiumBackgroundLayerState[],
-  snapshots: PremiumBackgroundScrollSnapshot[],
+  snapshots: PremiumBackgroundScrollSnapshot[]
 ): void {
   for (const layer of premiumBackgroundLayers) {
     const snapshot = snapshots.find((entry) => entry.key === layer.config.key);
@@ -139,7 +134,7 @@ export function rebuildPremiumBackgroundLayers(params: {
 
 export function layoutPremiumBackgroundLayers(
   premiumBackgroundLayers: PremiumBackgroundLayerState[],
-  viewport: ViewportSize,
+  viewport: ViewportSize
 ): void {
   for (const layer of premiumBackgroundLayers) {
     applyHeightCoverRepeatLayout(layer.sprite, viewport, {
@@ -161,12 +156,12 @@ export function scrollPremiumBackgroundLayers(params: {
   }
 
   for (const layer of params.premiumBackgroundLayers) {
-    layer.scrollOffsetY += layer.config.scrollSpeed * SCROLL_SPEED * params.delta / 16 * params.atmosphereDrift;
+    layer.scrollOffsetY += ((layer.config.scrollSpeed * SCROLL_SPEED * params.delta) / 16) * params.atmosphereDrift;
     layer.sprite.tilePositionY = getHeightCoverRepeatTilePositionY(
       layer.sprite,
       params.currentHeight,
       layer.sprite.tileScaleY,
-      layer.scrollOffsetY,
+      layer.scrollOffsetY
     );
     const roleDrift = layer.config.role === 'far' ? 4 : layer.config.role === 'mid' ? 10 : 16;
     layer.scrollOffsetX = Math.sin(params.elapsed * (0.00008 + layer.config.scrollSpeed * 0.00012)) * roleDrift;
@@ -174,10 +169,10 @@ export function scrollPremiumBackgroundLayers(params: {
 
     const nextAlpha = layer.config.pulse
       ? Phaser.Math.Clamp(
-          layer.baseAlpha * params.atmosphereAlpha
-            + Math.sin(params.elapsed * layer.config.pulse.speed) * layer.config.pulse.amplitude,
+          layer.baseAlpha * params.atmosphereAlpha +
+            Math.sin(params.elapsed * layer.config.pulse.speed) * layer.config.pulse.amplitude,
           0,
-          1,
+          1
         )
       : Phaser.Math.Clamp(layer.baseAlpha * params.atmosphereAlpha, 0, 1);
     layer.currentAlpha = nextAlpha;

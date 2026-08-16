@@ -5,9 +5,7 @@ mock.module('phaser', () => ({
   default: { Scale: { Events: { RESIZE: 'resize' } } },
 }));
 
-const { registerScaleHandlers } = await import(
-  '../src/scenes/gameScene/viewportScaleRegistration'
-);
+const { registerScaleHandlers } = await import('../src/scenes/gameScene/viewportScaleRegistration');
 
 describe('viewport scale registration lifecycle', () => {
   test('repeated registration retains exactly one resize callback', () => {

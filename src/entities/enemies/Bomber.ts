@@ -1,12 +1,7 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { BomberBomb } from '../BomberBomb';
-import {
-  BOMBER_BOMB_COOLDOWN,
-  BOMBER_HP,
-  BOMBER_SCORE,
-  BOMBER_SPEED,
-} from '../../utils/constants';
+import { BOMBER_BOMB_COOLDOWN, BOMBER_HP, BOMBER_SCORE, BOMBER_SPEED } from '../../utils/constants';
 import { ensureBomberTexture } from '../../utils/SpriteFactory';
 
 export class Bomber extends EnemyBase {

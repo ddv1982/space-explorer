@@ -14,8 +14,7 @@ export const TERMINAL_TRANSITIONS = {
   levelComplete: 'level-complete',
 } as const;
 
-export type TerminalTransitionState =
-  typeof TERMINAL_TRANSITIONS[keyof typeof TERMINAL_TRANSITIONS];
+export type TerminalTransitionState = (typeof TERMINAL_TRANSITIONS)[keyof typeof TERMINAL_TRANSITIONS];
 
 const POWER_UP_DROP_CHANCE = 0.12;
 const POWER_UP_TYPES: PowerUpType[] = ['health', 'shield', 'rapidfire'];
@@ -38,11 +37,7 @@ const POWER_UP_TINTS: Record<PowerUpType, number> = {
   rapidfire: 0xffcc00,
 };
 
-export function trySpawnRandomPowerUp(
-  group: Phaser.Physics.Arcade.Group,
-  x: number,
-  y: number
-): void {
+export function trySpawnRandomPowerUp(group: Phaser.Physics.Arcade.Group, x: number, y: number): void {
   if (Math.random() > POWER_UP_DROP_CHANCE) {
     return;
   }
@@ -56,24 +51,13 @@ export function trySpawnRandomPowerUp(
  * flag instead of also rolling trySpawnRandomPowerUp, so the guaranteed drop
  * is never duplicated by the normal drop roll.
  */
-export function spawnGuaranteedPowerUp(
-  group: Phaser.Physics.Arcade.Group,
-  x: number,
-  y: number
-): void {
+export function spawnGuaranteedPowerUp(group: Phaser.Physics.Arcade.Group, x: number, y: number): void {
   const type = Phaser.Utils.Array.GetRandom(POWER_UP_TYPES);
   spawnPowerUp(group, x, y, type);
 }
 
-export function spawnPowerUp(
-  group: Phaser.Physics.Arcade.Group,
-  x: number,
-  y: number,
-  type: PowerUpType
-): void {
-  const powerUp =
-    (group.getFirstDead(false) as PowerUp | null) ??
-    (group.get(x, y) as PowerUp | null);
+export function spawnPowerUp(group: Phaser.Physics.Arcade.Group, x: number, y: number, type: PowerUpType): void {
+  const powerUp = (group.getFirstDead(false) as PowerUp | null) ?? (group.get(x, y) as PowerUp | null);
 
   powerUp?.spawn(x, y, type);
 }
@@ -101,12 +85,15 @@ export function applyPowerUpPickup(
   effectsManager.createSparkBurst(player.x, player.y);
   effectsManager.createPowerUpBurst(player.x, player.y, POWER_UP_TINTS[type]);
 
-  const text = scene.add.text(player.x, player.y - 40, POWER_UP_LABELS[type], {
-    fontSize: '14px',
-    color: POWER_UP_COLORS[type],
-    fontFamily: UI_FONT_MONO,
-    fontStyle: 'bold',
-  }).setOrigin(0.5).setDepth(50);
+  const text = scene.add
+    .text(player.x, player.y - 40, POWER_UP_LABELS[type], {
+      fontSize: '14px',
+      color: POWER_UP_COLORS[type],
+      fontFamily: UI_FONT_MONO,
+      fontStyle: 'bold',
+    })
+    .setOrigin(0.5)
+    .setDepth(50);
 
   scene.tweens.add({
     targets: text,

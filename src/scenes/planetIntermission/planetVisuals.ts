@@ -18,8 +18,8 @@ function drawBackgroundStars(
   accent: number
 ): void {
   for (let index = 0; index < 54; index += 1) {
-    const x = left + (index * 137 + level * 83) % width;
-    const y = top + (index * 71 + level * 47) % height;
+    const x = left + ((index * 137 + level * 83) % width);
+    const y = top + ((index * 71 + level * 47) % height);
     const radius = index % 13 === 0 ? 1.4 : index % 5 === 0 ? 0.9 : 0.55;
     graphics.fillStyle(index % 7 === 0 ? accent : 0xd9f3ff, index % 5 === 0 ? 0.42 : 0.22);
     graphics.fillCircle(x, y, radius);
@@ -38,7 +38,8 @@ export function createIntermissionBackdrop(
   if (manifest) {
     const backdropLayers = manifest.runtimeLayers.filter((layer) => scene.textures.exists(layer.key));
     backdropLayers.forEach((layer, index) => {
-      scene.add.image(viewport.centerX, viewport.centerY, layer.key)
+      scene.add
+        .image(viewport.centerX, viewport.centerY, layer.key)
         .setDisplaySize(viewport.width, viewport.height)
         .setAlpha((layout.mode === 'desktop' ? 0.43 : 0.34) * (index === 0 ? 1 : 0.72))
         .setBlendMode(layer.blendMode ?? Phaser.BlendModes.NORMAL)
@@ -94,24 +95,28 @@ export function createPlanetArrivalVisual(
   const hasPortrait = scene.textures.exists(textureKey);
 
   if (!hasPortrait) {
-    console.warn(`[planetIntermission] Planet portrait "${textureKey}" is not loaded; rendering the arrival chrome without the planet body.`);
+    console.warn(
+      `[planetIntermission] Planet portrait "${textureKey}" is not loaded; rendering the arrival chrome without the planet body.`
+    );
   }
 
-  const halo = scene.add.ellipse(
-    layout.planetX,
-    layout.planetY,
-    layout.planetDiameter * 1.12,
-    layout.planetDiameter * 1.12,
-    levelConfig.planetPalette[1],
-    0.055
-  ).setStrokeStyle(Math.max(2, layout.planetDiameter * 0.018), levelConfig.planetPalette[1], 0.16).setDepth(0);
+  const halo = scene.add
+    .ellipse(
+      layout.planetX,
+      layout.planetY,
+      layout.planetDiameter * 1.12,
+      layout.planetDiameter * 1.12,
+      levelConfig.planetPalette[1],
+      0.055
+    )
+    .setStrokeStyle(Math.max(2, layout.planetDiameter * 0.018), levelConfig.planetPalette[1], 0.16)
+    .setDepth(0);
   halo.setBlendMode(Phaser.BlendModes.ADD);
-  const orbit = scene.add.ellipse(
-    layout.planetX,
-    layout.planetY,
-    layout.planetDiameter * 1.34,
-    layout.planetDiameter * 0.52
-  ).setStrokeStyle(1, levelConfig.planetPalette[1], 0.42).setAngle(profile.orbitTilt).setDepth(0);
+  const orbit = scene.add
+    .ellipse(layout.planetX, layout.planetY, layout.planetDiameter * 1.34, layout.planetDiameter * 0.52)
+    .setStrokeStyle(1, levelConfig.planetPalette[1], 0.42)
+    .setAngle(profile.orbitTilt)
+    .setDepth(0);
   orbit.setBlendMode(Phaser.BlendModes.ADD);
 
   const route = scene.add.graphics().setDepth(2);
@@ -137,37 +142,44 @@ export function createPlanetArrivalVisual(
   // Portraits use a 1024px source while preserving the historical composition
   // footprint, so large desktop presentation stays crisp without layout drift.
   const planet = hasPortrait
-    ? scene.add.image(layout.planetX, layout.planetY, textureKey)
-      .setDisplaySize(layout.planetDiameter * 1.43, layout.planetDiameter * 1.43)
-      .setDepth(1)
+    ? scene.add
+        .image(layout.planetX, layout.planetY, textureKey)
+        .setDisplaySize(layout.planetDiameter * 1.43, layout.planetDiameter * 1.43)
+        .setDepth(1)
     : null;
 
   if (layout.showOrbitLabels) {
-    scene.add.text(
-      layout.planetX - layout.planetDiameter * 0.52,
-      layout.planetY - layout.planetDiameter * 0.63,
-      profile.classification,
-      {
-        fontSize: layout.mode === 'desktop' ? '11px' : '9px',
-        color: '#8eb2c8',
-        fontFamily: UI_FONT_MONO,
-      }
-    ).setOrigin(0, 0.5).setDepth(3);
+    scene.add
+      .text(
+        layout.planetX - layout.planetDiameter * 0.52,
+        layout.planetY - layout.planetDiameter * 0.63,
+        profile.classification,
+        {
+          fontSize: layout.mode === 'desktop' ? '11px' : '9px',
+          color: '#8eb2c8',
+          fontFamily: UI_FONT_MONO,
+        }
+      )
+      .setOrigin(0, 0.5)
+      .setDepth(3);
 
-    scene.add.text(
-      layout.planetX,
-      layout.planetY + layout.planetDiameter * 0.67,
-      `ORBIT ${String(level).padStart(2, '0')}  ·  ${profile.approachCode}`,
-      {
-        fontSize: layout.mode === 'desktop' ? '11px' : '9px',
-        color: '#6f93aa',
-        fontFamily: UI_FONT_MONO,
-      }
-    ).setOrigin(0.5).setDepth(3);
+    scene.add
+      .text(
+        layout.planetX,
+        layout.planetY + layout.planetDiameter * 0.67,
+        `ORBIT ${String(level).padStart(2, '0')}  ·  ${profile.approachCode}`,
+        {
+          fontSize: layout.mode === 'desktop' ? '11px' : '9px',
+          color: '#6f93aa',
+          fontFamily: UI_FONT_MONO,
+        }
+      )
+      .setOrigin(0.5)
+      .setDepth(3);
   }
 
-  const reducedMotion = typeof window !== 'undefined'
-    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion =
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   if (!reducedMotion) {
     if (planet) {
       const targetScaleX = planet.scaleX;

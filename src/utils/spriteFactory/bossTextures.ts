@@ -1,13 +1,7 @@
 import Phaser from 'phaser';
 import type { BossAttackStyle } from '../../config/levels/types';
 import { withGeneratedEntityTexture } from '../generatedTexture';
-import {
-  fillHotCore,
-  fillNeonCircle,
-  fillNeonPolygon,
-  strokeNeonLine,
-  type NeonPalette,
-} from './neonStyle';
+import { fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine, type NeonPalette } from './neonStyle';
 
 const BOSS_PALETTES: Record<BossAttackStyle, NeonPalette> = {
   barrage: { body: 0x330a16, outline: 0xff6688, glow: 0x991833, hot: 0xffd7e0 },

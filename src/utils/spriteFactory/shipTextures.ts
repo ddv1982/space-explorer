@@ -1,13 +1,6 @@
 import Phaser from 'phaser';
 import { withGeneratedEntityTexture } from '../generatedTexture';
-import {
-  NEON_ENTITY,
-  fillCanopy,
-  fillHotCore,
-  fillNeonCircle,
-  fillNeonPolygon,
-  strokeNeonLine,
-} from './neonStyle';
+import { NEON_ENTITY, fillCanopy, fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine } from './neonStyle';
 
 export function ensurePlayerTexture(scene: Phaser.Scene): string {
   return withGeneratedEntityTexture(scene, 'player-ship', 36, 44, (g) => {

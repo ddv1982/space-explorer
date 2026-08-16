@@ -29,12 +29,14 @@ export function createTierSelectorControl<T extends string>(
   }
 ): TierSelectorControl<T> {
   let value = config.value;
-  const label = scene.add.text(0, 0, '', {
-    fontSize: '11px',
-    color: NEON_TEXT.secondary,
-    fontFamily: NEON_FONT.mono,
-    fontStyle: 'bold',
-  }).setOrigin(0, 0.5);
+  const label = scene.add
+    .text(0, 0, '', {
+      fontSize: '11px',
+      color: NEON_TEXT.secondary,
+      fontFamily: NEON_FONT.mono,
+      fontStyle: 'bold',
+    })
+    .setOrigin(0, 0.5);
   const buttons: ActionButtonControl[] = [];
 
   const refresh = (): void => {
@@ -77,19 +79,22 @@ export function createTierSelectorControl<T extends string>(
 
   const initialLabelWidth = config.layout.compact ? 82 : 116;
   const initialGap = 5;
-  const stableButtonWidth = (config.layout.width - initialLabelWidth - initialGap * config.tiers.length) / config.tiers.length;
+  const stableButtonWidth =
+    (config.layout.width - initialLabelWidth - initialGap * config.tiers.length) / config.tiers.length;
   config.tiers.forEach((tier) => {
-    buttons.push(createActionButtonControl(scene, {
-      label: tier.toUpperCase(),
-      width: stableButtonWidth,
-      height: config.layout.height,
-      fontSize: config.layout.compact ? '9px' : '10px',
-      onClick: () => {
-        if (tier === value || !config.onSelect(tier)) return;
-        value = tier;
-        refresh();
-      },
-    }));
+    buttons.push(
+      createActionButtonControl(scene, {
+        label: tier.toUpperCase(),
+        width: stableButtonWidth,
+        height: config.layout.height,
+        fontSize: config.layout.compact ? '9px' : '10px',
+        onClick: () => {
+          if (tier === value || !config.onSelect(tier)) return;
+          value = tier;
+          refresh();
+        },
+      })
+    );
   });
   control.setLayout(config.layout);
   refresh();

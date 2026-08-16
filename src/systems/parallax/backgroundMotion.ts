@@ -51,7 +51,7 @@ export function scrollStarLayers(
   delta: number
 ): void {
   for (let i = 0; i < tileSprites.length; i++) {
-    const speed = layerConfigs[i].scrollSpeed * SCROLL_SPEED * delta / 16;
+    const speed = (layerConfigs[i].scrollSpeed * SCROLL_SPEED * delta) / 16;
     tileSprites[i].tilePositionY += speed;
   }
 }
@@ -86,16 +86,12 @@ export function updateDebrisMoteMotion(
     const phase = elapsed * mote.speed + mote.phase;
     mote.sprite.x = mote.baseX + Math.sin(phase) * mote.driftX;
     mote.sprite.y = mote.baseY + Math.cos(phase * 0.7) * mote.driftY;
-    mote.sprite.angle += mote.rotSpeed * delta / 16;
+    mote.sprite.angle += (mote.rotSpeed * delta) / 16;
     setAlphaIfChanged(mote.sprite, Phaser.Math.Clamp(mote.baseAlpha * atmosphereAlpha, 0.08, 0.45));
   }
 }
 
-export function updateTwinkleMotion(
-  twinkles: TwinkleMotionState[],
-  elapsed: number,
-  atmosphereTwinkle: number
-): void {
+export function updateTwinkleMotion(twinkles: TwinkleMotionState[], elapsed: number, atmosphereTwinkle: number): void {
   for (let i = 0; i < twinkles.length; i++) {
     const twinkle = twinkles[i];
     const t = Math.sin(elapsed * twinkle.speed + twinkle.phase);
@@ -116,11 +112,8 @@ export function updatePassingPlanetMotion(
 ): void {
   for (let i = 0; i < planets.length; i++) {
     const planet = planets[i];
-    planet.sprite.x -= planet.scrollSpeed * SCROLL_SPEED * delta / 16;
-    setAlphaIfChanged(
-      planet.sprite,
-      Phaser.Math.Clamp(planet.baseAlpha * atmosphereAlpha * landmarkAlpha, 0.05, 0.28)
-    );
+    planet.sprite.x -= (planet.scrollSpeed * SCROLL_SPEED * delta) / 16;
+    setAlphaIfChanged(planet.sprite, Phaser.Math.Clamp(planet.baseAlpha * atmosphereAlpha * landmarkAlpha, 0.05, 0.28));
     if (planet.sprite.x < getOffscreenThreshold(planet.sprite)) {
       resetPosition(planet);
     }

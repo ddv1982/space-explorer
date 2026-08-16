@@ -23,12 +23,17 @@ describe('background motion render-property writes', () => {
   test('skips a redundant planet alpha write while preserving motion', () => {
     const sprite = createImage(0.4);
 
-    updatePlanetLayerMotion({
-      sprite: sprite as never,
-      baseX: 100,
-      baseY: 200,
-      baseAlpha: 0.5,
-    }, 0, 1, 1);
+    updatePlanetLayerMotion(
+      {
+        sprite: sprite as never,
+        baseX: 100,
+        baseY: 200,
+        baseAlpha: 0.5,
+      },
+      0,
+      1,
+      1
+    );
 
     expect(sprite.x).toBe(100);
     expect(sprite.y).toBe(215);
@@ -38,12 +43,17 @@ describe('background motion render-property writes', () => {
   test('applies a changed planet alpha exactly once', () => {
     const sprite = createImage(0.2);
 
-    updatePlanetLayerMotion({
-      sprite: sprite as never,
-      baseX: 100,
-      baseY: 200,
-      baseAlpha: 0.5,
-    }, 0, 1, 1);
+    updatePlanetLayerMotion(
+      {
+        sprite: sprite as never,
+        baseX: 100,
+        baseY: 200,
+        baseAlpha: 0.5,
+      },
+      0,
+      1,
+      1
+    );
 
     expect(sprite.alpha).toBe(0.4);
     expect(sprite.setAlpha).toHaveBeenCalledTimes(1);
@@ -60,14 +70,16 @@ describe('background motion render-property writes', () => {
     sprite.tilePositionY = 0;
 
     scrollPremiumBackgroundLayers({
-      premiumBackgroundLayers: [{
-        sprite: sprite as never,
-        config: { role: 'overlay', key: 'overlay', alpha: 0.75, depth: -16, scrollSpeed: 0.34 },
-        baseAlpha: 0.75,
-        currentAlpha: 0.75,
-        scrollOffsetX: 0,
-        scrollOffsetY: 0,
-      }],
+      premiumBackgroundLayers: [
+        {
+          sprite: sprite as never,
+          config: { role: 'overlay', key: 'overlay', alpha: 0.75, depth: -16, scrollSpeed: 0.34 },
+          baseAlpha: 0.75,
+          currentAlpha: 0.75,
+          scrollOffsetX: 0,
+          scrollOffsetY: 0,
+        },
+      ],
       delta: 0,
       currentHeight: 600,
       atmosphereDrift: 1,

@@ -97,7 +97,12 @@ function createSection(overrides: Partial<LevelSectionConfig> = {}): LevelSectio
 function createWaveManagerHarness(levelConfig: LevelConfig) {
   const spawnerCalls = {
     resetCorridorGapCenter: 0,
-    spawnAsteroids: [] as Array<{ time: number; activeSection: LevelSectionConfig | null; levelConfig: LevelConfig; lastAsteroidSpawn: number }>,
+    spawnAsteroids: [] as Array<{
+      time: number;
+      activeSection: LevelSectionConfig | null;
+      levelConfig: LevelConfig;
+      lastAsteroidSpawn: number;
+    }>,
     spawnMirroredAsteroids: [] as Array<{ leftSpeed: number; rightSpeed: number }>,
     spawnAsteroidBurst: [] as Array<{ count: number; minSpeed: number; maxSpeed: number; spacing?: number }>,
     spawnEdgeAsteroids: [] as unknown[],
@@ -331,9 +336,11 @@ describe('WaveManager', () => {
       hazardEvents: [{ type: 'wormhole-spawn', intensity: 0, cadenceMs: 500 }],
     });
     const nextSection = createSection({ id: 'next-section', startProgress: 0.5, endProgress: 1 });
-    const harness = createWaveManagerHarness(createLevelConfig({
-      sections: [wormholeSection, nextSection],
-    }));
+    const harness = createWaveManagerHarness(
+      createLevelConfig({
+        sections: [wormholeSection, nextSection],
+      })
+    );
 
     harness.manager.update(0, 0, 0.2);
     harness.manager.update(600, 600, 0.2);
@@ -456,16 +463,12 @@ describe('WaveManager', () => {
     harness.manager.update(200, 16, 0.45);
     harness.manager.update(300, 16, 0.8);
 
-    expect(harness.spawnedPowerUps).toEqual([
-      { x: 400, y: -40, type: 'shield' },
-    ]);
+    expect(harness.spawnedPowerUps).toEqual([{ x: 400, y: -40, type: 'shield' }]);
   });
 
   test('update fires choreographed section waves on accumulated gameplay delta, ignoring wall-clock jumps', () => {
     const activeSection = createSection({
-      waves: [
-        { id: 'opening-line', atMs: 300, formation: 'line', type: 'scout', count: 3, lane: 3 },
-      ],
+      waves: [{ id: 'opening-line', atMs: 300, formation: 'line', type: 'scout', count: 3, lane: 3 }],
     });
     const harness = createWaveManagerHarness(createLevelConfig({ sections: [activeSection], enemies: [] }));
 

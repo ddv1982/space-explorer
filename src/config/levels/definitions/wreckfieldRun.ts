@@ -84,7 +84,8 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       startProgress: 0.14,
       endProgress: 0.32,
       phase: 'build',
-      summary: 'The first solar-flare sweeps telegraph from the screen edge; debris keeps the lanes honest between beams.',
+      summary:
+        'The first solar-flare sweeps telegraph from the screen edge; debris keeps the lanes honest between beams.',
       waves: [
         {
           id: 'rampart-bomber-column',
@@ -123,7 +124,8 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       startProgress: 0.32,
       endProgress: 0.5,
       phase: 'hazard',
-      summary: 'Laser-lattice crossings stitch the wreck lanes while destructible cover shelters planned route switches.',
+      summary:
+        'Laser-lattice crossings stitch the wreck lanes while destructible cover shelters planned route switches.',
       signatureWaves: [
         {
           id: 'cover-exit-pair',
@@ -132,7 +134,8 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
             { type: 'fighter', lane: 'left' },
             { type: 'fighter', lane: 'right' },
           ],
-          notes: 'Two-lane pressure asks the player to leave cover deliberately, reading the lattice gap route rather than drifting.',
+          notes:
+            'Two-lane pressure asks the player to leave cover deliberately, reading the lattice gap route rather than drifting.',
         },
       ],
       waves: [
@@ -173,7 +176,8 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
           blocksEnemyProjectiles: true,
           coverHp: 3,
           coverIndestructible: false,
-          notes: 'Destructible cover returns: three-hit wreck plates block enemy projectiles and reward planned routes.',
+          notes:
+            'Destructible cover returns: three-hit wreck plates block enemy projectiles and reward planned routes.',
         },
       ],
       musicIntensity: 0.74,
@@ -203,7 +207,8 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
             { type: 'bomber', lane: 'left' },
             { type: 'bomber', lane: 'right' },
           ],
-          notes: 'Central gilded ace gunship pressure validates that cover blocks projectiles but not bodies; read the lane and commit.',
+          notes:
+            'Central gilded ace gunship pressure validates that cover blocks projectiles but not bodies; read the lane and commit.',
         },
       ],
       waves: [
@@ -216,7 +221,8 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
           aceCount: 1,
           midBossBeat: true,
           telegraph: 'warning',
-          notes: 'Mid-boss elite beat at ~60%: a gunship pincer with banner and warnings marks the siege peak; the gilded ace lead anchors the priority read.',
+          notes:
+            'Mid-boss elite beat at ~60%: a gunship pincer with banner and warnings marks the siege peak; the gilded ace lead anchors the priority read.',
         },
       ],
       encounterSizeOverride: { min: 2, max: 3 },

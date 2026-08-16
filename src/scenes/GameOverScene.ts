@@ -56,12 +56,15 @@ export class GameOverScene extends Phaser.Scene {
     drawNeonDivider(frame, layout.centerX, frameY + 30, frameWidth - 140, NEON.red);
     drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 30, frameWidth - 140, NEON.red);
 
-    this.add.text(layout.centerX, layout.centerY - 124, 'COMMAND LOSS', {
-      fontSize: '12px',
-      color: NEON_TEXT.danger,
-      fontFamily: NEON_FONT.mono,
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(12);
+    this.add
+      .text(layout.centerX, layout.centerY - 124, 'COMMAND LOSS', {
+        fontSize: '12px',
+        color: NEON_TEXT.danger,
+        fontFamily: NEON_FONT.mono,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     addNeonTitle(this, layout.centerX, layout.centerY - 92, 'GAME OVER', 56, 11, {
       glowDark: '#8c1f28',
@@ -69,18 +72,24 @@ export class GameOverScene extends Phaser.Scene {
       glowBright: '#ff756f',
     });
 
-    this.add.text(layout.centerX, layout.centerY - 6, `SCORE: ${runSummary.finalScore}`, {
-      fontSize: '30px',
-      color: NEON_TEXT.primary,
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(12);
+    this.add
+      .text(layout.centerX, layout.centerY - 6, `SCORE: ${runSummary.finalScore}`, {
+        fontSize: '30px',
+        color: NEON_TEXT.primary,
+        fontFamily: UI_FONT_MONO,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
-    this.add.text(layout.centerX, layout.centerY + 40, `REACHED LEVEL ${runSummary.levelReached}`, {
-      fontSize: '17px',
-      color: NEON_TEXT.danger,
-      fontFamily: UI_FONT_MONO,
-    }).setOrigin(0.5).setDepth(12);
+    this.add
+      .text(layout.centerX, layout.centerY + 40, `REACHED LEVEL ${runSummary.levelReached}`, {
+        fontSize: '17px',
+        color: NEON_TEXT.danger,
+        fontFamily: UI_FONT_MONO,
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     createPromptText(this, layout.centerX, layout.centerY + 96, CONTINUE_PROMPT, {
       color: '#ffd0d0',

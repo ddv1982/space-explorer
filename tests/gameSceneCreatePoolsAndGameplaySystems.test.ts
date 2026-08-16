@@ -22,10 +22,12 @@ mock.module('@/systems/PlayerState', () => ({
 mock.module('@/entities/PowerUp', () => ({
   PowerUp: class {},
   resolvePowerUpOverlap: (...values: unknown[]) => {
-    return values.find(
-      (value): value is { active: boolean; powerUpType: string; kill: () => void } =>
-        value !== null && typeof value === 'object' && 'powerUpType' in value
-    ) ?? null;
+    return (
+      values.find(
+        (value): value is { active: boolean; powerUpType: string; kill: () => void } =>
+          value !== null && typeof value === 'object' && 'powerUpType' in value
+      ) ?? null
+    );
   },
 }));
 
@@ -65,14 +67,18 @@ describe('createPoolsAndGameplaySystems', () => {
     };
     const effectsManager = {};
     const enemyPool = {
-      create: () => { callLog.push('enemyPool.create'); },
+      create: () => {
+        callLog.push('enemyPool.create');
+      },
       setTargetProvider: (provider: () => { x: number; y: number } | null) => {
         callLog.push('enemyPool.setTargetProvider');
         capturedTargetProvider = provider;
       },
     };
     const bulletPool = {
-      create: () => { callLog.push('bulletPool.create'); },
+      create: () => {
+        callLog.push('bulletPool.create');
+      },
     };
     const helperWing = {
       create: (args: { persistentState: unknown }) => {
@@ -90,7 +96,9 @@ describe('createPoolsAndGameplaySystems', () => {
     };
     const asteroidGroup = { id: 'asteroids' };
     const hazardBeamSystem = {
-      create: () => { callLog.push('hazardBeamSystem.create'); },
+      create: () => {
+        callLog.push('hazardBeamSystem.create');
+      },
     };
     const waveManager = {
       create: () => {
@@ -106,7 +114,14 @@ describe('createPoolsAndGameplaySystems', () => {
       },
     };
     const collisionManager = {
-      setup: (_scene: unknown, _player: unknown, _bulletPool: unknown, _enemyPool: unknown, group: unknown, beams: unknown) => {
+      setup: (
+        _scene: unknown,
+        _player: unknown,
+        _bulletPool: unknown,
+        _enemyPool: unknown,
+        group: unknown,
+        beams: unknown
+      ) => {
         callLog.push('collisionManager.setup');
         expect(group).toBe(asteroidGroup);
         expect(beams).toBe(hazardBeamSystem);

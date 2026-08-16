@@ -252,11 +252,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private updateRotationFromMovement(ax: number, delta: number): void {
     const targetRotation = (ax / PLAYER_CONFIG.speed) * Phaser.Math.DegToRad(15);
-    this.rotation = Phaser.Math.Linear(
-      this.rotation,
-      targetRotation,
-      getFrameDampingAlpha(0.1, delta)
-    );
+    this.rotation = Phaser.Math.Linear(this.rotation, targetRotation, getFrameDampingAlpha(0.1, delta));
   }
 
   private emitExhaustIfDue(delta: number, ax: number, ay: number): void {
@@ -271,11 +267,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.exhaustTimer = this.exhaustInterval;
   }
 
-  spawn(
-    x: number,
-    y: number,
-    options: { hp?: number; invulnerabilityDuration?: number } = {}
-  ): void {
+  spawn(x: number, y: number, options: { hp?: number; invulnerabilityDuration?: number } = {}): void {
     this.enableBody(true, x, y, true, true);
     this.resetSpawnState(options.hp);
     this.stopBodyMotion();

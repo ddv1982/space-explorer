@@ -69,34 +69,19 @@ export function resolveSectionAtmosphereTargets(
   const phaseBias = getSectionPhaseAtmosphereBias(section.phase);
 
   let atmosphereAlpha =
-    Phaser.Math.Clamp(
-      0.94 + musicIntensity * 0.14 + tension * 0.08 + progress * 0.04 + phaseBias.alpha,
-      0.82,
-      1.14
-    ) * atmosphereScale;
+    Phaser.Math.Clamp(0.94 + musicIntensity * 0.14 + tension * 0.08 + progress * 0.04 + phaseBias.alpha, 0.82, 1.14) *
+    atmosphereScale;
   atmosphereAlpha = Phaser.Math.Clamp(atmosphereAlpha, 0.8, 1.18);
 
   let atmosphereDrift =
-    Phaser.Math.Clamp(
-      0.95 + musicIntensity * 0.08 + tension * 0.08 + phaseBias.drift,
-      0.9,
-      1.16
-    ) * driftScale;
+    Phaser.Math.Clamp(0.95 + musicIntensity * 0.08 + tension * 0.08 + phaseBias.drift, 0.9, 1.16) * driftScale;
   atmosphereDrift = Phaser.Math.Clamp(atmosphereDrift, 0.88, 1.2);
 
   let atmosphereTwinkle =
-    Phaser.Math.Clamp(
-      0.92 + musicIntensity * 0.1 + tension * 0.06 + phaseBias.twinkle,
-      0.72,
-      1.18
-    ) * twinkleScale;
+    Phaser.Math.Clamp(0.92 + musicIntensity * 0.1 + tension * 0.06 + phaseBias.twinkle, 0.72, 1.18) * twinkleScale;
   atmosphereTwinkle = Phaser.Math.Clamp(atmosphereTwinkle, 0.65, 1.22);
 
-  const landmarkAlpha = Phaser.Math.Clamp(
-    (0.94 + tension * 0.12 + progress * 0.05) * landmarkScale,
-    0.78,
-    1.22
-  );
+  const landmarkAlpha = Phaser.Math.Clamp((0.94 + tension * 0.12 + progress * 0.05) * landmarkScale, 0.78, 1.22);
 
   const hazardIntensity = getHazardVisualIntensity(activeHazards);
   const hazardOverlayAlpha = Phaser.Math.Clamp(hazardIntensity * 0.18 * hazardResponseScale, 0, 0.22);

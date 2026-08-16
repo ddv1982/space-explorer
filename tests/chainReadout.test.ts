@@ -3,11 +3,8 @@ import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
 
-const {
-  CHAIN_OVERDRIVE_READOUT_COLOR,
-  CHAIN_READOUT_COLOR,
-  resolveChainReadout,
-} = await import('../src/systems/hud/chainReadout');
+const { CHAIN_OVERDRIVE_READOUT_COLOR, CHAIN_READOUT_COLOR, resolveChainReadout } =
+  await import('../src/systems/hud/chainReadout');
 const { CHAIN_MAX_MULTIPLIER } = await import('../src/systems/ScoreManager');
 
 describe('resolveChainReadout', () => {

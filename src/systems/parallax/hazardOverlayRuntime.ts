@@ -26,13 +26,27 @@ function getHazardIntensities(activeHazards: ScriptedHazardConfig[]): HazardInte
   for (const hazard of activeHazards) {
     const intensity = hazard.intensity ?? 0.5;
     switch (hazard.type) {
-      case 'energy-storm': intensities.energyStorm += intensity; break;
-      case 'gravity-well': intensities.gravityWell += intensity; break;
-      case 'nebula-ambush': intensities.nebulaAmbush += intensity; break;
-      case 'ring-crossfire': intensities.ringCrossfire += intensity; break;
-      case 'debris-surge': intensities.debrisSurge += intensity; break;
-      case 'minefield': intensities.minefield += intensity; break;
-      case 'rock-corridor': intensities.rockCorridor += intensity; break;
+      case 'energy-storm':
+        intensities.energyStorm += intensity;
+        break;
+      case 'gravity-well':
+        intensities.gravityWell += intensity;
+        break;
+      case 'nebula-ambush':
+        intensities.nebulaAmbush += intensity;
+        break;
+      case 'ring-crossfire':
+        intensities.ringCrossfire += intensity;
+        break;
+      case 'debris-surge':
+        intensities.debrisSurge += intensity;
+        break;
+      case 'minefield':
+        intensities.minefield += intensity;
+        break;
+      case 'rock-corridor':
+        intensities.rockCorridor += intensity;
+        break;
     }
   }
 
@@ -61,26 +75,15 @@ interface HazardOverlayRuntimeUpdateInput {
 }
 
 export function updateHazardOverlay(input: HazardOverlayRuntimeUpdateInput): number {
-  const {
-    overlay,
-    scene,
-    width,
-    height,
-    time,
-    delta,
-    levelConfig,
-    overlayAlpha,
-    targetOverlayAlpha,
-    activeHazards,
-  } = input;
+  const { overlay, scene, width, height, time, delta, levelConfig, overlayAlpha, targetOverlayAlpha, activeHazards } =
+    input;
 
   if (!overlay) {
     return overlayAlpha;
   }
 
-  const dampingAlpha = Number.isFinite(delta) && delta > 0
-    ? Phaser.Math.Clamp(1 - Math.pow(1 - 0.12, delta / (1000 / 60)), 0, 1)
-    : 0;
+  const dampingAlpha =
+    Number.isFinite(delta) && delta > 0 ? Phaser.Math.Clamp(1 - Math.pow(1 - 0.12, delta / (1000 / 60)), 0, 1) : 0;
   const nextOverlayAlpha = Phaser.Math.Linear(overlayAlpha, targetOverlayAlpha, dampingAlpha);
 
   if (nextOverlayAlpha <= 0.005 || !scene) {

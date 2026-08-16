@@ -93,7 +93,8 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
       startProgress: 0.34,
       endProgress: 0.53,
       phase: 'hazard',
-      summary: 'Bait lanes collapse into gear-trap pockets when pilots over-hold center; every collapse is telegraphed on the tick.',
+      summary:
+        'Bait lanes collapse into gear-trap pockets when pilots over-hold center; every collapse is telegraphed on the tick.',
       asteroidInterval: 3200,
       hazardEvents: [
         { type: 'debris-surge', cadenceMs: 2200, intensity: 0.5 },

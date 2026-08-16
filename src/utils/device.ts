@@ -1,9 +1,7 @@
 const hasWindow = typeof window !== 'undefined';
 
 function matchesMedia(query: string): boolean {
-  return hasWindow && typeof window.matchMedia === 'function'
-    ? window.matchMedia(query).matches
-    : false;
+  return hasWindow && typeof window.matchMedia === 'function' ? window.matchMedia(query).matches : false;
 }
 
 export function isTouchMobileDevice(): boolean {

@@ -27,15 +27,13 @@ describe('GameScene event bindings', () => {
     const handler = (x: number): void => {
       void x;
     };
-    const bindings: SceneEventBinding[] = [
-      { event: 'enemy-spawn-warning', handler },
-    ];
+    const bindings: SceneEventBinding[] = [{ event: 'enemy-spawn-warning', handler }];
 
     rebindSceneEventHandlers({ events, bindings, context });
     unbindSceneEventHandlers({ events, bindings, context });
 
     expect(calls.map(({ operation }) => operation)).toEqual(['off', 'on', 'off']);
-    expect(calls.every(call => call.handler === handler)).toBe(true);
-    expect(calls.every(call => call.context === context)).toBe(true);
+    expect(calls.every((call) => call.handler === handler)).toBe(true);
+    expect(calls.every((call) => call.context === context)).toBe(true);
   });
 });

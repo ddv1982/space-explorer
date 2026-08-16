@@ -84,9 +84,11 @@ describe('AudioContextManager lifecycle control', () => {
         state = 'suspended';
       });
     });
-    const resume = mock(() => pendingResume.promise.then(() => {
-      state = 'running';
-    }));
+    const resume = mock(() =>
+      pendingResume.promise.then(() => {
+        state = 'running';
+      })
+    );
     const context = {
       get state() {
         return state;
@@ -222,9 +224,11 @@ describe('AudioContextManager lifecycle control', () => {
     const resume = mock(() => undefined);
     const ensureContext = mock(() => true);
     const manager = new AudioManager();
-    (manager as unknown as {
-      contextManager: Pick<AudioContextManager, 'ensureContext' | 'suspend' | 'resume'>;
-    }).contextManager = { ensureContext, suspend, resume };
+    (
+      manager as unknown as {
+        contextManager: Pick<AudioContextManager, 'ensureContext' | 'suspend' | 'resume'>;
+      }
+    ).contextManager = { ensureContext, suspend, resume };
 
     manager.setPaused('gameplay', true);
     manager.setPaused('visibility', true);

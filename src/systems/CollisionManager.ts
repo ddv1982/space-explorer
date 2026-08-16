@@ -8,6 +8,7 @@ import { Asteroid } from '../entities/Asteroid';
 import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
 import { routePlayerDamageOutcome } from './collision/playerDamagePolicy';
 import { clearHazardGroup } from './collision/clearHazardGroup';
+import { registerCollisionOverlaps } from './collision/registerCollisionOverlaps';
 import { runBestEffort } from '../utils/runBestEffort';
 import { BulletPool } from './BulletPool';
 import { EnemyPool } from './EnemyPool';
@@ -46,22 +47,29 @@ export class CollisionManager {
     this.hazardBeamSystem = hazardBeamSystem ?? null;
     this.getHullDamageMultiplier = getHullDamageMultiplier;
 
-    const bulletGroup = bulletPool.getGroup();
-    const enemyGroups = enemyPool.getEnemyGroupRegistry();
-
-    this.registerBulletEnemyOverlaps(bulletGroup, enemyGroups);
-    this.registerBulletAsteroidOverlap(bulletGroup, asteroidGroup);
-    this.registerEnemyBulletPlayerOverlap(enemyPool.getEnemyBulletGroup(), player);
-    this.registerBombPlayerOverlap(enemyPool.getBombGroup(), player);
-    this.registerMinePlayerOverlap(enemyPool.getMineGroup(), player);
-    this.registerBulletMineOverlap(bulletGroup, enemyPool.getMineGroup());
-    this.registerEnemyProjectileCoverOverlaps(enemyPool, asteroidGroup);
-    this.registerEnemyPlayerOverlaps(enemyGroups);
-    this.registerAsteroidPlayerOverlap(asteroidGroup, player);
-
-    if (hazardBeamSystem) {
-      this.registerHazardBeamOverlaps(hazardBeamSystem.getGroup(), enemyPool.getEnemyBulletGroup(), player);
-    }
+    registerCollisionOverlaps({
+      scene,
+      player,
+      bulletPool,
+      enemyPool,
+      asteroidGroup,
+      hazardBeamSystem: this.hazardBeamSystem,
+      callbacks: {
+        bulletEnemy: (...values) => this.bulletVsEnemy(...values),
+        bulletAsteroid: (...values) => this.handleBulletAsteroidOverlap(...values),
+        enemyBulletPlayer: (...values) => this.handleEnemyBulletPlayerOverlap(...values),
+        bombPlayer: (...values) => this.handleBombPlayerOverlap(...values),
+        minePlayer: (...values) => this.handleMinePlayerOverlap(...values),
+        bulletMine: (...values) => this.handleBulletMineOverlap(...values),
+        beamPlayer: (...values) => this.handleHazardBeamPlayerOverlap(...values),
+        beamBullet: (...values) => this.handleHazardBeamBulletClear(...values),
+        enemyBulletAsteroid: (...values) => this.handleEnemyBulletAsteroidOverlap(...values),
+        bombAsteroid: (...values) => this.handleBombAsteroidOverlap(...values),
+        mineAsteroid: (...values) => this.handleMineAsteroidOverlap(...values),
+        enemyPlayer: (behavior, ...values) => this.handleEnemyPlayerCollision(values[0], values[1], behavior),
+        asteroidPlayer: (...values) => this.handleAsteroidPlayerOverlap(...values),
+      },
+    });
   }
 
   private assignSetupContext(
@@ -77,126 +85,6 @@ export class CollisionManager {
     this.terminalTransitionActive = false;
     this.respawnInProgress = false;
     this.lastPlayerHitFeedbackTime = Number.NEGATIVE_INFINITY;
-  }
-
-  private registerBulletEnemyOverlaps(
-    bulletGroup: Phaser.Physics.Arcade.Group,
-    enemyGroups: ReturnType<EnemyPool['getEnemyGroupRegistry']>
-  ): void {
-    enemyGroups.forEach(({ group }) => {
-      this.registerOverlap(bulletGroup, group, (_obj1, _obj2) => this.bulletVsEnemy(_obj1, _obj2));
-    });
-  }
-
-  private registerBulletAsteroidOverlap(
-    bulletGroup: Phaser.Physics.Arcade.Group,
-    asteroidGroup: Phaser.Physics.Arcade.Group
-  ): void {
-    this.registerOverlap(bulletGroup, asteroidGroup, (_obj1, _obj2) => {
-      this.handleBulletAsteroidOverlap(_obj1, _obj2);
-    });
-  }
-
-  private registerEnemyBulletPlayerOverlap(
-    enemyBulletGroup: Phaser.Physics.Arcade.Group,
-    player: Player
-  ): void {
-    this.registerOverlap(enemyBulletGroup, player, (_obj1, _obj2) => {
-      this.handleEnemyBulletPlayerOverlap(_obj1, _obj2);
-    });
-  }
-
-  private registerBombPlayerOverlap(
-    bombGroup: Phaser.Physics.Arcade.Group,
-    player: Player
-  ): void {
-    this.registerOverlap(bombGroup, player, (_obj1, _obj2) => {
-      this.handleBombPlayerOverlap(_obj1, _obj2);
-    });
-  }
-
-  private registerMinePlayerOverlap(
-    mineGroup: Phaser.Physics.Arcade.Group,
-    player: Player
-  ): void {
-    this.registerOverlap(mineGroup, player, (_obj1, _obj2) => {
-      this.handleMinePlayerOverlap(_obj1, _obj2);
-    });
-  }
-
-  private registerBulletMineOverlap(
-    bulletGroup: Phaser.Physics.Arcade.Group,
-    mineGroup: Phaser.Physics.Arcade.Group
-  ): void {
-    this.registerOverlap(bulletGroup, mineGroup, (_obj1, _obj2) => {
-      this.handleBulletMineOverlap(_obj1, _obj2);
-    });
-  }
-
-  private registerHazardBeamOverlaps(
-    beamGroup: Phaser.Physics.Arcade.Group,
-    enemyBulletGroup: Phaser.Physics.Arcade.Group,
-    player: Player
-  ): void {
-    this.registerOverlap(beamGroup, player, (_obj1, _obj2) => {
-      this.handleHazardBeamPlayerOverlap(_obj1, _obj2);
-    });
-    this.registerOverlap(beamGroup, enemyBulletGroup, (_obj1, _obj2) => {
-      this.handleHazardBeamBulletClear(_obj1, _obj2);
-    });
-  }
-
-  private registerEnemyProjectileCoverOverlaps(
-    enemyPool: EnemyPool,
-    asteroidGroup: Phaser.Physics.Arcade.Group
-  ): void {
-    this.registerOverlap(enemyPool.getEnemyBulletGroup(), asteroidGroup, (_obj1, _obj2) => {
-      this.handleEnemyBulletAsteroidOverlap(_obj1, _obj2);
-    });
-    this.registerOverlap(enemyPool.getBombGroup(), asteroidGroup, (_obj1, _obj2) => {
-      this.handleBombAsteroidOverlap(_obj1, _obj2);
-    });
-    this.registerOverlap(enemyPool.getMineGroup(), asteroidGroup, (_obj1, _obj2) => {
-      this.handleMineAsteroidOverlap(_obj1, _obj2);
-    });
-  }
-
-  private registerEnemyPlayerOverlaps(
-    enemyGroups: ReturnType<EnemyPool['getEnemyGroupRegistry']>
-  ): void {
-    enemyGroups.forEach(({ group, playerCollisionBehavior }) => {
-      if (playerCollisionBehavior === 'none') {
-        return;
-      }
-
-      this.setupEnemyPlayerCollision(group, playerCollisionBehavior);
-    });
-  }
-
-  private registerAsteroidPlayerOverlap(
-    asteroidGroup: Phaser.Physics.Arcade.Group,
-    player: Player
-  ): void {
-    this.registerOverlap(asteroidGroup, player, (_obj1, _obj2) => {
-      this.handleAsteroidPlayerOverlap(_obj1, _obj2);
-    });
-  }
-
-  private registerOverlap(
-    a: Phaser.Types.Physics.Arcade.ArcadeColliderType,
-    b: Phaser.Types.Physics.Arcade.ArcadeColliderType,
-    callback: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback
-  ): void {
-    this.scene.physics.add.overlap(a, b, callback);
-  }
-
-  private setupEnemyPlayerCollision(
-    group: Phaser.Physics.Arcade.Group,
-    playerCollisionBehavior: 'kamikaze' | 'impact'
-  ): void {
-    this.registerOverlap(group, this.player, (_obj1, _obj2) => {
-      this.handleEnemyPlayerCollision(_obj1, _obj2, playerCollisionBehavior);
-    });
   }
 
   setEffectsManager(effectsManager: EffectsManager): void {
@@ -401,10 +289,7 @@ export class CollisionManager {
     });
   }
 
-  private applyEnemyContactOutcome(
-    enemy: EnemyBase,
-    playerCollisionBehavior: 'kamikaze' | 'impact'
-  ): void {
+  private applyEnemyContactOutcome(enemy: EnemyBase, playerCollisionBehavior: 'kamikaze' | 'impact'): void {
     if (playerCollisionBehavior === 'kamikaze') {
       enemy.die();
       return;

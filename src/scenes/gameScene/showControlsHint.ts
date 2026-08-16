@@ -1,10 +1,7 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '@/utils/layout';
 import { UI_FONT_MONO } from '@/utils/uiFonts';
-import {
-  isHardwareKeyboardDetected,
-  onHardwareKeyboardDetected,
-} from '@/systems/hardwareKeyboardDetection';
+import { isHardwareKeyboardDetected, onHardwareKeyboardDetected } from '@/systems/hardwareKeyboardDetection';
 
 const MOBILE_TITLE = 'Use the joystick to move';
 const MOBILE_FIRE_HINT = 'Tap the right side to shoot';
@@ -23,17 +20,25 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
   const bg = scene.add.graphics();
   bg.setDepth(200).setScrollFactor(0);
 
-  const title = scene.add.text(0, 0, mobile ? MOBILE_TITLE : KEYBOARD_TITLE, {
-    fontSize: '16px',
-    color: '#88ccff',
-    fontFamily: UI_FONT_MONO,
-  }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+  const title = scene.add
+    .text(0, 0, mobile ? MOBILE_TITLE : KEYBOARD_TITLE, {
+      fontSize: '16px',
+      color: '#88ccff',
+      fontFamily: UI_FONT_MONO,
+    })
+    .setOrigin(0.5)
+    .setDepth(201)
+    .setScrollFactor(0);
 
-  const fireHint = scene.add.text(0, 0, mobile ? MOBILE_FIRE_HINT : KEYBOARD_FIRE_HINT, {
-    fontSize: '16px',
-    color: '#88ccff',
-    fontFamily: UI_FONT_MONO,
-  }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+  const fireHint = scene.add
+    .text(0, 0, mobile ? MOBILE_FIRE_HINT : KEYBOARD_FIRE_HINT, {
+      fontSize: '16px',
+      color: '#88ccff',
+      fontFamily: UI_FONT_MONO,
+    })
+    .setOrigin(0.5)
+    .setDepth(201)
+    .setScrollFactor(0);
 
   const stopKeyboardWatch = onHardwareKeyboardDetected(() => {
     if (!mobile) {

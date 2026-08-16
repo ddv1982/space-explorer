@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { MusicArrangementPhase, MusicLayerRhythmConfig, ProceduralMusicTrackConfig } from '../src/config/LevelsConfig';
+import type {
+  MusicArrangementPhase,
+  MusicLayerRhythmConfig,
+  ProceduralMusicTrackConfig,
+} from '../src/config/LevelsConfig';
 import { CORE_CAMPAIGN } from '../src/config/levels/definitions/coreCampaign';
 import { EXPANSION_CAMPAIGN } from '../src/config/levels/definitions/expansionCampaign';
 
@@ -30,12 +34,16 @@ describe('music complexity guardrails', () => {
 
     for (const { levelName, trackName, track } of getAllTracks()) {
       const rhythms = getRhythms(track);
-      const divisions = new Set(rhythms.map((rhythm) => rhythm.division).filter((division): division is number => Boolean(division)));
+      const divisions = new Set(
+        rhythms.map((rhythm) => rhythm.division).filter((division): division is number => Boolean(division))
+      );
       const phases = rhythms.map((rhythm) => rhythm.phase ?? 0);
       const phaseScatter = phases.length > 0 ? Math.max(...phases) - Math.min(...phases) : 0;
 
       if (divisions.size > MAX_UNIQUE_DIVISIONS_PER_TRACK || phaseScatter > MAX_PHASE_SCATTER_PER_TRACK) {
-        violations.push(`${levelName} (${trackName}) complexity budget: divisions=${[...divisions].join(',')}, phaseScatter=${phaseScatter}`);
+        violations.push(
+          `${levelName} (${trackName}) complexity budget: divisions=${[...divisions].join(',')}, phaseScatter=${phaseScatter}`
+        );
       }
 
       for (const rhythm of rhythms) {
@@ -67,7 +75,9 @@ describe('music complexity guardrails', () => {
       for (const rhythm of getRhythms(track)) {
         const division = rhythm.division ?? beatsPerBar;
         if (!allowed.has(division)) {
-          violations.push(`${levelName} (${trackName}) odd-meter division ${division} is not in allowed ${[...allowed].join(',')}`);
+          violations.push(
+            `${levelName} (${trackName}) odd-meter division ${division} is not in allowed ${[...allowed].join(',')}`
+          );
         }
       }
     }

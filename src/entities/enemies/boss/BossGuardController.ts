@@ -9,7 +9,7 @@ export interface BossGuardState {
 export function applyBossGuardHit(
   state: BossGuardState,
   amount: number,
-  time: number,
+  time: number
 ): BossGuardState & { shouldBreak: boolean } {
   if (state.capacity <= 0 || state.broken || amount <= 0) {
     return { ...state, shouldBreak: false };
@@ -25,7 +25,7 @@ export function applyBossGuardHit(
 
 export function advanceBossGuard(
   state: BossGuardState,
-  options: { time: number; delta: number; decayDelayMs: number; decayPerSecond: number },
+  options: { time: number; delta: number; decayDelayMs: number; decayPerSecond: number }
 ): BossGuardState & { frozen: boolean; recovered: boolean } {
   if (state.broken && options.time < state.brokenUntil) {
     return { ...state, frozen: true, recovered: false };
@@ -40,9 +40,7 @@ export function advanceBossGuard(
       recovered: true,
     };
   }
-  const shouldDecay = state.capacity > 0
-    && state.value > 0
-    && options.time > state.lastHitAt + options.decayDelayMs;
+  const shouldDecay = state.capacity > 0 && state.value > 0 && options.time > state.lastHitAt + options.decayDelayMs;
   return {
     ...state,
     value: shouldDecay

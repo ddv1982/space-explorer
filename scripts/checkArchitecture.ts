@@ -1,9 +1,14 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
+import ts from 'typescript';
 
 const SOURCE_ROOT = resolve('src');
 const WARN_LINES = 500;
 const WARN_IMPORTS = 25;
+const WARN_EXPORTS = 20;
+const WARN_FUNCTION_LINES = 100;
+const WARN_COMPLEXITY = 20;
+const WARN_TEST_LINES = 500;
 const CONCENTRATION_BUDGETS: Record<string, { lines: number; imports: number; reason: string }> = {
   'src/browserHarness.ts': {
     lines: 950,
@@ -54,6 +59,54 @@ const sourceFiles = collectTypeScriptFiles(SOURCE_ROOT).map(normalize).sort();
 const files = new Set(sourceFiles);
 const graph = new Map<string, string[]>();
 const concentrations: Array<{ file: string; lines: number; imports: number }> = [];
+const surfaceWarnings: Array<{ file: string; exports: number }> = [];
+const functionWarnings: Array<{ file: string; name: string; lines: number; complexity: number }> = [];
+
+function getFunctionName(node: ts.FunctionLikeDeclarationBase): string {
+  if ('name' in node && node.name) return node.name.getText();
+  const parent = node.parent;
+  if (ts.isPropertyAssignment(parent) || ts.isVariableDeclaration(parent)) return parent.name.getText();
+  return '<anonymous>';
+}
+
+function inspectFunctions(file: string, source: string): void {
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionLike(node) && 'body' in node && node.body) {
+      const functionNode = node as ts.FunctionLikeDeclaration;
+      const body = functionNode.body;
+      if (!body) return;
+      let complexity = 1;
+      const countBranches = (child: ts.Node): void => {
+        if (
+          ts.isIfStatement(child) ||
+          ts.isIterationStatement(child, false) ||
+          ts.isCaseClause(child) ||
+          ts.isCatchClause(child) ||
+          ts.isConditionalExpression(child) ||
+          (ts.isBinaryExpression(child) && ['&&', '||', '??'].includes(child.operatorToken.getText()))
+        )
+          complexity += 1;
+        ts.forEachChild(child, countBranches);
+      };
+      ts.forEachChild(body, countBranches);
+      const lines =
+        sourceFile.getLineAndCharacterOfPosition(node.end).line -
+        sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line +
+        1;
+      if (lines > WARN_FUNCTION_LINES || complexity > WARN_COMPLEXITY) {
+        functionWarnings.push({
+          file: relative(process.cwd(), file),
+          name: getFunctionName(functionNode),
+          lines,
+          complexity,
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+}
 
 for (const file of sourceFiles) {
   const source = readFileSync(file, 'utf8');
@@ -66,6 +119,13 @@ for (const file of sourceFiles) {
     lines: source.split(/\r?\n/).length,
     imports: imports.length,
   });
+  const exports = [
+    ...source.matchAll(
+      /^export\s+(?:default\s+)?(?:abstract\s+)?(?:class|function|const|let|var|type|interface|enum)\s+/gm
+    ),
+  ].length;
+  if (exports > WARN_EXPORTS) surfaceWarnings.push({ file: relative(process.cwd(), file), exports });
+  inspectFunctions(file, source);
 }
 
 const visiting = new Set<string>();
@@ -96,11 +156,31 @@ const warnings = concentrations
     const budget = CONCENTRATION_BUDGETS[file];
     return lines > (budget?.lines ?? WARN_LINES) || imports > (budget?.imports ?? WARN_IMPORTS);
   })
-  .sort((a, b) => Math.max(b.lines / WARN_LINES, b.imports / WARN_IMPORTS) - Math.max(a.lines / WARN_LINES, a.imports / WARN_IMPORTS));
+  .sort(
+    (a, b) =>
+      Math.max(b.lines / WARN_LINES, b.imports / WARN_IMPORTS) -
+      Math.max(a.lines / WARN_LINES, a.imports / WARN_IMPORTS)
+  );
 
-console.log(`Architecture report: ${sourceFiles.length} source modules, ${[...graph.values()].reduce((sum, entries) => sum + entries.length, 0)} internal edges.`);
+console.log(
+  `Architecture report: ${sourceFiles.length} source modules, ${[...graph.values()].reduce((sum, entries) => sum + entries.length, 0)} internal edges.`
+);
 for (const warning of warnings) {
   console.warn(`warning: ${warning.file} (${warning.lines} lines, ${warning.imports} internal imports)`);
+}
+for (const warning of surfaceWarnings) {
+  console.warn(`warning: ${warning.file} (${warning.exports} exported declarations)`);
+}
+for (const warning of functionWarnings) {
+  console.warn(`warning: ${warning.file}#${warning.name} (${warning.lines} lines, complexity ${warning.complexity})`);
+}
+
+const testConcentrations = collectTypeScriptFiles(resolve('tests'))
+  .map((file) => ({ file: relative(process.cwd(), file), lines: readFileSync(file, 'utf8').split(/\r?\n/).length }))
+  .filter(({ lines }) => lines > WARN_TEST_LINES)
+  .sort((a, b) => b.lines - a.lines);
+for (const warning of testConcentrations) {
+  console.warn(`warning: ${warning.file} (${warning.lines} test lines)`);
 }
 
 const trackedConcentrations = concentrations.filter(({ file }) => CONCENTRATION_BUDGETS[file]);

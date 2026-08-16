@@ -156,7 +156,14 @@ function drawNebulaLayer(g: Phaser.GameObjects.Graphics, config: LevelConfig, si
   }
 }
 
-function traceArc(g: Phaser.GameObjects.Graphics, x: number, y: number, radius: number, start: number, end: number): () => void {
+function traceArc(
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  radius: number,
+  start: number,
+  end: number
+): () => void {
   return () => {
     g.beginPath();
     g.arc(x, y, radius, start, end);
@@ -243,7 +250,13 @@ function drawMotifEmberStorm(g: Phaser.GameObjects.Graphics, size: number, accen
 
     forWrappedY(size, y, length + 8, (drawY) => {
       forWrappedX(size, x, slant + 8, (drawX) => {
-        neonStroke(g, accent, 1.25, alpha, traceLine(g, drawX - slant, drawY - length * 0.5, drawX + slant, drawY + length * 0.5));
+        neonStroke(
+          g,
+          accent,
+          1.25,
+          alpha,
+          traceLine(g, drawX - slant, drawY - length * 0.5, drawX + slant, drawY + length * 0.5)
+        );
         if (i % 2 === 0) {
           g.fillStyle(mixColor(accent, 0xffffff, 0.35), alpha + 0.08);
           g.fillCircle(drawX + slant, drawY + length * 0.5, 1.5);
@@ -267,13 +280,19 @@ function drawMotifClockwork(g: Phaser.GameObjects.Graphics, size: number, accent
         neonStroke(g, accent, 1, 0.1, traceArc(g, drawX, drawY, radius * 0.55, 0, Math.PI * 2));
         for (let tooth = 0; tooth < teeth; tooth++) {
           const angle = (tooth / teeth) * Math.PI * 2 + gear * 0.3;
-          neonStroke(g, accent, 1.5, 0.18, traceLine(
+          neonStroke(
             g,
-            drawX + Math.cos(angle) * radius,
-            drawY + Math.sin(angle) * radius,
-            drawX + Math.cos(angle) * (radius + 10),
-            drawY + Math.sin(angle) * (radius + 10)
-          ));
+            accent,
+            1.5,
+            0.18,
+            traceLine(
+              g,
+              drawX + Math.cos(angle) * radius,
+              drawY + Math.sin(angle) * radius,
+              drawX + Math.cos(angle) * (radius + 10),
+              drawY + Math.sin(angle) * (radius + 10)
+            )
+          );
         }
       });
     });
@@ -293,7 +312,7 @@ function drawMotifCoralReef(g: Phaser.GameObjects.Graphics, size: number, accent
     forWrappedY(size, baseY, height, (drawBaseY) => {
       forWrappedX(size, baseX, height * 0.4 + 6, (drawX) => {
         for (let b = 0; b < branches; b++) {
-          const lean = ((b / Math.max(branches - 1, 1)) - 0.5) * height * 0.8;
+          const lean = (b / Math.max(branches - 1, 1) - 0.5) * height * 0.8;
           const tipX = drawX + lean;
           const tipY = drawBaseY - height * direction;
           neonStroke(g, accent, 1.25, 0.15, () => {
@@ -331,12 +350,18 @@ function drawMotifWreckageRamparts(g: Phaser.GameObjects.Graphics, size: number,
 
     forWrappedY(size, y, h, (drawY) => {
       forWrappedX(size, x, w, (drawX) => {
-        neonStroke(g, accent, 1.5, 0.13, tracePolygon(g, [
-          { x: drawX - w / 2, y: drawY - h / 2 },
-          { x: drawX + w / 2, y: drawY - h * 0.38 },
-          { x: drawX + w * 0.42, y: drawY + h / 2 },
-          { x: drawX - w * 0.38, y: drawY + h * 0.46 },
-        ]));
+        neonStroke(
+          g,
+          accent,
+          1.5,
+          0.13,
+          tracePolygon(g, [
+            { x: drawX - w / 2, y: drawY - h / 2 },
+            { x: drawX + w / 2, y: drawY - h * 0.38 },
+            { x: drawX + w * 0.42, y: drawY + h / 2 },
+            { x: drawX - w * 0.38, y: drawY + h * 0.46 },
+          ])
+        );
         neonStroke(g, accent, 1, 0.09, traceLine(g, drawX - w / 2, drawY, drawX + w / 2, drawY + h * 0.08));
         for (let rivet = 0; rivet < 4; rivet++) {
           g.fillStyle(accent, 0.3);
@@ -385,16 +410,28 @@ function drawMotifEclipse(g: Phaser.GameObjects.Graphics, size: number, accent: 
       forWrappedX(size, anchor.x, radius + 26, (drawX) => {
         drawSoftCircle(g, drawX, drawY, radius, 0x000000, 0.55, 10);
         neonStroke(g, accent, 1.5, 0.2, traceArc(g, drawX, drawY, radius, 0, Math.PI * 2));
-        neonStroke(g, mixColor(accent, 0xffffff, 0.45), 1, 0.12, traceArc(g, drawX, drawY, radius + 8, Math.PI * 0.1, Math.PI * 0.9));
+        neonStroke(
+          g,
+          mixColor(accent, 0xffffff, 0.45),
+          1,
+          0.12,
+          traceArc(g, drawX, drawY, radius + 8, Math.PI * 0.1, Math.PI * 0.9)
+        );
         for (let flare = 0; flare < 6; flare++) {
           const angle = (flare / 6) * Math.PI * 2 + 0.3;
-          neonStroke(g, accent, 1, 0.16, traceLine(
+          neonStroke(
             g,
-            drawX + Math.cos(angle) * (radius + 4),
-            drawY + Math.sin(angle) * (radius + 4),
-            drawX + Math.cos(angle) * (radius + 16),
-            drawY + Math.sin(angle) * (radius + 16)
-          ));
+            accent,
+            1,
+            0.16,
+            traceLine(
+              g,
+              drawX + Math.cos(angle) * (radius + 4),
+              drawY + Math.sin(angle) * (radius + 4),
+              drawX + Math.cos(angle) * (radius + 16),
+              drawY + Math.sin(angle) * (radius + 16)
+            )
+          );
         }
       });
     });
@@ -450,13 +487,19 @@ function drawMotifSingularityEngine(g: Phaser.GameObjects.Graphics, size: number
   neonStroke(g, accent, 1.25, 0.16, traceArc(g, cx, cy, 170, 0, Math.PI * 2));
   for (let spoke = 0; spoke < 8; spoke++) {
     const angle = (spoke / 8) * Math.PI * 2;
-    neonStroke(g, accent, 1, 0.12, traceLine(
+    neonStroke(
       g,
-      cx + Math.cos(angle) * 170,
-      cy + Math.sin(angle) * 170,
-      cx + Math.cos(angle) * 205,
-      cy + Math.sin(angle) * 205
-    ));
+      accent,
+      1,
+      0.12,
+      traceLine(
+        g,
+        cx + Math.cos(angle) * 170,
+        cy + Math.sin(angle) * 170,
+        cx + Math.cos(angle) * 205,
+        cy + Math.sin(angle) * 205
+      )
+    );
   }
 
   drawSoftCircle(g, cx, cy, 130, 0x000000, 0.5, 12);

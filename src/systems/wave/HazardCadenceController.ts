@@ -31,9 +31,11 @@ export class HazardCadenceController {
     const lastTriggered = this.lastTriggered.get(key) ?? this.sectionStartedAt;
     const sectionElapsedMs = Math.max(0, time - this.sectionStartedAt);
 
-    if (!isHazardWithinDuration(hazard, sectionElapsedMs)
-      || time <= lastTriggered + cadence
-      || !canTriggerHazard(this.pressure, hazard)) {
+    if (
+      !isHazardWithinDuration(hazard, sectionElapsedMs) ||
+      time <= lastTriggered + cadence ||
+      !canTriggerHazard(this.pressure, hazard)
+    ) {
       return false;
     }
 

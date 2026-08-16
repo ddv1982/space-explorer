@@ -79,20 +79,68 @@ const DEFAULT_BOSS_LAYER_RHYTHM: Record<'bass' | 'pulse' | 'lead' | 'noise', Mus
 const DEFAULT_STAGE_ARRANGEMENT: MusicArrangementConfig = {
   loop: true,
   sections: [
-    { phase: 'intro', barsDuration: 4, density: 0.74, energyLift: 0.16, layerGainMultipliers: { bass: 0.94, pulse: 0.86, lead: 0.8, noise: 0.72 } },
-    { phase: 'build', barsDuration: 8, density: 0.82, energyLift: 0.24, layerGainMultipliers: { bass: 1, pulse: 0.98, lead: 0.92, noise: 0.86 } },
-    { phase: 'peak', barsDuration: 4, density: 0.9, energyLift: 0.34, layerGainMultipliers: { bass: 1.06, pulse: 1.12, lead: 1.04, noise: 0.94 } },
-    { phase: 'release', barsDuration: 4, density: 0.78, energyLift: 0.2, layerGainMultipliers: { bass: 0.98, pulse: 0.9, lead: 0.84, noise: 0.76 } },
+    {
+      phase: 'intro',
+      barsDuration: 4,
+      density: 0.74,
+      energyLift: 0.16,
+      layerGainMultipliers: { bass: 0.94, pulse: 0.86, lead: 0.8, noise: 0.72 },
+    },
+    {
+      phase: 'build',
+      barsDuration: 8,
+      density: 0.82,
+      energyLift: 0.24,
+      layerGainMultipliers: { bass: 1, pulse: 0.98, lead: 0.92, noise: 0.86 },
+    },
+    {
+      phase: 'peak',
+      barsDuration: 4,
+      density: 0.9,
+      energyLift: 0.34,
+      layerGainMultipliers: { bass: 1.06, pulse: 1.12, lead: 1.04, noise: 0.94 },
+    },
+    {
+      phase: 'release',
+      barsDuration: 4,
+      density: 0.78,
+      energyLift: 0.2,
+      layerGainMultipliers: { bass: 0.98, pulse: 0.9, lead: 0.84, noise: 0.76 },
+    },
   ],
 };
 
 const DEFAULT_BOSS_ARRANGEMENT: MusicArrangementConfig = {
   loop: true,
   sections: [
-    { phase: 'intro', barsDuration: 2, density: 0.84, energyLift: 0.26, layerGainMultipliers: { bass: 1.1, pulse: 1.06, lead: 1.02, noise: 0.94 } },
-    { phase: 'build', barsDuration: 4, density: 0.92, energyLift: 0.34, layerGainMultipliers: { bass: 1.16, pulse: 1.18, lead: 1.12, noise: 1 } },
-    { phase: 'peak', barsDuration: 4, density: 0.98, energyLift: 0.44, layerGainMultipliers: { bass: 1.22, pulse: 1.24, lead: 1.18, noise: 1.04 } },
-    { phase: 'release', barsDuration: 2, density: 0.86, energyLift: 0.3, layerGainMultipliers: { bass: 1.14, pulse: 1.08, lead: 1, noise: 0.92 } },
+    {
+      phase: 'intro',
+      barsDuration: 2,
+      density: 0.84,
+      energyLift: 0.26,
+      layerGainMultipliers: { bass: 1.1, pulse: 1.06, lead: 1.02, noise: 0.94 },
+    },
+    {
+      phase: 'build',
+      barsDuration: 4,
+      density: 0.92,
+      energyLift: 0.34,
+      layerGainMultipliers: { bass: 1.16, pulse: 1.18, lead: 1.12, noise: 1 },
+    },
+    {
+      phase: 'peak',
+      barsDuration: 4,
+      density: 0.98,
+      energyLift: 0.44,
+      layerGainMultipliers: { bass: 1.22, pulse: 1.24, lead: 1.18, noise: 1.04 },
+    },
+    {
+      phase: 'release',
+      barsDuration: 2,
+      density: 0.86,
+      energyLift: 0.3,
+      layerGainMultipliers: { bass: 1.14, pulse: 1.08, lead: 1, noise: 0.92 },
+    },
   ],
 };
 

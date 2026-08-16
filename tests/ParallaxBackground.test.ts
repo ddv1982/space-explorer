@@ -194,10 +194,7 @@ describe('ParallaxBackground premium-background presentation regression coverage
       accentColor: 0x52f7a6,
     });
 
-    expect(tileSpriteCalls).toEqual([
-      'bg_level03_composite',
-      'bg_level03_motif',
-    ]);
+    expect(tileSpriteCalls).toEqual(['bg_level03_composite', 'bg_level03_motif']);
     expect(state.tileSprites).toEqual([]);
     expect(state.premiumBackgroundLayers.length).toBe(2);
   });
@@ -282,11 +279,7 @@ describe('ParallaxBackground update orchestration regression coverage', () => {
 
     expect(state.elapsed).toBe(26);
     expect(state.hazardOverlayAlpha).toBe(0.75);
-    expect(calls).toEqual([
-      'updateAtmosphereState:26',
-      'updateVisualLayers:16:26',
-      'updateHazardOverlay:26',
-    ]);
+    expect(calls).toEqual(['updateAtmosphereState:26', 'updateVisualLayers:16:26', 'updateHazardOverlay:26']);
   });
 
   test('atmosphere damping is elapsed-time equivalent and bounded after a long frame', () => {
@@ -346,11 +339,7 @@ describe('ParallaxBackground resize debounce regression coverage', () => {
 
     parallax.resize(800, 600);
 
-    expect(calls).toEqual([
-      'layoutTileSprites',
-      'layoutPremiumBackgroundLayers',
-      'layoutLevelVisualLayers',
-    ]);
+    expect(calls).toEqual(['layoutTileSprites', 'layoutPremiumBackgroundLayers', 'layoutLevelVisualLayers']);
     expect(delayedCalls).toEqual([]);
   });
 

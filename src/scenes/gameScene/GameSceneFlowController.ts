@@ -1,15 +1,7 @@
 import Phaser from 'phaser';
 import { audioManager } from '@/systems/AudioManager';
-import {
-  saveCurrentHp,
-  saveRemainingLives,
-  saveScoreToState,
-  setRunSummary,
-} from '@/systems/PlayerState';
-import {
-  TERMINAL_TRANSITIONS,
-  type TerminalTransitionState,
-} from '@/systems/GameplayFlow';
+import { saveCurrentHp, saveRemainingLives, saveScoreToState, setRunSummary } from '@/systems/PlayerState';
+import { TERMINAL_TRANSITIONS, type TerminalTransitionState } from '@/systems/GameplayFlow';
 import type { Player } from '@/entities/Player';
 import type { CollisionManager } from '@/systems/CollisionManager';
 import type { LevelManager } from '@/systems/LevelManager';
@@ -37,10 +29,7 @@ export interface GameSceneFlowContext {
   getPlayerRespawnPosition: () => { x: number; y: number };
 }
 
-type PlayerDeathFlowOutcomeStatus =
-  | 'respawn-started'
-  | 'game-over-started'
-  | 'ignored-terminal-active';
+type PlayerDeathFlowOutcomeStatus = 'respawn-started' | 'game-over-started' | 'ignored-terminal-active';
 
 export interface PlayerDeathFlowOutcome {
   status: PlayerDeathFlowOutcomeStatus;
@@ -235,7 +224,6 @@ export class GameSceneFlowController {
       this.pendingRespawnFreeze.remove(false);
       this.pendingRespawnFreeze = null;
     }
-
   }
 
   private clearPendingTransitions(): void {
@@ -255,11 +243,7 @@ export class GameSceneFlowController {
     this.respawnFrameProbe.abort();
   }
 
-  private persistGameOverState(
-    context: GameSceneFlowContext,
-    finalScore: number,
-    level: number
-  ): void {
+  private persistGameOverState(context: GameSceneFlowContext, finalScore: number, level: number): void {
     context.runBestEffort(() => audioManager.stopMusic());
     context.runBestEffort(() => saveRemainingLives(context.registry, 0));
     context.runBestEffort(() => saveScoreToState(context.registry, finalScore));
@@ -354,10 +338,7 @@ export class GameSceneFlowController {
     });
   }
 
-  private finishRespawnTransition(
-    context: GameSceneFlowContext,
-    outcome: 'cancelled' | 'respawned'
-  ): void {
+  private finishRespawnTransition(context: GameSceneFlowContext, outcome: 'cancelled' | 'respawned'): void {
     this.respawnInProgress = false;
     context.collisionManager.setRespawnInProgress(false);
     this.respawnFrameProbe.finish(outcome, context.scene.time.now);

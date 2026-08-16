@@ -32,8 +32,7 @@ export const NEON_FONT = {
 } as const;
 
 export function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined'
-    && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  return typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 }
 
 function getMenuAtmosphere(): number {
@@ -47,7 +46,7 @@ export function drawCornerTicks(
   width: number,
   height: number,
   color: number,
-  alpha: number,
+  alpha: number
 ): void {
   const tick = Math.min(10, Math.max(5, Math.min(width, height) * 0.06));
   graphics.lineStyle(1, color, alpha);
@@ -75,7 +74,7 @@ export function drawAngledRectPath(
   y: number,
   width: number,
   height: number,
-  cornerCut: number,
+  cornerCut: number
 ): void {
   const cut = Math.max(0, Math.min(cornerCut, width / 2, height / 2));
   graphics.beginPath();
@@ -96,7 +95,7 @@ export function drawNeonFrame(
   y: number,
   width: number,
   height: number,
-  options: NeonFrameOptions = {},
+  options: NeonFrameOptions = {}
 ): void {
   const accent = options.accentColor ?? NEON.cyan;
   const cut = options.cornerCut ?? Math.min(14, Math.max(4, Math.min(width, height) * 0.04));
@@ -138,7 +137,7 @@ export function drawNeonDivider(
   centerX: number,
   y: number,
   width: number,
-  color: number = NEON.cyan,
+  color: number = NEON.cyan
 ): void {
   const gap = 32;
   const wing = Math.max(32, width / 2 - gap);
@@ -170,7 +169,7 @@ export function fitNeonTitleFontSize(
   text: string,
   desiredFontSize: number,
   maxWidth: number,
-  minFontSize = 18,
+  minFontSize = 18
 ): number {
   const probe = scene.add
     .text(0, 0, text, {
@@ -197,7 +196,7 @@ export function addNeonTitle(
   text: string,
   fontSize: number,
   depth: number,
-  colors: NeonTitleColors = {},
+  colors: NeonTitleColors = {}
 ): Phaser.GameObjects.Text {
   const {
     glowDark = '#145fb2',

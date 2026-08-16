@@ -1,10 +1,6 @@
 import Phaser from 'phaser';
 
-import {
-  getActiveSection,
-  getSectionProgress,
-  type BossConfig,
-} from '@/config/LevelsConfig';
+import { getActiveSection, getSectionProgress, type BossConfig } from '@/config/LevelsConfig';
 import type { Player } from '@/entities/Player';
 import type { Boss } from '@/entities/enemies/Boss';
 import type { PowerUpType } from '@/entities/PowerUp';
@@ -46,17 +42,10 @@ import { updateHud as updateHudOrchestration } from './gameScene/hudSyncOrchestr
 import { PauseStateController } from './gameScene/PauseStateController';
 import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
-import {
-  runGameSceneCreateBootstrap,
-  type GameSceneCreateBootstrapBridge,
-} from './gameScene/runGameSceneCreateBootstrap';
+import { runGameSceneCreateBootstrap } from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
 import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
-import {
-  clampPlayerToViewport,
-  getPlayerSpawnPoint,
-  syncSceneViewport,
-} from './gameScene/viewport';
+import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
 export class GameScene extends Phaser.Scene {
@@ -103,68 +92,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    runGameSceneCreateBootstrap(this.createBootstrapBridge());
+    const runtime = runGameSceneCreateBootstrap({
+      scene: this,
+      runtimeLifecycle: this.runtimeLifecycle,
+      previousHudShieldCount: this.lastHudShieldCount,
+      resetRuntimeState: () => this.resetRuntimeState(),
+      initializePlayerRunState: () => this.initializePlayerRunState(),
+      initializeAudioForLevel: (levelConfig) => this.initializeAudioForLevel(levelConfig),
+      syncViewportBounds: () => this.syncViewportBounds(),
+      getPlayerSpawnPoint: () => this.getPlayerSpawnPoint(),
+      applyPowerUp: (type) => this.applyPowerUp(type),
+      isTerminalTransitionActive: () => this.flow.isTerminalTransitionActive(),
+      isGameplayLocked: () => this.flow.isGameplayLocked(),
+      stopPlayerMotion: () => this.stopPlayerMotion(),
+      captureCurrentRunStateForSave: () => this.captureCurrentRunStateForSave(),
+      canSaveCurrentRun: () => this.canSaveCurrentRun(),
+    });
+    this.installBootstrapRuntime(runtime);
     this.gameplayFrameBehavior = this.createGameplayFrameBehavior();
     this.updateFrameDelegate = this.createUpdateFrameDelegate();
   }
 
-  private createBootstrapBridge(): GameSceneCreateBootstrapBridge {
-    const owner = (): GameScene => this;
-
-    return {
-      scene: owner(),
-      resetRuntimeState: () => owner().resetRuntimeState(),
-      initializePlayerRunState: () => owner().initializePlayerRunState(),
-      initializeAudioForLevel: (levelConfig) => owner().initializeAudioForLevel(levelConfig),
-      runtimeLifecycle: owner().runtimeLifecycle,
-      get levelManager() { return owner().levelManager; },
-      set levelManager(value) { owner().levelManager = value; },
-      get scaledBossConfig() { return owner().scaledBossConfig; },
-      set scaledBossConfig(value) { owner().scaledBossConfig = value; },
-      syncViewportBounds: () => owner().syncViewportBounds(),
-      getPlayerSpawnPoint: () => owner().getPlayerSpawnPoint(),
-      get parallax() { return owner().parallax; },
-      set parallax(value) { owner().parallax = value; },
-      get effectsManager() { return owner().effectsManager; },
-      set effectsManager(value) { owner().effectsManager = value; },
-      get mobileControls() { return owner().mobileControls; },
-      set mobileControls(value) { owner().mobileControls = value; },
-      get inputManager() { return owner().inputManager; },
-      set inputManager(value) { owner().inputManager = value; },
-      get player() { return owner().player; },
-      set player(value) { owner().player = value; },
-      applyPowerUp: (type) => owner().applyPowerUp(type),
-      flow: owner().flow,
-      get bulletPool() { return owner().bulletPool; },
-      set bulletPool(value) { owner().bulletPool = value; },
-      get enemyPool() { return owner().enemyPool; },
-      set enemyPool(value) { owner().enemyPool = value; },
-      get lastLifeHelperWing() { return owner().lastLifeHelperWing; },
-      set lastLifeHelperWing(value) { owner().lastLifeHelperWing = value; },
-      get picketTurrets() { return owner().picketTurrets; },
-      set picketTurrets(value) { owner().picketTurrets = value; },
-      get waveManager() { return owner().waveManager; },
-      set waveManager(value) { owner().waveManager = value; },
-      get collisionManager() { return owner().collisionManager; },
-      set collisionManager(value) { owner().collisionManager = value; },
-      get scoreManager() { return owner().scoreManager; },
-      set scoreManager(value) { owner().scoreManager = value; },
-      get grazeSurge() { return owner().grazeSurge; },
-      set grazeSurge(value) { owner().grazeSurge = value; },
-      get powerUpGroup() { return owner().powerUpGroup; },
-      set powerUpGroup(value) { owner().powerUpGroup = value; },
-      get hud() { return owner().hud; },
-      set hud(value) { owner().hud = value; },
-      get warpTransition() { return owner().warpTransition; },
-      set warpTransition(value) { owner().warpTransition = value; },
-      get lastHudShieldCount() { return owner().lastHudShieldCount; },
-      set lastHudShieldCount(value) { owner().lastHudShieldCount = value; },
-      stopPlayerMotion: () => owner().stopPlayerMotion(),
-      captureCurrentRunStateForSave: () => owner().captureCurrentRunStateForSave(),
-      canSaveCurrentRun: () => owner().canSaveCurrentRun(),
-      get pauseStateController() { return owner().pauseStateController; },
-      set pauseStateController(value) { owner().pauseStateController = value; },
-    };
+  private installBootstrapRuntime(runtime: ReturnType<typeof runGameSceneCreateBootstrap>): void {
+    Object.assign(this, runtime);
   }
 
   private resetRuntimeState(): void {
@@ -449,8 +399,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private requireGameplayFrameBehavior(): GameSceneGameplayFrameBehavior {
-    return this.gameplayFrameBehavior
-      ?? (this.gameplayFrameBehavior = this.createGameplayFrameBehavior());
+    return this.gameplayFrameBehavior ?? (this.gameplayFrameBehavior = this.createGameplayFrameBehavior());
   }
 
   private createUpdateFrameDelegate(): GameSceneFrameDelegate {

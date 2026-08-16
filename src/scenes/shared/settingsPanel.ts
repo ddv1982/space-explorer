@@ -28,13 +28,16 @@ export interface SettingsPanel {
   destroy: () => void;
 }
 
-export function createSettingsPanel(scene: Phaser.Scene, config: {
-  layout: SettingsPanelLayout;
-  difficulty: GameplayDifficultyTier;
-  quality: VisualQualityTier;
-  onSelectDifficulty: (tier: GameplayDifficultyTier) => boolean;
-  onSelectQuality: (tier: VisualQualityTier) => boolean;
-}): SettingsPanel {
+export function createSettingsPanel(
+  scene: Phaser.Scene,
+  config: {
+    layout: SettingsPanelLayout;
+    difficulty: GameplayDifficultyTier;
+    quality: VisualQualityTier;
+    onSelectDifficulty: (tier: GameplayDifficultyTier) => boolean;
+    onSelectQuality: (tier: VisualQualityTier) => boolean;
+  }
+): SettingsPanel {
   let sliders: MusicSliderCluster | null = null;
   let sliderWidth = config.layout.sliderWidth ?? config.layout.width;
   let currentDepth = 0;
@@ -43,26 +46,51 @@ export function createSettingsPanel(scene: Phaser.Scene, config: {
     label: 'DIFFICULTY',
     tiers: ['low', 'normal', 'high'],
     value: config.difficulty,
-    layout: { x: config.layout.x, y: config.layout.difficultyY, width: config.layout.width, height: config.layout.tierHeight, compact: config.layout.compact },
+    layout: {
+      x: config.layout.x,
+      y: config.layout.difficultyY,
+      width: config.layout.width,
+      height: config.layout.tierHeight,
+      compact: config.layout.compact,
+    },
     onSelect: config.onSelectDifficulty,
   });
   const quality: TierSelectorControl<VisualQualityTier> = createTierSelectorControl(scene, {
     label: 'QUALITY',
     tiers: ['low', 'standard', 'high', 'auto'],
     value: config.quality,
-    layout: { x: config.layout.x, y: config.layout.qualityY, width: config.layout.width, height: config.layout.tierHeight, compact: config.layout.compact },
+    layout: {
+      x: config.layout.x,
+      y: config.layout.qualityY,
+      width: config.layout.width,
+      height: config.layout.tierHeight,
+      compact: config.layout.compact,
+    },
     onSelect: config.onSelectQuality,
   });
-  const createSliders = (): MusicSliderCluster => createMusicSliderCluster(scene, {
-    width: sliderWidth,
-    getSliders: () => sliders,
-  });
+  const createSliders = (): MusicSliderCluster =>
+    createMusicSliderCluster(scene, {
+      width: sliderWidth,
+      getSliders: () => sliders,
+    });
   sliders = createSliders();
 
   const panel: SettingsPanel = {
     setLayout(layout) {
-      difficulty.setLayout({ x: layout.x, y: layout.difficultyY, width: layout.width, height: layout.tierHeight, compact: layout.compact });
-      quality.setLayout({ x: layout.x, y: layout.qualityY, width: layout.width, height: layout.tierHeight, compact: layout.compact });
+      difficulty.setLayout({
+        x: layout.x,
+        y: layout.difficultyY,
+        width: layout.width,
+        height: layout.tierHeight,
+        compact: layout.compact,
+      });
+      quality.setLayout({
+        x: layout.x,
+        y: layout.qualityY,
+        width: layout.width,
+        height: layout.tierHeight,
+        compact: layout.compact,
+      });
       const nextSliderWidth = layout.sliderWidth ?? layout.width;
       if (nextSliderWidth !== sliderWidth) {
         destroyMusicSliderCluster(sliders);

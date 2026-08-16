@@ -33,7 +33,9 @@ interface PauseSaveSlotRowControlLayout {
   deleteButton: { x: number; y: number; width: number; height: number };
 }
 
-export function getPauseSaveSlotRowControlLayout(row: PauseOverlayLayout['slotRows'][number]): PauseSaveSlotRowControlLayout {
+export function getPauseSaveSlotRowControlLayout(
+  row: PauseOverlayLayout['slotRows'][number]
+): PauseSaveSlotRowControlLayout {
   const deleteX = row.x + row.width - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH - 10;
   const loadX = deleteX - PAUSE_OVERLAY_SLOT_BUTTON_GAP - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH;
   const saveX = loadX - PAUSE_OVERLAY_SLOT_BUTTON_GAP - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH;
@@ -51,9 +53,24 @@ export function getPauseSaveSlotRowControlLayout(row: PauseOverlayLayout['slotRo
       title: { x: textX, y: titleY, width: row.width - 28, height: 14, visible: titleVisible },
       subtitle: { x: textX, y: titleY, width: 0, height: 0, visible: false },
       savedAt: { x: textX, y: titleY, width: 0, height: 0, visible: false },
-      saveButton: { x: saveX, y: buttonY, width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT },
-      loadButton: { x: loadX, y: buttonY, width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT },
-      deleteButton: { x: deleteX, y: buttonY, width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT },
+      saveButton: {
+        x: saveX,
+        y: buttonY,
+        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+      },
+      loadButton: {
+        x: loadX,
+        y: buttonY,
+        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+      },
+      deleteButton: {
+        x: deleteX,
+        y: buttonY,
+        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+      },
     };
   }
 
@@ -61,12 +78,45 @@ export function getPauseSaveSlotRowControlLayout(row: PauseOverlayLayout['slotRo
   const availableTextWidth = Math.max(0, saveX - textX - 8);
 
   return {
-    title: { x: textX, y: row.y + (ultraCompactRow ? 12 : compactRow ? 7 : 10), width: availableTextWidth, height: 14, visible: true },
-    subtitle: { x: textX, y: row.y + (compactRow ? 24 : 30), width: availableTextWidth, height: 12, visible: !ultraCompactRow },
-    savedAt: { x: textX, y: row.y + (compactRow ? 39 : 51), width: availableTextWidth, height: 10, visible: !ultraCompactRow },
-    saveButton: { x: saveX, y: buttonY, width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT },
-    loadButton: { x: loadX, y: buttonY, width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT },
-    deleteButton: { x: deleteX, y: buttonY, width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT },
+    title: {
+      x: textX,
+      y: row.y + (ultraCompactRow ? 12 : compactRow ? 7 : 10),
+      width: availableTextWidth,
+      height: 14,
+      visible: true,
+    },
+    subtitle: {
+      x: textX,
+      y: row.y + (compactRow ? 24 : 30),
+      width: availableTextWidth,
+      height: 12,
+      visible: !ultraCompactRow,
+    },
+    savedAt: {
+      x: textX,
+      y: row.y + (compactRow ? 39 : 51),
+      width: availableTextWidth,
+      height: 10,
+      visible: !ultraCompactRow,
+    },
+    saveButton: {
+      x: saveX,
+      y: buttonY,
+      width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+      height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+    },
+    loadButton: {
+      x: loadX,
+      y: buttonY,
+      width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+      height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+    },
+    deleteButton: {
+      x: deleteX,
+      y: buttonY,
+      width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+      height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+    },
   };
 }
 
@@ -98,7 +148,14 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const panelWidth = stackedLayout
     ? Math.min(PAUSE_OVERLAY_COMPACT_PANEL_WIDTH, safeViewportWidth - 24)
     : Math.min(PAUSE_OVERLAY_PANEL_WIDTH, safeViewportWidth - 24, widePanelWidth);
-  const panelHeight = Math.min(shortViewport ? PAUSE_OVERLAY_PANEL_HEIGHT : compact ? PAUSE_OVERLAY_COMPACT_PANEL_HEIGHT : PAUSE_OVERLAY_PANEL_HEIGHT, viewport.height - 24);
+  const panelHeight = Math.min(
+    shortViewport
+      ? PAUSE_OVERLAY_PANEL_HEIGHT
+      : compact
+        ? PAUSE_OVERLAY_COMPACT_PANEL_HEIGHT
+        : PAUSE_OVERLAY_PANEL_HEIGHT,
+    viewport.height - 24
+  );
   const panelX = centerHorizontally(viewport, panelWidth);
   const panelY = viewport.centerY - panelHeight / 2;
   const panelBottom = panelY + panelHeight;
@@ -110,9 +167,7 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const footerBottomMargin = ultraCompactViewport ? 4 : buttonsStacked ? 10 : shortViewport ? 6 : compact ? 20 : 36;
   const footerButtonGap = ultraCompactViewport ? 6 : PAUSE_OVERLAY_BUTTON_GAP;
   const menuButtonY = panelBottom - PAUSE_OVERLAY_BUTTON_HEIGHT - footerBottomMargin;
-  const footerTop = buttonsStacked
-    ? menuButtonY - footerButtonGap - PAUSE_OVERLAY_BUTTON_HEIGHT
-    : menuButtonY;
+  const footerTop = buttonsStacked ? menuButtonY - footerButtonGap - PAUSE_OVERLAY_BUTTON_HEIGHT : menuButtonY;
   const resumeButtonY = footerTop;
   const statusTextHeight = 20;
   const statusY = footerTop - 8 - statusTextHeight / 2;
@@ -120,12 +175,22 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     ? 32
     : veryShortViewport
       ? 36
-    : compressedPortrait
-      ? 60
-    : buttonsStacked
-      ? (shortViewport ? 44 : PAUSE_OVERLAY_SLOT_ROW_HEIGHT)
-      : shortViewport ? 44 : PAUSE_OVERLAY_SLOT_ROW_HEIGHT;
-  const slotRowGap = ultraCompactViewport ? 0 : veryShortViewport ? 2 : compressedPortrait || buttonsStacked || shortViewport || compact ? 4 : 10;
+      : compressedPortrait
+        ? 60
+        : buttonsStacked
+          ? shortViewport
+            ? 44
+            : PAUSE_OVERLAY_SLOT_ROW_HEIGHT
+          : shortViewport
+            ? 44
+            : PAUSE_OVERLAY_SLOT_ROW_HEIGHT;
+  const slotRowGap = ultraCompactViewport
+    ? 0
+    : veryShortViewport
+      ? 2
+      : compressedPortrait || buttonsStacked || shortViewport || compact
+        ? 4
+        : 10;
   const slotRowWidth = Math.min(PAUSE_OVERLAY_SLOT_ROW_MAX_WIDTH, panelWidth - contentInset * 2);
   const slotBlockHeight = slotRowHeight * 3 + slotRowGap * 2;
   const titleFontSize = shortViewport ? 42 : 74;
@@ -145,7 +210,8 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
         tabContentStartY
       )
     : panelY + 300;
-  const earliestSlotStartY = panelY + (ultraCompactViewport ? 34 : veryShortViewport ? 36 : shortViewport ? 24 : stackedLayout ? 130 : 150);
+  const earliestSlotStartY =
+    panelY + (ultraCompactViewport ? 34 : veryShortViewport ? 36 : shortViewport ? 24 : stackedLayout ? 130 : 150);
   const latestSlotStartY = statusY - statusTextHeight / 2 - 8 - slotBlockHeight;
 
   let subtitleVisible = !shortViewport && !compressedPortrait;
@@ -200,7 +266,9 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const saveHeaderY = slotStartY - saveHeaderGap;
   const saveHeaderVisible = !shortViewport;
   const slotX = viewport.centerX - slotRowWidth / 2;
-  const compactResumeX = buttonsStacked ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2 : viewport.centerX - twoButtonsWidth / 2;
+  const compactResumeX = buttonsStacked
+    ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2
+    : viewport.centerX - twoButtonsWidth / 2;
   const compactMenuX = buttonsStacked
     ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2
     : viewport.centerX - twoButtonsWidth / 2 + PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP;
@@ -305,7 +373,12 @@ export function drawPauseOverlayBackdrop(
     glow: true,
   });
 
-  drawNeonDivider(panel, layout.centerX, Math.max(layout.panelY + 24, layout.titleY - 48), Math.min(620, layout.panelWidth - 160));
+  drawNeonDivider(
+    panel,
+    layout.centerX,
+    Math.max(layout.panelY + 24, layout.titleY - 48),
+    Math.min(620, layout.panelWidth - 160)
+  );
   if (layout.hintVisible) {
     drawNeonDivider(
       panel,

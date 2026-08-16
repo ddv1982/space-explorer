@@ -87,9 +87,7 @@ export function resolveArrangementForBar(
 
   const cycleBars = sections.reduce((total, section) => total + section.barsDuration, 0);
   const shouldLoop = config?.loop ?? false;
-  const cycleBarIndex = shouldLoop
-    ? positiveModulo(safeBarIndex, cycleBars)
-    : Math.min(safeBarIndex, cycleBars - 1);
+  const cycleBarIndex = shouldLoop ? positiveModulo(safeBarIndex, cycleBars) : Math.min(safeBarIndex, cycleBars - 1);
 
   let accumulatedBars = 0;
   for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {

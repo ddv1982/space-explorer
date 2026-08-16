@@ -16,4 +16,3 @@ export function drawSoftCircle(
     graphics.fillCircle(x, y, r);
   }
 }
-

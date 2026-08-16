@@ -49,10 +49,7 @@ function getResolvedTensionArc(section: LevelSectionConfig): NonNullable<LevelSe
   }
 }
 
-export function resolveSectionSpawnRateScale(
-  section: LevelSectionConfig | null,
-  sectionProgress: number
-): number {
+export function resolveSectionSpawnRateScale(section: LevelSectionConfig | null, sectionProgress: number): number {
   if (!section) {
     return 1;
   }
@@ -60,10 +57,7 @@ export function resolveSectionSpawnRateScale(
   return clamp(getArcShapeScale(getResolvedTensionArc(section), sectionProgress), 0.75, 1.2);
 }
 
-export function resolveSectionMusicIntensity(
-  section: LevelSectionConfig | null,
-  sectionProgress: number
-): number {
+export function resolveSectionMusicIntensity(section: LevelSectionConfig | null, sectionProgress: number): number {
   const baseIntensity = section?.musicIntensity ?? 1;
   if (!section) {
     return clamp(baseIntensity, 0.2, 1.2);

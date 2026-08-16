@@ -1,11 +1,7 @@
 import type { ProceduralMusicTrackConfig } from '../config/LevelsConfig';
 import { AudioContextManager } from './audio/AudioContextManager';
 import { SFXManager } from './audio/SFXManager';
-import {
-  ProceduralMusicManager,
-  DEFAULT_TRACK,
-  type MusicRuntimeTuning,
-} from './audio/ProceduralMusicManager';
+import { ProceduralMusicManager, DEFAULT_TRACK, type MusicRuntimeTuning } from './audio/ProceduralMusicManager';
 
 export type AudioPauseReason = 'gameplay' | 'visibility';
 

@@ -67,7 +67,7 @@ function resolveChordIndex(steps: MusicHarmonicChordStepConfig[], cycleBarIndex:
 }
 
 function resolveRootSemitoneOffset(mode: readonly number[], chord: MusicHarmonicChordStepConfig): number {
-  const degreeIndex = ((toPositiveInteger(chord.degree, 1) - 1) % 7 + 7) % 7;
+  const degreeIndex = (((toPositiveInteger(chord.degree, 1) - 1) % 7) + 7) % 7;
   const octaveShift = chord.octaveShift ?? 0;
   return mode[degreeIndex] + octaveShift * 12;
 }

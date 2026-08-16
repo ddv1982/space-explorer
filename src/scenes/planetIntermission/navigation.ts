@@ -25,12 +25,7 @@ function getGridFocusState(buttons: UpgradeButton[], currentIndex: number): Grid
 export function findButtonIndexAtPoint(buttons: UpgradeButton[], x: number, y: number): number {
   for (let i = 0; i < buttons.length; i++) {
     const button = buttons[i];
-    if (
-      x >= button.x &&
-      x <= button.x + button.width &&
-      y >= button.y &&
-      y <= button.y + button.height
-    ) {
+    if (x >= button.x && x <= button.x + button.width && y >= button.y && y <= button.y + button.height) {
       return i;
     }
   }
@@ -60,11 +55,7 @@ export function findLinearFocusIndex(
 
   const totalButtons = buttons.length;
   let newIndex =
-    currentIndex === -1
-      ? delta > 0
-        ? 0
-        : totalButtons - 1
-      : (currentIndex + delta + totalButtons) % totalButtons;
+    currentIndex === -1 ? (delta > 0 ? 0 : totalButtons - 1) : (currentIndex + delta + totalButtons) % totalButtons;
 
   let iterations = 0;
   while (iterations < totalButtons) {
@@ -170,10 +161,7 @@ export function findNextPurchasableAfter(
   return -1;
 }
 
-export function drawFocusIndicator(
-  graphics: Phaser.GameObjects.Graphics,
-  button: UpgradeButton | undefined
-): void {
+export function drawFocusIndicator(graphics: Phaser.GameObjects.Graphics, button: UpgradeButton | undefined): void {
   graphics.clear();
   if (!button) {
     return;
@@ -210,10 +198,7 @@ export function drawFocusIndicator(
   );
 }
 
-export function drawHoverIndicator(
-  graphics: Phaser.GameObjects.Graphics,
-  button: UpgradeButton | undefined
-): void {
+export function drawHoverIndicator(graphics: Phaser.GameObjects.Graphics, button: UpgradeButton | undefined): void {
   graphics.clear();
   if (!button) {
     return;

@@ -48,12 +48,15 @@ export class VictoryScene extends Phaser.Scene {
     drawNeonDivider(frame, layout.centerX, frameY + 32, frameWidth - 150, NEON.amber);
     drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 32, frameWidth - 150, NEON.teal);
 
-    this.add.text(layout.centerX, layout.centerY - 138, 'COMMAND DECK', {
-      fontSize: '12px',
-      color: NEON_TEXT.cyan,
-      fontFamily: NEON_FONT.mono,
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(12);
+    this.add
+      .text(layout.centerX, layout.centerY - 138, 'COMMAND DECK', {
+        fontSize: '12px',
+        color: NEON_TEXT.cyan,
+        fontFamily: NEON_FONT.mono,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     addNeonTitle(this, layout.centerX, layout.centerY - 108, 'MISSION COMPLETE', 44, 11, {
       glowDark: '#8c6a1f',
@@ -61,27 +64,36 @@ export class VictoryScene extends Phaser.Scene {
       glowBright: '#ffc36e',
     });
 
-    this.add.text(layout.centerX, layout.centerY - 52, 'ALL SECTORS CLEARED', {
-      fontSize: '20px',
-      color: '#58f0d8',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(12);
+    this.add
+      .text(layout.centerX, layout.centerY - 52, 'ALL SECTORS CLEARED', {
+        fontSize: '20px',
+        color: '#58f0d8',
+        fontFamily: UI_FONT_MONO,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     const finalScore = getRunSummary(this.registry).finalScore;
-    this.add.text(layout.centerX, layout.centerY + 4, `FINAL SCORE: ${finalScore}`, {
-      fontSize: '28px',
-      color: NEON_TEXT.primary,
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(12);
+    this.add
+      .text(layout.centerX, layout.centerY + 4, `FINAL SCORE: ${finalScore}`, {
+        fontSize: '28px',
+        color: NEON_TEXT.primary,
+        fontFamily: UI_FONT_MONO,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     const totalLevels = getTotalLevels();
-    this.add.text(layout.centerX, layout.centerY + 46, `${totalLevels}/${totalLevels} LEVELS COMPLETED`, {
-      fontSize: '15px',
-      color: NEON_TEXT.muted,
-      fontFamily: UI_FONT_MONO,
-    }).setOrigin(0.5).setDepth(12);
+    this.add
+      .text(layout.centerX, layout.centerY + 46, `${totalLevels}/${totalLevels} LEVELS COMPLETED`, {
+        fontSize: '15px',
+        color: NEON_TEXT.muted,
+        fontFamily: UI_FONT_MONO,
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     createPromptText(this, layout.centerX, layout.centerY + 118, CONTINUE_PROMPT, {
       color: '#dce8ff',

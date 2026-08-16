@@ -19,18 +19,34 @@ class GraphicsStub {
     return this;
   }
 
-  fillStyle(): this { return this; }
+  fillStyle(): this {
+    return this;
+  }
   fillCircle(x: number, y: number, radius: number): this {
     this.fillCircleCalls.push([x, y, radius]);
     return this;
   }
-  beginPath(): this { return this; }
-  moveTo(): this { return this; }
-  lineTo(): this { return this; }
-  closePath(): this { return this; }
-  fillPath(): this { return this; }
-  lineStyle(): this { return this; }
-  strokePath(): this { return this; }
+  beginPath(): this {
+    return this;
+  }
+  moveTo(): this {
+    return this;
+  }
+  lineTo(): this {
+    return this;
+  }
+  closePath(): this {
+    return this;
+  }
+  fillPath(): this {
+    return this;
+  }
+  lineStyle(): this {
+    return this;
+  }
+  strokePath(): this {
+    return this;
+  }
 
   destroy(): void {
     this.destroyCalls += 1;
@@ -83,9 +99,15 @@ describe('HudShieldIconRenderer', () => {
     const renderer = new HudShieldIconRenderer();
     let renderCalls = 0;
 
-    renderer.updateShields(2, () => { renderCalls += 1; });
-    renderer.updateShields(2, () => { renderCalls += 1; });
-    renderer.updateShields(3, () => { renderCalls += 1; });
+    renderer.updateShields(2, () => {
+      renderCalls += 1;
+    });
+    renderer.updateShields(2, () => {
+      renderCalls += 1;
+    });
+    renderer.updateShields(3, () => {
+      renderCalls += 1;
+    });
 
     expect(renderCalls).toBe(2);
   });

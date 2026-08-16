@@ -29,7 +29,8 @@ mock.module('../src/utils/layout', () => {
       centerX: 640,
       centerY: 360,
     }),
-    centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
+    centerHorizontally: (layout: { left: number; width: number }, width: number) =>
+      layout.left + (layout.width - width) / 2,
   };
 });
 
@@ -186,12 +187,19 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
   expectNoOverlap(tileRect, statusRect);
 
   for (const position of plan.settingsLayout.sliderPositions) {
-    const sliderRect = { x: position.x, y: position.y, width: plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width, height: 52 };
+    const sliderRect = {
+      x: position.x,
+      y: position.y,
+      width: plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width,
+      height: 52,
+    };
     expectNoOverlap(subtitleRect, sliderRect);
     expectNoOverlap(sliderRect, tileRect);
     expectNoOverlap(sliderRect, statusRect);
     expect(position.x).toBeGreaterThanOrEqual(0);
-    expect(position.x + (plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width)).toBeLessThanOrEqual(viewport.width);
+    expect(position.x + (plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width)).toBeLessThanOrEqual(
+      viewport.width
+    );
   }
 
   expect(statusRect.y + statusRect.height).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
@@ -238,7 +246,8 @@ describe('responsive save-slot layouts', () => {
 
     for (const row of layout.slotRows) {
       const deleteButtonRight = row.x + row.width - 10;
-      const saveButtonLeft = deleteButtonRight - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH * 3 - PAUSE_OVERLAY_SLOT_BUTTON_GAP * 2;
+      const saveButtonLeft =
+        deleteButtonRight - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH * 3 - PAUSE_OVERLAY_SLOT_BUTTON_GAP * 2;
 
       expect(row.x).toBeGreaterThanOrEqual(0);
       expect(row.x + row.width).toBeLessThanOrEqual(viewport.width);
@@ -281,7 +290,9 @@ describe('responsive save-slot layouts', () => {
     for (const row of layout.slotRows) {
       const controlLayout = getPauseSaveSlotRowControlLayout(row);
       const buttonRects = [controlLayout.saveButton, controlLayout.loadButton, controlLayout.deleteButton];
-      const textRects = [controlLayout.title, controlLayout.subtitle, controlLayout.savedAt].filter((rect) => rect.visible);
+      const textRects = [controlLayout.title, controlLayout.subtitle, controlLayout.savedAt].filter(
+        (rect) => rect.visible
+      );
 
       for (const buttonRect of buttonRects) {
         expect(buttonRect.width).toBe(PAUSE_OVERLAY_SLOT_BUTTON_WIDTH);
@@ -400,9 +411,12 @@ describe('responsive save-slot layouts', () => {
     { width: 480, height: 320 },
     { width: 320, height: 360 },
     { width: 280, height: 360 },
-  ])('pause overlay keeps save header and text bands above save-slot rows across desktop and ultra-compact heights', (viewport) => {
-    assertPauseRequiredControlsDoNotOverlap(viewport);
-  });
+  ])(
+    'pause overlay keeps save header and text bands above save-slot rows across desktop and ultra-compact heights',
+    (viewport) => {
+      assertPauseRequiredControlsDoNotOverlap(viewport);
+    }
+  );
 
   test.each([
     { width: 812, height: 375 },
@@ -410,9 +424,12 @@ describe('responsive save-slot layouts', () => {
     { width: 480, height: 320 },
     { width: 480, height: 500 },
     { width: 640, height: 360 },
-  ])('menu layout keeps title, music band, tile block, and status in separate vertical bands on compact/mobile viewports', (viewport) => {
-    assertMenuBandsDoNotOverlap(viewport);
-  });
+  ])(
+    'menu layout keeps title, music band, tile block, and status in separate vertical bands on compact/mobile viewports',
+    (viewport) => {
+      assertMenuBandsDoNotOverlap(viewport);
+    }
+  );
 
   test.each([
     { width: 1024, height: 768 },
@@ -423,7 +440,9 @@ describe('responsive save-slot layouts', () => {
 
     expect(plan.musicPanelY).toBeGreaterThanOrEqual(0);
     expect(plan.musicPanelY + plan.musicPanelHeight).toBeLessThanOrEqual(viewport.height);
-    expect(Math.max(...plan.settingsLayout.sliderPositions.map((position) => position.y + 52))).toBeLessThanOrEqual(viewport.height);
+    expect(Math.max(...plan.settingsLayout.sliderPositions.map((position) => position.y + 52))).toBeLessThanOrEqual(
+      viewport.height
+    );
   });
 
   test.each([

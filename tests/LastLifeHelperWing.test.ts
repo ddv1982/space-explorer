@@ -127,8 +127,14 @@ describe('LastLifeHelperWing', () => {
     helper.takeDamage = takeDamage as never;
     helper.takeContactDamage = takeContactDamage as never;
 
-    (wing as unknown as { handleEnemyBulletOverlap: (a: unknown, b: unknown) => void }).handleEnemyBulletOverlap(bullet, helper);
-    (wing as unknown as { handleEnemyContactOverlap: (a: unknown, b: unknown) => void }).handleEnemyContactOverlap(enemy, helper);
+    (wing as unknown as { handleEnemyBulletOverlap: (a: unknown, b: unknown) => void }).handleEnemyBulletOverlap(
+      bullet,
+      helper
+    );
+    (wing as unknown as { handleEnemyContactOverlap: (a: unknown, b: unknown) => void }).handleEnemyContactOverlap(
+      enemy,
+      helper
+    );
 
     expect(bulletKill).toHaveBeenCalledTimes(1);
     expect(takeDamage).toHaveBeenCalledWith(1, 1234, effectsManager);

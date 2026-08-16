@@ -57,10 +57,7 @@ export function resetPassingPlanetPosition(
   planet.sprite.y = planet.baseY;
 }
 
-export function getPassingPlanetOffscreenThreshold(
-  sprite: Phaser.GameObjects.Image,
-  offscreenPadding: number
-): number {
+export function getPassingPlanetOffscreenThreshold(sprite: Phaser.GameObjects.Image, offscreenPadding: number): number {
   return -Math.max(offscreenPadding, sprite.displayWidth * 0.5);
 }
 

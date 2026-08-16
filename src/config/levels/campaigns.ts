@@ -32,9 +32,7 @@ export function flattenCampaignLevels(campaigns: readonly CampaignConfig[]): Lev
     for (const level of campaign.levels) {
       const levelKey = `${level.name}::${level.planetName}`;
       if (seenLevelKeys.has(levelKey)) {
-        throw new Error(
-          `[levels] Duplicate level entry "${level.name}" detected while building campaign order.`
-        );
+        throw new Error(`[levels] Duplicate level entry "${level.name}" detected while building campaign order.`);
       }
 
       seenLevelKeys.add(levelKey);

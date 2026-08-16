@@ -9,7 +9,12 @@ export class InputManager {
   private static readonly mobileSecondaryAxisEngageRatio = 0.72;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
+  private wasd!: {
+    W: Phaser.Input.Keyboard.Key;
+    A: Phaser.Input.Keyboard.Key;
+    S: Phaser.Input.Keyboard.Key;
+    D: Phaser.Input.Keyboard.Key;
+  };
   private space!: Phaser.Input.Keyboard.Key;
   private escape!: Phaser.Input.Keyboard.Key;
   private scene!: Phaser.Scene;
@@ -94,8 +99,10 @@ export class InputManager {
     const absX = Math.abs(movementVector.x);
     const absY = Math.abs(movementVector.y);
 
-    let horizontalActive = rawXDirection !== 0 && absX >= this.getAxisThreshold(this.mobileHorizontalDirection, rawXDirection);
-    let verticalActive = rawYDirection !== 0 && absY >= this.getAxisThreshold(this.mobileVerticalDirection, rawYDirection);
+    let horizontalActive =
+      rawXDirection !== 0 && absX >= this.getAxisThreshold(this.mobileHorizontalDirection, rawXDirection);
+    let verticalActive =
+      rawYDirection !== 0 && absY >= this.getAxisThreshold(this.mobileVerticalDirection, rawYDirection);
 
     if (horizontalActive && verticalActive) {
       const dominantMagnitude = Math.max(absX, absY);
@@ -131,9 +138,7 @@ export class InputManager {
 
     return this.scene.input.manager.pointers.some((pointer) => {
       return (
-        pointer.isDown &&
-        pointer.downX >= viewport.centerX &&
-        this.mobileControls?.isControlPointer(pointer) !== true
+        pointer.isDown && pointer.downX >= viewport.centerX && this.mobileControls?.isControlPointer(pointer) !== true
       );
     });
   }

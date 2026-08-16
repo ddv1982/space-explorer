@@ -35,7 +35,7 @@ function resolvePatrolMovement(
   horizontalBounds: { min: number; max: number },
   speedScale: number
 ): { x: number; moveDir: number } {
-  const rawX = input.x + input.moveSpeed * speedScale * input.moveDir * input.delta / 1000;
+  const rawX = input.x + (input.moveSpeed * speedScale * input.moveDir * input.delta) / 1000;
   const x = Phaser.Math.Clamp(rawX, horizontalBounds.min, horizontalBounds.max);
 
   return {
@@ -61,8 +61,12 @@ export function updateBossMovement(input: BossMovementInput): BossMovementOutput
     }
     case 'pursuit': {
       const horizontalBounds = getHorizontalBounds(minX, maxX, 70);
-      const targetX = Phaser.Math.Clamp(input.playerX ?? input.x + input.moveDir * 120, horizontalBounds.min, horizontalBounds.max);
-      const maxStep = input.moveSpeed * 1.15 * delta / 1000;
+      const targetX = Phaser.Math.Clamp(
+        input.playerX ?? input.x + input.moveDir * 120,
+        horizontalBounds.min,
+        horizontalBounds.max
+      );
+      const maxStep = (input.moveSpeed * 1.15 * delta) / 1000;
       const x = Phaser.Math.Clamp(
         input.x + Phaser.Math.Clamp(targetX - input.x, -maxStep, maxStep),
         horizontalBounds.min,
@@ -93,10 +97,6 @@ export function updateBossMovement(input: BossMovementInput): BossMovementOutput
       };
     }
   }
-}
-
-export function shouldEnterBossPhaseTwo(phase: number, hp: number, maxHp: number): boolean {
-  return phase === 1 && hp / maxHp <= 0.5;
 }
 
 export function getBossShieldActive(

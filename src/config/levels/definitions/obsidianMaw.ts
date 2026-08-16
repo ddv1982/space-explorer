@@ -102,9 +102,7 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
       endProgress: 0.32,
       phase: 'build',
       summary: 'First brood rings teach swarm survival: read the ring, carve a lane, clear fast for the bonus brood.',
-      hazardEvents: [
-        { type: 'debris-surge', cadenceMs: 2800, intensity: 0.5 },
-      ],
+      hazardEvents: [{ type: 'debris-surge', cadenceMs: 2800, intensity: 0.5 }],
       waves: [
         {
           id: 'brood-ring-one',
@@ -136,7 +134,8 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
           lane: 3,
           aceCount: 1,
           telegraph: 'warning',
-          notes: 'Splitter pack: every kill multiplies into swarmlings; the gilded ace point is the priority read before it splits.',
+          notes:
+            'Splitter pack: every kill multiplies into swarmlings; the gilded ace point is the priority read before it splits.',
         },
       ],
       musicIntensity: 0.68,
@@ -149,7 +148,8 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
       startProgress: 0.32,
       endProgress: 0.5,
       phase: 'hazard',
-      summary: 'The brood surges: debris and ring-crossfire weave through the swarm front while splitters multiply the pressure.',
+      summary:
+        'The brood surges: debris and ring-crossfire weave through the swarm front while splitters multiply the pressure.',
       hazardEvents: [
         { type: 'debris-surge', cadenceMs: 2600, intensity: 0.55 },
         { type: 'ring-crossfire', cadenceMs: 3400, intensity: 0.5 },

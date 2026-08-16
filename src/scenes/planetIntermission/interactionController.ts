@@ -231,7 +231,9 @@ export class PlanetIntermissionInteractionController {
   }
 
   moveFocusAfterPurchase(): void {
-    this.focusButton(findNextPurchasableAfter(this.buttons, this.focusedButtonIndex, (button) => this.evaluateButton(button)));
+    this.focusButton(
+      findNextPurchasableAfter(this.buttons, this.focusedButtonIndex, (button) => this.evaluateButton(button))
+    );
   }
 
   private setupHoverEffects(): void {

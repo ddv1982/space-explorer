@@ -12,10 +12,19 @@ Object.assign(audioManager, {
 });
 const trySpawnRandomPowerUp = mock();
 const spawnGuaranteedPowerUp = mock();
-const spawnPowerUp = mock((group: { getFirstDead?: (createIfNull: boolean) => unknown; get?: (x: number, y: number) => unknown }, x: number, y: number, type: string) => {
-  const powerUp = (group.getFirstDead?.(false) ?? group.get?.(x, y)) as { spawn?: (spawnX: number, spawnY: number, powerUpType: string) => void } | null;
-  powerUp?.spawn?.(x, y, type);
-});
+const spawnPowerUp = mock(
+  (
+    group: { getFirstDead?: (createIfNull: boolean) => unknown; get?: (x: number, y: number) => unknown },
+    x: number,
+    y: number,
+    type: string
+  ) => {
+    const powerUp = (group.getFirstDead?.(false) ?? group.get?.(x, y)) as {
+      spawn?: (spawnX: number, spawnY: number, powerUpType: string) => void;
+    } | null;
+    powerUp?.spawn?.(x, y, type);
+  }
+);
 mock.module('../src/systems/GameplayFlow', () => ({
   trySpawnRandomPowerUp,
   spawnGuaranteedPowerUp,
@@ -47,9 +56,28 @@ mock.module('../src/systems/GameplayFlow', () => ({
 mock.module('../src/utils/layout', () => ({
   getViewportBounds: () => ({ centerX: 400 }),
   getViewportLayout: () => ({ left: 0, width: 800, centerX: 400 }),
-  getGameplayBounds: () => ({ left: 0, top: 0, width: 1280, height: 720, right: 1280, bottom: 720, centerX: 640, centerY: 360 }),
-  getActiveGameplayBounds: () => ({ left: 0, top: 0, width: 1280, height: 720, right: 1280, bottom: 720, centerX: 640, centerY: 360 }),
-  centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
+  getGameplayBounds: () => ({
+    left: 0,
+    top: 0,
+    width: 1280,
+    height: 720,
+    right: 1280,
+    bottom: 720,
+    centerX: 640,
+    centerY: 360,
+  }),
+  getActiveGameplayBounds: () => ({
+    left: 0,
+    top: 0,
+    width: 1280,
+    height: 720,
+    right: 1280,
+    bottom: 720,
+    centerX: 640,
+    centerY: 360,
+  }),
+  centerHorizontally: (layout: { left: number; width: number }, width: number) =>
+    layout.left + (layout.width - width) / 2,
 }));
 mock.module('phaser', () => ({
   default: {
@@ -95,26 +123,29 @@ type PlayerDeathOutcome = {
   remainingLives: number;
 };
 
-function createCombatFeedbackHarness(options: {
-  playerDeathOutcome?: PlayerDeathOutcome;
-  boss?: { x: number; y: number } | null;
-  persistHelperWingState?: () => void;
-  suspendForTransition?: () => void;
-  suspendPicketsForTransition?: () => void;
-  queueLevelComplete?: () => void;
-} = {}) {
+function createCombatFeedbackHarness(
+  options: {
+    playerDeathOutcome?: PlayerDeathOutcome;
+    boss?: { x: number; y: number } | null;
+    persistHelperWingState?: () => void;
+    suspendForTransition?: () => void;
+    suspendPicketsForTransition?: () => void;
+    queueLevelComplete?: () => void;
+  } = {}
+) {
   const player = {
     x: 24,
     y: 48,
     playDeathAnimation: mock(),
   };
   const flowContext = { id: 'flow-context' };
-  const handlePlayerDeath = mock(() =>
-    options.playerDeathOutcome ?? {
-      status: 'respawn-started',
-      levelCompleteQueued: false,
-      remainingLives: 1,
-    }
+  const handlePlayerDeath = mock(
+    () =>
+      options.playerDeathOutcome ?? {
+        status: 'respawn-started',
+        levelCompleteQueued: false,
+        remainingLives: 1,
+      }
   );
   const queueLevelComplete = mock(() => options.queueLevelComplete?.());
   const createExplosion = mock();
@@ -140,49 +171,54 @@ function createCombatFeedbackHarness(options: {
       time: { now: 1000 },
     } as never,
     player: () => player as never,
-    scoreManager: () => ({
-      addScore: mock(),
-      registerKill: mock((score: number) => score),
-      onPlayerHit: mock(),
-      onPlayerDeath: mock(),
-    } as never),
-    effectsManager: () => ({
-      createScorePopup: mock(),
-      createExplosion,
-      createSurgePulse: mock(),
-      createWormholeTelegraph,
-      pulseCameraColor: mock(),
-    } as never),
-    flow: () => ({
-      handlePlayerDeath,
-      isPlayerDeathTransitionActive: mock(() => false),
-      queueLevelComplete,
-    } as never),
+    scoreManager: () =>
+      ({
+        addScore: mock(),
+        registerKill: mock((score: number) => score),
+        onPlayerHit: mock(),
+        onPlayerDeath: mock(),
+      }) as never,
+    effectsManager: () =>
+      ({
+        createScorePopup: mock(),
+        createExplosion,
+        createSurgePulse: mock(),
+        createWormholeTelegraph,
+        pulseCameraColor: mock(),
+      }) as never,
+    flow: () =>
+      ({
+        handlePlayerDeath,
+        isPlayerDeathTransitionActive: mock(() => false),
+        queueLevelComplete,
+      }) as never,
     getFlowContext: () => flowContext as never,
-    levelManager: () => ({
-      markBossDefeated,
-      getLevelConfig: () => ({ music: { boss: 'boss-track' } }),
-    } as never),
-    collisionManager: () => ({ clearPlayerHazards: mock() } as never),
-    waveManager: () => ({ applyDeathRelief: mock() } as never),
+    levelManager: () =>
+      ({
+        markBossDefeated,
+        getLevelConfig: () => ({ music: { boss: 'boss-track' } }),
+      }) as never,
+    collisionManager: () => ({ clearPlayerHazards: mock() }) as never,
+    waveManager: () => ({ applyDeathRelief: mock() }) as never,
     grazeSurge: () => null,
-    enemyPool: () => ({ getAllEnemies: (): never[] => [], spawnBoss: mock() } as never),
-    hud: () => ({
-      showBossWarning: mock(),
-      showBossBar: mock(),
-      hideBossBar,
-      showBossPhaseAnnouncement: mock(),
-      showHelperWingAnnouncement: mock(),
-      showHelperWingDepletedAnnouncement: mock(),
-      showEliteWaveAnnouncement,
-      showPicketOnlineAnnouncement,
-    } as never),
+    enemyPool: () => ({ getAllEnemies: (): never[] => [], spawnBoss: mock() }) as never,
+    hud: () =>
+      ({
+        showBossWarning: mock(),
+        showBossBar: mock(),
+        hideBossBar,
+        showBossPhaseAnnouncement: mock(),
+        showHelperWingAnnouncement: mock(),
+        showHelperWingDepletedAnnouncement: mock(),
+        showEliteWaveAnnouncement,
+        showPicketOnlineAnnouncement,
+      }) as never,
     getBoss: () => (options.boss ?? null) as never,
     setBoss,
     getScaledBossConfig: () => null,
-    getLastLifeHelperWing: () => ({ suspendForTransition } as never),
-    getPicketTurrets: () => ({ suspendForTransition: suspendPicketsForTransition } as never),
-    powerUpGroup: () => ({ id: 'powerups' } as never),
+    getLastLifeHelperWing: () => ({ suspendForTransition }) as never,
+    getPicketTurrets: () => ({ suspendForTransition: suspendPicketsForTransition }) as never,
+    powerUpGroup: () => ({ id: 'powerups' }) as never,
     persistHelperWingState,
     syncLastLifeHelperWingState,
     constants: {
@@ -223,27 +259,28 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
 
     const handlers = createGameSceneCombatFeedbackHandlers({
       scene: { cameras: { main: {} }, time: { now: 1000 } } as never,
-      player: () => ({ x: 0, y: 0 } as never),
-      scoreManager: () => ({ registerKill: addScore } as never),
-      effectsManager: () => ({ createScorePopup } as never),
-      flow: () => ({
-        handlePlayerDeath: mock(),
-        isPlayerDeathTransitionActive: mock(() => false),
-        queueLevelComplete: mock(),
-      } as never),
+      player: () => ({ x: 0, y: 0 }) as never,
+      scoreManager: () => ({ registerKill: addScore }) as never,
+      effectsManager: () => ({ createScorePopup }) as never,
+      flow: () =>
+        ({
+          handlePlayerDeath: mock(),
+          isPlayerDeathTransitionActive: mock(() => false),
+          queueLevelComplete: mock(),
+        }) as never,
       getFlowContext: () => ({}) as never,
-      levelManager: () => ({ getLevelConfig: () => ({ music: { boss: 'boss-track' } }) } as never),
-      collisionManager: () => ({ clearPlayerHazards: mock() } as never),
-      waveManager: () => ({ applyDeathRelief: mock() } as never),
+      levelManager: () => ({ getLevelConfig: () => ({ music: { boss: 'boss-track' } }) }) as never,
+      collisionManager: () => ({ clearPlayerHazards: mock() }) as never,
+      waveManager: () => ({ applyDeathRelief: mock() }) as never,
       grazeSurge: () => null,
-      enemyPool: () => ({ getAllEnemies: (): never[] => [] } as never),
-      hud: () => ({ showBossWarning: mock(), hideBossBar: mock() } as never),
+      enemyPool: () => ({ getAllEnemies: (): never[] => [] }) as never,
+      hud: () => ({ showBossWarning: mock(), hideBossBar: mock() }) as never,
       getBoss: () => null,
       setBoss: mock(),
       getScaledBossConfig: () => null,
       getLastLifeHelperWing: () => null,
       getPicketTurrets: () => null,
-      powerUpGroup: () => ({ id: 'powerups' } as never),
+      powerUpGroup: () => ({ id: 'powerups' }) as never,
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
       constants: {
@@ -273,27 +310,28 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
 
     const handlers = createGameSceneCombatFeedbackHandlers({
       scene: { cameras: { main: {} }, time: { now: 1000 } } as never,
-      player: () => ({ x: 0, y: 0 } as never),
-      scoreManager: () => ({ registerKill } as never),
-      effectsManager: () => ({ createScorePopup } as never),
-      flow: () => ({
-        handlePlayerDeath: mock(),
-        isPlayerDeathTransitionActive: mock(() => false),
-        queueLevelComplete: mock(),
-      } as never),
+      player: () => ({ x: 0, y: 0 }) as never,
+      scoreManager: () => ({ registerKill }) as never,
+      effectsManager: () => ({ createScorePopup }) as never,
+      flow: () =>
+        ({
+          handlePlayerDeath: mock(),
+          isPlayerDeathTransitionActive: mock(() => false),
+          queueLevelComplete: mock(),
+        }) as never,
       getFlowContext: () => ({}) as never,
-      levelManager: () => ({ getLevelConfig: () => ({ music: { boss: 'boss-track' } }) } as never),
-      collisionManager: () => ({ clearPlayerHazards: mock() } as never),
-      waveManager: () => ({ applyDeathRelief: mock() } as never),
+      levelManager: () => ({ getLevelConfig: () => ({ music: { boss: 'boss-track' } }) }) as never,
+      collisionManager: () => ({ clearPlayerHazards: mock() }) as never,
+      waveManager: () => ({ applyDeathRelief: mock() }) as never,
       grazeSurge: () => null,
-      enemyPool: () => ({ getAllEnemies: (): never[] => [] } as never),
-      hud: () => ({ showBossWarning: mock(), hideBossBar: mock() } as never),
+      enemyPool: () => ({ getAllEnemies: (): never[] => [] }) as never,
+      hud: () => ({ showBossWarning: mock(), hideBossBar: mock() }) as never,
       getBoss: () => null,
       setBoss: mock(),
       getScaledBossConfig: () => null,
       getLastLifeHelperWing: () => null,
       getPicketTurrets: () => null,
-      powerUpGroup: () => ({ id: 'powerups' } as never),
+      powerUpGroup: () => ({ id: 'powerups' }) as never,
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
       constants: {
@@ -432,35 +470,38 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     const handlers = createGameSceneCombatFeedbackHandlers({
       scene: { cameras: { main: {} } } as never,
       player: () => player as never,
-      scoreManager: () => ({ addScore: mock() } as never),
-      effectsManager: () => ({ createScorePopup: mock() } as never),
-      flow: () => ({
-        handlePlayerDeath: mock(),
-        isPlayerDeathTransitionActive: mock(() => false),
-        queueLevelComplete: mock(),
-      } as never),
+      scoreManager: () => ({ addScore: mock() }) as never,
+      effectsManager: () => ({ createScorePopup: mock() }) as never,
+      flow: () =>
+        ({
+          handlePlayerDeath: mock(),
+          isPlayerDeathTransitionActive: mock(() => false),
+          queueLevelComplete: mock(),
+        }) as never,
       getFlowContext: () => ({}) as never,
-      levelManager: () => ({
-        markBossSpawned,
-        getLevelConfig: () => ({
-          boss: { name: 'Dreadnova' },
-          music: { boss: 'boss-track' },
-        }),
-      } as never),
-      collisionManager: () => ({ clearPlayerHazards } as never),
-      waveManager: () => ({ applyDeathRelief: mock() } as never),
+      levelManager: () =>
+        ({
+          markBossSpawned,
+          getLevelConfig: () => ({
+            boss: { name: 'Dreadnova' },
+            music: { boss: 'boss-track' },
+          }),
+        }) as never,
+      collisionManager: () => ({ clearPlayerHazards }) as never,
+      waveManager: () => ({ applyDeathRelief: mock() }) as never,
       grazeSurge: () => null,
-      enemyPool: () => ({
-        getAllEnemies: () => [activeEnemy, inactiveEnemy],
-        spawnBoss: mock(() => boss),
-      } as never),
-      hud: () => ({ showBossWarning, showBossBar, hideBossBar: mock() } as never),
+      enemyPool: () =>
+        ({
+          getAllEnemies: () => [activeEnemy, inactiveEnemy],
+          spawnBoss: mock(() => boss),
+        }) as never,
+      hud: () => ({ showBossWarning, showBossBar, hideBossBar: mock() }) as never,
       getBoss: () => null,
       setBoss,
-      getScaledBossConfig: () => ({ name: 'Scaled Boss' } as never),
+      getScaledBossConfig: () => ({ name: 'Scaled Boss' }) as never,
       getLastLifeHelperWing: () => null,
       getPicketTurrets: () => null,
-      powerUpGroup: () => ({ id: 'powerups' } as never),
+      powerUpGroup: () => ({ id: 'powerups' }) as never,
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
       constants: {

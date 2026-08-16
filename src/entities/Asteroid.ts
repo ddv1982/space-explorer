@@ -60,9 +60,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
       config.angularVelocityRange?.min ?? -2,
       config.angularVelocityRange?.max ?? 2
     );
-    this.setScale(
-      Phaser.Math.FloatBetween(config.scaleRange?.min ?? 0.8, config.scaleRange?.max ?? 1.4)
-    );
+    this.setScale(Phaser.Math.FloatBetween(config.scaleRange?.min ?? 0.8, config.scaleRange?.max ?? 1.4));
 
     if (this.baseTint !== null) {
       this.setTint(this.baseTint);

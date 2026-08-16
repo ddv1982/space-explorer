@@ -1,7 +1,4 @@
-import type {
-  BrowserHarnessFrameDeliveryProbe,
-  BrowserHarnessFramePacingProbe,
-} from '../../src/browserHarness';
+import type { BrowserHarnessFrameDeliveryProbe, BrowserHarnessFramePacingProbe } from '../../src/browserHarness';
 import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
 
 function expectConsistentFramePacingMetrics(metrics: BrowserHarnessFramePacingProbe, sampleCount: number): void {
@@ -16,10 +13,7 @@ function expectConsistentFramePacingMetrics(metrics: BrowserHarnessFramePacingPr
     expect(count).toBeGreaterThanOrEqual(0);
     expect(count).toBeLessThanOrEqual(metrics.sampleCount);
   }
-  for (const workCost of [
-    metrics.workCost.update,
-    metrics.workCost.renderSubmission,
-  ]) {
+  for (const workCost of [metrics.workCost.update, metrics.workCost.renderSubmission]) {
     expect(workCost.sampleCount).toBeGreaterThanOrEqual(metrics.sampleCount);
     expect(workCost.averageMs).toBeGreaterThanOrEqual(0);
     expect(workCost.p95Ms).toBeGreaterThanOrEqual(0);
@@ -46,10 +40,7 @@ function expectConsistentFramePacingMetrics(metrics: BrowserHarnessFramePacingPr
   expect(metrics.runtimeLoad.laserRequestCount).toBeGreaterThanOrEqual(0);
 }
 
-function expectConsistentFrameDeliveryMetrics(
-  metrics: BrowserHarnessFrameDeliveryProbe,
-  sampleCount: number,
-): void {
+function expectConsistentFrameDeliveryMetrics(metrics: BrowserHarnessFrameDeliveryProbe, sampleCount: number): void {
   expect(metrics.sampleCount).toBe(sampleCount);
   expect(metrics.averageMs).toBeGreaterThan(0);
   expect(metrics.p50Ms).toBeLessThanOrEqual(metrics.p95Ms);
@@ -143,11 +134,11 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
   }): Promise<BrowserHarnessFramePacingProbe> => {
     await openMenu(page);
     await startNewRun(page);
-    await expect.poll(async () =>
-      (await snapshot(page)).objects.some((object) =>
-        object.active && object.textureKey.endsWith('-texture')
-      ),
-    ).toBe(true);
+    await expect
+      .poll(async () =>
+        (await snapshot(page)).objects.some((object) => object.active && object.textureKey.endsWith('-texture'))
+      )
+      .toBe(true);
     if (options.trailIntervals) {
       await page.evaluate(({ playerMs, enemyMs }) => {
         const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
@@ -178,11 +169,11 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
 
     try {
       if (options.firing) {
-        await expect.poll(async () =>
-          (await snapshot(page)).objects.some((object) =>
-            object.textureKey === 'player-bullet' && object.active
-          ),
-        ).toBe(true);
+        await expect
+          .poll(async () =>
+            (await snapshot(page)).objects.some((object) => object.textureKey === 'player-bullet' && object.active)
+          )
+          .toBe(true);
       }
       const metrics = await page.evaluate(async (count) => {
         const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
@@ -212,7 +203,9 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
       return metrics;
     } finally {
       if (session) {
-        await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }).catch((): void => undefined);
+        await session
+          .send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+          .catch((): void => undefined);
       } else if (options.firing) {
         await page.keyboard.up('Space').catch((): void => undefined);
       }
@@ -247,14 +240,13 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
     firing: true,
     captureTrailEvidence: true,
   });
-  const legacyTrailEventsPerShot = legacyCadenceCombat.runtimeLoad.effectEventCount.playerBulletTrail
-    / legacyCadenceCombat.runtimeLoad.laserRequestCount;
-  const optimizedTrailEventsPerShot = activeCombat.runtimeLoad.effectEventCount.playerBulletTrail
-    / activeCombat.runtimeLoad.laserRequestCount;
-  const cadenceComparisonResolvable = sampleCount >= 60 && Math.max(
-    legacyCadenceCombat.p95Ms,
-    activeCombat.p95Ms,
-  ) < activeTrailIntervalMs;
+  const legacyTrailEventsPerShot =
+    legacyCadenceCombat.runtimeLoad.effectEventCount.playerBulletTrail /
+    legacyCadenceCombat.runtimeLoad.laserRequestCount;
+  const optimizedTrailEventsPerShot =
+    activeCombat.runtimeLoad.effectEventCount.playerBulletTrail / activeCombat.runtimeLoad.laserRequestCount;
+  const cadenceComparisonResolvable =
+    sampleCount >= 60 && Math.max(legacyCadenceCombat.p95Ms, activeCombat.p95Ms) < activeTrailIntervalMs;
   const trailCadenceComparison = {
     activeTrailIntervalMs,
     cadenceComparisonResolvable,
@@ -262,11 +254,15 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
     optimizedTrailEventsPerShot,
   };
   await test.info().attach(`frame-pacing-${test.info().project.name}`, {
-    body: JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, legacyCadenceCombat, activeCombat, trailCadenceComparison }, null, 2),
+    body: JSON.stringify(
+      { baseline, movementOnly, firingWithoutPlayerTrails, legacyCadenceCombat, activeCombat, trailCadenceComparison },
+      null,
+      2
+    ),
     contentType: 'application/json',
   });
   console.info(
-    `frame pacing ${test.info().project.name}: ${JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, legacyCadenceCombat, activeCombat, trailCadenceComparison })}`,
+    `frame pacing ${test.info().project.name}: ${JSON.stringify({ baseline, movementOnly, firingWithoutPlayerTrails, legacyCadenceCombat, activeCombat, trailCadenceComparison })}`
   );
 
   expect(activeCombat.runtimeLoad.effectEventCount.playerBulletTrail).toBeGreaterThan(0);
@@ -292,7 +288,7 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
     const second = await harness.probeFramePacing(2);
     const interruptedProbe = harness.probeFramePacing(240).then(
       () => '',
-      (error) => error instanceof Error ? error.message : String(error),
+      (error) => (error instanceof Error ? error.message : String(error))
     );
     await harness.route('Victory');
     return {

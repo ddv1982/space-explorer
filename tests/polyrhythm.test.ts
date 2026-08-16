@@ -18,11 +18,17 @@ function resolveStepsInBar(args: {
     stepsPerBar: args.stepsPerBar,
   };
 
-  return Array.from({ length: args.stepsPerBar }, (_, stepInBar) =>
-    resolveLayerRhythmScheduling(args.rhythm, {
-      ...meterBase,
-      stepInBar,
-    }, args.modulation).shouldTrigger
+  return Array.from(
+    { length: args.stepsPerBar },
+    (_, stepInBar) =>
+      resolveLayerRhythmScheduling(
+        args.rhythm,
+        {
+          ...meterBase,
+          stepInBar,
+        },
+        args.modulation
+      ).shouldTrigger
   );
 }
 

@@ -16,11 +16,7 @@ interface TwinkleViewport {
   depths: readonly number[];
 }
 
-export function createStarTwinkles(
-  scene: Phaser.Scene,
-  twinkles: TwinkleState[],
-  viewport: TwinkleViewport
-): void {
+export function createStarTwinkles(scene: Phaser.Scene, twinkles: TwinkleState[], viewport: TwinkleViewport): void {
   const twinkleCount = Phaser.Math.Between(12, 24);
 
   for (let i = 0; i < twinkleCount; i++) {

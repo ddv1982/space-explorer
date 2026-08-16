@@ -50,10 +50,7 @@ export function setSingleLineTextWithEllipsis(
     const mid = (low + high) >> 1;
     const candidate = `${source.slice(0, mid)}${ellipsis}`;
     text.setText(candidate);
-    const candidateWidth =
-      typeof text.width === 'number'
-        ? text.width
-        : candidate.length * estimateCharWidthPx(text);
+    const candidateWidth = typeof text.width === 'number' ? text.width : candidate.length * estimateCharWidthPx(text);
 
     if (candidateWidth <= safeMaxWidth) {
       best = candidate;

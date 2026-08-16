@@ -21,8 +21,22 @@ export const bassPatterns = {
    * Classic bass foundation pattern for stability
    */
   rootFifth: (root: number = 0): (number | null)[] => [
-    root, null, null, null, root + 7, null, null, null,
-    root, null, null, null, root - 5, null, null, null
+    root,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    root,
+    null,
+    null,
+    null,
+    root - 5,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -30,8 +44,22 @@ export const bassPatterns = {
    * Soft rhythmic foundation for calm exploration
    */
   gentlePulse: (root: number = 0): (number | null)[] => [
-    root, null, null, null, null, null, root + 3, null,
-    null, null, root, null, null, null, null, null
+    root,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root + 3,
+    null,
+    null,
+    null,
+    root,
+    null,
+    null,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -39,8 +67,22 @@ export const bassPatterns = {
    * Long sustained notes for atmospheric backgrounds
    */
   drone: (root: number = 0): (number | null)[] => [
-    root, null, null, null, null, null, null, null,
-    null, null, root, null, null, null, null, null
+    root,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root,
+    null,
+    null,
+    null,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -53,8 +95,22 @@ export const bassPatterns = {
    * Jazz-influenced melodic bass line with passing tones
    */
   walking: (root: number = 0): (number | null)[] => [
-    root, null, root + 2, null, root + 4, null, root + 5, null,
-    root + 7, null, root + 5, null, root + 4, null, root + 2, null
+    root,
+    null,
+    root + 2,
+    null,
+    root + 4,
+    null,
+    root + 5,
+    null,
+    root + 7,
+    null,
+    root + 5,
+    null,
+    root + 4,
+    null,
+    root + 2,
+    null,
   ],
 
   /**
@@ -62,8 +118,22 @@ export const bassPatterns = {
    * Creates space while maintaining stepwise momentum
    */
   sparseWalk: (root: number = 0): (number | null)[] => [
-    root, null, null, root + 2, null, null, root + 4, null,
-    null, root + 5, null, null, root, null, null, null
+    root,
+    null,
+    null,
+    root + 2,
+    null,
+    null,
+    root + 4,
+    null,
+    null,
+    root + 5,
+    null,
+    null,
+    root,
+    null,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -76,8 +146,22 @@ export const bassPatterns = {
    * Consistent rhythmic cell for hypnotic drive
    */
   rhythmicOstinato: (root: number = 0): (number | null)[] => [
-    root, null, root + 7, null, root + 12, null, root + 7, null,
-    root, null, root + 7, null, root + 12, null, root + 7, null
+    root,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
   ],
 
   /**
@@ -85,8 +169,22 @@ export const bassPatterns = {
    * Shifts rhythmic weight to weak beats for groove
    */
   syncopatedOstinato: (root: number = 0): (number | null)[] => [
-    null, root, null, null, root + 7, null, null, root + 12,
-    null, null, root + 7, null, null, root, null, null
+    null,
+    root,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    root,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -99,8 +197,22 @@ export const bassPatterns = {
    * Creates a solid foundation that supports harmonic changes above
    */
   pedalFifths: (root: number = 0): (number | null)[] => [
-    root, null, null, null, root + 7, null, null, null,
-    root + 7, null, null, null, root, null, null, null
+    root,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    root,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -108,8 +220,22 @@ export const bassPatterns = {
    * Deep sub-bass foundation for ominous atmospheres
    */
   lowDrone: (root: number = 0): (number | null)[] => [
-    root - 12, null, null, null, null, null, root - 12, null,
-    null, null, null, null, root - 12, null, null, null
+    root - 12,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root - 12,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root - 12,
+    null,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -122,8 +248,22 @@ export const bassPatterns = {
    * Emphasizes the "and" of beats for funky feel
    */
   syncopatedBounce: (root: number = 0): (number | null)[] => [
-    root, null, null, root + 7, null, null, root, null,
-    null, root + 12, null, null, root + 7, null, null, null
+    root,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    root,
+    null,
+    null,
+    root + 12,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -131,8 +271,22 @@ export const bassPatterns = {
    * Creates forward-leaning rhythmic tension
    */
   pushRhythm: (root: number = 0): (number | null)[] => [
-    null, root, null, root + 7, null, root, null, root + 12,
-    null, root + 7, null, root, null, null, null, null
+    null,
+    root,
+    null,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root,
+    null,
+    null,
+    null,
+    null,
   ],
 
   // ============================================================================
@@ -145,8 +299,22 @@ export const bassPatterns = {
    * Powerful bass pattern for high-tension scenes
    */
   drivingPulseBass: (root: number = 0): (number | null)[] => [
-    root, null, root + 12, null, root + 7, null, root + 12, null,
-    root, null, root + 7, root + 12, null, root + 7, null, root
+    root,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root,
+    null,
+    root + 7,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root,
   ],
 
   /**
@@ -154,8 +322,22 @@ export const bassPatterns = {
    * Sharp, percussive bass for combat intensity
    */
   aggressiveBass: (root: number = 0): (number | null)[] => [
-    root, root + 7, null, null, root + 12, null, root + 7, null,
-    root, null, null, root + 12, root + 7, null, root, null
+    root,
+    root + 7,
+    null,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root,
+    null,
+    null,
+    root + 12,
+    root + 7,
+    null,
+    root,
+    null,
   ],
 
   /**
@@ -163,8 +345,22 @@ export const bassPatterns = {
    * Heavy bass pattern inspired by rock/metal
    */
   powerChordBass: (root: number = 0): (number | null)[] => [
-    root, null, root + 7, null, root + 12, null, null, root + 7,
-    null, root + 12, null, root + 7, null, root, null, root + 12
+    root,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    null,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 12,
   ],
 
   /**
@@ -172,8 +368,22 @@ export const bassPatterns = {
    * Uses chromatic passing tones for maximum harmonic tension
    */
   tensionWalkBass: (root: number = 0): (number | null)[] => [
-    root, root + 1, root + 2, root + 4, null, root + 2, root + 1, root,
-    root + 7, root + 8, root + 7, root + 5, null, root + 4, root + 3, root + 4
+    root,
+    root + 1,
+    root + 2,
+    root + 4,
+    null,
+    root + 2,
+    root + 1,
+    root,
+    root + 7,
+    root + 8,
+    root + 7,
+    root + 5,
+    null,
+    root + 4,
+    root + 3,
+    root + 4,
   ],
 
   // ============================================================================
@@ -186,8 +396,22 @@ export const bassPatterns = {
    * Suitable for Obsidian Maw escape sequences
    */
   mawChase: (root: number = 0): (number | null)[] => [
-    root, null, root, root + 7, null, root, null, root + 12,
-    root + 7, null, root, null, root + 7, root, null, null
+    root,
+    null,
+    root,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 12,
+    root + 7,
+    null,
+    root,
+    null,
+    root + 7,
+    root,
+    null,
+    null,
   ],
 
   /**
@@ -195,8 +419,22 @@ export const bassPatterns = {
    * Deep space ambience for Terminus Black sequences
    */
   terminusDrone: (root: number = 0): (number | null)[] => [
-    root, null, null, null, null, null, null, null,
-    null, null, null, root + 7, null, null, null, null
+    root,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    null,
   ],
 
   /**
@@ -204,8 +442,22 @@ export const bassPatterns = {
    * Incessant rhythmic pattern for final confrontations
    */
   finalBossOstinato: (root: number = 0): (number | null)[] => [
-    root, root + 7, null, root + 12, null, root + 7, root, null,
-    root + 12, null, root + 7, root, null, root + 7, null, root + 12
+    root,
+    root + 7,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    root,
+    null,
+    root + 12,
+    null,
+    root + 7,
+    root,
+    null,
+    root + 7,
+    null,
+    root + 12,
   ],
 
   /**
@@ -213,8 +465,22 @@ export const bassPatterns = {
    * Uses semitone intervals for dissonant low-end
    */
   chromaticPulse: (root: number = 0): (number | null)[] => [
-    root, null, root + 1, null, root, null, root - 1, null,
-    root, null, root + 7, null, root + 6, root + 7, null, null
+    root,
+    null,
+    root + 1,
+    null,
+    root,
+    null,
+    root - 1,
+    null,
+    root,
+    null,
+    root + 7,
+    null,
+    root + 6,
+    root + 7,
+    null,
+    null,
   ],
 
   /**
@@ -222,7 +488,21 @@ export const bassPatterns = {
    * Minimal but menacing pattern for psychological tension
    */
   voidStalker: (root: number = 0): (number | null)[] => [
-    root, null, null, null, root + 6, null, null, null,
-    null, root + 7, null, null, null, null, root, null
+    root,
+    null,
+    null,
+    null,
+    root + 6,
+    null,
+    null,
+    null,
+    null,
+    root + 7,
+    null,
+    null,
+    null,
+    null,
+    root,
+    null,
   ],
 };

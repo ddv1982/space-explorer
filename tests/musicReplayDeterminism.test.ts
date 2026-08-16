@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { MusicArrangementConfig, MusicLayerRhythmConfig, ProceduralMusicTrackConfig } from '../src/config/LevelsConfig';
+import type {
+  MusicArrangementConfig,
+  MusicLayerRhythmConfig,
+  ProceduralMusicTrackConfig,
+} from '../src/config/LevelsConfig';
 import { resolveArrangementForBar } from '../src/systems/audio/procedural/arrangement';
 import { resolveHarmonicContext } from '../src/systems/audio/procedural/harmony';
 import { getMeterStepContext } from '../src/systems/audio/procedural/musicIntent';

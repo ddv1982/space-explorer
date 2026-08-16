@@ -19,10 +19,50 @@ interface StarLayerConfig {
 }
 
 export const STARFIELD_LAYER_CONFIGS: StarLayerConfig[] = [
-  { name: 'far-stars', scrollSpeed: 0.15, starCount: 100, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.15, max: 0.5 }, baseColor: 0x8888aa, accentMix: 0.08, sparkleFraction: 0.03, colorStarCount: 3 },
-  { name: 'mid-stars', scrollSpeed: 0.35, starCount: 65, starSize: { min: 0.8, max: 1.8 }, starAlpha: { min: 0.3, max: 0.75 }, baseColor: 0xaaaacc, accentMix: 0.14, sparkleFraction: 0.06, colorStarCount: 5 },
-  { name: 'near-stars', scrollSpeed: 0.6, starCount: 35, starSize: { min: 1.2, max: 2.8 }, starAlpha: { min: 0.5, max: 1.0 }, baseColor: 0xccccee, accentMix: 0.22, sparkleFraction: 0.1, colorStarCount: 4 },
-  { name: 'dust', scrollSpeed: 0.85, starCount: 20, starSize: { min: 0.4, max: 1.2 }, starAlpha: { min: 0.08, max: 0.22 }, baseColor: 0x6666aa, accentMix: 0.32, sparkleFraction: 0, colorStarCount: 2 },
+  {
+    name: 'far-stars',
+    scrollSpeed: 0.15,
+    starCount: 100,
+    starSize: { min: 0.4, max: 1.2 },
+    starAlpha: { min: 0.15, max: 0.5 },
+    baseColor: 0x8888aa,
+    accentMix: 0.08,
+    sparkleFraction: 0.03,
+    colorStarCount: 3,
+  },
+  {
+    name: 'mid-stars',
+    scrollSpeed: 0.35,
+    starCount: 65,
+    starSize: { min: 0.8, max: 1.8 },
+    starAlpha: { min: 0.3, max: 0.75 },
+    baseColor: 0xaaaacc,
+    accentMix: 0.14,
+    sparkleFraction: 0.06,
+    colorStarCount: 5,
+  },
+  {
+    name: 'near-stars',
+    scrollSpeed: 0.6,
+    starCount: 35,
+    starSize: { min: 1.2, max: 2.8 },
+    starAlpha: { min: 0.5, max: 1.0 },
+    baseColor: 0xccccee,
+    accentMix: 0.22,
+    sparkleFraction: 0.1,
+    colorStarCount: 4,
+  },
+  {
+    name: 'dust',
+    scrollSpeed: 0.85,
+    starCount: 20,
+    starSize: { min: 0.4, max: 1.2 },
+    starAlpha: { min: 0.08, max: 0.22 },
+    baseColor: 0x6666aa,
+    accentMix: 0.32,
+    sparkleFraction: 0,
+    colorStarCount: 2,
+  },
 ];
 
 export const STARFIELD_TILE_DEPTHS = [-10, -8, -6, -4];
@@ -73,7 +113,9 @@ export function layoutStarfieldTileSprites(
   }
 }
 
-export function destroyStarfieldTileSprites(tileSprites: Phaser.GameObjects.TileSprite[]): Phaser.GameObjects.TileSprite[] {
+export function destroyStarfieldTileSprites(
+  tileSprites: Phaser.GameObjects.TileSprite[]
+): Phaser.GameObjects.TileSprite[] {
   for (let i = 0; i < tileSprites.length; i++) {
     tileSprites[i].destroy();
   }

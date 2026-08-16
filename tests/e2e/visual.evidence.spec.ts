@@ -34,15 +34,15 @@ async function sampleGameplayLaneLuminance(page: import('@playwright/test').Page
 
     return {
       center: average([[0.38, 0.62]]),
-      edges: average([[0.05, 0.29], [0.71, 0.95]]),
+      edges: average([
+        [0.05, 0.29],
+        [0.71, 0.95],
+      ]),
     };
   }, screenshot.toString('base64'));
 }
 
-test('pause command deck stays balanced across checkpoints and settings', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
+test('pause command deck stays balanced across checkpoints and settings', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(120_000);
   const mobile = test.info().project.name.includes('mobile');
   const viewport = mobile ? { width: 390, height: 844 } : { width: 984, height: 768 };
@@ -80,9 +80,9 @@ test('pause command deck stays balanced across checkpoints and settings', async 
   const settingsTab = checkpoints.texts.find((text) => text.text === 'SETTINGS');
   expect(settingsTab).toBeDefined();
   await page.mouse.click(settingsTab?.x ?? 0, settingsTab?.y ?? 0);
-  await expect.poll(async () => (await snapshot(page)).texts.some(
-    (text) => text.text.startsWith('DIFFICULTY:')
-  )).toBe(true);
+  await expect
+    .poll(async () => (await snapshot(page)).texts.some((text) => text.text.startsWith('DIFFICULTY:')))
+    .toBe(true);
 
   const settingsPath = evidenceDirectory
     ? `${evidenceDirectory}/pause-settings-${mode}.png`
@@ -95,10 +95,7 @@ test('pause command deck stays balanced across checkpoints and settings', async 
   assertNoBrowserErrors();
 });
 
-test('crossfire telegraph glow preserves readable gameplay lanes', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
+test('crossfire telegraph glow preserves readable gameplay lanes', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(120_000);
   await openMenu(page);
   await startNewRun(page);
@@ -129,9 +126,7 @@ test('crossfire telegraph glow preserves readable gameplay lanes', async ({
   });
   expect(pilot.filterCount).toBe(1);
   const pilotName = `crossfire-pilot-${evidenceTarget}.png`;
-  const pilotPath = evidenceDirectory
-    ? `${evidenceDirectory}/${pilotName}`
-    : test.info().outputPath(pilotName);
+  const pilotPath = evidenceDirectory ? `${evidenceDirectory}/${pilotName}` : test.info().outputPath(pilotName);
   await page.screenshot({ path: pilotPath });
   await test.info().attach(`crossfire-pilot-${evidenceTarget}`, {
     path: pilotPath,
@@ -171,34 +166,36 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
       return harness.showPlanetIntermission(targetLevel);
     }, level);
     await waitForScene(page, 'PlanetIntermission');
-    await expect.poll(async () => {
-      const arrival = await snapshot(page);
-      return {
-        hasArrivalConfirmation: arrival.texts.some((text) => text.text.includes('ARRIVAL CONFIRMED')),
-        hasPlanetTitle: arrival.texts.some((text) => text.text === staged.planetName.toUpperCase()),
-        hasPlanetVisual: arrival.objects.some((object) =>
-          object.active
-          && object.textureKey === `planet-portrait-${String(level).padStart(2, '0')}`
-        ),
-      };
-    }, {
-      message: `wait for level ${level} planet arrival to finish rendering`,
-      timeout: 10_000,
-    }).toEqual({
-      hasArrivalConfirmation: true,
-      hasPlanetTitle: true,
-      hasPlanetVisual: true,
-    });
+    await expect
+      .poll(
+        async () => {
+          const arrival = await snapshot(page);
+          return {
+            hasArrivalConfirmation: arrival.texts.some((text) => text.text.includes('ARRIVAL CONFIRMED')),
+            hasPlanetTitle: arrival.texts.some((text) => text.text === staged.planetName.toUpperCase()),
+            hasPlanetVisual: arrival.objects.some(
+              (object) => object.active && object.textureKey === `planet-portrait-${String(level).padStart(2, '0')}`
+            ),
+          };
+        },
+        {
+          message: `wait for level ${level} planet arrival to finish rendering`,
+          timeout: 10_000,
+        }
+      )
+      .toEqual({
+        hasArrivalConfirmation: true,
+        hasPlanetTitle: true,
+        hasPlanetVisual: true,
+      });
 
     const projectName = test.info().project.name;
-    const levelPath = test.info().outputPath(
-      `planet-arrival-${String(level).padStart(2, '0')}-${projectName}.png`
-    );
+    const levelPath = test.info().outputPath(`planet-arrival-${String(level).padStart(2, '0')}-${projectName}.png`);
     await page.screenshot({ path: levelPath });
-    await test.info().attach(
-      `planet-arrival-${String(level).padStart(2, '0')}-${staged.planetName}-${projectName}`,
-      { path: levelPath, contentType: 'image/png' }
-    );
+    await test.info().attach(`planet-arrival-${String(level).padStart(2, '0')}-${staged.planetName}-${projectName}`, {
+      path: levelPath,
+      contentType: 'image/png',
+    });
   }
 
   const projectName = test.info().project.name;
@@ -217,16 +214,21 @@ test('all planet arrivals share a responsive cinematic system with distinct iden
   });
   await waitForScene(page, 'PlanetIntermission');
   await expect.poll(async () => (await snapshot(page)).gameSize).toEqual({ width: 390, height: 844 });
-  await expect.poll(async () => {
-    const portrait = await snapshot(page);
-    return {
-      hasPlanetTitle: portrait.texts.some((text) => text.text === 'KORRA VALE'),
-      hasContinuePrompt: portrait.texts.some((text) => text.text.includes('CONTINUE TO')),
-    };
-  }, {
-    message: 'wait for the resized portrait intermission to finish rendering',
-    timeout: 10_000,
-  }).toEqual({ hasPlanetTitle: true, hasContinuePrompt: true });
+  await expect
+    .poll(
+      async () => {
+        const portrait = await snapshot(page);
+        return {
+          hasPlanetTitle: portrait.texts.some((text) => text.text === 'KORRA VALE'),
+          hasContinuePrompt: portrait.texts.some((text) => text.text.includes('CONTINUE TO')),
+        };
+      },
+      {
+        message: 'wait for the resized portrait intermission to finish rendering',
+        timeout: 10_000,
+      }
+    )
+    .toEqual({ hasPlanetTitle: true, hasContinuePrompt: true });
   const portrait = await snapshot(page);
   expect(portrait.gameSize).toEqual({ width: 390, height: 844 });
 
@@ -267,10 +269,7 @@ test('gameplay corridor preserves a dark field with brighter desktop edges', asy
   assertNoBrowserErrors();
 });
 
-test('game over and victory command decks stay readable', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
+test('game over and victory command decks stay readable', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(60_000);
   const mobile = test.info().project.name.includes('mobile');
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 984, height: 768 });
@@ -285,7 +284,9 @@ test('game over and victory command decks stay readable', async ({
     await waitForScene(page, sceneKey);
     const shot = await snapshot(page);
     const title = shot.texts.find((text) => text.text === (sceneKey === 'GameOver' ? 'GAME OVER' : 'MISSION COMPLETE'));
-    const eyebrow = shot.texts.find((text) => text.text === (sceneKey === 'GameOver' ? 'COMMAND LOSS' : 'COMMAND DECK'));
+    const eyebrow = shot.texts.find(
+      (text) => text.text === (sceneKey === 'GameOver' ? 'COMMAND LOSS' : 'COMMAND DECK')
+    );
     expect(title).toBeDefined();
     expect(eyebrow).toBeDefined();
     expect(title?.x ?? -1).toBeGreaterThan(0);

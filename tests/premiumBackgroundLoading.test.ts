@@ -3,10 +3,8 @@ import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
 
-const {
-  ensurePremiumBackgroundAssets,
-  releasePremiumBackgroundTexturesOutsideWindow,
-} = await import('../src/systems/parallax/premiumBackgroundLoading');
+const { ensurePremiumBackgroundAssets, releasePremiumBackgroundTexturesOutsideWindow } =
+  await import('../src/systems/parallax/premiumBackgroundLoading');
 
 function createGraphicsStub(generatedKeys: string[], textures: Set<string>) {
   const stub: Record<string, unknown> = {
@@ -103,12 +101,7 @@ describe('premium background loading helpers', () => {
 
     ensurePremiumBackgroundAssets(harness.scene, 5, onReady);
 
-    expect(harness.generatedKeys).toEqual([
-      'bg_level05',
-      'bg_level05_nebula',
-      'bg_level05_mid',
-      'bg_level05_near',
-    ]);
+    expect(harness.generatedKeys).toEqual(['bg_level05', 'bg_level05_nebula', 'bg_level05_mid', 'bg_level05_near']);
     expect(onReady).toHaveBeenCalledTimes(1);
     expect(harness.compositeDraws).toEqual([
       { source: 'bg_level05', alpha: 1, operation: 'source-over' },

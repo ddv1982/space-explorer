@@ -30,17 +30,19 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      y: { from: layout.announcementY, to: layout.announcementExitY },
-      duration: 2000,
-      delay: 1000,
-      ease: 'Power2',
-      onComplete: () => {
-        this.deps.setAnnouncementTween(null);
-      },
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        y: { from: layout.announcementY, to: layout.announcementExitY },
+        duration: 2000,
+        delay: 1000,
+        ease: 'Power2',
+        onComplete: () => {
+          this.deps.setAnnouncementTween(null);
+        },
+      })
+    );
   }
 
   showBossWarning(): void {
@@ -52,15 +54,17 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      duration: 2500,
-      ease: 'Power2',
-      onComplete: () => {
-        this.deps.setAnnouncementTween(null);
-      },
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        duration: 2500,
+        ease: 'Power2',
+        onComplete: () => {
+          this.deps.setAnnouncementTween(null);
+        },
+      })
+    );
   }
 
   showBossPhaseAnnouncement(phase: number): void {
@@ -72,16 +76,18 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 8);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      y: { from: layout.announcementY - 8, to: layout.announcementY - 34 },
-      duration: 1400,
-      ease: 'Power2',
-      onComplete: () => {
-        this.deps.setAnnouncementTween(null);
-      },
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        y: { from: layout.announcementY - 8, to: layout.announcementY - 34 },
+        duration: 1400,
+        ease: 'Power2',
+        onComplete: () => {
+          this.deps.setAnnouncementTween(null);
+        },
+      })
+    );
   }
 
   showBossGuardBreakAnnouncement(): void {
@@ -93,14 +99,16 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 8);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      y: { from: layout.announcementY - 8, to: layout.announcementY - 30 },
-      duration: 1300,
-      ease: 'Power2',
-      onComplete: () => this.deps.setAnnouncementTween(null),
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        y: { from: layout.announcementY - 8, to: layout.announcementY - 30 },
+        duration: 1300,
+        ease: 'Power2',
+        onComplete: () => this.deps.setAnnouncementTween(null),
+      })
+    );
   }
 
   showHelperWingAnnouncement(helperCount: number): void {
@@ -112,16 +120,18 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
-      duration: 1600,
-      ease: 'Power2',
-      onComplete: () => {
-        this.deps.setAnnouncementTween(null);
-      },
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
+        duration: 1600,
+        ease: 'Power2',
+        onComplete: () => {
+          this.deps.setAnnouncementTween(null);
+        },
+      })
+    );
   }
 
   showEliteWaveAnnouncement(): void {
@@ -133,16 +143,18 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      y: { from: layout.announcementY - 6, to: layout.announcementY - 30 },
-      duration: 1500,
-      ease: 'Power2',
-      onComplete: () => {
-        this.deps.setAnnouncementTween(null);
-      },
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        y: { from: layout.announcementY - 6, to: layout.announcementY - 30 },
+        duration: 1500,
+        ease: 'Power2',
+        onComplete: () => {
+          this.deps.setAnnouncementTween(null);
+        },
+      })
+    );
   }
 
   showPicketOnlineAnnouncement(): void {
@@ -154,16 +166,18 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
-      duration: 1500,
-      ease: 'Power2',
-      onComplete: () => {
-        this.deps.setAnnouncementTween(null);
-      },
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
+        duration: 1500,
+        ease: 'Power2',
+        onComplete: () => {
+          this.deps.setAnnouncementTween(null);
+        },
+      })
+    );
   }
 
   showHelperWingDepletedAnnouncement(): void {
@@ -175,14 +189,16 @@ export class HudAnnouncementTweens {
     this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 4);
     this.deps.getAnnouncementTween()?.stop();
 
-    this.deps.setAnnouncementTween(this.deps.scene.tweens.add({
-      targets: this.deps.announcementText,
-      alpha: { from: 1, to: 0 },
-      duration: 1400,
-      ease: 'Power2',
-      onComplete: () => {
-        this.deps.setAnnouncementTween(null);
-      },
-    }));
+    this.deps.setAnnouncementTween(
+      this.deps.scene.tweens.add({
+        targets: this.deps.announcementText,
+        alpha: { from: 1, to: 0 },
+        duration: 1400,
+        ease: 'Power2',
+        onComplete: () => {
+          this.deps.setAnnouncementTween(null);
+        },
+      })
+    );
   }
 }

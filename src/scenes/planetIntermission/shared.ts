@@ -41,10 +41,7 @@ export function getUpgradeGridLayout(
   const compact = options.compact ?? false;
   const spacingX = mode === 'desktop' ? 14 : 8;
   const maxButtonWidth = mode === 'desktop' ? 286 : mode === 'portrait' ? 420 : 248;
-  const buttonWidth = Math.min(
-    maxButtonWidth,
-    Math.floor((availableWidth - spacingX * (columns - 1)) / columns)
-  );
+  const buttonWidth = Math.min(maxButtonWidth, Math.floor((availableWidth - spacingX * (columns - 1)) / columns));
 
   if (mode === 'ultra-compact') {
     return {

@@ -377,5 +377,4 @@ export class ProceduralMusicManager {
   private getStepDuration(track: ProceduralMusicTrackConfig, tempoScale: number): number {
     return 60 / (track.tempo * tempoScale) / track.stepsPerBeat;
   }
-
 }

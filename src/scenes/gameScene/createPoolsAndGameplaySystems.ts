@@ -61,7 +61,10 @@ type CollisionSetupParams = {
   createCollisionManager: () => CollisionManager;
 };
 
-type PowerUpGroupParams = Pick<CreatePoolsAndGameplaySystemsParams, 'scene' | 'player' | 'applyPowerUp' | 'isTerminalTransitionActive'>;
+type PowerUpGroupParams = Pick<
+  CreatePoolsAndGameplaySystemsParams,
+  'scene' | 'player' | 'applyPowerUp' | 'isTerminalTransitionActive'
+>;
 
 type HelperWingSetupParams = Pick<
   CreatePoolsAndGameplaySystemsParams,
@@ -146,26 +149,20 @@ function createPowerUpGroup({
     runChildUpdate: true,
   });
 
-  scene.physics.add.overlap(
-    powerUpGroup,
-    player,
-    (_obj1, _obj2) => {
-      const powerUp = resolvePowerUpOverlap(_obj1, _obj2);
-      if (!powerUp || !powerUp.active || !player.isAlive || isTerminalTransitionActive()) {
-        return;
-      }
-
-      applyPowerUp(powerUp.powerUpType);
-      powerUp.kill();
+  scene.physics.add.overlap(powerUpGroup, player, (_obj1, _obj2) => {
+    const powerUp = resolvePowerUpOverlap(_obj1, _obj2);
+    if (!powerUp || !powerUp.active || !player.isAlive || isTerminalTransitionActive()) {
+      return;
     }
-  );
+
+    applyPowerUp(powerUp.powerUpType);
+    powerUp.kill();
+  });
 
   return powerUpGroup;
 }
 
-export function createPoolsAndGameplaySystems(
-  params: CreatePoolsAndGameplaySystemsParams
-): PoolsAndGameplaySystems {
+export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySystemsParams): PoolsAndGameplaySystems {
   const {
     scene,
     player,
@@ -233,8 +230,7 @@ export function createPoolsAndGameplaySystems(
 
   const grazeSurge = new GrazeSurgeSystem({
     getPlayerPosition: () => (player.isAlive ? { x: player.x, y: player.y } : null),
-    getEnemyBullets: () =>
-      enemyPool.getEnemyBulletGroup().getChildren() as unknown as GrazeSurgeBullet[],
+    getEnemyBullets: () => enemyPool.getEnemyBulletGroup().getChildren() as unknown as GrazeSurgeBullet[],
     onGraze: (x, y) => effectsManager.createGrazeSpark(x, y),
     onSurgePulse: (x, y, clearedBullets) => {
       if (clearedBullets > 0) {

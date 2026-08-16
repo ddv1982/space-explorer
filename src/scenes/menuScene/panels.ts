@@ -3,7 +3,15 @@ import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorag
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
 import { getVisualQualityProfile } from '../../config/visualQuality';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
-import { addNeonTitle, drawNeonDivider, drawNeonFrame, fitNeonTitleFontSize, NEON, NEON_FONT, NEON_TEXT } from '../shared/neonUiTheme';
+import {
+  addNeonTitle,
+  drawNeonDivider,
+  drawNeonFrame,
+  fitNeonTitleFontSize,
+  NEON,
+  NEON_FONT,
+  NEON_TEXT,
+} from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
 import type { MenuLayoutPlan } from './layout';
 
@@ -28,7 +36,11 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
   grid.fillStyle(0x01040a, 0.46);
   grid.fillRect(0, 0, width, height);
   grid.fillStyle(accentColor, scaleUiGlowAlpha(0.05));
-  grid.fillCircle(plan.centerX, plan.outerFrameY + plan.outerFrameHeight + 20, Math.min(220, plan.outerFrameWidth * 0.28));
+  grid.fillCircle(
+    plan.centerX,
+    plan.outerFrameY + plan.outerFrameHeight + 20,
+    Math.min(220, plan.outerFrameWidth * 0.28)
+  );
   grid.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.07));
   const scanStep = atmosphere >= 3 ? 22 : atmosphere >= 2 ? 28 : 36;
   for (let y = 0; y < height; y += scanStep) {
@@ -61,7 +73,13 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
     glow: true,
   });
   drawNeonDivider(grid, plan.centerX, plan.outerFrameY + 34, Math.min(560, plan.outerFrameWidth - 120), NEON.blue);
-  drawNeonDivider(grid, plan.centerX, plan.outerFrameY + plan.outerFrameHeight - 34, Math.min(560, plan.outerFrameWidth - 120), NEON.cyan);
+  drawNeonDivider(
+    grid,
+    plan.centerX,
+    plan.outerFrameY + plan.outerFrameHeight - 34,
+    Math.min(560, plan.outerFrameWidth - 120),
+    NEON.cyan
+  );
   grid.setDepth(4);
 }
 
@@ -78,8 +96,21 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
       .setDepth(12);
   }
 
-  const desiredTitleSize = plan.shortLandscape ? 30 : plan.veryShortCompact ? 48 : plan.outerFrameWidth < 500 ? 42 : plan.compact ? 64 : 86;
-  const titleSize = fitNeonTitleFontSize(scene, 'SPACE EXPLORER', desiredTitleSize, Math.max(180, plan.outerFrameWidth - 96));
+  const desiredTitleSize = plan.shortLandscape
+    ? 30
+    : plan.veryShortCompact
+      ? 48
+      : plan.outerFrameWidth < 500
+        ? 42
+        : plan.compact
+          ? 64
+          : 86;
+  const titleSize = fitNeonTitleFontSize(
+    scene,
+    'SPACE EXPLORER',
+    desiredTitleSize,
+    Math.max(180, plan.outerFrameWidth - 96)
+  );
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
 
   const wings = scene.add.graphics();
@@ -87,14 +118,44 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
   const wingGap = plan.veryShortCompact ? 12 : 20;
   const wingSpan = plan.veryShortCompact ? 20 : plan.compact ? 40 : 60;
   wings.lineStyle(1, NEON.cyan, 0.55);
-  wings.lineBetween(plan.centerX - halfTitleWidth - wingGap - wingSpan, plan.titleY, plan.centerX - halfTitleWidth - wingGap, plan.titleY);
-  wings.lineBetween(plan.centerX + halfTitleWidth + wingGap, plan.titleY, plan.centerX + halfTitleWidth + wingGap + wingSpan, plan.titleY);
+  wings.lineBetween(
+    plan.centerX - halfTitleWidth - wingGap - wingSpan,
+    plan.titleY,
+    plan.centerX - halfTitleWidth - wingGap,
+    plan.titleY
+  );
+  wings.lineBetween(
+    plan.centerX + halfTitleWidth + wingGap,
+    plan.titleY,
+    plan.centerX + halfTitleWidth + wingGap + wingSpan,
+    plan.titleY
+  );
   wings.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.4));
-  wings.lineBetween(plan.centerX - halfTitleWidth - wingGap - wingSpan + 4, plan.titleY - 5, plan.centerX - halfTitleWidth - wingGap - 4, plan.titleY - 5);
-  wings.lineBetween(plan.centerX + halfTitleWidth + wingGap + 4, plan.titleY - 5, plan.centerX + halfTitleWidth + wingGap + wingSpan - 4, plan.titleY - 5);
+  wings.lineBetween(
+    plan.centerX - halfTitleWidth - wingGap - wingSpan + 4,
+    plan.titleY - 5,
+    plan.centerX - halfTitleWidth - wingGap - 4,
+    plan.titleY - 5
+  );
+  wings.lineBetween(
+    plan.centerX + halfTitleWidth + wingGap + 4,
+    plan.titleY - 5,
+    plan.centerX + halfTitleWidth + wingGap + wingSpan - 4,
+    plan.titleY - 5
+  );
   wings.lineStyle(1, NEON.cyanBright, scaleUiGlowAlpha(0.35));
-  wings.lineBetween(plan.centerX - halfTitleWidth - wingGap - wingSpan + 8, plan.titleY + 5, plan.centerX - halfTitleWidth - wingGap, plan.titleY + 5);
-  wings.lineBetween(plan.centerX + halfTitleWidth + wingGap, plan.titleY + 5, plan.centerX + halfTitleWidth + wingGap + wingSpan - 8, plan.titleY + 5);
+  wings.lineBetween(
+    plan.centerX - halfTitleWidth - wingGap - wingSpan + 8,
+    plan.titleY + 5,
+    plan.centerX - halfTitleWidth - wingGap,
+    plan.titleY + 5
+  );
+  wings.lineBetween(
+    plan.centerX + halfTitleWidth + wingGap,
+    plan.titleY + 5,
+    plan.centerX + halfTitleWidth + wingGap + wingSpan - 8,
+    plan.titleY + 5
+  );
   wings.setDepth(12);
 
   scene.add
@@ -114,7 +175,7 @@ export function createSaveSlotEntryPanel(
   plan: MenuLayoutPlan,
   _accentColor: number,
   handlers: MenuSaveSlotHandlers,
-  storageAvailable: boolean,
+  storageAvailable: boolean
 ): MenuSaveSlotPanel {
   const tileTextMaxWidth = Math.max(12, plan.tileWidth - 20);
   const compact = plan.tileHeight < 150;
@@ -182,18 +243,24 @@ export function createSaveSlotEntryPanel(
     }
     iconG.setDepth(12);
 
-    const labelText = scene.add.text(tx + plan.tileWidth / 2, labelY, isNewRun ? 'NEW RUN' : `SLOT ${i}`, {
-      fontSize: compact ? '13px' : '15px',
-      color: isNewRun ? '#f2fbff' : '#e2f3ff',
-      fontFamily: NEON_FONT.mono,
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(12);
+    const labelText = scene.add
+      .text(tx + plan.tileWidth / 2, labelY, isNewRun ? 'NEW RUN' : `SLOT ${i}`, {
+        fontSize: compact ? '13px' : '15px',
+        color: isNewRun ? '#f2fbff' : '#e2f3ff',
+        fontFamily: NEON_FONT.mono,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
-    const subtext = scene.add.text(tx + plan.tileWidth / 2, subtextY, isNewRun ? 'START FRESH' : 'EMPTY', {
-      fontSize: compact ? '10px' : '11px',
-      color: NEON_TEXT.muted,
-      fontFamily: NEON_FONT.mono,
-    }).setOrigin(0.5).setDepth(12);
+    const subtext = scene.add
+      .text(tx + plan.tileWidth / 2, subtextY, isNewRun ? 'START FRESH' : 'EMPTY', {
+        fontSize: compact ? '10px' : '11px',
+        color: NEON_TEXT.muted,
+        fontFamily: NEON_FONT.mono,
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
 
     let deleteBtn: ActionButtonControl | null = null;
     if (!isNewRun) {

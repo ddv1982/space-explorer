@@ -2,10 +2,7 @@ import Phaser from 'phaser';
 
 const RESIZE_RESTART_DEBOUNCE_MS = 120;
 
-export function registerRestartOnResize(
-  scene: Phaser.Scene,
-  shouldRestart: () => boolean = () => true
-): void {
+export function registerRestartOnResize(scene: Phaser.Scene, shouldRestart: () => boolean = () => true): void {
   let width = Math.round(scene.scale.gameSize.width);
   let height = Math.round(scene.scale.gameSize.height);
   let pendingRestart: number | null = null;

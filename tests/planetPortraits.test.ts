@@ -63,9 +63,7 @@ describe('planet portrait assets', () => {
     const { scene, queuedImages } = createSceneHarness();
 
     expect(queuePlanetPortrait(scene, 4)).toBe(true);
-    expect(queuedImages).toEqual([
-      { key: 'planet-portrait-04', url: '/assets/planets/planet-04.webp' },
-    ]);
+    expect(queuedImages).toEqual([{ key: 'planet-portrait-04', url: '/assets/planets/planet-04.webp' }]);
 
     const cached = createSceneHarness(['planet-portrait-04']);
     expect(queuePlanetPortrait(cached.scene, 4)).toBe(false);

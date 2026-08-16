@@ -151,12 +151,7 @@ describe('boot and preload loader lifecycle', () => {
     harness.loadEvents.emit('progress', -0.2);
     harness.loadEvents.emit('progress', 0.425);
     harness.loadEvents.emit('progress', 1.2);
-    expect(harness.displayedText).toEqual([
-      'LOADING... 0%',
-      'LOADING... 0%',
-      'LOADING... 43%',
-      'LOADING... 100%',
-    ]);
+    expect(harness.displayedText).toEqual(['LOADING... 0%', 'LOADING... 0%', 'LOADING... 43%', 'LOADING... 100%']);
     expect(harness.startCalls).toEqual([]);
 
     harness.scene.create();
@@ -174,10 +169,7 @@ describe('boot and preload loader lifecycle', () => {
     const totalLevels = getTotalLevels();
     expect(harness.queuedImages).toHaveLength(totalLevels);
     expect(harness.queuedImages.map((image) => image.key)).toEqual(
-      Array.from(
-        { length: totalLevels },
-        (_, index) => `planet-portrait-${String(index + 1).padStart(2, '0')}`
-      )
+      Array.from({ length: totalLevels }, (_, index) => `planet-portrait-${String(index + 1).padStart(2, '0')}`)
     );
     expect(harness.queuedImages[0].url).toBe('/assets/planets/planet-01.webp');
     expect(harness.queuedImages.at(-1)?.url).toBe(

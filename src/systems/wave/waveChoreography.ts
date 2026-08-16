@@ -1,8 +1,4 @@
-import type {
-  ChoreographedWaveConfig,
-  EnemyType,
-  WaveFormation,
-} from '@/config/LevelsConfig';
+import type { ChoreographedWaveConfig, EnemyType, WaveFormation } from '@/config/LevelsConfig';
 
 export const CHOREO_LANE_COUNT = 7;
 
@@ -242,11 +238,7 @@ export class WaveChoreographer {
       return;
     }
 
-    if (
-      wave.members.some(
-        ({ member, defeatCountAtSpawn }) => member.getDefeatCount() <= defeatCountAtSpawn
-      )
-    ) {
+    if (wave.members.some(({ member, defeatCountAtSpawn }) => member.getDefeatCount() <= defeatCountAtSpawn)) {
       return;
     }
 

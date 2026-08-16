@@ -283,7 +283,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     },
   };
 
-    const pool = new EnemyPool();
+  const pool = new EnemyPool();
   pool.create(scene as never);
 
   return {
@@ -324,11 +324,7 @@ describe('EnemyPool regression coverage', () => {
   test('create eagerly initializes scout/fighter/enemy-bullet groups with expected descriptors', () => {
     const harness = createEnemyPoolHarness();
 
-    expect(harness.groupCreateCalls.map(call => call.classType)).toEqual([
-      Scout,
-      Fighter,
-      EnemyBullet,
-    ]);
+    expect(harness.groupCreateCalls.map((call) => call.classType)).toEqual([Scout, Fighter, EnemyBullet]);
 
     expect(harness.groupCreateCalls).toEqual([
       EXPECTED_GROUP_CONFIGS.get(Scout)!,
@@ -338,9 +334,7 @@ describe('EnemyPool regression coverage', () => {
 
     expect(harness.pool.getScoutGroup() as unknown).toBe(harness.groupsByClassType.get(Scout));
     expect(harness.pool.getFighterGroup() as unknown).toBe(harness.groupsByClassType.get(Fighter));
-    expect(harness.pool.getEnemyBulletGroup() as unknown).toBe(
-      harness.groupsByClassType.get(EnemyBullet),
-    );
+    expect(harness.pool.getEnemyBulletGroup() as unknown).toBe(harness.groupsByClassType.get(EnemyBullet));
   });
 
   test('enemy registry order is stable and repeated accessor calls do not duplicate groups', () => {
@@ -353,7 +347,7 @@ describe('EnemyPool regression coverage', () => {
     harness.pool.getBombGroup();
     harness.pool.getBossGroup();
 
-    expect(registryA.map(entry => entry.key)).toEqual([
+    expect(registryA.map((entry) => entry.key)).toEqual([
       'scout',
       'fighter',
       'bomber',
@@ -367,7 +361,7 @@ describe('EnemyPool regression coverage', () => {
       'swarmling',
       'boss',
     ]);
-    expect(registryB.map(entry => entry.key)).toEqual([
+    expect(registryB.map((entry) => entry.key)).toEqual([
       'scout',
       'fighter',
       'bomber',
@@ -382,21 +376,21 @@ describe('EnemyPool regression coverage', () => {
       'boss',
     ]);
 
-    const classTypeCalls = harness.groupCreateCalls.map(call => call.classType);
-    expect(classTypeCalls.filter(type => type === Bomber).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Swarm).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Gunship).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Diver).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Dodger).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Sower).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Lancer).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Splitter).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Swarmling).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Boss).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === BomberBomb).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Scout).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === Fighter).length).toBe(1);
-    expect(classTypeCalls.filter(type => type === EnemyBullet).length).toBe(1);
+    const classTypeCalls = harness.groupCreateCalls.map((call) => call.classType);
+    expect(classTypeCalls.filter((type) => type === Bomber).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Swarm).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Gunship).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Diver).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Dodger).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Sower).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Lancer).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Splitter).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Swarmling).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Boss).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === BomberBomb).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Scout).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === Fighter).length).toBe(1);
+    expect(classTypeCalls.filter((type) => type === EnemyBullet).length).toBe(1);
 
     for (const call of harness.groupCreateCalls) {
       expect(call).toEqual(EXPECTED_GROUP_CONFIGS.get(call.classType)!);
@@ -411,8 +405,8 @@ describe('EnemyPool regression coverage', () => {
     expect(bomber as unknown).toBe(harness.lastBomber);
     expect(harness.lastBomber?.setBombGroupArgs).toEqual([harness.pool.getBombGroup()]);
 
-    const bomberCreateIndex = harness.groupCreateCalls.findIndex(call => call.classType === Bomber);
-    const bombCreateIndex = harness.groupCreateCalls.findIndex(call => call.classType === BomberBomb);
+    const bomberCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === Bomber);
+    const bombCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === BomberBomb);
 
     expect(bomberCreateIndex).toBeGreaterThanOrEqual(0);
     expect(bombCreateIndex).toBeGreaterThanOrEqual(0);
@@ -464,8 +458,8 @@ describe('EnemyPool regression coverage', () => {
     expect(sower as unknown).toBe(harness.lastSower);
     expect(harness.lastSower?.setMineGroupArgs).toEqual([harness.pool.getMineGroup()]);
 
-    const sowerCreateIndex = harness.groupCreateCalls.findIndex(call => call.classType === Sower);
-    const mineCreateIndex = harness.groupCreateCalls.findIndex(call => call.classType === Mine);
+    const sowerCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === Sower);
+    const mineCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === Mine);
 
     expect(sowerCreateIndex).toBeGreaterThanOrEqual(0);
     expect(mineCreateIndex).toBeGreaterThanOrEqual(0);
@@ -481,10 +475,7 @@ describe('EnemyPool regression coverage', () => {
 
     harness.lastSplitter?.splitHandler?.(100, 100);
 
-    expect(harness.swarmlings.map(swarmling => swarmling.spawnArgs)).toEqual([
-      [[86, 100]],
-      [[114, 100]],
-    ]);
+    expect(harness.swarmlings.map((swarmling) => swarmling.spawnArgs)).toEqual([[[86, 100]], [[114, 100]]]);
   });
 
   test('spawnBoss enforces singleton active boss', () => {

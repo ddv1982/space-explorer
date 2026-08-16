@@ -43,9 +43,7 @@ describe('HazardBeamSystem', () => {
   test('create builds a pooled hazard beam group', () => {
     const { groupConfigs } = createHarness();
 
-    expect(groupConfigs).toEqual([
-      { maxSize: 8, classType: HazardBeam, runChildUpdate: true },
-    ]);
+    expect(groupConfigs).toEqual([{ maxSize: 8, classType: HazardBeam, runChildUpdate: true }]);
   });
 
   test('spawnSolarFlare launches one bullet-clearing beam sweeping from the left edge', () => {

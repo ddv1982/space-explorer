@@ -113,12 +113,10 @@ describe('Boss Guard Break', () => {
     const { boss } = createGuardBoss();
     boss.takePlayerDamage(2, 0);
 
-    (boss as unknown as { updateGuardState(time: number, delta: number): boolean })
-      .updateGuardState(1500, 100);
+    (boss as unknown as { updateGuardState(time: number, delta: number): boolean }).updateGuardState(1500, 100);
     expect(boss.getGuardState().ratio).toBe(0.5);
 
-    (boss as unknown as { updateGuardState(time: number, delta: number): boolean })
-      .updateGuardState(1600, 100);
+    (boss as unknown as { updateGuardState(time: number, delta: number): boolean }).updateGuardState(1600, 100);
     expect(boss.getGuardState().ratio).toBe(0.25);
   });
 

@@ -32,10 +32,7 @@ import {
   type IntermissionLayoutMetrics,
 } from './planetIntermission/presentation';
 import { getPlanetIntermissionProfile } from './planetIntermission/planetProfiles';
-import {
-  createIntermissionBackdrop,
-  createPlanetArrivalVisual,
-} from './planetIntermission/planetVisuals';
+import { createIntermissionBackdrop, createPlanetArrivalVisual } from './planetIntermission/planetVisuals';
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
 import type { UpgradeButton } from './planetIntermission/shared';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
@@ -72,22 +69,14 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     const profile = getPlanetIntermissionProfile(this.state.level);
     this.warmNextLevelBackgroundAssets();
     createIntermissionBackdrop(this, completedLevelConfig, this.state.level, intermissionLayout);
-    createPlanetArrivalVisual(
-      this,
-      completedLevelConfig,
-      this.state.level,
-      profile,
-      intermissionLayout
-    );
+    createPlanetArrivalVisual(this, completedLevelConfig, this.state.level, profile, intermissionLayout);
     this.scoreText = createIntermissionHeader(this, intermissionLayout, {
       levelConfig: completedLevelConfig,
       profile,
       level: this.state.level,
       totalLevels: getTotalLevels(),
       score: this.state.score,
-      nextLevelName: this.isFinalMissionComplete
-        ? null
-        : getLevelConfig(this.state.level + 1).name,
+      nextLevelName: this.isFinalMissionComplete ? null : getLevelConfig(this.state.level + 1).name,
     });
     this.initializeOverlayGraphics();
     this.initializeUpgradeFlow(intermissionLayout);
@@ -306,12 +295,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private getButtonEvaluation(button: UpgradeButton): UpgradeEvaluation {
-    return evaluateUpgrade(
-      getUpgradeByKey(button.upgradeKey),
-      this.state.level,
-      this.state.score,
-      this.state.upgrades
-    );
+    return evaluateUpgrade(getUpgradeByKey(button.upgradeKey), this.state.level, this.state.score, this.state.upgrades);
   }
 
   private continueToNextLevel(): void {
@@ -386,5 +370,4 @@ export class PlanetIntermissionScene extends Phaser.Scene {
         return true;
     }
   }
-
 }

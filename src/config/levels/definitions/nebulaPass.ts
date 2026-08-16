@@ -57,7 +57,8 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       startProgress: 0.16,
       endProgress: 0.36,
       phase: 'build',
-      summary: 'Ambush packets and the first wormhole rings arrive telegraphed, training pre-positioning on a slow cadence.',
+      summary:
+        'Ambush packets and the first wormhole rings arrive telegraphed, training pre-positioning on a slow cadence.',
       hazardEvents: [
         { type: 'nebula-ambush', cadenceMs: 2600, intensity: 0.42 },
         {
@@ -244,10 +245,34 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
         arrangement: {
           loop: true,
           sections: [
-            { phase: 'intro', barsDuration: 4, density: 0.76, energyLift: 0.2, layerGainMultipliers: { bass: 0.98, pulse: 0.92, lead: 0.86, noise: 0.76 } },
-            { phase: 'build', barsDuration: 8, density: 0.86, energyLift: 0.3, layerGainMultipliers: { bass: 1.08, pulse: 1.06, lead: 0.98, noise: 0.9 } },
-            { phase: 'peak', barsDuration: 4, density: 0.94, energyLift: 0.4, layerGainMultipliers: { bass: 1.14, pulse: 1.18, lead: 1.08, noise: 0.98 } },
-            { phase: 'release', barsDuration: 4, density: 0.8, energyLift: 0.22, layerGainMultipliers: { bass: 1, pulse: 0.94, lead: 0.88, noise: 0.8 } },
+            {
+              phase: 'intro',
+              barsDuration: 4,
+              density: 0.76,
+              energyLift: 0.2,
+              layerGainMultipliers: { bass: 0.98, pulse: 0.92, lead: 0.86, noise: 0.76 },
+            },
+            {
+              phase: 'build',
+              barsDuration: 8,
+              density: 0.86,
+              energyLift: 0.3,
+              layerGainMultipliers: { bass: 1.08, pulse: 1.06, lead: 0.98, noise: 0.9 },
+            },
+            {
+              phase: 'peak',
+              barsDuration: 4,
+              density: 0.94,
+              energyLift: 0.4,
+              layerGainMultipliers: { bass: 1.14, pulse: 1.18, lead: 1.08, noise: 0.98 },
+            },
+            {
+              phase: 'release',
+              barsDuration: 4,
+              density: 0.8,
+              energyLift: 0.22,
+              layerGainMultipliers: { bass: 1, pulse: 0.94, lead: 0.88, noise: 0.8 },
+            },
           ],
         },
       },
@@ -268,8 +293,29 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
     },
   }),
   passingPlanets: [
-    { scrollSpeed: 0.015, planetPalette: [0x2a7fa8, 0xa8ecff], size: 200, yPosition: 0.18, alpha: 0.2, ringChance: 0.5 },
-    { scrollSpeed: 0.025, planetPalette: [0x3d8f99, 0x87fff0], size: 100, yPosition: 0.72, alpha: 0.15, ringChance: 0.3 },
-    { scrollSpeed: 0.008, planetPalette: [0x8a5533, 0xffcc88], size: 300, yPosition: 0.45, alpha: 0.1, ringChance: 0.7 },
+    {
+      scrollSpeed: 0.015,
+      planetPalette: [0x2a7fa8, 0xa8ecff],
+      size: 200,
+      yPosition: 0.18,
+      alpha: 0.2,
+      ringChance: 0.5,
+    },
+    {
+      scrollSpeed: 0.025,
+      planetPalette: [0x3d8f99, 0x87fff0],
+      size: 100,
+      yPosition: 0.72,
+      alpha: 0.15,
+      ringChance: 0.3,
+    },
+    {
+      scrollSpeed: 0.008,
+      planetPalette: [0x8a5533, 0xffcc88],
+      size: 300,
+      yPosition: 0.45,
+      alpha: 0.1,
+      ringChance: 0.7,
+    },
   ],
 };

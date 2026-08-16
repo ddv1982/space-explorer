@@ -16,7 +16,7 @@ mock.module('phaser', () => ({
 }));
 
 const { runGameSceneCreateBootstrap } = await import('../src/scenes/gameScene/runGameSceneCreateBootstrap');
-type GameSceneCreateBootstrapBridge = import('../src/scenes/gameScene/runGameSceneCreateBootstrap').GameSceneCreateBootstrapBridge;
+type GameSceneBootstrapHost = import('../src/scenes/gameScene/runGameSceneCreateBootstrap').GameSceneBootstrapHost;
 
 describe('runGameSceneCreateBootstrap', () => {
   test('orchestrates create-time phases in order and wires pause handling', () => {
@@ -115,10 +115,7 @@ describe('runGameSceneCreateBootstrap', () => {
           playerSpawnPoint: spawn,
         };
       },
-      createInputAndPlayer: (params: {
-        state: unknown;
-        playerSpawnPoint: { x: number; y: number };
-      }) => {
+      createInputAndPlayer: (params: { state: unknown; playerSpawnPoint: { x: number; y: number } }) => {
         callLog.push('createInputAndPlayer');
         expect(params.state).toBe(state);
         expect(params.playerSpawnPoint).toEqual(playerSpawnPoint);
@@ -207,36 +204,10 @@ describe('runGameSceneCreateBootstrap', () => {
         },
       },
     } as never;
-    const scene: GameSceneCreateBootstrapBridge = {
+    const host: GameSceneBootstrapHost = {
       scene: phaserScene,
       runtimeLifecycle: runtimeLifecycle as never,
-      flow: {
-        isTerminalTransitionActive: () => false,
-        isGameplayLocked: () => {
-          callLog.push('flow.isGameplayLocked');
-          return true;
-        },
-      },
-      levelManager: null as never,
-      scaledBossConfig: null,
-      parallax: null as never,
-      effectsManager: null as never,
-      mobileControls: null,
-      inputManager: null as never,
-      player: null as never,
-      bulletPool: null as never,
-      enemyPool: null as never,
-      lastLifeHelperWing: null,
-      picketTurrets: null,
-      waveManager: null as never,
-      collisionManager: null as never,
-      scoreManager: null as never,
-      grazeSurge: null as never,
-      powerUpGroup: null as never,
-      hud: null as never,
-      warpTransition: null as never,
-      pauseStateController: null,
-      lastHudShieldCount: 7,
+      previousHudShieldCount: 7,
       resetRuntimeState: () => {
         callLog.push('resetRuntimeState');
       },
@@ -265,6 +236,11 @@ describe('runGameSceneCreateBootstrap', () => {
       applyPowerUp: (type: string) => {
         callLog.push(`applyPowerUp:${type}`);
       },
+      isTerminalTransitionActive: () => false,
+      isGameplayLocked: () => {
+        callLog.push('flow.isGameplayLocked');
+        return true;
+      },
       captureCurrentRunStateForSave: () => {
         callLog.push('captureCurrentRunStateForSave');
         return savedState as never;
@@ -275,7 +251,7 @@ describe('runGameSceneCreateBootstrap', () => {
       },
     };
 
-    runGameSceneCreateBootstrap(scene, dependencies as never);
+    const runtime = runGameSceneCreateBootstrap(host, dependencies as never);
 
     expect(callLog).toEqual([
       'resetRuntimeState',
@@ -302,7 +278,7 @@ describe('runGameSceneCreateBootstrap', () => {
       'runtimeLifecycle.registerRuntimeHandlers',
     ]);
 
-    expect(scene).toMatchObject({
+    expect(runtime).toMatchObject({
       levelManager: { id: 'level-manager' },
       scaledBossConfig,
       parallax,
@@ -335,10 +311,7 @@ describe('runGameSceneCreateBootstrap', () => {
     expect(callLog.slice(-1)).toEqual(['unsubscribeHardwareKeyboardDetected']);
 
     (pauseHandler as (() => void) | null)?.();
-    expect(callLog.slice(-2)).toEqual([
-      'flow.isGameplayLocked',
-      'pauseStateController.togglePauseRequest',
-    ]);
+    expect(callLog.slice(-2)).toEqual(['flow.isGameplayLocked', 'pauseStateController.togglePauseRequest']);
     expect(pauseToggleArg as boolean | null).toBe(true);
   });
 });

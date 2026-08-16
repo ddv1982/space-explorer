@@ -6,7 +6,6 @@ import { ParallaxBackground } from '@/systems/ParallaxBackground';
 import { releasePremiumBackgroundTexturesOutsideWindow } from '@/systems/parallax/premiumBackgroundLoading';
 import { type getPlayerSpawnPoint } from './viewport';
 
-
 type LevelConfig = ReturnType<LevelManager['getLevelConfig']>;
 type InitialSection = ReturnType<typeof getActiveSection>;
 type PlayerSpawnPoint = ReturnType<typeof getPlayerSpawnPoint>;

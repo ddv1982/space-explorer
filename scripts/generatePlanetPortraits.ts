@@ -31,7 +31,8 @@ const PNG_DIR = path.resolve(process.cwd(), 'test-results/planet-portraits-src')
 // ---------------------------------------------------------------------------
 
 function hash3(ix: number, iy: number, iz: number, seed: number): number {
-  let h = Math.imul(ix, 0x8da6b343) ^ Math.imul(iy, 0xd8163841) ^ Math.imul(iz, 0xcb1ab31f) ^ Math.imul(seed, 0x9e3779b1);
+  let h =
+    Math.imul(ix, 0x8da6b343) ^ Math.imul(iy, 0xd8163841) ^ Math.imul(iz, 0xcb1ab31f) ^ Math.imul(seed, 0x9e3779b1);
   h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
   h ^= h >>> 16;
@@ -308,8 +309,8 @@ function makeMachineWorld(seed: number): SurfacePainter {
     let albedo = mixRgb(hull, hullLight, smoothstep(0.28, 0.74, panels));
 
     // Faint manufactured panel grid.
-    const gridX = Math.abs(((px * 3.1 + pz * 1.3) % 0.5 + 0.5) % 0.5 - 0.25);
-    const gridY = Math.abs(((py * 3.4) % 0.5 + 0.5) % 0.5 - 0.25);
+    const gridX = Math.abs(((((px * 3.1 + pz * 1.3) % 0.5) + 0.5) % 0.5) - 0.25);
+    const gridY = Math.abs(((((py * 3.4) % 0.5) + 0.5) % 0.5) - 0.25);
     const gridMask = smoothstep(0.032, 0.012, Math.min(gridX, gridY)) * 0.35;
     albedo = mixRgb(albedo, trench, gridMask);
 
@@ -424,7 +425,7 @@ function makeCathedralMoon(seed: number): SurfacePainter {
       albedo = mixRgb(albedo, craterFloor, floorMask * crater.depth * 0.7);
       // Sunlit inner rim on the light-facing wall.
       const rimMask = smoothstep(0.55, 0.95, t) * floorMask;
-      const facing = clamp01((dx * LIGHT_DIR[0] + dy * LIGHT_DIR[1]) / (crater.radius + 1e-5) * -1.4 + 0.5);
+      const facing = clamp01(((dx * LIGHT_DIR[0] + dy * LIGHT_DIR[1]) / (crater.radius + 1e-5)) * -1.4 + 0.5);
       albedo = mixRgb(albedo, regolithLight, rimMask * facing * 0.5);
     }
 
@@ -528,11 +529,7 @@ function renderSphere(buffer: PixelBuffer, art: PlanetArt): void {
 
       const { albedo, emissive, emissiveStrength } = art.surface(sample);
       const shading = (art.ambient + (1 - art.ambient) * sample.light) * sample.limb;
-      const color: Rgb = [
-        clamp01(albedo[0] * shading),
-        clamp01(albedo[1] * shading),
-        clamp01(albedo[2] * shading),
-      ];
+      const color: Rgb = [clamp01(albedo[0] * shading), clamp01(albedo[1] * shading), clamp01(albedo[2] * shading)];
 
       // 1px anti-aliased limb.
       const edgeAlpha = clamp01((1 - sample.r) * PLANET_RADIUS);
@@ -972,9 +969,7 @@ function encodePng(buffer: PixelBuffer): Uint8Array {
 
   const signature = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   const idat = deflateSync(scanlines, { level: 9 });
-  const png = new Uint8Array(
-    signature.length + (12 + 13) + (12 + idat.length) + 12
-  );
+  const png = new Uint8Array(signature.length + (12 + 13) + (12 + idat.length) + 12);
   let offset = 0;
   png.set(signature, offset);
   offset += signature.length;
@@ -1005,14 +1000,9 @@ function main(): void {
     const webpPath = path.join(OUTPUT_DIR, `${art.fileName}.webp`);
     writeFileSync(pngPath, png);
 
-    execFileSync('cwebp', [
-      '-q', String(WEBP_QUALITY),
-      '-alpha_q', '90',
-      '-m', '6',
-      '-mt',
-      pngPath,
-      '-o', webpPath,
-    ], { stdio: 'pipe' });
+    execFileSync('cwebp', ['-q', String(WEBP_QUALITY), '-alpha_q', '90', '-m', '6', '-mt', pngPath, '-o', webpPath], {
+      stdio: 'pipe',
+    });
 
     const stats = Bun.file(webpPath);
     totalBytes += stats.size;

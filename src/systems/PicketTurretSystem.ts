@@ -37,8 +37,7 @@ interface PicketMount {
 const TARGET_OFFSCREEN_PADDING = 30;
 
 function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined'
-    && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  return typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 }
 
 /**
@@ -188,9 +187,8 @@ export class PicketTurretSystem {
     const anchorY = viewport.top + viewport.height * PICKET_HARDPOINT_Y_RATIO;
 
     for (const mount of this.mounts) {
-      const anchorX = mount.side < 0
-        ? viewport.left + PICKET_HARDPOINT_EDGE_INSET_X
-        : viewport.right - PICKET_HARDPOINT_EDGE_INSET_X;
+      const anchorX =
+        mount.side < 0 ? viewport.left + PICKET_HARDPOINT_EDGE_INSET_X : viewport.right - PICKET_HARDPOINT_EDGE_INSET_X;
       mount.sprite.setPosition(anchorX, anchorY);
     }
   }
@@ -221,10 +219,12 @@ export class PicketTurretSystem {
     }
 
     const viewport = getViewportBounds(this.scene);
-    return target.x > viewport.left - TARGET_OFFSCREEN_PADDING
-      && target.x < viewport.right + TARGET_OFFSCREEN_PADDING
-      && target.y > viewport.top - TARGET_OFFSCREEN_PADDING
-      && target.y < viewport.bottom + TARGET_OFFSCREEN_PADDING;
+    return (
+      target.x > viewport.left - TARGET_OFFSCREEN_PADDING &&
+      target.x < viewport.right + TARGET_OFFSCREEN_PADDING &&
+      target.y > viewport.top - TARGET_OFFSCREEN_PADDING &&
+      target.y < viewport.bottom + TARGET_OFFSCREEN_PADDING
+    );
   }
 
   private scanForTarget(mount: PicketMount): EnemyBase | null {
@@ -247,10 +247,11 @@ export class PicketTurretSystem {
         const dy = enemy.y - mount.sprite.y;
         const distanceSq = dx * dx + dy * dy;
 
-        const isBetter = best === null
-          || (inHalf && !bestInHalf)
-          || (inHalf === bestInHalf && preferred && !bestPreferred)
-          || (inHalf === bestInHalf && preferred === bestPreferred && distanceSq < bestDistanceSq);
+        const isBetter =
+          best === null ||
+          (inHalf && !bestInHalf) ||
+          (inHalf === bestInHalf && preferred && !bestPreferred) ||
+          (inHalf === bestInHalf && preferred === bestPreferred && distanceSq < bestDistanceSq);
 
         if (isBetter) {
           best = enemy;
@@ -269,7 +270,8 @@ export class PicketTurretSystem {
       return;
     }
 
-    const bolt = (this.boltGroup.getFirstDead(false) ?? this.boltGroup.get(mount.sprite.x, mount.sprite.y)) as PicketBolt | null;
+    const bolt = (this.boltGroup.getFirstDead(false) ??
+      this.boltGroup.get(mount.sprite.x, mount.sprite.y)) as PicketBolt | null;
     if (!bolt) {
       return;
     }
@@ -278,12 +280,7 @@ export class PicketTurretSystem {
     const muzzleX = mount.sprite.x + Math.cos(angle) * 10;
     const muzzleY = mount.sprite.y + Math.sin(angle) * 10;
 
-    bolt.fire(
-      muzzleX,
-      muzzleY,
-      Math.cos(angle) * PICKET_BOLT_SPEED,
-      Math.sin(angle) * PICKET_BOLT_SPEED
-    );
+    bolt.fire(muzzleX, muzzleY, Math.cos(angle) * PICKET_BOLT_SPEED, Math.sin(angle) * PICKET_BOLT_SPEED);
     this.effectsManager.createMuzzleFlash(muzzleX, muzzleY);
     audioManager.playPicketShot();
   }
@@ -293,11 +290,7 @@ export class PicketTurretSystem {
       return;
     }
 
-    const collider = this.scene.physics.add.overlap(
-      this.boltGroup,
-      group,
-      (a, b) => this.handleBoltEnemyOverlap(a, b)
-    );
+    const collider = this.scene.physics.add.overlap(this.boltGroup, group, (a, b) => this.handleBoltEnemyOverlap(a, b));
     this.overlapColliders.push(collider);
   }
 

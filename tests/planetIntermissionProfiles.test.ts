@@ -23,14 +23,13 @@ describe('planet intermission profiles', () => {
   });
 
   test('keeps every arrival approach code distinct', () => {
-    expect(new Set(PLANET_INTERMISSION_PROFILES.map((profile) => profile.approachCode)).size)
-      .toBe(PLANET_INTERMISSION_PROFILES.length);
+    expect(new Set(PLANET_INTERMISSION_PROFILES.map((profile) => profile.approachCode)).size).toBe(
+      PLANET_INTERMISSION_PROFILES.length
+    );
   });
 
   test('rejects levels without an authored arrival profile', () => {
     expect(() => getPlanetIntermissionProfile(0)).toThrow('Missing planet intermission profile');
-    expect(() => getPlanetIntermissionProfile(getTotalLevels() + 1)).toThrow(
-      'Missing planet intermission profile'
-    );
+    expect(() => getPlanetIntermissionProfile(getTotalLevels() + 1)).toThrow('Missing planet intermission profile');
   });
 });

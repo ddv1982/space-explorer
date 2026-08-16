@@ -13,7 +13,7 @@ export function applyModulation(
     return;
   }
 
-  const waveform = modulation.waveform === 'random' ? 'triangle' : modulation.waveform ?? 'sine';
+  const waveform = modulation.waveform === 'random' ? 'triangle' : (modulation.waveform ?? 'sine');
   const lfo = ctx.createOscillator();
   const lfoGain = ctx.createGain();
 

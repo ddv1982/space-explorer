@@ -13,9 +13,8 @@ mock.module('../src/systems/parallax/starfieldTextureGenerator', () => ({
   ensureStarfieldTexture,
 }));
 
-const { createStarfieldTileSprites, destroyStarfieldTileSprites, STARFIELD_TILE_DEPTHS } = await import(
-  '../src/systems/parallax/starfieldTileSpriteLifecycle'
-);
+const { createStarfieldTileSprites, destroyStarfieldTileSprites, STARFIELD_TILE_DEPTHS } =
+  await import('../src/systems/parallax/starfieldTileSpriteLifecycle');
 
 function createTileSprite() {
   return {

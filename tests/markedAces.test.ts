@@ -18,9 +18,7 @@ const {
 const { LEVELS } = await import('../src/config/levels/registry');
 const { EnemyBase } = await import('../src/entities/enemies/EnemyBase');
 const { Lancer } = await import('../src/entities/enemies/Lancer');
-const { LANCER_FIRE_RATE, LANCER_HP, LANCER_SCORE, LANCER_TELEGRAPH_MS } = await import(
-  '../src/utils/constants'
-);
+const { LANCER_FIRE_RATE, LANCER_HP, LANCER_SCORE, LANCER_TELEGRAPH_MS } = await import('../src/utils/constants');
 
 type EnemyStub = Record<string, unknown> & {
   hp: number;
@@ -115,10 +113,7 @@ function countLevelAces(level: LevelConfig): number {
       (waveTotal, wave) => waveTotal + wave.enemies.filter((enemy) => enemy.ace === true).length,
       0
     );
-    const choreographedAces = (section.waves ?? []).reduce(
-      (waveTotal, wave) => waveTotal + (wave.aceCount ?? 0),
-      0
-    );
+    const choreographedAces = (section.waves ?? []).reduce((waveTotal, wave) => waveTotal + (wave.aceCount ?? 0), 0);
     return total + signatureAces + choreographedAces;
   }, 0);
 }

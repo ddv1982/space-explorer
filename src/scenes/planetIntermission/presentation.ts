@@ -5,11 +5,7 @@ import { getViewportLayout } from '../../utils/layout';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 import { drawNeonFrame } from '../shared/neonUiTheme';
 import type { PlanetIntermissionProfile } from './planetProfiles';
-import {
-  getUpgradeGridLayout,
-  type IntermissionViewportMode,
-  type UpgradeGridLayout,
-} from './shared';
+import { getUpgradeGridLayout, type IntermissionViewportMode, type UpgradeGridLayout } from './shared';
 
 export interface IntermissionLayoutMetrics {
   mode: IntermissionViewportMode;
@@ -51,9 +47,7 @@ function colorToCss(color: number): string {
 
 function getGridHeight(buttonCount: number, gridLayout: UpgradeGridLayout): number {
   const rows = buttonCount > 0 ? Math.ceil(buttonCount / gridLayout.columns) : 0;
-  return rows > 0
-    ? rows * gridLayout.buttonHeight + (rows - 1) * gridLayout.spacingY
-    : 0;
+  return rows > 0 ? rows * gridLayout.buttonHeight + (rows - 1) * gridLayout.spacingY : 0;
 }
 
 export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number): IntermissionLayoutMetrics {
@@ -73,9 +67,7 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
   // Five upgrade cards need a tighter stack on short viewports: compress the
   // header, drop the journey note, and shrink buttons so the grid never clamps
   // up into the status band.
-  const compactGrid =
-    buttonCount >= 5
-    && (mode === 'landscape' || (mode === 'portrait' && viewport.height < 760));
+  const compactGrid = buttonCount >= 5 && (mode === 'landscape' || (mode === 'portrait' && viewport.height < 760));
 
   let planetX: number;
   let planetY: number;
@@ -173,8 +165,7 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
     mode,
     compact: compactGrid,
   });
-  const gridWidth = gridLayout.buttonWidth * gridLayout.columns
-    + gridLayout.spacingX * (gridLayout.columns - 1);
+  const gridWidth = gridLayout.buttonWidth * gridLayout.columns + gridLayout.spacingX * (gridLayout.columns - 1);
   const gridLeft = contentX + Math.max(0, (contentWidth - gridWidth) / 2);
   const gridHeight = getGridHeight(buttonCount, gridLayout);
   const promptY = viewport.bottom - (mode === 'desktop' || mode === 'portrait' ? 34 : 26);
@@ -188,8 +179,7 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
     portrait,
     showDestination: mode !== 'ultra-compact',
     showJourneyNote:
-      !compactGrid
-      && (mode === 'desktop' || mode === 'portrait' || (mode === 'landscape' && viewport.width >= 700)),
+      !compactGrid && (mode === 'desktop' || mode === 'portrait' || (mode === 'landscape' && viewport.width >= 700)),
     showOrbitLabels: mode === 'desktop' || mode === 'landscape',
     planetX,
     planetY,
@@ -211,11 +201,7 @@ export function getIntermissionLayout(scene: Phaser.Scene, buttonCount: number):
   };
 }
 
-function drawContentFrame(
-  scene: Phaser.Scene,
-  layout: IntermissionLayoutMetrics,
-  accentColor: number
-): void {
+function drawContentFrame(scene: Phaser.Scene, layout: IntermissionLayoutMetrics, accentColor: number): void {
   const viewport = getViewportLayout(scene);
   const graphics = scene.add.graphics().setDepth(1);
 
@@ -244,7 +230,7 @@ function drawContentFrame(
         strokeAlpha: 0.25,
         cornerCut: 14,
         glow: true,
-      },
+      }
     );
   }
 }
@@ -256,82 +242,121 @@ export function createIntermissionHeader(
 ): Phaser.GameObjects.Text {
   const viewport = getViewportLayout(scene);
   const accentCss = colorToCss(config.levelConfig.planetPalette[1]);
-  const textX = intermissionLayout.portrait || intermissionLayout.mode === 'ultra-compact' && viewport.width < 400
-    ? viewport.centerX
-    : intermissionLayout.contentX;
+  const textX =
+    intermissionLayout.portrait || (intermissionLayout.mode === 'ultra-compact' && viewport.width < 400)
+      ? viewport.centerX
+      : intermissionLayout.contentX;
   const originX = textX === viewport.centerX ? 0.5 : 0;
 
   drawContentFrame(scene, intermissionLayout, config.levelConfig.planetPalette[1]);
 
-  scene.add.text(textX, intermissionLayout.eyebrowY, `// ${config.profile.approachCode} · ARRIVAL CONFIRMED`, {
-    fontSize: intermissionLayout.mode === 'desktop' ? '13px' : '10px',
-    color: accentCss,
-    fontFamily: UI_FONT_MONO,
-    letterSpacing: 1.4,
-  }).setOrigin(originX, 0.5).setDepth(3);
+  scene.add
+    .text(textX, intermissionLayout.eyebrowY, `// ${config.profile.approachCode} · ARRIVAL CONFIRMED`, {
+      fontSize: intermissionLayout.mode === 'desktop' ? '13px' : '10px',
+      color: accentCss,
+      fontFamily: UI_FONT_MONO,
+      letterSpacing: 1.4,
+    })
+    .setOrigin(originX, 0.5)
+    .setDepth(3);
 
-  scene.add.text(textX, intermissionLayout.planetNameY, config.levelConfig.planetName.toUpperCase(), {
-    fontSize: intermissionLayout.mode === 'desktop'
-      ? '42px'
-      : intermissionLayout.mode === 'portrait'
-        ? '27px'
-        : intermissionLayout.mode === 'landscape'
-          ? '25px'
-          : '18px',
-    color: '#f4fbff',
-    fontStyle: 'bold',
-    fontFamily: UI_FONT_DISPLAY,
-    stroke: '#071523',
-    strokeThickness: 4,
-  }).setOrigin(originX, 0.5).setDepth(3);
+  scene.add
+    .text(textX, intermissionLayout.planetNameY, config.levelConfig.planetName.toUpperCase(), {
+      fontSize:
+        intermissionLayout.mode === 'desktop'
+          ? '42px'
+          : intermissionLayout.mode === 'portrait'
+            ? '27px'
+            : intermissionLayout.mode === 'landscape'
+              ? '25px'
+              : '18px',
+      color: '#f4fbff',
+      fontStyle: 'bold',
+      fontFamily: UI_FONT_DISPLAY,
+      stroke: '#071523',
+      strokeThickness: 4,
+    })
+    .setOrigin(originX, 0.5)
+    .setDepth(3);
 
   if (intermissionLayout.showDestination) {
-    scene.add.text(textX, intermissionLayout.destinationY, config.levelConfig.destination.toUpperCase(), {
-      fontSize: intermissionLayout.mode === 'desktop' ? '14px' : '10px',
-      color: '#a9c5d8',
-      fontFamily: UI_FONT_MONO,
-      wordWrap: { width: intermissionLayout.contentWidth },
-      align: originX === 0.5 ? 'center' : 'left',
-    }).setOrigin(originX, 0.5).setDepth(3);
+    scene.add
+      .text(textX, intermissionLayout.destinationY, config.levelConfig.destination.toUpperCase(), {
+        fontSize: intermissionLayout.mode === 'desktop' ? '14px' : '10px',
+        color: '#a9c5d8',
+        fontFamily: UI_FONT_MONO,
+        wordWrap: { width: intermissionLayout.contentWidth },
+        align: originX === 0.5 ? 'center' : 'left',
+      })
+      .setOrigin(originX, 0.5)
+      .setDepth(3);
   }
 
   if (intermissionLayout.showJourneyNote) {
-    scene.add.text(textX, intermissionLayout.journeyNoteY, `“${config.levelConfig.journeyNote}”`, {
-      fontSize: intermissionLayout.mode === 'desktop' ? '15px' : intermissionLayout.mode === 'portrait' ? '11px' : '10px',
-      color: '#d4e4ee',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'italic',
-      lineSpacing: 4,
-      wordWrap: { width: intermissionLayout.contentWidth },
-      align: originX === 0.5 ? 'center' : 'left',
-    }).setOrigin(originX, 0.5).setDepth(3);
+    scene.add
+      .text(textX, intermissionLayout.journeyNoteY, `“${config.levelConfig.journeyNote}”`, {
+        fontSize:
+          intermissionLayout.mode === 'desktop' ? '15px' : intermissionLayout.mode === 'portrait' ? '11px' : '10px',
+        color: '#d4e4ee',
+        fontFamily: UI_FONT_MONO,
+        fontStyle: 'italic',
+        lineSpacing: 4,
+        wordWrap: { width: intermissionLayout.contentWidth },
+        align: originX === 0.5 ? 'center' : 'left',
+      })
+      .setOrigin(originX, 0.5)
+      .setDepth(3);
   }
 
   const statusGraphics = scene.add.graphics().setDepth(2);
   const statusWidth = intermissionLayout.contentWidth;
   const statusLeft = intermissionLayout.contentX;
   statusGraphics.lineStyle(1, config.levelConfig.planetPalette[1], 0.28);
-  statusGraphics.lineBetween(statusLeft, intermissionLayout.statusY - 15, statusLeft + statusWidth, intermissionLayout.statusY - 15);
+  statusGraphics.lineBetween(
+    statusLeft,
+    intermissionLayout.statusY - 15,
+    statusLeft + statusWidth,
+    intermissionLayout.statusY - 15
+  );
 
-  scene.add.text(statusLeft, intermissionLayout.statusY, `SECTOR ${String(config.level).padStart(2, '0')} / ${String(config.totalLevels).padStart(2, '0')}  ·  ${config.profile.signalLabel}`, {
-    fontSize: intermissionLayout.mode === 'desktop' ? '12px' : '9px',
-    color: '#73f5be',
-    fontFamily: UI_FONT_MONO,
-  }).setOrigin(0, 0.5).setDepth(3);
+  scene.add
+    .text(
+      statusLeft,
+      intermissionLayout.statusY,
+      `SECTOR ${String(config.level).padStart(2, '0')} / ${String(config.totalLevels).padStart(2, '0')}  ·  ${config.profile.signalLabel}`,
+      {
+        fontSize: intermissionLayout.mode === 'desktop' ? '12px' : '9px',
+        color: '#73f5be',
+        fontFamily: UI_FONT_MONO,
+      }
+    )
+    .setOrigin(0, 0.5)
+    .setDepth(3);
 
-  const scoreText = scene.add.text(statusLeft + statusWidth, intermissionLayout.statusY, `CREDITS ${config.score}`, {
-    fontSize: intermissionLayout.mode === 'desktop' ? '16px' : '11px',
-    color: '#ffd36a',
-    fontFamily: UI_FONT_MONO,
-    fontStyle: 'bold',
-  }).setOrigin(1, 0.5).setDepth(3);
+  const scoreText = scene.add
+    .text(statusLeft + statusWidth, intermissionLayout.statusY, `CREDITS ${config.score}`, {
+      fontSize: intermissionLayout.mode === 'desktop' ? '16px' : '11px',
+      color: '#ffd36a',
+      fontFamily: UI_FONT_MONO,
+      fontStyle: 'bold',
+    })
+    .setOrigin(1, 0.5)
+    .setDepth(3);
 
-  scene.add.text(statusLeft, intermissionLayout.upgradeLabelY, config.nextLevelName ? 'REFIT BAY // SELECT AN UPGRADE' : 'MISSION ARCHIVE // JOURNEY COMPLETE', {
-    fontSize: intermissionLayout.mode === 'desktop' ? '12px' : '9px',
-    color: '#7f9eb3',
-    fontFamily: UI_FONT_MONO,
-    letterSpacing: 1,
-  }).setOrigin(0, 0.5).setDepth(3);
+  scene.add
+    .text(
+      statusLeft,
+      intermissionLayout.upgradeLabelY,
+      config.nextLevelName ? 'REFIT BAY // SELECT AN UPGRADE' : 'MISSION ARCHIVE // JOURNEY COMPLETE',
+      {
+        fontSize: intermissionLayout.mode === 'desktop' ? '12px' : '9px',
+        color: '#7f9eb3',
+        fontFamily: UI_FONT_MONO,
+        letterSpacing: 1,
+      }
+    )
+    .setOrigin(0, 0.5)
+    .setDepth(3);
 
   const nextLabel = config.nextLevelName
     ? `NEXT VECTOR  ·  ${config.nextLevelName.toUpperCase()}`
@@ -339,13 +364,16 @@ export function createIntermissionHeader(
   const nextLabelX = intermissionLayout.portrait
     ? viewport.centerX
     : intermissionLayout.contentX + intermissionLayout.contentWidth / 2;
-  scene.add.text(nextLabelX, intermissionLayout.nextMissionY, nextLabel, {
-    fontSize: intermissionLayout.mode === 'desktop' ? '13px' : '10px',
-    color: accentCss,
-    fontFamily: UI_FONT_MONO,
-    wordWrap: { width: intermissionLayout.portrait ? viewport.width - 32 : intermissionLayout.contentWidth },
-    align: 'center',
-  }).setOrigin(0.5).setDepth(3);
+  scene.add
+    .text(nextLabelX, intermissionLayout.nextMissionY, nextLabel, {
+      fontSize: intermissionLayout.mode === 'desktop' ? '13px' : '10px',
+      color: accentCss,
+      fontFamily: UI_FONT_MONO,
+      wordWrap: { width: intermissionLayout.portrait ? viewport.width - 32 : intermissionLayout.contentWidth },
+      align: 'center',
+    })
+    .setOrigin(0.5)
+    .setDepth(3);
 
   return scoreText;
 }
@@ -373,10 +401,13 @@ export function createIntermissionPrompt(
   graphics.fillCircle(x + 17, intermissionLayout.promptY, 3);
   graphics.fillCircle(x + width - 17, intermissionLayout.promptY, 3);
 
-  scene.add.text(viewport.centerX, intermissionLayout.promptY, label.toUpperCase(), {
-    fontSize: intermissionLayout.mode === 'desktop' ? '14px' : '11px',
-    color: '#eefbff',
-    fontFamily: UI_FONT_MONO,
-    fontStyle: 'bold',
-  }).setOrigin(0.5).setDepth(5);
+  scene.add
+    .text(viewport.centerX, intermissionLayout.promptY, label.toUpperCase(), {
+      fontSize: intermissionLayout.mode === 'desktop' ? '14px' : '11px',
+      color: '#eefbff',
+      fontFamily: UI_FONT_MONO,
+      fontStyle: 'bold',
+    })
+    .setOrigin(0.5)
+    .setDepth(5);
 }

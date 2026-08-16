@@ -79,7 +79,8 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
           lane: 3,
           aceCount: 1,
           telegraph: 'warning',
-          notes: 'Opening convoy screen: a readable vee that teaches the corridor lanes; the gilded ace point introduces the priority read early.',
+          notes:
+            'Opening convoy screen: a readable vee that teaches the corridor lanes; the gilded ace point introduces the priority read early.',
         },
       ],
       musicIntensity: 0.46,
@@ -143,7 +144,8 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
       startProgress: 0.33,
       endProgress: 0.51,
       phase: 'hazard',
-      summary: 'Eclipse shadow deepens: mirrored ring-crossfire crosses the corridors while dodgers harry every route commit.',
+      summary:
+        'Eclipse shadow deepens: mirrored ring-crossfire crosses the corridors while dodgers harry every route commit.',
       hazardEvents: [
         { type: 'rock-corridor', cadenceMs: 3000, corridorWidth: 188, laneCount: 2, damage: 1, intensity: 0.5 },
         { type: 'ring-crossfire', cadenceMs: 2400, intensity: 0.55 },
@@ -235,7 +237,8 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
           aceCount: 1,
           telegraph: 'warning',
           midBossBeat: true,
-          notes: 'Mid-boss elite wave: gunship-led vanguard of the Umbral Ark convoy; the gilded ace point leads the vee.',
+          notes:
+            'Mid-boss elite wave: gunship-led vanguard of the Umbral Ark convoy; the gilded ace point leads the vee.',
         },
       ],
       musicIntensity: 0.94,

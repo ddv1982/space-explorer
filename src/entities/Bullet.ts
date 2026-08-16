@@ -22,7 +22,6 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
 
     despawnEntity(this);
     this.setDepth(4);
-
   }
 
   fire(x: number, y: number, velocityX: number = 0, velocityY?: number): void {

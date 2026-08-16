@@ -32,12 +32,8 @@ mock.module('../src/systems/parallax/starTwinkleLifecycle', () => ({
   destroyTwinkles,
 }));
 
-const {
-  createLevelVisualLayers,
-  destroyLevelVisualLayers,
-  rebuildLevelVisualLayers,
-} = await import('../src/systems/parallax/levelVisualLayerLifecycle');
-
+const { createLevelVisualLayers, destroyLevelVisualLayers, rebuildLevelVisualLayers } =
+  await import('../src/systems/parallax/levelVisualLayerLifecycle');
 
 function createContext() {
   const passingPlanetSprites: unknown[] = [];

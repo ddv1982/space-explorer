@@ -69,7 +69,8 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       startProgress: 0,
       endProgress: 0.1,
       phase: 'intro',
-      summary: 'A quiet hush, then the first reprise: wormhole rings sequence fighter and lancer pickets into the exam.',
+      summary:
+        'A quiet hush, then the first reprise: wormhole rings sequence fighter and lancer pickets into the exam.',
       hazardEvents: [
         {
           type: 'wormhole-spawn',
@@ -161,7 +162,8 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       startProgress: 0.22,
       endProgress: 0.34,
       phase: 'build',
-      summary: 'Solar-flare reprise: the beam sweep clears the bullets it crosses, a risk route folded into the sequence.',
+      summary:
+        'Solar-flare reprise: the beam sweep clears the bullets it crosses, a risk route folded into the sequence.',
       hazardEvents: [
         {
           type: 'solar-flare',
@@ -318,7 +320,8 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
             { type: 'fighter', lane: 'center' },
             { type: 'gunship', lane: 'right', ace: true },
           ],
-          notes: 'Final lane-read exam: twin gilded ace gunships bracket the center route until the crossfire telegraphs clear.',
+          notes:
+            'Final lane-read exam: twin gilded ace gunships bracket the center route until the crossfire telegraphs clear.',
         },
       ],
       waves: [
@@ -341,7 +344,8 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
           aceCount: 1,
           telegraph: 'warning',
           midBossBeat: true,
-          notes: 'Mid-boss elite wave: Omega Null honor guard enters at the convergence; the gilded ace point leads the guard.',
+          notes:
+            'Mid-boss elite wave: Omega Null honor guard enters at the convergence; the gilded ace point leads the guard.',
         },
       ],
       musicIntensity: 0.97,

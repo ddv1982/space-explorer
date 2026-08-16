@@ -163,9 +163,7 @@ describe('PauseStateController regression coverage', () => {
     const harness = createPauseHarness();
 
     expect(harness.controller.isGameplayPaused()).toBe(false);
-    expect(harness.overlayStates).toEqual([
-      createOverlayState({ visible: false, canResume: false }),
-    ]);
+    expect(harness.overlayStates).toEqual([createOverlayState({ visible: false, canResume: false })]);
     expect(harness.mobileControlBlocked).toEqual([false]);
     expect(harness.physicsActions).toEqual([]);
     expect(harness.stopPlayerMotionCalls).toBe(0);
@@ -224,14 +222,16 @@ describe('PauseStateController regression coverage', () => {
 
     expect(String(savedSlot)).toBe('slot-1');
     expect(harness.playClickCalls).toBe(2);
-    expect(harness.overlayStates.at(-1)).toEqual(createOverlayState({
-      visible: true,
-      canResume: true,
-      canSave: true,
-      storageAvailable: true,
-      saveSlots: slots,
-      statusMessage: 'Saved checkpoint to slot 1.',
-    }));
+    expect(harness.overlayStates.at(-1)).toEqual(
+      createOverlayState({
+        visible: true,
+        canResume: true,
+        canSave: true,
+        storageAvailable: true,
+        saveSlots: slots,
+        statusMessage: 'Saved checkpoint to slot 1.',
+      })
+    );
   });
 
   test('load slot action reports adapter status without resuming physics', () => {
@@ -305,14 +305,16 @@ describe('PauseStateController regression coverage', () => {
     harness.handlers.onDeleteSlot('slot-1');
 
     expect(String(deletedSlot)).toBe('slot-1');
-    expect(harness.overlayStates.at(-1)).toEqual(createOverlayState({
-      visible: true,
-      canResume: true,
-      canSave: true,
-      storageAvailable: true,
-      saveSlots: slots,
-      statusMessage: 'Slot 1 checkpoint cleared.',
-    }));
+    expect(harness.overlayStates.at(-1)).toEqual(
+      createOverlayState({
+        visible: true,
+        canResume: true,
+        canSave: true,
+        storageAvailable: true,
+        saveSlots: slots,
+        statusMessage: 'Slot 1 checkpoint cleared.',
+      })
+    );
   });
 
   test('save slot action is blocked while runtime cannot save', () => {

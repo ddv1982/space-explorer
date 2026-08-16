@@ -20,15 +20,18 @@ export function resolveLayerExpression(
   layerExpression?: ProceduralMusicLayerExpressionConfig
 ): ProceduralMusicLayerExpressionConfig | undefined {
   const envelope = layerExpression?.envelope;
-  const stereo = trackExpression?.stereo || layerExpression?.stereo
-    ? { ...trackExpression?.stereo, ...layerExpression?.stereo }
-    : undefined;
-  const modulation = trackExpression?.modulation || layerExpression?.modulation
-    ? { ...trackExpression?.modulation, ...layerExpression?.modulation }
-    : undefined;
-  const accent = trackExpression?.accent || layerExpression?.accent
-    ? { ...trackExpression?.accent, ...layerExpression?.accent }
-    : undefined;
+  const stereo =
+    trackExpression?.stereo || layerExpression?.stereo
+      ? { ...trackExpression?.stereo, ...layerExpression?.stereo }
+      : undefined;
+  const modulation =
+    trackExpression?.modulation || layerExpression?.modulation
+      ? { ...trackExpression?.modulation, ...layerExpression?.modulation }
+      : undefined;
+  const accent =
+    trackExpression?.accent || layerExpression?.accent
+      ? { ...trackExpression?.accent, ...layerExpression?.accent }
+      : undefined;
 
   if (!envelope && !stereo && !modulation && !accent) {
     return undefined;

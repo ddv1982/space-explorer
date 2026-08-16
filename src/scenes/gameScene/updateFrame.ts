@@ -6,11 +6,7 @@ export interface GameSceneFrameDelegate {
   updateHud(): void;
 }
 
-export function runGameSceneUpdateFrame(
-  delegate: GameSceneFrameDelegate,
-  time: number,
-  delta: number
-): void {
+export function runGameSceneUpdateFrame(delegate: GameSceneFrameDelegate, time: number, delta: number): void {
   delegate.handlePauseInput();
 
   if (delegate.isPausedOrLockedFrame()) {

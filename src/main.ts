@@ -98,7 +98,12 @@ if (game && typeof window !== 'undefined') {
     queuedViewportHeight = nextViewport.height;
     queuedForceRefresh = queuedForceRefresh || force;
 
-    if (!queuedForceRefresh && !pendingScaleRefresh && nextViewport.width === lastViewportWidth && nextViewport.height === lastViewportHeight) {
+    if (
+      !queuedForceRefresh &&
+      !pendingScaleRefresh &&
+      nextViewport.width === lastViewportWidth &&
+      nextViewport.height === lastViewportHeight
+    ) {
       return;
     }
 

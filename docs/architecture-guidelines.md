@@ -77,6 +77,15 @@ This document describes the scene boundaries, system contracts, and coding rules
 - Intentional composition and procedural-generation hotspots have explicit, near-current budgets in `checkArchitecture.ts`. They stay listed in the report, and any growth beyond the budget becomes a warning; reduce a budget whenever an extraction lands so the improvement cannot silently regress.
 - Current budgeted hotspots are the browser diagnostics facade, `GameScene`, the neon background recipe collection, `WaveManager`, and the boss entity facade. New files must use the default limits rather than joining this list without an architectural review.
 - Scene classes remain lifecycle and composition roots; scheduling belongs in focused controllers, and Phaser callback normalization belongs at adapter boundaries.
+- The architecture report also flags functions above 100 lines or complexity 20, public surfaces above 20 declarations, and tests above 500 lines. These are review prompts rather than instructions to split code mechanically.
+
+## Maintainability scorecard
+
+- A gameplay startup path should be traceable through at most three primary modules.
+- Runtime factories return owned objects; they do not mirror an owner's private fields through getter/setter bridges.
+- Pure decisions use `resolve` or `select`; construction uses `create`; listener attachment uses `bind` or `register`; teardown uses `destroy` or `dispose`.
+- Tests prefer typed scenario harnesses and observable outcomes over direct private-state mutation.
+- Extract a module only when it separates a domain responsibility, reduces dependencies, or enables a materially simpler test.
 
 ## Runtime performance adaptation
 

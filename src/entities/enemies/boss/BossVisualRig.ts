@@ -1,13 +1,7 @@
 import Phaser from 'phaser';
 
 interface OptionalShapeFactory {
-  circle?: (
-    x: number,
-    y: number,
-    radius: number,
-    fillColor?: number,
-    fillAlpha?: number
-  ) => Phaser.GameObjects.Arc;
+  circle?: (x: number, y: number, radius: number, fillColor?: number, fillAlpha?: number) => Phaser.GameObjects.Arc;
   ellipse?: (
     x: number,
     y: number,
@@ -40,31 +34,37 @@ export class BossVisualRig {
       return;
     }
 
-    this.aura = factory.ellipse(0, 0, 108, 72, 0xff5577, 0.045)
+    this.aura = factory
+      .ellipse(0, 0, 108, 72, 0xff5577, 0.045)
       .setStrokeStyle(2, 0xff6688, 0.12)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setDepth(2)
       .setVisible(false);
-    this.corona = factory.ellipse(0, 0, 124, 84, 0xff335f, 0.02)
+    this.corona = factory
+      .ellipse(0, 0, 124, 84, 0xff335f, 0.02)
       .setStrokeStyle(1, 0xffd7e0, 0.18)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setDepth(2)
       .setVisible(false);
-    this.shield = factory.ellipse(0, 0, 104, 70, 0x77ccff, 0.035)
+    this.shield = factory
+      .ellipse(0, 0, 104, 70, 0x77ccff, 0.035)
       .setStrokeStyle(2, 0xa8e7ff, 0.72)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setDepth(4)
       .setVisible(false);
-    this.core = factory.circle(0, 0, 5, 0xffd7e0, 0.9)
+    this.core = factory
+      .circle(0, 0, 5, 0xffd7e0, 0.9)
       .setStrokeStyle(2, 0xff6688, 0.72)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setDepth(4)
       .setVisible(false);
-    this.hardpoints = [-31, 31].map((offset) => factory.circle!(offset, 0, 3.2, 0xff6688, 0.72)
-      .setStrokeStyle(1, 0xffffff, 0.5)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setDepth(4)
-      .setVisible(false));
+    this.hardpoints = [-31, 31].map((offset) =>
+      factory.circle!(offset, 0, 3.2, 0xff6688, 0.72)
+        .setStrokeStyle(1, 0xffffff, 0.5)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(4)
+        .setVisible(false)
+    );
   }
 
   update(params: {

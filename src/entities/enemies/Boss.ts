@@ -5,7 +5,8 @@ import { Player } from '../Player';
 import type { BossAttackStyle, BossConfig, EnemyType } from '../../config/LevelsConfig';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { fireBossPattern } from './boss/attacks';
-import { getBossShieldActive, shouldEnterBossPhaseTwo, updateBossMovement } from './boss/behavior';
+import { getBossShieldActive, updateBossMovement } from './boss/behavior';
+import { resolveBossPhaseTransition } from './boss/phaseTransition';
 import { getViewportBounds } from '../../utils/layout';
 import { ensureBossTextureVariant } from '../../utils/SpriteFactory';
 import { BossVisualRig } from './boss/BossVisualRig';
@@ -106,13 +107,17 @@ export class Boss extends EnemyBase {
       return;
     }
 
-    const nextGuard = applyBossGuardHit({
-      capacity: this.guardCapacity,
-      value: this.guardValue,
-      lastHitAt: this.guardLastHitAt,
-      broken: this.guardBroken,
-      brokenUntil: this.guardBrokenUntil,
-    }, amount, gameplayTime);
+    const nextGuard = applyBossGuardHit(
+      {
+        capacity: this.guardCapacity,
+        value: this.guardValue,
+        lastHitAt: this.guardLastHitAt,
+        broken: this.guardBroken,
+        brokenUntil: this.guardBrokenUntil,
+      },
+      amount,
+      gameplayTime
+    );
     this.guardValue = nextGuard.value;
     this.guardLastHitAt = nextGuard.lastHitAt;
     if (nextGuard.shouldBreak) {
@@ -231,18 +236,24 @@ export class Boss extends EnemyBase {
   }
 
   private updatePhaseState(time: number): void {
-    if (shouldEnterBossPhaseTwo(this.phase, this.hp, this.maxHp)) {
-      this.transitionToPhaseTwo(time);
-    }
-  }
+    const transition = resolveBossPhaseTransition({
+      phase: this.phase,
+      hp: this.hp,
+      maxHp: this.maxHp,
+      time,
+      phase2MoveSpeed: this.phase2MoveSpeed,
+      phaseTransitionPauseMs: this.phaseTransitionPauseMs,
+      attackStyle: this.attackStyle,
+      phase2AttackStyle: this.phase2AttackStyle,
+    });
+    if (!transition) return;
 
-  private transitionToPhaseTwo(time: number): void {
-    this.phase = 2;
-    this.moveSpeed = this.phase2MoveSpeed;
-    this.phaseStartedAt = time;
-    this.lastFireTime = time + this.phaseTransitionPauseMs;
-    if (this.phase2AttackStyle && this.phase2AttackStyle !== this.attackStyle) {
-      this.attackStyle = this.phase2AttackStyle;
+    this.phase = transition.phase;
+    this.moveSpeed = transition.moveSpeed;
+    this.phaseStartedAt = transition.phaseStartedAt;
+    this.lastFireTime = transition.nextFireTime;
+    if (transition.textureChanges) {
+      this.attackStyle = transition.attackStyle;
       this.setTexture(ensureBossTextureVariant(this.scene, this.attackStyle, this.bossName));
     }
     this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
@@ -355,8 +366,7 @@ export class Boss extends EnemyBase {
     }
 
     return (
-      (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ??
-      (this.bulletGroup.get(x, y) as EnemyBullet | null)
+      (this.bulletGroup.getFirstDead(false) as EnemyBullet | null) ?? (this.bulletGroup.get(x, y) as EnemyBullet | null)
     );
   }
 
@@ -406,18 +416,21 @@ export class Boss extends EnemyBase {
   }
 
   private updateGuardState(time: number, delta: number): boolean {
-    const nextGuard = advanceBossGuard({
-      capacity: this.guardCapacity,
-      value: this.guardValue,
-      lastHitAt: this.guardLastHitAt,
-      broken: this.guardBroken,
-      brokenUntil: this.guardBrokenUntil,
-    }, {
-      time,
-      delta,
-      decayDelayMs: this.guardDecayDelayMs,
-      decayPerSecond: this.guardDecayPerSecond,
-    });
+    const nextGuard = advanceBossGuard(
+      {
+        capacity: this.guardCapacity,
+        value: this.guardValue,
+        lastHitAt: this.guardLastHitAt,
+        broken: this.guardBroken,
+        brokenUntil: this.guardBrokenUntil,
+      },
+      {
+        time,
+        delta,
+        decayDelayMs: this.guardDecayDelayMs,
+        decayPerSecond: this.guardDecayPerSecond,
+      }
+    );
     this.guardValue = nextGuard.value;
     this.guardLastHitAt = nextGuard.lastHitAt;
     this.guardBroken = nextGuard.broken;

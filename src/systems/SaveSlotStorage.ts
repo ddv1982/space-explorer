@@ -1,8 +1,5 @@
 import { getLevelConfig, getTotalLevels } from '../config/LevelsConfig';
-import type {
-  PlayerStateData,
-  RunSummaryData,
-} from './PlayerState';
+import type { PlayerStateData, RunSummaryData } from './PlayerState';
 import { normalizePersistedPlayerState, normalizePersistedScore } from './PlayerState';
 
 export const SAVE_SLOT_STORAGE_KEY = 'space-explorer.saveSlots.v1';

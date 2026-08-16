@@ -14,10 +14,7 @@ import {
   shouldRenderMeterRatio,
 } from './hud/statusBarLayout';
 import { HudShieldIconRenderer } from './hud/shieldIconRenderer';
-import {
-  createHudWidgets,
-  relayoutHudWidgets,
-} from './hud/bootstrapRelayout';
+import { createHudWidgets, relayoutHudWidgets } from './hud/bootstrapRelayout';
 
 export class HUD {
   private scene!: Phaser.Scene;
@@ -301,8 +298,7 @@ export class HUD {
     const clampedProgress = Math.min(progress, 1);
     const progressStep =
       1 /
-      getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth)
-        .progressWidth;
+      getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth).progressWidth;
     if (
       this.currentProgress === null ||
       Math.abs(clampedProgress - this.currentProgress) >= progressStep ||

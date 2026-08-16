@@ -24,7 +24,10 @@ export function createPanner(
     const panLfo = ctx.createOscillator();
     const panDepth = ctx.createGain();
     panLfo.type = 'sine';
-    panLfo.frequency.setValueAtTime((stereo.rateHz ?? 0) * (0.72 + intensityBlend * 0.42 + creativityDrive * 0.3), time);
+    panLfo.frequency.setValueAtTime(
+      (stereo.rateHz ?? 0) * (0.72 + intensityBlend * 0.42 + creativityDrive * 0.3),
+      time
+    );
     panDepth.gain.setValueAtTime(width * (0.3 + intensityBlend * 0.45), time);
     panLfo.connect(panDepth);
     panDepth.connect(panner.pan);

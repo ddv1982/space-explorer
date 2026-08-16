@@ -23,13 +23,7 @@ interface EncounterSizeConfig {
   max: number;
 }
 
-export type BossAttackStyle =
-  | 'barrage'
-  | 'pressure'
-  | 'maelstrom'
-  | 'carrier'
-  | 'pursuit'
-  | 'bulwark';
+export type BossAttackStyle = 'barrage' | 'pressure' | 'maelstrom' | 'carrier' | 'pursuit' | 'bulwark';
 
 export interface BossConfig {
   name: string;
@@ -178,9 +172,9 @@ export interface LevelSectionConfig {
   visualModifiers?: LevelSectionVisualModifierConfig;
   // VAT emotion targets for this section
   vatTarget?: {
-    valence: number;   // -1.0 to 1.0
-    arousal: number;   // 0.0 to 1.0
-    tension: number;   // 0.0 to 1.0
+    valence: number; // -1.0 to 1.0
+    arousal: number; // 0.0 to 1.0
+    tension: number; // 0.0 to 1.0
   };
   tensionArc?: 'constant' | 'gradualBuild' | 'buildRelease' | 'waves';
 }

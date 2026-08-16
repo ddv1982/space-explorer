@@ -43,9 +43,7 @@ export function resolveRuntimeConfig(
         ? Math.max(120, Math.floor(config.respawnDelayMs))
         : DEFAULT_HELPER_CONFIG.respawnDelayMs,
     spacing:
-      typeof config?.spacing === 'number'
-        ? Math.max(18, Math.round(config.spacing))
-        : DEFAULT_HELPER_CONFIG.spacing,
+      typeof config?.spacing === 'number' ? Math.max(18, Math.round(config.spacing)) : DEFAULT_HELPER_CONFIG.spacing,
     followOffsetY:
       typeof config?.followOffsetY === 'number'
         ? Math.round(config.followOffsetY)
@@ -64,10 +62,7 @@ export function normalizePersistedState(
   }
 
   const slots = persistentState.slots.map((slot) => ({
-    remainingLives:
-      typeof slot?.remainingLives === 'number'
-        ? Math.max(0, Math.floor(slot.remainingLives))
-        : 0,
+    remainingLives: typeof slot?.remainingLives === 'number' ? Math.max(0, Math.floor(slot.remainingLives)) : 0,
     hp: typeof slot?.hp === 'number' ? Math.max(0, Math.round(slot.hp)) : 0,
   }));
 

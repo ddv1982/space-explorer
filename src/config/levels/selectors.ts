@@ -17,9 +17,13 @@ export function isLastLevel(levelNumber: number): boolean {
 export function getActiveSection(levelConfig: LevelConfig, progress: number): LevelSectionConfig | null {
   const clampedProgress = Math.max(0, Math.min(progress, 1));
 
-  return levelConfig.sections.find(
-    (section) => clampedProgress >= section.startProgress && clampedProgress < section.endProgress
-  ) ?? levelConfig.sections.find((section) => clampedProgress === 1 && section.endProgress === 1) ?? null;
+  return (
+    levelConfig.sections.find(
+      (section) => clampedProgress >= section.startProgress && clampedProgress < section.endProgress
+    ) ??
+    levelConfig.sections.find((section) => clampedProgress === 1 && section.endProgress === 1) ??
+    null
+  );
 }
 
 export function getSectionProgress(section: LevelSectionConfig, progress: number): number {

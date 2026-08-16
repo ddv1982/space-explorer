@@ -31,12 +31,7 @@ export const PICKET_HARDPOINT_Y_RATIO = 0.5;
 export const PICKET_ONLINE_ANNOUNCE_DELAY_MS = 3200;
 
 /** Light enemies the pickets prefer: scouts, swarms, and boss adds. */
-export const PICKET_PREFERRED_TARGET_TYPES: ReadonlySet<string> = new Set([
-  'scout',
-  'swarm',
-  'swarmling',
-  'diver',
-]);
+export const PICKET_PREFERRED_TARGET_TYPES: ReadonlySet<string> = new Set(['scout', 'swarm', 'swarmling', 'diver']);
 
 export function normalizePicketTier(value: unknown): number {
   const tier = typeof value === 'number' && Number.isFinite(value) ? Math.floor(value) : 0;

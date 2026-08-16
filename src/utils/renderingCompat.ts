@@ -34,13 +34,7 @@ export function applyGameObjectGlow(
     clearFirst?: boolean;
   } = {}
 ): Phaser.Filters.Glow | null {
-  const {
-    outerStrength = 2,
-    innerStrength = 2,
-    scale = 1,
-    knockout = false,
-    clearFirst = true,
-  } = options;
+  const { outerStrength = 2, innerStrength = 2, scale = 1, knockout = false, clearFirst = true } = options;
 
   gameObject.enableFilters();
 
@@ -52,19 +46,10 @@ export function applyGameObjectGlow(
     gameObject.filters.internal.clear();
   }
 
-  return gameObject.filters.internal.addGlow(
-    color,
-    outerStrength,
-    innerStrength,
-    scale,
-    knockout
-  );
+  return gameObject.filters.internal.addGlow(color, outerStrength, innerStrength, scale, knockout);
 }
 
-export function applyHazardTelegraphGlow(
-  gameObject: FilterableGameObject,
-  color: number
-): Phaser.Filters.Glow | null {
+export function applyHazardTelegraphGlow(gameObject: FilterableGameObject, color: number): Phaser.Filters.Glow | null {
   return applyGameObjectGlow(gameObject, color, {
     outerStrength: 1.4,
     innerStrength: 0.15,
@@ -86,11 +71,7 @@ export function applyCameraColorGrade(
     0.8,
     1.4
   );
-  const mappedContrast = Phaser.Math.Clamp(
-    grade.contrast >= 0.5 ? grade.contrast - 1 : grade.contrast,
-    -0.8,
-    1
-  );
+  const mappedContrast = Phaser.Math.Clamp(grade.contrast >= 0.5 ? grade.contrast - 1 : grade.contrast, -0.8, 1);
   const mappedSaturation = Phaser.Math.Clamp(
     (grade.saturation >= 0.5 ? grade.saturation - 1 : grade.saturation) + 0.04,
     -1,

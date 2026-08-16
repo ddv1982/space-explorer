@@ -100,10 +100,7 @@ describe('showControlsHint hardware keyboard handling', () => {
     const { scene, texts } = createFakeScene();
     showControlsHint(scene as never, { mobile: true });
 
-    expect(texts.map((text) => text.text)).toEqual([
-      'Use the joystick to move',
-      'Tap the right side to shoot',
-    ]);
+    expect(texts.map((text) => text.text)).toEqual(['Use the joystick to move', 'Tap the right side to shoot']);
     expect(detectionSubscribers.length).toBe(1);
   });
 
@@ -114,10 +111,7 @@ describe('showControlsHint hardware keyboard handling', () => {
     hardwareDetected = true;
     detectionSubscribers.forEach((handler) => handler());
 
-    expect(texts.map((text) => text.text)).toEqual([
-      'WASD / Arrows to Move',
-      'SPACE / Click to Fire',
-    ]);
+    expect(texts.map((text) => text.text)).toEqual(['WASD / Arrows to Move', 'SPACE / Click to Fire']);
   });
 
   test('shows keyboard hints immediately when detection happened before scene start', () => {
@@ -126,10 +120,7 @@ describe('showControlsHint hardware keyboard handling', () => {
     const { scene, texts } = createFakeScene();
     showControlsHint(scene as never, { mobile: true });
 
-    expect(texts.map((text) => text.text)).toEqual([
-      'WASD / Arrows to Move',
-      'SPACE / Click to Fire',
-    ]);
+    expect(texts.map((text) => text.text)).toEqual(['WASD / Arrows to Move', 'SPACE / Click to Fire']);
   });
 
   test('keeps desktop keyboard hints and ignores later detection', () => {
@@ -139,9 +130,6 @@ describe('showControlsHint hardware keyboard handling', () => {
     hardwareDetected = true;
     detectionSubscribers.forEach((handler) => handler());
 
-    expect(texts.map((text) => text.text)).toEqual([
-      'WASD / Arrows to Move',
-      'SPACE / Click to Fire',
-    ]);
+    expect(texts.map((text) => text.text)).toEqual(['WASD / Arrows to Move', 'SPACE / Click to Fire']);
   });
 });

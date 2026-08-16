@@ -16,9 +16,7 @@ mock.module('phaser', () => ({
   },
 }));
 
-const { createScorePopup, createSpawnWarning } = await import(
-  '../src/systems/effects/ephemeralOverlayTweens'
-);
+const { createScorePopup, createSpawnWarning } = await import('../src/systems/effects/ephemeralOverlayTweens');
 
 type TweenConfig = {
   targets: unknown;

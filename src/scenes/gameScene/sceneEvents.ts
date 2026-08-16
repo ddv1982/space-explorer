@@ -1,8 +1,5 @@
 import type Phaser from 'phaser';
-import type {
-  GameSceneEventHandler,
-  GameSceneEventName,
-} from '@/systems/GameplayFlow';
+import type { GameSceneEventHandler, GameSceneEventName } from '@/systems/GameplayFlow';
 
 export type SceneEventBinding = {
   [Event in GameSceneEventName]: {

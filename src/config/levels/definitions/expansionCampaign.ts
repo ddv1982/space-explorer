@@ -9,11 +9,5 @@ export const EXPANSION_CAMPAIGN = defineCampaign({
   id: 'expansion',
   title: 'Expansion Campaign',
   summary: 'Post-core progression arc that deepens encounter complexity and intensity.',
-  levels: [
-    WRECKFIELD_RUN_LEVEL,
-    GHOSTLIGHT_VEIL_LEVEL,
-    CROWN_OF_RINGS_LEVEL,
-    OBSIDIAN_MAW_LEVEL,
-    TERMINUS_BLACK_LEVEL,
-  ],
+  levels: [WRECKFIELD_RUN_LEVEL, GHOSTLIGHT_VEIL_LEVEL, CROWN_OF_RINGS_LEVEL, OBSIDIAN_MAW_LEVEL, TERMINUS_BLACK_LEVEL],
 });

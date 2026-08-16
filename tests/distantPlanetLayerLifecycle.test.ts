@@ -7,11 +7,8 @@ mock.module('../src/systems/parallax/planetTextureGenerator', () => ({
   generatePlanetTexture,
 }));
 
-const {
-  createPlanetLayer,
-  destroyPlanetLayer,
-  layoutPlanetLayer,
-} = await import('../src/systems/parallax/distantPlanetLayerLifecycle');
+const { createPlanetLayer, destroyPlanetLayer, layoutPlanetLayer } =
+  await import('../src/systems/parallax/distantPlanetLayerLifecycle');
 
 function createImageStub() {
   return {

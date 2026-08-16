@@ -30,22 +30,17 @@ test('visual quality is selectable, responsive, and persists without a URL setti
     expect(highButton?.y).toBeLessThan(viewport.height);
 
     await page.mouse.click(difficultyHighButton?.x ?? 0, difficultyHighButton?.y ?? 0);
-    await expect.poll(async () => (await snapshot(page)).texts.some(
-      (item) => item.text === 'DIFFICULTY: HIGH'
-    )).toBe(true);
-    expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.gameplayDifficulty.v1')))
-      .toBe('high');
+    await expect
+      .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'DIFFICULTY: HIGH'))
+      .toBe(true);
+    expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.gameplayDifficulty.v1'))).toBe('high');
 
-    await Promise.all([
-      page.waitForEvent('load'),
-      page.mouse.click(highButton?.x ?? 0, highButton?.y ?? 0),
-    ]);
+    await Promise.all([page.waitForEvent('load'), page.mouse.click(highButton?.x ?? 0, highButton?.y ?? 0)]);
     await waitForScene(page, 'Menu');
-    await expect.poll(async () => (await snapshot(page)).texts.some(
-      (item) => item.text === 'QUALITY: HIGH'
-    )).toBe(true);
-    expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.visualQuality.v1')))
-      .toBe('high');
+    await expect
+      .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'QUALITY: HIGH'))
+      .toBe(true);
+    expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.visualQuality.v1'))).toBe('high');
     expect(new URL(page.url()).searchParams.has('visualQuality')).toBe(false);
 
     await page.evaluate(() => window.localStorage.removeItem('space-explorer.visualQuality.v1'));
@@ -110,7 +105,10 @@ test('resizes, pauses, resumes, restores visibility, and lazy-routes scenes', as
   assertNoBrowserErrors();
 });
 
-test('pause settings persist quality without reloading or leaving the active run', async ({ page, assertNoBrowserErrors }) => {
+test('pause settings persist quality without reloading or leaving the active run', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
   await openMenu(page);
   await startNewRun(page);
   await page.keyboard.down('Escape');
@@ -146,9 +144,13 @@ test('pause settings persist quality without reloading or leaving the active run
 
   const urlBefore = page.url();
   await page.mouse.click(difficultyLow?.x ?? 0, difficultyLow?.y ?? 0);
-  await expect.poll(async () => page.evaluate(() => localStorage.getItem('space-explorer.gameplayDifficulty.v1'))).toBe('low');
+  await expect
+    .poll(async () => page.evaluate(() => localStorage.getItem('space-explorer.gameplayDifficulty.v1')))
+    .toBe('low');
   await page.mouse.click(qualityLow?.x ?? 0, qualityLow?.y ?? 0);
-  await expect.poll(async () => page.evaluate(() => localStorage.getItem('space-explorer.visualQuality.v1'))).toBe('low');
+  await expect
+    .poll(async () => page.evaluate(() => localStorage.getItem('space-explorer.visualQuality.v1')))
+    .toBe('low');
   const after = await snapshot(page);
   expect(after.physicsPaused).toBe(true);
   expect(after.activeScenes).toContain('Game');
@@ -159,9 +161,7 @@ test('pause settings persist quality without reloading or leaving the active run
   expect(resume).toBeDefined();
   await page.mouse.click(resume?.x ?? 0, resume?.y ?? 0);
   await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(false);
-  const damage = await page.evaluate(() =>
-    window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeAcceptedPlayerDamage(1)
-  );
+  const damage = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeAcceptedPlayerDamage(1));
   expect(damage).toEqual({ beforeHp: 5, afterHp: 4.25, damage: 0.75 });
   assertNoBrowserErrors();
 });
@@ -180,9 +180,7 @@ test('mobile portrait plays without a rotate block and rotates freely', async ({
   expect(portrait.physicsBodyCount).toBeGreaterThan(0);
 
   await page.setViewportSize({ width: 844, height: 390 });
-  await expect
-    .poll(async () => (await snapshot(page)).gameSize.width)
-    .toBe(844);
+  await expect.poll(async () => (await snapshot(page)).gameSize.width).toBe(844);
   const landscape = await snapshot(page);
   expect(landscape.gameSize).toEqual({ width: 844, height: 390 });
   expect(landscape.activeScenes).toContain('Game');

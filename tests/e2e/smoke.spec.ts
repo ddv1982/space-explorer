@@ -40,9 +40,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   expect(initial.canvas.backingScale).toBeGreaterThanOrEqual(0.95);
   expect(initial.canvas.backingScale).toBeLessThanOrEqual(1.05);
   expect(initial.runtimePerformance).toMatchObject({ enabled: false, pressureLevel: 0 });
-  expect(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeArcadeOverlap())).toBe(
-    true,
-  );
+  expect(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeArcadeOverlap())).toBe(true);
 
   // Live movement and firing depend on real-time frame delivery. The isolated
   // CI SwiftShader runner validates rendering, physics, overlap, and the
@@ -51,9 +49,9 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   if (!process.env.CI) {
     await page.keyboard.down('ArrowLeft');
     try {
-      await expect.poll(async () =>
-        (await snapshot(page)).objects.find((item) => item.textureKey === 'player-ship')?.x,
-      ).toBeLessThan(player?.x ?? Number.POSITIVE_INFINITY);
+      await expect
+        .poll(async () => (await snapshot(page)).objects.find((item) => item.textureKey === 'player-ship')?.x)
+        .toBeLessThan(player?.x ?? Number.POSITIVE_INFINITY);
     } finally {
       await page.keyboard.up('ArrowLeft');
     }
@@ -86,10 +84,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   assertNoBrowserErrors();
 });
 
-test('command deck menu stays readable at desktop and phone-portrait', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
+test('command deck menu stays readable at desktop and phone-portrait', async ({ page, assertNoBrowserErrors }) => {
   for (const viewport of [
     { width: 984, height: 768 },
     { width: 390, height: 844 },
@@ -103,9 +98,7 @@ test('command deck menu stays readable at desktop and phone-portrait', async ({
     expect(newRun?.y ?? 0).toBeGreaterThan(0);
     const shotName = `menu-command-deck-${viewport.width}x${viewport.height}.png`;
     const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
-    const shotPath = evidenceDirectory
-      ? `${evidenceDirectory}/${shotName}`
-      : test.info().outputPath(shotName);
+    const shotPath = evidenceDirectory ? `${evidenceDirectory}/${shotName}` : test.info().outputPath(shotName);
     await page.screenshot({ path: shotPath });
     await test.info().attach(shotName, { path: shotPath, contentType: 'image/png' });
   }
@@ -143,10 +136,7 @@ test('preload feedback remains visible until startup font loading completes', as
   assertNoBrowserErrors();
 });
 
-test('shows a clear unsupported state when WebGL is unavailable', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
+test('shows a clear unsupported state when WebGL is unavailable', async ({ page, assertNoBrowserErrors }) => {
   if (test.info().project.name === 'chromium-mobile') {
     await page.setViewportSize({ width: 390, height: 844 });
   }
@@ -180,17 +170,12 @@ test('teardown cancels queued viewport recovery callbacks', async ({ page, asser
   assertNoBrowserErrors();
 });
 
-test('initial hidden state establishes the visibility audio pause reason', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
+test('initial hidden state establishes the visibility audio pause reason', async ({ page, assertNoBrowserErrors }) => {
   await page.addInitScript(() => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
   });
   await page.goto('/?browserHarness=1');
-  await expect.poll(async () => page.evaluate(() => Boolean(window.__SPACE_EXPLORER_BROWSER_HARNESS__))).toBe(
-    true,
-  );
+  await expect.poll(async () => page.evaluate(() => Boolean(window.__SPACE_EXPLORER_BROWSER_HARNESS__))).toBe(true);
   expect((await snapshot(page)).audioPauseReasons).toContain('visibility');
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
   assertNoBrowserErrors();

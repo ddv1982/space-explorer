@@ -18,13 +18,13 @@ export class WormholePackController {
   schedule(
     hazard: ScriptedHazardConfig,
     viewport: { left: number; right: number; width: number },
-    emitTelegraph: (x: number, y: number) => void,
+    emitTelegraph: (x: number, y: number) => void
   ): void {
     const portalCount = 1 + Math.round(hazard.intensity ?? 0.5);
     for (let index = 0; index < portalCount; index++) {
       const x = Phaser.Math.Between(
         Math.round(viewport.left + viewport.width * 0.2),
-        Math.round(viewport.right - viewport.width * 0.2),
+        Math.round(viewport.right - viewport.width * 0.2)
       );
       const y = Phaser.Math.Between(150, 280);
       emitTelegraph(x, y);

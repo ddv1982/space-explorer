@@ -54,7 +54,8 @@ mock.module('../src/utils/layout', () => ({
     centerX: 200,
     centerY: 150,
   }),
-  centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
+  centerHorizontally: (layout: { left: number; width: number }, width: number) =>
+    layout.left + (layout.width - width) / 2,
 }));
 
 const { InputManager } = await import('../src/systems/InputManager');
@@ -89,10 +90,13 @@ describe('InputManager mobile fire-touch filtering', () => {
     const scene = createScene([pointer]);
 
     const inputManager = new InputManager();
-    inputManager.create(scene as never, {
-      getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
-      isControlPointer: (candidate: { id: number }) => candidate.id === 7,
-    } as never);
+    inputManager.create(
+      scene as never,
+      {
+        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
+        isControlPointer: (candidate: { id: number }) => candidate.id === 7,
+      } as never
+    );
 
     expect(inputManager.isFiring()).toBe(false);
   });
@@ -102,10 +106,13 @@ describe('InputManager mobile fire-touch filtering', () => {
     const scene = createScene([pointer]);
 
     const inputManager = new InputManager();
-    inputManager.create(scene as never, {
-      getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
-      isControlPointer: () => false,
-    } as never);
+    inputManager.create(
+      scene as never,
+      {
+        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
+        isControlPointer: () => false,
+      } as never
+    );
 
     expect(inputManager.isFiring()).toBe(true);
   });
@@ -117,10 +124,13 @@ describe('InputManager mobile movement gating', () => {
     let vector = { x: 0.34, y: 0 };
 
     const inputManager = new InputManager();
-    inputManager.create(scene as never, {
-      getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-      isControlPointer: () => false,
-    } as never);
+    inputManager.create(
+      scene as never,
+      {
+        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isControlPointer: () => false,
+      } as never
+    );
 
     expect(inputManager.isRight()).toBe(false);
 
@@ -133,10 +143,13 @@ describe('InputManager mobile movement gating', () => {
     let vector = { x: 0.4, y: 0 };
 
     const inputManager = new InputManager();
-    inputManager.create(scene as never, {
-      getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-      isControlPointer: () => false,
-    } as never);
+    inputManager.create(
+      scene as never,
+      {
+        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isControlPointer: () => false,
+      } as never
+    );
 
     expect(inputManager.isRight()).toBe(true);
 
@@ -152,10 +165,13 @@ describe('InputManager mobile movement gating', () => {
     let vector = { x: 0.5, y: 0 };
 
     const inputManager = new InputManager();
-    inputManager.create(scene as never, {
-      getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-      isControlPointer: () => false,
-    } as never);
+    inputManager.create(
+      scene as never,
+      {
+        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isControlPointer: () => false,
+      } as never
+    );
 
     expect(inputManager.isRight()).toBe(true);
 
@@ -171,10 +187,13 @@ describe('InputManager mobile movement gating', () => {
     let vector = { x: 0.8, y: 0.45 };
 
     const inputManager = new InputManager();
-    inputManager.create(scene as never, {
-      getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-      isControlPointer: () => false,
-    } as never);
+    inputManager.create(
+      scene as never,
+      {
+        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isControlPointer: () => false,
+      } as never
+    );
 
     expect(inputManager.isRight()).toBe(true);
     expect(inputManager.isDown()).toBe(false);

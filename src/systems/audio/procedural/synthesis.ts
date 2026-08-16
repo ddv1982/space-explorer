@@ -135,7 +135,17 @@ function scheduleTone({
     return;
   }
 
-  const tonePlan = deriveToneVoicePlan({ track, layer, frequency, stepIndex, time, duration, intensityBlend, creativityDrive, gainScale });
+  const tonePlan = deriveToneVoicePlan({
+    track,
+    layer,
+    frequency,
+    stepIndex,
+    time,
+    duration,
+    intensityBlend,
+    creativityDrive,
+    gainScale,
+  });
   const noteGain = ctx.createGain();
   const voiceMix = ctx.createGain();
   const panner = createPanner(
@@ -231,7 +241,15 @@ function scheduleTone({
   }
 
   if (panner && tonePlan.expression?.modulation?.target === 'pan') {
-    applyModulation(ctx, tonePlan.expression.modulation, panner.pan, panner.pan.value, time, tonePlan.modulationDuration, 1);
+    applyModulation(
+      ctx,
+      tonePlan.expression.modulation,
+      panner.pan,
+      panner.pan.value,
+      time,
+      tonePlan.modulationDuration,
+      1
+    );
   }
 }
 

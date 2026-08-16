@@ -34,7 +34,7 @@ const hasScene = (scene: Phaser.Scene, key: string): boolean => {
 export const ensureSceneRegistered = async (
   scene: Phaser.Scene,
   key: string,
-  sceneLoaders: SceneLoaderMap = lazySceneLoaders,
+  sceneLoaders: SceneLoaderMap = lazySceneLoaders
 ): Promise<void> => {
   const managerPendingLoads = getPendingLoadsForManager(scene);
 
@@ -69,7 +69,7 @@ export const ensureSceneRegistered = async (
 export const startRegisteredScene = (
   scene: Phaser.Scene,
   key: string,
-  sceneLoaders: SceneLoaderMap = lazySceneLoaders,
+  sceneLoaders: SceneLoaderMap = lazySceneLoaders
 ): void => {
   void ensureSceneRegistered(scene, key, sceneLoaders)
     .then(() => {

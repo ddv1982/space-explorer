@@ -82,23 +82,15 @@ export class WaveAsteroidSpawner {
     for (let lane = 0; lane < laneCount; lane++) {
       const laneOffset = lane * 34;
 
-      this.spawnSingleAsteroid(
-        leftEdge - Phaser.Math.Between(18, 42) - laneOffset,
-        Phaser.Math.Between(110, 155),
-        {
-          ...baseConfig,
-          velocityX: Phaser.Math.Between(-12, 6),
-        }
-      );
+      this.spawnSingleAsteroid(leftEdge - Phaser.Math.Between(18, 42) - laneOffset, Phaser.Math.Between(110, 155), {
+        ...baseConfig,
+        velocityX: Phaser.Math.Between(-12, 6),
+      });
 
-      this.spawnSingleAsteroid(
-        rightEdge + Phaser.Math.Between(18, 42) + laneOffset,
-        Phaser.Math.Between(115, 160),
-        {
-          ...baseConfig,
-          velocityX: Phaser.Math.Between(-6, 12),
-        }
-      );
+      this.spawnSingleAsteroid(rightEdge + Phaser.Math.Between(18, 42) + laneOffset, Phaser.Math.Between(115, 160), {
+        ...baseConfig,
+        velocityX: Phaser.Math.Between(-6, 12),
+      });
     }
   }
 

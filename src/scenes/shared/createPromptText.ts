@@ -16,13 +16,15 @@ export function createPromptText(
   text: string,
   options: PromptTextOptions = {}
 ): Phaser.GameObjects.Text {
-  const prompt = scene.add.text(x, y, text, {
-    fontSize: options.fontSize ?? '24px',
-    color: options.color ?? '#cfefff',
-    fontFamily: UI_FONT_MONO,
-    stroke: '#040b12',
-    strokeThickness: 2,
-  }).setOrigin(0.5);
+  const prompt = scene.add
+    .text(x, y, text, {
+      fontSize: options.fontSize ?? '24px',
+      color: options.color ?? '#cfefff',
+      fontFamily: UI_FONT_MONO,
+      stroke: '#040b12',
+      strokeThickness: 2,
+    })
+    .setOrigin(0.5);
 
   if (!prefersReducedMotion()) {
     scene.tweens.add({

@@ -167,7 +167,7 @@ function createCollisionHarness(outcomes: DamageOutcome[], hullDamageMultiplier 
       now = value;
     },
     getOverlap: (a: unknown, b: unknown) => {
-      const overlap = overlaps.find(entry => entry.a === a && entry.b === b);
+      const overlap = overlaps.find((entry) => entry.a === a && entry.b === b);
       if (!overlap) {
         throw new Error('Requested overlap callback was not registered');
       }
@@ -208,7 +208,11 @@ describe('CollisionManager boss damage sources', () => {
 
 describe('CollisionManager player damage dedupe regression coverage', () => {
   test('scales accepted player hull damage for low, normal, and high without changing hazard damage', () => {
-    for (const [multiplier, expectedDamage] of [[0.75, 1.5], [1, 2], [1.25, 2.5]] as const) {
+    for (const [multiplier, expectedDamage] of [
+      [0.75, 1.5],
+      [1, 2],
+      [1.25, 2.5],
+    ] as const) {
       const harness = createCollisionHarness(['damaged'], multiplier);
       const bombVsPlayer = harness.getOverlap(harness.groups.bomb, harness.player);
       const bomb = createInstance(BomberBomb, {
@@ -276,10 +280,7 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
     expect(harness.callLog).toContain('bulletA.kill');
     expect(harness.callLog).toContain('bulletB.kill');
     expect(harness.callLog).toContain('bulletC.kill');
-    expect(harness.emittedEvents).toEqual([
-      GAME_SCENE_EVENTS.playerHit,
-      GAME_SCENE_EVENTS.playerFatalHit,
-    ]);
+    expect(harness.emittedEvents).toEqual([GAME_SCENE_EVENTS.playerHit, GAME_SCENE_EVENTS.playerFatalHit]);
   });
 
   test('bomb collision keeps kill->damage->explosion order and routes nonfatal/fatal events', () => {
@@ -313,10 +314,7 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
     expect(firstKillIndex).toBeGreaterThanOrEqual(0);
     expect(firstDamageIndex).toBeGreaterThan(firstKillIndex);
     expect(firstExplosionIndex).toBeGreaterThan(firstDamageIndex);
-    expect(harness.emittedEvents).toEqual([
-      GAME_SCENE_EVENTS.playerHit,
-      GAME_SCENE_EVENTS.playerFatalHit,
-    ]);
+    expect(harness.emittedEvents).toEqual([GAME_SCENE_EVENTS.playerHit, GAME_SCENE_EVENTS.playerFatalHit]);
   });
 
   test('mine collision keeps kill->damage->explosion order and routes player hit events', () => {
@@ -645,10 +643,7 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
     expect(harness.callLog).not.toContain('enemy.kamikaze.takeDamage');
     expect(harness.callLog).toContain('enemy.impact.takeDamage:1');
     expect(harness.callLog).not.toContain('enemy.impact.die');
-    expect(harness.emittedEvents).toEqual([
-      GAME_SCENE_EVENTS.playerHit,
-      GAME_SCENE_EVENTS.playerFatalHit,
-    ]);
+    expect(harness.emittedEvents).toEqual([GAME_SCENE_EVENTS.playerHit, GAME_SCENE_EVENTS.playerFatalHit]);
   });
 
   test('clearPlayerHazards tolerates hazard groups invalidated during teardown', () => {

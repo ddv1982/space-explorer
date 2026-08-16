@@ -39,7 +39,8 @@ mock.module('../src/utils/layout', () => ({
     centerX: 640,
     centerY: 360,
   }),
-  centerHorizontally: (layout: { left: number; width: number }, width: number) => layout.left + (layout.width - width) / 2,
+  centerHorizontally: (layout: { left: number; width: number }, width: number) =>
+    layout.left + (layout.width - width) / 2,
 }));
 
 const { createHudWidgets, relayoutHudWidgets } = await import('../src/systems/hud/bootstrapRelayout');
@@ -232,8 +233,7 @@ describe('bootstrapRelayout', () => {
 
     expect(hpLabel.state.x).toBe(16);
     expect(hpLabel.state.y).toBe(14);
-    expect(hpBarBg.calls.find((call) => call.method === 'fillRoundedRect')?.args)
-      .toEqual([46, 16, 146, 16, 3]);
+    expect(hpBarBg.calls.find((call) => call.method === 'fillRoundedRect')?.args).toEqual([46, 16, 146, 16, 3]);
     expect(scoreText.state.x).toBe(784);
     expect(scoreText.state.y).toBe(13);
     expect(announcementText.state.x).toBe(400);

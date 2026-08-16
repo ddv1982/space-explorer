@@ -3,12 +3,8 @@ import { describe, expect, test } from 'bun:test';
 import type { ChoreographedWaveConfig, EnemyType } from '@/config/LevelsConfig';
 import type { ChoreographedSpawnOptions } from '../src/systems/wave/waveChoreography';
 
-const {
-  CHOREO_LANE_COUNT,
-  getLaneCenterX,
-  resolveFormationPositions,
-  WaveChoreographer,
-} = await import('../src/systems/wave/waveChoreography');
+const { CHOREO_LANE_COUNT, getLaneCenterX, resolveFormationPositions, WaveChoreographer } =
+  await import('../src/systems/wave/waveChoreography');
 
 type FakeMember = {
   active: boolean;
@@ -143,10 +139,7 @@ describe('WaveChoreographer', () => {
   test('advances on accumulated gameplay delta so paused wall-clock time cannot compress the schedule', () => {
     const harness = createDeps();
     const choreographer = new WaveChoreographer(harness.deps);
-    choreographer.setSection([
-      createWave({ id: 'first', atMs: 300 }),
-      createWave({ id: 'second', atMs: 900 }),
-    ]);
+    choreographer.setSection([createWave({ id: 'first', atMs: 300 }), createWave({ id: 'second', atMs: 900 })]);
 
     choreographer.update(300);
     expect(harness.spawns).toHaveLength(3);

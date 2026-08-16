@@ -73,9 +73,12 @@ mock.module('../src/scenes/shared/actionButtonControl', () => ({
   },
 }));
 
-const { createPauseSaveSlotRows, setPauseSaveSlotRowsPosition, setPauseSaveSlotRowsState, setPauseSaveSlotRowsVisible } = await import(
-  '../src/scenes/gameScene/pauseOverlay/controls'
-);
+const {
+  createPauseSaveSlotRows,
+  setPauseSaveSlotRowsPosition,
+  setPauseSaveSlotRowsState,
+  setPauseSaveSlotRowsVisible,
+} = await import('../src/scenes/gameScene/pauseOverlay/controls');
 
 function createText(initialText: string): StubText {
   const text: StubText = {
@@ -147,7 +150,9 @@ function createGraphics(): StubGraphics {
   };
 }
 
-function createScene(): { add: { graphics: () => StubGraphics; text: (_x: number, _y: number, text: string) => StubText } } {
+function createScene(): {
+  add: { graphics: () => StubGraphics; text: (_x: number, _y: number, text: string) => StubText };
+} {
   return {
     add: {
       graphics: () => createGraphics(),
