@@ -109,7 +109,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
 
 test('command deck menu stays readable across responsive profiles', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(120_000);
-  for (const viewport of [
+  const viewports = [
     { width: 1366, height: 768 },
     { width: 984, height: 768 },
     { width: 768, height: 1024 },
@@ -117,9 +117,19 @@ test('command deck menu stays readable across responsive profiles', async ({ pag
     { width: 360, height: 600 },
     { width: 844, height: 390 },
     { width: 480, height: 320 },
-  ]) {
+  ];
+  for (const [index, viewport] of viewports.entries()) {
     await page.setViewportSize(viewport);
-    await openMenu(page);
+    if (index === 0) {
+      await openMenu(page);
+    } else {
+      await expect
+        .poll(async () => {
+          const title = (await snapshot(page)).texts.find((item) => item.text === 'SPACE EXPLORER');
+          return Math.round(title?.x ?? 0);
+        })
+        .toBe(Math.round(viewport.width / 2));
+    }
     const menu = await snapshot(page);
     const newRun = menu.texts.find((item) => item.text === 'NEW RUN');
     expect(newRun).toBeDefined();
