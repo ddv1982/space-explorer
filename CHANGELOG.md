@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-08-17
+
+### Added
+- Added explicit desktop, tablet, phone-portrait, phone-landscape, and ultra-compact menu layout profiles.
+- Added semantic bounds for the title lockup, mission settings, tuning controls, run selection, and status bands.
+- Added rendered text width and height to development browser snapshots so browser evidence can detect real glyph collisions.
+
+### Changed
+- Rebuilt the menu title lockup around actual font line boxes, preventing `COMMAND DECK` and the subtitle from crossing the `SPACE EXPLORER` title.
+- Reduced and fitted the desktop title, clamped decorative wings, and hides the eyebrow on constrained landscape screens.
+- Rebalanced desktop vertical rhythm and adapted tuning controls and save cards for tablet, portrait, landscape, and short-phone layouts.
+- Replaced approximate anchor-point collision tests with declared-band and rendered-bound assertions across seven representative viewports.
+
+### Quality
+- Passed both TypeScript compilers, formatting, ESLint, the complete unit suite, level validation, Knip, architecture checks, production build, and bundle budgets.
+- Passed 34 functional and visual browser checks with one intentional project skip.
+- Passed all four applicable performance scenarios with two intentional mobile project skips.
+
 ## [1.13.0] - 2026-08-17
 
 ### Added

@@ -1,5 +1,26 @@
 import { expect, openMenu, snapshot, test, waitForScene } from './fixtures';
 
+function expectMenuTitleLockup(menu: Awaited<ReturnType<typeof snapshot>>): void {
+  const title = menu.texts
+    .filter((item) => item.text === 'SPACE EXPLORER')
+    .sort((left, right) => right.width - left.width)[0];
+  const eyebrow = menu.texts.find((item) => item.text === 'COMMAND DECK');
+  const subtitle = menu.texts.find((item) => item.text === 'Select a session to begin your mission.');
+
+  expect(title).toBeDefined();
+  expect(subtitle).toBeDefined();
+  expect((title?.x ?? 0) - (title?.width ?? 0) / 2).toBeGreaterThanOrEqual(0);
+  expect((title?.x ?? 0) + (title?.width ?? 0) / 2).toBeLessThanOrEqual(menu.gameSize.width);
+  if (eyebrow) {
+    const eyebrowBottom = eyebrow.y + eyebrow.height / 2;
+    const titleTop = (title?.y ?? 0) - (title?.height ?? 0) / 2;
+    expect(titleTop - eyebrowBottom).toBeGreaterThanOrEqual(4);
+  }
+  const titleBottom = (title?.y ?? 0) + (title?.height ?? 0) / 2;
+  const subtitleTop = (subtitle?.y ?? 0) - (subtitle?.height ?? 0) / 2;
+  expect(subtitleTop - titleBottom).toBeGreaterThanOrEqual(4);
+}
+
 test('boots once, enters gameplay, and exercises real rendering and Arcade bodies', async ({
   page,
   assertNoBrowserErrors,
@@ -19,6 +40,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   const menu = await snapshot(page);
   const newRun = menu.texts.find((item) => item.text === 'NEW RUN');
   expect(newRun).toBeDefined();
+  expectMenuTitleLockup(menu);
   const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
   const menuShotName = `menu-command-deck-${test.info().project.name}.png`;
   const menuShotPath = evidenceDirectory
@@ -85,10 +107,16 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   assertNoBrowserErrors();
 });
 
-test('command deck menu stays readable at desktop and phone-portrait', async ({ page, assertNoBrowserErrors }) => {
+test('command deck menu stays readable across responsive profiles', async ({ page, assertNoBrowserErrors }) => {
+  test.setTimeout(120_000);
   for (const viewport of [
+    { width: 1366, height: 768 },
     { width: 984, height: 768 },
+    { width: 768, height: 1024 },
     { width: 390, height: 844 },
+    { width: 360, height: 600 },
+    { width: 844, height: 390 },
+    { width: 480, height: 320 },
   ]) {
     await page.setViewportSize(viewport);
     await openMenu(page);
@@ -97,6 +125,7 @@ test('command deck menu stays readable at desktop and phone-portrait', async ({ 
     expect(newRun).toBeDefined();
     expect(newRun?.x ?? 0).toBeGreaterThan(0);
     expect(newRun?.y ?? 0).toBeGreaterThan(0);
+    expectMenuTitleLockup(menu);
     const shotName = `menu-command-deck-${viewport.width}x${viewport.height}.png`;
     const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
     const shotPath = evidenceDirectory ? `${evidenceDirectory}/${shotName}` : test.info().outputPath(shotName);

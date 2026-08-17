@@ -157,52 +157,32 @@ function assertPauseRequiredControlsDoNotOverlap(viewport: { width: number; heig
 
 function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }): void {
   const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
-  const titleRect = {
-    x: 0,
-    y: plan.titleY - (plan.shortLandscape ? 18 : plan.veryShortCompact ? 28 : plan.compact ? 34 : 44),
-    width: viewport.width,
-    height: plan.shortLandscape ? 36 : plan.veryShortCompact ? 56 : plan.compact ? 68 : 88,
-  };
-  const subtitleRect = {
-    x: 0,
-    y: plan.subtitleY - 10,
-    width: viewport.width,
-    height: 20,
-  };
-  const tileRect = {
-    x: 0,
-    y: plan.tileRowY,
-    width: viewport.width,
-    height: plan.tileBlockHeight,
-  };
-  const statusRect = {
-    x: 0,
-    y: plan.statusY - plan.statusHeight / 2,
-    width: viewport.width,
-    height: plan.statusHeight,
-  };
+  const bands = [plan.titleBand, plan.missionBand, plan.tuningBand, plan.runSelectionBand, plan.statusBand];
+  for (let index = 1; index < bands.length; index += 1) {
+    expect(bands[index]?.top ?? 0).toBeGreaterThanOrEqual(bands[index - 1]?.bottom ?? 0);
+  }
+  expect(plan.titleBand.top).toBeGreaterThanOrEqual(plan.outerFrameY);
+  expect(plan.statusBand.bottom).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
 
-  expectNoOverlap(titleRect, subtitleRect);
-  expectNoOverlap(subtitleRect, tileRect);
-  expectNoOverlap(tileRect, statusRect);
+  if (plan.eyebrowVisible) {
+    const eyebrowBottom = plan.eyebrowY + (plan.compact ? 10 : 12) / 2;
+    const titleTop = plan.titleY - plan.titleFontSize / 2;
+    expect(titleTop - eyebrowBottom).toBeGreaterThanOrEqual(4);
+  }
+
+  const titleBottom = plan.titleY + plan.titleFontSize / 2;
+  const subtitleTop = plan.subtitleY - plan.subtitleFontSize / 2;
+  expect(subtitleTop).toBeGreaterThanOrEqual(titleBottom);
 
   for (const position of plan.settingsLayout.sliderPositions) {
-    const sliderRect = {
-      x: position.x,
-      y: position.y,
-      width: plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width,
-      height: 52,
-    };
-    expectNoOverlap(subtitleRect, sliderRect);
-    expectNoOverlap(sliderRect, tileRect);
-    expectNoOverlap(sliderRect, statusRect);
+    expect(position.y).toBeGreaterThanOrEqual(plan.tuningBand.top);
+    expect(position.y + 52).toBeLessThanOrEqual(plan.tuningBand.bottom + 8);
+    expect(position.y + 52).toBeLessThanOrEqual(plan.runSelectionBand.top);
     expect(position.x).toBeGreaterThanOrEqual(0);
     expect(position.x + (plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width)).toBeLessThanOrEqual(
       viewport.width
     );
   }
-
-  expect(statusRect.y + statusRect.height).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
 }
 
 function assertIntermissionUpgradeButtonsFit(viewport: { width: number; height: number }, buttonCount: number): void {
@@ -366,6 +346,20 @@ describe('responsive save-slot layouts', () => {
     expect(compactByHeight.compact).toBe(true);
     expect(nonCompactByWidth.compact).toBe(false);
     expect(compactByWidth.compact).toBe(true);
+  });
+
+  test.each([
+    { viewport: { width: 1366, height: 768 }, profile: 'desktop' },
+    { viewport: { width: 768, height: 1024 }, profile: 'tablet' },
+    { viewport: { width: 390, height: 844 }, profile: 'phone-portrait' },
+    { viewport: { width: 844, height: 390 }, profile: 'phone-landscape' },
+    { viewport: { width: 360, height: 600 }, profile: 'ultra-compact' },
+  ] as const)('menu selects the $profile layout as one coherent policy', ({ viewport, profile }) => {
+    const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
+
+    expect(plan.profile).toBe(profile);
+    expect(plan.eyebrowVisible).toBe(profile === 'desktop' || profile === 'tablet' || profile === 'phone-portrait');
+    assertMenuBandsDoNotOverlap(viewport);
   });
 
   test('pause overlay centers checkpoint slots when the frame narrows', () => {

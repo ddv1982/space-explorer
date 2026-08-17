@@ -84,7 +84,7 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
 }
 
 export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void {
-  if (plan.eyebrowY > 0 && plan.eyebrowY < plan.titleY - 8) {
+  if (plan.eyebrowVisible) {
     scene.add
       .text(plan.centerX, plan.eyebrowY, 'COMMAND DECK', {
         fontSize: plan.compact ? '10px' : '12px',
@@ -96,19 +96,10 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
       .setDepth(12);
   }
 
-  const desiredTitleSize = plan.shortLandscape
-    ? 30
-    : plan.veryShortCompact
-      ? 48
-      : plan.outerFrameWidth < 500
-        ? 42
-        : plan.compact
-          ? 64
-          : 86;
   const titleSize = fitNeonTitleFontSize(
     scene,
     'SPACE EXPLORER',
-    desiredTitleSize,
+    plan.titleFontSize,
     Math.max(180, plan.outerFrameWidth - 96)
   );
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
@@ -116,7 +107,8 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
   const wings = scene.add.graphics();
   const halfTitleWidth = titleText.width / 2;
   const wingGap = plan.veryShortCompact ? 12 : 20;
-  const wingSpan = plan.veryShortCompact ? 20 : plan.compact ? 40 : 60;
+  const availableWingWidth = Math.max(0, (plan.outerFrameWidth - titleText.width - 96) / 2);
+  const wingSpan = Math.min(plan.veryShortCompact ? 20 : plan.compact ? 40 : 60, availableWingWidth);
   wings.lineStyle(1, NEON.cyan, 0.55);
   wings.lineBetween(
     plan.centerX - halfTitleWidth - wingGap - wingSpan,
@@ -160,7 +152,7 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
 
   scene.add
     .text(plan.centerX, plan.subtitleY, 'Select a session to begin your mission.', {
-      fontSize: plan.veryShortCompact ? '12px' : plan.compact ? '14px' : '16px',
+      fontSize: `${plan.subtitleFontSize}px`,
       color: NEON_TEXT.secondary,
       fontFamily: NEON_FONT.mono,
       wordWrap: { width: Math.max(220, plan.outerFrameWidth - 96) },

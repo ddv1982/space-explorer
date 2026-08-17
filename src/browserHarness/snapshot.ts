@@ -25,7 +25,7 @@ export interface BrowserHarnessSnapshot {
   audioContextState: AudioContextState | null;
   levelProgress: number | null;
   preload: Readonly<{ status: number; progress: number; texts: readonly string[] }> | null;
-  texts: readonly Readonly<{ text: string; x: number; y: number }>[];
+  texts: readonly Readonly<{ text: string; x: number; y: number; width: number; height: number }>[];
   objects: readonly Readonly<{
     textureKey: string;
     x: number;
@@ -39,6 +39,13 @@ export interface BrowserHarnessSnapshot {
   arcs: readonly Readonly<{ x: number; y: number; radius: number; visible: boolean }>[];
 }
 
+type BrowserHarnessTextSnapshot = BrowserHarnessSnapshot['texts'][number];
+
+function createTextSnapshot(text: Phaser.GameObjects.Text): BrowserHarnessTextSnapshot {
+  const bounds = text.getBounds();
+  return { text: text.text, x: bounds.centerX, y: bounds.centerY, width: bounds.width, height: bounds.height };
+}
+
 function freezeList<T extends object>(items: T[]): readonly Readonly<T>[] {
   return Object.freeze(items.map((item) => Object.freeze(item)));
 }
@@ -47,7 +54,7 @@ export function createBrowserHarnessSnapshot(game: Phaser.Game): BrowserHarnessS
   const activeScenes = game.scene.getScenes(true);
   const primaryScene = activeScenes[0];
   const sceneManager = game.scene as Phaser.Scenes.SceneManager & { keys?: Record<string, unknown> };
-  const texts: Array<{ text: string; x: number; y: number }> = [];
+  const texts: Array<{ text: string; x: number; y: number; width: number; height: number }> = [];
   const objects: Array<{
     textureKey: string;
     x: number;
@@ -76,8 +83,7 @@ export function createBrowserHarnessSnapshot(game: Phaser.Game): BrowserHarnessS
         arcs.push({ x: child.x, y: child.y, radius: child.radius, visible: child.visible });
       }
       if (child instanceof Phaser.GameObjects.Text) {
-        const bounds = child.getBounds();
-        texts.push({ text: child.text, x: bounds.centerX, y: bounds.centerY });
+        texts.push(createTextSnapshot(child));
       }
 
       const texturedChild = child as Phaser.GameObjects.GameObject & {
