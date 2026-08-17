@@ -36,7 +36,7 @@ const PROFILE_METRICS: Record<MenuResponsiveProfile, MenuProfileMetrics> = {
   desktop: {
     titleTopInset: 24,
     eyebrowHeight: 12,
-    eyebrowGap: 6,
+    eyebrowGap: 8,
     titleHeight: 94,
     subtitleGap: 8,
     subtitleHeight: 20,
@@ -52,7 +52,7 @@ const PROFILE_METRICS: Record<MenuResponsiveProfile, MenuProfileMetrics> = {
   tablet: {
     titleTopInset: 18,
     eyebrowHeight: 10,
-    eyebrowGap: 5,
+    eyebrowGap: 7,
     titleHeight: 70,
     subtitleGap: 7,
     subtitleHeight: 18,
@@ -68,7 +68,7 @@ const PROFILE_METRICS: Record<MenuResponsiveProfile, MenuProfileMetrics> = {
   'phone-portrait': {
     titleTopInset: 14,
     eyebrowHeight: 10,
-    eyebrowGap: 4,
+    eyebrowGap: 6,
     titleHeight: 51,
     subtitleGap: 6,
     subtitleHeight: 18,
