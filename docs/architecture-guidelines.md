@@ -73,14 +73,14 @@ This document describes the scene boundaries, system contracts, and coding rules
 ## Structural guardrails
 
 - `bun run architecture:check` rejects dependency cycles between `src` modules.
-- Modules above 500 lines or 25 internal imports are reported as concentration warnings, not automatic failures. These warnings identify extraction candidates without forcing arbitrary file slicing.
-- Intentional composition and procedural-generation hotspots have explicit, near-current budgets in `checkArchitecture.ts`. They stay listed in the report, and any growth beyond the budget becomes a warning; reduce a budget whenever an extraction lands so the improvement cannot silently regress.
+- Modules above 500 lines or 25 internal imports are actionable architecture warnings unless they have a reviewed concentration policy. Actionable warnings fail the check; a policy prevents arbitrary slicing only when it records a category, rationale, regression evidence, and near-current budget.
+- Intentional authored data, composition roots, procedural drawing recipes, presentation builders, pure layouts, runtime coordinators, and test narratives remain visible in the report as retained policies. Growth beyond a policy budget fails the check; reduce or remove a budget whenever an extraction lands so the improvement cannot silently regress.
 - Current budgeted composition roots are the browser diagnostics facade, `GameScene`, `WaveManager`, and the boss entity facade; the neon background recipe collection remains a budgeted authored drawing hotspot. Their budgets are near-current and must be reduced after further extraction. New files must use the default limits rather than joining this list without an architectural review.
 - Browser diagnostics are split by contract: snapshots, performance sampling, runtime controls, gameplay probes, navigation, and visual pilots remain development-only. The top-level API factory may compose them but should not absorb their implementations again.
 - Responsive layout functions are pure policies. Shared viewport vocabulary belongs in `scenes/shared/responsiveViewport.ts`; scene-specific geometry stays with its scene and is protected by table-driven viewport tests and visual evidence.
-- Large test files may retain a documented near-current budget when a single typed fixture supports one coherent behavior matrix. Growth beyond that budget is a warning, and unrelated narratives must move to a separate suite.
+- Large test files may retain a documented near-current budget when a single typed fixture supports one coherent behavior matrix. Growth beyond that budget fails the check, and unrelated narratives must move to a separate suite.
 - Scene classes remain lifecycle and composition roots; scheduling belongs in focused controllers, and Phaser callback normalization belongs at adapter boundaries.
-- The architecture report also flags functions above 100 lines or complexity 20, public surfaces above 20 declarations, and tests above 500 lines. These are review prompts rather than instructions to split code mechanically.
+- The architecture report also rejects unexplained functions above 100 lines or complexity 20, public surfaces above 20 declarations, and tests above 500 lines. The thresholds trigger architectural review rather than mechanical splitting; a retained policy must explain why cohesion is clearer and identify the evidence protecting it.
 
 ## Maintainability scorecard
 

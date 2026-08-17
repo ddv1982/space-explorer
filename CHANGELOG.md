@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-08-17
+
+### Added
+- Added typed architecture-policy categories for authored data, composition roots, drawing recipes, presentation builders, pure layouts, runtime coordinators, and coherent test narratives.
+- Added regression coverage proving the architecture report contains zero unexplained warnings and retains its required policy categories.
+
+### Changed
+- Converted source concentration, function complexity, public-surface, and test-size findings from advisory noise into an enforceable architecture gate.
+- Recorded a rationale, regression evidence, and near-current ceiling for every intentionally concentrated source artifact.
+- Grouped retained policies separately from actionable warnings so the report remains readable without hiding reviewed hotspots.
+
+### Quality
+- Rejects stale policy entries, removed policy targets, exceeded budgets, dependency cycles, and any new unclassified warning.
+- Passed both TypeScript compilers, ESLint, the isolated unit suite, level validation, Knip, architecture checks, production build, bundle budgets, and formatting.
+
 ## [1.8.1] - 2026-08-16
 
 ### Changed
