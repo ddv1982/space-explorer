@@ -35,6 +35,10 @@ main
         → authored level configuration
 ```
 
+## Current remediation
+
+- [`plans/review-findings-remediation-2026-08-19.md`](./plans/review-findings-remediation-2026-08-19.md) — stacked PR plan for the 2026-08 review findings. No application code in that document.
+
 ## Historical material
 
 - [`plans/`](./plans/) contains dated implementation plans. Read their status header before treating one as current.
