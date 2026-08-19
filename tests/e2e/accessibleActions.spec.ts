@@ -30,8 +30,23 @@ test('exposes named menu, pause, and intermission actions without a second paint
   await activateNamedAction(page, 'New run');
   await waitForScene(page, 'Game');
 
-  await page.keyboard.press('Escape');
-  await expect.poll(() => namedActions(page, 'Paused')).toEqual(expect.arrayContaining(['Resume', 'Main menu']));
+  // Phaser JustDown only sees Escape if it is still held on a game frame.
+  // A Playwright press() is down+up between frames, so the toggle never
+  // fires. Mobile pause is the HUD tap, same as the other browser specs.
+  const mobile = test.info().project.name.includes('mobile');
+  if (mobile) {
+    const viewport = page.viewportSize();
+    await page.touchscreen.tap((viewport?.width ?? 844) - 44, 106);
+  } else {
+    await page.keyboard.down('Escape');
+  }
+  try {
+    await expect.poll(() => namedActions(page, 'Paused')).toEqual(expect.arrayContaining(['Resume', 'Main menu']));
+  } finally {
+    if (!mobile) {
+      await page.keyboard.up('Escape');
+    }
+  }
   await activateNamedAction(page, 'Resume');
 
   await expect.poll(async () => (await page.locator('nav[aria-label="Paused"]').count()) === 0).toBe(true);

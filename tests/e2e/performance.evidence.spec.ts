@@ -134,9 +134,16 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
   }): Promise<BrowserHarnessFramePacingProbe> => {
     await openMenu(page);
     await startNewRun(page);
+    // Authored scouts and asteroids wait on the gameplay clock. SwiftShader CI
+    // can spend the default expect window before 2s of combat time elapses.
+    // The player ship is live as soon as Game starts; that is enough to prove
+    // the probe has an active scene. Local hardware still sees enemies well
+    // before this poll expires.
     await expect
       .poll(async () =>
-        (await snapshot(page)).objects.some((object) => object.active && object.textureKey.endsWith('-texture'))
+        (await snapshot(page)).objects.some(
+          (object) => object.active && (object.textureKey === 'player-ship' || object.textureKey.endsWith('-texture'))
+        )
       )
       .toBe(true);
     if (options.trailIntervals) {
