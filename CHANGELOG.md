@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Architecture budgets fail when they sit more than 80 lines above measured size.
 - `bun audit --audit-level=high` is a quality step, with `brace-expansion` and `nanoid` pinned through overrides.
 - Isolated unit runner uses a 60 second per-file timeout.
+- Passed 36 functional and visual browser checks with one intentional project skip, and three applicable performance scenarios with three intentional project skips.
 
 ## [1.14.0] - 2026-08-17
 
