@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
 import ts from 'typescript';
 
-import { BUDGET_SLACK_LINES, isConcentrationBudgetLoose } from './architectureBudget';
+import { isConcentrationBudgetLoose } from './architectureBudget';
 
 const SOURCE_ROOT = resolve('src');
 const WARN_LINES = 500;

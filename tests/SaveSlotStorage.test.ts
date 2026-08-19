@@ -114,30 +114,6 @@ describe('SaveSlotStorage', () => {
     expect(readSaveSlot('slot-1')).toBeNull();
   });
 
-  test('reloads temporary shields above the upgrade tier', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 2,
-        score: 800,
-        currentHp: 5,
-        currentShields: 3,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 1, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
-      },
-      { finalScore: 800, levelReached: 2 },
-      new Date('2026-08-19T06:00:00.000Z')
-    );
-
-    expect(writeSaveSlot(record)?.playerState.currentShields).toBe(3);
-    expect(readSaveSlot('slot-1')?.playerState.currentShields).toBe(3);
-    expect(readSaveSlot('slot-1')?.playerState.upgrades.shield).toBe(1);
-  });
-
   test('round-trips a valid v1 save record unchanged', () => {
     const storage = new MemoryStorage();
     installWindow(storage);

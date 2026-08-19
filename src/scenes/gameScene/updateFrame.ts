@@ -1,4 +1,6 @@
-import type { GameplayClock } from '@/systems/GameplayClock';
+import { GameplayClock } from '@/systems/GameplayClock';
+
+export { GameplayClock };
 
 export interface GameSceneFrameDelegate {
   handlePauseInput(): void;

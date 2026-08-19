@@ -25,7 +25,6 @@ import {
   type PersistentHelperWingState,
   type PlayerStateData,
 } from '@/systems/PlayerState';
-import { GameplayClock } from '@/systems/GameplayClock';
 import type { GrazeSurgeSystem } from '@/systems/GrazeSurgeSystem';
 import type { ScoreManager } from '@/systems/ScoreManager';
 import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
@@ -45,7 +44,7 @@ import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
 import { runGameSceneCreateBootstrap, type GameSceneBootstrapRuntime } from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
-import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
+import { GameplayClock, runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
@@ -432,8 +431,8 @@ export class GameScene extends Phaser.Scene {
       updatePausedFrame: (pausedDelta) => {
         this.requireGameplayFrameBehavior().updatePausedFrame(pausedDelta, () => this.updateHud());
       },
-      updateGameplayFrame: (_gameTime, gameDelta) => {
-        this.requireGameplayFrameBehavior().updateGameplayFrame(this.gameplayClock.now, gameDelta);
+      updateGameplayFrame: (gameTime, gameDelta) => {
+        this.requireGameplayFrameBehavior().updateGameplayFrame(gameTime, gameDelta);
       },
       updateHud: () => this.updateHud(),
     };

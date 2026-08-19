@@ -1,7 +1,18 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import type Phaser from 'phaser';
 
-import { ensureSceneRegistered, startRegisteredScene } from '../src/scenes/sceneRegistry';
+mock.module('phaser', () => ({
+  default: {
+    Scenes: {
+      Events: {
+        SHUTDOWN: 'shutdown',
+        DESTROY: 'destroy',
+      },
+    },
+  },
+}));
+
+const { ensureSceneRegistered, startRegisteredScene } = await import('../src/scenes/sceneRegistry');
 
 type MockSceneState = {
   addCalls: string[];

@@ -114,6 +114,7 @@ describe('LastLifeHelperWing', () => {
 
     const wing = Object.create(LastLifeHelperWing.prototype) as LastLifeHelperWingInstance;
     (wing as unknown as Record<string, unknown>).scene = { time: { now: 1234 } };
+    (wing as unknown as Record<string, unknown>).gameplayNow = 1234;
     (wing as unknown as Record<string, unknown>).effectsManager = effectsManager;
 
     const bullet = Object.create(EnemyBullet.prototype) as InstanceType<typeof EnemyBullet>;

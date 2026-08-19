@@ -132,7 +132,7 @@ export const startRegisteredScene = (
     });
 };
 
-export function announceSceneLoadFailure(key: string, error?: unknown): void {
+function announceSceneLoadFailure(key: string, error?: unknown): void {
   const documentRef = globalThis.document;
   const root = documentRef?.getElementById('game-root');
   if (root) {

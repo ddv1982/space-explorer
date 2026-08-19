@@ -32,6 +32,7 @@ bun run bundle:check
 - Phaser is pinned to 4.2.1, consumed through its package ESM export, and configured for WebGL. Unsupported browsers receive the explicit WebGL-required state.
 - Production `tsconfig.json` keeps `noUnusedLocals` / `noUnusedParameters` **off** because ESLint (`@typescript-eslint/no-unused-vars`) is the authoritative unused-symbol gate.
 - Production deploy is a job on this same workflow. It runs only on `main` after both quality and browser jobs succeed, uses a pinned Vercel CLI, and keeps tokens on the deploy steps.
+- `bun audit --audit-level=high` is a quality step. Transitive `brace-expansion` and `nanoid` pins live in `package.json` `overrides` so the step fails on a new high instead of warning.
 
 ## Manual Release Smoke
 

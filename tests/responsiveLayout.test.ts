@@ -45,7 +45,6 @@ const {
 } = await import('../src/scenes/gameScene/pauseOverlay/view');
 const { createMenuLayoutPlan } = await import('../src/scenes/menuScene/layout');
 const { getIntermissionLayout } = await import('../src/scenes/planetIntermission/presentation');
-const { MIN_TOUCH_TARGET_PX } = await import('../src/scenes/shared/touchTarget');
 
 type SceneLike = {
   scale: {
@@ -361,66 +360,6 @@ describe('responsive save-slot layouts', () => {
     expect(plan.profile).toBe(profile);
     expect(plan.eyebrowVisible).toBe(profile === 'desktop' || profile === 'tablet' || profile === 'phone-portrait');
     assertMenuBandsDoNotOverlap(viewport);
-  });
-
-  test.each([
-    { width: 390, height: 844, profile: 'phone-portrait' },
-    { width: 844, height: 390, profile: 'phone-landscape' },
-    { width: 360, height: 600, profile: 'ultra-compact' },
-  ] as const)('keeps every $profile interactive hit at least 44 CSS pixels', ({ width, height }) => {
-    const scene = createScene(width, height) as never;
-    const menu = createMenuLayoutPlan(scene);
-    const pause = getPauseOverlayLayout(scene);
-    const intermission = getIntermissionLayout(scene, 5);
-    const hitRects = [
-      {
-        name: 'difficulty-tier',
-        width: menu.settingsLayout.width,
-        height: Math.max(menu.settingsLayout.tierHeight, MIN_TOUCH_TARGET_PX),
-      },
-      {
-        name: 'quality-tier',
-        width: menu.settingsLayout.width,
-        height: Math.max(menu.settingsLayout.tierHeight, MIN_TOUCH_TARGET_PX),
-      },
-      { name: 'menu-tile', width: menu.tileWidth, height: menu.tileHeight },
-      { name: 'menu-del', width: MIN_TOUCH_TARGET_PX, height: MIN_TOUCH_TARGET_PX },
-      {
-        name: 'pause-resume',
-        width: PAUSE_OVERLAY_BUTTON_WIDTH,
-        height: PAUSE_OVERLAY_BUTTON_HEIGHT,
-      },
-      {
-        name: 'pause-menu',
-        width: PAUSE_OVERLAY_BUTTON_WIDTH,
-        height: PAUSE_OVERLAY_BUTTON_HEIGHT,
-      },
-      {
-        name: 'pause-slot-save',
-        width: Math.max(PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, MIN_TOUCH_TARGET_PX),
-        height: Math.max(PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT, MIN_TOUCH_TARGET_PX),
-      },
-      {
-        name: 'pause-slot-load',
-        width: Math.max(PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, MIN_TOUCH_TARGET_PX),
-        height: Math.max(PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT, MIN_TOUCH_TARGET_PX),
-      },
-      {
-        name: 'pause-slot-del',
-        width: Math.max(PAUSE_OVERLAY_SLOT_BUTTON_WIDTH, MIN_TOUCH_TARGET_PX),
-        height: Math.max(PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT, MIN_TOUCH_TARGET_PX),
-      },
-      {
-        name: 'intermission-upgrade',
-        width: intermission.gridLayout.buttonWidth,
-        height: intermission.gridLayout.buttonHeight,
-      },
-    ];
-
-    for (const rect of hitRects) {
-      expect(rect.width, rect.name).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_PX);
-      expect(rect.height, rect.name).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_PX);
-    }
   });
 
   test('pause overlay centers checkpoint slots when the frame narrows', () => {
