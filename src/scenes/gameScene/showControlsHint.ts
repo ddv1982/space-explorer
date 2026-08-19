@@ -12,7 +12,12 @@ type ShowControlsHintOptions = {
   mobile?: boolean;
 };
 
+type SceneWithControlsHint = Phaser.Scene & { __controlsHintCleanup?: () => void };
+
 export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintOptions = {}): void {
+  const tracked = scene as SceneWithControlsHint;
+  tracked.__controlsHintCleanup?.();
+
   let mobile = options.mobile === true && !isHardwareKeyboardDetected();
   const hintWidth = 320;
   const hintHeight = 80;
@@ -65,7 +70,13 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
   const cleanup = (): void => {
     stopKeyboardWatch();
     scene.scale.off(Phaser.Scale.Events.RESIZE, relayout);
+    scene.events.off(Phaser.Scenes.Events.SHUTDOWN, cleanup);
+    scene.events.off(Phaser.Scenes.Events.DESTROY, cleanup);
+    if (tracked.__controlsHintCleanup === cleanup) {
+      tracked.__controlsHintCleanup = undefined;
+    }
   };
+  tracked.__controlsHintCleanup = cleanup;
 
   scene.scale.on(Phaser.Scale.Events.RESIZE, relayout);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanup);

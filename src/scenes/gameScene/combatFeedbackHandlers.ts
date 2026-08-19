@@ -44,6 +44,7 @@ interface GameSceneCombatFeedbackDeps {
   powerUpGroup: () => Phaser.Physics.Arcade.Group;
   persistHelperWingState: () => void;
   syncLastLifeHelperWingState: () => void;
+  getGameplayNow: () => number;
   constants: CombatFeedbackConstants;
 }
 
@@ -105,32 +106,16 @@ export function createGameSceneCombatFeedbackHandlers(
     spawnGuaranteedPowerUp(deps.powerUpGroup(), x, y);
   };
 
-  const hideEnemyForBossIntro = (enemy: {
-    active: boolean;
-    setActive(active: boolean): void;
-    setVisible(visible: boolean): void;
-    clearTint(): void;
-    setVelocity(x: number, y: number): void;
-    body?: { reset(x: number, y: number): void } | null;
-  }): void => {
-    enemy.setActive(false);
-    enemy.setVisible(false);
-    enemy.clearTint();
-    enemy.setVelocity(0, 0);
-
-    const body = enemy.body as Phaser.Physics.Arcade.Body | null;
-    body?.reset(0, 0);
-  };
-
   const clearFieldForBossIntro = (): void => {
     deps.collisionManager().clearPlayerHazards();
 
     for (const enemy of deps.enemyPool().getAllEnemies()) {
-      if (!enemy.active) {
+      const pooled = enemy as typeof enemy & { despawn?: () => void };
+      if (!pooled.active || typeof pooled.despawn !== 'function') {
         continue;
       }
 
-      hideEnemyForBossIntro(enemy);
+      pooled.despawn();
     }
   };
 
@@ -190,7 +175,7 @@ export function createGameSceneCombatFeedbackHandlers(
 
   return {
     handleEnemyDeath: (score, x, y, isAce): void => {
-      const awarded = deps.scoreManager().registerKill(score, deps.scene.time.now);
+      const awarded = deps.scoreManager().registerKill(score, deps.getGameplayNow());
       deps.effectsManager().createScorePopup(x, y, awarded);
       audioManager.playExplosion(0.5);
       // Aces always drop exactly one power-up; the normal roll is skipped so

@@ -23,7 +23,7 @@ bun run bundle:check
 
 - `bun run typecheck` uses TypeScript 7.0.2 as the authoritative compiler for production source, scripts, Vite config, and tests.
 - `bun run typecheck:ts6` checks the temporary TypeScript 6 compiler-API bridge retained for typescript-eslint compatibility.
-- `bun run test` runs each test file in its own Bun process so file-level mocks and globals cannot leak across suites.
+- `bun run test` runs each test file in its own Bun process so file-level mocks and globals cannot leak across suites. Each suite times out after 60 seconds unless `TEST_SUITE_TIMEOUT_MS` is set. Use `bun run test -- --verbose` to print successful child output.
 - `bun run test:e2e` runs independent functional and visual coverage with bounded parallel workers, then runs timing-sensitive performance evidence alone on one worker. It exercises the real Phaser runtime in desktop and mobile Chromium, including WebGL rendering, Arcade Physics, routing, resize, lifecycle recovery, and console-error failure.
 - CI runs static/build checks and the two browser lanes concurrently on separate runners. Each CI browser runner uses one Playwright worker because parallel Phaser instances can starve GitHub's software WebGL renderer; local hardware-backed browser runs retain four workers.
 - CI performance evidence uses short structural samples and leaves refresh-cadence and real-time movement gates to hardware-backed local runs, because SwiftShader delivery is not representative of player hardware.
@@ -31,6 +31,7 @@ bun run bundle:check
 - `bun run bundle:check` expects a fresh `dist/` from `bun run build`.
 - Phaser is pinned to 4.2.1, consumed through its package ESM export, and configured for WebGL. Unsupported browsers receive the explicit WebGL-required state.
 - Production `tsconfig.json` keeps `noUnusedLocals` / `noUnusedParameters` **off** because ESLint (`@typescript-eslint/no-unused-vars`) is the authoritative unused-symbol gate.
+- Production deploy is a job on this same workflow. It runs only on `main` after both quality and browser jobs succeed, uses a pinned Vercel CLI, and keeps tokens on the deploy steps.
 
 ## Manual Release Smoke
 

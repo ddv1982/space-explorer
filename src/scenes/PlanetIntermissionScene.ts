@@ -35,6 +35,7 @@ import { getPlanetIntermissionProfile } from './planetIntermission/planetProfile
 import { createIntermissionBackdrop, createPlanetArrivalVisual } from './planetIntermission/planetVisuals';
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
 import type { UpgradeButton } from './planetIntermission/shared';
+import { mountAccessibleActionLayer } from './shared/accessibleActionLayer';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { PlanetIntermissionInteractionController } from './planetIntermission/interactionController';
 import { startRegisteredScene } from './sceneRegistry';
@@ -50,6 +51,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private isFinalMissionComplete: boolean = false;
   private transitioning = false;
   private pointerdownHandler?: (pointer: Phaser.Input.Pointer) => void;
+  private teardownAccessibleActions?: () => void;
 
   constructor() {
     super({ key: 'PlanetIntermission' });
@@ -80,6 +82,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     });
     this.initializeOverlayGraphics();
     this.initializeUpgradeFlow(intermissionLayout);
+    this.syncAccessibleActions();
     this.initializeWarpTransition();
     this.createContinuePrompt(intermissionLayout);
     sharpenSceneText(this);
@@ -205,7 +208,30 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     };
   }
 
+  private syncAccessibleActions(): void {
+    this.teardownAccessibleActions?.();
+    this.teardownAccessibleActions = mountAccessibleActionLayer({
+      label: 'Planet intermission',
+      actions: [
+        ...this.buttons.map((button) => ({
+          name: button.upgradeKey,
+          label: `Buy ${button.upgradeKey}`,
+          activate: () => {
+            this.tryBuyUpgrade(button.upgradeKey);
+          },
+        })),
+        {
+          name: 'continue',
+          label: 'Continue',
+          activate: () => this.continueToNextLevel(),
+        },
+      ],
+    });
+  }
+
   private handleSceneShutdown(): void {
+    this.teardownAccessibleActions?.();
+    this.teardownAccessibleActions = undefined;
     this.interactionController?.destroy();
     this.interactionController = undefined;
 

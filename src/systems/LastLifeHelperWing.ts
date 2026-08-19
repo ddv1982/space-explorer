@@ -39,6 +39,7 @@ export class LastLifeHelperWing {
   private helpers: HelperShip[] = [];
   private activated = false;
   private depletedAnnounced = false;
+  private gameplayNow = 0;
 
   create(context: LastLifeHelperWingContext): void {
     this.assignContext(context);
@@ -54,15 +55,16 @@ export class LastLifeHelperWing {
     this.restorePersistedHelpers(persistedState.slots);
   }
 
-  updateLastLifeState(remainingLives: number): void {
+  updateLastLifeState(remainingLives: number, now = this.gameplayNow): void {
     if (remainingLives !== 1 || !this.canAcquireInLevel || this.helpers.length === 0) {
       return;
     }
 
-    this.grantHelperIfPossible();
+    this.grantHelperIfPossible(now);
   }
 
   update(time: number, delta: number): void {
+    this.gameplayNow = time;
     if (!this.activated || this.helpers.length === 0) {
       return;
     }
@@ -216,7 +218,7 @@ export class LastLifeHelperWing {
     }
   }
 
-  private grantHelperIfPossible(): void {
+  private grantHelperIfPossible(now: number): void {
     if (this.grantedSlots >= this.maxSlots) {
       return;
     }
@@ -228,7 +230,7 @@ export class LastLifeHelperWing {
     }
 
     this.configureHelperForSlot(helper, nextSlot);
-    helper.deployNearPlayer(this.player, this.scene.time.now);
+    helper.deployNearPlayer(this.player, now);
     this.grantedSlots += 1;
     this.activateWing();
   }
@@ -240,7 +242,7 @@ export class LastLifeHelperWing {
   }
 
   private restorePersistedWing(slots: PersistentHelperWingSlotState[]): void {
-    const now = this.scene.time.now;
+    const now = this.gameplayNow;
     let restoredCount = 0;
 
     const maxRestoredSlots = Math.min(this.grantedSlots, slots.length, this.helpers.length);
@@ -378,7 +380,7 @@ export class LastLifeHelperWing {
     }
 
     bullet.kill();
-    helper.takeDamage(1, this.scene.time.now, this.effectsManager);
+    helper.takeDamage(1, this.gameplayNow, this.effectsManager);
   }
 
   private handleBombOverlap(a: unknown, b: unknown): void {
@@ -393,7 +395,7 @@ export class LastLifeHelperWing {
     const y = bomb.y;
     bomb.kill();
     this.effectsManager.createExplosion(x, y, 1.1);
-    helper.takeDamage(2, this.scene.time.now, this.effectsManager);
+    helper.takeDamage(2, this.gameplayNow, this.effectsManager);
   }
 
   private handleEnemyContactOverlap(a: unknown, b: unknown): void {
@@ -404,6 +406,6 @@ export class LastLifeHelperWing {
       return;
     }
 
-    helper.takeContactDamage(1, this.scene.time.now, this.effectsManager);
+    helper.takeContactDamage(1, this.gameplayNow, this.effectsManager);
   }
 }

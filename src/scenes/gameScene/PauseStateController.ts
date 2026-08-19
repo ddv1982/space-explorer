@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { setGameplayDifficultyTier, type GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { setVisualQualityTier, type VisualQualityTier } from '@/config/visualQuality';
+import { createArmingAction } from '@/systems/armingAction';
 import { audioManager } from '@/systems/AudioManager';
 import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { PauseOverlay } from './PauseOverlay';
@@ -57,6 +58,9 @@ export class PauseStateController {
   private gameplayPaused = false;
   private statusMessage = '';
   private statusOk = true;
+  private readonly deleteArm = createArmingAction<SaveSlotId>((slotId) => {
+    this.completeDeleteSlot(slotId);
+  });
 
   static create(config: PauseStateControllerConfig): PauseStateController {
     return new PauseStateController().create(config);
@@ -77,6 +81,7 @@ export class PauseStateController {
     this.gameplayPaused = false;
     this.statusMessage = '';
     this.statusOk = true;
+    this.deleteArm.cancel();
 
     const createOverlay =
       config.createOverlay ??
@@ -114,6 +119,7 @@ export class PauseStateController {
     this.gameplayPaused = false;
     this.statusMessage = '';
     this.statusOk = true;
+    this.deleteArm.cancel();
   }
 
   relayout(): void {
@@ -197,12 +203,21 @@ export class PauseStateController {
     this.playClick?.();
 
     if (!this.saveSlotAdapter.isAvailable()) {
+      this.deleteArm.cancel();
       this.statusMessage = 'Checkpoint storage unavailable.';
       this.statusOk = false;
       this.syncGameplayPauseState();
       return;
     }
 
+    if (!this.deleteArm.trigger(slotId)) {
+      this.statusMessage = `Tap DEL again to confirm slot ${slotId.slice(-1)}.`;
+      this.statusOk = true;
+      this.syncGameplayPauseState();
+    }
+  }
+
+  private completeDeleteSlot(slotId: SaveSlotId): void {
     const result = this.saveSlotAdapter.delete(slotId);
     this.statusMessage = result.message;
     this.statusOk = result.ok;

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { defineCampaign, flattenCampaignLevels } from '../src/config/levels/campaigns';
 import { CORE_CAMPAIGN } from '../src/config/levels/definitions/coreCampaign';
+import { getLevelConfig } from '../src/config/LevelsConfig';
 import { LEVELS } from '../src/config/levels/registry';
 import type { LevelConfig } from '../src/config/levels/types';
 
@@ -29,6 +30,11 @@ function hasProjectileBlockingCover(level: LevelConfig): boolean {
 }
 
 describe('campaign helper regression coverage', () => {
+  test('fractional level numbers resolve to an authored config', () => {
+    expect(getLevelConfig(1.7)).toBe(LEVELS[0]);
+    expect(getLevelConfig(Number.NaN)).toBe(LEVELS[0]);
+  });
+
   test('defineCampaign rejects empty campaigns', () => {
     expect(() =>
       defineCampaign({

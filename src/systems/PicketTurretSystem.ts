@@ -168,7 +168,7 @@ export class PicketTurretSystem {
   private createMounts(): void {
     ensurePicketTurretTexture(this.scene);
 
-    const now = this.scene.time.now;
+    const now = 0;
     const sides: (-1 | 1)[] = [-1, 1];
     for (const [index, side] of sides.entries()) {
       const sprite = this.scene.add.sprite(0, 0, 'picket-turret');

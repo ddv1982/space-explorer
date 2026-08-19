@@ -37,7 +37,7 @@ main
 
 ## Current remediation
 
-- [`plans/review-findings-remediation-2026-08-19.md`](./plans/review-findings-remediation-2026-08-19.md) — stacked PR plan for the 2026-08 review findings. No application code in that document.
+- [`plans/review-findings-remediation-2026-08-19.md`](./plans/review-findings-remediation-2026-08-19.md) — stacked remediation for the 2026-08 review findings. Phases 0-8 are on this branch. Phase 9 stays parked.
 
 ## Historical material
 

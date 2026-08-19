@@ -3,7 +3,7 @@
 Run the focused desktop and mobile comparison with:
 
 ```sh
-VISUAL_SCREENSHOT_DIR=tests/e2e/visual-evidence bunx playwright test tests/e2e/game.smoke.spec.ts --grep "crossfire telegraph glow"
+VISUAL_SCREENSHOT_DIR=tests/e2e/visual-evidence bunx playwright test tests/e2e/visual.evidence.spec.ts tests/e2e/smoke.spec.ts --grep "crossfire telegraph glow"
 ```
 
 The `crossfire-baseline-*` images show the authored Prism Crossfire state with

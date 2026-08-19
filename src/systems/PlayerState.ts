@@ -1,4 +1,5 @@
 import { getUpgradeByKey, normalizeUpgradeLevel } from '../config/UpgradesConfig';
+import { normalizeAuthoredLevelNumber } from '../config/levels/selectors';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import type { PersistentHelperWingState, PlayerStateData, RunSummaryData } from './playerState/types';
 
@@ -20,6 +21,7 @@ const DEFAULT_RUN_SUMMARY: RunSummaryData = {
   levelReached: 1,
 };
 const MAX_HELPER_WING_SLOTS = 4;
+export const MAX_CURRENT_SHIELDS = 8;
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -128,10 +130,10 @@ export function normalizePersistedPlayerState(value: unknown): PlayerStateData {
   const currentShieldsInput = normalizeFiniteNumber(value.currentShields, maxShields);
 
   return {
-    level: normalizeFiniteNumber(value.level, defaultState.level),
+    level: normalizeAuthoredLevelNumber(normalizeFiniteNumber(value.level, defaultState.level), defaultState.level),
     score: normalizePersistedScore(value.score, defaultState.score),
     currentHp: normalizeBoundedNumber(value.currentHp, defaultState.currentHp, maxHp),
-    currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), maxShields)),
+    currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), MAX_CURRENT_SHIELDS)),
     remainingLives: normalizeBoundedInteger(
       value.remainingLives,
       defaultState.remainingLives,
@@ -162,9 +164,8 @@ export function getRunSummary(registry: PlayerStateRegistry): RunSummaryData {
       registry.get(RUN_SUMMARY_KEYS.finalScore) as unknown,
       DEFAULT_RUN_SUMMARY.finalScore
     ),
-    levelReached: normalizeFiniteNumber(
-      registry.get(RUN_SUMMARY_KEYS.levelReached) as unknown,
-      DEFAULT_RUN_SUMMARY.levelReached
+    levelReached: normalizeAuthoredLevelNumber(
+      normalizeFiniteNumber(registry.get(RUN_SUMMARY_KEYS.levelReached) as unknown, DEFAULT_RUN_SUMMARY.levelReached)
     ),
   };
 }
@@ -173,7 +174,9 @@ export function setRunSummary(registry: PlayerStateRegistry, summary: Partial<Ru
   const currentSummary = getRunSummary(registry);
   const nextSummary: RunSummaryData = {
     finalScore: normalizePersistedScore(summary.finalScore, currentSummary.finalScore),
-    levelReached: normalizeFiniteNumber(summary.levelReached, currentSummary.levelReached),
+    levelReached: normalizeAuthoredLevelNumber(
+      normalizeFiniteNumber(summary.levelReached, currentSummary.levelReached)
+    ),
   };
 
   registry.set(RUN_SUMMARY_KEYS.finalScore, nextSummary.finalScore);

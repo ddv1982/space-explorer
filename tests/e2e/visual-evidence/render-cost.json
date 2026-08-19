@@ -1,5 +1,5 @@
 {
-  "command": "VISUAL_SCREENSHOT_DIR=tests/e2e/visual-evidence bunx playwright test tests/e2e/game.smoke.spec.ts --grep \"crossfire telegraph glow\" --workers=1",
+  "command": "VISUAL_SCREENSHOT_DIR=tests/e2e/visual-evidence bunx playwright test tests/e2e/visual.evidence.spec.ts --grep \"crossfire telegraph glow\" --workers=1",
   "thresholds": {
     "averageRegressionMs": 1,
     "p95RegressionMs": 2

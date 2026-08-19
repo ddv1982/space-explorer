@@ -13,6 +13,7 @@ import {
   NEON_TEXT,
 } from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
+import { MIN_TOUCH_TARGET_PX } from '../shared/touchTarget';
 import type { MenuLayoutPlan } from './layout';
 
 interface MenuSaveSlotHandlers {
@@ -260,6 +261,8 @@ export function createSaveSlotEntryPanel(
         label: 'DEL',
         width: 44,
         height: 20,
+        hitWidth: MIN_TOUCH_TARGET_PX,
+        hitHeight: MIN_TOUCH_TARGET_PX,
         variant: 'danger',
         fontSize: '10px',
         onClick: () => {

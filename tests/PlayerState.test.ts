@@ -75,7 +75,7 @@ describe('PlayerState schema behavior', () => {
       level: 1,
       score: 0,
       currentHp: 5,
-      currentShields: 2,
+      currentShields: 8,
       remainingLives: 0,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 2, turrets: 1 },
       helperWing: {
@@ -180,10 +180,10 @@ describe('PlayerState schema behavior', () => {
     });
 
     expect(getPlayerState(registry)).toEqual({
-      level: 4.5,
+      level: 4,
       score: Number.MAX_SAFE_INTEGER,
       currentHp: 15,
-      currentShields: 3,
+      currentShields: 8,
       remainingLives: 3,
       upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
       helperWing: {
@@ -228,7 +228,28 @@ describe('PlayerState schema behavior', () => {
     expect(getPlayerState(registry).currentHp).toBe(5);
   });
 
-  test('clamps currentShields to upgrade max when setting state', () => {
+  test('keeps temporary shield charges above the purchased shield tier', () => {
+    const registry = createRegistry();
+    setPlayerState(registry, {
+      level: 1,
+      score: 0,
+      currentHp: 5,
+      currentShields: 3,
+      remainingLives: 3,
+      upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 1, turrets: 0 },
+      helperWing: { grantedSlots: 0, slots: [] },
+    });
+
+    expect(getPlayerState(registry).currentShields).toBe(3);
+  });
+
+  test('floors fractional levels to an authored integer', () => {
+    const registry = createRegistry();
+    registry.set('playerState', { level: 1.7, upgrades: {} });
+    expect(getPlayerState(registry).level).toBe(1);
+  });
+
+  test('clamps currentShields to the live charge ceiling when setting state', () => {
     const registry = createRegistry();
 
     setPlayerState(registry, {
@@ -250,7 +271,7 @@ describe('PlayerState schema behavior', () => {
       },
     });
 
-    expect(getPlayerState(registry).currentShields).toBe(2);
+    expect(getPlayerState(registry).currentShields).toBe(8);
   });
 
   test('advanceToNextLevel resets hp and shields for next run', () => {

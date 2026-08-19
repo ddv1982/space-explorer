@@ -55,4 +55,25 @@ describe('PlanetIntermissionScene premium background transition', () => {
 
     expect(startRegisteredScene).toHaveBeenCalledWith(scene, 'Game');
   });
+
+  test('handlePostPurchaseFocus moves once when the focused upgrade caps', () => {
+    const scene = Object.create(PlanetIntermissionScene.prototype) as PlanetIntermissionSceneInstance;
+    let moves = 0;
+    (scene as unknown as Record<string, unknown>).interactionController = {
+      isFocusedButton: () => true,
+      moveFocusAfterPurchase: () => {
+        moves += 1;
+      },
+    };
+    (scene as unknown as Record<string, unknown>).buttons = [{ upgradeKey: 'hp' }];
+    (scene as unknown as Record<string, unknown>).getButtonEvaluation = () => ({ canPurchase: false });
+
+    (
+      scene as unknown as {
+        handlePostPurchaseFocus: (button: { upgradeKey: string }, upgradeKey: string) => void;
+      }
+    ).handlePostPurchaseFocus({ upgradeKey: 'hp' }, 'hp');
+
+    expect(moves).toBe(1);
+  });
 });

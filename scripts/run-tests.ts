@@ -21,17 +21,31 @@ function collectTestFiles(directory: string): string[] {
   return files;
 }
 
-const requestedFiles = process.argv.slice(2);
+const argv = process.argv.slice(2);
+const verbose = argv.includes('--verbose');
+const requestedFiles = argv.filter((value) => value !== '--verbose');
 const testFiles = requestedFiles.length > 0 ? requestedFiles : collectTestFiles('tests').sort();
+const suiteTimeoutMs = Number(process.env.TEST_SUITE_TIMEOUT_MS ?? 60_000);
 
 for (const file of testFiles) {
   const displayPath = relative(process.cwd(), file);
-  const result = spawnSync('bun', ['test', file], { encoding: 'utf8' });
+  const result = spawnSync('bun', ['test', file], { encoding: 'utf8', timeout: suiteTimeoutMs });
 
-  if (result.status !== 0) {
+  if (result.error || result.status !== 0 || result.signal) {
+    process.stdout.write(result.stdout ?? '');
+    process.stderr.write(result.stderr ?? '');
+    if (result.error) {
+      process.stderr.write(`${displayPath}: ${result.error.message}\n`);
+    }
+    if (result.signal === 'SIGTERM') {
+      process.stderr.write(`${displayPath}: timed out after ${suiteTimeoutMs}ms\n`);
+    }
+    process.exit(result.status ?? 1);
+  }
+
+  if (verbose) {
     process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
-    process.exit(result.status ?? 1);
   }
 
   console.log(`${displayPath}: passed`);

@@ -1,7 +1,7 @@
 # Review Findings Remediation Plan
 
 Date: 2026-08-19
-Status: planned. No application code changes in this document.
+Status: phases 0-8 implemented on this branch. Phase 9 remains parked.
 
 This plan turns the 2026-08 review into a stacked sequence of PRs. The earlier quality plan in `docs/plans/codebase-quality-phased-improvement-2026-06-16.md` is historical. Most of its gates already exist. These findings are leftover holes in contracts that those gates do not enforce.
 

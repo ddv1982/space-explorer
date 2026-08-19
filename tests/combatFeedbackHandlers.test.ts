@@ -221,6 +221,7 @@ function createCombatFeedbackHarness(
     powerUpGroup: () => ({ id: 'powerups' }) as never,
     persistHelperWingState,
     syncLastLifeHelperWingState,
+    getGameplayNow: () => 1000,
     constants: {
       bossExplosionVisualIntensity: 3,
       bossExplosionAudioIntensity: 2,
@@ -283,6 +284,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       powerUpGroup: () => ({ id: 'powerups' }) as never,
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
+      getGameplayNow: () => 1000,
       constants: {
         bossExplosionVisualIntensity: 3,
         bossExplosionAudioIntensity: 2,
@@ -334,6 +336,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       powerUpGroup: () => ({ id: 'powerups' }) as never,
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
+      getGameplayNow: () => 1000,
       constants: {
         bossExplosionVisualIntensity: 3,
         bossExplosionAudioIntensity: 2,
@@ -447,22 +450,18 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     const showBossWarning = mock();
     const showBossBar = mock();
     const boss = { setPlayer: mock() };
-    const activeBody = { reset: mock() };
     const activeEnemy = {
       active: true,
-      setActive: mock(),
-      setVisible: mock(),
-      clearTint: mock(),
-      setVelocity: mock(),
-      body: activeBody,
+      body: { enable: true },
+      despawn() {
+        this.active = false;
+        this.body.enable = false;
+      },
     };
     const inactiveEnemy = {
       active: false,
-      setActive: mock(),
-      setVisible: mock(),
-      clearTint: mock(),
-      setVelocity: mock(),
-      body: { reset: mock() },
+      body: { enable: false },
+      despawn: mock(),
     };
     const setBoss = mock();
     const player = { id: 'player' };
@@ -504,6 +503,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       powerUpGroup: () => ({ id: 'powerups' }) as never,
       persistHelperWingState: mock(),
       syncLastLifeHelperWingState: mock(),
+      getGameplayNow: () => 1000,
       constants: {
         bossExplosionVisualIntensity: 3,
         bossExplosionAudioIntensity: 2,
@@ -517,12 +517,11 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
 
     expect(markBossSpawned).toHaveBeenCalledTimes(1);
     expect(clearPlayerHazards).toHaveBeenCalledTimes(1);
-    expect(activeEnemy.setActive).toHaveBeenCalledWith(false);
-    expect(activeEnemy.setVisible).toHaveBeenCalledWith(false);
-    expect(activeEnemy.clearTint).toHaveBeenCalledTimes(1);
-    expect(activeEnemy.setVelocity).toHaveBeenCalledWith(0, 0);
-    expect(activeBody.reset).toHaveBeenCalledWith(0, 0);
-    expect(inactiveEnemy.setActive).not.toHaveBeenCalled();
+    expect(activeEnemy.active).toBe(false);
+    expect(activeEnemy.body.enable).toBe(false);
+    expect(inactiveEnemy.despawn).not.toHaveBeenCalled();
+    expect(inactiveEnemy.active).toBe(false);
+    expect(inactiveEnemy.body.enable).toBe(false);
     expect(showBossWarning).toHaveBeenCalledTimes(1);
     expect(startMusic).toHaveBeenCalledWith('boss-track');
     expect(boss.setPlayer).toHaveBeenCalledWith(player);

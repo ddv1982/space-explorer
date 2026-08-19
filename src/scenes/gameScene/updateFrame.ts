@@ -1,3 +1,5 @@
+import type { GameplayClock } from '@/systems/GameplayClock';
+
 export interface GameSceneFrameDelegate {
   handlePauseInput(): void;
   isPausedOrLockedFrame(): boolean;
@@ -6,7 +8,12 @@ export interface GameSceneFrameDelegate {
   updateHud(): void;
 }
 
-export function runGameSceneUpdateFrame(delegate: GameSceneFrameDelegate, time: number, delta: number): void {
+export function runGameSceneUpdateFrame(
+  delegate: GameSceneFrameDelegate,
+  time: number,
+  delta: number,
+  clock?: GameplayClock
+): void {
   delegate.handlePauseInput();
 
   if (delegate.isPausedOrLockedFrame()) {
@@ -14,6 +21,11 @@ export function runGameSceneUpdateFrame(delegate: GameSceneFrameDelegate, time: 
     return;
   }
 
-  delegate.updateGameplayFrame(time, delta);
+  if (clock) {
+    clock.advance(delta);
+    delegate.updateGameplayFrame(clock.now, clock.delta);
+  } else {
+    delegate.updateGameplayFrame(time, delta);
+  }
   delegate.updateHud();
 }

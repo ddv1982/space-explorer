@@ -67,6 +67,11 @@ describe('SaveSlotStorage', () => {
     expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, false, false]);
   });
 
+  test('reports unavailable when a write probe throws', () => {
+    installWindow(new ThrowingStorage());
+    expect(isSaveStorageAvailable()).toBe(false);
+  });
+
   test('writes, reads, lists, and deletes save slots using localStorage', () => {
     const storage = new MemoryStorage();
     installWindow(storage);
@@ -107,6 +112,30 @@ describe('SaveSlotStorage', () => {
 
     expect(deleteSaveSlot('slot-1')).toBe(true);
     expect(readSaveSlot('slot-1')).toBeNull();
+  });
+
+  test('reloads temporary shields above the upgrade tier', () => {
+    const storage = new MemoryStorage();
+    installWindow(storage);
+
+    const record = createSaveSlotRecord(
+      'slot-1',
+      {
+        level: 2,
+        score: 800,
+        currentHp: 5,
+        currentShields: 3,
+        remainingLives: 3,
+        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 1, turrets: 0 },
+        helperWing: { grantedSlots: 0, slots: [] },
+      },
+      { finalScore: 800, levelReached: 2 },
+      new Date('2026-08-19T06:00:00.000Z')
+    );
+
+    expect(writeSaveSlot(record)?.playerState.currentShields).toBe(3);
+    expect(readSaveSlot('slot-1')?.playerState.currentShields).toBe(3);
+    expect(readSaveSlot('slot-1')?.playerState.upgrades.shield).toBe(1);
   });
 
   test('round-trips a valid v1 save record unchanged', () => {
@@ -515,7 +544,7 @@ describe('SaveSlotStorage', () => {
       level: 5,
       score: Number.MAX_SAFE_INTEGER,
       currentHp: 15,
-      currentShields: 3,
+      currentShields: 8,
       remainingLives: 3,
       upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 3, hp: 15 }] },

@@ -20,6 +20,9 @@ function createMockScene(): { scene: Phaser.Scene; state: MockSceneState } {
   };
 
   const scene = {
+    events: {
+      once: () => undefined,
+    },
     scene: {
       manager: { keys },
       add: (key: string, sceneClass: unknown) => {
