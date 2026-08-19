@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.15.0`](./1.15.0.md) - holds the fight with the deck so pause, saves, hands, and the production gate tell the same story
 - [`1.14.0`](./1.14.0.md) - sets the Command Deck in true orbit with a collision-free title lockup, balanced stations, and five responsive flight profiles
 - [`1.13.0`](./1.13.0.md) - binds the Sentry's Concordance, separating unknown structural signals from reviewed charts with enforced evidence and budgets
 - [`1.12.0`](./1.12.0.md) - opens the Cartographer's Ledger with named diagnostics, explicit runtime berths, focused encounter law, and ratcheted structural charts

@@ -6,6 +6,15 @@ async function namedActions(page: import('@playwright/test').Page, label: string
     .evaluateAll((buttons) => buttons.map((button) => button.textContent?.trim() ?? ''));
 }
 
+async function activateNamedAction(page: import('@playwright/test').Page, name: string): Promise<void> {
+  // The layer is visually hidden under the canvas. A pointer click hits the
+  // canvas, not the named control. DOM activation is what a keyboard or AT
+  // user actually does.
+  await page.getByRole('button', { name }).evaluate((button) => {
+    (button as HTMLButtonElement).click();
+  });
+}
+
 test('exposes named menu, pause, and intermission actions without a second painted UI', async ({
   page,
   assertNoBrowserErrors,
@@ -18,12 +27,12 @@ test('exposes named menu, pause, and intermission actions without a second paint
     .toEqual(expect.arrayContaining(['New run', 'Load slot 1', 'Delete slot 1']));
   await expect(page.locator('#game-root canvas')).toHaveAttribute('aria-hidden', 'true');
 
-  await page.getByRole('button', { name: 'New run' }).click();
+  await activateNamedAction(page, 'New run');
   await waitForScene(page, 'Game');
 
   await page.keyboard.press('Escape');
   await expect.poll(() => namedActions(page, 'Paused')).toEqual(expect.arrayContaining(['Resume', 'Main menu']));
-  await page.getByRole('button', { name: 'Resume' }).click();
+  await activateNamedAction(page, 'Resume');
 
   await expect.poll(async () => (await page.locator('nav[aria-label="Paused"]').count()) === 0).toBe(true);
 

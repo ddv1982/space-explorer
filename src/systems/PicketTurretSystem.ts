@@ -99,23 +99,18 @@ export class PicketTurretSystem {
     this.anchorMounts();
     this.playDeployment();
     this.onlineAnnouncementPending = true;
+    // HUD chrome uses Phaser's loop clock. Clock.now is the frame timestamp,
+    // so the banner still lands about three seconds after deploy on a slow
+    // renderer. delayedCall is the wrong tool: TimerEvent elapsed uses
+    // clamped delta and falls behind wall time. Fire cadence stays on the
+    // gameplay `time` argument so pause cannot gift extra volleys.
+    this.onlineAnnounceAtTime = this.scene.time.now + PICKET_ONLINE_ANNOUNCE_DELAY_MS;
   }
 
   update(time: number): void {
-    // The one-time announcement counts down on the gameplay clock passed to
-    // update rather than scene.time.delayedCall: the scene clock's TimerEvent
-    // elapsed accumulates clamped per-frame delta, which drifts far behind
-    // real time on slow renderers, and keeps running while the game is
-    // paused. Gating on the update timestamp keeps the announcement roughly
-    // three seconds after deployment regardless of frame rate.
-    if (this.onlineAnnouncementPending) {
-      if (this.onlineAnnounceAtTime === 0) {
-        this.onlineAnnounceAtTime = time + PICKET_ONLINE_ANNOUNCE_DELAY_MS;
-      }
-      if (time >= this.onlineAnnounceAtTime) {
-        this.onlineAnnouncementPending = false;
-        this.scene.events.emit(GAME_SCENE_EVENTS.picketOnline);
-      }
+    if (this.onlineAnnouncementPending && this.scene.time.now >= this.onlineAnnounceAtTime) {
+      this.onlineAnnouncementPending = false;
+      this.scene.events.emit(GAME_SCENE_EVENTS.picketOnline);
     }
 
     if (this.mounts.length === 0) {
