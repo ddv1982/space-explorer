@@ -61,7 +61,7 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
 
     // Gentle bobbing motion
     this.bobTime += delta;
-    this.x += Math.sin(this.bobTime * 0.005) * 0.3;
+    this.x += Math.sin(this.bobTime * 0.005) * 0.3 * (delta / (1000 / 60));
 
     // Go off screen
     if (this.y > this.scene.scale.gameSize.height + 30) {

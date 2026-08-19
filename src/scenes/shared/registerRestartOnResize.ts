@@ -2,7 +2,12 @@ import Phaser from 'phaser';
 
 const RESIZE_RESTART_DEBOUNCE_MS = 120;
 
+type SceneWithResizeRestart = Phaser.Scene & { __resizeRestartCleanup?: () => void };
+
 export function registerRestartOnResize(scene: Phaser.Scene, shouldRestart: () => boolean = () => true): void {
+  const tracked = scene as SceneWithResizeRestart;
+  tracked.__resizeRestartCleanup?.();
+
   let width = Math.round(scene.scale.gameSize.width);
   let height = Math.round(scene.scale.gameSize.height);
   let pendingRestart: number | null = null;
@@ -51,8 +56,14 @@ export function registerRestartOnResize(scene: Phaser.Scene, shouldRestart: () =
     }
 
     scene.scale.off(Phaser.Scale.Events.RESIZE, handleResize);
+    scene.events.off(Phaser.Scenes.Events.SHUTDOWN, cleanup);
+    scene.events.off(Phaser.Scenes.Events.DESTROY, cleanup);
+    if (tracked.__resizeRestartCleanup === cleanup) {
+      tracked.__resizeRestartCleanup = undefined;
+    }
   };
 
+  tracked.__resizeRestartCleanup = cleanup;
   scene.scale.on(Phaser.Scale.Events.RESIZE, handleResize);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanup);
   scene.events.once(Phaser.Scenes.Events.DESTROY, cleanup);

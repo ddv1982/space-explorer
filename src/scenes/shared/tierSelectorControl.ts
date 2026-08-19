@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { createActionButtonControl, type ActionButtonControl } from './actionButtonControl';
 import { NEON_FONT, NEON_TEXT } from './neonUiTheme';
+import { MIN_TOUCH_TARGET_PX } from './touchTarget';
 
 export interface TierSelectorLayout {
   x: number;
@@ -87,6 +88,7 @@ export function createTierSelectorControl<T extends string>(
         label: tier.toUpperCase(),
         width: stableButtonWidth,
         height: config.layout.height,
+        hitHeight: Math.max(config.layout.height, MIN_TOUCH_TARGET_PX),
         fontSize: config.layout.compact ? '9px' : '10px',
         onClick: () => {
           if (tier === value || !config.onSelect(tier)) return;

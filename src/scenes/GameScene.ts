@@ -44,7 +44,7 @@ import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
 import { runGameSceneCreateBootstrap, type GameSceneBootstrapRuntime } from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
-import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
+import { GameplayClock, runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
@@ -83,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
   private gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null = null;
   private updateFrameDelegate: GameSceneFrameDelegate | null = null;
+  private readonly gameplayClock = new GameplayClock();
   private readonly combatFeedbackHandlers = this.createCombatFeedbackHandlers();
   private readonly sceneEventBindings: SceneEventBinding[] = this.createSceneEventBindings();
   private readonly runtimeLifecycle = this.createRuntimeLifecycle();
@@ -92,6 +93,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.gameplayClock.reset();
     const runtime = runGameSceneCreateBootstrap({
       scene: this,
       runtimeLifecycle: this.runtimeLifecycle,
@@ -109,6 +111,7 @@ export class GameScene extends Phaser.Scene {
       canSaveCurrentRun: () => this.canSaveCurrentRun(),
     });
     this.installBootstrapRuntime(runtime);
+    this.syncLastLifeHelperWingState();
     this.gameplayFrameBehavior = this.createGameplayFrameBehavior();
     this.updateFrameDelegate = this.createUpdateFrameDelegate();
   }
@@ -178,6 +181,7 @@ export class GameScene extends Phaser.Scene {
       powerUpGroup: () => this.powerUpGroup,
       persistHelperWingState: () => this.persistHelperWingState(),
       syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
+      getGameplayNow: () => this.gameplayClock.now,
       constants: {
         bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
         bossExplosionAudioIntensity: GameScene.BOSS_EXPLOSION_AUDIO_INTENSITY,
@@ -215,7 +219,6 @@ export class GameScene extends Phaser.Scene {
     return createGameSceneRuntimeLifecycle({
       scene: this,
       sceneEventBindings: this.sceneEventBindings,
-      syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
       getScaleResizeContext: () => this.getScaleResizeContext(),
       destroyPauseStateController: () => {
         this.pauseStateController?.destroy();
@@ -384,7 +387,7 @@ export class GameScene extends Phaser.Scene {
       levelManager: this.levelManager,
       flow: this.flow,
       lastHudShieldCount: this.lastHudShieldCount,
-      now: this.time.now,
+      now: this.gameplayClock.now,
       surgeRatio: this.grazeSurge?.getGaugeRatio() ?? 0,
     });
   }
@@ -443,6 +446,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    runGameSceneUpdateFrame(this.ensureUpdateFrameDelegate(), time, delta);
+    runGameSceneUpdateFrame(this.ensureUpdateFrameDelegate(), time, delta, this.gameplayClock);
   }
 }

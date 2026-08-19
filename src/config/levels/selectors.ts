@@ -1,9 +1,18 @@
 import { LEVELS } from './registry';
 import type { LevelConfig, LevelSectionConfig } from './types';
 
+export function normalizeAuthoredLevelNumber(levelNumber: number, fallback = 1): number {
+  const total = Math.max(1, LEVELS.length);
+  if (!Number.isFinite(levelNumber)) {
+    return fallback;
+  }
+
+  return Math.min(total, Math.max(1, Math.floor(levelNumber)));
+}
+
 export function getLevelConfig(levelNumber: number): LevelConfig {
-  const index = Math.min(levelNumber - 1, LEVELS.length - 1);
-  return LEVELS[Math.max(0, index)];
+  const level = normalizeAuthoredLevelNumber(levelNumber);
+  return LEVELS[level - 1] ?? LEVELS[0];
 }
 
 export function getTotalLevels(): number {
@@ -11,7 +20,7 @@ export function getTotalLevels(): number {
 }
 
 export function isLastLevel(levelNumber: number): boolean {
-  return levelNumber >= LEVELS.length;
+  return normalizeAuthoredLevelNumber(levelNumber) >= LEVELS.length;
 }
 
 export function getActiveSection(levelConfig: LevelConfig, progress: number): LevelSectionConfig | null {

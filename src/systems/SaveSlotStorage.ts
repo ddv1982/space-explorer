@@ -163,13 +163,18 @@ function normalizeEnvelope(value: unknown): SaveSlotsEnvelopeV1 {
   };
 }
 
+const STORAGE_PROBE_KEY = 'space-explorer.storageProbe';
+
 function getStorage(): Storage | null {
   if (typeof window === 'undefined' || !('localStorage' in window)) {
     return null;
   }
 
   try {
-    return window.localStorage;
+    const storage = window.localStorage;
+    storage.setItem(STORAGE_PROBE_KEY, '1');
+    storage.removeItem(STORAGE_PROBE_KEY);
+    return storage;
   } catch {
     return null;
   }

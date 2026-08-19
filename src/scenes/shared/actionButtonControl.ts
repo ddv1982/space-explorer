@@ -23,6 +23,8 @@ interface CreateActionButtonConfig {
   label: string;
   width: number;
   height: number;
+  hitWidth?: number;
+  hitHeight?: number;
   onClick: () => void;
   variant?: ActionButtonVariant;
   fontSize?: string;
@@ -118,6 +120,8 @@ function drawButtonBackground(
 export function createActionButtonControl(scene: Phaser.Scene, config: CreateActionButtonConfig): ActionButtonControl {
   const width = config.width;
   const height = config.height;
+  const hitWidth = Math.max(width, config.hitWidth ?? width);
+  const hitHeight = Math.max(height, config.hitHeight ?? height);
   let variant = config.variant ?? 'secondary';
   let visible = true;
 
@@ -131,7 +135,7 @@ export function createActionButtonControl(scene: Phaser.Scene, config: CreateAct
       align: 'center',
     })
     .setOrigin(0.5);
-  const hitArea = scene.add.zone(0, 0, width, height).setOrigin(0);
+  const hitArea = scene.add.zone(0, 0, hitWidth, hitHeight).setOrigin(0);
 
   const control: ActionButtonControl = {
     background,
@@ -142,8 +146,8 @@ export function createActionButtonControl(scene: Phaser.Scene, config: CreateAct
     setPosition(x: number, y: number) {
       background.setPosition(x, y);
       label.setPosition(x + width / 2, y + height / 2);
-      hitArea.setPosition(x, y);
-      hitArea.setSize(width, height);
+      hitArea.setPosition(x - (hitWidth - width) / 2, y - (hitHeight - height) / 2);
+      hitArea.setSize(hitWidth, hitHeight);
     },
     setDepth(depth: number) {
       background.setDepth(depth);

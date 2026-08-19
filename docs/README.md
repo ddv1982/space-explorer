@@ -35,6 +35,10 @@ main
         → authored level configuration
 ```
 
+## Current remediation
+
+- [`plans/review-findings-remediation-2026-08-19.md`](./plans/review-findings-remediation-2026-08-19.md) — stacked remediation for the 2026-08 review findings. Phases 0-8 are on this branch. Phase 9 stays parked.
+
 ## Historical material
 
 - [`plans/`](./plans/) contains dated implementation plans. Read their status header before treating one as current.

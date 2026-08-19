@@ -146,7 +146,15 @@ export function runGameSceneCreateBootstrap(
   const unsubscribeKeyboard = dependencies.onHardwareKeyboardDetected(() => {
     input.mobileControls.setJoystickSuppressed(true);
   });
-  host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeKeyboard);
+  const restoreJoystick = (): void => {
+    input.mobileControls.setJoystickSuppressed(false);
+  };
+  host.scene.input.on('pointerdown', restoreJoystick);
+  const unsubscribeInput = (): void => {
+    unsubscribeKeyboard();
+    host.scene.input.off('pointerdown', restoreJoystick);
+  };
+  host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeInput);
   dependencies.showControlsHint(host.scene, { mobile: dependencies.isTouchMobileDevice() });
   host.runtimeLifecycle.registerRuntimeHandlers();
 

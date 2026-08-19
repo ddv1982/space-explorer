@@ -2,6 +2,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
 import ts from 'typescript';
 
+import { isConcentrationBudgetLoose } from './architectureBudget';
+
 const SOURCE_ROOT = resolve('src');
 const WARN_LINES = 500;
 const WARN_IMPORTS = 25;
@@ -488,6 +490,15 @@ const staleConcentrationPolicies = Object.keys(CONCENTRATION_POLICIES).filter(
 if (staleConcentrationPolicies.length > 0) {
   for (const file of staleConcentrationPolicies) console.error(`stale concentration policy: ${file}`);
 }
+const looseConcentrationPolicies = trackedConcentrations.filter(({ file, lines }) => {
+  const budget = CONCENTRATION_POLICIES[file];
+  return Boolean(budget && isConcentrationBudgetLoose(lines, budget.lines));
+});
+for (const { file, lines } of looseConcentrationPolicies) {
+  console.error(
+    `stale concentration budget: ${file} is ${lines} lines but budget is ${CONCENTRATION_POLICIES[file].lines}`
+  );
+}
 
 const retainedPolicies = [
   ...trackedFunctions.map(([name, policy]) => ({ name, ...policy })),
@@ -517,7 +528,8 @@ if (
   functionWarnings.length > 0 ||
   testConcentrations.length > 0 ||
   staleFunctionPolicies.length > 0 ||
-  staleConcentrationPolicies.length > 0
+  staleConcentrationPolicies.length > 0 ||
+  looseConcentrationPolicies.length > 0
 ) {
   for (const cycle of cycles) console.error(`cycle: ${cycle}`);
   process.exit(1);

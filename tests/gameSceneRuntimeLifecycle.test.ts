@@ -49,9 +49,6 @@ function createRuntimeLifecycleHarness() {
   const lifecycle = createGameSceneRuntimeLifecycle({
     scene: scene as unknown as Phaser.Scene,
     sceneEventBindings: bindings,
-    syncLastLifeHelperWingState: () => {
-      log.push('syncLastLifeHelperWingState');
-    },
     getScaleResizeContext: () => ({
       scene: scene as unknown as Phaser.Scene,
       parallax: null,
@@ -95,6 +92,15 @@ function createRuntimeLifecycleHarness() {
 }
 
 describe('createGameSceneRuntimeLifecycle', () => {
+  test('registerRuntimeHandlers does not sync helper-wing state', () => {
+    const { lifecycle, log } = createRuntimeLifecycleHarness();
+
+    lifecycle.registerRuntimeHandlers();
+
+    expect(log.includes('syncLastLifeHelperWingState')).toBe(false);
+    expect(log).toContain('off:enemy-death');
+  });
+
   test('handleSceneShutdown tears down lifecycle resources before runtime reset', () => {
     const { lifecycle, log } = createRuntimeLifecycleHarness();
 

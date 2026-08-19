@@ -237,18 +237,21 @@ describe('PicketTurretSystem', () => {
     // Every enemy group (boss included) gets a bolt overlap for incidental hits.
     expect(harness.overlapRegistrations).toHaveLength(3);
 
-    // The one-time announcement counts down on the gameplay clock handed to
-    // update, starting from the first gameplay frame after deployment.
-    system.update(1000);
+    // The banner is HUD chrome on scene.time.now. A large gameplay timestamp
+    // must not pull it early, and pause-frozen combat time must not hold it.
+    system.update(10_000);
     expect(harness.emit).not.toHaveBeenCalled();
-    system.update(1000 + PICKET_ONLINE_ANNOUNCE_DELAY_MS - 1);
+    harness.scene.time.now = PICKET_ONLINE_ANNOUNCE_DELAY_MS - 1;
+    system.update(10_000);
     expect(harness.emit).not.toHaveBeenCalled();
-    system.update(1000 + PICKET_ONLINE_ANNOUNCE_DELAY_MS);
+    harness.scene.time.now = PICKET_ONLINE_ANNOUNCE_DELAY_MS;
+    system.update(0);
     expect(harness.emit).toHaveBeenCalledTimes(1);
     expect(harness.emit).toHaveBeenCalledWith(GAME_SCENE_EVENTS.picketOnline);
 
     // One-time: later frames never re-emit.
-    system.update(1000 + PICKET_ONLINE_ANNOUNCE_DELAY_MS + 5000);
+    harness.scene.time.now = PICKET_ONLINE_ANNOUNCE_DELAY_MS + 5000;
+    system.update(10_000);
     expect(harness.emit).toHaveBeenCalledTimes(1);
 
     // Deployment tween runs when reduced motion is not requested.

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { PLAYER_CONFIG } from '../config/playerConfig';
+import { MAX_CURRENT_SHIELDS } from './PlayerState';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import { Player } from '../entities/Player';
 import { PowerUp, PowerUpType } from '../entities/PowerUp';
@@ -75,7 +76,7 @@ export function applyPowerUpPickup(
       player.hp = Math.min(player.hp + 2, player.maxHp);
       break;
     case 'shield':
-      player.shields += 1;
+      player.shields = Math.min(player.shields + 1, MAX_CURRENT_SHIELDS);
       break;
     case 'rapidfire':
       player.fireRate = Math.max(PLAYER_CONFIG.absoluteMinFireRate, player.fireRate - 20);

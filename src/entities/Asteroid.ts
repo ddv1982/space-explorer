@@ -144,7 +144,7 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    this.angle += this.rotSpeed;
+    this.angle += this.rotSpeed * (delta / (1000 / 60));
     if (this.y > this.scene.cameras.main.height + 80) {
       this.deactivate();
     }

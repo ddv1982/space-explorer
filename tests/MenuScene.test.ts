@@ -13,7 +13,6 @@ mock.module('phaser', () => ({
 
 const ensurePremiumBackgroundAssets = mock();
 const startRegisteredScene = mock();
-let currentLevel = 1;
 
 mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
   ensurePremiumBackgroundAssets,
@@ -23,17 +22,7 @@ mock.module('../src/scenes/sceneRegistry', () => ({
   startRegisteredScene,
 }));
 
-mock.module('../src/systems/PlayerState', () => ({
-  getPlayerMaxHp: mock(() => 5),
-  getPlayerState: () => ({ level: currentLevel }),
-  normalizePersistedPlayerState: (value: unknown) => value,
-  normalizePersistedScore: (value: unknown, fallback: number) => (typeof value === 'number' ? value : fallback),
-  resetPlayerState: mock(),
-  resetRunSummary: mock(),
-  setPlayerState: mock(),
-  setRunSummary: mock(),
-}));
-
+const { setPlayerState } = await import('../src/systems/PlayerState');
 const { MenuScene } = await import('../src/scenes/MenuScene');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
@@ -113,7 +102,6 @@ describe('MenuScene', () => {
   });
 
   test('waits for the saved level premium background window before starting Game', () => {
-    currentLevel = 7;
     ensurePremiumBackgroundAssets.mockClear();
     startRegisteredScene.mockClear();
 
@@ -122,8 +110,25 @@ describe('MenuScene', () => {
       onReady = callback;
     });
 
+    const values = new Map<string, unknown>();
+    const registry = {
+      get: (key: string) => values.get(key),
+      set: (key: string, value: unknown) => {
+        values.set(key, value);
+      },
+    };
+    setPlayerState(registry, {
+      level: 7,
+      score: 0,
+      currentHp: 5,
+      currentShields: 0,
+      remainingLives: 3,
+      upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
+      helperWing: { slots: [], grantedSlots: 0 },
+    });
+
     const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
-    (scene as unknown as Record<string, unknown>).registry = {};
+    (scene as unknown as Record<string, unknown>).registry = registry;
 
     (scene as unknown as { startGameScene: () => void }).startGameScene();
 
@@ -186,5 +191,26 @@ describe('MenuScene', () => {
     expect(showSaveSlotError).toHaveBeenCalledWith('Save slots unavailable in this browser context.');
     expect(readSaveSlotRecord).not.toHaveBeenCalled();
     expect(startGameScene).not.toHaveBeenCalled();
+  });
+
+  test('deleteSlot arms on the first tap and deletes only after confirm', () => {
+    const playMenuClick = mock(() => undefined);
+    const isSaveStorageAvailable = mock(() => true);
+    const deleteStoredSaveSlot = mock(() => true);
+    const refreshSaveSlots = mock(() => undefined);
+
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
+    (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
+    (scene as unknown as Record<string, unknown>).isSaveStorageAvailable = isSaveStorageAvailable;
+    (scene as unknown as Record<string, unknown>).deleteStoredSaveSlot = deleteStoredSaveSlot;
+    (scene as unknown as Record<string, unknown>).refreshSaveSlots = refreshSaveSlots;
+
+    (scene as unknown as { deleteSlot: (slotId: string) => void }).deleteSlot('slot-2');
+    expect(deleteStoredSaveSlot).not.toHaveBeenCalled();
+    expect(refreshSaveSlots).toHaveBeenCalledWith('Tap DEL again to confirm slot 2.');
+
+    (scene as unknown as { deleteSlot: (slotId: string) => void }).deleteSlot('slot-2');
+    expect(deleteStoredSaveSlot).toHaveBeenCalledWith('slot-2');
+    expect(refreshSaveSlots).toHaveBeenCalledWith('Slot 2 cleared.');
   });
 });

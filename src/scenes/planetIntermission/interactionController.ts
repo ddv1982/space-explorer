@@ -147,14 +147,20 @@ export class PlanetIntermissionInteractionController {
       },
       {
         event: 'keydown-ENTER',
-        callback: () => {
+        callback: (event?: KeyboardEvent) => {
+          if (event?.repeat) {
+            return;
+          }
           this.setKeyboardFocusVisible(true);
           this.activateFocusedButton();
         },
       },
       {
         event: 'keydown-SPACE',
-        callback: () => {
+        callback: (event?: KeyboardEvent) => {
+          if (event?.repeat) {
+            return;
+          }
           this.setKeyboardFocusVisible(true);
           this.activateFocusedButton();
         },
@@ -223,10 +229,7 @@ export class PlanetIntermissionInteractionController {
     const evaluation = this.evaluateButton(button);
 
     if (evaluation.canPurchase) {
-      const success = this.tryBuyUpgrade(button.upgradeKey);
-      if (success) {
-        this.moveFocusAfterPurchase();
-      }
+      this.tryBuyUpgrade(button.upgradeKey);
     }
   }
 

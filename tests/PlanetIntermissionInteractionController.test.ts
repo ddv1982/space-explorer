@@ -145,7 +145,10 @@ type ControllerHarness = {
   purchaseState: Map<string, PurchaseState>;
 };
 
-function createControllerHarness(initialPurchasable: boolean[]): ControllerHarness {
+function createControllerHarness(
+  initialPurchasable: boolean[],
+  options?: { moveFocusOnPurchase?: boolean }
+): ControllerHarness {
   const inputHarness = createInputHarness();
   const focusGraphics = createGraphicsStub();
   const hoverGraphics = createGraphicsStub();
@@ -213,6 +216,9 @@ function createControllerHarness(initialPurchasable: boolean[]): ControllerHarne
 
       state.canPurchase = false;
       purchases.push(upgradeKey);
+      if (options?.moveFocusOnPurchase !== false) {
+        controller.moveFocusAfterPurchase();
+      }
       return true;
     },
     continueToNextLevel: () => {
@@ -259,6 +265,37 @@ describe('PlanetIntermissionInteractionController', () => {
 
     triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-ESC');
     expect(harness.continueCalls).toBe(1);
+  });
+
+  test('activateFocusedButton does not move focus on its own', () => {
+    const harness = createControllerHarness([true, true], { moveFocusOnPurchase: false });
+    harness.controller.initialize();
+
+    triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-ENTER');
+
+    expect(harness.purchases).toEqual(['upgrade-0']);
+    expect(harness.controller.isFocusedButton(0)).toBe(true);
+  });
+
+  test('buying the last rank of a focused upgrade moves focus once', () => {
+    const harness = createControllerHarness([true, true]);
+    harness.controller.initialize();
+
+    triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-ENTER');
+
+    expect(harness.purchases).toEqual(['upgrade-0']);
+    expect(harness.controller.isFocusedButton(1)).toBe(true);
+  });
+
+  test('repeated Enter or Space does not purchase again', () => {
+    const harness = createControllerHarness([true, true]);
+    harness.controller.initialize();
+
+    triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-ENTER');
+    triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-ENTER', { repeat: true });
+    triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-SPACE', { repeat: true });
+
+    expect(harness.purchases).toEqual(['upgrade-0']);
   });
 
   test('hover and pointer movement update cursor for purchasable/disabled/outside states', () => {

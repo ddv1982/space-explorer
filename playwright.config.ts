@@ -26,7 +26,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-desktop',
-      testMatch: ['**/smoke.spec.ts', '**/interaction.spec.ts', '**/picketTurrets.spec.ts'],
+      testMatch: [
+        '**/smoke.spec.ts',
+        '**/interaction.spec.ts',
+        '**/accessibleActions.spec.ts',
+        '**/picketTurrets.spec.ts',
+      ],
       use: { viewport: { width: 1280, height: 720 } },
     },
     {
@@ -34,6 +39,7 @@ export default defineConfig({
       testMatch: [
         '**/smoke.spec.ts',
         '**/interaction.spec.ts',
+        '**/accessibleActions.spec.ts',
         '**/hardwareKeyboard.spec.ts',
         '**/picketTurrets.spec.ts',
       ],

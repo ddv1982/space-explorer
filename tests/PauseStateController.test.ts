@@ -303,6 +303,10 @@ describe('PauseStateController regression coverage', () => {
 
     harness.controller.togglePauseRequest(false);
     harness.handlers.onDeleteSlot('slot-1');
+    expect(deletedSlot).toBeNull();
+    expect(harness.overlayStates.at(-1)?.statusMessage).toBe('Tap DEL again to confirm slot 1.');
+
+    harness.handlers.onDeleteSlot('slot-1');
 
     expect(String(deletedSlot)).toBe('slot-1');
     expect(harness.overlayStates.at(-1)).toEqual(

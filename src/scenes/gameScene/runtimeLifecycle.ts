@@ -22,7 +22,6 @@ interface GameSceneRuntimeLifecycleHandlers {
 interface CreateGameSceneRuntimeLifecycleOptions {
   scene: Phaser.Scene;
   sceneEventBindings: SceneEventBinding[];
-  syncLastLifeHelperWingState: () => void;
   getScaleResizeContext: () => ViewportScaleResizeContext;
   destroyPauseStateController: () => void;
   destroyMobileControls: () => void;
@@ -107,7 +106,6 @@ export function createGameSceneRuntimeLifecycle(
 
   const registerRuntimeHandlers = (): void => {
     registerSceneEventHandlers();
-    options.syncLastLifeHelperWingState();
   };
 
   return {

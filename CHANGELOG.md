@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2026-08-19
+
+### Added
+- Added a `GameplayClock` that accumulates delta only on unpaused combat frames.
+- Added a visually hidden named-action layer for menu, pause, and intermission.
+- Added a write-probe before save mutations and a second-tap confirm for slot delete.
+- Added Content-Security-Policy and related security headers on the production deploy.
+
+### Changed
+- Pause no longer expires score chains, fire cooldown, helper respawn, or picket fire cadence.
+- Picket `PICKET ONLINE` announcement stays on Phaser scene time. Mount fire stays on the gameplay clock.
+- Hybrid devices hide the joystick on hardware keydown and restore it on the next pointerdown.
+- Intermission ignores key repeat on Enter and Space.
+- Menu, pause, and shop hit areas floor at 44 CSS pixels.
+- Save slots persist live shield charges up to eight and floor authored campaign levels.
+- Production deploy is a job on `quality.yml` and runs only after quality and browser jobs succeed.
+
+### Quality
+- Architecture budgets fail when they sit more than 80 lines above measured size.
+- `bun audit --audit-level=high` is a quality step, with `brace-expansion` and `nanoid` pinned through overrides.
+- Isolated unit runner uses a 60 second per-file timeout.
+- Passed 36 functional and visual browser checks with one intentional project skip, and three applicable performance scenarios with three intentional project skips.
+
 ## [1.14.0] - 2026-08-17
 
 ### Added

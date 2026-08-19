@@ -84,3 +84,14 @@
 - The five authored procedural planes are now generated as before, composited once with their original alpha/additive treatment, and released as source canvases. Gameplay samples one 1024px background texture while planets, twinkles, and debris preserve independent depth and motion.
 - The active level is the default residency window. PlanetIntermission explicitly warms the next composite just before transition rather than permanently keeping a second five-canvas source set alive.
 - The global vignette is a CSS compositor overlay and the procedural/entity art keeps its baked neon glow. Gameplay retains its color-grade filter without two additional full-camera WebGL post-processing passes.
+
+## Review Remediation Rebaseline (2026-08-19)
+
+- Commands: `bun run build`, `bun run bundle:report`, `bun run bundle:check`.
+- JavaScript chunks:
+  - `dist/assets/phaser-BWyy4hHF.js`: 1,344.42 kB raw / 347.99 kB gzip.
+  - `dist/assets/GameScene-CTvhq52L.js`: 203.34 kB raw / 52.51 kB gzip.
+  - `dist/assets/index-DVWTmKF_.js`: 200.99 kB raw / 56.49 kB gzip.
+  - `dist/assets/PlanetIntermissionScene-CYbX0ezK.js`: 29.13 kB raw / 9.28 kB gzip.
+- Bundle report totals: 22 files, 2,206.59 kB raw / 885.98 kB gzip; JavaScript total 1,785.98 kB raw; application JavaScript 441.56 kB raw (Phaser excluded).
+- `bun run bundle:check` passed with thresholds: largest asset <= 3,500 kB, total <= 30,000 kB, largest JS <= 1,500 kB, total JS <= 1,900 kB, app JS <= 475 kB.

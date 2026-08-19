@@ -196,11 +196,20 @@ describe('runGameSceneCreateBootstrap', () => {
       },
     };
 
+    const pointerHandlers = new Map<string, () => void>();
     const phaserScene = {
       events: {
         once: (event: string, callback: () => void) => {
           shutdownEventName = event;
           shutdownUnsubscribe = callback;
+        },
+      },
+      input: {
+        on: (event: string, callback: () => void) => {
+          pointerHandlers.set(event, callback);
+        },
+        off: (event: string) => {
+          pointerHandlers.delete(event);
         },
       },
     } as never;
@@ -307,6 +316,8 @@ describe('runGameSceneCreateBootstrap', () => {
     expect(keyboardDetectedHandler).not.toBeNull();
     (keyboardDetectedHandler as (() => void) | null)?.();
     expect(suppressedValues).toEqual([true]);
+    pointerHandlers.get('pointerdown')?.();
+    expect(suppressedValues).toEqual([true, false]);
     (shutdownUnsubscribe as (() => void) | null)?.();
     expect(callLog.slice(-1)).toEqual(['unsubscribeHardwareKeyboardDetected']);
 

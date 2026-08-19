@@ -23,9 +23,11 @@ import {
   setRunSummary,
   type PlayerStateData,
 } from '../systems/PlayerState';
+import { createArmingAction, type ArmingAction } from '../systems/armingAction';
 import { audioManager } from '../systems/AudioManager';
 import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
+import { mountAccessibleActionLayer } from './shared/accessibleActionLayer';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { createSettingsPanel, type SettingsPanel } from './shared/settingsPanel';
 import { createMenuLayoutPlan } from './menuScene/layout';
@@ -43,6 +45,8 @@ export class MenuScene extends Phaser.Scene {
   private saveSlotPanel: MenuSaveSlotPanel | null = null;
   private settingsPanel: SettingsPanel | null = null;
   private gameTransitionQueued = false;
+  private deleteArm?: ArmingAction<SaveSlotId>;
+  private teardownAccessibleActions?: () => void;
 
   constructor() {
     super({ key: 'Menu' });
@@ -53,6 +57,7 @@ export class MenuScene extends Phaser.Scene {
     const layoutPlan = this.initializeMenuScene(menuConfig);
     this.createMenuPanels(layoutPlan, menuConfig.accentColor);
     this.refreshSaveSlots('');
+    this.syncAccessibleActions();
     this.maybeStartDevLevelJump();
   }
 
@@ -227,11 +232,26 @@ export class MenuScene extends Phaser.Scene {
   private deleteSlot(slotId: SaveSlotId): void {
     this.playMenuClick();
 
+    const deleteArm = this.ensureDeleteArm();
     if (!this.isSaveStorageAvailable()) {
+      deleteArm.cancel();
       this.showSaveSlotError('Save slots unavailable in this browser context.');
       return;
     }
 
+    if (!deleteArm.trigger(slotId)) {
+      this.refreshSaveSlots(`Tap DEL again to confirm slot ${slotId.slice(-1)}.`);
+    }
+  }
+
+  private ensureDeleteArm() {
+    this.deleteArm ??= createArmingAction<SaveSlotId>((slotId) => {
+      this.completeDeleteSlot(slotId);
+    });
+    return this.deleteArm;
+  }
+
+  private completeDeleteSlot(slotId: SaveSlotId): void {
     const ok = this.deleteStoredSaveSlot(slotId);
     if (!ok) {
       this.showSaveSlotError('Failed to delete slot. Check browser storage permissions.');
@@ -300,7 +320,25 @@ export class MenuScene extends Phaser.Scene {
     });
   }
 
+  private syncAccessibleActions(): void {
+    this.teardownAccessibleActions?.();
+    this.teardownAccessibleActions = mountAccessibleActionLayer({
+      label: 'Command deck',
+      actions: [
+        { name: 'new-run', label: 'New run', activate: () => this.startNewRun() },
+        { name: 'load-slot-1', label: 'Load slot 1', activate: () => this.loadFromSlot('slot-1') },
+        { name: 'load-slot-2', label: 'Load slot 2', activate: () => this.loadFromSlot('slot-2') },
+        { name: 'load-slot-3', label: 'Load slot 3', activate: () => this.loadFromSlot('slot-3') },
+        { name: 'delete-slot-1', label: 'Delete slot 1', activate: () => this.deleteSlot('slot-1') },
+        { name: 'delete-slot-2', label: 'Delete slot 2', activate: () => this.deleteSlot('slot-2') },
+        { name: 'delete-slot-3', label: 'Delete slot 3', activate: () => this.deleteSlot('slot-3') },
+      ],
+    });
+  }
+
   private handleSceneShutdown(): void {
+    this.teardownAccessibleActions?.();
+    this.teardownAccessibleActions = undefined;
     this.parallax?.destroy();
     this.saveSlotPanel?.destroy();
     this.saveSlotPanel = null;

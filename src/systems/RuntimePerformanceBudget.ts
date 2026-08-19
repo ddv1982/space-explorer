@@ -28,9 +28,12 @@ export class RuntimePerformanceBudget {
   private samples: boolean[] = [];
   private recoveryWindows = 0;
   private droppedFrameRatio = 0;
+  private cachedSnapshot: RuntimePerformanceSnapshot;
   private listeners = new Set<(snapshot: RuntimePerformanceSnapshot) => void>();
 
-  constructor(private readonly enabledResolver: () => boolean = () => getVisualQualityTier() === 'auto') {}
+  constructor(private readonly enabledResolver: () => boolean = () => getVisualQualityTier() === 'auto') {
+    this.cachedSnapshot = this.buildSnapshot();
+  }
 
   isEnabled(): boolean {
     return this.enabledResolver();
@@ -39,7 +42,10 @@ export class RuntimePerformanceBudget {
   sampleFrame(deltaMs: number): void {
     if (!this.isEnabled() || !Number.isFinite(deltaMs) || deltaMs <= 0 || deltaMs > 250) return;
     this.samples.push(deltaMs > 22);
-    if (this.samples.length < SAMPLE_WINDOW) return;
+    if (this.samples.length < SAMPLE_WINDOW) {
+      this.cachedSnapshot = this.buildSnapshot();
+      return;
+    }
 
     const dropped = this.samples.filter(Boolean).length;
     this.droppedFrameRatio = dropped / this.samples.length;
@@ -62,6 +68,8 @@ export class RuntimePerformanceBudget {
     } else {
       this.recoveryWindows = 0;
     }
+
+    this.cachedSnapshot = this.buildSnapshot();
   }
 
   reset(): void {
@@ -71,9 +79,17 @@ export class RuntimePerformanceBudget {
     this.recoveryWindows = 0;
     this.droppedFrameRatio = 0;
     if (changed) this.emit();
+    else this.cachedSnapshot = this.buildSnapshot();
   }
 
   getSnapshot(): RuntimePerformanceSnapshot {
+    if (this.cachedSnapshot.enabled !== this.isEnabled()) {
+      this.cachedSnapshot = this.buildSnapshot();
+    }
+    return this.cachedSnapshot;
+  }
+
+  private buildSnapshot(): RuntimePerformanceSnapshot {
     const enabled = this.isEnabled();
     const level = enabled ? LEVELS[this.pressureLevel] : LEVELS[0];
     return Object.freeze({
@@ -99,7 +115,8 @@ export class RuntimePerformanceBudget {
   }
 
   private emit(): void {
-    const snapshot = this.getSnapshot();
+    this.cachedSnapshot = this.buildSnapshot();
+    const snapshot = this.cachedSnapshot;
     this.listeners.forEach((listener) => listener(snapshot));
   }
 }

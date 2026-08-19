@@ -67,6 +67,11 @@ describe('SaveSlotStorage', () => {
     expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, false, false]);
   });
 
+  test('reports unavailable when a write probe throws', () => {
+    installWindow(new ThrowingStorage());
+    expect(isSaveStorageAvailable()).toBe(false);
+  });
+
   test('writes, reads, lists, and deletes save slots using localStorage', () => {
     const storage = new MemoryStorage();
     installWindow(storage);
@@ -515,7 +520,7 @@ describe('SaveSlotStorage', () => {
       level: 5,
       score: Number.MAX_SAFE_INTEGER,
       currentHp: 15,
-      currentShields: 3,
+      currentShields: 8,
       remainingLives: 3,
       upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 3, hp: 15 }] },

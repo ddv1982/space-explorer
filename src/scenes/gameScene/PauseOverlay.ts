@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { getGameplayDifficultyTier } from '../../config/gameplayDifficulty';
 import { getVisualQualityTier } from '../../config/visualQuality';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
+import { mountAccessibleActionLayer } from '../shared/accessibleActionLayer';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
 import { createSettingsPanel, type SettingsPanel } from '../shared/settingsPanel';
 import {
@@ -51,6 +52,7 @@ export class PauseOverlay {
   private checkpointTab: ActionButtonControl | null = null;
   private settingsTab: ActionButtonControl | null = null;
   private settingsPanel: SettingsPanel | null = null;
+  private teardownAccessibleActions?: () => void;
   private saveSlotRows: PauseSaveSlotRows | null = null;
   private saveSlotsVisible = true;
   private saveHeaderVisible = true;
@@ -245,6 +247,8 @@ export class PauseOverlay {
   }
 
   destroy(): void {
+    this.teardownAccessibleActions?.();
+    this.teardownAccessibleActions = undefined;
     if (!this.scene) {
       return;
     }
@@ -372,6 +376,36 @@ export class PauseOverlay {
     this.settingsTab.setVariant(this.activeSubview === 'settings' ? 'primary' : 'secondary');
     this.settingsPanel.setVisible(settingsVisible);
     setPauseSaveSlotRowsVisible(this.saveSlotRows, checkpointsVisible && this.saveSlotsVisible);
+    this.syncAccessibleActions(shouldShow);
+  }
+
+  private syncAccessibleActions(visible: boolean): void {
+    this.teardownAccessibleActions?.();
+    this.teardownAccessibleActions = undefined;
+    if (!visible || !this.handlers) {
+      return;
+    }
+
+    const handlers = this.handlers;
+    this.teardownAccessibleActions = mountAccessibleActionLayer({
+      label: 'Paused',
+      actions: [
+        { name: 'resume', label: 'Resume', activate: () => handlers.onResume() },
+        { name: 'main-menu', label: 'Main menu', activate: () => handlers.onMainMenu() },
+        ...this.state.saveSlots.map((slot) => ({
+          name: `load-${slot.id}`,
+          label: `Load ${slot.title}`,
+          activate: () => handlers.onLoadSlot(slot.id),
+          disabled: !slot.occupied,
+        })),
+        ...this.state.saveSlots.map((slot) => ({
+          name: `delete-${slot.id}`,
+          label: `Delete ${slot.title}`,
+          activate: () => handlers.onDeleteSlot(slot.id),
+          disabled: !slot.occupied,
+        })),
+      ],
+    });
   }
 
   private selectSubview(subview: 'checkpoints' | 'settings'): void {

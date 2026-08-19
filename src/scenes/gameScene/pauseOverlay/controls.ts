@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { UI_FONT_MONO } from '@/utils/uiFonts';
 import { createActionButtonControl, type ActionButtonControl } from '../../shared/actionButtonControl';
+import { MIN_TOUCH_TARGET_PX } from '../../shared/touchTarget';
 import { setSingleLineTextWithEllipsis } from '../../shared/textFit';
 import {
   PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
@@ -96,6 +97,7 @@ export function createPauseSaveSlotRows(
         label: '+ SAVE',
         width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
         height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+        hitHeight: MIN_TOUCH_TARGET_PX,
         onClick: () => handlers.onSaveSlot(slotId),
         variant: 'primary',
         fontSize: '11px',
@@ -104,6 +106,7 @@ export function createPauseSaveSlotRows(
         label: '> LOAD',
         width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
         height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+        hitHeight: MIN_TOUCH_TARGET_PX,
         onClick: () => handlers.onLoadSlot(slotId),
         variant: 'secondary',
         fontSize: '11px',
@@ -112,6 +115,7 @@ export function createPauseSaveSlotRows(
         label: 'X DEL',
         width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
         height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+        hitHeight: MIN_TOUCH_TARGET_PX,
         onClick: () => handlers.onDeleteSlot(slotId),
         variant: 'danger',
         fontSize: '11px',
