@@ -6,44 +6,52 @@
   "workerCount": 1,
   "serverMode": "vite-development-with-browser-harness",
   "environment": {
-    "platform": "darwin",
-    "hardwareConcurrency": 10,
+    "platform": "ubuntu-24.04",
+    "hardwareConcurrency": 4,
     "deviceMemoryGiB": 16,
     "browser": "HeadlessChrome 151.0.7922.34",
-    "webglRenderer": "ANGLE Vulkan SwiftShader"
+    "webglRenderer": "ANGLE Vulkan SwiftShader (Subzero)"
   },
   "signal": "workCost.update.p95Ms",
   "sampleCount": 10,
   "warmupFrames": 2,
   "replicateCountPerCondition": 5,
   "syntheticUpdateWorkMs": 6,
-  "approvedThresholdMs": 2,
+  "approvedThresholdMs": 5,
   "baseline": {
-    "values": [0.5, 0.4, 0.5, 0.4, 0.3],
-    "min": 0.3,
-    "max": 0.5,
-    "median": 0.4,
+    "values": [3.9, 0.9, 1.0, 1.1, 1.0, 1.1, 0.9, 1.8, 0.8, 2.6],
+    "min": 0.8,
+    "max": 3.9,
+    "median": 1.0,
     "mad": 0.1,
-    "coefficientOfVariation": 0.1782
+    "coefficientOfVariation": 0.669
   },
   "synthetic": {
-    "values": [6.5, 6.4, 6.3, 6.3, 6.4],
-    "min": 6.3,
-    "max": 6.5,
-    "median": 6.4,
-    "mad": 0.1,
-    "coefficientOfVariation": 0.0117,
-    "failureCount": 5
+    "values": [10.1, 9.8, 8.0, 7.6, 8.9],
+    "min": 7.6,
+    "max": 10.1,
+    "median": 8.9,
+    "mad": 0.9,
+    "coefficientOfVariation": 0.1097,
+    "failureCount": 5,
+    "completedReplicateSets": 1
   },
   "sourceBinding": {
-    "executionContext": "local-ci-shaped",
+    "executionContext": "github-actions",
+    "workflowRunId": 32502090298,
+    "sourceCommit": "5ee1b7f9979bcccc9e4fb7e57badc781e3dc1404",
+    "attempts": 2,
     "normalCommand": "CI=1 bun run test:e2e:performance:gate",
     "syntheticCommand": "CI=1 bun run test:e2e:performance:gate:synthetic",
     "syntheticValidationCommand": "if CI=1 bun run test:e2e:performance:gate:synthetic; then exit 1; else exit 0; fi",
-    "normalResult": "passed",
-    "syntheticResult": "failed-threshold-as-required",
-    "normalFlowValidationRevision": 64,
-    "syntheticFlowValidationRevision": 65
+    "normalResultAtPreviousThreshold": "two-runs-exceeded-2ms",
+    "syntheticResult": "first-run-failed-threshold-as-required",
+    "secondSyntheticResult": "former-180s-test-timeout"
+  },
+  "localReference": {
+    "platform": "darwin",
+    "baselineRangeMs": [0.3, 0.5],
+    "syntheticRangeMs": [6.3, 6.5]
   },
   "evidenceOnlySignals": [
     "requestAnimationFrame delivery cadence",

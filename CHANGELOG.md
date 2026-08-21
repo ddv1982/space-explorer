@@ -18,9 +18,9 @@ All notable changes to this project will be documented in this file.
 
 ### Quality
 - Passed both TypeScript compilers, formatting, ESLint, Knip, level validation, architecture and cycle checks, the complete isolated unit suite, production build, and bundle guardrails.
-- Passed 31 applicable desktop/mobile functional browser checks with one intentional project skip.
+- Passed 41 applicable desktop/mobile functional and visual browser checks with one intentional project skip.
 - Passed the local SwiftShader performance gate at a maximum update p95 of 0.5 ms; all five 6 ms synthetic replicates were rejected as required.
-- GitHub-hosted `ubuntu-24.04` characterization remains the release workflow's environment-specific performance evidence.
+- Two GitHub-hosted `ubuntu-24.04` runs characterized a 5 ms update-cost ceiling and a 300-second execution allowance for the unchanged 10-frame measurement window.
 
 ## [1.15.0] - 2026-08-19
 
