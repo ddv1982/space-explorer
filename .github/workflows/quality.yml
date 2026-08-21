@@ -107,14 +107,16 @@ jobs:
 
       - name: Run normal threshold condition
         id: normal
-        run: bun run test:e2e:performance:gate
+        run: bun run test:e2e:performance:gate 2>&1 | tee performance-gate-normal.log
 
       - name: Upload normal threshold metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: performance-gate-normal
-          path: test-results/
+          path: |
+            test-results/
+            performance-gate-normal.log
           if-no-files-found: error
           retention-days: 14
 
