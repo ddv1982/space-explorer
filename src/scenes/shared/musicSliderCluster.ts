@@ -11,6 +11,7 @@ export type MusicSliderCluster = MusicTuningSliders & {
 interface CreateMusicSliderClusterConfig {
   width: number;
   getSliders: () => MusicSliderCluster | null;
+  onValueChanged?: () => void;
 }
 
 export function createMusicSliderCluster(
@@ -25,21 +26,33 @@ export function createMusicSliderCluster(
       value: tuning.creativity,
       width: config.width,
       icon: drawBrainIcon,
-      onChange: (value) => applyMusicRuntimeTuningValue('creativity', value, config.getSliders()),
+      onChange: (value) => {
+        audioManager.resumeFromUserGesture();
+        applyMusicRuntimeTuningValue('creativity', value, config.getSliders());
+        config.onValueChanged?.();
+      },
     }),
     energy: createMusicSliderControl(scene, {
       label: 'ENERGY',
       value: tuning.energy,
       width: config.width,
       icon: drawBoltIcon,
-      onChange: (value) => applyMusicRuntimeTuningValue('energy', value, config.getSliders()),
+      onChange: (value) => {
+        audioManager.resumeFromUserGesture();
+        applyMusicRuntimeTuningValue('energy', value, config.getSliders());
+        config.onValueChanged?.();
+      },
     }),
     ambience: createMusicSliderControl(scene, {
       label: 'AMBIENCE',
       value: tuning.ambience,
       width: config.width,
       icon: drawWaveformIcon,
-      onChange: (value) => applyMusicRuntimeTuningValue('ambience', value, config.getSliders()),
+      onChange: (value) => {
+        audioManager.resumeFromUserGesture();
+        applyMusicRuntimeTuningValue('ambience', value, config.getSliders());
+        config.onValueChanged?.();
+      },
     }),
     volume: createMusicSliderControl(scene, {
       label: 'MUSIC VOLUME',
@@ -47,8 +60,10 @@ export function createMusicSliderCluster(
       width: config.width,
       icon: drawNoteIcon,
       onChange: (value) => {
+        audioManager.resumeFromUserGesture();
         const nextVolume = audioManager.setMusicVolume(value);
         config.getSliders()?.volume.setValue(nextVolume);
+        config.onValueChanged?.();
       },
     }),
   };

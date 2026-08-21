@@ -6,12 +6,14 @@ import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
+import { mountAccessibleActionLayer, type AccessibleActionLayerHandle } from './shared/accessibleActionLayer';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
 import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_FONT, NEON_TEXT } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class VictoryScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
+  private teardownAccessibleActions?: AccessibleActionLayerHandle;
 
   constructor() {
     super({ key: 'Victory' });
@@ -99,9 +101,15 @@ export class VictoryScene extends Phaser.Scene {
       color: '#dce8ff',
     });
 
-    bindProceedOnInput(this, () => {
+    const continueToMenu = () => {
       audioManager.playClick();
       this.scene.start('Menu');
+    };
+    bindProceedOnInput(this, continueToMenu);
+    this.teardownAccessibleActions = mountAccessibleActionLayer({
+      label: 'Mission complete',
+      summary: `All ${totalLevels} sectors cleared. Final score ${finalScore}.`,
+      actions: [{ name: 'continue', label: 'Continue to command deck', activate: continueToMenu }],
     });
 
     // Play victory fanfare
@@ -109,7 +117,11 @@ export class VictoryScene extends Phaser.Scene {
     this.time.delayedCall(400, () => audioManager.playPowerUp());
     this.time.delayedCall(800, () => audioManager.playPowerUp());
 
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.parallax.destroy());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.teardownAccessibleActions?.();
+      this.teardownAccessibleActions = undefined;
+      this.parallax.destroy();
+    });
   }
 
   update(_time: number, delta: number): void {

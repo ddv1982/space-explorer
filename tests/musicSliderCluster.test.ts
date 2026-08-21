@@ -23,12 +23,14 @@ const createdConfigs = new Map<string, SliderConfig>();
 const createdSliders = new Map<string, SliderStub>();
 const applyCalls: Array<{ key: string; value: number; sliders: unknown }> = [];
 const setMusicVolumeCalls: number[] = [];
+const resumeFromUserGesture = mock(() => undefined);
 
 mock.module('phaser', () => ({ default: {} }));
 mock.module('../src/systems/AudioManager', () => ({
   audioManager: {
     getMusicRuntimeTuning: () => ({ creativity: 0.25, energy: 0.5, ambience: 0.75 }),
     getMusicVolume: () => 0.6,
+    resumeFromUserGesture,
     setMusicVolume: (value: number) => {
       setMusicVolumeCalls.push(value);
       return 0.42;
@@ -86,6 +88,7 @@ beforeEach(() => {
   createdSliders.clear();
   applyCalls.length = 0;
   setMusicVolumeCalls.length = 0;
+  resumeFromUserGesture.mockClear();
 });
 
 describe('musicSliderCluster', () => {
@@ -103,6 +106,7 @@ describe('musicSliderCluster', () => {
     expect(applyCalls[0]).toEqual({ key: 'creativity', value: 0.9, sliders });
 
     createdConfigs.get('MUSIC VOLUME')?.onChange(0.8);
+    expect(resumeFromUserGesture).toHaveBeenCalledTimes(2);
     expect(setMusicVolumeCalls).toEqual([0.8]);
     expect(createdSliders.get('MUSIC VOLUME')?.setValueCalls).toEqual([0.42]);
   });

@@ -57,7 +57,12 @@ export class AudioManager {
   }
 
   playClick(): void {
+    this.resumeFromUserGesture();
     this.sfxManager.playClick();
+  }
+
+  resumeFromUserGesture(): void {
+    if (this.pauseReasons.size === 0) this.contextManager.resumeFromUserGesture();
   }
 
   playPlayerHit(): void {

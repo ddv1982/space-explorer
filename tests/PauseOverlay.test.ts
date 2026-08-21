@@ -66,6 +66,8 @@ type StubButton = {
   destroy: () => void;
 };
 
+let accessibleStatusMessage = '';
+
 mock.module('phaser', () => ({
   default: {
     Scale: {
@@ -115,6 +117,17 @@ mock.module('../src/scenes/shared/settingsPanel', () => ({
     },
     destroy() {},
   }),
+}));
+
+mock.module('../src/scenes/shared/accessibleActionLayer', () => ({
+  mountAccessibleActionLayer: (options: { status?: { message: string } }) => {
+    accessibleStatusMessage = options.status?.message ?? '';
+    return Object.assign(() => {}, {
+      update(nextOptions: { status?: { message: string } }) {
+        accessibleStatusMessage = nextOptions.status?.message ?? '';
+      },
+    });
+  },
 }));
 
 mock.module('../src/utils/layout', () => ({
@@ -344,5 +357,21 @@ describe('PauseOverlay relayout regression', () => {
     (overlay as unknown as { selectSubview: (view: 'settings' | 'checkpoints') => void }).selectSubview('checkpoints');
     expect(internals.settingsPanel.visible).toBe(false);
     expect(internals.hintText.text).toBe('Choose a slot to save, restore, or clear your run.');
+  });
+
+  test('mirrors the painted unavailable-storage fallback into semantic status', () => {
+    const overlay = PauseOverlay.create(createScene() as never, {
+      onResume: () => {},
+      onSaveSlot: () => {},
+      onLoadSlot: () => {},
+      onDeleteSlot: () => {},
+      onMainMenu: () => {},
+      onSelectDifficulty: () => true,
+      onSelectQuality: () => true,
+    });
+
+    overlay.setState({ visible: true, storageAvailable: false, saveSlots: [] });
+
+    expect(accessibleStatusMessage).toBe('Checkpoint storage unavailable in this browser.');
   });
 });

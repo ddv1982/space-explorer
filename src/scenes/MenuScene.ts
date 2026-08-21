@@ -27,7 +27,11 @@ import { createArmingAction, type ArmingAction } from '../systems/armingAction';
 import { audioManager } from '../systems/AudioManager';
 import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
-import { mountAccessibleActionLayer } from './shared/accessibleActionLayer';
+import {
+  mountAccessibleActionLayer,
+  type AccessibleAction,
+  type AccessibleActionLayerHandle,
+} from './shared/accessibleActionLayer';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { createSettingsPanel, type SettingsPanel } from './shared/settingsPanel';
 import { createMenuLayoutPlan } from './menuScene/layout';
@@ -46,7 +50,9 @@ export class MenuScene extends Phaser.Scene {
   private settingsPanel: SettingsPanel | null = null;
   private gameTransitionQueued = false;
   private deleteArm?: ArmingAction<SaveSlotId>;
-  private teardownAccessibleActions?: () => void;
+  private teardownAccessibleActions?: AccessibleActionLayerHandle;
+  private accessibleStatusMessage = '';
+  private accessibleStatusOk = true;
 
   constructor() {
     super({ key: 'Menu' });
@@ -131,6 +137,7 @@ export class MenuScene extends Phaser.Scene {
       quality: this.getCurrentVisualQualityTier(),
       onSelectDifficulty: (tier) => this.selectGameplayDifficultyTier(tier),
       onSelectQuality: (tier) => this.selectVisualQualityTier(tier),
+      onMusicValueChanged: () => this.syncAccessibleActions(),
     });
     this.settingsPanel.setDepth(11);
   }
@@ -278,6 +285,9 @@ export class MenuScene extends Phaser.Scene {
   private refreshSaveSlots(message: string, isError = false): void {
     this.saveSlotPanel?.refresh(this.listAvailableSaveSlots());
     this.saveSlotPanel?.setStatus(message, isError);
+    this.accessibleStatusMessage = message;
+    this.accessibleStatusOk = !isError;
+    if (this.teardownAccessibleActions) this.syncAccessibleActions();
   }
 
   private showSaveSlotError(message: string): void {
@@ -321,19 +331,89 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private syncAccessibleActions(): void {
-    this.teardownAccessibleActions?.();
-    this.teardownAccessibleActions = mountAccessibleActionLayer({
+    const slots = this.listAvailableSaveSlots();
+    const options = {
       label: 'Command deck',
+      summary: 'Start a new run, manage save slots, or change game and music settings.',
+      status: {
+        message: this.accessibleStatusMessage,
+        politeness: this.accessibleStatusOk ? ('polite' as const) : ('assertive' as const),
+      },
       actions: [
         { name: 'new-run', label: 'New run', activate: () => this.startNewRun() },
-        { name: 'load-slot-1', label: 'Load slot 1', activate: () => this.loadFromSlot('slot-1') },
-        { name: 'load-slot-2', label: 'Load slot 2', activate: () => this.loadFromSlot('slot-2') },
-        { name: 'load-slot-3', label: 'Load slot 3', activate: () => this.loadFromSlot('slot-3') },
-        { name: 'delete-slot-1', label: 'Delete slot 1', activate: () => this.deleteSlot('slot-1') },
-        { name: 'delete-slot-2', label: 'Delete slot 2', activate: () => this.deleteSlot('slot-2') },
-        { name: 'delete-slot-3', label: 'Delete slot 3', activate: () => this.deleteSlot('slot-3') },
+        ...slots.map((slot) => ({
+          name: `load-${slot.id}`,
+          label: `Load ${slot.title}`,
+          description: slot.occupied ? `${slot.subtitle}, ${slot.savedAtLabel}` : 'Empty slot',
+          disabled: !slot.occupied,
+          activate: () => this.loadFromSlot(slot.id),
+        })),
+        ...slots.map((slot) => ({
+          name: `delete-${slot.id}`,
+          label: `Delete ${slot.title}`,
+          disabled: !slot.occupied,
+          activate: () => this.deleteSlot(slot.id),
+        })),
+        ...(['low', 'normal', 'high'] as const).map((tier) => ({
+          name: `difficulty-${tier}`,
+          label: `Set difficulty ${tier}`,
+          selected: this.getCurrentGameplayDifficultyTier() === tier,
+          activate: () => {
+            if (this.selectGameplayDifficultyTier(tier)) this.settingsPanel?.setDifficulty(tier);
+          },
+        })),
+        ...(['low', 'standard', 'high', 'auto'] as const).map((tier) => ({
+          name: `quality-${tier}`,
+          label: `Set visual quality ${tier}`,
+          selected: this.getCurrentVisualQualityTier() === tier,
+          activate: () => this.selectVisualQualityTier(tier),
+        })),
+        ...this.createAccessibleMusicActions(),
       ],
+    };
+    if (this.teardownAccessibleActions) {
+      this.teardownAccessibleActions.update(options);
+    } else {
+      this.teardownAccessibleActions = mountAccessibleActionLayer(options);
+    }
+  }
+
+  private createAccessibleMusicActions(): AccessibleAction[] {
+    const tuning = audioManager.getMusicRuntimeTuning();
+    const values = { ...tuning, volume: audioManager.getMusicVolume() };
+    return (Object.keys(values) as Array<keyof typeof values>).flatMap((key) => {
+      const label = key === 'volume' ? 'music volume' : key;
+      const description = `${Math.round(values[key] * 100)} percent`;
+      return [
+        {
+          name: `decrease-${key}`,
+          label: `Decrease ${label}`,
+          description,
+          disabled: values[key] <= 0,
+          activate: () => this.adjustAccessibleMusicValue(key, -0.05),
+        },
+        {
+          name: `increase-${key}`,
+          label: `Increase ${label}`,
+          description,
+          disabled: values[key] >= 1,
+          activate: () => this.adjustAccessibleMusicValue(key, 0.05),
+        },
+      ];
     });
+  }
+
+  private adjustAccessibleMusicValue(key: 'creativity' | 'energy' | 'ambience' | 'volume', delta: number): void {
+    const current = key === 'volume' ? audioManager.getMusicVolume() : audioManager.getMusicRuntimeTuning()[key];
+    const requested = Math.max(0, Math.min(1, current + delta));
+    const value =
+      key === 'volume'
+        ? audioManager.setMusicVolume(requested)
+        : audioManager.setMusicRuntimeTuning({ [key]: requested })[key];
+    this.settingsPanel?.setMusicValue(key, value);
+    this.accessibleStatusMessage = `${key === 'volume' ? 'Music volume' : key} ${Math.round(value * 100)} percent.`;
+    this.accessibleStatusOk = true;
+    this.syncAccessibleActions();
   }
 
   private handleSceneShutdown(): void {

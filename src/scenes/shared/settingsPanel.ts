@@ -22,6 +22,9 @@ export interface SettingsPanelLayout {
 }
 
 export interface SettingsPanel {
+  setDifficulty: (tier: GameplayDifficultyTier) => void;
+  setQuality: (tier: VisualQualityTier) => void;
+  setMusicValue: (key: 'creativity' | 'energy' | 'ambience' | 'volume', value: number) => void;
   setLayout: (layout: SettingsPanelLayout) => void;
   setDepth: (depth: number) => void;
   setVisible: (visible: boolean) => void;
@@ -36,6 +39,7 @@ export function createSettingsPanel(
     quality: VisualQualityTier;
     onSelectDifficulty: (tier: GameplayDifficultyTier) => boolean;
     onSelectQuality: (tier: VisualQualityTier) => boolean;
+    onMusicValueChanged?: () => void;
   }
 ): SettingsPanel {
   let sliders: MusicSliderCluster | null = null;
@@ -72,10 +76,20 @@ export function createSettingsPanel(
     createMusicSliderCluster(scene, {
       width: sliderWidth,
       getSliders: () => sliders,
+      onValueChanged: config.onMusicValueChanged,
     });
   sliders = createSliders();
 
   const panel: SettingsPanel = {
+    setDifficulty(tier) {
+      difficulty.setValue(tier);
+    },
+    setQuality(tier) {
+      quality.setValue(tier);
+    },
+    setMusicValue(key, value) {
+      sliders?.[key].setValue(value);
+    },
     setLayout(layout) {
       difficulty.setLayout({
         x: layout.x,

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const createdSliderWidths: number[] = [];
 const destroyedClusters: unknown[] = [];
+const sliderValueChangedCallbacks: Array<(() => void) | undefined> = [];
 
 mock.module('phaser', () => ({ default: {} }));
 mock.module('../src/scenes/shared/tierSelectorControl', () => ({
@@ -13,8 +14,9 @@ mock.module('../src/scenes/shared/tierSelectorControl', () => ({
   }),
 }));
 mock.module('../src/scenes/shared/musicSliderCluster', () => ({
-  createMusicSliderCluster: (_scene: unknown, config: { width: number }) => {
+  createMusicSliderCluster: (_scene: unknown, config: { width: number; onValueChanged?: () => void }) => {
     createdSliderWidths.push(config.width);
+    sliderValueChangedCallbacks.push(config.onValueChanged);
     const createSlider = () => ({
       setPosition() {},
       setDepth() {},
@@ -56,6 +58,7 @@ const createLayout = (sliderWidth: number) => ({
 beforeEach(() => {
   createdSliderWidths.length = 0;
   destroyedClusters.length = 0;
+  sliderValueChangedCallbacks.length = 0;
 });
 
 describe('settingsPanel responsive slider lifecycle', () => {
@@ -78,5 +81,23 @@ describe('settingsPanel responsive slider lifecycle', () => {
     panel.setLayout(createLayout(161));
     expect(createdSliderWidths).toEqual([248, 161]);
     expect(destroyedClusters).toHaveLength(1);
+  });
+
+  test('forwards painted music changes to the scene adapter after responsive recreation', () => {
+    let notifications = 0;
+    const panel = createSettingsPanel({} as never, {
+      layout: createLayout(248),
+      difficulty: 'normal',
+      quality: 'standard',
+      onSelectDifficulty: () => true,
+      onSelectQuality: () => true,
+      onMusicValueChanged: () => notifications++,
+    });
+
+    sliderValueChangedCallbacks[0]?.();
+    panel.setLayout(createLayout(161));
+    sliderValueChangedCallbacks[1]?.();
+
+    expect(notifications).toBe(2);
   });
 });

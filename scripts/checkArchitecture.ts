@@ -44,9 +44,9 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
     reason: 'development-only diagnostics composition root backed by focused command modules',
     evidence: 'browser harness API contract and production bundle exclusion checks',
   },
-  'src/browserHarness.ts#probeFramePacing': {
-    lines: 200,
-    complexity: 25,
+  'src/browserHarness/performanceProbes.ts#probeFramePacing': {
+    lines: 230,
+    complexity: 45,
     category: 'runtime-coordinator',
     reason: 'single sampling transaction with symmetric instrumentation cleanup',
     evidence: 'browser performance probe coverage',
@@ -99,6 +99,13 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
     category: 'presentation-builder',
     reason: 'atomic projection of pause state across mutually dependent controls',
     evidence: 'pause overlay state tests',
+  },
+  'src/scenes/VictoryScene.ts#create': {
+    lines: 104,
+    complexity: 1,
+    category: 'presentation-builder',
+    reason: 'cohesive victory display-list construction with visible animation order',
+    evidence: 'victory scene tests and browser visual evidence',
   },
   'src/scenes/gameScene/combatFeedbackHandlers.ts#createGameSceneCombatFeedbackHandlers': {
     lines: 245,
@@ -155,6 +162,27 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
     category: 'presentation-builder',
     reason: 'small control lifecycle keeping construction, state, input, and disposal adjacent',
     evidence: 'shared control tests and browser interaction coverage',
+  },
+  'src/scenes/shared/accessibleActionLayer.ts#mountAccessibleActionLayer': {
+    lines: 137,
+    complexity: 31,
+    category: 'presentation-builder',
+    reason: 'single semantic action-layer lifecycle with shared focus and announcement state',
+    evidence: 'accessible action-layer tests and browser accessibility coverage',
+  },
+  'src/scenes/shared/accessibleActionLayer.ts#update': {
+    lines: 76,
+    complexity: 21,
+    category: 'presentation-builder',
+    reason: 'atomic projection of scene actions into the semantic DOM layer',
+    evidence: 'accessible action-layer tests and browser accessibility coverage',
+  },
+  'src/scenes/shared/settingsPanel.ts#createSettingsPanel': {
+    lines: 110,
+    complexity: 8,
+    category: 'presentation-builder',
+    reason: 'cohesive settings control construction and responsive relayout wiring',
+    evidence: 'settings tests and browser interaction coverage',
   },
   'src/scenes/shared/musicSliderControl.ts#createMusicSliderControl': {
     lines: 262,
@@ -263,6 +291,11 @@ const TEST_CONCENTRATION_BUDGETS: Record<string, { lines: number; reason: string
     reason: 'single turret lifecycle fixture',
     evidence: 'picket turret regression suite',
   },
+  'tests/e2e/performance.evidence.spec.ts': {
+    lines: 575,
+    reason: 'single normal-and-synthetic performance-gate evidence narrative',
+    evidence: 'desktop and mobile performance projects with threshold-marker verification',
+  },
 };
 const CONCENTRATION_POLICIES: Record<string, ConcentrationPolicy> = {
   'src/config/levels/music/patterns/arpeggiatorPatterns.ts': {
@@ -280,11 +313,18 @@ const CONCENTRATION_POLICIES: Record<string, ConcentrationPolicy> = {
     evidence: 'level music validation and procedural music tests',
   },
   'src/browserHarness.ts': {
-    lines: 400,
+    lines: 140,
     imports: 15,
     category: 'composition-root',
     reason: 'browser-only diagnostics composition root after command extraction',
     evidence: 'browser harness contract and production bundle exclusion checks',
+  },
+  'src/scenes/gameScene/PauseOverlay.ts': {
+    lines: 525,
+    imports: 10,
+    category: 'presentation-builder',
+    reason: 'single pause-overlay view lifecycle with shared controls and responsive state',
+    evidence: 'pause overlay tests and responsive browser visuals',
   },
   'src/scenes/GameScene.ts': {
     lines: 455,

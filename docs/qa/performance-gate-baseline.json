@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-21",
+  "project": "chromium-desktop-performance-gate",
+  "viewport": { "width": 1280, "height": 720 },
+  "workerCount": 1,
+  "serverMode": "vite-development-with-browser-harness",
+  "environment": {
+    "platform": "darwin",
+    "hardwareConcurrency": 10,
+    "deviceMemoryGiB": 16,
+    "browser": "HeadlessChrome 151.0.7922.34",
+    "webglRenderer": "ANGLE Vulkan SwiftShader"
+  },
+  "signal": "workCost.update.p95Ms",
+  "sampleCount": 10,
+  "warmupFrames": 2,
+  "replicateCountPerCondition": 5,
+  "syntheticUpdateWorkMs": 6,
+  "approvedThresholdMs": 2,
+  "baseline": {
+    "values": [0.5, 0.4, 0.5, 0.4, 0.3],
+    "min": 0.3,
+    "max": 0.5,
+    "median": 0.4,
+    "mad": 0.1,
+    "coefficientOfVariation": 0.1782
+  },
+  "synthetic": {
+    "values": [6.5, 6.4, 6.3, 6.3, 6.4],
+    "min": 6.3,
+    "max": 6.5,
+    "median": 6.4,
+    "mad": 0.1,
+    "coefficientOfVariation": 0.0117,
+    "failureCount": 5
+  },
+  "sourceBinding": {
+    "executionContext": "local-ci-shaped",
+    "normalCommand": "CI=1 bun run test:e2e:performance:gate",
+    "syntheticCommand": "CI=1 bun run test:e2e:performance:gate:synthetic",
+    "syntheticValidationCommand": "if CI=1 bun run test:e2e:performance:gate:synthetic; then exit 1; else exit 0; fi",
+    "normalResult": "passed",
+    "syntheticResult": "failed-threshold-as-required",
+    "normalFlowValidationRevision": 64,
+    "syntheticFlowValidationRevision": 65
+  },
+  "evidenceOnlySignals": [
+    "requestAnimationFrame delivery cadence",
+    "render submission timing",
+    "mobile timing",
+    "runtime load inventory"
+  ]
+}

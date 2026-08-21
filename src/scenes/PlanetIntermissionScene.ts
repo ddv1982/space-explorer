@@ -35,7 +35,7 @@ import { getPlanetIntermissionProfile } from './planetIntermission/planetProfile
 import { createIntermissionBackdrop, createPlanetArrivalVisual } from './planetIntermission/planetVisuals';
 import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
 import type { UpgradeButton } from './planetIntermission/shared';
-import { mountAccessibleActionLayer } from './shared/accessibleActionLayer';
+import { mountAccessibleActionLayer, type AccessibleActionLayerHandle } from './shared/accessibleActionLayer';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { PlanetIntermissionInteractionController } from './planetIntermission/interactionController';
 import { startRegisteredScene } from './sceneRegistry';
@@ -51,7 +51,8 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private isFinalMissionComplete: boolean = false;
   private transitioning = false;
   private pointerdownHandler?: (pointer: Phaser.Input.Pointer) => void;
-  private teardownAccessibleActions?: () => void;
+  private teardownAccessibleActions?: AccessibleActionLayerHandle;
+  private accessibleStatusMessage = '';
 
   constructor() {
     super({ key: 'PlanetIntermission' });
@@ -209,24 +210,42 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private syncAccessibleActions(): void {
-    this.teardownAccessibleActions?.();
-    this.teardownAccessibleActions = mountAccessibleActionLayer({
+    const options = {
       label: 'Planet intermission',
+      summary: this.isFinalMissionComplete
+        ? `Campaign complete. Final score ${this.state.score}.`
+        : `Level ${this.state.level} complete. ${this.state.score} credits available for upgrades.`,
+      status: { message: this.accessibleStatusMessage, politeness: 'polite' as const },
       actions: [
         ...this.buttons.map((button) => ({
           name: button.upgradeKey,
-          label: `Buy ${button.upgradeKey}`,
+          label: `Buy ${this.getButtonEvaluation(button).upgrade.name}`,
+          description: this.getAccessibleUpgradeDescription(button),
+          disabled: !this.getButtonEvaluation(button).canPurchase,
           activate: () => {
             this.tryBuyUpgrade(button.upgradeKey);
           },
         })),
         {
           name: 'continue',
-          label: 'Continue',
+          label: this.getContinueLabel(),
           activate: () => this.continueToNextLevel(),
         },
       ],
-    });
+    };
+    if (this.teardownAccessibleActions) {
+      this.teardownAccessibleActions.update(options);
+    } else {
+      this.teardownAccessibleActions = mountAccessibleActionLayer(options);
+    }
+  }
+
+  private getAccessibleUpgradeDescription(button: UpgradeButton): string {
+    const evaluation = this.getButtonEvaluation(button);
+    const availability = evaluation.canPurchase
+      ? `${evaluation.cost} credits`
+      : (evaluation.unlockReason ?? evaluation.blockReason ?? 'Unavailable');
+    return `${evaluation.upgrade.description}. Level ${evaluation.currentLevel} of ${evaluation.upgrade.maxLevel}. ${availability}.`;
   }
 
   private handleSceneShutdown(): void {
@@ -294,6 +313,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     audioManager.playPowerUp();
 
     this.scoreText.setText(`CREDITS ${this.state.score}`);
+    this.accessibleStatusMessage = `${evaluation.upgrade.name} upgraded to level ${this.state.upgrades[upgradeKey]}. ${this.state.score} credits remaining.`;
     this.refreshButtons();
     this.handlePostPurchaseFocus(button, upgradeKey);
 
@@ -318,6 +338,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     }
 
     this.interactionController?.refreshIndicators();
+    this.syncAccessibleActions();
   }
 
   private getButtonEvaluation(button: UpgradeButton): UpgradeEvaluation {

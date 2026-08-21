@@ -15,7 +15,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   private aceMarked = false;
   private baseMaxHp: number | null = null;
   private baseScoreValue: number | null = null;
-  private gameplayTime: number | null = null;
+  private gameplayTime = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string) {
     super(scene, x, y, textureKey);
@@ -131,7 +131,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
     // previous life; restore base stats before hp is refilled below.
     this.clearAceMark();
     spawnEntity(this, x, y);
-    this.gameplayTime = null;
+    this.gameplayTime = 0;
     this.hp = this.maxHp;
     this.clearTint();
   }
@@ -149,7 +149,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   }
 
   protected getGameplayTime(): number {
-    return this.gameplayTime ?? this.scene.time.now;
+    return this.gameplayTime;
   }
 
   preUpdate(time: number, delta: number): void {
@@ -163,8 +163,8 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
         this.despawn();
         return;
       }
-      const gameplayDelta = Math.max(0, delta);
-      this.gameplayTime = this.gameplayTime === null ? time : this.gameplayTime + gameplayDelta;
+      const gameplayDelta = Number.isFinite(delta) ? Math.max(0, delta) : 0;
+      this.gameplayTime += gameplayDelta;
       this.updateBehavior(this.gameplayTime, gameplayDelta);
     }
   }
