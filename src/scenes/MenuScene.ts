@@ -404,6 +404,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private adjustAccessibleMusicValue(key: 'creativity' | 'energy' | 'ambience' | 'volume', delta: number): void {
+    audioManager.resumeFromUserGesture();
     const current = key === 'volume' ? audioManager.getMusicVolume() : audioManager.getMusicRuntimeTuning()[key];
     const requested = Math.max(0, Math.min(1, current + delta));
     const value =

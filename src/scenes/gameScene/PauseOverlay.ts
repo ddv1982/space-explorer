@@ -192,6 +192,7 @@ export class PauseOverlay {
     this.state.saveSlots = nextState.saveSlots ?? this.state.saveSlots;
     const statusMessageChanged =
       nextState.statusMessage !== undefined && nextState.statusMessage !== this.state.statusMessage;
+    if (statusMessageChanged) this.accessibleStatusMessage = '';
     this.state.statusMessage = nextState.statusMessage ?? this.state.statusMessage;
     this.state.statusOk =
       nextState.statusOk ?? (nextState.statusMessage === '' || statusMessageChanged ? true : this.state.statusOk);
@@ -440,8 +441,9 @@ export class PauseOverlay {
       label: 'Paused',
       summary: `${this.activeSubview === 'checkpoints' ? 'Checkpoint controls' : 'Game and music settings'}. Gameplay remains paused.`,
       status: {
-        message: this.state.statusMessage || this.accessibleStatusMessage || this.paintedStatusMessage,
-        politeness: this.state.statusOk === false ? ('assertive' as const) : ('polite' as const),
+        message: this.accessibleStatusMessage || this.state.statusMessage || this.paintedStatusMessage,
+        politeness:
+          !this.accessibleStatusMessage && this.state.statusOk === false ? ('assertive' as const) : ('polite' as const),
       },
       actions: [
         { name: 'resume', label: 'Resume', disabled: !this.state.canResume, activate: () => handlers.onResume() },

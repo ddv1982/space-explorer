@@ -67,6 +67,7 @@ type StubButton = {
 };
 
 let accessibleStatusMessage = '';
+let accessibleStatusPoliteness = '';
 
 mock.module('phaser', () => ({
   default: {
@@ -115,16 +116,19 @@ mock.module('../src/scenes/shared/settingsPanel', () => ({
     setVisible(visible: boolean) {
       this.visible = visible;
     },
+    setMusicValue() {},
     destroy() {},
   }),
 }));
 
 mock.module('../src/scenes/shared/accessibleActionLayer', () => ({
-  mountAccessibleActionLayer: (options: { status?: { message: string } }) => {
+  mountAccessibleActionLayer: (options: { status?: { message: string; politeness?: string } }) => {
     accessibleStatusMessage = options.status?.message ?? '';
+    accessibleStatusPoliteness = options.status?.politeness ?? '';
     return Object.assign(() => {}, {
-      update(nextOptions: { status?: { message: string } }) {
+      update(nextOptions: { status?: { message: string; politeness?: string } }) {
         accessibleStatusMessage = nextOptions.status?.message ?? '';
+        accessibleStatusPoliteness = nextOptions.status?.politeness ?? '';
       },
     });
   },
@@ -156,6 +160,7 @@ mock.module('../src/utils/layout', () => ({
 }));
 
 const { PauseOverlay } = await import('../src/scenes/gameScene/PauseOverlay');
+const { audioManager } = await import('../src/systems/AudioManager');
 
 function createZone(): StubZone {
   return {
@@ -373,5 +378,39 @@ describe('PauseOverlay relayout regression', () => {
     overlay.setState({ visible: true, storageAvailable: false, saveSlots: [] });
 
     expect(accessibleStatusMessage).toBe('Checkpoint storage unavailable in this browser.');
+  });
+
+  test('announces a semantic music adjustment after an older controller error', () => {
+    const overlay = PauseOverlay.create(createScene() as never, {
+      onResume: () => {},
+      onSaveSlot: () => {},
+      onLoadSlot: () => {},
+      onDeleteSlot: () => {},
+      onMainMenu: () => {},
+      onSelectDifficulty: () => true,
+      onSelectQuality: () => true,
+    });
+    overlay.setState({ visible: true, statusMessage: 'Save failed.', statusOk: false, saveSlots: [] });
+    const originalGetTuning = audioManager.getMusicRuntimeTuning;
+    const originalSetTuning = audioManager.setMusicRuntimeTuning;
+    audioManager.getMusicRuntimeTuning = () => ({ creativity: 0.5, energy: 0.5, ambience: 0.5 });
+    audioManager.setMusicRuntimeTuning = () => ({ creativity: 0.55, energy: 0.5, ambience: 0.5 });
+
+    try {
+      (
+        overlay as unknown as {
+          adjustAccessibleMusicValue: (key: 'creativity', delta: number) => void;
+        }
+      ).adjustAccessibleMusicValue('creativity', 0.05);
+    } finally {
+      audioManager.getMusicRuntimeTuning = originalGetTuning;
+      audioManager.setMusicRuntimeTuning = originalSetTuning;
+    }
+
+    expect(accessibleStatusMessage).toBe('creativity 55 percent.');
+    expect(accessibleStatusPoliteness).toBe('polite');
+
+    overlay.setState({ statusMessage: 'Checkpoint saved.', statusOk: true });
+    expect(accessibleStatusMessage).toBe('Checkpoint saved.');
   });
 });

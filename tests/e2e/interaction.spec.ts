@@ -179,9 +179,9 @@ test('first trusted menu action recovers policy-suspended audio without overridi
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
   expect((await snapshot(page)).audioPauseReasons).toEqual([]);
 
-  const difficulty = page.getByRole('button', { name: 'Set difficulty low' });
-  await difficulty.focus();
-  await difficulty.press('Enter');
+  const musicAdjustment = page.getByRole('button', { name: 'Increase creativity' });
+  await musicAdjustment.focus();
+  await musicAdjustment.press('Enter');
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('running');
   expect((await snapshot(page)).audioPauseReasons).toEqual([]);
 
