@@ -1,8 +1,13 @@
 import Phaser from 'phaser';
 import { getGameplayDifficultyTier } from '../../config/gameplayDifficulty';
 import { getVisualQualityTier } from '../../config/visualQuality';
+import { audioManager } from '../../systems/AudioManager';
 import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
-import { mountAccessibleActionLayer } from '../shared/accessibleActionLayer';
+import {
+  mountAccessibleActionLayer,
+  type AccessibleAction,
+  type AccessibleActionLayerHandle,
+} from '../shared/accessibleActionLayer';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
 import { createSettingsPanel, type SettingsPanel } from '../shared/settingsPanel';
 import {
@@ -52,13 +57,15 @@ export class PauseOverlay {
   private checkpointTab: ActionButtonControl | null = null;
   private settingsTab: ActionButtonControl | null = null;
   private settingsPanel: SettingsPanel | null = null;
-  private teardownAccessibleActions?: () => void;
+  private teardownAccessibleActions?: AccessibleActionLayerHandle;
   private saveSlotRows: PauseSaveSlotRows | null = null;
   private saveSlotsVisible = true;
   private saveHeaderVisible = true;
   private subtitleVisible = true;
   private hintVisible = true;
   private activeSubview: 'checkpoints' | 'settings' = 'checkpoints';
+  private accessibleStatusMessage = '';
+  private paintedStatusMessage = '';
 
   static create(scene: Phaser.Scene, handlers: PauseOverlayHandlers): PauseOverlay {
     return new PauseOverlay().create(scene, handlers);
@@ -127,6 +134,7 @@ export class PauseOverlay {
       quality: getVisualQualityTier(),
       onSelectDifficulty: (tier) => this.handlers?.onSelectDifficulty(tier) ?? false,
       onSelectQuality: (tier) => this.handlers?.onSelectQuality(tier) ?? false,
+      onMusicValueChanged: () => this.syncAccessibleActions(this.state.visible),
     });
     this.saveSlotRows = createPauseSaveSlotRows(scene, {
       onSaveSlot: (slotId) => this.handlers?.onSaveSlot(slotId),
@@ -184,6 +192,7 @@ export class PauseOverlay {
     this.state.saveSlots = nextState.saveSlots ?? this.state.saveSlots;
     const statusMessageChanged =
       nextState.statusMessage !== undefined && nextState.statusMessage !== this.state.statusMessage;
+    if (statusMessageChanged) this.accessibleStatusMessage = '';
     this.state.statusMessage = nextState.statusMessage ?? this.state.statusMessage;
     this.state.statusOk =
       nextState.statusOk ?? (nextState.statusMessage === '' || statusMessageChanged ? true : this.state.statusOk);
@@ -342,6 +351,7 @@ export class PauseOverlay {
         : this.state.storageAvailable
           ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.'
           : 'Checkpoint storage unavailable in this browser.');
+    this.paintedStatusMessage = statusMessage;
 
     this.titleText.setText(message.title);
     this.subtitleText.setText(message.subtitle);
@@ -380,37 +390,130 @@ export class PauseOverlay {
   }
 
   private syncAccessibleActions(visible: boolean): void {
-    this.teardownAccessibleActions?.();
-    this.teardownAccessibleActions = undefined;
     if (!visible || !this.handlers) {
+      this.teardownAccessibleActions?.();
+      this.teardownAccessibleActions = undefined;
       return;
     }
 
     const handlers = this.handlers;
-    this.teardownAccessibleActions = mountAccessibleActionLayer({
+    const checkpointActions: AccessibleAction[] = this.state.saveSlots.flatMap((slot) => [
+      {
+        name: `save-${slot.id}`,
+        label: `Save to ${slot.title}`,
+        disabled: !this.state.storageAvailable || !this.state.canSave,
+        activate: () => handlers.onSaveSlot(slot.id),
+      },
+      {
+        name: `load-${slot.id}`,
+        label: `Load ${slot.title}`,
+        description: slot.occupied ? `${slot.subtitle}, ${slot.savedAtLabel}` : 'Empty slot',
+        disabled: !this.state.storageAvailable || !slot.occupied,
+        activate: () => handlers.onLoadSlot(slot.id),
+      },
+      {
+        name: `delete-${slot.id}`,
+        label: `Delete ${slot.title}`,
+        disabled: !this.state.storageAvailable || !slot.occupied,
+        activate: () => handlers.onDeleteSlot(slot.id),
+      },
+    ]);
+    const settingsActions: AccessibleAction[] = [
+      ...(['low', 'normal', 'high'] as const).map((tier) => ({
+        name: `difficulty-${tier}`,
+        label: `Set difficulty ${tier}`,
+        selected: getGameplayDifficultyTier() === tier,
+        activate: () => {
+          if (handlers.onSelectDifficulty(tier)) this.settingsPanel?.setDifficulty(tier);
+        },
+      })),
+      ...(['low', 'standard', 'high', 'auto'] as const).map((tier) => ({
+        name: `quality-${tier}`,
+        label: `Set visual quality ${tier}`,
+        selected: getVisualQualityTier() === tier,
+        activate: () => {
+          if (handlers.onSelectQuality(tier)) this.settingsPanel?.setQuality(tier);
+        },
+      })),
+      ...this.createAccessibleMusicActions(),
+    ];
+    const options = {
       label: 'Paused',
+      summary: `${this.activeSubview === 'checkpoints' ? 'Checkpoint controls' : 'Game and music settings'}. Gameplay remains paused.`,
+      status: {
+        message: this.accessibleStatusMessage || this.state.statusMessage || this.paintedStatusMessage,
+        politeness:
+          !this.accessibleStatusMessage && this.state.statusOk === false ? ('assertive' as const) : ('polite' as const),
+      },
       actions: [
-        { name: 'resume', label: 'Resume', activate: () => handlers.onResume() },
+        { name: 'resume', label: 'Resume', disabled: !this.state.canResume, activate: () => handlers.onResume() },
         { name: 'main-menu', label: 'Main menu', activate: () => handlers.onMainMenu() },
-        ...this.state.saveSlots.map((slot) => ({
-          name: `load-${slot.id}`,
-          label: `Load ${slot.title}`,
-          activate: () => handlers.onLoadSlot(slot.id),
-          disabled: !slot.occupied,
-        })),
-        ...this.state.saveSlots.map((slot) => ({
-          name: `delete-${slot.id}`,
-          label: `Delete ${slot.title}`,
-          activate: () => handlers.onDeleteSlot(slot.id),
-          disabled: !slot.occupied,
-        })),
+        {
+          name: 'checkpoints',
+          label: 'Checkpoints',
+          selected: this.activeSubview === 'checkpoints',
+          activate: () => this.selectSubview('checkpoints'),
+        },
+        {
+          name: 'settings',
+          label: 'Settings',
+          selected: this.activeSubview === 'settings',
+          activate: () => this.selectSubview('settings'),
+        },
+        ...(this.activeSubview === 'checkpoints' ? checkpointActions : settingsActions),
       ],
+    };
+    if (this.teardownAccessibleActions) {
+      this.teardownAccessibleActions.update(options);
+    } else {
+      this.teardownAccessibleActions = mountAccessibleActionLayer(options);
+    }
+  }
+
+  private createAccessibleMusicActions(): AccessibleAction[] {
+    const tuning = audioManager.getMusicRuntimeTuning();
+    const values = { ...tuning, volume: audioManager.getMusicVolume() };
+    return (Object.keys(values) as Array<keyof typeof values>).flatMap((key) => {
+      const label = key === 'volume' ? 'music volume' : key;
+      const description = `${Math.round(values[key] * 100)} percent`;
+      return [
+        {
+          name: `decrease-${key}`,
+          label: `Decrease ${label}`,
+          description,
+          disabled: values[key] <= 0,
+          activate: () => this.adjustAccessibleMusicValue(key, -0.05),
+        },
+        {
+          name: `increase-${key}`,
+          label: `Increase ${label}`,
+          description,
+          disabled: values[key] >= 1,
+          activate: () => this.adjustAccessibleMusicValue(key, 0.05),
+        },
+      ];
     });
+  }
+
+  private adjustAccessibleMusicValue(key: 'creativity' | 'energy' | 'ambience' | 'volume', delta: number): void {
+    const current = key === 'volume' ? audioManager.getMusicVolume() : audioManager.getMusicRuntimeTuning()[key];
+    const requested = Math.max(0, Math.min(1, current + delta));
+    if (key === 'volume') {
+      const value = audioManager.setMusicVolume(requested);
+      this.settingsPanel?.setMusicValue(key, value);
+      this.accessibleStatusMessage = `Music volume ${Math.round(value * 100)} percent.`;
+    } else {
+      const value = audioManager.setMusicRuntimeTuning({ [key]: requested })[key];
+      this.settingsPanel?.setMusicValue(key, value);
+      this.accessibleStatusMessage = `${key} ${Math.round(value * 100)} percent.`;
+    }
+    this.syncAccessibleActions(true);
   }
 
   private selectSubview(subview: 'checkpoints' | 'settings'): void {
     if (subview === this.activeSubview) return;
     this.activeSubview = subview;
+    this.accessibleStatusMessage = '';
     this.applyState();
   }
 }

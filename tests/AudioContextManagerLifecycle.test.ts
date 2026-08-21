@@ -198,6 +198,98 @@ describe('AudioContextManager lifecycle control', () => {
     expect(manager.getState() as unknown).toBe('suspended');
   });
 
+  test('invokes policy recovery synchronously from a user gesture', () => {
+    const pendingResume = deferred();
+    const resume = mock(() => pendingResume.promise);
+    const manager = new AudioContextManager();
+    (manager as unknown as { ctx: AudioContext | null }).ctx = {
+      state: 'suspended',
+      resume,
+    } as unknown as AudioContext;
+
+    manager.resumeFromUserGesture();
+
+    expect(resume).toHaveBeenCalledTimes(1);
+  });
+
+  test('deduplicates a pending gesture resume and retries after rejection', async () => {
+    const firstResume = deferred();
+    const secondResume = deferred();
+    let state: AudioContextState = 'suspended';
+    let resumeCalls = 0;
+    const resume = mock(() => {
+      const transition = resumeCalls++ === 0 ? firstResume : secondResume;
+      return transition.promise.then(() => {
+        state = 'running';
+      });
+    });
+    const manager = new AudioContextManager();
+    (manager as unknown as { ctx: AudioContext | null }).ctx = {
+      get state() {
+        return state;
+      },
+      resume,
+    } as unknown as AudioContext;
+
+    manager.resumeFromUserGesture();
+    manager.resumeFromUserGesture();
+    expect(resume).toHaveBeenCalledTimes(1);
+
+    firstResume.reject();
+    await flushTransitions();
+    manager.resumeFromUserGesture();
+    expect(resume).toHaveBeenCalledTimes(2);
+
+    secondResume.resolve();
+    await flushTransitions();
+  });
+
+  test('does not recover while application suspension is requested', async () => {
+    const resume = mock(() => Promise.resolve());
+    const manager = new AudioContextManager();
+    (manager as unknown as { ctx: AudioContext | null }).ctx = {
+      state: 'suspended',
+      resume,
+    } as unknown as AudioContext;
+
+    manager.suspend();
+    await flushTransitions();
+    manager.resumeFromUserGesture();
+
+    expect(resume).not.toHaveBeenCalled();
+  });
+
+  test('reapplies a pause requested while gesture resume is pending', async () => {
+    const pendingResume = deferred();
+    let state: AudioContextState = 'suspended';
+    const resume = mock(() =>
+      pendingResume.promise.then(() => {
+        state = 'running';
+      })
+    );
+    const suspend = mock(async () => {
+      state = 'suspended';
+    });
+    const manager = new AudioContextManager();
+    (manager as unknown as { ctx: AudioContext | null }).ctx = {
+      get state() {
+        return state;
+      },
+      resume,
+      suspend,
+    } as unknown as AudioContext;
+
+    manager.resumeFromUserGesture();
+    manager.suspend();
+    pendingResume.resolve();
+    await flushTransitions();
+    await flushTransitions();
+
+    expect(resume).toHaveBeenCalledTimes(1);
+    expect(suspend).toHaveBeenCalledTimes(1);
+    expect(manager.getState() as unknown).toBe('suspended');
+  });
+
   test('absorbs a pending transition rejection after destroy', async () => {
     const pendingSuspend = deferred();
     const close = mock(() => Promise.reject(new Error('close rejected')));
@@ -243,5 +335,28 @@ describe('AudioContextManager lifecycle control', () => {
 
     manager.setPaused('gameplay', false);
     expect(resume).toHaveBeenCalledTimes(1);
+  });
+
+  test('only delegates gesture recovery when no pause reason remains', () => {
+    const resumeFromUserGesture = mock(() => undefined);
+    const suspend = mock(() => undefined);
+    const resume = mock(() => undefined);
+    const manager = new AudioManager();
+    (
+      manager as unknown as {
+        contextManager: Pick<AudioContextManager, 'resumeFromUserGesture' | 'suspend' | 'resume'>;
+      }
+    ).contextManager = { resumeFromUserGesture, suspend, resume };
+
+    manager.setPaused('gameplay', true);
+    manager.setPaused('visibility', true);
+    manager.resumeFromUserGesture();
+    manager.setPaused('gameplay', false);
+    manager.resumeFromUserGesture();
+    expect(resumeFromUserGesture).not.toHaveBeenCalled();
+
+    manager.setPaused('visibility', false);
+    manager.playClick();
+    expect(resumeFromUserGesture).toHaveBeenCalledTimes(1);
   });
 });

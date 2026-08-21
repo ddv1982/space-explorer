@@ -23,6 +23,7 @@ mock.module('../src/scenes/sceneRegistry', () => ({
 }));
 
 const { setPlayerState } = await import('../src/systems/PlayerState');
+const { audioManager } = await import('../src/systems/AudioManager');
 const { MenuScene } = await import('../src/scenes/MenuScene');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
@@ -212,5 +213,37 @@ describe('MenuScene', () => {
     (scene as unknown as { deleteSlot: (slotId: string) => void }).deleteSlot('slot-2');
     expect(deleteStoredSaveSlot).toHaveBeenCalledWith('slot-2');
     expect(refreshSaveSlots).toHaveBeenCalledWith('Slot 2 cleared.');
+  });
+
+  test('resumes audio in the trusted semantic music action before changing its value', () => {
+    const events: string[] = [];
+    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
+    (scene as unknown as Record<string, unknown>).settingsPanel = {
+      setMusicValue: () => events.push('panel'),
+    };
+    (scene as unknown as Record<string, unknown>).syncAccessibleActions = () => events.push('sync');
+    const originalResume = audioManager.resumeFromUserGesture;
+    const originalGetTuning = audioManager.getMusicRuntimeTuning;
+    const originalSetTuning = audioManager.setMusicRuntimeTuning;
+    audioManager.resumeFromUserGesture = () => events.push('resume');
+    audioManager.getMusicRuntimeTuning = () => ({ creativity: 0.5, energy: 0.5, ambience: 0.5 });
+    audioManager.setMusicRuntimeTuning = () => {
+      events.push('set');
+      return { creativity: 0.55, energy: 0.5, ambience: 0.5 };
+    };
+
+    try {
+      (
+        scene as unknown as {
+          adjustAccessibleMusicValue: (key: 'creativity', delta: number) => void;
+        }
+      ).adjustAccessibleMusicValue('creativity', 0.05);
+    } finally {
+      audioManager.resumeFromUserGesture = originalResume;
+      audioManager.getMusicRuntimeTuning = originalGetTuning;
+      audioManager.setMusicRuntimeTuning = originalSetTuning;
+    }
+
+    expect(events).toEqual(['resume', 'set', 'panel', 'sync']);
   });
 });

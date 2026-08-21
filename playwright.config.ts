@@ -30,6 +30,7 @@ export default defineConfig({
         '**/smoke.spec.ts',
         '**/interaction.spec.ts',
         '**/accessibleActions.spec.ts',
+        '**/saveSlotConcurrency.spec.ts',
         '**/picketTurrets.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
@@ -66,6 +67,13 @@ export default defineConfig({
     {
       name: 'chromium-desktop-performance',
       testMatch: '**/performance.evidence.spec.ts',
+      use: { viewport: { width: 1280, height: 720 } },
+    },
+    {
+      name: 'chromium-desktop-performance-gate',
+      testMatch: '**/performance.evidence.spec.ts',
+      grep: /enforces the approved gameplay update-cost threshold/,
+      retries: 0,
       use: { viewport: { width: 1280, height: 720 } },
     },
     {

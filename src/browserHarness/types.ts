@@ -23,6 +23,8 @@ export interface BrowserHarnessVisualPilotMetrics {
 
 export interface BrowserHarnessFramePacingProbe {
   sampleCount: number;
+  warmupFrames: number;
+  syntheticUpdateWorkMs: number;
   averageMs: number;
   p50Ms: number;
   p95Ms: number;
@@ -76,8 +78,12 @@ export interface BrowserHarnessApi {
   setProjectileTrailIntervals: (playerMs: number, enemyMs: number) => void;
   stageProjectileTrailEvidence: () => { playerCount: number; enemyCount: number };
   setAudioResumeRequestsEnabled: (enabled: boolean) => void;
+  suspendAudioContextForPolicyTest: () => Promise<void>;
   setLaserSfxEnabled: (enabled: boolean) => void;
-  probeFramePacing: (sampleCount?: number) => Promise<BrowserHarnessFramePacingProbe>;
+  probeFramePacing: (
+    sampleCount?: number,
+    options?: { warmupFrames?: number; syntheticUpdateWorkMs?: number }
+  ) => Promise<BrowserHarnessFramePacingProbe>;
   probeFrameDelivery: (sampleCount?: number) => Promise<BrowserHarnessFrameDeliveryProbe>;
   getRuntimePerformanceSnapshot: () => RuntimePerformanceSnapshot;
   showLaneReadingPilot: (glowEnabled?: boolean) => { filterCount: number; sectionId: string };

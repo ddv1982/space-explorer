@@ -314,7 +314,7 @@ describe('Lancer', () => {
 
     lancer.preUpdate(20_000, 16);
     expect(lancer.phase).toBe('idle');
-    expect(lancer.cycleStart).toBe(20_000);
+    expect(lancer.cycleStart).toBe(16);
 
     lancer.preUpdate(20_000 + LANCER_FIRE_RATE, LANCER_FIRE_RATE);
     expect(lancer.phase).toBe('idle');

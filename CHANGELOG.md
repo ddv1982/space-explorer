@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2026-08-21
+
+### Added
+- Added complete semantic action parity for menu, pause, intermission, victory, and game-over workflows while keeping the canvas as the only painted UI.
+- Added trusted-input audio recovery that resumes policy-suspended audio without overriding gameplay or visibility pause reasons.
+- Added atomic per-slot v2 save entries with storage-event/read-through coverage while retaining shipped v1 envelope compatibility.
+- Added a release-blocking desktop update-cost gate with five normal replicates, five synthetic sensitivity replicates, and retained CI artifacts.
+
+### Changed
+- Semantic controls now retain focus across updates, expose painted settings in both directions, announce status, and use collision-free descriptions.
+- Enemy firing cycles now begin from accumulated gameplay delta after spawn instead of inheriting scene uptime.
+- Performance probes live in a focused browser-harness module and collect exactly ten update/render samples after warm-up.
+- Architecture policies now classify the completed accessibility and performance evidence boundaries with zero actionable warnings.
+
+### Quality
+- Passed both TypeScript compilers, formatting, ESLint, Knip, level validation, architecture and cycle checks, the complete isolated unit suite, production build, and bundle guardrails.
+- Passed 41 applicable desktop/mobile functional and visual browser checks with one intentional project skip.
+- Passed the local SwiftShader performance gate at a maximum update p95 of 0.5 ms; all five 6 ms synthetic replicates were rejected as required.
+- Two GitHub-hosted `ubuntu-24.04` runs characterized a 5 ms update-cost ceiling and a 300-second execution allowance for the unchanged 10-frame measurement window.
+
 ## [1.15.0] - 2026-08-19
 
 ### Added

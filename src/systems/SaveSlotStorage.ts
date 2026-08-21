@@ -3,6 +3,7 @@ import type { PlayerStateData, RunSummaryData } from './PlayerState';
 import { normalizePersistedPlayerState, normalizePersistedScore } from './PlayerState';
 
 export const SAVE_SLOT_STORAGE_KEY = 'space-explorer.saveSlots.v1';
+export const SAVE_SLOT_ENTRY_STORAGE_KEY_PREFIX = 'space-explorer.saveSlot.v2.';
 const SAVE_SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
 
 export type SaveSlotId = (typeof SAVE_SLOT_IDS)[number];
@@ -26,6 +27,13 @@ export interface SaveSlotRecordV1 {
 interface SaveSlotsEnvelopeV1 {
   version: 1;
   slots: Partial<Record<SaveSlotId, SaveSlotRecordV1>>;
+}
+
+interface SaveSlotEntryV2 {
+  version: 2;
+  id: SaveSlotId;
+  deleted: boolean;
+  record?: SaveSlotRecordV1;
 }
 
 export interface SaveSlotViewModel {
@@ -186,26 +194,47 @@ function readEnvelope(): SaveSlotsEnvelopeV1 {
     return getDefaultEnvelope();
   }
 
+  let envelope = getDefaultEnvelope();
   try {
     const rawValue = storage.getItem(SAVE_SLOT_STORAGE_KEY);
-    if (!rawValue) {
-      return getDefaultEnvelope();
-    }
-
-    return normalizeEnvelope(JSON.parse(rawValue));
+    if (rawValue) envelope = normalizeEnvelope(JSON.parse(rawValue));
   } catch {
-    return getDefaultEnvelope();
+    // A corrupt legacy envelope must not hide valid per-slot entries.
+  }
+
+  for (const slotId of SAVE_SLOT_IDS) {
+    const override = readSlotEntry(storage, slotId);
+    if (override === null) {
+      delete envelope.slots[slotId];
+    } else if (override) {
+      envelope.slots[slotId] = override;
+    }
+  }
+  return envelope;
+}
+
+function readSlotEntry(storage: Storage, id: SaveSlotId): SaveSlotRecordV1 | null | undefined {
+  try {
+    const rawValue = storage.getItem(`${SAVE_SLOT_ENTRY_STORAGE_KEY_PREFIX}${id}`);
+    if (!rawValue) return undefined;
+
+    const value: unknown = JSON.parse(rawValue);
+    if (!isObjectRecord(value) || value.version !== 2 || value.id !== id || typeof value.deleted !== 'boolean') {
+      return undefined;
+    }
+    if (value.deleted) return null;
+    return normalizeSaveSlotRecord(value.record, id) ?? undefined;
+  } catch {
+    return undefined;
   }
 }
 
-function writeEnvelope(envelope: SaveSlotsEnvelopeV1): boolean {
+function writeSlotEntry(entry: SaveSlotEntryV2): boolean {
   const storage = getStorage();
-  if (!storage) {
-    return false;
-  }
+  if (!storage) return false;
 
   try {
-    storage.setItem(SAVE_SLOT_STORAGE_KEY, JSON.stringify(envelope));
+    storage.setItem(`${SAVE_SLOT_ENTRY_STORAGE_KEY_PREFIX}${entry.id}`, JSON.stringify(entry));
     return true;
   } catch {
     return false;
@@ -286,10 +315,14 @@ export function writeSaveSlot(record: SaveSlotRecordV1): SaveSlotRecordV1 | null
     return null;
   }
 
-  const envelope = readEnvelope();
-  envelope.slots[normalizedRecord.id] = normalizedRecord;
-
-  if (!writeEnvelope(envelope)) {
+  if (
+    !writeSlotEntry({
+      version: 2,
+      id: normalizedRecord.id,
+      deleted: false,
+      record: normalizedRecord,
+    })
+  ) {
     return null;
   }
 
@@ -297,13 +330,11 @@ export function writeSaveSlot(record: SaveSlotRecordV1): SaveSlotRecordV1 | null
 }
 
 export function deleteSaveSlot(id: SaveSlotId): boolean {
-  const envelope = readEnvelope();
-  if (!envelope.slots[id]) {
+  if (!readSaveSlot(id)) {
     return true;
   }
 
-  delete envelope.slots[id];
-  return writeEnvelope(envelope);
+  return writeSlotEntry({ version: 2, id, deleted: true });
 }
 
 export function createSaveSlotRecord(

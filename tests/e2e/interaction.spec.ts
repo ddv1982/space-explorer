@@ -166,6 +166,50 @@ test('pause settings persist quality without reloading or leaving the active run
   assertNoBrowserErrors();
 });
 
+test('first trusted menu action recovers policy-suspended audio without overriding pause reasons', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  await openMenu(page);
+  await page.evaluate(async () => {
+    const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+    if (!harness) throw new Error('Browser harness is not installed');
+    await harness.suspendAudioContextForPolicyTest();
+  });
+  await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
+  expect((await snapshot(page)).audioPauseReasons).toEqual([]);
+
+  const musicAdjustment = page.getByRole('button', { name: 'Increase creativity' });
+  await musicAdjustment.focus();
+  await musicAdjustment.press('Enter');
+  await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('running');
+  expect((await snapshot(page)).audioPauseReasons).toEqual([]);
+
+  await startNewRun(page);
+  const mobile = test.info().project.name === 'chromium-mobile';
+  if (mobile) {
+    const viewport = page.viewportSize();
+    await page.touchscreen.tap((viewport?.width ?? 844) - 44, 106);
+  } else {
+    await page.keyboard.down('Escape');
+  }
+  try {
+    await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(true);
+  } finally {
+    if (!mobile) await page.keyboard.up('Escape');
+  }
+  await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
+  expect((await snapshot(page)).audioPauseReasons).toEqual(['gameplay']);
+
+  const save = page.getByRole('button', { name: 'Save to SLOT 1' });
+  await save.focus();
+  await save.press('Enter');
+  expect((await snapshot(page)).physicsPaused).toBe(true);
+  expect((await snapshot(page)).audioPauseReasons).toEqual(['gameplay']);
+  expect((await snapshot(page)).audioContextState).toBe('suspended');
+  assertNoBrowserErrors();
+});
+
 test('mobile portrait plays without a rotate block and rotates freely', async ({ page, assertNoBrowserErrors }) => {
   test.skip(test.info().project.name !== 'chromium-mobile', 'mobile-only orientation scenario');
 

@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -9,11 +9,13 @@
   "scripts": {
     "dev": "vite",
     "test": "bun scripts/run-tests.ts",
-    "test:e2e": "bun run test:e2e:fast && bun run test:e2e:performance",
+    "test:e2e": "bun run test:e2e:fast && bun run test:e2e:performance && bun run test:e2e:performance:gate",
     "test:e2e:fast": "playwright test --project=chromium-desktop --project=chromium-mobile --project=chromium-desktop-visual --project=chromium-mobile-visual",
     "test:e2e:smoke": "playwright test --project=chromium-desktop --project=chromium-mobile",
     "test:e2e:visual": "playwright test --project=chromium-desktop-visual --project=chromium-mobile-visual",
     "test:e2e:performance": "playwright test --project=chromium-desktop-performance --project=chromium-mobile-performance --workers=1",
+    "test:e2e:performance:gate": "PERFORMANCE_GATE_MODE=normal playwright test --project=chromium-desktop-performance-gate --workers=1",
+    "test:e2e:performance:gate:synthetic": "PERFORMANCE_GATE_MODE=synthetic playwright test --project=chromium-desktop-performance-gate --workers=1",
     "test:e2e:evidence": "bun run test:e2e:visual && bun run test:e2e:performance",
     "test:e2e:desktop": "playwright test --project=chromium-desktop",
     "test:e2e:mobile": "playwright test --project=chromium-mobile",

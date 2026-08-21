@@ -12,6 +12,7 @@ export class AudioContextManager {
   private readonly noiseBuffers = new Map<string, AudioBuffer>();
   private desiredSuspended = false;
   private stateTransition: Promise<void> = Promise.resolve();
+  private gestureResume: Promise<void> | null = null;
 
   getCtx(): AudioContext | null {
     return this.ctx;
@@ -158,6 +159,33 @@ export class AudioContextManager {
     this.queueStateTransition();
   }
 
+  resumeFromUserGesture(): void {
+    const context = this.ctx;
+    if (!context || context.state !== 'suspended' || this.desiredSuspended || this.gestureResume) {
+      return;
+    }
+
+    let resume: Promise<void>;
+    try {
+      // Invocation must remain in the trusted input stack; awaiting or queueing
+      // this call can lose browser user activation.
+      resume = context.resume();
+    } catch {
+      return;
+    }
+
+    const trackedResume = Promise.resolve(resume).then(
+      () => {
+        if (this.gestureResume === trackedResume) this.gestureResume = null;
+        if (this.ctx === context) this.queueStateTransition();
+      },
+      () => {
+        if (this.gestureResume === trackedResume) this.gestureResume = null;
+      }
+    );
+    this.gestureResume = trackedResume;
+  }
+
   private queueStateTransition(): void {
     this.stateTransition = this.stateTransition
       .catch((): void => undefined)
@@ -186,6 +214,7 @@ export class AudioContextManager {
     this.explosionBuffer = null;
     this.noiseBuffers.clear();
     this.desiredSuspended = false;
+    this.gestureResume = null;
   }
 
   destroy(): void {
