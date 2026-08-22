@@ -3,9 +3,22 @@ import Phaser from 'phaser';
 import { getLevelConfig, getSectionProgress } from '@/config/LevelsConfig';
 import { getVisualQualityProfile } from '@/config/visualQuality';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
-import { ensurePlayerTexture, ensureScoutTexture } from '@/utils/SpriteFactory';
+import {
+  ensureAsteroidTexture,
+  ensureDiverTexture,
+  ensureEnemyBulletTexture,
+  ensureFighterTexture,
+  ensurePlayerBulletTexture,
+  ensurePlayerTexture,
+  ensureScoutTexture,
+} from '@/utils/SpriteFactory';
 
-import type { BrowserHarnessRenderCost, BrowserHarnessVisualPilotMetrics } from './types';
+import type {
+  BrowserHarnessRenderCost,
+  BrowserHarnessVisualPilotEntity,
+  BrowserHarnessVisualPilotEvidence,
+  BrowserHarnessVisualPilotMetrics,
+} from './types';
 
 function summarize(samples: number[]): BrowserHarnessRenderCost {
   const sorted = [...samples].sort((a, b) => a - b);
@@ -19,34 +32,19 @@ function summarize(samples: number[]): BrowserHarnessRenderCost {
 export class BrowserHarnessVisualPilot {
   private entityMotionPhase = 0;
   private lastEntityMotionPhase = 0;
-  private stagedEntities:
-    { scene: Phaser.Scene; player: Phaser.GameObjects.Image; enemy: Phaser.GameObjects.Image } | undefined;
+  private stagedEntities: { scene: Phaser.Scene; images: Phaser.GameObjects.Image[] } | undefined;
 
   constructor(private readonly game: Phaser.Game) {}
 
-  show(glowEnabled = true): {
-    filterCount: number;
-    sectionId: string;
-    motionPhase: number;
-    qualityTier: string;
-    entityTextureResolution: number;
-    entities: Array<{
-      textureKey: string;
-      active: boolean;
-      x: number;
-      y: number;
-      logicalWidth: number;
-      logicalHeight: number;
-      sourceCanvasWidth: number;
-      sourceCanvasHeight: number;
-      sourceIsCanvas: boolean;
-    }>;
-  } {
+  show(
+    glowEnabled = true,
+    hazardType: 'ring-crossfire' | 'debris-surge' = 'ring-crossfire'
+  ): BrowserHarnessVisualPilotEvidence {
     const scene = this.game.scene.getScene('Game') as Phaser.Scene & {
       parallax?: Pick<ParallaxBackground, 'setSectionAtmosphere' | 'update'>;
     };
     const section = getLevelConfig(1).sections.find((candidate) =>
-      candidate.hazardEvents?.some((hazard) => hazard.type === 'ring-crossfire')
+      candidate.hazardEvents?.some((hazard) => hazard.type === hazardType)
     );
     if (!scene?.parallax || !section) throw new Error('Browser harness cannot show the lane-reading visual pilot');
 
@@ -57,6 +55,7 @@ export class BrowserHarnessVisualPilot {
     }
     scene.parallax.setSectionAtmosphere(section, getSectionProgress(section, 0.54));
     for (let frame = 0; frame < 60; frame += 1) scene.parallax.update(1000 / 60);
+    this.hideRuntimeEvidenceEntities(scene);
     const motionPhase = glowEnabled ? this.lastEntityMotionPhase : this.entityMotionPhase;
     const entities = this.stageEntityMotionEvidence(scene, motionPhase);
     const quality = getVisualQualityProfile();
@@ -70,44 +69,73 @@ export class BrowserHarnessVisualPilot {
       motionPhase,
       qualityTier: quality.tier,
       entityTextureResolution: quality.entityTextureResolution,
-      entities: [this.describeEntity(entities.player), this.describeEntity(entities.enemy)],
+      entities: entities.map((entity) => this.describeEntity(entity)),
     };
   }
 
-  private stageEntityMotionEvidence(
-    scene: Phaser.Scene,
-    motionPhase: number
-  ): { player: Phaser.GameObjects.Image; enemy: Phaser.GameObjects.Image } {
+  private stageEntityMotionEvidence(scene: Phaser.Scene, motionPhase: number): Phaser.GameObjects.Image[] {
     if (!this.stagedEntities || this.stagedEntities.scene !== scene) {
-      ensurePlayerTexture(scene);
-      ensureScoutTexture(scene);
+      const textureKeys = [
+        ensurePlayerTexture(scene),
+        ensureScoutTexture(scene),
+        ensureFighterTexture(scene),
+        ensureDiverTexture(scene),
+        ensureAsteroidTexture(scene),
+        ensurePlayerBulletTexture(scene),
+        ensureEnemyBulletTexture(scene),
+      ];
       this.stagedEntities = {
         scene,
-        player: scene.add.image(0, 0, 'player-ship').setScale(3).setDepth(190),
-        enemy: scene.add.image(0, 0, 'scout-texture').setScale(3).setDepth(190),
+        images: textureKeys.map((textureKey) => scene.add.image(0, 0, textureKey).setScale(1).setDepth(190)),
       };
     }
 
     const offset = motionPhase === 0 ? 0.125 : 0.625;
-    const centerX = Number(this.game.scale.width) / 2;
-    const centerY = Number(this.game.scale.height) / 2;
-    const separation = Math.min(120, Number(this.game.scale.width) * 0.2);
-    this.stagedEntities.player.setPosition(Math.round(centerX - separation) + offset, Math.round(centerY) + offset);
-    this.stagedEntities.enemy.setPosition(Math.round(centerX + separation) + offset, Math.round(centerY) + offset);
-    return this.stagedEntities;
+    const width = Number(this.game.scale.width);
+    const height = Number(this.game.scale.height);
+    const positions = [
+      [0.15, 0.62],
+      [0.27, 0.4],
+      [0.39, 0.3],
+      [0.61, 0.3],
+      [0.73, 0.4],
+      [0.32, 0.58],
+      [0.68, 0.58],
+    ] as const;
+    this.stagedEntities.images.forEach((image, index) => {
+      const position = positions[index];
+      if (!position) return;
+      const [x, y] = position;
+      image.setPosition(Math.round(width * x) + offset, Math.round(height * y) + offset);
+    });
+    return this.stagedEntities.images;
   }
 
-  private describeEntity(image: Phaser.GameObjects.Image): {
-    textureKey: string;
-    active: boolean;
-    x: number;
-    y: number;
-    logicalWidth: number;
-    logicalHeight: number;
-    sourceCanvasWidth: number;
-    sourceCanvasHeight: number;
-    sourceIsCanvas: boolean;
-  } {
+  private hideRuntimeEvidenceEntities(scene: Phaser.Scene): void {
+    const staged = new Set<Phaser.GameObjects.GameObject>(
+      this.stagedEntities?.scene === scene ? this.stagedEntities.images : []
+    );
+    const evidenceTextureKeys = new Set([
+      'player-ship',
+      'scout-texture',
+      'fighter-texture',
+      'diver-texture',
+      'asteroid-texture',
+      'player-bullet',
+      'enemy-bullet',
+    ]);
+    for (const child of scene.children.list) {
+      if (
+        (child instanceof Phaser.GameObjects.Image || child instanceof Phaser.GameObjects.Sprite) &&
+        !staged.has(child) &&
+        evidenceTextureKeys.has(child.texture.key)
+      ) {
+        child.setVisible(false);
+      }
+    }
+  }
+
+  private describeEntity(image: Phaser.GameObjects.Image): BrowserHarnessVisualPilotEntity {
     const frame = image.texture.get();
     const source = image.texture.getSourceImage() as CanvasImageSource & { width?: number; height?: number };
     return {
@@ -115,6 +143,7 @@ export class BrowserHarnessVisualPilot {
       active: image.active,
       x: image.x,
       y: image.y,
+      displayScale: image.scaleX,
       logicalWidth: frame.width,
       logicalHeight: frame.height,
       sourceCanvasWidth: source.width ?? 0,

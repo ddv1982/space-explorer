@@ -105,14 +105,14 @@ describe('hazardOverlayRenderer', () => {
       rockCorridor: 1,
     });
 
-    expect(countByMethod(calls, 'lineStyle')).toBe(7);
-    expect(countByMethod(calls, 'lineBetween')).toBe(7);
+    expect(countByMethod(calls, 'lineStyle')).toBe(9);
+    expect(countByMethod(calls, 'lineBetween')).toBe(11);
     expect(countByMethod(calls, 'strokeEllipse')).toBe(2);
     expect(countByMethod(calls, 'fillStyle')).toBe(2);
     expect(countByMethod(calls, 'fillEllipse')).toBe(2);
-    expect(countByMethod(calls, 'beginPath')).toBe(2);
-    expect(countByMethod(calls, 'arc')).toBe(2);
-    expect(countByMethod(calls, 'strokePath')).toBe(2);
+    expect(countByMethod(calls, 'beginPath')).toBe(4);
+    expect(countByMethod(calls, 'arc')).toBe(4);
+    expect(countByMethod(calls, 'strokePath')).toBe(4);
     expect(countByMethod(calls, 'fillCircle')).toBe(8);
     expect(countByMethod(calls, 'fillTriangle')).toBe(0);
   });
@@ -156,9 +156,50 @@ describe('hazardOverlayRenderer', () => {
       rockCorridor: 0,
     });
 
-    const lineStyle = calls.find((call) => call.method === 'lineStyle');
-    expect(lineStyle?.args[0]).toBe(3);
-    expect(lineStyle?.args[2]).toBeCloseTo(0.07, 6);
-    expect(countByMethod(calls, 'arc')).toBe(2);
+    const lineStyles = calls.filter((call) => call.method === 'lineStyle');
+    expect(lineStyles.map((call) => call.args[0])).toEqual([7, 2]);
+    expect(lineStyles[0].args[2]).toBeCloseTo(0.022, 6);
+    expect(lineStyles[1].args[2]).toBeCloseTo(0.095, 6);
+    const arcs = calls.filter((call) => call.method === 'arc');
+    expect(arcs).toHaveLength(4);
+    expect(arcs.slice(0, 2).map((call) => call.args)).toEqual([
+      [128, 156, 128, -0.35, 0.55],
+      [672, 156, 128, 2.59, 3.49],
+    ]);
+    expect(arcs[2].args).toEqual(arcs[0].args);
+    expect(arcs[3].args).toEqual(arcs[1].args);
+  });
+
+  test('renders debris surge with a visible core and matching halo geometry', () => {
+    const { recorder, calls } = createGraphicsRecorder();
+
+    drawHazardOverlayPrimitives(recorder as never, {
+      width: 800,
+      height: 600,
+      time: 1000,
+      accentColor: 0x335577,
+      overlayAlpha: 0.06,
+      energyStorm: 0,
+      gravityWell: 0,
+      nebulaAmbush: 0,
+      ringCrossfire: 0,
+      debrisSurge: 0.33,
+      minefield: 0,
+      rockCorridor: 0,
+    });
+
+    const lineStyles = calls.filter((call) => call.method === 'lineStyle');
+    expect(lineStyles.map((call) => call.args[0])).toEqual([7, 2.25]);
+    expect(lineStyles[0].args[2]).toBeCloseTo(0.0336, 6);
+    expect(lineStyles[1].args[2]).toBeCloseTo(0.084, 6);
+    const streaks = calls.filter((call) => call.method === 'lineBetween');
+    expect(streaks).toHaveLength(8);
+    expect(streaks.slice(0, 4).map((call) => call.args)).toEqual([
+      [76, 108, 114, 204.00000000000003],
+      [204.00000000000003, 108, 242.00000000000003, 204.00000000000003],
+      [556, 108, 594, 204.00000000000003],
+      [684, 108, 722, 204.00000000000003],
+    ]);
+    expect(streaks.slice(4).map((call) => call.args)).toEqual(streaks.slice(0, 4).map((call) => call.args));
   });
 });

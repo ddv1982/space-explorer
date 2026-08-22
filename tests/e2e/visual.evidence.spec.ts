@@ -1,6 +1,11 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
+import {
+  assertLevelOneEvidenceEntities,
+  sampleEvidenceThreatContrast,
+  sampleGameplayLaneLuminance,
+} from './levelOneVisualEvidence';
 
 const visualEvidenceDirectory = join(process.cwd(), 'test-results');
 const visualEvidenceRunId = String(process.ppid);
@@ -8,15 +13,19 @@ const visualProjects = ['chromium-desktop-visual', 'chromium-mobile-visual'] as 
 const visualTestTitles = [
   'pause command deck stays balanced across checkpoints and settings',
   'crossfire telegraph glow preserves readable gameplay lanes',
+  'debris surge separates its lane tells from the aurora backdrop',
   'all planet arrivals share a responsive cinematic system with distinct identities',
   'gameplay corridor preserves a dark field with brighter desktop edges',
   'entity diagonal edges remain reviewable across quality tiers and fractional motion phases',
   'game over and victory command decks stay readable',
 ] as const;
 const visualEvidenceAssertions = [
-  'Representative entity edges are captured at gameplay size for low, standard, high, and auto.',
+  'Desktop and 390px portrait Level 1 captures show continuous aurora ribbons, reduced nebula banding, distinct hazard tells, and a darker center lane.',
+  'Representative Level 1 entities and projectiles are captured at authored gameplay scale rather than 3x staging.',
+  'Level 1 entity edges are captured at authored 1x gameplay size for low, standard, high, and auto.',
   'Desktop and 390px phone portrait evidence shows improved edge coverage without clipped halos or alpha fringes.',
   'Fractional-motion evidence shows no material edge shimmer or pixel crawl.',
+  'Recorded ring-crossfire and debris-surge luminance keeps the center 45-55% lane darker than threats.',
 ] as const;
 
 function atomicWriteJson(path: string, value: unknown): void {
@@ -92,48 +101,6 @@ test.afterAll(({ browserName: _browserName }, testInfo) => {
   );
 });
 
-async function sampleGameplayLaneLuminance(page: import('@playwright/test').Page): Promise<{
-  center: number;
-  edges: number;
-}> {
-  const screenshot = await page.screenshot();
-  return page.evaluate(async (base64) => {
-    const binary = atob(base64);
-    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-    const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Screenshot sampling canvas is unavailable');
-    context.drawImage(bitmap, 0, 0);
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    bitmap.close();
-
-    const average = (ranges: ReadonlyArray<readonly [number, number]>): number => {
-      let luminance = 0;
-      let samples = 0;
-      const step = Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 160));
-      for (let y = Math.floor(canvas.height * 0.15); y < canvas.height * 0.85; y += step) {
-        for (const [start, end] of ranges) {
-          for (let x = Math.floor(canvas.width * start); x < canvas.width * end; x += step) {
-            const offset = (y * canvas.width + x) * 4;
-            luminance += pixels[offset] * 0.2126 + pixels[offset + 1] * 0.7152 + pixels[offset + 2] * 0.0722;
-            samples += 1;
-          }
-        }
-      }
-      return luminance / Math.max(1, samples);
-    };
-
-    return {
-      center: average([[0.38, 0.62]]),
-      edges: average([
-        [0.05, 0.29],
-        [0.71, 0.95],
-      ]),
-    };
-  }, screenshot.toString('base64'));
-}
-
 test('pause command deck stays balanced across checkpoints and settings', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(120_000);
   const mobile = test.info().project.name.includes('mobile');
@@ -189,6 +156,8 @@ test('pause command deck stays balanced across checkpoints and settings', async 
 
 test('crossfire telegraph glow preserves readable gameplay lanes', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(120_000);
+  const mobile = test.info().project.name.includes('mobile');
+  await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 984, height: 768 });
   await openMenu(page);
   await startNewRun(page);
   const evidenceTarget = test.info().project.name.replace('-evidence', '');
@@ -200,6 +169,7 @@ test('crossfire telegraph glow preserves readable gameplay lanes', async ({ page
 
   expect(baselinePilot.sectionId).toBe('slipstream-prism-cross');
   expect(baselinePilot.filterCount).toBe(1);
+  assertLevelOneEvidenceEntities(baselinePilot.entities);
   const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
   const baselineName = `crossfire-baseline-${evidenceTarget}.png`;
   const baselinePath = evidenceDirectory
@@ -217,6 +187,14 @@ test('crossfire telegraph glow preserves readable gameplay lanes', async ({ page
     return harness.showLaneReadingPilot(true);
   });
   expect(pilot.filterCount).toBe(1);
+  assertLevelOneEvidenceEntities(pilot.entities);
+  await page.waitForTimeout(32);
+  const luminance = await sampleEvidenceThreatContrast(page, pilot.entities);
+  expect(luminance.center45To55).toBeLessThan(luminance.threats);
+  await test.info().attach(`crossfire-lane-luminance-${evidenceTarget}.json`, {
+    body: JSON.stringify(luminance, null, 2),
+    contentType: 'application/json',
+  });
   const pilotName = `crossfire-pilot-${evidenceTarget}.png`;
   const pilotPath = evidenceDirectory ? `${evidenceDirectory}/${pilotName}` : test.info().outputPath(pilotName);
   await page.screenshot({ path: pilotPath });
@@ -241,6 +219,42 @@ test('crossfire telegraph glow preserves readable gameplay lanes', async ({ page
     });
     console.info(`crossfire render cost ${test.info().project.name}: ${JSON.stringify(renderCost)}`);
   }
+  assertNoBrowserErrors();
+});
+
+test('debris surge separates its lane tells from the aurora backdrop', async ({ page, assertNoBrowserErrors }) => {
+  test.setTimeout(90_000);
+  const mobile = test.info().project.name.includes('mobile');
+  const viewport = mobile ? { width: 390, height: 844 } : { width: 984, height: 768 };
+  const target = mobile ? 'portrait' : 'desktop';
+  await page.setViewportSize(viewport);
+  await openMenu(page);
+  await startNewRun(page);
+
+  const pilot = await page.evaluate(() => {
+    const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+    if (!harness) throw new Error('Browser harness is not installed');
+    return harness.showLaneReadingPilot(false, 'debris-surge');
+  });
+  expect(pilot.sectionId).toBe('slipstream-debris-ribbon');
+  expect(pilot.filterCount).toBe(1);
+  assertLevelOneEvidenceEntities(pilot.entities);
+
+  await page.waitForTimeout(32);
+  const luminance = await sampleGameplayLaneLuminance(page);
+  expect(luminance.center).toBeLessThan(45);
+  expect(luminance.edges).toBeLessThan(45);
+  const threatContrast = await sampleEvidenceThreatContrast(page, pilot.entities);
+  expect(threatContrast.center45To55).toBeLessThan(threatContrast.threats);
+  await test.info().attach(`debris-surge-lane-luminance-${target}.json`, {
+    body: JSON.stringify(threatContrast, null, 2),
+    contentType: 'application/json',
+  });
+  const name = `debris-surge-${target}.png`;
+  const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
+  const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);
+  await page.screenshot({ path });
+  await test.info().attach(name, { path, contentType: 'image/png' });
   assertNoBrowserErrors();
 });
 
@@ -371,10 +385,6 @@ test('entity diagonal edges remain reviewable across quality tiers and fractiona
   const viewportName = mobile ? 'phone-portrait' : 'desktop';
   const qualityStorageKey = 'space-explorer.visualQuality.v1';
   const tiers = ['low', 'standard', 'high', 'auto'] as const;
-  const expectedDimensions = {
-    'player-ship': { width: 36, height: 44 },
-    'scout-texture': { width: 26, height: 28 },
-  } as const;
 
   await page.setViewportSize(viewport);
   await openMenu(page);
@@ -398,36 +408,13 @@ test('entity diagonal edges remain reviewable across quality tiers and fractiona
       const staged = await page.evaluate(() => {
         const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
         if (!harness) throw new Error('Browser harness is not installed');
-        return harness.showLaneReadingPilot(false) as unknown as {
-          motionPhase: number;
-          qualityTier: string;
-          entityTextureResolution: number;
-          entities: Array<{
-            textureKey: string;
-            active: boolean;
-            x: number;
-            y: number;
-            logicalWidth: number;
-            logicalHeight: number;
-            sourceCanvasWidth: number;
-            sourceCanvasHeight: number;
-            sourceIsCanvas: boolean;
-          }>;
-        };
+        return harness.showLaneReadingPilot(false);
       });
 
       expect(staged.motionPhase).toBe(expectedPhase);
       expect(staged.qualityTier).toBe(tier);
       expect(staged.entityTextureResolution).toBe(4);
-      expect(staged.entities.map((entity) => entity.textureKey)).toEqual(['player-ship', 'scout-texture']);
-      for (const entity of staged.entities) {
-        const expected = expectedDimensions[entity.textureKey as keyof typeof expectedDimensions];
-        expect(entity.active).toBe(true);
-        expect(expected).toBeDefined();
-        expect({ width: entity.logicalWidth, height: entity.logicalHeight }).toEqual(expected);
-        expect(entity.sourceIsCanvas).toBe(true);
-        expect({ width: entity.sourceCanvasWidth, height: entity.sourceCanvasHeight }).toEqual(expected);
-      }
+      assertLevelOneEvidenceEntities(staged.entities);
       phaseEvidence.push(staged);
 
       // Let the paused scene render the harness-controlled fractional placement.

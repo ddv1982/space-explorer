@@ -126,6 +126,68 @@ function drawFarLayer(g: Phaser.GameObjects.Graphics, config: LevelConfig, size:
   }
 }
 
+export function usesSmoothNebulaGradient(levelName: string): boolean {
+  return levelName === 'Aurora Threshold';
+}
+
+export function drawSmoothNebulaCircle(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  color: number,
+  peakAlpha: number
+): void {
+  const red = (color >> 16) & 0xff;
+  const green = (color >> 8) & 0xff;
+  const blue = color & 0xff;
+  const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${peakAlpha})`);
+  gradient.addColorStop(0.45, `rgba(${red}, ${green}, ${blue}, ${peakAlpha * 0.42})`);
+  gradient.addColorStop(1, `rgba(${red}, ${green}, ${blue}, 0)`);
+  context.fillStyle = gradient;
+  context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+}
+
+function drawSmoothNebulaLayer(scene: Phaser.Scene, key: string, config: LevelConfig, size: number): boolean {
+  const texture = scene.textures.createCanvas(key, size, size);
+  if (!texture) return false;
+
+  try {
+    const context = texture.context;
+    context.clearRect(0, 0, size, size);
+    const blobCount = motifCount(5);
+    for (let index = 0; index < blobCount; index += 1) {
+      const radius = Phaser.Math.Between(170, 330);
+      const x = edgeBiasedX(size, radius * 0.4);
+      const y = Phaser.Math.FloatBetween(0, size);
+      const color = index % 2 === 0 ? config.nebulaColor : mixColor(config.nebulaColor, config.accentColor, 0.4);
+      const peakAlpha = Math.min(0.3, config.nebulaAlpha * Phaser.Math.FloatBetween(0.35, 0.6) * 3);
+      forWrappedY(size, y, radius, (drawY) => {
+        forWrappedX(size, x, radius, (drawX) => {
+          drawSmoothNebulaCircle(context, drawX, drawY, radius, color, peakAlpha);
+        });
+      });
+    }
+
+    for (let index = 0; index < 2; index += 1) {
+      const radius = Phaser.Math.Between(60, 110);
+      const x = edgeBiasedX(size, radius);
+      const y = Phaser.Math.FloatBetween(0, size);
+      forWrappedY(size, y, radius, (drawY) => {
+        forWrappedX(size, x, radius, (drawX) => {
+          drawSmoothNebulaCircle(context, drawX, drawY, radius, mixColor(config.accentColor, 0xffffff, 0.25), 0.12);
+        });
+      });
+    }
+    texture.refresh();
+    return true;
+  } catch (error) {
+    scene.textures.remove(key);
+    throw error;
+  }
+}
+
 function drawNebulaLayer(g: Phaser.GameObjects.Graphics, config: LevelConfig, size: number): void {
   const blobCount = motifCount(5);
   for (let i = 0; i < blobCount; i++) {
@@ -178,6 +240,63 @@ function traceLine(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: n
   };
 }
 
+export interface AuroraRibbonPoint {
+  x: number;
+  y: number;
+}
+
+export function createAuroraRibbonPath(
+  size: number,
+  baseX: number,
+  phase: number,
+  amplitude: number,
+  cycles: number
+): AuroraRibbonPoint[] {
+  const points: AuroraRibbonPoint[] = [];
+  const left = baseX < size / 2;
+  const minX = left ? 12 : size * LANE_EDGE_MAX + 24;
+  const maxX = left ? size * LANE_EDGE_MIN - 24 : size - 12;
+  const segmentHeight = 16;
+
+  for (let y = 0; y <= size; y += segmentHeight) {
+    const normalizedY = Math.min(1, y / size);
+    points.push({
+      x: Phaser.Math.Clamp(baseX + Math.sin(phase + normalizedY * Math.PI * 2 * cycles) * amplitude, minX, maxX),
+      y: Math.min(size, y),
+    });
+  }
+  if (points[points.length - 1]?.y !== size) {
+    points.push({
+      x: Phaser.Math.Clamp(baseX + Math.sin(phase) * amplitude, minX, maxX),
+      y: size,
+    });
+  }
+  return points;
+}
+
+function traceRibbonCenter(g: Phaser.GameObjects.Graphics, points: AuroraRibbonPoint[]): () => void {
+  return () => {
+    g.beginPath();
+    g.moveTo(points[0].x, points[0].y);
+    for (let index = 1; index < points.length; index += 1) {
+      g.lineTo(points[index].x, points[index].y);
+    }
+  };
+}
+
+function fillRibbonBand(g: Phaser.GameObjects.Graphics, points: AuroraRibbonPoint[], width: number): void {
+  g.beginPath();
+  g.moveTo(points[0].x - width / 2, points[0].y);
+  for (let index = 1; index < points.length; index += 1) {
+    g.lineTo(points[index].x - width / 2, points[index].y);
+  }
+  for (let index = points.length - 1; index >= 0; index -= 1) {
+    g.lineTo(points[index].x + width / 2, points[index].y);
+  }
+  g.closePath();
+  g.fillPath();
+}
+
 function tracePolygon(g: Phaser.GameObjects.Graphics, points: { x: number; y: number }[]): () => void {
   return () => {
     g.beginPath();
@@ -190,20 +309,22 @@ function tracePolygon(g: Phaser.GameObjects.Graphics, points: { x: number; y: nu
 }
 
 function drawMotifAurora(g: Phaser.GameObjects.Graphics, size: number, accent: number): void {
-  // Aurora curtains: tall shimmering ribbons hugging the edges.
+  // Broad, continuous curtains retain their weight while the tile scrolls fractionally.
   for (let ribbon = 0; ribbon < motifCount(4); ribbon++) {
-    const baseX = edgeBiasedX(size, 70);
+    const left = ribbon % 2 === 0;
+    const baseX = left
+      ? Phaser.Math.FloatBetween(size * 0.27, size * 0.3)
+      : Phaser.Math.FloatBetween(size * 0.7, size * 0.73);
     const phase = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const amplitude = Phaser.Math.Between(14, 30);
+    const amplitude = Phaser.Math.Between(18, 34);
+    const cycles = Phaser.Math.Between(2, 3);
+    const bandWidth = Phaser.Math.Between(16, 28);
     const hue = mixColor(accent, [0x8fffd8, 0xa8b8ff, 0xd88fff][ribbon % 3], 0.35);
 
-    forWrappedX(size, baseX, amplitude + 6, (drawX) => {
-      for (let y = 0; y < size; y += 26) {
-        const sway = Math.sin(phase + y * 0.012) * amplitude;
-        const alpha = Math.max(0.03, 0.08 + 0.06 * Math.sin(phase + y * 0.05));
-        neonStroke(g, hue, 1.5, alpha, traceLine(g, drawX + sway, y, drawX + sway * 0.7, y + 22));
-      }
-    });
+    const points = createAuroraRibbonPath(size, baseX, phase, amplitude, cycles);
+    g.fillStyle(hue, motifAlpha(0.035));
+    fillRibbonBand(g, points, bandWidth);
+    neonStroke(g, hue, 2, 0.14, traceRibbonCenter(g, points));
   }
 }
 
@@ -605,6 +726,10 @@ export function ensureNeonBackgroundTextures(scene: Phaser.Scene, levelNumber: n
   for (const layer of manifest.layers) {
     if (!requiredSourceRoles.has(layer.role) || scene.textures.exists(layer.key)) {
       continue;
+    }
+
+    if (layer.role === 'nebula' && usesSmoothNebulaGradient(config.name)) {
+      if (drawSmoothNebulaLayer(scene, layer.key, config, size)) continue;
     }
 
     withGeneratedTexture(scene, layer.key, size, size, (g) => {

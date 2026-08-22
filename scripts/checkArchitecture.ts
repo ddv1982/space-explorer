@@ -220,8 +220,8 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
     evidence: 'HUD responsive layout tests',
   },
   'src/systems/parallax/neonBackgroundGenerator.ts#ensureNeonBackgroundTextures': {
-    lines: 94,
-    complexity: 24,
+    lines: 95,
+    complexity: 25,
     category: 'drawing-recipe',
     reason: 'idempotent texture registration whose branch structure mirrors generated texture variants',
     evidence: 'parallax texture lifecycle tests and visual evidence',
@@ -334,7 +334,7 @@ const CONCENTRATION_POLICIES: Record<string, ConcentrationPolicy> = {
     evidence: 'game scene composition and lifecycle tests',
   },
   'src/systems/parallax/neonBackgroundGenerator.ts': {
-    lines: 680,
+    lines: 800,
     imports: 8,
     category: 'drawing-recipe',
     reason: 'procedural drawing recipe collection',

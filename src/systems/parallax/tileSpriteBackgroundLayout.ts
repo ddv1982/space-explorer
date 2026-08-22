@@ -8,6 +8,7 @@ interface ViewportSize {
 interface HeightCoverRepeatLayoutOptions {
   scrollOffsetY?: number;
   minTileScale?: number;
+  coverWidth?: boolean;
 }
 
 const DEFAULT_MIN_TILE_SCALE = 0.35;
@@ -32,13 +33,22 @@ export function applyHeightCoverRepeatLayout(
   options: HeightCoverRepeatLayoutOptions = {}
 ): void {
   const size = layoutViewportTileSprite(sprite, viewport);
-  const tileScale = getHeightCoverRepeatScale(sprite, size.height, options.minTileScale);
+  const tileScale = getHeightCoverRepeatScale(sprite, size, options.minTileScale, options.coverWidth);
 
   sprite.setTileScale(tileScale, tileScale);
   sprite.setTilePosition(
-    getCenteredTileOffset(sprite.frame.width, size.width, tileScale),
+    getHeightCoverRepeatTilePositionX(sprite, size.width, tileScale, 0),
     getHeightCoverRepeatTilePositionY(sprite, size.height, tileScale, options.scrollOffsetY ?? 0)
   );
+}
+
+export function getHeightCoverRepeatTilePositionX(
+  sprite: Phaser.GameObjects.TileSprite,
+  viewportWidth: number,
+  tileScale: number,
+  scrollOffsetX: number
+): number {
+  return getCenteredTileOffset(sprite.frame.width, Math.ceil(viewportWidth), tileScale) + scrollOffsetX;
 }
 
 export function getHeightCoverRepeatTilePositionY(
@@ -52,15 +62,18 @@ export function getHeightCoverRepeatTilePositionY(
 
 function getHeightCoverRepeatScale(
   sprite: Phaser.GameObjects.TileSprite,
-  viewportHeight: number,
-  minTileScale = DEFAULT_MIN_TILE_SCALE
+  viewport: ViewportSize,
+  minTileScale = DEFAULT_MIN_TILE_SCALE,
+  coverWidth = false
 ): number {
   const frameHeight = Math.max(1, sprite.frame.height);
+  const heightScale = viewport.height / frameHeight;
+  const widthScale = coverWidth ? viewport.width / Math.max(1, sprite.frame.width) : 0;
 
   // Phaser TileSprites are intended for seamless repeating textures. Keep the
   // GameObject viewport-sized, scale one tile to cover the height, then let the
   // texture repeat horizontally on wide or maximized screens.
-  return Math.max(Math.ceil(viewportHeight) / frameHeight, minTileScale);
+  return Math.max(heightScale, widthScale, minTileScale);
 }
 
 function getCenteredTileOffset(frameSize: number, viewportSize: number, tileScale: number): number {

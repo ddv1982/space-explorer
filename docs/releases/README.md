@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.18.0`](./1.18.0.md) - opens Aurora Threshold into continuous light, unmistakable hazard lanes, and honest gameplay-scale evidence without changing encounter grammar
 - [`1.17.0`](./1.17.0.md) - lets every threat silhouette hold a smooth line through changing glass while authored mass, motion, and encounter grammar stay fixed
 - [`1.16.0`](./1.16.0.md) - lets every control, save, combat clock, and performance signal reach the deck without changing encounter grammar
 - [`1.15.0`](./1.15.0.md) - holds the fight with the deck so pause, saves, hands, and the production gate tell the same story

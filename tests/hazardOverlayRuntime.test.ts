@@ -74,7 +74,7 @@ describe('hazard overlay runtime damping', () => {
     expect(overlay.clear).toHaveBeenCalledTimes(1);
   });
 
-  test('aggregates and clamps repeated hazard intensities before drawing', () => {
+  test('draws layered debris from the resolved overlay alpha without attenuating it again', () => {
     const lineStyles: number[][] = [];
     const overlay = {
       clear: mock(),
@@ -108,7 +108,8 @@ describe('hazard overlay runtime damping', () => {
     });
 
     expect(overlay.clear).toHaveBeenCalledTimes(1);
-    expect(lineStyles).toHaveLength(1);
-    expect(lineStyles[0]?.[2]).toBeCloseTo(0.18 * 1.8, 10);
+    expect(lineStyles).toHaveLength(2);
+    expect(lineStyles[0]?.[2]).toBeCloseTo(1.4 * 0.4, 10);
+    expect(lineStyles[1]?.[2]).toBeCloseTo(1.4, 10);
   });
 });

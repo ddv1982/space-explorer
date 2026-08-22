@@ -61,12 +61,16 @@ describe('background motion render-property writes', () => {
 
   test('skips unchanged alpha writes on non-pulsing premium layers', () => {
     const sprite = createImage(0.75) as ReturnType<typeof createImage> & {
-      frame: { height: number };
+      frame: { width: number; height: number };
+      tileScaleX: number;
       tileScaleY: number;
+      tilePositionX: number;
       tilePositionY: number;
     };
-    sprite.frame = { height: 1024 };
+    sprite.frame = { width: 1024, height: 1024 };
+    sprite.tileScaleX = 1;
     sprite.tileScaleY = 1;
+    sprite.tilePositionX = 0;
     sprite.tilePositionY = 0;
 
     scrollPremiumBackgroundLayers({
@@ -81,6 +85,7 @@ describe('background motion render-property writes', () => {
         },
       ],
       delta: 0,
+      currentWidth: 390,
       currentHeight: 600,
       atmosphereDrift: 1,
       atmosphereAlpha: 1,
@@ -88,5 +93,6 @@ describe('background motion render-property writes', () => {
     });
 
     expect(sprite.setAlpha).not.toHaveBeenCalled();
+    expect(sprite.tilePositionX).toBe(317);
   });
 });

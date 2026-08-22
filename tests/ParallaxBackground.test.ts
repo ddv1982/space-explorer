@@ -21,6 +21,9 @@ mock.module('phaser', () => ({
 
 const { ParallaxBackground } = await import('../src/systems/ParallaxBackground');
 const { resolveSectionAtmosphereTargets } = await import('../src/systems/parallax/atmosphereProfile');
+const { createAuroraRibbonPath, drawSmoothNebulaCircle, usesSmoothNebulaGradient } =
+  await import('../src/systems/parallax/neonBackgroundGenerator');
+const { getPremiumBackgroundManifest } = await import('../src/systems/parallax/premiumBackgroundManifest');
 type ParallaxBackgroundInstance = InstanceType<typeof ParallaxBackground>;
 
 /**
@@ -160,6 +163,57 @@ function createSection(overrides?: Partial<LevelSectionConfig>): LevelSectionCon
 }
 
 describe('ParallaxBackground premium-background presentation regression coverage', () => {
+  test('aurora ribbons form continuous tile-safe paths outside the protected lane', () => {
+    const size = 1024;
+    const left = createAuroraRibbonPath(size, size * 0.285, 0.7, 34, 3);
+    const right = createAuroraRibbonPath(size, size * 0.715, 1.1, 34, 2);
+
+    for (const points of [left, right]) {
+      expect(points[0].y).toBe(0);
+      expect(points[points.length - 1]?.y).toBe(size);
+      expect(points[points.length - 1]?.x).toBeCloseTo(points[0].x, 8);
+      for (let index = 1; index < points.length; index += 1) {
+        expect(points[index].y - points[index - 1].y).toBeLessThanOrEqual(16);
+      }
+    }
+    expect(left.every((point) => point.x < size * 0.34)).toBe(true);
+    expect(right.every((point) => point.x > size * 0.66)).toBe(true);
+  });
+
+  test('Level 1 alone uses a true radial gradient for smooth nebula light', () => {
+    const stops: Array<[number, string]> = [];
+    const fillRects: number[][] = [];
+    const gradient = { addColorStop: (offset: number, color: string) => stops.push([offset, color]) };
+    const context = {
+      fillStyle: '' as string | CanvasGradient,
+      createRadialGradient: (...args: number[]) => {
+        expect(args).toEqual([100, 120, 0, 100, 120, 320]);
+        return gradient;
+      },
+      fillRect: (...args: number[]) => fillRects.push(args),
+    };
+
+    drawSmoothNebulaCircle(context as never, 100, 120, 320, 0x55ffee, 0.2);
+
+    expect(usesSmoothNebulaGradient('Aurora Threshold')).toBe(true);
+    expect(usesSmoothNebulaGradient('Tideglass Shallows')).toBe(false);
+    expect(stops).toEqual([
+      [0, 'rgba(85, 255, 238, 0.2)'],
+      [0.45, 'rgba(85, 255, 238, 0.084)'],
+      [1, 'rgba(85, 255, 238, 0)'],
+    ]);
+    expect(context.fillStyle).toBe(gradient);
+    expect(fillRects).toEqual([[-220, -200, 640, 640]]);
+  });
+
+  test('Level 1 motif covers wide viewports without changing other level repeat policy', () => {
+    const aurora = getPremiumBackgroundManifest('Aurora Threshold');
+    const tideglass = getPremiumBackgroundManifest('Tideglass Shallows');
+
+    expect(aurora?.runtimeLayers.find((layer) => layer.role === 'mid')?.coverViewport).toBe(true);
+    expect(tideglass?.runtimeLayers.find((layer) => layer.role === 'mid')?.coverViewport).toBeUndefined();
+  });
+
   test('createSceneLayers skips procedural starfield when premium background art is available', () => {
     const tileSpriteCalls: string[] = [];
     const tileSpriteStub = {

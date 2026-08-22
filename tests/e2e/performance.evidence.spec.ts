@@ -515,6 +515,7 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
   assertNoBrowserErrors();
   if (test.info().project.name === 'chromium-mobile-performance')
     writeJUnit('flow-performance-evidence.xml', 'Flow performance evidence', [
+      'Existing desktop and mobile performance evidence passes established contracts without threshold relaxation.',
       'Existing desktop and mobile performance cases pass established thresholds.',
       'Logical-size resolved textures introduce no sustained gameplay frame-cost regression.',
     ]);

@@ -8,6 +8,7 @@ export interface PremiumBackgroundLayerConfig {
   scrollSpeed: number;
   blendMode?: number | string;
   transparent?: boolean;
+  coverViewport?: boolean;
   pulse?: {
     amplitude: number;
     speed: number;
@@ -110,6 +111,7 @@ function createManifest(level: (typeof LEVELS)[number]): PremiumBackgroundManife
         key: `${assetPrefix}_motif`,
         alpha: 0.92,
         scrollSpeed: 0.18,
+        ...(level.index === 1 ? { coverViewport: true } : {}),
       },
       {
         ...layers[4],

@@ -4,7 +4,11 @@ import { getVisualQualityProfile } from '../../config/visualQuality';
 import { runtimePerformanceBudget } from '../RuntimePerformanceBudget';
 import { SCROLL_SPEED } from '../../utils/constants';
 import { getPremiumBackgroundManifest, type PremiumBackgroundLayerConfig } from './premiumBackgroundManifest';
-import { applyHeightCoverRepeatLayout, getHeightCoverRepeatTilePositionY } from './tileSpriteBackgroundLayout';
+import {
+  applyHeightCoverRepeatLayout,
+  getHeightCoverRepeatTilePositionX,
+  getHeightCoverRepeatTilePositionY,
+} from './tileSpriteBackgroundLayout';
 
 export interface PremiumBackgroundLayerState {
   sprite: Phaser.GameObjects.TileSprite;
@@ -139,6 +143,7 @@ export function layoutPremiumBackgroundLayers(
   for (const layer of premiumBackgroundLayers) {
     applyHeightCoverRepeatLayout(layer.sprite, viewport, {
       scrollOffsetY: layer.scrollOffsetY,
+      coverWidth: layer.config.coverViewport,
     });
   }
 }
@@ -146,6 +151,7 @@ export function layoutPremiumBackgroundLayers(
 export function scrollPremiumBackgroundLayers(params: {
   premiumBackgroundLayers: PremiumBackgroundLayerState[];
   delta: number;
+  currentWidth: number;
   currentHeight: number;
   atmosphereDrift: number;
   atmosphereAlpha: number;
@@ -165,7 +171,12 @@ export function scrollPremiumBackgroundLayers(params: {
     );
     const roleDrift = layer.config.role === 'far' ? 4 : layer.config.role === 'mid' ? 10 : 16;
     layer.scrollOffsetX = Math.sin(params.elapsed * (0.00008 + layer.config.scrollSpeed * 0.00012)) * roleDrift;
-    layer.sprite.tilePositionX = layer.scrollOffsetX;
+    layer.sprite.tilePositionX = getHeightCoverRepeatTilePositionX(
+      layer.sprite,
+      params.currentWidth,
+      layer.sprite.tileScaleX,
+      layer.scrollOffsetX
+    );
 
     const nextAlpha = layer.config.pulse
       ? Phaser.Math.Clamp(

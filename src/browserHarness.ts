@@ -99,7 +99,8 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
     probeFrameDelivery: (sampleCount) => performanceProbes.probeFrameDelivery(sampleCount),
     getRuntimePerformanceSnapshot: () => runtimePerformanceBudget.getSnapshot(),
     ...gameplayProbes,
-    showLaneReadingPilot: (glowEnabled = true) => visualPilot.show(glowEnabled),
+    showLaneReadingPilot: (glowEnabled = true, hazardType = 'ring-crossfire') =>
+      visualPilot.show(glowEnabled, hazardType),
     measureLaneReadingPilotRenderCost: () => visualPilot.measureRenderCost(),
     ...navigation,
   };

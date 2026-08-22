@@ -384,6 +384,7 @@ export class ParallaxBackground {
     scrollPremiumBackgroundLayersHelper({
       premiumBackgroundLayers: this.premiumBackgroundLayers,
       delta,
+      currentWidth: this.currentWidth,
       currentHeight: this.currentHeight,
       atmosphereDrift: this.atmosphereDrift,
       atmosphereAlpha: this.atmosphereAlpha,

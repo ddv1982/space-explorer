@@ -31,6 +31,22 @@ interface HazardOverlayDrawPrimitivesInput {
   rockCorridor: number;
 }
 
+function strokeCrossfireArcs(overlay: HazardOverlayGraphics, width: number, height: number): void {
+  overlay.beginPath();
+  overlay.arc(width * 0.16, height * 0.26, width * 0.16, -0.35, 0.55);
+  overlay.strokePath();
+  overlay.beginPath();
+  overlay.arc(width * 0.84, height * 0.26, width * 0.16, 2.59, 3.49);
+  overlay.strokePath();
+}
+
+function strokeDebrisSurge(overlay: HazardOverlayGraphics, width: number, height: number): void {
+  for (const ratio of DEBRIS_SURGE_RATIOS) {
+    const x = width * ratio;
+    overlay.lineBetween(x - 20, height * 0.18, x + 18, height * 0.34);
+  }
+}
+
 export function drawHazardOverlayPrimitives(
   overlay: HazardOverlayGraphics,
   input: HazardOverlayDrawPrimitivesInput
@@ -80,23 +96,19 @@ export function drawHazardOverlayPrimitives(
   if (ringCrossfire > 0) {
     // overlayAlpha already contains hazard intensity. Avoid attenuating it twice
     // so mirrored lane tells remain readable over premium background detail.
-    const arcAlpha = overlayAlpha * 0.7;
-    overlay.lineStyle(3, mixColor(accentColor, 0xffffff, 0.28), arcAlpha);
-    overlay.beginPath();
-    overlay.arc(width * 0.16, height * 0.26, width * 0.16, -0.35, 0.55);
-    overlay.strokePath();
-    overlay.beginPath();
-    overlay.arc(width * 0.84, height * 0.26, width * 0.16, 2.59, 3.49);
-    overlay.strokePath();
+    overlay.lineStyle(7, accentColor, overlayAlpha * 0.22);
+    strokeCrossfireArcs(overlay, width, height);
+    overlay.lineStyle(2, mixColor(accentColor, 0xffffff, 0.58), overlayAlpha * 0.95);
+    strokeCrossfireArcs(overlay, width, height);
   }
 
   if (debrisSurge > 0) {
-    const streakAlpha = overlayAlpha * 0.18 * debrisSurge;
-    overlay.lineStyle(1.5, mixColor(0x8899aa, accentColor, 0.2), streakAlpha);
-    for (const ratio of DEBRIS_SURGE_RATIOS) {
-      const x = width * ratio;
-      overlay.lineBetween(x - 20, height * 0.18, x + 18, height * 0.34);
-    }
+    // overlayAlpha already represents the active hazard intensity.
+    const streakAlpha = overlayAlpha * 1.4;
+    overlay.lineStyle(7, accentColor, streakAlpha * 0.4);
+    strokeDebrisSurge(overlay, width, height);
+    overlay.lineStyle(2.25, mixColor(0x9aabba, 0xffffff, 0.55), streakAlpha);
+    strokeDebrisSurge(overlay, width, height);
   }
 
   if (minefield > 0) {

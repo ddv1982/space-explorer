@@ -21,6 +21,28 @@ export interface BrowserHarnessVisualPilotMetrics {
   p95RegressionMs: number;
 }
 
+export interface BrowserHarnessVisualPilotEntity {
+  textureKey: string;
+  active: boolean;
+  x: number;
+  y: number;
+  displayScale: number;
+  logicalWidth: number;
+  logicalHeight: number;
+  sourceCanvasWidth: number;
+  sourceCanvasHeight: number;
+  sourceIsCanvas: boolean;
+}
+
+export interface BrowserHarnessVisualPilotEvidence {
+  filterCount: number;
+  sectionId: string;
+  motionPhase: number;
+  qualityTier: string;
+  entityTextureResolution: number;
+  entities: BrowserHarnessVisualPilotEntity[];
+}
+
 export interface BrowserHarnessFramePacingProbe {
   sampleCount: number;
   warmupFrames: number;
@@ -86,7 +108,10 @@ export interface BrowserHarnessApi {
   ) => Promise<BrowserHarnessFramePacingProbe>;
   probeFrameDelivery: (sampleCount?: number) => Promise<BrowserHarnessFrameDeliveryProbe>;
   getRuntimePerformanceSnapshot: () => RuntimePerformanceSnapshot;
-  showLaneReadingPilot: (glowEnabled?: boolean) => { filterCount: number; sectionId: string };
+  showLaneReadingPilot: (
+    glowEnabled?: boolean,
+    hazardType?: 'ring-crossfire' | 'debris-surge'
+  ) => BrowserHarnessVisualPilotEvidence;
   measureLaneReadingPilotRenderCost: () => Promise<BrowserHarnessVisualPilotMetrics>;
   showPlanetIntermission: (level: number) => Promise<{ level: number; planetName: string }>;
   route: (key: string) => Promise<void>;

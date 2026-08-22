@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.18.0] - 2026-08-22
+
+### Added
+- Added deterministic Level 1 visual evidence for the player, Scout, Fighter, Diver, asteroid, and both projectile types at their authored 1x gameplay dimensions.
+- Added desktop and 390px phone-portrait evidence for ring-crossfire, debris-surge, fractional entity motion, and center-lane luminance.
+- Added canonical coordinate coverage for every Level 1 crossfire arc and debris-surge streak.
+
+### Changed
+- Aurora Threshold now uses continuous layered edge ribbons and smooth radial nebula light instead of segmented curtains and visibly banded circles.
+- Ring-crossfire and debris-surge tells now use distinct halo and core passes while preserving their authored geometry and resolved intensity.
+- Wide Level 1 backgrounds retain centered parallax coverage without repeating the dominant motif into the gameplay corridor.
+- Extracted reusable Level 1 screenshot sampling and entity assertions from the visual evidence narrative.
+
+### Quality
+- Preserved formations, schedules, speeds, telegraph windows, hazard geometry, Arcade bodies, damage rules, pause behavior, quality budgets, and the dark center lane.
+- Passed both TypeScript compilers, formatting, ESLint, the complete isolated unit suite, level validation, Knip, architecture checks, audit, production build, and bundle guardrails.
+- Passed all 14 desktop/mobile visual scenarios and all four applicable desktop/mobile performance scenarios, with six intentional project skips.
+
 ## [1.17.0] - 2026-08-22
 
 ### Added
