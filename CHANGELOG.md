@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.17.0] - 2026-08-22
+
+### Added
+- Added an explicit high-density-to-logical texture resolve so procedural entity edges retain smooth coverage without permanently increasing texture memory.
+- Added desktop and phone-portrait visual evidence across Low, Standard, High, and Auto with controlled half-pixel motion phases.
+- Added failure-path coverage for temporary canvas ownership, pre-registration construction errors, post-registration listener errors, and cleanup exception precedence.
+
+### Changed
+- Low, Standard, High, and Auto now generate gameplay entity textures from the same 4x supersampled source while particle and spectacle budgets remain tiered.
+- Generated textures now register at their authored logical dimensions instead of repairing private Phaser frame metadata after upload.
+- Browser evidence now records authored frame and source-canvas dimensions alongside quality tier and motion phase.
+
+### Quality
+- Passed both TypeScript compilers, architecture checks, the complete isolated unit suite, desktop/mobile visual evidence, desktop/mobile performance evidence, and the normal update-cost gate.
+- Passed 12 visual browser scenarios, including 16 all-tier entity-edge captures across desktop and 390px phone portrait.
+- Passed the normal SwiftShader performance gate at a maximum update p95 of 0.7 ms against the unchanged 5 ms threshold.
+
 ## [1.16.0] - 2026-08-21
 
 ### Added

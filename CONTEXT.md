@@ -37,3 +37,6 @@ The campaign's original balance is Normal difficulty. Low, Normal, and High mult
 
 **Presentation remake does not change encounter grammar (2026-08)**:
 The v2 neon-vector remake is a presentation pass: menus, silhouettes, VFX, atmosphere, and HUD chrome may escalate spectacle, but formations, spawn schedules, movement or projectile speeds, telegraph windows, hazard geometry, boss phase thresholds, Arcade body sizes, and the one-hit shield contract stay frozen. The center 45–55% lane stays darker than threats so Lane-Reading survives the louder look. Textures stay procedural except the existing planet-arrival portraits. Visual quality remains three tiers with remake FX budgets on the existing profile; there is no new quality axis. Pause still freezes gameplay clocks; both orientations stay playable with no rotate block.
+
+**Threat silhouette edges are quality-invariant (2026-08)**:
+Low, Standard, High, and Auto all supersample procedurally generated entity textures at 4x, so quality tiers never degrade threat silhouette edge smoothing. The explicit high-density resolve is only a temporary generation surface; logical texture dimensions, gameplay geometry, and authored encounter values remain unchanged, while particle and spectacle budgets stay tiered.

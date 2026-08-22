@@ -16,10 +16,12 @@ export const VISUAL_QUALITY_STORAGE_KEY = 'space-explorer.visualQuality.v1';
 
 type VisualQualityStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
+const ENTITY_TEXTURE_RESOLUTION = 4;
+
 const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
   low: {
     tier: 'low',
-    entityTextureResolution: 1,
+    entityTextureResolution: ENTITY_TEXTURE_RESOLUTION,
     particleTextureResolution: 1,
     backgroundLayerCount: 2,
     uiGlowStrength: 0.4,
@@ -30,7 +32,7 @@ const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
   },
   standard: {
     tier: 'standard',
-    entityTextureResolution: 2,
+    entityTextureResolution: ENTITY_TEXTURE_RESOLUTION,
     particleTextureResolution: 1,
     backgroundLayerCount: 2,
     uiGlowStrength: 0.8,
@@ -41,7 +43,7 @@ const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
   },
   high: {
     tier: 'high',
-    entityTextureResolution: 3,
+    entityTextureResolution: ENTITY_TEXTURE_RESOLUTION,
     particleTextureResolution: 2,
     backgroundLayerCount: 3,
     uiGlowStrength: 1,
@@ -52,7 +54,7 @@ const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
   },
   auto: {
     tier: 'auto',
-    entityTextureResolution: 3,
+    entityTextureResolution: ENTITY_TEXTURE_RESOLUTION,
     particleTextureResolution: 2,
     backgroundLayerCount: 3,
     uiGlowStrength: 1,

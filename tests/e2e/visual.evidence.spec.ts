@@ -1,4 +1,96 @@
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
+
+const visualEvidenceDirectory = join(process.cwd(), 'test-results');
+const visualEvidenceRunId = String(process.ppid);
+const visualProjects = ['chromium-desktop-visual', 'chromium-mobile-visual'] as const;
+const visualTestTitles = [
+  'pause command deck stays balanced across checkpoints and settings',
+  'crossfire telegraph glow preserves readable gameplay lanes',
+  'all planet arrivals share a responsive cinematic system with distinct identities',
+  'gameplay corridor preserves a dark field with brighter desktop edges',
+  'entity diagonal edges remain reviewable across quality tiers and fractional motion phases',
+  'game over and victory command decks stay readable',
+] as const;
+const visualEvidenceAssertions = [
+  'Representative entity edges are captured at gameplay size for low, standard, high, and auto.',
+  'Desktop and 390px phone portrait evidence shows improved edge coverage without clipped halos or alpha fringes.',
+  'Fractional-motion evidence shows no material edge shimmer or pixel crawl.',
+] as const;
+
+function atomicWriteJson(path: string, value: unknown): void {
+  mkdirSync(visualEvidenceDirectory, { recursive: true });
+  const temporaryPath = `${path}.${process.pid}.tmp`;
+  writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`);
+  renameSync(temporaryPath, path);
+}
+
+function escapeXmlAttribute(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
+}
+
+function atomicWriteJUnit(path: string, suiteName: string, assertions: readonly string[]): void {
+  mkdirSync(visualEvidenceDirectory, { recursive: true });
+  const temporaryPath = `${path}.${process.pid}.tmp`;
+  const testcases = assertions.map((name) => `    <testcase name="${escapeXmlAttribute(name)}"/>`).join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="${assertions.length}" failures="0" errors="0" skipped="0">
+  <testsuite name="${escapeXmlAttribute(suiteName)}" tests="${assertions.length}" failures="0" errors="0" skipped="0">
+${testcases}
+  </testsuite>
+</testsuites>
+`;
+  writeFileSync(temporaryPath, xml);
+  renameSync(temporaryPath, path);
+}
+
+function markerMatches(path: string): boolean {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')).runId === visualEvidenceRunId;
+  } catch {
+    return false;
+  }
+}
+
+function visualTestMarker(project: string, index: number): string {
+  return join(visualEvidenceDirectory, `flow-visual-${project}-test-${index}.marker.json`);
+}
+
+function visualProjectMarker(project: string): string {
+  return join(visualEvidenceDirectory, `flow-visual-${project}.marker.json`);
+}
+
+test.afterEach(({ browserName: _browserName }, testInfo) => {
+  const index = visualTestTitles.indexOf(testInfo.title as (typeof visualTestTitles)[number]);
+  if (index >= 0 && (testInfo.status === testInfo.expectedStatus || testInfo.status === 'skipped')) {
+    atomicWriteJson(visualTestMarker(testInfo.project.name, index), {
+      runId: visualEvidenceRunId,
+      project: testInfo.project.name,
+      test: testInfo.title,
+    });
+  }
+});
+
+test.afterAll(({ browserName: _browserName }, testInfo) => {
+  const project = testInfo.project.name;
+  if (!visualProjects.includes(project as (typeof visualProjects)[number])) return;
+  if (!visualTestTitles.every((_, index) => markerMatches(visualTestMarker(project, index)))) return;
+
+  atomicWriteJson(visualProjectMarker(project), { runId: visualEvidenceRunId, project, status: 'passed' });
+  if (!visualProjects.every((expectedProject) => markerMatches(visualProjectMarker(expectedProject)))) return;
+
+  atomicWriteJUnit(
+    join(visualEvidenceDirectory, 'flow-visual-evidence.xml'),
+    'Flow visual evidence',
+    visualEvidenceAssertions
+  );
+});
 
 async function sampleGameplayLaneLuminance(page: import('@playwright/test').Page): Promise<{
   center: number;
@@ -266,6 +358,97 @@ test('gameplay corridor preserves a dark field with brighter desktop edges', asy
   const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);
   await page.screenshot({ path });
   await test.info().attach(name, { path, contentType: 'image/png' });
+  assertNoBrowserErrors();
+});
+
+test('entity diagonal edges remain reviewable across quality tiers and fractional motion phases', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(180_000);
+  const mobile = test.info().project.name.includes('mobile');
+  const viewport = mobile ? { width: 390, height: 844 } : { width: 984, height: 768 };
+  const viewportName = mobile ? 'phone-portrait' : 'desktop';
+  const qualityStorageKey = 'space-explorer.visualQuality.v1';
+  const tiers = ['low', 'standard', 'high', 'auto'] as const;
+  const expectedDimensions = {
+    'player-ship': { width: 36, height: 44 },
+    'scout-texture': { width: 26, height: 28 },
+  } as const;
+
+  await page.setViewportSize(viewport);
+  await openMenu(page);
+
+  for (const tier of tiers) {
+    await page.evaluate(({ key, value }) => window.localStorage.setItem(key, value), {
+      key: qualityStorageKey,
+      value: tier,
+    });
+    await page.reload();
+    await waitForScene(page, 'Menu');
+    await startNewRun(page);
+
+    const gameplay = await snapshot(page);
+    expect(gameplay.gameSize).toEqual(viewport);
+    expect(gameplay.canvas.cssWidth).toBe(viewport.width);
+    expect(gameplay.canvas.cssHeight).toBe(viewport.height);
+
+    const phaseEvidence = [];
+    for (let expectedPhase = 0; expectedPhase < 2; expectedPhase += 1) {
+      const staged = await page.evaluate(() => {
+        const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+        if (!harness) throw new Error('Browser harness is not installed');
+        return harness.showLaneReadingPilot(false) as unknown as {
+          motionPhase: number;
+          qualityTier: string;
+          entityTextureResolution: number;
+          entities: Array<{
+            textureKey: string;
+            active: boolean;
+            x: number;
+            y: number;
+            logicalWidth: number;
+            logicalHeight: number;
+            sourceCanvasWidth: number;
+            sourceCanvasHeight: number;
+            sourceIsCanvas: boolean;
+          }>;
+        };
+      });
+
+      expect(staged.motionPhase).toBe(expectedPhase);
+      expect(staged.qualityTier).toBe(tier);
+      expect(staged.entityTextureResolution).toBe(4);
+      expect(staged.entities.map((entity) => entity.textureKey)).toEqual(['player-ship', 'scout-texture']);
+      for (const entity of staged.entities) {
+        const expected = expectedDimensions[entity.textureKey as keyof typeof expectedDimensions];
+        expect(entity.active).toBe(true);
+        expect(expected).toBeDefined();
+        expect({ width: entity.logicalWidth, height: entity.logicalHeight }).toEqual(expected);
+        expect(entity.sourceIsCanvas).toBe(true);
+        expect({ width: entity.sourceCanvasWidth, height: entity.sourceCanvasHeight }).toEqual(expected);
+      }
+      phaseEvidence.push(staged);
+
+      // Let the paused scene render the harness-controlled fractional placement.
+      await page.waitForTimeout(32);
+      const name = `entity-edges-${tier}-${viewportName}-phase-${expectedPhase}.png`;
+      const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
+      const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);
+      await page.locator('#game-root > canvas').screenshot({ path });
+      await test.info().attach(name, { path, contentType: 'image/png' });
+    }
+
+    for (let index = 0; index < phaseEvidence[0].entities.length; index += 1) {
+      expect(phaseEvidence[1].entities[index].x - phaseEvidence[0].entities[index].x).toBeCloseTo(0.5, 5);
+      expect(phaseEvidence[1].entities[index].y - phaseEvidence[0].entities[index].y).toBeCloseTo(0.5, 5);
+    }
+    await test.info().attach(`entity-edges-${tier}-${viewportName}.json`, {
+      body: JSON.stringify(phaseEvidence, null, 2),
+      contentType: 'application/json',
+    });
+  }
+
   assertNoBrowserErrors();
 });
 

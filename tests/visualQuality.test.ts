@@ -50,7 +50,7 @@ describe('visual quality profiles', () => {
     expect(getVisualQualityTier(null)).toBe('standard');
     expect(getVisualQualityProfile(null)).toEqual({
       tier: 'standard',
-      entityTextureResolution: 2,
+      entityTextureResolution: 4,
       particleTextureResolution: 1,
       backgroundLayerCount: 2,
       uiGlowStrength: 0.8,
@@ -61,10 +61,13 @@ describe('visual quality profiles', () => {
     });
   });
 
-  test('exposes remake FX budgets on every quality tier', () => {
+  test('keeps entity edge density invariant while tiering remake FX budgets', () => {
     const storage = new MemoryStorage();
     const expected = {
       low: {
+        entityTextureResolution: 4,
+        particleTextureResolution: 1,
+        backgroundLayerCount: 2,
         uiGlowStrength: 0.4,
         motifDensity: 0.6,
         particleBurstScale: 0.75,
@@ -72,6 +75,9 @@ describe('visual quality profiles', () => {
         menuAtmosphere: 1,
       },
       standard: {
+        entityTextureResolution: 4,
+        particleTextureResolution: 1,
+        backgroundLayerCount: 2,
         uiGlowStrength: 0.8,
         motifDensity: 1,
         particleBurstScale: 0.9,
@@ -79,6 +85,9 @@ describe('visual quality profiles', () => {
         menuAtmosphere: 2,
       },
       high: {
+        entityTextureResolution: 4,
+        particleTextureResolution: 2,
+        backgroundLayerCount: 3,
         uiGlowStrength: 1,
         motifDensity: 1.25,
         particleBurstScale: 1.15,
@@ -86,6 +95,9 @@ describe('visual quality profiles', () => {
         menuAtmosphere: 3,
       },
       auto: {
+        entityTextureResolution: 4,
+        particleTextureResolution: 2,
+        backgroundLayerCount: 3,
         uiGlowStrength: 1,
         motifDensity: 1.25,
         particleBurstScale: 1.15,
@@ -96,7 +108,7 @@ describe('visual quality profiles', () => {
 
     for (const tier of ['low', 'standard', 'high', 'auto'] as const) {
       expect(setVisualQualityTier(tier, storage)).toBe(true);
-      expect(getVisualQualityProfile(storage)).toMatchObject(expected[tier]);
+      expect(getVisualQualityProfile(storage)).toEqual({ tier, ...expected[tier] });
     }
   });
 

@@ -6,35 +6,86 @@ interface GeneratedTextureOptions {
   resolution?: number;
 }
 
-interface MutableFrameData {
-  sourceSize: { w: number; h: number };
-  spriteSourceSize: { w: number; h: number; r: number; b: number };
-  radius: number;
+function cleanupWithoutMasking(cleanup: () => void, primaryOperationFailed: boolean): void {
+  try {
+    cleanup();
+  } catch (error) {
+    if (!primaryOperationFailed) throw error;
+  }
 }
 
-function restoreLogicalFrameSize(
+function generateResolvedTexture(
   scene: Phaser.Scene,
   key: string,
   width: number,
   height: number,
-  resolution: number
+  resolution: number,
+  graphics: Phaser.GameObjects.Graphics
 ): void {
-  const texture = scene.textures.get(key);
-  const frame = texture.get();
-  frame.source.resolution = resolution;
+  const drawWidth = width * resolution;
+  const drawHeight = height * resolution;
+  const drawCanvas = Phaser.Display.Canvas.CanvasPool.create2D(graphics, drawWidth, drawHeight);
+  let generationFailed = false;
 
-  // Phaser renders high-density texture sources at cutSize / resolution, but
-  // Size and Arcade Physics read Frame.realWidth/realHeight. Keep that logical
-  // metadata at the authored dimensions so supersampling cannot alter bodies,
-  // origins, display footprints, or any gameplay geometry.
-  const data = (frame as Phaser.Textures.Frame & { data: MutableFrameData }).data;
-  data.sourceSize.w = width;
-  data.sourceSize.h = height;
-  data.spriteSourceSize.w = width;
-  data.spriteSourceSize.h = height;
-  data.spriteSourceSize.r = width;
-  data.spriteSourceSize.b = height;
-  data.radius = 0.5 * Math.sqrt(width * width + height * height);
+  try {
+    graphics.generateTexture(drawCanvas, drawWidth, drawHeight);
+    const resolvedCanvas = Phaser.Display.Canvas.CanvasPool.create2D(scene.textures, width, height);
+    let resolvedCanvasOwned = true;
+
+    try {
+      const context = resolvedCanvas.getContext('2d');
+      if (!context) {
+        throw new Error(`Unable to resolve generated texture: ${key}`);
+      }
+
+      context.save();
+      let resolveFailed = false;
+      try {
+        context.clearRect(0, 0, width, height);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+
+        // drawImage performs interpolation in the browser's premultiplied-alpha
+        // pipeline, avoiding the dark fringes produced by averaging raw RGBA data.
+        context.drawImage(drawCanvas, 0, 0, drawWidth, drawHeight, 0, 0, width, height);
+      } catch (error) {
+        resolveFailed = true;
+        throw error;
+      } finally {
+        cleanupWithoutMasking(() => context.restore(), resolveFailed);
+      }
+
+      const texture = scene.textures.addCanvas(key, resolvedCanvas);
+      if (!texture) {
+        throw new Error(`Unable to register generated texture: ${key}`);
+      }
+      resolvedCanvasOwned = false;
+    } catch (error) {
+      // addCanvas registers before emitting ADD. Once registered, its texture owns
+      // the canvas and removing by key lets CanvasTexture release it.
+      try {
+        if (scene.textures.exists(key)) {
+          resolvedCanvasOwned = false;
+          scene.textures.remove(key);
+        }
+      } catch {
+        // Preserve the original resolve or registration failure.
+      }
+      if (resolvedCanvasOwned) {
+        try {
+          Phaser.Display.Canvas.CanvasPool.remove(resolvedCanvas);
+        } catch {
+          // Preserve the original resolve or registration failure.
+        }
+      }
+      throw error;
+    }
+  } catch (error) {
+    generationFailed = true;
+    throw error;
+  } finally {
+    cleanupWithoutMasking(() => Phaser.Display.Canvas.CanvasPool.remove(drawCanvas), generationFailed);
+  }
 }
 
 export function withGeneratedTexture(
@@ -51,15 +102,22 @@ export function withGeneratedTexture(
 
   const resolution = Math.max(1, Math.floor(options.resolution ?? 1));
   const graphics = scene.add.graphics();
-  if (resolution > 1) {
-    graphics.setScale(resolution);
-  }
-  draw(graphics);
-  graphics.generateTexture(key, width * resolution, height * resolution);
-  graphics.destroy();
-
-  if (resolution > 1) {
-    restoreLogicalFrameSize(scene, key, width, height, resolution);
+  let generationFailed = false;
+  try {
+    if (resolution > 1) {
+      graphics.setScale(resolution);
+    }
+    draw(graphics);
+    if (resolution === 1) {
+      graphics.generateTexture(key, width, height);
+    } else {
+      generateResolvedTexture(scene, key, width, height, resolution, graphics);
+    }
+  } catch (error) {
+    generationFailed = true;
+    throw error;
+  } finally {
+    cleanupWithoutMasking(() => graphics.destroy(), generationFailed);
   }
 
   return key;
