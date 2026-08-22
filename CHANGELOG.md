@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Quality
 - Passed both TypeScript compilers, architecture checks, the complete isolated unit suite, desktop/mobile visual evidence, desktop/mobile performance evidence, and the normal update-cost gate.
 - Passed 12 visual browser scenarios, including 16 all-tier entity-edge captures across desktop and 390px phone portrait.
-- Passed the normal SwiftShader performance gate at a maximum update p95 of 0.7 ms against the unchanged 5 ms threshold.
+- Passed the normal SwiftShader performance gate at a maximum update p95 of 2.8 ms against the unchanged 5 ms threshold.
 
 ## [1.16.0] - 2026-08-21
 

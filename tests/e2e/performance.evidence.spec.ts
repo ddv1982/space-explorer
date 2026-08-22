@@ -176,11 +176,6 @@ test('characterizes a repeatable update-cost regression signal', async ({ page, 
     await page.keyboard.down('ArrowLeft');
     await page.keyboard.down('Space');
     try {
-      await expect
-        .poll(async () =>
-          (await snapshot(page)).objects.some((object) => object.textureKey === 'player-bullet' && object.active)
-        )
-        .toBe(true);
       const metrics = await page.evaluate(
         async ({ count, warmup, syntheticMs }) => {
           const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
@@ -194,6 +189,7 @@ test('characterizes a repeatable update-cost regression signal', async ({ page, 
         }
       );
       expectConsistentFramePacingMetrics(metrics, sampleCount);
+      expect(metrics.runtimeLoad.laserRequestCount).toBeGreaterThan(0);
       results.push({ condition, metrics });
     } finally {
       await page.keyboard.up('Space').catch((): void => undefined);
@@ -264,11 +260,6 @@ test('enforces the approved gameplay update-cost threshold', async ({ page, asse
     await page.keyboard.down('ArrowLeft');
     await page.keyboard.down('Space');
     try {
-      await expect
-        .poll(async () =>
-          (await snapshot(page)).objects.some((object) => object.textureKey === 'player-bullet' && object.active)
-        )
-        .toBe(true);
       const metrics = await page.evaluate(
         async ({ count, warmup, syntheticMs }) => {
           const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
@@ -278,6 +269,7 @@ test('enforces the approved gameplay update-cost threshold', async ({ page, asse
         { count: sampleCount, warmup: warmupFrames, syntheticMs: syntheticUpdateWorkMs }
       );
       expectConsistentFramePacingMetrics(metrics, sampleCount);
+      expect(metrics.runtimeLoad.laserRequestCount).toBeGreaterThan(0);
       updateP95Values.push(metrics.workCost.update.p95Ms);
     } finally {
       await page.keyboard.up('Space').catch((): void => undefined);
@@ -383,19 +375,13 @@ test('captures representative active-gameplay frame pacing with non-invasive loa
     }
 
     try {
-      if (options.firing) {
-        await expect
-          .poll(async () =>
-            (await snapshot(page)).objects.some((object) => object.textureKey === 'player-bullet' && object.active)
-          )
-          .toBe(true);
-      }
       const metrics = await page.evaluate(async (count) => {
         const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
         if (!harness) throw new Error('Browser harness is not installed');
         return harness.probeFramePacing(count);
       }, sampleCount);
       expectConsistentFramePacingMetrics(metrics, sampleCount);
+      if (options.firing) expect(metrics.runtimeLoad.laserRequestCount).toBeGreaterThan(0);
       if (options.captureTrailEvidence) {
         const staged = await page.evaluate(() => {
           const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
