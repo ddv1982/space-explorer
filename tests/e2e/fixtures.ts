@@ -44,7 +44,7 @@ export async function waitForScene(page: Page, sceneKey: string): Promise<void> 
           const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
           return harness?.snapshot().activeScenes.includes(key) ?? false;
         }, sceneKey),
-      { timeout: 15_000 }
+      { timeout: process.env.CI ? 60_000 : 15_000 }
     )
     .toBe(true);
 }

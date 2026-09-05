@@ -3,18 +3,20 @@ import { getLevelConfig } from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { runtimePerformanceBudget } from '../systems/RuntimePerformanceBudget';
 
-function deferShaderCompilation(game: Phaser.Game): boolean {
+function deferShaderCompilation(game: Phaser.Game): (() => void) | null {
   const renderer = game.renderer;
-  if (!(renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return false;
+  if (!(renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return null;
   const nativeExtension = renderer.gl.getExtension('KHR_parallel_shader_compile');
   const extension: KHR_parallel_shader_compile = nativeExtension ?? { COMPLETION_STATUS_KHR: 0x91b1 };
+  const previousExtension = renderer.parallelShaderCompileExtension;
+  const previousSkip = game.config.skipUnreadyShaders;
   renderer.parallelShaderCompileExtension = extension;
   Reflect.set(game.config, 'skipUnreadyShaders', true);
   const original = renderer.gl.getProgramParameter.bind(renderer.gl);
   const backgroundPrograms = new WeakMap<WebGLProgram, boolean>();
-  let pending = 40;
+  let held = true;
   renderer.gl.getProgramParameter = (program, parameter) => {
-    if (parameter === extension.COMPLETION_STATUS_KHR && pending > 0) {
+    if (parameter === extension.COMPLETION_STATUS_KHR && held) {
       let backgroundProgram = backgroundPrograms.get(program);
       if (backgroundProgram === undefined) {
         backgroundProgram =
@@ -24,16 +26,21 @@ function deferShaderCompilation(game: Phaser.Game): boolean {
         backgroundPrograms.set(program, backgroundProgram);
       }
       if (backgroundProgram) {
-        pending -= 1;
         return false;
       }
     }
     if (!nativeExtension && parameter === extension.COMPLETION_STATUS_KHR)
       return original(program, renderer.gl.LINK_STATUS);
-    if (pending === 0) renderer.gl.getProgramParameter = original;
     return original(program, parameter);
   };
-  return true;
+  game.events.once(Phaser.Core.Events.DESTROY, () => {
+    renderer.gl.getProgramParameter = original;
+    renderer.parallelShaderCompileExtension = previousExtension;
+    Reflect.set(game.config, 'skipUnreadyShaders', previousSkip);
+  });
+  return () => {
+    held = false;
+  };
 }
 
 function measureBackgroundCost(game: Phaser.Game, current: { scene: Phaser.Scene; parallax: ParallaxBackground }) {
@@ -78,6 +85,7 @@ function measureBackgroundCost(game: Phaser.Game, current: { scene: Phaser.Scene
 }
 
 export function createProceduralBackgroundProbes(game: Phaser.Game) {
+  let releaseShaderCompilation: (() => void) | null = null;
   const activeParallax = () => {
     const scenes = [
       ...game.scene.getScenes(true),
@@ -137,7 +145,11 @@ export function createProceduralBackgroundProbes(game: Phaser.Game) {
     applyProceduralPressure: () => {
       for (let sample = 0; sample < 480; sample += 1) runtimePerformanceBudget.sampleFrame(40);
     },
-    deferProceduralShaderCompilation: () => deferShaderCompilation(game),
+    deferProceduralShaderCompilation: () => {
+      releaseShaderCompilation = deferShaderCompilation(game);
+      return releaseShaderCompilation !== null;
+    },
+    releaseProceduralShaderCompilation: () => releaseShaderCompilation?.(),
     measureProceduralBackgroundCost: () => {
       const current = activeParallax();
       if (!current) throw new Error('Expected a background');

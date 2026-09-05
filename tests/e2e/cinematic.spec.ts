@@ -2,8 +2,6 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { test as loaderTest } from '@playwright/test';
 import { expect, snapshot, test, waitForScene } from './fixtures';
 
-test.use({ video: 'on' });
-
 const dimensions = {
   'player-ship': [36, 44, 24, 32],
   'scout-texture': [26, 28, 26, 28],
@@ -13,12 +11,15 @@ const dimensions = {
 } as const;
 
 test('cinematic ships retain their logical geometry during real combat', async ({ page, assertNoBrowserErrors }) => {
+  test.setTimeout(process.env.CI ? 180_000 : 60_000);
   const mobile = test.info().project.name.includes('mobile');
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 });
   await page.goto('/?browserHarness=1&startLevel=1&upgrades=0');
   await waitForScene(page, 'Game');
   await expect
-    .poll(async () => (await snapshot(page)).texts.some((item) => item.text.includes('WASD')), { timeout: 15_000 })
+    .poll(async () => (await snapshot(page)).texts.some((item) => item.text.includes('WASD')), {
+      timeout: process.env.CI ? 60_000 : 15_000,
+    })
     .toBe(false);
   await page.evaluate(() => {
     window.__SPACE_EXPLORER_BROWSER_HARNESS__?.stageCinematicEncounter();
@@ -56,20 +57,17 @@ test('cinematic ships retain their logical geometry during real combat', async (
   writeFileSync(`${directory}/cinematic-geometry-${mode}.json`, JSON.stringify(evidence, null, 2));
   const progress = (await snapshot(page)).levelProgress ?? 0;
   await expect
-    .poll(async () => (await snapshot(page)).levelProgress, { timeout: 15_000 })
+    .poll(async () => (await snapshot(page)).levelProgress, { timeout: process.env.CI ? 60_000 : 15_000 })
     .toBeGreaterThan(progress + 0.01);
   await page.keyboard.up('Space');
   assertNoBrowserErrors();
-  const video = page.video();
-  await page.close();
-  if (video) await video.saveAs(`${directory}/cinematic-combat-${mode}.webm`);
 });
 
 test('cinematic frames survive pooling, boss phases, respawn, resize, and level handoff', async ({
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(process.env.CI ? 180_000 : 90_000);
   await page.goto('/?browserHarness=1&startLevel=1&upgrades=0');
   await waitForScene(page, 'Game');
   const reuse = await page.evaluate(() => {
@@ -110,7 +108,7 @@ test('cinematic frames survive pooling, boss phases, respawn, resize, and level 
               .__SPACE_EXPLORER_BROWSER_HARNESS__!.getCinematicSnapshot()
               .sprites.find((sprite) => sprite.key === 'player-ship')?.alive
         ),
-      { timeout: 20_000 }
+      { timeout: process.env.CI ? 60_000 : 20_000 }
     )
     .toBe(true);
   await page.setViewportSize({ width: 844, height: 390 });

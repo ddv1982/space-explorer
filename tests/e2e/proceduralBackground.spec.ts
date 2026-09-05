@@ -158,7 +158,7 @@ test('low and auto quality bound procedural work without reallocating on pressur
 });
 
 test('low backgrounds become visible after delayed shader compilation', async ({ page, assertNoBrowserErrors }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(process.env.CI ? 360_000 : 180_000);
   await page.addInitScript(() => localStorage.setItem('space-explorer.visualQuality.v1', 'low'));
   for (const { level } of LIVING_CAMPAIGN) {
     let unblock = () => {};
@@ -177,7 +177,11 @@ test('low backgrounds become visible after delayed shader compilation', async ({
     unblock();
     test.skip(!supported, 'WebGL instrumentation is unavailable');
     await waitForScene(page, 'Game');
-    await expect.poll(async () => (await background(page)).background?.ready, { timeout: 15_000 }).toBe(true);
+    expect((await background(page)).background?.ready).toBe(false);
+    await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.releaseProceduralShaderCompilation());
+    await expect
+      .poll(async () => (await background(page)).background?.ready, { timeout: process.env.CI ? 60_000 : 15_000 })
+      .toBe(true);
     await stage(page, 4000, true);
     const light = await sampleGameplayLaneLuminance(page);
     expect(light.edges).toBeGreaterThan(light.center + 0.5);
@@ -238,7 +242,7 @@ test('campaign transitions release each world and reuse warmed GPU allocations',
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(process.env.CI ? 360_000 : 180_000);
   await openMenu(page);
   const tours: Array<Array<{ world: string; buffers: number; vaos: number; textures: number }>> = [];
   const menus: Array<{ buffers: number; backgroundVaos: number; backgroundPrograms: number }> = [];

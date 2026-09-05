@@ -65,10 +65,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: functional and visual
-            script: test:e2e:fast
+          - name: desktop functional and visual
+            command: bunx playwright test --project=chromium-desktop --project=chromium-desktop-visual
+          - name: mobile functional and visual
+            command: bunx playwright test --project=chromium-mobile --project=chromium-mobile-visual
           - name: performance evidence
-            script: test:e2e:performance
+            command: bun run test:e2e:performance
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -85,7 +87,7 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Run browser lane
-        run: bun run ${{ matrix.script }}
+        run: ${{ matrix.command }}
 
   performance-gate:
     name: Gameplay update-cost gate
