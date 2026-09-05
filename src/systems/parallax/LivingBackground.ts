@@ -128,6 +128,7 @@ export class LivingBackground {
     frame.setSize(targetWidth, targetHeight);
     this.image
       .setSizeToFrame()
+      .updateDisplayOrigin()
       .setDisplaySize(width, height)
       .setPosition(width / 2, height / 2);
     this.stars.setSize(width, height).setPosition(width / 2, height / 2);

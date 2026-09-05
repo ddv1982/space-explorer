@@ -289,3 +289,33 @@ test('campaign transitions release each world and reuse warmed GPU allocations',
   expect(menus[1]).toEqual(menus[0]);
   assertNoBrowserErrors();
 });
+
+test('resized atmosphere matches a fresh viewport in both orientations', async ({ page, assertNoBrowserErrors }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const freeze = async () => {
+    await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.setProceduralSection(1, 1));
+    await stage(page, 4000, true);
+  };
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/?browserHarness=1&startLevel=1');
+  await waitForScene(page, 'Game');
+  await freeze();
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const expectedHeight = Math.round((viewport.height * 480) / Math.max(viewport.width, viewport.height));
+    await expect.poll(async () => (await background(page)).background?.targetHeight).toBe(expectedHeight);
+    await freeze();
+    mkdirSync(evidenceDirectory, { recursive: true });
+    const prefix = `${evidenceDirectory}/resize-parity-${test.info().project.name}-${viewport.width}`;
+    const resized = await page.screenshot({ path: `${prefix}-resized.png` });
+    await page.reload();
+    await waitForScene(page, 'Game');
+    await freeze();
+    const fresh = await page.screenshot({ path: `${prefix}-fresh.png` });
+    expect(await pixelDifference(page, resized, fresh)).toBeLessThan(1);
+  }
+  assertNoBrowserErrors();
+});

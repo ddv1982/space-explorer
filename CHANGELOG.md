@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Kept generated research and recording output out of version control.
 
 ### Fixed
+- Resizing between landscape and portrait updates the atmosphere image origin, preventing clipped or shifted backgrounds.
 - Returning to the main menu from a development level preview no longer restarts that preview automatically.
 - Released scene-owned shader buffers and VAOs across background transitions and restored static backgrounds after WebGL context loss.
 
