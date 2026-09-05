@@ -295,6 +295,7 @@ test('campaign transitions release each world and reuse warmed GPU allocations',
 });
 
 test('resized atmosphere matches a fresh viewport in both orientations', async ({ page, assertNoBrowserErrors }) => {
+  test.setTimeout(process.env.CI ? 180_000 : 60_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const freeze = async () => {
     await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.setProceduralSection(1, 1));

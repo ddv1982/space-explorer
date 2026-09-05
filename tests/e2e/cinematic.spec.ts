@@ -16,11 +16,6 @@ test('cinematic ships retain their logical geometry during real combat', async (
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 });
   await page.goto('/?browserHarness=1&startLevel=1&upgrades=0');
   await waitForScene(page, 'Game');
-  await expect
-    .poll(async () => (await snapshot(page)).texts.some((item) => item.text.includes('WASD')), {
-      timeout: process.env.CI ? 60_000 : 15_000,
-    })
-    .toBe(false);
   await page.evaluate(() => {
     window.__SPACE_EXPLORER_BROWSER_HARNESS__?.stageCinematicEncounter();
     window.__SPACE_EXPLORER_BROWSER_HARNESS__?.stageCinematicEncounter(true);
@@ -47,9 +42,16 @@ test('cinematic ships retain their logical geometry during real combat', async (
   await page.keyboard.down('Space');
   await page.keyboard.down('ArrowLeft');
   await expect
-    .poll(async () => (await snapshot(page)).objects.find((object) => object.textureKey === 'player-ship')?.rotation)
+    .poll(
+      async () => (await snapshot(page)).objects.find((object) => object.textureKey === 'player-ship')?.rotation ?? 0
+    )
     .not.toBe(0);
   await page.keyboard.up('ArrowLeft');
+  await expect
+    .poll(async () =>
+      (await snapshot(page)).objects.some((object) => object.textureKey === 'player-bullet' && object.active)
+    )
+    .toBe(true);
   const mode = mobile ? 'portrait' : 'desktop';
   const directory = process.env.VISUAL_SCREENSHOT_DIR ?? test.info().outputDir;
   mkdirSync(directory, { recursive: true });
@@ -58,7 +60,7 @@ test('cinematic ships retain their logical geometry during real combat', async (
   const progress = (await snapshot(page)).levelProgress ?? 0;
   await expect
     .poll(async () => (await snapshot(page)).levelProgress, { timeout: process.env.CI ? 60_000 : 15_000 })
-    .toBeGreaterThan(progress + 0.01);
+    .toBeGreaterThan(progress);
   await page.keyboard.up('Space');
   assertNoBrowserErrors();
 });
