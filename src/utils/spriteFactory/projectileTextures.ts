@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { usesCinematicArt } from '../../config/cinematicAssets';
 import { withGeneratedEntityTexture } from '../generatedTexture';
 import { NEON_ENTITY, fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine } from './neonStyle';
 
@@ -23,6 +24,17 @@ export function ensurePlayerBulletTexture(scene: Phaser.Scene): string {
 export function ensureEnemyBulletTexture(scene: Phaser.Scene): string {
   return withGeneratedEntityTexture(scene, 'enemy-bullet', 8, 8, (g) => {
     const palette = NEON_ENTITY.enemyFire;
+
+    if (usesCinematicArt()) {
+      g.fillStyle(0x070711, 0.95);
+      g.fillCircle(4, 4, 3.8);
+      g.lineStyle(0.7, palette.outline, 1);
+      g.strokeCircle(4, 4, 2.8);
+      g.fillStyle(palette.outline, 1);
+      g.fillCircle(4, 4, 1.8);
+      fillHotCore(g, 4, 4, 1, palette.hot);
+      return;
+    }
 
     fillNeonCircle(g, 4, 4, 2.2, palette, {
       haloScale: 1.9,

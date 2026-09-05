@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] - 2026-09-06
+
+### Added
+- Added distinct living procedural atmospheres across all ten campaign levels, with generated stars and optional landmarks.
+- Added cinematic hulls for the player, Scout, Fighter, Bomber, and Pyre Herald, with editable source artwork and reproducible WebP exports.
+- Added browser coverage for shader animation, context restoration, delayed compilation, quality settings, loading retries, and repeated campaign transitions.
+
+### Changed
+- Preserved logical sprite dimensions and collision bodies while retaining 4× source pixels for the cinematic hulls.
+- Bounded atmosphere rendering to 320px on Low, 480px on Standard, and 640px on High/Auto. Reduced motion freezes environmental animation.
+- Replaced the raster Aurora pilot with generated environments and removed obsolete pilot tooling and documentation.
+- Kept generated research and recording output out of version control.
+
+### Fixed
+- Returning to the main menu from a development level preview no longer restarts that preview automatically.
+- Released scene-owned shader buffers and VAOs across background transitions and restored static backgrounds after WebGL context loss.
+
+### Quality
+- Preserved encounter schedules, movement, damage, collisions, laser hazards, and normal campaign progression.
+- Passed both TypeScript compilers, formatting, lint, the complete unit suite, level validation, Knip, architecture checks, dependency audit, production build, and the unchanged bundle limits.
+
 ## [1.18.0] - 2026-08-22
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -8,6 +8,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "art:export": "bun scripts/exportCinematicAssets.ts",
+    "art:evidence": "bun scripts/captureCinematicEvidence.ts",
+    "backgrounds:compare": "bun scripts/compareProceduralBackgrounds.ts",
     "test": "bun scripts/run-tests.ts",
     "test:e2e": "bun run test:e2e:fast && bun run test:e2e:performance && bun run test:e2e:performance:gate",
     "test:e2e:fast": "playwright test --project=chromium-desktop --project=chromium-mobile --project=chromium-desktop-visual --project=chromium-mobile-visual",
@@ -30,7 +33,8 @@
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "knip": "knip",
-    "levels:validate": "bun scripts/validateLevels.ts"
+    "levels:validate": "bun scripts/validateLevels.ts",
+    "backgrounds:record": "bun scripts/recordLivingBackgrounds.ts"
   },
   "knip": {
     "entry": [

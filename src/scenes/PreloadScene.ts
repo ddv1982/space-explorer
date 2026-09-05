@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { finishCinematicLoading, queueCinematicAssets } from '../utils/cinematicAssets';
 import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
 import { getViewportLayout } from '../utils/layout';
 import { queueAllPlanetPortraits } from './planetIntermission/planetPortraits';
@@ -26,6 +27,7 @@ export class PreloadScene extends Phaser.Scene {
 
   preload(): void {
     registerRestartOnResize(this);
+    queueCinematicAssets(this);
 
     const layout = getViewportLayout(this);
     const loadingText = this.add
@@ -55,8 +57,6 @@ export class PreloadScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanupLoaderProgress);
     this.events.once(Phaser.Scenes.Events.DESTROY, cleanupLoaderProgress);
 
-    // Neon backgrounds are generated procedurally: warm Level 1 only; later
-    // levels generate just-in-time during the preceding intermission.
     ensurePremiumBackgroundAssets(this, 1, () => {});
 
     // Authored planet portraits are real raster files (~18 kB each): cache
@@ -79,6 +79,7 @@ export class PreloadScene extends Phaser.Scene {
     // create is Phaser's completion boundary for preload, including an empty or
     // already-cached queue. Do not report completion or advance before it runs.
     this.cleanupLoaderProgress?.();
+    if (!finishCinematicLoading(this)) return;
 
     if (this.menuTransitionStarted) {
       return;

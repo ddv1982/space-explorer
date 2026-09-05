@@ -206,6 +206,12 @@ Playtest shortcut (dev server only, stripped from production builds): open
 progression-legal max loadout. Append `&upgrades=3,3,3,2` (hp,damage,fireRate,shield)
 for an explicit loadout, or `&upgrades=0` for a stock ship.
 
+The level shortcut runs once per page load. Returning to the main menu stays in the menu; reloading the browser starts the requested preview level again.
+
+All ten campaign levels use evolving procedural atmosphere and generated landmarks, with a distinct composition for each world. Their expensive shader work runs in a bounded texture; Low and reduced-motion settings retain a stable composition. Cinematic hulls remain separate from the background renderer. See [the background contract](docs/adr/0004-living-procedural-backgrounds.md).
+
+For development comparisons, append `&background=legacy` to use the previous background with the cinematic ships, or `&atmosphere=live` to compare live noise calculation against cached-field sampling. Reload between comparisons. `bun run backgrounds:compare` captures serial rendering evidence against the dev server on port 4173.
+
 ## Docs
 
 - [`docs/README.md`](docs/README.md) — current documentation map and common change paths
@@ -217,7 +223,7 @@ for an explicit loadout, or `&upgrades=0` for a stock ship.
 ## Release notes
 
 - [Unreleased changes](docs/releases/unreleased.md)
-- [Latest release notes](docs/releases/1.18.0.md)
+- [Latest release notes](docs/releases/1.19.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

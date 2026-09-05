@@ -1,6 +1,8 @@
 import type { RuntimePerformanceSnapshot } from '@/systems/RuntimePerformanceBudget';
 
 import type { BrowserHarnessSnapshot } from './snapshot';
+import type { createCinematicProbes } from './cinematicProbes';
+import type { createProceduralBackgroundProbes } from './proceduralBackgroundProbes';
 
 export interface BrowserHarnessFrameMetrics {
   frameCount: number;
@@ -87,7 +89,8 @@ export interface BrowserHarnessFrameDeliveryProbe {
   over33_33MsCount: number;
 }
 
-export interface BrowserHarnessApi {
+export interface BrowserHarnessApi
+  extends ReturnType<typeof createCinematicProbes>, ReturnType<typeof createProceduralBackgroundProbes> {
   destroyGame: () => void;
   snapshot: () => BrowserHarnessSnapshot;
   probeArcadeOverlap: () => Promise<boolean>;

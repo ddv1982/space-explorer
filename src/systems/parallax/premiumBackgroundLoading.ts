@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { selectLivingWorld } from './livingBackgroundProfile';
+import { getLevelConfig } from '../../config/LevelsConfig';
 
 import { ensureNeonBackgroundTextures } from './neonBackgroundGenerator';
 import {
@@ -32,9 +34,8 @@ export function releasePremiumBackgroundTexturesOutsideWindow(
 }
 
 /**
- * Ensure the active level window's premium backgrounds are in the texture cache.
- * Neon vector backgrounds are generated procedurally, so this is synchronous:
- * layers are drawn once per texture key and onReady fires immediately.
+ * Prepares legacy planes only for development comparisons, then calls onReady
+ * synchronously. Cinematic assets load at each scene preload boundary.
  */
 export function ensurePremiumBackgroundAssets(
   scene: Phaser.Scene,
@@ -44,8 +45,10 @@ export function ensurePremiumBackgroundAssets(
 ): void {
   const lookAhead = options.lookAhead ?? 0;
 
-  for (const windowLevel of getPremiumBackgroundLevelWindow(levelNumber, { lookAhead })) {
-    ensureNeonBackgroundTextures(scene, windowLevel);
+  if (import.meta.env.DEV) {
+    for (const windowLevel of getPremiumBackgroundLevelWindow(levelNumber, { lookAhead })) {
+      if (!selectLivingWorld(getLevelConfig(windowLevel).name)) ensureNeonBackgroundTextures(scene, windowLevel);
+    }
   }
 
   if (options.releaseOutsideWindow ?? false) {

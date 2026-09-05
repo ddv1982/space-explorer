@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { createLivingBackground, type LivingBackground } from './parallax/LivingBackground';
 import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../config/LevelsConfig';
 import { applyHazardTelegraphGlow } from '../utils/renderingCompat';
 import { resolveSectionAtmosphereTargets } from './parallax/atmosphereProfile';
@@ -60,6 +61,7 @@ const PASSING_PLANET_OFFSCREEN_PADDING = 220;
 
 export class ParallaxBackground {
   private scene: Phaser.Scene | null = null;
+  private livingBackground: LivingBackground | null = null;
   private levelConfig?: LevelConfig;
   private tileSprites: Phaser.GameObjects.TileSprite[] = [];
   private planetLayer: PlanetLayerState | null = null;
@@ -95,9 +97,6 @@ export class ParallaxBackground {
       this.applyRuntimePerformanceBudget(snapshot);
     });
     this.applyRuntimePerformanceBudget(runtimePerformanceBudget.getSnapshot());
-
-    // The seamless image backgrounds are a low-depth art backplate. The normal
-    // committed Phaser background stack remains in front of it.
   }
 
   private initializeSceneState(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
@@ -109,6 +108,8 @@ export class ParallaxBackground {
   }
 
   private createSceneLayers(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
+    this.livingBackground = createLivingBackground(scene, levelConfig?.name);
+    if (this.livingBackground) return;
     const hasPremiumBackgroundLayers = levelConfig ? this.createPremiumBackgroundLayers(scene, levelConfig) : false;
 
     this.tileSprites = hasPremiumBackgroundLayers
@@ -198,6 +199,12 @@ export class ParallaxBackground {
   }
 
   resize(width: number, height: number): void {
+    if (this.livingBackground && width > 0 && height > 0) {
+      this.currentWidth = width;
+      this.currentHeight = height;
+      this.livingBackground.resize(width, height);
+      return;
+    }
     resizeParallaxBackground(this.getResizeRebuildOrchestrationContext(), width, height);
   }
 
@@ -225,6 +232,8 @@ export class ParallaxBackground {
   }
 
   destroy(): void {
+    this.livingBackground?.destroy();
+    this.livingBackground = null;
     this.unsubscribePerformanceBudget?.();
     this.unsubscribePerformanceBudget = null;
     this.clearPendingRebuildEvent();
@@ -239,6 +248,7 @@ export class ParallaxBackground {
   }
 
   private applyRuntimePerformanceBudget(snapshot: RuntimePerformanceSnapshot): void {
+    this.livingBackground?.setPressure(snapshot.pressureLevel);
     this.premiumBackgroundLayers.forEach((layer, index) => {
       layer.sprite.setVisible(index < snapshot.backgroundLayerLimit);
     });
@@ -328,6 +338,10 @@ export class ParallaxBackground {
   }
 
   private updateVisualLayers(delta: number): void {
+    if (this.livingBackground) {
+      this.livingBackground.update(delta, this.atmosphereDrift, this.atmosphereAlpha, this.landmarkAlpha);
+      return;
+    }
     scrollStarLayers(this.tileSprites, STARFIELD_LAYER_CONFIGS, delta);
     this.scrollPremiumBackgroundLayers(delta);
     updatePlanetLayerMotion(this.planetLayer, this.elapsed, this.atmosphereAlpha, this.landmarkAlpha);
@@ -394,6 +408,10 @@ export class ParallaxBackground {
 
   private layoutPlanetLayer(): void {
     layoutPlanetLayerHelper(this.planetLayer, this.getViewportSize());
+  }
+
+  getLivingBackgroundSnapshot() {
+    return this.livingBackground?.snapshot() ?? null;
   }
 
   // ---------------------------------------------------------------------------

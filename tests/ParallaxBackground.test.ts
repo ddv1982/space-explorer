@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import type { LevelSectionConfig, ScriptedHazardConfig } from '../src/config/LevelsConfig';
+mock.module('../src/systems/parallax/LivingBackground', () => ({ createLivingBackground: () => null }));
 
 mock.module('phaser', () => ({
   default: {
@@ -206,7 +207,7 @@ describe('ParallaxBackground premium-background presentation regression coverage
     expect(fillRects).toEqual([[-220, -200, 640, 640]]);
   });
 
-  test('Level 1 motif covers wide viewports without changing other level repeat policy', () => {
+  test('legacy Level 1 retains its viewport-cover motif policy', () => {
     const aurora = getPremiumBackgroundManifest('Aurora Threshold');
     const tideglass = getPremiumBackgroundManifest('Tideglass Shallows');
 

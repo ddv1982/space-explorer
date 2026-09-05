@@ -52,6 +52,10 @@ mock.module('phaser', () => ({
 }));
 
 let ensuredLevels: number[] = [];
+mock.module('../src/utils/cinematicAssets', () => ({
+  queueCinematicAssets: () => undefined,
+  finishCinematicLoading: () => true,
+}));
 mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
   ensurePremiumBackgroundAssets: (_scene: unknown, level: number, onReady: () => void) => {
     ensuredLevels.push(level);
