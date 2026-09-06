@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Bullet } from '../entities/Bullet';
 import { BULLET_POOL_SIZE } from '../utils/constants';
+import { ensurePlayerBulletTexture } from '../utils/SpriteFactory';
 
 export class BulletPool {
   private group!: Phaser.Physics.Arcade.Group;
@@ -15,6 +16,7 @@ export class BulletPool {
   }
 
   create(scene: Phaser.Scene): void {
+    ensurePlayerBulletTexture(scene);
     this.group = scene.physics.add.group({
       maxSize: BULLET_POOL_SIZE,
       classType: Bullet,

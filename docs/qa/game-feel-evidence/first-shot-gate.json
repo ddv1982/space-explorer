@@ -1,0 +1,66 @@
+{
+  "normal": {
+    "mode": "normal",
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+      "hardwareConcurrency": 10,
+      "deviceMemory": 16,
+      "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+    },
+    "signal": "workCost.update.p95Ms",
+    "thresholdMs": 5,
+    "sampleCount": 10,
+    "warmupFrames": 2,
+    "replicateCount": 5,
+    "syntheticUpdateWorkMs": 0,
+    "updateP95": {
+      "values": [
+        1,
+        0.4000000059604645,
+        0.5,
+        0.5,
+        0.6000000238418579
+      ],
+      "min": 0.4000000059604645,
+      "max": 1,
+      "median": 0.5,
+      "mad": 0.09999999403953552,
+      "coefficientOfVariation": 0.3496029440226977
+    },
+    "thresholdFailureCount": 0,
+    "maxUpdateP95Ms": 1
+  },
+  "synthetic": {
+    "mode": "synthetic",
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+      "hardwareConcurrency": 10,
+      "deviceMemory": 16,
+      "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+    },
+    "signal": "workCost.update.p95Ms",
+    "thresholdMs": 5,
+    "sampleCount": 10,
+    "warmupFrames": 2,
+    "replicateCount": 5,
+    "syntheticUpdateWorkMs": 6,
+    "updateP95": {
+      "values": [
+        6.800000011920929,
+        6.299999982118607,
+        6.4000000059604645,
+        6.300000011920929,
+        6.300000011920929
+      ],
+      "min": 6.299999982118607,
+      "max": 6.800000011920929,
+      "median": 6.300000011920929,
+      "mad": 2.9802322387695312e-08,
+      "coefficientOfVariation": 0.030203613390067947
+    },
+    "thresholdFailureCount": 5,
+    "maxUpdateP95Ms": 6.800000011920929
+  },
+  "build": "6eda7fb parent plus uncommitted first-shot fix",
+  "command": "CI=1 GAME_FEEL_EVIDENCE_PORT=4182 bun run test:e2e:performance:gate; repeat with :synthetic, requiring exit1"
+}

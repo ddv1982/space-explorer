@@ -57,3 +57,5 @@ The existing CI performance job reported success despite a normal-condition fail
 Runtime profiling of the unchanged baseline identified the first-shot stall. `BulletPool.fire` creates the first `Bullet`, which generates its texture and calls canvas `getImageData`. Under the CI-style launcher on this Mac, the first update p95 was 495 ms and the readback itself took 492.7 ms. The default launcher measured 0.4 ms. Both launch modes reported a SwiftShader renderer.
 
 A live experiment precreated only the player-bullet texture before input. Preparation took 449.6 ms, and the subsequent first-shot update p95 was 0.4 ms. This proves that the preparation is on the firing path. It does not identify every lower-level driver cause. The follow-up fix moves this existing work into pool initialization and keeps firing values and texture pixels unchanged.
+
+The production-byte comparison above applies to the P0 recorder commit. The separate [first-shot preparation change](first-shot-preparation.md) changes initialization and has its own regression and performance evidence.

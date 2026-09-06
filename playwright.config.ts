@@ -57,6 +57,7 @@ export default defineConfig({
         '**/accessibleActions.spec.ts',
         '**/saveSlotConcurrency.spec.ts',
         '**/picketTurrets.spec.ts',
+        '**/firstShot.spec.ts',
         '**/gameFeel.evidence.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
@@ -72,6 +73,7 @@ export default defineConfig({
         '**/proceduralBackground.spec.ts',
         '**/cinematic.spec.ts',
         '**/picketTurrets.spec.ts',
+        '**/firstShot.spec.ts',
         '**/gameFeel.evidence.spec.ts',
       ],
       use: {
