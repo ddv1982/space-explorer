@@ -1,8 +1,10 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { EventEmitter } from 'node:events';
 
 mock.module('phaser', () => ({
   default: {
     Scene: class {},
+    Scenes: { Events: { SHUTDOWN: 'shutdown', DESTROY: 'destroy' } },
     GameObjects: {
       Image: class {},
       TileSprite: class {},
@@ -130,6 +132,7 @@ describe('MenuScene', () => {
 
     const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
     (scene as unknown as Record<string, unknown>).registry = registry;
+    (scene as unknown as Record<string, unknown>).events = new EventEmitter();
 
     (scene as unknown as { startGameScene: () => void }).startGameScene();
 

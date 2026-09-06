@@ -25,7 +25,7 @@ import {
 } from '../systems/PlayerState';
 import { createArmingAction, type ArmingAction } from '../systems/armingAction';
 import { audioManager } from '../systems/AudioManager';
-import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
+import { startFreshRun, startPreparedRun } from './shared/startRun';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import {
   mountAccessibleActionLayer,
@@ -36,7 +36,6 @@ import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { createSettingsPanel, type SettingsPanel } from './shared/settingsPanel';
 import { createMenuLayoutPlan } from './menuScene/layout';
 import { resolveDevLevelJump } from './menuScene/devLevelJump';
-import { startRegisteredScene } from './sceneRegistry';
 import {
   createMenuBackdrop,
   createMenuTitle,
@@ -212,8 +211,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     this.playMenuClick();
-    this.resetRunState();
-    this.startGameScene();
+    startFreshRun(this);
   }
 
   private loadFromSlot(slotId: SaveSlotId): void {
@@ -326,10 +324,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private startGameScene(): void {
-    const level = getPlayerState(this.registry).level;
-    ensurePremiumBackgroundAssets(this, level, () => {
-      startRegisteredScene(this, 'Game');
-    });
+    startPreparedRun(this);
   }
 
   private syncAccessibleActions(): void {
