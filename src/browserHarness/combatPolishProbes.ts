@@ -275,8 +275,10 @@ export function createCombatPolishProbes(game: Phaser.Game) {
       restoreBeamFixture = () => {
         restoreSpawning();
         combat.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
+        combat.scene.events.off(Phaser.Scenes.Events.DESTROY, endBeamFixture);
       };
       combat.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
+      combat.scene.events.once(Phaser.Scenes.Events.DESTROY, endBeamFixture);
       clearField(combat);
       const viewport = getViewportBounds(combat.scene);
       if (pattern === 'flare') combat.beams.spawnSolarFlare(0.8);

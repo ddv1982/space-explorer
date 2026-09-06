@@ -87,6 +87,14 @@ An authored health pickup restores 2 hull up to the maximum; a shield pickup add
 
 A realistic campaign test should record level-entry reserves, credits, purchased tiers, restored hull/shields, then boss-entry resources and damage sources. Injecting low hull at every level start would not represent the normal progression contract. The harder question is whether reserve loss before the late campaign becomes unrecoverable despite the intermission refill. This audit does not invent a survival rate or change reserves without observed evidence.
 
+## Beam-only browser fixture
+
+Full-cycle beam checks pause gameplay, clear the field, and temporarily suspend the two existing WaveManager spawning updates. This development-only fixture preserves input, physics, damage, invulnerability rules, and authored beam timing. It restores spawning on explicit fixture end, restaging, scene shutdown, or destruction. The test retains full-health and full-expiry assertions and records accepted damage events while the fixture runs.
+
+The Linux software renderer advanced only 3442 ms of gameplay in a 120-second wall window. At that measured rate, the desktop flare's roughly 6.53-second cycle needs about 228 seconds. Its observer therefore allows 300 seconds, with a separate 60-second setup/capture allowance. Lattice retains 120 seconds. These are test watchdogs, not changed hazard timing or performance thresholds.
+
+The isolated fixture proves the stated beam-only route. Combined encounters and ordinary campaign play remain separate evidence.
+
 ## Remaining validation, ranked
 
 1. Exercise beam overlaps with initial motion and surviving enemies, including upper-screen positions and three natural spawn samples. The geometric proof covers only the stated lower-screen beam samples.
