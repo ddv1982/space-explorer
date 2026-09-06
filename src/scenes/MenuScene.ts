@@ -49,6 +49,7 @@ export class MenuScene extends Phaser.Scene {
   private saveSlotPanel: MenuSaveSlotPanel | null = null;
   private settingsPanel: SettingsPanel | null = null;
   private gameTransitionQueued = false;
+  private devLevelJumpConsumed = false;
   private deleteArm?: ArmingAction<SaveSlotId>;
   private teardownAccessibleActions?: AccessibleActionLayerHandle;
   private accessibleStatusMessage = '';
@@ -70,7 +71,7 @@ export class MenuScene extends Phaser.Scene {
   private maybeStartDevLevelJump(): void {
     // Dev-server playtest shortcut only; Vite dead-code-eliminates this whole
     // path (including the devLevelJump module) from production builds.
-    if (!import.meta.env.DEV) {
+    if (!import.meta.env.DEV || this.devLevelJumpConsumed) {
       return;
     }
 
@@ -79,6 +80,7 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
 
+    this.devLevelJumpConsumed = true;
     this.resetRunState();
     const baseState = getPlayerState(this.registry);
     const jumpState: PlayerStateData = {

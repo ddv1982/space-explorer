@@ -26,6 +26,12 @@ _Avoid_: surprise, cheap shot
 
 ## Decisions
 
+**Procedural background preference (2026-09)**:
+After playing the cinematic pilot, the user preferred dynamic Phaser-generated backgrounds over the authored Level 1 plate. Living procedural backgrounds now cover all ten campaign levels. The approved Aurora look is preserved; the other worlds have distinct atmospheric kernels and generated landmarks. The raster backplate is retired from runtime; its source remains historical reference. Cinematic hulls remain. New background generation uses isolated visual randomness and scene-owned resources. See `docs/adr/0004-living-procedural-backgrounds.md` and the research in `docs/procedural-background-research-2026-09-05.md`.
+
+**Cinematic hulls (2026-09)**:
+Five authored hulls use 4× source pixels while preserving logical sprite and collision dimensions. The initial raster Aurora background was retired in favor of the living procedural campaign. Only the five hull images remain in the game texture cache. See `docs/adr/0003-cinematic-frontier-pilot.md`.
+
 **Both orientations on touch devices (2026-08)**:
 Phones and tablets are playable in portrait and landscape; there is no rotate block. Portrait is the preferred phone experience because a taller viewport gives the player more vertical runway to read incoming threats, which serves Lane-Reading and Ambush Anticipation. Late-level formations were audited at phone-portrait width (390px) and needed no geometry retuning.
 

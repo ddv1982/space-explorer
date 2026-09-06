@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { finishCinematicLoading, queueCinematicAssets } from '../utils/cinematicAssets';
 
 import { getActiveSection, getSectionProgress, type BossConfig } from '@/config/LevelsConfig';
 import type { Player } from '@/entities/Player';
@@ -92,7 +93,12 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'Game' });
   }
 
+  preload(): void {
+    queueCinematicAssets(this);
+  }
+
   create(): void {
+    if (!finishCinematicLoading(this)) return;
     this.gameplayClock.reset();
     const runtime = runGameSceneCreateBootstrap({
       scene: this,

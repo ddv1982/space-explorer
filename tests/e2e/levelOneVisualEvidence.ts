@@ -31,8 +31,11 @@ export function assertLevelOneEvidenceEntities(entities: LevelOneEvidenceEntity[
     expect(entity.displayScale).toBe(1);
     expect(expected).toBeDefined();
     expect({ width: entity.logicalWidth, height: entity.logicalHeight }).toEqual(expected);
-    expect(entity.sourceIsCanvas).toBe(true);
-    expect({ width: entity.sourceCanvasWidth, height: entity.sourceCanvasHeight }).toEqual(expected);
+    const density = entity.sourceIsCanvas ? 1 : 4;
+    expect({ width: entity.sourceCanvasWidth, height: entity.sourceCanvasHeight }).toEqual({
+      width: expected.width * density,
+      height: expected.height * density,
+    });
   }
 }
 

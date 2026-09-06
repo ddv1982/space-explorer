@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { usesCinematicArt } from '../../config/cinematicAssets';
 import { getVisualQualityProfile } from '../../config/visualQuality';
 import { scaleRuntimeParticleQuantity } from '../RuntimePerformanceBudget';
 
@@ -36,8 +37,8 @@ export function getExplosionConfig(
   return {
     speed: { min: 50, max: burstScale(200 * intensity) },
     angle: { min: 0, max: 360 },
-    scale: { start: burstScale(0.8 * intensity), end: 0 },
-    lifespan: { min: 300, max: 600 },
+    scale: { start: burstScale((usesCinematicArt() ? 0.55 : 0.8) * intensity), end: 0 },
+    lifespan: usesCinematicArt() ? { min: 120, max: 280 } : { min: 300, max: 600 },
     blendMode: Phaser.BlendModes.ADD,
     quantity: burstQuantity(quantity),
     tint,
@@ -59,7 +60,7 @@ export function getSparkConfig(): Phaser.Types.GameObjects.Particles.ParticleEmi
       onUpdate: (particle?: Phaser.GameObjects.Particles.Particle) =>
         particle ? Phaser.Math.RadToDeg(Math.atan2(particle.velocityY, particle.velocityX)) : 0,
     },
-    tint: [0x5bd8ff, 0xbff6ff, 0xffffff],
+    tint: usesCinematicArt() ? [0xffb861, 0xffdfad, 0xffffff] : [0x5bd8ff, 0xbff6ff, 0xffffff],
   };
 }
 
@@ -146,10 +147,11 @@ export function getDebrisConfig(): Phaser.Types.GameObjects.Particles.ParticleEm
     speed: { min: 80, max: 250 },
     angle: { min: 0, max: 360 },
     scale: { start: burstScale(0.4), end: 0.1 },
-    lifespan: { min: 400, max: 800 },
+    lifespan: usesCinematicArt() ? { min: 280, max: 550 } : { min: 400, max: 800 },
+    alpha: { start: 1, end: 0 },
     blendMode: Phaser.BlendModes.NORMAL,
     quantity: burstQuantity(12),
     rotate: { min: 0, max: 360 },
-    tint: [0x886644, 0x665533, 0x998866],
+    tint: usesCinematicArt() ? [0xc9c0a7, 0x565e63, 0x938268] : [0x886644, 0x665533, 0x998866],
   };
 }

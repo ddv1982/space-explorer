@@ -1,22 +1,24 @@
-# Space Explorer Art Direction — Neon Vector
+# Space Explorer art direction
 
-This document is the master visual bible for the neon vector redesign. It supersedes the painterly direction in `background-art-bible.md` (kept for history) and extends the scope to ships, projectiles, VFX, backgrounds, and UI. Everything is produced procedurally in code, with one approved exception: the ten authored planet-arrival portraits (see below).
+The ship direction is Cinematic Frontier, with authored ceramic and titanium hulls and procedural combat signals. Gameplay environments are generated in Phaser. All ten campaign environments now use evolving procedural atmosphere with generated landmarks. Their palettes and gameplay contrast still follow the world identities below. See [ADR 0004](adr/0004-living-procedural-backgrounds.md) for the current background contract and [ADR 0003](adr/0003-cinematic-frontier-pilot.md) for the hull pilot's history.
 
-The v2 presentation remake intensifies this language. It is not a new art style, not a campaign remake, and not a new encounter grammar. See [V2 remake contract](#v2-remake-contract).
+The five cinematic hulls use retained 4× image pixels with logical frame dimensions at scale 1. This differs from procedural supersampling, which resolves drawings back to logical-size canvases. Keep player 36×44, scout 26×28, fighter 36×36, bomber 44×38, and Pyre Herald 88×56. Collision bodies stay unchanged. Pale armor, dark recesses, and small engine apertures carry the new material language; broad bloom must not obscure them.
+
+The v2 contract remains the baseline for unmigrated assets. Cinematic Frontier changes presentation while preserving encounter grammar. The superseded `background-art-bible.md` remains historical reference.
 
 ## V2 remake contract
 
 - **Readable pressure first.** The center 45–55% of the playfield stays darker and calmer than entities, bullets, hazards, and pickups so Lane-Reading and Ambush Anticipation stay intact. Scenery and HUD chrome never win contrast in that corridor.
 - **Gameplay clocks stay frozen on pause.** Telegraph windows, beam phases, and choreographed waves still count accumulated gameplay delta. Presentation motion may tween on the scene clock; it must not schedule combat consequences from scene time.
 - **Both orientations stay first-class.** There is no rotate block. Phone-portrait 390px remains a required layout. Decorative chrome must collapse before it clips a primary action.
-- **Procedural only, one raster exception.** Generated Phaser textures remain the source of ships, projectiles, VFX, backgrounds, and UI chrome. The only approved rasters are the ten planet-arrival WebP portraits.
-- **Quality tiers budget spectacle.** Low / standard / high stay the only player-facing quality axis. Remake FX budgets live on `VisualQualityProfile` as `uiGlowStrength`, `motifDensity`, `particleBurstScale`, `particleQuantityScale`, and `menuAtmosphere`. Standard uses two full-screen background layers and reduced particle texture/count budgets to protect fanless Retina laptops; high retains the third atmosphere layer. Main-menu quality changes persist and reload; pause quality changes persist and report that a restart is required; storage failures stay non-fatal and keep the prior tier.
+- **Scoped hybrid art.** Authored cinematic hulls join the ten planet-arrival portraits. Gameplay backgrounds are procedural. Required hull image failures block entry with retry; they must not masquerade as a successful procedural fallback.
+- **Quality tiers budget spectacle.** Low / standard / high stay the only player-facing quality axis. Remake FX budgets live on `VisualQualityProfile` as `uiGlowStrength`, `motifDensity`, `particleBurstScale`, `particleQuantityScale`, and `menuAtmosphere`. The living atmosphere uses the bounded target sizes below; particle budgets remain tiered. Main-menu quality changes persist and reload; pause quality changes persist and report that a restart is required; storage failures stay non-fatal and keep the prior tier.
 - **Glow stays cheap.** Per-object Glow remains reserved for the player and telegraphs. Entity and pickup glow is baked into generated textures. Camera ColorMatrix stays subtle.
 
 ## Pillars
 
 1. **Neon vector** — clean geometric silhouettes, hot cores, layered glow halos, crisp outlines. Geometry Wars readability with a modern space-opera palette.
-2. **Procedural only** — every texture is generated at runtime via Phaser Graphics (`withGeneratedTexture`). No raster downloads; the former 25 MB of painterly background PNGs is retired. **Approved exception (2026-08):** the ten planet-arrival portraits are committed authored WebP rasters, documented under [Planet arrival portraits](#planet-arrival-portraits-approved-raster-exception).
+2. **Bounded authored assets** — the cinematic hulls use compressed WebP images, retained source density, and explicit cache ownership. Procedural textures remain appropriate for readable combat signals and unmigrated content. The retired 25 MB painterly background pack stays retired.
 3. **Readable pressure** — the center gameplay lane stays dark and calm. Bullets, enemies, hazards, and pickups win attention with saturated neon cores; scenery never crosses their luminance in the lane.
 
 ## Palette System
@@ -59,17 +61,11 @@ Per-level identity: each level keeps its `accentColor` / `nebulaColor` from the 
 
 ## Backgrounds
 
-Per level, five procedurally generated authoring layers (vertically seamless) replace the old PNG backplate:
+All ten worlds use `LivingBackground`. Aurora has folded light curtains and an edge planet; the other worlds use distinct caustics, ember fronts, mechanical rings, crystals, wreckage, arches, an eclipse, hive membranes, or an orbital well. Stars and optional landmark images render separately from the bounded atmosphere texture. The center-lane mask uses viewport coordinates.
 
-1. `far` — deep vertical gradient (navy → black), sparse dim stars. Opaque.
-2. `nebula` — large soft radial glow blobs in the level's `nebulaColor`, weighted to edges.
-3. `mid` — the level's neon motif: thin line work drawn by `LEVEL_MOTIFS` in `neonBackgroundGenerator.ts` (aurora ribbons, glass-tide swells, ember-storm streaks, clockwork gears, coral fans, wreckage plates, cathedral arches, eclipse coronas, hive honeycomb, singularity-engine swirl).
-4. `near` — rare dark silhouette flecks near edges. Transparent.
-5. `overlay` — tiny bright motes, additive blend, very sparse.
+Low uses a static 320px atmosphere target, Standard uses 480px, and High/Auto use 640px. Reduced motion freezes the environment. Section lighting still responds to gameplay. See [ADR 0004](adr/0004-living-procedural-backgrounds.md) for ownership and recovery.
 
-At generation time those five canvases are collapsed into three bounded runtime planes: `deep` (`far + nebula`), `motif` (`mid + near`), and additive `atmosphere` (`overlay`). Each plane retains independent vertical speed, alpha response, pulse, and subtle horizontal drift. The low quality tier omits the atmosphere plane; standard/high retain all three.
-
-Rules: center 45–55% of the lane stays under ~20% luminance; scroll speeds increase deep → atmosphere; textures are generated per level window and released outside it (existing window logic). The procedural starfield/twinkle/debris/planet extras remain as enhancement layers.
+The previous plane compositor and supplemental scenery remain available through the development-only `background=legacy` comparison. They are not created for the living campaign.
 
 ## VFX
 
@@ -97,7 +93,7 @@ Approved 2026-08 as a scoped exception to the procedural-only rule. The ten plan
 
 ## Performance Rules
 
-- Entity, projectile, pickup, and particle textures are density-supersampled while retaining their authored logical frame metadata. Standard uses 2× entity/particle sources; high uses 3× entities and 2× particles; low remains 1×. This must never change sprite display dimensions or Arcade Physics bodies.
+- Procedural entities draw at 4× on every quality tier and resolve to logical-size textures. Authored cinematic hulls retain 4× source pixels with logical metadata. Low/Standard particles use 1× generation; High/Auto use 2×. Sprite display dimensions and Arcade Physics bodies never change with quality.
 - Main and pause menus use the same settings surface: difficulty (low/normal/high), visual quality (low/standard/high), and creativity, energy, ambience, and music-volume sliders. Difficulty and music changes apply to the active runtime; difficulty changes forgiveness only and never encounter grammar. Main-menu quality changes persist and reload so generated assets share one profile. Pause-menu quality changes persist without discarding the run and clearly report that a restart is required. Storage failures remain non-fatal and leave the prior tier selected.
 - Pause separates checkpoint actions and settings into explicit subviews. Reopening pause deterministically starts on checkpoints; switching subviews or resizing never changes the physics/audio pause contract. Both subviews retain reachable controls in desktop, phone portrait, and phone landscape compositions.
 - Additive glow is expensive: cap simultaneous ADD-blend layers, keep halos inside texture canvases, prefer texture-baked glow over runtime filters for pooled objects.

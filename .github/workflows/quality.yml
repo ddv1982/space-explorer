@@ -65,10 +65,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: functional and visual
-            script: test:e2e:fast
+          - name: desktop functional 1
+            command: bunx playwright test --project=chromium-desktop --shard=1/2
+          - name: desktop functional 2
+            command: bunx playwright test --project=chromium-desktop --shard=2/2
+          - name: mobile functional 1
+            command: bunx playwright test --project=chromium-mobile --shard=1/2
+          - name: mobile functional 2
+            command: bunx playwright test --project=chromium-mobile --shard=2/2
+          - name: desktop visual
+            command: bunx playwright test --project=chromium-desktop-visual
+          - name: mobile visual
+            command: bunx playwright test --project=chromium-mobile-visual
           - name: performance evidence
-            script: test:e2e:performance
+            command: bun run test:e2e:performance
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -85,7 +95,18 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Run browser lane
-        run: bun run ${{ matrix.script }}
+        run: ${{ matrix.command }}
+
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-${{ matrix.name }}
+          path: |
+            test-results/
+            output/campaign-backgrounds/verified/
+          if-no-files-found: ignore
+          retention-days: 7
 
   performance-gate:
     name: Gameplay update-cost gate

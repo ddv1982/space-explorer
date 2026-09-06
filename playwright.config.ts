@@ -28,6 +28,8 @@ export default defineConfig({
       name: 'chromium-desktop',
       testMatch: [
         '**/smoke.spec.ts',
+        '**/cinematic.spec.ts',
+        '**/proceduralBackground.spec.ts',
         '**/interaction.spec.ts',
         '**/accessibleActions.spec.ts',
         '**/saveSlotConcurrency.spec.ts',
@@ -42,6 +44,8 @@ export default defineConfig({
         '**/interaction.spec.ts',
         '**/accessibleActions.spec.ts',
         '**/hardwareKeyboard.spec.ts',
+        '**/proceduralBackground.spec.ts',
+        '**/cinematic.spec.ts',
         '**/picketTurrets.spec.ts',
       ],
       use: {

@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { createCinematicProbes } from './browserHarness/cinematicProbes';
+import { createProceduralBackgroundProbes } from './browserHarness/proceduralBackgroundProbes';
 
 import { createBrowserHarnessGameplayProbes } from './browserHarness/gameplayProbes';
 import { createBrowserHarnessNavigation } from './browserHarness/navigation';
@@ -99,6 +101,8 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
     probeFrameDelivery: (sampleCount) => performanceProbes.probeFrameDelivery(sampleCount),
     getRuntimePerformanceSnapshot: () => runtimePerformanceBudget.getSnapshot(),
     ...gameplayProbes,
+    ...createCinematicProbes(game),
+    ...createProceduralBackgroundProbes(game),
     showLaneReadingPilot: (glowEnabled = true, hazardType = 'ring-crossfire') =>
       visualPilot.show(glowEnabled, hazardType),
     measureLaneReadingPilotRenderCost: () => visualPilot.measureRenderCost(),

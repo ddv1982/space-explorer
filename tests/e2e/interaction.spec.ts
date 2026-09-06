@@ -210,6 +210,30 @@ test('first trusted menu action recovers policy-suspended audio without overridi
   assertNoBrowserErrors();
 });
 
+test('returning to the menu does not replay a preview URL level jump', async ({ page, assertNoBrowserErrors }) => {
+  await page.goto('/?browserHarness=1&startLevel=9&upgrades=0');
+  await waitForScene(page, 'Game');
+  await page.keyboard.down('Escape');
+  try {
+    await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(true);
+  } finally {
+    await page.keyboard.up('Escape');
+  }
+  const mainMenu = page.getByRole('button', { name: 'Main menu', exact: true });
+  await mainMenu.focus();
+  await mainMenu.press('Enter');
+  await waitForScene(page, 'Menu');
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await expect.poll(async () => (await snapshot(page)).gameSize.width).toBe(1024);
+  await expect(page.getByRole('button', { name: 'New run', exact: true })).toBeEnabled();
+  await startNewRun(page);
+  expect((await snapshot(page)).texts.some((item) => item.text === 'Aurora Threshold')).toBe(true);
+  await page.reload();
+  await waitForScene(page, 'Game');
+  expect((await snapshot(page)).texts.some((item) => item.text === 'Swarmfront')).toBe(true);
+  assertNoBrowserErrors();
+});
+
 test('mobile portrait plays without a rotate block and rotates freely', async ({ page, assertNoBrowserErrors }) => {
   test.skip(test.info().project.name !== 'chromium-mobile', 'mobile-only orientation scenario');
 

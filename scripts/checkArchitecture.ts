@@ -327,11 +327,11 @@ const CONCENTRATION_POLICIES: Record<string, ConcentrationPolicy> = {
     evidence: 'pause overlay tests and responsive browser visuals',
   },
   'src/scenes/GameScene.ts': {
-    lines: 455,
-    imports: 36,
+    lines: 460,
+    imports: 37,
     category: 'composition-root',
-    reason: 'Phaser gameplay composition root',
-    evidence: 'game scene composition and lifecycle tests',
+    reason: 'Phaser gameplay composition root with authored-asset preload boundary',
+    evidence: 'game scene composition, cinematic loading, and lifecycle tests',
   },
   'src/systems/parallax/neonBackgroundGenerator.ts': {
     lines: 800,

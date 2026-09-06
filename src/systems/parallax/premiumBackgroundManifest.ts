@@ -24,11 +24,6 @@ interface PremiumBackgroundManifest {
   layers: PremiumBackgroundLayerConfig[];
 }
 
-/**
- * Premium backgrounds are generated procedurally at runtime (neon vector art
- * direction), so manifests describe layer structure only; there are no image
- * URLs to download. Textures are produced by neonBackgroundGenerator.
- */
 const BASE_SIZE = { width: 1024, height: 1024 } as const;
 
 const LEVELS = [

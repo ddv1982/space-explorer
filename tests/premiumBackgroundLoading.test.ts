@@ -5,6 +5,7 @@ mockPhaserModule();
 
 const { ensurePremiumBackgroundAssets, releasePremiumBackgroundTexturesOutsideWindow } =
   await import('../src/systems/parallax/premiumBackgroundLoading');
+const { ensureNeonBackgroundTextures } = await import('../src/systems/parallax/neonBackgroundGenerator');
 
 function createGraphicsStub(generatedKeys: string[], textures: Set<string>) {
   const stub: Record<string, unknown> = {
@@ -95,10 +96,11 @@ function createSceneHarness(existingKeys: string[] = []) {
 }
 
 describe('premium background loading helpers', () => {
-  test('ensure generates every active-level layer and is synchronous', () => {
+  test('legacy generation retains its composited drawing recipe', () => {
     const harness = createSceneHarness();
     const onReady = mock();
 
+    ensureNeonBackgroundTextures(harness.scene, 5);
     ensurePremiumBackgroundAssets(harness.scene, 5, onReady);
 
     expect(harness.generatedKeys).toEqual(['bg_level05', 'bg_level05_nebula', 'bg_level05_mid', 'bg_level05_near']);

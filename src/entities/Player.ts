@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { usesCinematicArt } from '../config/cinematicAssets';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
@@ -46,7 +47,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5);
 
-    applyGameObjectGlow(this, 0x00aaff, { clearFirst: false });
+    applyGameObjectGlow(this, 0x00aaff, {
+      clearFirst: false,
+      ...(usesCinematicArt() ? { outerStrength: 0.25, innerStrength: 0, scale: 0.3 } : {}),
+    });
   }
 
   applyState(state: PlayerStateData): void {

@@ -18,6 +18,7 @@ export function ensureBossTextureVariant(
   bossName: string = 'boss'
 ): string {
   const motifVariant = Array.from(bossName).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 3;
+  if (bossName === 'Pyre Herald' && scene.textures.exists('cinematic-pyre-herald')) return 'cinematic-pyre-herald';
   const textureKey = `boss-texture-${attackStyle}-${motifVariant}`;
 
   return withGeneratedEntityTexture(scene, textureKey, 88, 56, (g) => {
