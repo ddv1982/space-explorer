@@ -12,7 +12,7 @@ class FakeElement {
   parent: FakeElement | null = null;
   readonly children: FakeElement[] = [];
   private readonly attributes = new Map<string, string>();
-  private readonly listeners = new Map<string, Array<() => void>>();
+  private readonly listeners = new Map<string, Array<(event: Event) => void>>();
 
   constructor(private readonly owner: FakeDocument) {}
 
@@ -57,14 +57,18 @@ class FakeElement {
     return element === this || this.children.some((child) => child.contains(element));
   }
 
-  addEventListener(name: string, listener: () => void): void {
+  addEventListener(name: string, listener: (event: Event) => void): void {
     const listeners = this.listeners.get(name) ?? [];
     listeners.push(listener);
     this.listeners.set(name, listeners);
   }
 
+  dispatchEvent(event: Event): void {
+    for (const listener of this.listeners.get(event.type) ?? []) listener(event);
+  }
+
   click(): void {
-    for (const listener of this.listeners.get('click') ?? []) listener();
+    this.dispatchEvent(new Event('click'));
   }
 
   focus(): void {
@@ -173,6 +177,23 @@ describe('mountAccessibleActionLayer', () => {
     teardown();
     expect(documentRef.getElementById('accessible-action-layer')).toBeNull();
     expect(documentRef.canvas.getAttribute('aria-hidden')).toBeNull();
+  });
+
+  test('native action keys retain browser defaults without reaching global gameplay capture', () => {
+    const documentRef = new FakeDocument();
+    installDocument(documentRef);
+    const teardown = mountAccessibleActionLayer({ label: 'Actions', actions: [] });
+    const root = documentRef.getElementById('accessible-action-layer');
+    if (!root) throw new Error('Missing action layer');
+    for (const type of ['keydown', 'keyup']) {
+      for (const code of ['Enter', 'Space', 'Tab', 'Escape', 'KeyR', 'KeyM']) {
+        const event = Object.assign(new Event(type, { bubbles: true, cancelable: true }), { code });
+        root.dispatchEvent(event);
+        expect(event.cancelBubble).toBe(['Enter', 'Space', 'Tab'].includes(code));
+        expect(event.defaultPrevented).toBe(false);
+      }
+    }
+    teardown();
   });
 
   test('uses distinct description IDs for action names that sanitize alike', () => {

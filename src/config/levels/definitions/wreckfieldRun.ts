@@ -58,7 +58,7 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     spacing: 40,
     followOffsetY: 18,
   },
-  bossTriggerProgress: 0.7,
+  bossTriggerProgress: 0.742,
   asteroidInterval: 3350,
   sections: [
     {
@@ -84,8 +84,11 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       startProgress: 0.14,
       endProgress: 0.32,
       phase: 'build',
-      summary:
-        'The first solar-flare sweeps telegraph from the screen edge; debris keeps the lanes honest between beams.',
+      summary: 'Read each flare edge, descend through its lower escape lane, then clear the warned bomber column.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.65,
+      asteroidInterval: 10000,
       waves: [
         {
           id: 'rampart-bomber-column',
@@ -101,11 +104,11 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       hazardEvents: [
         {
           type: 'solar-flare',
-          cadenceMs: 2600,
+          cadenceMs: 6000,
+          durationMs: 15000,
           intensity: 0.55,
           notes: 'Solar-flare debut: a telegraphed beam sweep that also clears enemy bullets it crosses.',
         },
-        { type: 'debris-surge', cadenceMs: 3300, intensity: 0.4 },
       ],
       musicIntensity: 0.62,
       visualModifiers: {
@@ -124,8 +127,11 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       startProgress: 0.32,
       endProgress: 0.5,
       phase: 'hazard',
-      summary:
-        'Laser-lattice crossings stitch the wreck lanes while destructible cover shelters planned route switches.',
+      summary: 'Read the lattice gap first, then leave its expired beams for the later destructible-cover route.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.65,
+      asteroidInterval: 10000,
       signatureWaves: [
         {
           id: 'cover-exit-pair',
@@ -162,13 +168,15 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       hazardEvents: [
         {
           type: 'laser-lattice',
-          cadenceMs: 2900,
+          cadenceMs: 4500,
+          durationMs: 10000,
           intensity: 0.5,
-          notes: 'Laser-lattice debut: timed crossing beams with safe gaps layered over the cover lanes.',
+          notes: 'Two lattice lessons expire before the first cover eligibility at 14s.',
         },
         {
           type: 'rock-corridor',
-          cadenceMs: 3700,
+          cadenceMs: 14000,
+          durationMs: 18000,
           corridorWidth: 220,
           laneCount: 2,
           damage: 1,
@@ -226,11 +234,11 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
         },
       ],
       encounterSizeOverride: { min: 2, max: 3 },
-      spawnRateMultiplier: 1.7,
+      spawnRateMultiplier: 1.15,
       hazardEvents: [
-        { type: 'solar-flare', cadenceMs: 2600, intensity: 0.5 },
-        { type: 'laser-lattice', cadenceMs: 3400, intensity: 0.48 },
-        { type: 'debris-surge', cadenceMs: 4100, intensity: 0.5 },
+        { type: 'solar-flare', cadenceMs: 6500, durationMs: 14000, intensity: 0.5 },
+        { type: 'laser-lattice', cadenceMs: 7000, durationMs: 14000, intensity: 0.48 },
+        { type: 'debris-surge', cadenceMs: 8200, durationMs: 14000, intensity: 0.5 },
       ],
       musicIntensity: 0.9,
       visualModifiers: {
@@ -247,15 +255,17 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       id: 'bulwark-threshold',
       label: 'Bulwark Threshold',
       startProgress: 0.68,
-      endProgress: 0.7,
+      endProgress: 0.742,
       phase: 'boss-approach',
-      summary: 'A last shelter line and a held breath before the Bastion Bulwark anchors the wall.',
-      spawnRateMultiplier: 0.9,
+      summary: 'Follow the center shield into open space, clearing single scouts before the Bulwark arrives.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 5000,
       recoveryDrops: [
         {
           id: 'pre-bulwark-shield',
-          triggerProgress: 0.4,
+          triggerProgress: 0.02,
           type: 'shield',
           lane: 'center',
           notes: 'Pre-boss Recovery Beat shield stabilizes the gauntlet run before the bulwark cycle.',

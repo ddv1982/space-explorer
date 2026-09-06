@@ -6,7 +6,7 @@ import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { Boss } from '../entities/enemies/Boss';
 import { Asteroid } from '../entities/Asteroid';
 import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
-import { routePlayerDamageOutcome } from './collision/playerDamagePolicy';
+import type { DamageSource, PlayerHitResult } from './PlayerDamage';
 import { clearHazardGroup } from './collision/clearHazardGroup';
 import { registerCollisionOverlaps } from './collision/registerCollisionOverlaps';
 import { runBestEffort } from '../utils/runBestEffort';
@@ -152,6 +152,7 @@ export class CollisionManager {
 
     this.processAcceptedPlayerDamage({
       amount: 1,
+      source: 'enemy-bullet',
       beforeDamage: () => enemyBullet.kill(),
     });
   }
@@ -167,6 +168,7 @@ export class CollisionManager {
 
     this.processAcceptedPlayerDamage({
       amount: 2,
+      source: 'bomb',
       beforeDamage: () => bomb.kill(),
       afterDamage: () => this.effectsManager.createExplosion(impactX, impactY, 1.5),
     });
@@ -197,6 +199,7 @@ export class CollisionManager {
 
     this.processAcceptedPlayerDamage({
       amount: 2,
+      source: 'mine',
       beforeDamage: () => mine.kill(),
       afterDamage: () => this.effectsManager.createExplosion(impactX, impactY, 1.5),
     });
@@ -225,6 +228,7 @@ export class CollisionManager {
 
     this.processAcceptedPlayerDamage({
       amount: beam.getDamage(),
+      source: 'beam',
       afterDamage: () => this.effectsManager.createSparkBurst(this.player.x, this.player.y),
     });
   }
@@ -285,6 +289,7 @@ export class CollisionManager {
 
     this.processAcceptedPlayerDamage({
       amount: 1,
+      source: 'enemy-contact',
       afterDamage: () => this.applyEnemyContactOutcome(enemy, playerCollisionBehavior),
     });
   }
@@ -306,6 +311,7 @@ export class CollisionManager {
 
     this.processAcceptedPlayerDamage({
       amount: asteroid.getCollisionDamage(),
+      source: 'asteroid',
       afterDamage: () => asteroid.onPlayerCollision(),
     });
   }
@@ -326,27 +332,30 @@ export class CollisionManager {
 
   private processAcceptedPlayerDamage(options: {
     amount: number;
+    source: DamageSource;
     beforeDamage?: () => void;
     afterDamage?: () => void;
   }): void {
     options.beforeDamage?.();
 
-    const damageOutcome = this.player.takeDamage(options.amount * this.getHullDamageMultiplier());
+    const damageOutcome = this.player.takeDamage({
+      amount: options.amount * this.getHullDamageMultiplier(),
+      source: options.source,
+    });
 
     options.afterDamage?.();
 
-    const route = routePlayerDamageOutcome(damageOutcome);
-    if (route === 'fatal-transition') {
+    if (damageOutcome.outcome === 'fatal') {
       this.onPlayerFatalHit();
       return;
     }
 
-    if (route === 'hit-feedback') {
-      this.onPlayerHit();
+    if (damageOutcome.outcome === 'absorbed' || damageOutcome.outcome === 'damaged') {
+      this.onPlayerHit(damageOutcome);
     }
   }
 
-  private onPlayerHit(): void {
+  private onPlayerHit(result: PlayerHitResult): void {
     if (this.terminalTransitionActive || this.respawnInProgress) {
       return;
     }
@@ -358,8 +367,11 @@ export class CollisionManager {
 
     this.lastPlayerHitFeedbackTime = now;
 
-    runBestEffort(() => this.effectsManager.createSparkBurst(this.player.x, this.player.y));
-    runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerHit));
+    runBestEffort(() => {
+      if (result.outcome === 'absorbed') this.effectsManager.createShieldImpact(this.player.x, this.player.y);
+      else this.effectsManager.createSparkBurst(this.player.x, this.player.y);
+    });
+    runBestEffort(() => this.scene.events.emit(GAME_SCENE_EVENTS.playerHit, result));
   }
 
   private onPlayerFatalHit(): void {

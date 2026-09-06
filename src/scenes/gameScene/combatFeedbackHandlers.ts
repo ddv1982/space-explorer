@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { PlayerFatalResult, PlayerHitResult } from '@/systems/PlayerDamage';
 import type { BossConfig } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
 import type { Player } from '@/entities/Player';
@@ -50,12 +51,12 @@ interface GameSceneCombatFeedbackDeps {
 
 interface GameSceneCombatFeedbackHandlers {
   handleEnemyDeath: (score: number, x: number, y: number, isAce?: boolean) => void;
-  handlePlayerDeath: () => void;
+  handlePlayerDeath: (result: PlayerFatalResult) => void;
   handlePlayerFatalHit: () => void;
   handleLevelComplete: () => void;
   handleBossSpawn: () => void;
   clearFieldForBossIntro: () => void;
-  handlePlayerHit: () => void;
+  handlePlayerHit: (result: PlayerHitResult) => void;
   handlePlayerExhaust: (x: number, y: number, intensity: number) => void;
   handlePlayerBulletTrail: (x: number, y: number) => void;
   handleEnemyBulletTrail: (x: number, y: number) => void;
@@ -187,11 +188,11 @@ export function createGameSceneCombatFeedbackHandlers(
       }
     },
 
-    handlePlayerDeath: (): void => {
+    handlePlayerDeath: (result): void => {
       const player = deps.player();
       const deathX = player.x;
       const deathY = player.y;
-      const outcome = deps.flow().handlePlayerDeath(deps.getFlowContext());
+      const outcome = deps.flow().handlePlayerDeath(deps.getFlowContext(), result.source);
 
       if (outcome.status !== 'ignored-terminal-active') {
         runBestEffort(() => playPlayerDeathCue(deathX, deathY));
@@ -231,9 +232,9 @@ export function createGameSceneCombatFeedbackHandlers(
 
     clearFieldForBossIntro,
 
-    handlePlayerHit: (): void => {
+    handlePlayerHit: (result): void => {
       deps.scoreManager().onPlayerHit();
-      runBestEffort(() => audioManager.playPlayerHit());
+      runBestEffort(() => audioManager.playPlayerHit(result.outcome));
     },
 
     handlePlayerExhaust: (x, y, intensity): void => {

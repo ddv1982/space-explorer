@@ -59,7 +59,7 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
     spacing: 38,
     followOffsetY: 18,
   },
-  bossTriggerProgress: 0.68,
+  bossTriggerProgress: 0.719,
   asteroidInterval: 3150,
   sections: [
     {
@@ -249,10 +249,12 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
       id: 'eclipse-threshold',
       label: 'Eclipse Threshold',
       startProgress: 0.66,
-      endProgress: 0.68,
+      endProgress: 0.719,
       phase: 'boss-approach',
-      summary: 'A held breath at the threshold: one last picket, a shield relief beat, then the Ark.',
-      spawnRateMultiplier: 0.9,
+      summary: 'Clear the final picket, then follow the center shield before the Ark arrives.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 4900,
       waves: [
         {
@@ -269,7 +271,7 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
       recoveryDrops: [
         {
           id: 'ark-shield-relief',
-          triggerProgress: 0.45,
+          triggerProgress: 0.02,
           type: 'shield',
           lane: 'center',
           notes: 'Pre-boss relief beat: shield the convoy before the Umbral Ark carrier reveals.',

@@ -50,7 +50,7 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
     guardBreakDurationMs: 1800,
   },
   bossAddWaves: true,
-  bossTriggerProgress: 0.7,
+  bossTriggerProgress: 0.746,
   asteroidInterval: 3400,
   sections: [
     {
@@ -186,15 +186,18 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
       id: 'reef-stalker-gate',
       label: 'Stalker Gate',
       startProgress: 0.68,
-      endProgress: 0.7,
+      endProgress: 0.746,
       phase: 'boss-approach',
-      summary: 'The reef stills for a breath as the Reef Stalker picks up the trail.',
-      spawnRateMultiplier: 0.9,
+      summary:
+        'Leave the splitter pressure behind, clear single scouts, and collect the center shield before pursuit resumes.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 5100,
       recoveryDrops: [
         {
           id: 'pre-stalker-shield',
-          triggerProgress: 0.4,
+          triggerProgress: 0.02,
           type: 'shield',
           lane: 'center',
           notes: 'Pre-boss Recovery Beat shield stabilizes the run before the pursuit duel.',

@@ -1,3 +1,5 @@
+import type { PlayerFatalResult, PlayerHitResult } from './PlayerDamage';
+
 export const GAME_SCENE_EVENTS = {
   enemyDeath: 'enemy-death',
   playerDeath: 'player-death',
@@ -21,11 +23,11 @@ export const GAME_SCENE_EVENTS = {
 
 type GameSceneEventPayloads = {
   [GAME_SCENE_EVENTS.enemyDeath]: [score: number, x: number, y: number, isAce?: boolean];
-  [GAME_SCENE_EVENTS.playerDeath]: [];
+  [GAME_SCENE_EVENTS.playerDeath]: [result: PlayerFatalResult];
   [GAME_SCENE_EVENTS.playerFatalHit]: [];
   [GAME_SCENE_EVENTS.levelComplete]: [];
   [GAME_SCENE_EVENTS.bossSpawn]: [];
-  [GAME_SCENE_EVENTS.playerHit]: [];
+  [GAME_SCENE_EVENTS.playerHit]: [result: PlayerHitResult];
   [GAME_SCENE_EVENTS.playerExhaust]: [x: number, y: number, intensity: number];
   [GAME_SCENE_EVENTS.enemySpawnWarning]: [x: number];
   [GAME_SCENE_EVENTS.wormholeTelegraph]: [x: number, y: number];

@@ -82,7 +82,7 @@ function createRecord(id: 'slot-1' | 'slot-2' | 'slot-3', score: number): SaveSl
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
       helperWing: { grantedSlots: 0, slots: [] },
     },
-    { finalScore: score, levelReached: 2 },
+    { finalScore: score, levelReached: 2, deathCause: null },
     new Date(`2026-08-21T10:${String(score % 60).padStart(2, '0')}:00.000Z`)
   );
 }

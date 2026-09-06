@@ -1,4 +1,5 @@
 import { getLevelConfig, getTotalLevels } from '../config/LevelsConfig';
+import { normalizeDeathCause } from './PlayerDamage';
 import type { PlayerStateData, RunSummaryData } from './PlayerState';
 import { normalizePersistedPlayerState, normalizePersistedScore } from './PlayerState';
 
@@ -101,12 +102,14 @@ function normalizeRunSummaryData(value: unknown, fallbackLevel: number, fallback
   if (!isObjectRecord(value)) {
     return {
       finalScore: fallbackScore,
+      deathCause: null,
       levelReached: normalizeKnownLevel(fallbackLevel, 1),
     };
   }
 
   return {
     finalScore: normalizePersistedScore(value.finalScore, fallbackScore),
+    deathCause: normalizeDeathCause(value.deathCause),
     levelReached: normalizeKnownLevel(value.levelReached, fallbackLevel),
   };
 }

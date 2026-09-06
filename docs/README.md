@@ -37,6 +37,8 @@ main
 
 ## Current remediation
 
+- [Play feel and replayability](./plans/game-feel-replayability-2026-09-06.md). Active phased program beginning with local recording and a fresh-player baseline.
+
 - [Cinematic hull contract](./adr/0003-cinematic-frontier-pilot.md). Source artwork, loading, logical dimensions, and the retired raster pilot.
 - [Procedural background research](./procedural-background-research-2026-09-05.md). Follow-up direction from pilot feedback: evolving Phaser atmosphere and generated landmarks alongside cinematic hulls.
 - [Living procedural backgrounds](./adr/0004-living-procedural-backgrounds.md). Implemented worlds, shader ownership, quality limits, and verification requirements.

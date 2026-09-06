@@ -96,7 +96,7 @@ describe('SaveSlotStorage', () => {
           slots: [{ remainingLives: 2, hp: 5 }],
         },
       },
-      { finalScore: 12400, levelReached: 3 },
+      { finalScore: 12400, levelReached: 3, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -128,7 +128,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
         helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 5 }] },
       },
-      { finalScore: 12400, levelReached: 3 },
+      { finalScore: 12400, levelReached: 3, deathCause: 'beam' },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -161,7 +161,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 500, levelReached: 2 },
+      { finalScore: 500, levelReached: 2, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -196,7 +196,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 100, levelReached: 1 },
+      { finalScore: 100, levelReached: 1, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -220,7 +220,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 100, levelReached: totalLevels + 99 },
+      { finalScore: 100, levelReached: totalLevels + 99, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -263,7 +263,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 100, levelReached: 2 },
+      { finalScore: 100, levelReached: 2, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -304,7 +304,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 100, levelReached: 2 },
+      { finalScore: 100, levelReached: 2, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -339,7 +339,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 100, levelReached: -5 },
+      { finalScore: 100, levelReached: -5, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -366,7 +366,7 @@ describe('SaveSlotStorage', () => {
           slots: Array.from({ length: 10 }, () => ({ remainingLives: 1, hp: 1 })),
         },
       },
-      { finalScore: 100, levelReached: 1 },
+      { finalScore: 100, levelReached: 1, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -394,7 +394,7 @@ describe('SaveSlotStorage', () => {
     expect(helperWing?.slots).toHaveLength(4);
   });
 
-  test('normalizes legacy records without currentShields', () => {
+  test('normalizes legacy records without shields or a terminal cause', () => {
     const storage = new MemoryStorage();
     installWindow(storage);
 
@@ -412,7 +412,10 @@ describe('SaveSlotStorage', () => {
       },
       runSummary: { finalScore: 900, levelReached: 4 },
       label: { level: 4, levelName: 'Legacy', score: 900, remainingLives: 2 },
-    } satisfies Omit<SaveSlotRecordV1, 'playerState'> & { playerState: Record<string, unknown> };
+    } satisfies Omit<SaveSlotRecordV1, 'playerState' | 'runSummary'> & {
+      playerState: Record<string, unknown>;
+      runSummary: { finalScore: number; levelReached: number };
+    };
 
     storage.setItem(
       SAVE_SLOT_STORAGE_KEY,
@@ -426,6 +429,7 @@ describe('SaveSlotStorage', () => {
 
     expect(readSaveSlot('slot-1')?.playerState.currentShields).toBe(3);
     expect(readSaveSlot('slot-1')?.playerState.upgrades.turrets).toBe(0);
+    expect(readSaveSlot('slot-1')?.runSummary.deathCause).toBeNull();
   });
 
   test('normalizes corrupt saved turret tiers during slot reads', () => {
@@ -443,7 +447,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 3200, levelReached: 5 },
+      { finalScore: 3200, levelReached: 5, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -454,7 +458,7 @@ describe('SaveSlotStorage', () => {
         slots: {
           'slot-1': {
             ...record,
-            runSummary: { finalScore: Number.MAX_VALUE, levelReached: 5 },
+            runSummary: { finalScore: Number.MAX_VALUE, levelReached: 5, deathCause: null },
             playerState: {
               ...record.playerState,
               upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1.9 },
@@ -481,7 +485,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 100, levelReached: 5 },
+      { finalScore: 100, levelReached: 5, deathCause: null },
       new Date('2026-04-27T10:30:00.000Z')
     );
 
@@ -492,7 +496,7 @@ describe('SaveSlotStorage', () => {
         slots: {
           'slot-1': {
             ...record,
-            runSummary: { finalScore: Number.MAX_VALUE, levelReached: 5 },
+            runSummary: { finalScore: Number.MAX_VALUE, levelReached: 5, deathCause: null },
             playerState: {
               ...record.playerState,
               score: Number.MAX_VALUE,
@@ -542,7 +546,7 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
         helperWing: { grantedSlots: 0, slots: [] },
       },
-      { finalScore: 10, levelReached: 2 }
+      { finalScore: 10, levelReached: 2, deathCause: null }
     );
 
     const corruptRecord = {
@@ -598,7 +602,7 @@ describe('SaveSlotStorage', () => {
           slots: [],
         },
       },
-      { finalScore: 0, levelReached: 1 }
+      { finalScore: 0, levelReached: 1, deathCause: null }
     );
 
     expect(writeSaveSlot(record)).toBeNull();

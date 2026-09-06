@@ -278,6 +278,26 @@ export class EffectsManager {
     this.sparkEmitter?.explode(this.getParticleQuantity(8), x, y);
   }
 
+  createShieldImpact(x: number, y: number): void {
+    const reducedMotion =
+      typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    const ring = this.scene.add
+      .image(x, y, 'particle-ring')
+      .setDepth(7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0x44aaff)
+      .setScale(reducedMotion ? 1 : 0.45)
+      .setAlpha(0.8);
+    this.scene.tweens.add({
+      targets: ring,
+      scale: reducedMotion ? 1 : 1.05,
+      alpha: 0,
+      duration: 180,
+      ease: 'Cubic.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+  }
+
   createGrazeSpark(x: number, y: number): void {
     this.sparkEmitter?.explode(this.getParticleQuantity(3), x, y);
   }

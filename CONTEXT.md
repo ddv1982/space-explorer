@@ -26,6 +26,9 @@ _Avoid_: surprise, cheap shot
 
 ## Decisions
 
+**Play-feel implementation (2026-09)**:
+The user authorized autonomous implementation of the complete play-feel plan. Movement now uses normalized intent, native Arcade acceleration of 3,200 px/s², a total speed cap of 480 px/s, and drag of 4,000 px/s². Hull banking is visual; shots follow the upward centerline. Damage attribution comes from the actual collision before the death event, and direct retry shares Menu's fresh-run contract. Flare warnings appear inside the viewport and leave a lower escape route. Boss approaches allow a deliberate midfield pickup intercept, with about 44 seconds added across the campaign. Human preference and physical-device results remain unmeasured. See `docs/plans/game-feel-replayability-2026-09-06.md` and its evidence links.
+
 **Procedural background preference (2026-09)**:
 After playing the cinematic pilot, the user preferred dynamic Phaser-generated backgrounds over the authored Level 1 plate. Living procedural backgrounds now cover all ten campaign levels. The approved Aurora look is preserved; the other worlds have distinct atmospheric kernels and generated landmarks. The raster backplate is retired from runtime; its source remains historical reference. Cinematic hulls remain. New background generation uses isolated visual randomness and scene-owned resources. See `docs/adr/0004-living-procedural-backgrounds.md` and the research in `docs/procedural-background-research-2026-09-05.md`.
 

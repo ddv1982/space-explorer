@@ -256,11 +256,6 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
   },
 };
 const TEST_CONCENTRATION_BUDGETS: Record<string, { lines: number; reason: string; evidence: string }> = {
-  'tests/CollisionManager.test.ts': {
-    lines: 675,
-    reason: 'shared typed collision fixture with source-specific narratives',
-    evidence: 'collision manager regression suite',
-  },
   'tests/SaveSlotStorage.test.ts': {
     lines: 615,
     reason: 'single persistence compatibility matrix',

@@ -222,8 +222,8 @@ For development comparisons, append `&background=legacy` to use the previous bac
 
 ## Release notes
 
-- [Unreleased changes](docs/releases/unreleased.md)
-- [Latest release notes](docs/releases/1.19.0.md)
+- [Changelog](CHANGELOG.md)
+- [Latest release notes](docs/releases/1.20.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

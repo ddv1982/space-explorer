@@ -2,6 +2,9 @@ import Phaser from 'phaser';
 import { withGeneratedEntityTexture } from '../generatedTexture';
 import { NEON_ENTITY, fillCanopy, fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine } from './neonStyle';
 
+const HULL_MATERIAL = { titanium: 0x485460, ceramic: 0xc4ccd2, recess: 0x101a27, highlight: 0xe0e5e8 };
+const HULL_EDGE = { haloScale: 1.1, haloAlpha: 0.08, midAlpha: 0.16, outlineWidth: 1 };
+
 export function ensurePlayerTexture(scene: Phaser.Scene): string {
   return withGeneratedEntityTexture(scene, 'player-ship', 36, 44, (g) => {
     const palette = NEON_ENTITY.player;
@@ -204,8 +207,8 @@ export function ensureGunshipTexture(scene: Phaser.Scene): string {
         { x: 12, y: 31 },
         { x: 6, y: 31 },
       ],
-      palette,
-      { haloScale: 1.1, outlineWidth: 1 }
+      { ...palette, body: HULL_MATERIAL.titanium },
+      HULL_EDGE
     );
     fillNeonPolygon(
       g,
@@ -215,8 +218,8 @@ export function ensureGunshipTexture(scene: Phaser.Scene): string {
         { x: 34, y: 31 },
         { x: 28, y: 31 },
       ],
-      palette,
-      { haloScale: 1.1, outlineWidth: 1 }
+      { ...palette, body: HULL_MATERIAL.titanium },
+      HULL_EDGE
     );
 
     // Center command pod.
@@ -230,15 +233,29 @@ export function ensureGunshipTexture(scene: Phaser.Scene): string {
         { x: 15, y: 26 },
         { x: 15, y: 10 },
       ],
-      palette
+      { ...palette, body: HULL_MATERIAL.titanium },
+      HULL_EDGE
     );
 
-    // Cannon tips and cross-brace.
+    g.fillStyle(HULL_MATERIAL.recess);
+    g.fillRect(8, 12, 2, 16);
+    g.fillRect(30, 12, 2, 16);
+    g.fillRect(18, 9, 4, 17);
+    g.fillStyle(HULL_MATERIAL.ceramic);
+    g.fillRect(6.5, 10, 1.5, 17);
+    g.fillRect(28.5, 10, 1.5, 17);
+    g.fillTriangle(16, 11, 18, 8, 16, 25);
+    g.fillTriangle(22, 8, 24, 11, 24, 25);
+    g.lineStyle(0.7, HULL_MATERIAL.highlight, 0.8);
+    g.lineBetween(16, 11, 19, 6);
+    g.lineBetween(21, 6, 24, 11);
+
     fillHotCore(g, 9, 8, 1.5, palette.hot);
     fillHotCore(g, 31, 8, 1.5, palette.hot);
     strokeNeonLine(g, 12, 22, 28, 22, palette.glow, 1);
 
-    fillHotCore(g, 20, 12, 1.7, palette.hot);
+    g.fillStyle(palette.outline);
+    g.fillRect(19, 11, 2, 3);
 
     fillNeonCircle(g, 17, 34, 1.6, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
     fillNeonCircle(g, 23, 34, 1.6, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
@@ -286,15 +303,21 @@ export function ensureDiverTexture(scene: Phaser.Scene): string {
         { x: 3, y: 24 },
         { x: 6, y: 10 },
       ],
-      palette,
-      { haloScale: 1.12 }
+      { ...palette, body: HULL_MATERIAL.titanium },
+      HULL_EDGE
     );
 
-    strokeNeonLine(g, 12, 5, 12, 22, palette.outline, 1);
-    strokeNeonLine(g, 6, 13, 10, 18, palette.glow, 1);
-    strokeNeonLine(g, 18, 13, 14, 18, palette.glow, 1);
-
-    fillHotCore(g, 12, 11, 1.5, palette.hot);
+    g.fillStyle(HULL_MATERIAL.ceramic);
+    g.fillTriangle(7, 10, 10, 7, 5, 20);
+    g.fillTriangle(14, 7, 17, 10, 19, 20);
+    g.fillStyle(HULL_MATERIAL.recess);
+    g.fillTriangle(12, 5, 15, 17, 9, 17);
+    g.fillRect(11, 16, 2, 6);
+    g.lineStyle(0.7, HULL_MATERIAL.highlight, 0.8);
+    g.lineBetween(8, 9, 11, 4);
+    g.lineBetween(13, 4, 16, 9);
+    g.fillStyle(palette.outline);
+    g.fillEllipse(12, 11, 2, 4);
     fillNeonCircle(g, 12, 27, 1.3, palette, { haloScale: 1.5, midScale: 1.2, outlineWidth: 0 });
   });
 }
@@ -346,17 +369,27 @@ export function ensureSowerTexture(scene: Phaser.Scene): string {
         { x: 4, y: 18 },
         { x: 7, y: 8 },
       ],
-      palette
+      { ...palette, body: HULL_MATERIAL.titanium },
+      HULL_EDGE
     );
 
+    g.fillStyle(HULL_MATERIAL.ceramic);
+    g.fillTriangle(8, 9, 14, 5, 6, 18);
+    g.fillTriangle(20, 5, 26, 9, 28, 18);
+    g.fillStyle(HULL_MATERIAL.recess);
+    g.fillRoundedRect(8, 16, 18, 10, 3);
+    g.fillRect(15, 7, 4, 6);
+    g.lineStyle(0.7, HULL_MATERIAL.highlight, 0.8);
+    g.lineBetween(10, 8, 14, 5);
+    g.lineBetween(20, 5, 24, 8);
     // Mine bay doors.
     fillNeonCircle(g, 11, 20, 2.4, palette, { haloScale: 1.6, midScale: 1.3 });
     fillNeonCircle(g, 23, 20, 2.4, palette, { haloScale: 1.6, midScale: 1.3 });
     fillHotCore(g, 11, 20, 0.9, palette.hot);
     fillHotCore(g, 23, 20, 0.9, palette.hot);
 
-    strokeNeonLine(g, 10, 12, 24, 12, palette.glow, 1);
-    fillHotCore(g, 17, 9, 1.6, palette.hot);
+    g.fillStyle(palette.outline);
+    g.fillRect(16, 8, 2, 3);
   });
 }
 

@@ -6,6 +6,24 @@ The five cinematic hulls use retained 4× image pixels with logical frame dimens
 
 The v2 contract remains the baseline for unmigrated assets. Cinematic Frontier changes presentation while preserving encounter grammar. The superseded `background-art-bible.md` remains historical reference.
 
+## Procedural combat hull materials
+
+Diver, Gunship, and Sower share the cinematic hulls' material values. Titanium `#485460` carries the body; ceramic `#c4ccd2` covers small forward plates. Recesses use `#101a27`, and short lit edges use `#e0e5e8`. Flat material regions remain legible at 24–40 pixels. They do not add photographic texture, animated layers, filters, or new assets to runtime.
+
+Threat colors still identify each family. Diver keeps its magenta swept crescent and central engine. Gunship keeps its blue twin cannon rails, command pod, and paired engines. Sower keeps its purple broad pod and two bright mine bays. Canopies are small colored apertures inside dark recesses. White highlights stay on short forward edges, leaving fire and damage effects brighter than the armor.
+
+| Family | Logical texture | Material placement |
+| --- | --- | --- |
+| Diver | 24×30 | Ceramic swept wing plates, recessed central spine, narrow magenta canopy |
+| Gunship | 40×40 | Ceramic rail faces, dark barrel channels and command recess, blue canopy |
+| Sower | 34×34 | Ceramic shoulders, recessed paired mine bay, purple canopy |
+
+The original polygon vertices, texture keys, logical dimensions, and collision bodies are preserved. These three hulls use a one-pixel threat-colored outline and a tighter baked halo. All quality tiers still generate at 4× and resolve to logical pixels. Other procedural enemy families retain the v2 recipe.
+
+The comparison uses actual Phaser-generated texture pixels at native size and at 4× inspection size beside the cinematic fighter. The full ceramic-body candidate loses separation between the wing plates and body. The selected titanium-body hybrid keeps those regions distinct while preserving the colored silhouette. This is an art-direction judgment from a static comparison. Fresh-player recognition and preference remain unmeasured.
+
+To reproduce the current contact sheet, start `bun run dev --host 127.0.0.1 --port 4194`, then run `bun scripts/captureCombatArt.ts`. `COMBAT_ART_ORIGIN` can select another development server. The script writes `output/combat-art/contact-sheet.png` and `texture-metrics.json`. It checks the logical sizes, opaque hull coverage, and visible highlights for all three families at Low, Standard, and High. The 4× inspection row enlarges the resolved pixels; judge recognition from the native row.
+
 ## V2 remake contract
 
 - **Readable pressure first.** The center 45–55% of the playfield stays darker and calmer than entities, bullets, hazards, and pickups so Lane-Reading and Ambush Anticipation stay intact. Scenery and HUD chrome never win contrast in that corridor.
@@ -56,7 +74,7 @@ Per-level identity: each level keeps its `accentColor` / `nebulaColor` from the 
 - **Player**: sleek forward dart; twin prongs; engine cores glow. Banking conveyed by rotation (code-driven, no extra frames).
 - **Enemies**: single-gesture silhouettes (dart, chevron, hex, twin-prong, tri-shard) readable at 20–44 px.
 - **Bosses**: wide multi-part hulls with concentric rings / arc motifs; pulsing core.
-- **Glow recipe** (all entities): halo pass (shape scaled up, low alpha) → mid glow pass → near-black body fill tinted with hue → bright neon outline → white-hot core accents (cockpit, engine dots).
+- **Glow recipe** (unmigrated procedural entities): halo pass (shape scaled up, low alpha) → mid glow pass → near-black body fill tinted with hue → bright neon outline → white-hot core accents (cockpit, engine dots).
 - **Asteroids**: faceted wireframe polygons, dim inner fill, neon edge strokes; rotating.
 
 ## Backgrounds

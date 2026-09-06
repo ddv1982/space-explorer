@@ -332,43 +332,56 @@ describe('PlayerState schema behavior', () => {
     expect(getPlayerTurretTier(getPlayerState(registry))).toBe(2);
   });
 
+  test('normalizes old and malformed causes, preserves partial updates, and clears attribution on reset', () => {
+    const registry = createRegistry();
+    expect(getRunSummary(registry).deathCause).toBeNull();
+    setRunSummary(registry, { deathCause: 'enemy-bullet' });
+    expect(setRunSummary(registry, { finalScore: 12 }).deathCause).toBe('enemy-bullet');
+    registry.set('deathCause', '<invalid>');
+    expect(getRunSummary(registry).deathCause).toBeNull();
+    setRunSummary(registry, { deathCause: 'unknown' });
+    expect(getRunSummary(registry).deathCause).toBe('unknown');
+    resetRunSummary(registry);
+    expect(getRunSummary(registry).deathCause).toBeNull();
+  });
+
   test('resetRunSummary restores default summary values', () => {
     const registry = createRegistry();
 
-    setRunSummary(registry, { finalScore: 999, levelReached: 7 });
-    expect(getRunSummary(registry)).toEqual({ finalScore: 999, levelReached: 7 });
+    setRunSummary(registry, { finalScore: 999, levelReached: 7, deathCause: null });
+    expect(getRunSummary(registry)).toEqual({ finalScore: 999, levelReached: 7, deathCause: null });
 
     resetRunSummary(registry);
-    expect(getRunSummary(registry)).toEqual({ finalScore: 0, levelReached: 1 });
+    expect(getRunSummary(registry)).toEqual({ finalScore: 0, levelReached: 1, deathCause: null });
   });
 
   test('run summary never returns non-finite or wrong-type registry values', () => {
     const registry = createRegistry();
     registry.set('finalScore', Number.NaN);
     registry.set('levelReached', Number.POSITIVE_INFINITY);
-    expect(getRunSummary(registry)).toEqual({ finalScore: 0, levelReached: 1 });
+    expect(getRunSummary(registry)).toEqual({ finalScore: 0, levelReached: 1, deathCause: null });
 
     registry.set('finalScore', '999');
     registry.set('levelReached', null);
-    expect(getRunSummary(registry)).toEqual({ finalScore: 0, levelReached: 1 });
+    expect(getRunSummary(registry)).toEqual({ finalScore: 0, levelReached: 1, deathCause: null });
   });
 
   test('setRunSummary rejects non-finite numeric inputs', () => {
     const registry = createRegistry();
-    setRunSummary(registry, { finalScore: 20, levelReached: 3 });
+    setRunSummary(registry, { finalScore: 20, levelReached: 3, deathCause: null });
 
     expect(
       setRunSummary(registry, {
         finalScore: Number.NaN,
         levelReached: Number.NEGATIVE_INFINITY,
       })
-    ).toEqual({ finalScore: 20, levelReached: 3 });
-    expect(getRunSummary(registry)).toEqual({ finalScore: 20, levelReached: 3 });
+    ).toEqual({ finalScore: 20, levelReached: 3, deathCause: null });
+    expect(getRunSummary(registry)).toEqual({ finalScore: 20, levelReached: 3, deathCause: null });
   });
 
   test('run summary score is a bounded nonnegative integer', () => {
     const registry = createRegistry();
-    setRunSummary(registry, { finalScore: Number.MAX_VALUE, levelReached: 3 });
+    setRunSummary(registry, { finalScore: Number.MAX_VALUE, levelReached: 3, deathCause: null });
     expect(getRunSummary(registry).finalScore).toBe(Number.MAX_SAFE_INTEGER);
 
     setRunSummary(registry, { finalScore: -10.8 });

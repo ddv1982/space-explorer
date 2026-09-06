@@ -6,8 +6,7 @@ import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } f
 import { GAME_SCENE_EVENTS } from '../systems/GameSceneEvents';
 import { ensurePlayerTexture } from '../utils/SpriteFactory';
 import { applyGameObjectGlow } from '../utils/renderingCompat';
-
-export type PlayerDamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
+import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
 const NOMINAL_FRAME_MS = 1000 / 60;
 
@@ -44,6 +43,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setDepth(5);
     (this.body as Phaser.Physics.Arcade.Body).setSize(24, 32);
     this.setDrag(PLAYER_CONFIG.drag);
+    this.setMaxVelocity(PLAYER_CONFIG.maxSpeed);
+    (this.body as Phaser.Physics.Arcade.Body).setMaxSpeed(PLAYER_CONFIG.maxSpeed);
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5);
 
@@ -61,16 +62,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.shields = state.currentShields;
   }
 
-  takeDamage(amount: number): PlayerDamageOutcome {
+  takeDamage(context: PlayerDamageContext): PlayerDamageResult {
     if (this.shouldIgnoreDamage()) {
-      return 'ignored';
+      return { outcome: 'ignored', source: context.source, hullDamage: 0 };
     }
 
     if (this.absorbShieldHit()) {
-      return 'absorbed';
+      return { outcome: 'absorbed', source: context.source, hullDamage: 0 };
     }
 
-    return this.applyHullDamage(amount);
+    return this.applyHullDamage(context);
   }
 
   playDeathAnimation(): void {
@@ -97,19 +98,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   getFireDirection(out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
-    return out.set(0, -1).rotate(this.getShotRotation()).normalize();
+    return out.set(0, -1);
   }
 
   getMuzzlePosition(distance: number, out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
-    this.getFireDirection(out).scale(distance);
-    out.x += this.x;
-    out.y += this.y;
-    return out;
-  }
-
-  private getShotRotation(): number {
-    const shotRotationDeadzone = Phaser.Math.DegToRad(1);
-    return Math.abs(this.rotation) < shotRotationDeadzone ? 0 : this.rotation;
+    return out.set(this.x, this.y - distance);
   }
 
   private shouldIgnoreDamage(): boolean {
@@ -127,18 +120,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return true;
   }
 
-  private applyHullDamage(amount: number): PlayerDamageOutcome {
-    this.hp -= amount;
+  private applyHullDamage(context: PlayerDamageContext): PlayerDamageResult {
+    const hullDamage = Math.min(this.hp, context.amount);
+    this.hp -= context.amount;
 
     if (this.hp <= 0) {
       this.hp = 0;
-      this.die();
-      return 'fatal';
+      const result: PlayerFatalResult = { outcome: 'fatal', source: context.source, hullDamage };
+      this.die(result);
+      return result;
     }
 
     this.setInvulnerable(1500);
     this.flashWhite();
-    return 'damaged';
+    return { outcome: 'damaged', source: context.source, hullDamage };
   }
 
   private setInvulnerable(duration: number): void {
@@ -167,7 +162,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  private die(): void {
+  private die(result: PlayerFatalResult): void {
     if (this.deathStarted) {
       return;
     }
@@ -181,7 +176,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.applyDeathVisualState();
     this.disableBodyForDeath();
 
-    this.scene.events.emit(GAME_SCENE_EVENTS.playerDeath);
+    this.scene.events.emit(GAME_SCENE_EVENTS.playerDeath, result);
   }
 
   private applyDeathVisualState(): void {
@@ -208,11 +203,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.updateInvulnerability(delta);
 
-    const movement = this.resolveMovementAcceleration(inputManager);
-    this.applyMovementAcceleration(movement.ax, movement.ay);
-    this.updateRotationFromMovement(movement.ax, delta);
-    this.isMovingUp = movement.isMovingUp;
-    this.emitExhaustIfDue(delta, movement.ax, movement.ay);
+    const horizontal = Number(inputManager.isRight()) - Number(inputManager.isLeft());
+    const vertical = Number(inputManager.isDown()) - Number(inputManager.isUp());
+    const acceleration =
+      horizontal !== 0 && vertical !== 0 ? PLAYER_CONFIG.acceleration * Math.SQRT1_2 : PLAYER_CONFIG.acceleration;
+    const ax = horizontal * acceleration;
+    const ay = vertical * acceleration;
+    this.setAcceleration(ax, ay);
+    this.updateRotationFromMovement(horizontal, delta);
+    this.isMovingUp = vertical < 0;
+    this.emitExhaustIfDue(delta, ax, ay);
   }
 
   private updateInvulnerability(delta: number): void {
@@ -227,35 +227,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  private resolveMovementAcceleration(inputManager: InputManager): {
-    ax: number;
-    ay: number;
-    isMovingUp: boolean;
-  } {
-    let ax = 0;
-    let ay = 0;
-
-    if (inputManager.isLeft()) ax -= PLAYER_CONFIG.speed;
-    if (inputManager.isRight()) ax += PLAYER_CONFIG.speed;
-    if (inputManager.isUp()) ay -= PLAYER_CONFIG.speed;
-    if (inputManager.isDown()) ay += PLAYER_CONFIG.speed;
-
-    return {
-      ax,
-      ay,
-      isMovingUp: inputManager.isUp(),
-    };
-  }
-
-  private applyMovementAcceleration(ax: number, ay: number): void {
-    this.setAcceleration(ax, ay);
-
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.maxVelocity.set(PLAYER_CONFIG.speed);
-  }
-
-  private updateRotationFromMovement(ax: number, delta: number): void {
-    const targetRotation = (ax / PLAYER_CONFIG.speed) * Phaser.Math.DegToRad(15);
+  private updateRotationFromMovement(horizontal: number, delta: number): void {
+    const targetRotation = horizontal * Phaser.Math.DegToRad(15);
     this.rotation = Phaser.Math.Linear(this.rotation, targetRotation, getFrameDampingAlpha(0.1, delta));
   }
 

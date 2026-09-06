@@ -1,4 +1,4 @@
-import { expect, openMenu, snapshot, test, waitForScene } from './fixtures';
+import { expect, openMenu, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
 
 async function namedActions(page: import('@playwright/test').Page, label: string): Promise<string[]> {
   return page
@@ -127,5 +127,72 @@ test('announces intermission and terminal summaries with semantic continuation',
   await activateNamedAction(page, 'Continue to command deck');
   await waitForScene(page, 'Menu');
 
+  assertNoBrowserErrors();
+});
+
+async function readPersistedRun(page: Page) {
+  return page.evaluate(() => {
+    const recorder = window.__SPACE_EXPLORER_BROWSER_HARNESS__?.gameFeel;
+    if (!recorder) throw new Error('Missing recorder');
+    const recording = recorder.start({
+      scenario: 'intermission native keyboard ownership',
+      source: 'automation',
+      buildSha: 'test',
+      deviceLabel: 'browser',
+      maxFrames: 2,
+    });
+    recorder.stop();
+    return recording?.environment?.startingPersistedPlayerState;
+  });
+}
+
+async function flushKeyboardQueue(page: Page): Promise<void> {
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  );
+}
+
+test('native intermission buttons purchase only their named upgrade and continue once', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  await openMenu(page);
+  await startNewRun(page);
+  await page.evaluate(async () => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.showPlanetIntermission(1));
+  await waitForScene(page, 'PlanetIntermission');
+  expect(await readPersistedRun(page)).toMatchObject({
+    level: 1,
+    score: 8000,
+    upgrades: { hp: 0, damage: 0, fireRate: 0 },
+  });
+
+  await activateNamedAction(page, 'Buy WEAPONS');
+  await flushKeyboardQueue(page);
+  expect(await readPersistedRun(page)).toMatchObject({
+    level: 1,
+    score: 7200,
+    upgrades: { hp: 0, damage: 1, fireRate: 0 },
+  });
+  await page.getByRole('button', { name: 'Buy HULL ARMOR', exact: true }).focus();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Continue to Tideglass Shallows', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Buy HULL ARMOR', exact: true }).focus();
+  await page.keyboard.press('Space');
+  await flushKeyboardQueue(page);
+  expect(await readPersistedRun(page)).toMatchObject({
+    level: 1,
+    score: 6700,
+    upgrades: { hp: 1, damage: 1, fireRate: 0 },
+  });
+
+  await activateNamedAction(page, 'Continue to Tideglass Shallows');
+  await waitForScene(page, 'Game');
+  await flushKeyboardQueue(page);
+  expect(await readPersistedRun(page)).toMatchObject({
+    level: 2,
+    score: 6700,
+    upgrades: { hp: 1, damage: 1, fireRate: 0 },
+  });
+  await expect(page.locator('nav[aria-label="Planet intermission"]')).toHaveCount(0);
   assertNoBrowserErrors();
 });

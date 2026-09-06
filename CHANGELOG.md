@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.0] - 2026-09-06
+
+### Added
+- Added direct fresh retry, fatal-cause summaries, and an existing score or progress target for the next run.
+- Added bounded development recording and reproducible controls, collision, hazard, and campaign checks.
+
+### Changed
+- Tuned acceleration and braking, capped total movement speed, and kept firing on the upward centerline.
+- Separated shield absorption from hull-hit feedback.
+- Made flare warnings visible and added a lower escape region.
+- Tuned introductions and recovery across all ten levels, with about 44 seconds added across eight boss approaches.
+- Aligned Diver, Gunship, and Sower materials while preserving their geometry.
+
+### Fixed
+- Prepared the first projectile texture and physics object before firing.
+- Preserved brief pause presses and the final reward after fatal contact.
+- Prevented duplicate life loss, duplicate native upgrade purchases, and blocked Space activation.
+- Restored CI failure propagation and declared the existing player artwork as the browser icon.
+
+### Quality
+- Preserved saves, settings, the campaign roster, damage-only difficulty, and existing bundle and performance limits.
+- Added explicit isolation and cleanup for development-only beam fixtures while preserving full lifetime and HP assertions.
+
 ## [1.19.0] - 2026-09-06
 
 ### Added

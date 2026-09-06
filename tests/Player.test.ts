@@ -5,6 +5,7 @@ mockPhaserModule();
 
 const { Player } = await import('../src/entities/Player');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
+const { PLAYER_CONFIG } = await import('../src/config/playerConfig');
 type PlayerInstance = InstanceType<typeof Player>;
 
 describe('Player', () => {
@@ -23,9 +24,9 @@ describe('Player', () => {
     (player as unknown as Record<string, unknown>).flashShield = flashShield;
     (player as unknown as Record<string, unknown>).die = die;
 
-    const outcome = player.takeDamage(3);
+    const outcome = player.takeDamage({ amount: 3, source: 'bomb' });
 
-    expect(outcome).toBe('absorbed');
+    expect(outcome).toEqual({ outcome: 'absorbed', source: 'bomb', hullDamage: 0 });
     expect(player.shields).toBe(1);
     expect(player.hp).toBe(5);
     expect(setInvulnerable).toHaveBeenCalledWith(800);
@@ -36,7 +37,6 @@ describe('Player', () => {
   test('update emits playerExhaust when exhaust timer elapses and movement is active', () => {
     const emit = mock();
     const setAcceleration = mock();
-    const maxVelocitySet = mock();
 
     const player = Object.create(Player.prototype) as PlayerInstance;
     player.isAlive = true;
@@ -44,7 +44,6 @@ describe('Player', () => {
     player.y = 200;
     player.rotation = 0;
     player.scene = { events: { emit } } as never;
-    player.body = { maxVelocity: { set: maxVelocitySet } } as never;
     player.setAcceleration = setAcceleration as never;
     (player as unknown as Record<string, unknown>).exhaustTimer = 0;
     (player as unknown as Record<string, unknown>).invulnerable = false;
@@ -58,10 +57,33 @@ describe('Player', () => {
 
     player.update(inputManager as never, 1000 / 60);
 
-    expect(setAcceleration).toHaveBeenCalled();
-    expect(maxVelocitySet).toHaveBeenCalled();
+    expect(setAcceleration).toHaveBeenCalledWith(
+      PLAYER_CONFIG.acceleration * Math.SQRT1_2,
+      -PLAYER_CONFIG.acceleration * Math.SQRT1_2
+    );
     expect(player.isMovingUp).toBe(true);
     expect(emit).toHaveBeenCalledWith(GAME_SCENE_EVENTS.playerExhaust, 100, 220, 1);
+  });
+
+  test('opposing inputs cancel and each direction is consumed once', () => {
+    const player = Object.create(Player.prototype) as PlayerInstance;
+    player.isAlive = true;
+    player.rotation = 0;
+    player.scene = { events: { emit: mock() } } as never;
+    const setAcceleration = mock();
+    player.setAcceleration = setAcceleration as never;
+    const input = {
+      isLeft: mock(() => true),
+      isRight: mock(() => true),
+      isUp: mock(() => true),
+      isDown: mock(() => true),
+    };
+
+    player.update(input as never, 1000 / 60);
+
+    expect(setAcceleration).toHaveBeenCalledWith(0, 0);
+    expect(player.isMovingUp).toBe(false);
+    for (const direction of Object.values(input)) expect(direction).toHaveBeenCalledTimes(1);
   });
 
   test('rotation damping is equivalent across frame rates and bounded for long deltas', () => {
@@ -70,7 +92,6 @@ describe('Player', () => {
       player.isAlive = true;
       player.rotation = 0;
       player.scene = { events: { emit: mock() } } as never;
-      player.body = { maxVelocity: { set: mock() } } as never;
       player.setAcceleration = mock() as never;
       (player as unknown as Record<string, unknown>).exhaustTimer = 10000;
       (player as unknown as Record<string, unknown>).invulnerable = false;

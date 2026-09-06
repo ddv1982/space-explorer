@@ -1,6 +1,7 @@
 export const PLAYER_CONFIG = {
-  speed: 800,
-  drag: 400,
+  acceleration: 3200,
+  maxSpeed: 480,
+  drag: 4000,
   baseMaxHp: 5,
   // The campaign has no reserve-life upgrades, so this is also the persisted-state maximum.
   startingLives: 3,

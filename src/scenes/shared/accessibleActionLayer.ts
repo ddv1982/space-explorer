@@ -41,6 +41,20 @@ function actionDescriptionId(name: string): string {
   return `${LAYER_ID}-${encodeURIComponent(name)}-description`;
 }
 
+function createActionRoot(documentRef: Document): HTMLElement {
+  const root = documentRef.createElement('nav');
+  root.id = LAYER_ID;
+  root.className = 'sr-only-actions';
+
+  const keepNativeActionKeys = (event: KeyboardEvent): void => {
+    if (event.code === 'Enter' || event.code === 'Space' || event.code === 'Tab') event.stopPropagation();
+  };
+  root.addEventListener('keydown', keepNativeActionKeys);
+  root.addEventListener('keyup', keepNativeActionKeys);
+
+  return root;
+}
+
 export function mountAccessibleActionLayer(options: AccessibleActionLayerOptions): AccessibleActionLayerHandle {
   const documentRef = globalThis.document;
   if (!documentRef?.body) {
@@ -58,9 +72,7 @@ export function mountAccessibleActionLayer(options: AccessibleActionLayerOptions
   }
   existing?.remove();
 
-  const root = documentRef.createElement('nav');
-  root.id = LAYER_ID;
-  root.className = 'sr-only-actions';
+  const root = createActionRoot(documentRef);
 
   const summary = documentRef.createElement('p');
   summary.id = SUMMARY_ID;

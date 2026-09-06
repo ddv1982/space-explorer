@@ -174,8 +174,16 @@ export class PlanetIntermissionInteractionController {
     ];
 
     for (const handler of handlers) {
-      this.scene.input.keyboard?.on(handler.event, handler.callback);
-      this.keyboardEventHandlers.push(handler);
+      const callback = (event?: KeyboardEvent): void => {
+        const target = event?.target;
+        if (target && target instanceof Element) {
+          if (target.closest('input, select, textarea, [contenteditable="true"]')) return;
+          if (handler.event !== 'keydown-ESC' && target.closest('button')) return;
+        }
+        handler.callback(event);
+      };
+      this.scene.input.keyboard?.on(handler.event, callback);
+      this.keyboardEventHandlers.push({ event: handler.event, callback });
     }
   }
 

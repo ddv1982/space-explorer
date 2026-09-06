@@ -1,5 +1,10 @@
 import { defineConfig } from '@playwright/test';
 
+const evidencePort = Number(process.env.GAME_FEEL_EVIDENCE_PORT ?? 4173);
+if (!Number.isInteger(evidencePort) || evidencePort < 1024 || evidencePort > 65535)
+  throw new Error('Invalid GAME_FEEL_EVIDENCE_PORT');
+const baseURL = `http://127.0.0.1:${evidencePort}`;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -14,7 +19,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL,
     browserName: 'chromium',
     trace: 'retain-on-failure',
     launchOptions: process.env.CI
@@ -25,7 +30,30 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'chromium-portrait-polish',
+      testMatch: ['**/playerControls.spec.ts', '**/directRetry.spec.ts', '**/combatPolish.spec.ts'],
+      use: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
+    },
+    {
+      name: 'chromium-desktop-game-feel',
+      testMatch: '**/gameFeel.evidence.spec.ts',
+      use: { viewport: { width: 1280, height: 720 } },
+    },
+    {
+      name: 'chromium-mobile-game-feel',
+      testMatch: '**/gameFeel.evidence.spec.ts',
+      grepInvert: /recording overhead/,
+      use: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true },
+    },
+    {
+      name: 'chromium-portrait-game-feel',
+      testMatch: '**/gameFeel.evidence.spec.ts',
+      grep: /records delivered controls/,
+      use: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
+    },
+    {
       name: 'chromium-desktop',
+      grepInvert: /recording overhead/,
       testMatch: [
         '**/smoke.spec.ts',
         '**/cinematic.spec.ts',
@@ -34,11 +62,17 @@ export default defineConfig({
         '**/accessibleActions.spec.ts',
         '**/saveSlotConcurrency.spec.ts',
         '**/picketTurrets.spec.ts',
+        '**/firstShot.spec.ts',
+        '**/playerControls.spec.ts',
+        '**/directRetry.spec.ts',
+        '**/combatPolish.spec.ts',
+        '**/gameFeel.evidence.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
     },
     {
       name: 'chromium-mobile',
+      grepInvert: /recording overhead/,
       testMatch: [
         '**/smoke.spec.ts',
         '**/interaction.spec.ts',
@@ -47,6 +81,11 @@ export default defineConfig({
         '**/proceduralBackground.spec.ts',
         '**/cinematic.spec.ts',
         '**/picketTurrets.spec.ts',
+        '**/firstShot.spec.ts',
+        '**/playerControls.spec.ts',
+        '**/directRetry.spec.ts',
+        '**/combatPolish.spec.ts',
+        '**/gameFeel.evidence.spec.ts',
       ],
       use: {
         viewport: { width: 844, height: 390 },
@@ -91,8 +130,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'bun run dev --host 127.0.0.1 --port 4173',
-    url: 'http://127.0.0.1:4173',
+    command: `bun run dev --host 127.0.0.1 --port ${evidencePort} --strictPort`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
   },
 });

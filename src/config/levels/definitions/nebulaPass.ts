@@ -41,6 +41,10 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       endProgress: 0.16,
       phase: 'intro',
       summary: 'Sparse scouts arrive on a slow cadence through low glass fog.',
+      enemyFocus: [
+        { type: 'scout', weight: 3 },
+        { type: 'diver', weight: 1 },
+      ],
       musicIntensity: 0.36,
       visualModifiers: {
         atmosphereAlpha: 0.92,
@@ -57,22 +61,22 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       startProgress: 0.16,
       endProgress: 0.36,
       phase: 'build',
-      summary:
-        'Ambush packets and the first wormhole rings arrive telegraphed, training pre-positioning on a slow cadence.',
+      summary: 'Read the first wormhole ring alone, then face the warned dodger line before later ambush combinations.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
       hazardEvents: [
-        { type: 'nebula-ambush', cadenceMs: 2600, intensity: 0.42 },
         {
           type: 'wormhole-spawn',
           cadenceMs: 3600,
           intensity: 0.4,
-          enemyTypes: ['scout', 'diver', 'dodger'],
+          enemyTypes: ['scout'],
           notes: 'Headline debut: a shrinking ring telegraph first, then a small pack materializes mid-screen.',
         },
       ],
       waves: [
         {
           id: 'l2-dodger-line-debut',
-          atMs: 4200,
+          atMs: 7800,
           formation: 'line',
           type: 'dodger',
           count: 2,

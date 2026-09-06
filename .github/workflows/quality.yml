@@ -73,6 +73,8 @@ jobs:
             command: bunx playwright test --project=chromium-mobile --shard=1/2
           - name: mobile functional 2
             command: bunx playwright test --project=chromium-mobile --shard=2/2
+          - name: portrait gameplay polish
+            command: bunx playwright test --project=chromium-portrait-polish
           - name: desktop visual
             command: bunx playwright test --project=chromium-desktop-visual
           - name: mobile visual
@@ -128,6 +130,7 @@ jobs:
 
       - name: Run normal threshold condition
         id: normal
+        shell: bash
         run: bun run test:e2e:performance:gate 2>&1 | tee performance-gate-normal.log
 
       - name: Upload normal threshold metrics

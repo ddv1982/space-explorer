@@ -1,0 +1,33 @@
+{
+  "mode": "normal",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+    "hardwareConcurrency": 10,
+    "deviceMemory": 16,
+    "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "signal": "workCost.update.p95Ms",
+  "thresholdMs": 5,
+  "sampleCount": 10,
+  "warmupFrames": 2,
+  "replicateCount": 5,
+  "syntheticUpdateWorkMs": 0,
+  "updateP95": {
+    "values": [
+      0.30000001192092896,
+      0.30000001192092896,
+      0.29999998211860657,
+      0.29999998211860657,
+      0.29999998211860657
+    ],
+    "min": 0.29999998211860657,
+    "max": 0.30000001192092896,
+    "median": 0.29999998211860657,
+    "mad": 0,
+    "coefficientOfVariation": 4.866698963344431e-08
+  },
+  "thresholdFailureCount": 0,
+  "maxUpdateP95Ms": 0.30000001192092896,
+  "buildSha": "fccb176a82542285807739f786a8fe661ccfb8d2-dirty",
+  "command": "GAME_FEEL_EVIDENCE_PORT=4180 bun run test:e2e:performance:gate"
+}

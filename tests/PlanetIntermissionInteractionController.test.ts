@@ -298,6 +298,41 @@ describe('PlanetIntermissionInteractionController', () => {
     expect(harness.purchases).toEqual(['upgrade-0']);
   });
 
+  test('native controls own Enter, Space, Tab and arrow keys without activating or moving canvas focus', () => {
+    class NativeButton extends EventTarget {
+      closest(selector: string): this | null {
+        return selector === 'button' ? this : null;
+      }
+    }
+    const elementDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'Element');
+    Object.defineProperty(globalThis, 'Element', { configurable: true, value: NativeButton });
+    try {
+      const harness = createControllerHarness([true, true]);
+      harness.controller.initialize();
+      const preventDefault = mock();
+      const target = new NativeButton();
+      for (const name of ['keydown-ENTER', 'keydown-SPACE', 'keydown-TAB', 'keydown-ARROW_RIGHT']) {
+        triggerKeyboardEvent(harness.keyboardHandlers, name, { target, preventDefault });
+      }
+      expect(harness.purchases).toEqual([]);
+      expect(harness.controller.isFocusedButton(0)).toBe(true);
+      expect(preventDefault).not.toHaveBeenCalled();
+      triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-ESC', { target });
+      expect(harness.continueCalls).toBe(1);
+
+      triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-TAB', { preventDefault });
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      expect(harness.controller.isFocusedButton(1)).toBe(true);
+      triggerKeyboardEvent(harness.keyboardHandlers, 'keydown-SPACE');
+      expect(harness.purchases).toEqual(['upgrade-1']);
+      harness.controller.destroy();
+      for (const callbacks of harness.keyboardHandlers.values()) expect(callbacks).toHaveLength(0);
+    } finally {
+      if (elementDescriptor) Object.defineProperty(globalThis, 'Element', elementDescriptor);
+      else Reflect.deleteProperty(globalThis, 'Element');
+    }
+  });
+
   test('hover and pointer movement update cursor for purchasable/disabled/outside states', () => {
     const harness = createControllerHarness([true, false]);
 
