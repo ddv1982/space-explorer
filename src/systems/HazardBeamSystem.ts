@@ -31,15 +31,18 @@ export class HazardBeamSystem {
     const fromLeft = Phaser.Math.Between(0, 1) === 0;
     const thickness = 26 + intensity * 14;
     const speed = 150 + intensity * 110;
-    const startX = fromLeft ? viewport.left - 30 : viewport.right + 30;
+    const startX = fromLeft ? viewport.left + thickness / 2 : viewport.right - thickness / 2;
     const travel = viewport.width + 60;
     const activeMs = (travel / speed) * 1000 + 200;
+    const escapeHeight = Math.max(100, viewport.height * 0.22);
+    const beamTop = viewport.top - 30;
+    const beamBottom = viewport.bottom - escapeHeight;
 
     this.launchBeam({
       x: startX,
-      y: viewport.centerY,
+      y: (beamTop + beamBottom) / 2,
       width: thickness,
-      height: viewport.height + 60,
+      height: beamBottom - beamTop,
       tint: SOLAR_FLARE_TINT,
       telegraphMs: SOLAR_FLARE_TELEGRAPH_MS,
       activeMs,

@@ -203,3 +203,13 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 - Save slots clamp dynamically to `getTotalLevels()`; no migration needed.
 - Enemy base stats stay global in `constants.ts` (new types added there); no per-level stat overrides.
 - No new player weapons or input mappings in this overhaul (Surge pulse is automatic).
+
+## 6. Play-feel tuning, September 2026
+
+The concept sheet above describes campaign intent. Current authored timing is inspectable with `bun scripts/analyzeEncounterRhythm.ts`; implementation decisions and measurement limits are recorded in `docs/qa/encounter-rhythm.md`.
+
+The first pilot keeps Aurora's 12.22s Blue Quiet and gives it one warned right-side scout column, with single-scout random arrivals. Leaving the 2.5s chain during recovery remains a valid choice. Ember's existing health drop moves out of its storm peak into the boss approach, following the center shield. Its boss trigger moves from 0.72 to 0.78; the preceding sections retain their absolute timing.
+
+Debris Gauntlet teaches the flare before recurring debris and teaches lattice before cover begins. The siege still remixes flare, lattice, and debris, with fewer simultaneous emissions and time for beam expiry before the approach. Its boss trigger moves from 0.70 to 0.742. Both pilot approaches provide more than 7.70s between the shield spawn and boss arrival, enough for deliberate interception near midfield on an 844px portrait viewport. Collection through surviving enemies still needs playtest evidence.
+
+Solar flares leave a visible bottom escape lane of at least 100px or 22% of viewport height. The previous full-height sweep forced a collision somewhere across the screen. Lattice vertical beams still reach the bottom, so players must read their gap or outside lanes. This is a gameplay geometry correction; it does not change damage, pause clocks, quality tiers, or artwork collision sizes.

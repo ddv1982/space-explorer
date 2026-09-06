@@ -45,7 +45,7 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
     phase2SpiralTurnRate: 80,
     phase2BulletSpeedScale: 0.98,
   },
-  bossTriggerProgress: 0.72,
+  bossTriggerProgress: 0.78,
   asteroidInterval: 3900,
   sections: [
     {
@@ -169,15 +169,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
           notes: 'Mid-boss elite wave: a warned gunship column rehearses boss discipline at the heat front.',
         },
       ],
-      recoveryDrops: [
-        {
-          id: 'l3-health-heat-front',
-          triggerProgress: 0.55,
-          type: 'health',
-          lane: 'center',
-          notes: 'Relief beat: a breather to stabilize after the storm front peaks.',
-        },
-      ],
       musicIntensity: 0.88,
       visualModifiers: {
         atmosphereAlpha: 1.12,
@@ -193,18 +184,28 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       id: 'foundry-gate',
       label: 'Guardian Rail',
       startProgress: 0.7,
-      endProgress: 0.72,
+      endProgress: 0.78,
       phase: 'boss-approach',
-      summary: 'The monsoon hushes for a breath before the Pyre Herald channels the storms.',
-      spawnRateMultiplier: 0.9,
+      summary:
+        'Track the center shield and following health drop while clearing single scouts before the Herald arrives.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 5200,
       recoveryDrops: [
         {
           id: 'l3-shield-preboss',
-          triggerProgress: 0.5,
+          triggerProgress: 0.02,
           type: 'shield',
           lane: 'center',
-          notes: 'Relief beat: a pre-boss breather shield so pilots stabilize at the gate.',
+          notes: 'Recovery Beat: intercept the shield near midfield before boss arrival.',
+        },
+        {
+          id: 'l3-health-heat-front',
+          triggerProgress: 0.18,
+          type: 'health',
+          lane: 'center',
+          notes: 'Recovery Beat: the existing heat-front health now follows the shield outside recurring storm spawns.',
         },
       ],
       musicIntensity: 0.8,
