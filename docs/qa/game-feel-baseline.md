@@ -49,3 +49,11 @@ Five interleaved recording-off and recording-on samples under the normal local l
 An earlier run with the CI-style browser launcher on this Mac produced update p95 outliers around 400 to 500 ms in both conditions. Repeating the comparison with the normal local launcher removed those outliers. Both reports are retained. This is evidence of a launch-environment difference, not a reason to relax the existing release threshold. Hardware frame delivery and physical input latency remain unmeasured.
 
 Reproduce the focused evidence with `bun run test:e2e:game-feel`. JSON exports and screenshots are written under `output/game-feel/` and attached to the Playwright test results. The dedicated script uses port 4180. Set `GAME_FEEL_EVIDENCE_PORT` when running other Playwright commands against a separate checkout, so they do not reuse another checkout's development server.
+
+## Follow-up defects found during verification
+
+The existing CI performance job reported success despite a normal-condition failure. Its `tee` pipeline did not propagate the test's exit status under the default GitHub shell. The raw normal probes exceeded the threshold. A separate follow-up change must make the job fail correctly; a green badge from that workflow is not proof of this gate. The [affected job log](https://github.com/ddv1982/space-explorer/actions/runs/34003924071/job/101407598430) contains the failed normal condition.
+
+Runtime profiling of the unchanged baseline identified the first-shot stall. `BulletPool.fire` creates the first `Bullet`, which generates its texture and calls canvas `getImageData`. Under the CI-style launcher on this Mac, the first update p95 was 495 ms and the readback itself took 492.7 ms. The default launcher measured 0.4 ms. Both launch modes reported a SwiftShader renderer.
+
+A live experiment precreated only the player-bullet texture before input. Preparation took 449.6 ms, and the subsequent first-shot update p95 was 0.4 ms. This proves that the preparation is on the firing path. It does not identify every lower-level driver cause. The follow-up fix moves this existing work into pool initialization and keeps firing values and texture pixels unchanged.
