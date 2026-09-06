@@ -30,6 +30,11 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'chromium-portrait-polish',
+      testMatch: '**/playerControls.spec.ts',
+      use: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
+    },
+    {
       name: 'chromium-desktop-game-feel',
       testMatch: '**/gameFeel.evidence.spec.ts',
       use: { viewport: { width: 1280, height: 720 } },
@@ -58,6 +63,7 @@ export default defineConfig({
         '**/saveSlotConcurrency.spec.ts',
         '**/picketTurrets.spec.ts',
         '**/firstShot.spec.ts',
+        '**/playerControls.spec.ts',
         '**/gameFeel.evidence.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
@@ -74,6 +80,7 @@ export default defineConfig({
         '**/cinematic.spec.ts',
         '**/picketTurrets.spec.ts',
         '**/firstShot.spec.ts',
+        '**/playerControls.spec.ts',
         '**/gameFeel.evidence.spec.ts',
       ],
       use: {

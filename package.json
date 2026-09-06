@@ -41,6 +41,7 @@
     "entry": [
       "index.html",
       "scripts/**/*.ts",
+      "tests/e2e/playerControlsPhysics.ts",
       "tests/**/*.test.ts"
     ],
     "project": [

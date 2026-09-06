@@ -1,5 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { evidenceRevision, saveBrowserEvidence } from './evidence';
 import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
 
 test('compares real Arcade control profiles at 60 and 120 Hz', async ({ page, assertNoBrowserErrors }) => {
@@ -10,13 +9,7 @@ test('compares real Arcade control profiles at 60 and 120 Hz', async ({ page, as
     const probe: typeof import('./playerControlsPhysics') = await import(modulePath);
     return probe.measurePlayerControls();
   });
-  const directory = join('output', 'player-controls', test.info().project.name);
-  mkdirSync(directory, { recursive: true });
-  writeFileSync(join(directory, 'physics-comparison.json'), JSON.stringify(result, null, 2));
-  await test.info().attach('controls-physics-comparison.json', {
-    body: JSON.stringify(result, null, 2),
-    contentType: 'application/json',
-  });
+  await saveBrowserEvidence(page, 'physics-comparison', result);
   const native = result.filter((item) => item.profile === 'native');
   expect(native).toHaveLength(3);
   for (const item of native) {
@@ -41,15 +34,15 @@ test('keyboard and touch steer diagonally, stop after release, and fire straight
 }) => {
   await openMenu(page);
   await startNewRun(page);
-  await page.evaluate(() => {
+  await page.evaluate((revision) => {
     window.__SPACE_EXPLORER_BROWSER_HARNESS__?.gameFeel.start({
       scenario: 'P1 delivered diagonal movement, release and straight fire',
-      buildSha: 'working-tree',
+      buildSha: revision,
       source: 'automation',
       deviceLabel: 'emulated input',
       maxFrames: 3600,
     });
-  });
+  }, evidenceRevision);
   const touch = isMobile ? await page.context().newCDPSession(page) : null;
   let touchActive = false;
   try {
@@ -120,14 +113,7 @@ test('keyboard and touch steer diagonally, stop after release, and fire straight
     expect(stopped.gameplayMs - first.gameplayMs).toBeLessThanOrEqual(200);
     expect(Math.hypot(stopped.x - first.x, stopped.y - first.y)).toBeLessThanOrEqual(40);
     expect(captured.frames.every((frame) => Math.hypot(frame.velocityX, frame.velocityY) <= 480.01)).toBe(true);
-    const directory = join('output', 'player-controls', test.info().project.name);
-    mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, 'delivered-controls.json'), JSON.stringify(captured, null, 2));
-    await page.screenshot({ path: join(directory, 'controls-gameplay.png') });
-    await test
-      .info()
-      .attach('delivered-controls.json', { body: JSON.stringify(captured, null, 2), contentType: 'application/json' });
-    await test.info().attach('controls-gameplay.png', { body: await page.screenshot(), contentType: 'image/png' });
+    await saveBrowserEvidence(page, 'delivered-controls', captured);
   } finally {
     if (touch) {
       if (touchActive) await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
