@@ -106,13 +106,15 @@ function spawnCollision(combat: Combat, source: Exclude<DamageSource, 'unknown'>
   }
 }
 
-function shieldRingCount(scene: Phaser.Scene): number {
-  return scene.children.list.filter(
-    (child) =>
-      child instanceof Phaser.GameObjects.Image &&
-      child.texture.key === 'particle-ring' &&
-      child.tintTopLeft === 0x44aaff
-  ).length;
+function shieldRingScales(scene: Phaser.Scene): number[] {
+  return scene.children.list
+    .filter(
+      (child): child is Phaser.GameObjects.Image =>
+        child instanceof Phaser.GameObjects.Image &&
+        child.texture.key === 'particle-ring' &&
+        child.tintTopLeft === 0x44aaff
+    )
+    .map((ring) => ring.scaleX);
 }
 
 function stageCollision(
@@ -140,32 +142,49 @@ function stageCollision(
     shields: number;
     playerTint: number;
     blueShieldRings: number;
+    shieldRingScales: number[];
   }>((resolve, reject) => {
+    let settled = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
     const finish = (result: PlayerHitResult | PlayerFatalResult): void => {
+      if (settled) return;
+      settled = true;
       cleanup();
+      const scales = shieldRingScales(combat.scene);
       resolve({
         result,
         beforeHp,
         afterHp: combat.player.hp,
         shields: combat.player.shields,
         playerTint: combat.player.tintTopLeft,
-        blueShieldRings: shieldRingCount(combat.scene),
+        blueShieldRings: scales.length,
+        shieldRingScales: scales,
       });
     };
-    const timeout = setTimeout(() => {
+    const cancel = (): void => {
+      settled = true;
       cleanup();
-      reject(new Error(`No registered collision resolved for ${source}`));
-    }, 5000);
+      reject(new Error(`Scene ended before the ${source} collision resolved`));
+    };
     const cleanup = (): void => {
-      clearTimeout(timeout);
+      if (timeout !== null) clearTimeout(timeout);
       combat.scene.events.off(GAME_SCENE_EVENTS.playerHit, finish);
       combat.scene.events.off(GAME_SCENE_EVENTS.playerDeath, finish);
+      combat.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, cancel);
     };
     combat.scene.events.on(GAME_SCENE_EVENTS.playerHit, finish);
     combat.scene.events.on(GAME_SCENE_EVENTS.playerDeath, finish);
+    combat.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, cancel);
     try {
       spawnCollision(combat, source);
+      if (!settled)
+        timeout = setTimeout(() => {
+          settled = true;
+          cleanup();
+          reject(new Error(`No registered collision resolved for ${source}`));
+        }, 30000);
     } catch (error) {
+      settled = true;
       cleanup();
       reject(error);
     }

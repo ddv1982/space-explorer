@@ -215,6 +215,29 @@ test('delivered eight-direction input escapes overlapping beam danger before act
   assertNoBrowserErrors();
 });
 
+test('minimum-quality shield feedback remains visible without expansion under reduced motion', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.skip(!test.info().project.name.includes('portrait'), 'minimum-width preference coverage');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openMenu(page);
+  const low = page.getByRole('button', { name: 'Set visual quality low', exact: true });
+  await low.focus();
+  await Promise.all([page.waitForEvent('load'), page.keyboard.press('Enter')]);
+  await waitForScene(page, 'Menu');
+  await startNewRun(page);
+  const shield = await page.evaluate(() =>
+    window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageCollision('enemy-bullet', 'shield')
+  );
+  expect(shield.result.outcome).toBe('absorbed');
+  expect(shield.afterHp).toBe(shield.beforeHp);
+  expect(shield.shieldRingScales).toEqual([1]);
+  expect(shield.playerTint).toBe(0x44aaff);
+  await saveBrowserEvidence(page, 'reduced-motion-shield', shield);
+  assertNoBrowserErrors();
+});
+
 test('all ten directly staged levels initialize and reach their natural boss trigger', async ({
   page,
   assertNoBrowserErrors,
