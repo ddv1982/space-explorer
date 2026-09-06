@@ -201,11 +201,41 @@ function combatPolishState(game: Phaser.Game) {
   };
 }
 
+function stageBeamEscapeRoute(game: Phaser.Game) {
+  const combat = requireCombat(game);
+  if (!combat.scene.physics.world.isPaused) throw new Error('Pause before staging the escape route');
+  clearField(combat);
+  combat.beams.spawnSolarFlare(0.8);
+  combat.beams.spawnLaserLattice(0.8);
+  const viewport = getViewportBounds(combat.scene);
+  const beams = combat.beams
+    .getGroup()
+    .getChildren()
+    .filter((value): value is HazardBeam => value instanceof HazardBeam && value.active);
+  const flare = beams.find((beam) => beam.getClearsBullets());
+  const wall = beams.find((beam) => beam.displayHeight > viewport.height);
+  const body = combat.player.body;
+  if (!flare || !wall || !(body instanceof Phaser.Physics.Arcade.Body)) {
+    throw new Error('Escape route requires a flare, a lattice wall, and the player body');
+  }
+  combat.player.spawn(wall.x, viewport.top + viewport.height * 0.68, { hp: combat.player.maxHp });
+  combat.player.shields = 0;
+  return {
+    start: { x: combat.player.x, y: combat.player.y },
+    goal: {
+      x: wall.x + wall.displayWidth / 2 + body.halfWidth + 20,
+      y: flare.y + flare.displayHeight / 2 + body.halfHeight + 4,
+    },
+    hp: combat.player.hp,
+  };
+}
+
 export function createCombatPolishProbes(game: Phaser.Game) {
   return {
     stageCollision: (source: Exclude<DamageSource, 'unknown'>, mode: 'shield' | 'hull' | 'fatal') =>
       stageCollision(game, source, mode),
     combatPolishState: () => combatPolishState(game),
+    stageBeamEscapeRoute: () => stageBeamEscapeRoute(game),
     stageBeamPattern: (pattern: 'flare' | 'lattice') => {
       const combat = requireCombat(game);
       clearField(combat);

@@ -5,7 +5,7 @@ This document describes the scene boundaries, system contracts, and coding rules
 ## Scene Responsibilities
 
 - `BootScene` and `PreloadScene` are thin startup scenes. Keep them focused on bootstrapping and startup handoff.
-- `MenuScene` owns fresh-run setup. It resets persistent player state before starting gameplay.
+- `scenes/shared/startRun.ts` owns fresh-run reset and asset-ready gameplay entry. `MenuScene` and `GameOverScene` invoke it with their own one-shot action guards.
 - `GameScene` is the gameplay orchestrator. It builds the active level, connects systems, reacts to gameplay events, and is the only scene that decides when combat transitions to `PlanetIntermission` or `GameOver`.
 - `PlanetIntermissionScene` owns between-level upgrades and the handoff into the next gameplay scene or `Victory`.
 - `GameOverScene` and `VictoryScene` are terminal presentation scenes. They read the stored run summary and should not reconstruct gameplay state themselves.
@@ -28,6 +28,8 @@ This document describes the scene boundaries, system contracts, and coding rules
 - Keep terminal transition state centralized through `TERMINAL_TRANSITIONS` and `TerminalTransitionState` so combat shutdown rules stay consistent.
 - `GameScene` currently treats terminal transitions as effectively one-way once they are committed, with one deliberate exception: a pending level-complete handoff can still be canceled if a fatal hit needs to take precedence first. Preserve that guard/precedence rule before adding new end-of-level or death behavior.
 - Optional cleanup and feedback that should not block scene completion should stay wrapped in best-effort helpers, matching the existing `runBestEffort` usage in gameplay and collision code.
+- Collision handlers supply a typed damage source before `Player.takeDamage` resolves the hit. The synchronous `player-death` event carries the fatal result and remains the authoritative flow transition. Shield and hull feedback share attribution without changing shield absorption or difficulty scaling.
+- `RunSummaryData.deathCause` is nullable for legacy or nonfatal summaries. GameOver formats the stored source and never guesses a cause from nearby objects.
 
 ## Shared Player State and Run Summary Contracts
 

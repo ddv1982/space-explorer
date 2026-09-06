@@ -1,6 +1,20 @@
 import { evidenceRevision, saveBrowserEvidence } from './evidence';
 import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
 
+test('brief Escape presses pause once even when released between gameplay updates', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  await openMenu(page);
+  await startNewRun(page);
+  for (const paused of [true, false, true, false]) {
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(paused);
+  }
+  await saveBrowserEvidence(page, 'brief-pause-input', await snapshot(page));
+  assertNoBrowserErrors();
+});
+
 test('compares real Arcade control profiles at 60 and 120 Hz', async ({ page, assertNoBrowserErrors }) => {
   await page.route('**/controls-probe', (route) => route.fulfill({ contentType: 'text/html', body: '<html></html>' }));
   await page.goto('/controls-probe');

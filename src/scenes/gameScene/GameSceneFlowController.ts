@@ -146,6 +146,9 @@ export class GameSceneFlowController {
 
     this.gameOverSceneStarted = true;
     this.clearGameOverTransitionTimers();
+    const finalScore = context.scoreManager.getScore();
+    context.runBestEffort(() => saveScoreToState(context.registry, finalScore));
+    context.runBestEffort(() => setRunSummary(context.registry, { finalScore }));
     context.startScene('GameOver');
   }
 

@@ -98,6 +98,7 @@ test('real pooled collisions distinguish shield, hull and every fatal cause thro
     expect(fatal.result).toEqual({ outcome: 'fatal', source, hullDamage: 0.25 });
     await waitForScene(page, 'GameOver');
     expect((await state(page)).summary.deathCause).toBe(source);
+    if (source === 'enemy-contact') expect((await state(page)).summary.finalScore).toBeGreaterThan(0);
     expect((await snapshot(page)).texts.some((text) => text.text === label)).toBe(true);
     const recording = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.read());
     expect(
@@ -158,6 +159,58 @@ test('authored beam escape regions stay safe and telegraphs survive pause', asyn
     await expect.poll(async () => (await state(page)).beams.length, { timeout: 60000 }).toBe(0);
     expect((await state(page)).player?.hp).toBe(staged.hp);
     await saveBrowserEvidence(page, `${pattern}-completed-escape-region`, { staged, completed: await state(page) });
+  }
+  assertNoBrowserErrors();
+});
+
+test('delivered eight-direction input escapes overlapping beam danger before activation', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(120000);
+  await openMenu(page);
+  await startNewRun(page);
+  await recordCombat(page);
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await state(page)).paused).toBe(true);
+  const staged = await page.evaluate(() =>
+    window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBeamEscapeRoute()
+  );
+  expect(staged.start.y).toBeLessThan(staged.goal.y);
+  await saveBrowserEvidence(page, 'escape-danger-start', { staged, state: await state(page) });
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await state(page)).paused).toBe(false);
+  const startedAt = (await state(page)).gameplayMs;
+  if (startedAt === null) throw new Error('Missing gameplay clock');
+  await page.waitForFunction((start) => {
+    const now = window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().gameplayMs;
+    return now !== null && now >= start + 250;
+  }, startedAt);
+  try {
+    await page.keyboard.down('ArrowRight');
+    await page.keyboard.down('ArrowDown');
+    await page.waitForFunction(
+      (goal) => (window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().player?.x ?? 0) >= goal,
+      staged.goal.x
+    );
+    await page.keyboard.up('ArrowRight');
+    await page.waitForFunction(
+      (goal) => (window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().player?.y ?? 0) >= goal,
+      staged.goal.y
+    );
+    await page.keyboard.up('ArrowDown');
+    await page.waitForFunction(() => {
+      const beams = window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().beams;
+      return beams.length === 4 && beams.every((beam) => beam.damaging);
+    });
+    const escaped = await state(page);
+    expect(escaped.player?.hp).toBe(staged.hp);
+    const recording = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop());
+    expect(recording?.events.some((event) => event.kind === 'key' && event.code === 'ArrowDown')).toBe(true);
+    await saveBrowserEvidence(page, 'delivered-beam-escape', { staged, escaped, recording });
+  } finally {
+    await page.keyboard.up('ArrowRight');
+    await page.keyboard.up('ArrowDown');
   }
   assertNoBrowserErrors();
 });

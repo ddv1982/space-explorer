@@ -61,11 +61,13 @@ mock.module('../src/utils/layout', () => ({
 const { InputManager } = await import('../src/systems/InputManager');
 
 function createKey() {
-  return { isDown: false };
+  return { isDown: false, timeDown: 0 };
 }
 
 function createScene(pointers: Array<{ id: number; isDown: boolean; downX: number }> = []) {
+  const keys = new Map<number, ReturnType<typeof createKey>>();
   return {
+    keys,
     input: {
       activePointer: { isDown: false },
       manager: {
@@ -78,7 +80,11 @@ function createScene(pointers: Array<{ id: number; isDown: boolean; downX: numbe
           up: createKey(),
           down: createKey(),
         }),
-        addKey: () => createKey(),
+        addKey: (code: number) => {
+          const key = createKey();
+          keys.set(code, key);
+          return key;
+        },
       },
     },
   };
@@ -202,4 +208,26 @@ describe('InputManager mobile movement gating', () => {
     expect(inputManager.isRight()).toBe(true);
     expect(inputManager.isDown()).toBe(true);
   });
+});
+
+test('a brief pause press survives release before the next gameplay update', () => {
+  const scene = createScene();
+  const manager = new InputManager();
+  manager.create(scene as never);
+  const escape = scene.keys.get(27);
+  if (!escape) throw new Error('Escape was not registered');
+  expect(manager.consumePauseToggleRequest()).toBe(false);
+  escape.timeDown = 100;
+  escape.isDown = false;
+  expect(manager.consumePauseToggleRequest()).toBe(true);
+  expect(manager.consumePauseToggleRequest()).toBe(false);
+  escape.timeDown = 200;
+  escape.isDown = true;
+  expect(manager.consumePauseToggleRequest()).toBe(true);
+  expect(manager.consumePauseToggleRequest()).toBe(false);
+  escape.timeDown = 0;
+  escape.isDown = false;
+  expect(manager.consumePauseToggleRequest()).toBe(false);
+  escape.timeDown = 300;
+  expect(manager.consumePauseToggleRequest()).toBe(true);
 });

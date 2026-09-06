@@ -371,3 +371,15 @@ describe('GameSceneFlowController', () => {
     expect(harness.play).not.toHaveBeenCalled();
   });
 });
+
+test('game over includes the contact reward completed after synchronous fatal damage', () => {
+  const harness = createFlowHarness();
+  const controller = new GameSceneFlowController();
+  controller.reset(1);
+  controller.handlePlayerDeath(harness.context, 'enemy-contact');
+  expect(getRunSummary(harness.registry).finalScore).toBe(987);
+  harness.getScore.mockReturnValue(1037);
+  harness.clock.fireNext(1500);
+  expect(getRunSummary(harness.registry)).toEqual({ finalScore: 1037, levelReached: 6, deathCause: 'enemy-contact' });
+  expect(getPlayerState(harness.registry).score).toBe(1037);
+});

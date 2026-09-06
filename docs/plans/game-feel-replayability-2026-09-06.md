@@ -2,6 +2,8 @@
 
 The user authorized this program on 2026-09-06. The comparison build is `fccb176a82542285807739f786a8fe661ccfb8d2`, version 1.19.0.
 
+The user subsequently authorized autonomous implementation of every phase. Human and physical-device observations remain follow-up validation, not implementation blockers. The engineering choices below use code, controlled comparisons, and automated evidence; they do not claim proven enjoyment or retention.
+
 The program preserves the existing ten-level campaign, procedural worlds, cinematic hull direction, and damage-only difficulty settings. Each phase uses evidence from the preceding phase. Human findings remain separate from automated correctness checks.
 
 ## Execute the phases in order
@@ -9,12 +11,14 @@ The program preserves the existing ten-level campaign, procedural worlds, cinema
 | Phase | Scope | Exit evidence | Status |
 | --- | --- | --- | --- |
 | P0 | Local recording, baseline capture, playtest protocol | Technical evidence plus fresh-player observations and three common barriers | Recorder implemented; human observations pending |
-| P1 | Compare movement, braking, directional travel, and bank-directed aiming | Deliberate control on keyboard and physical touch devices | Depends on P0 human baseline |
-| P2 | Distinguish hit outcomes and explain deaths | Players identify damage and a plausible avoidance action | Pending |
-| P3 | Tune Aurora Threshold, Ember Monsoon, and Debris Gauntlet | Purposeful recovery, readable escalation, and feasible safe routes | Pending |
-| P4 | Resolve the three most visible combat-art inconsistencies | Recognition at actual play size without changed geometry | Pending |
-| P5 | Direct retry and useful existing run results | Repeated voluntary-play signal in fresh cohorts | Pending |
-| P6 | Apply proven tuning across the campaign | Sustained campaign and human evidence, plus release checks | Pending |
+| P1 | Compare movement, braking, directional travel, and bank-directed aiming | Deliberate control on keyboard and physical touch devices | Implemented; native Arcade comparison and emulated-input checks pass |
+| P2 | Distinguish hit outcomes and explain deaths | Players identify damage and a plausible avoidance action | Implemented; typed source/outcome and terminal cause, integration checks in progress |
+| P3 | Tune Aurora Threshold, Ember Monsoon, and Debris Gauntlet | Purposeful recovery, readable escalation, and feasible safe routes | Implemented; visible flare warnings, escape routes, and purposeful approaches |
+| P4 | Resolve the three most visible combat-art inconsistencies | Recognition at actual play size without changed geometry | Implemented; Diver, Gunship, and Sower compared at native scale |
+| P5 | Direct retry and useful existing run results | Repeated voluntary-play signal in fresh cohorts | Implemented; reset, settings, input, and ten-retry checks pass |
+| P6 | Apply proven tuning across the campaign | Sustained campaign and human evidence, plus release checks | Implemented; all-ten-level audit and tuning, final integration checks in progress |
+
+Implementation does not mark the human exit evidence as collected. Read [control measurements](../qa/player-controls-tuning.md), [encounter decisions and campaign matrix](../qa/encounter-rhythm.md), and [retry verification](../qa/direct-retry.md) for the technical evidence and its limits.
 
 ## Preserve the evidence boundaries
 

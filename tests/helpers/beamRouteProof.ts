@@ -1,9 +1,7 @@
 import type { HazardBeamLaunchConfig } from '../../src/entities/HazardBeam';
+import { PLAYER_CONFIG } from '../../src/config/playerConfig';
 
-// Selected P1 profile. Keep the integration assertion in sync with PLAYER_CONFIG.
-const SPEED = 480;
-const ACCELERATION = 3200;
-const BRAKING = 4000;
+const { maxSpeed: SPEED, acceleration: ACCELERATION, drag: BRAKING } = PLAYER_CONFIG;
 const REACTION_MS = 250;
 const PLAYER_HALF_WIDTH = 12;
 const PLAYER_HALF_HEIGHT = 16;
