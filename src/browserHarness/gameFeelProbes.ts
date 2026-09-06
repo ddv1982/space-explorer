@@ -16,6 +16,9 @@ const CONTROL_CODES = new Set([
   'KeyD',
   'Space',
   'Escape',
+  'Enter',
+  'KeyR',
+  'KeyM',
 ]);
 
 class GameFeelProbe {

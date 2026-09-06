@@ -148,6 +148,37 @@ test('records delivered controls, applied movement, fire attempts and a separate
   assertNoBrowserErrors();
 });
 
+test('records native run activation and retry shortcuts without unrelated keys', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(120_000);
+  await openMenu(page);
+  await startRecording(page);
+  await page.getByRole('button', { name: 'New run', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await waitForScene(page, 'Game');
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.route('GameOver'));
+  await waitForScene(page, 'GameOver');
+  await page.keyboard.press('r');
+  await waitForScene(page, 'Game');
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.route('GameOver'));
+  await waitForScene(page, 'GameOver');
+  await page.keyboard.press('m');
+  await waitForScene(page, 'Menu');
+  await page.keyboard.press('z');
+  const result = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop());
+  if (!result) throw new Error('Missing keyboard activation recording');
+  const keys = result.events.filter((event) => event.kind === 'key');
+  for (const code of ['Enter', 'KeyR', 'KeyM']) {
+    expect(keys.filter((event) => event.code === code && event.action === 'down')).toHaveLength(1);
+    expect(keys.filter((event) => event.code === code && event.action === 'up')).toHaveLength(1);
+  }
+  expect(keys.some((event) => event.code === 'KeyZ')).toBe(false);
+  await saveEvidence(page, 'native-run-activations', result);
+  assertNoBrowserErrors();
+});
+
 test('cleans up across caps, clear, scene restarts and game destruction', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(120_000);
   await openMenu(page);
