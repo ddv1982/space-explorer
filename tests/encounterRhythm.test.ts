@@ -30,17 +30,29 @@ describe('authored encounter timing', () => {
     }
   });
 
-  test.each([3, 6])('level %i shield can drift to portrait midfield before the boss arrives', (number) => {
-    const config = level(number);
-    const approach = config.sections.find((section) => section.phase === 'boss-approach');
-    if (!approach) throw new Error(`Missing approach in ${config.name}`);
-    const audit = analyzeEncounterRhythm(config).sections.find((section) => section.id === approach.id);
-    const shield = audit?.drops.find((drop) => drop.type === 'shield');
-    expect(shield).toBeDefined();
-    expect(shield?.beforeBossMs).toBeGreaterThan((40 / 60) * 1000 + ((844 * 0.5) / 60) * 1000);
-    expect(approach.hazardEvents ?? []).toHaveLength(0);
-    expect(approach.enemyFocus).toEqual([{ type: 'scout', weight: 1 }]);
-    expect(approach.encounterSizeOverride).toEqual({ min: 1, max: 1 });
+  test.each([3, 4, 5, 6, 7, 8, 9, 10])(
+    'level %i recovery drop can drift to portrait midfield before the boss arrives',
+    (number) => {
+      const config = level(number);
+      const approach = config.sections.find((section) => section.phase === 'boss-approach');
+      if (!approach) throw new Error(`Missing approach in ${config.name}`);
+      const audit = analyzeEncounterRhythm(config).sections.find((section) => section.id === approach.id);
+      const shield = audit?.drops[0];
+      expect(shield).toBeDefined();
+      expect(shield?.beforeBossMs).toBeGreaterThan((40 / 60) * 1000 + ((844 * 0.5) / 60) * 1000);
+      expect(approach.hazardEvents ?? []).toHaveLength(0);
+      expect(approach.enemyFocus).toEqual([{ type: 'scout', weight: 1 }]);
+      expect(approach.encounterSizeOverride).toEqual({ min: 1, max: 1 });
+    }
+  );
+
+  test('Tideglass teaches the portal with scouts before the dodger line', () => {
+    expect(level(2).sections[0].enemyFocus?.map((enemy) => enemy.type)).toEqual(['scout', 'diver']);
+    const debut = level(2).sections.find((section) => section.id === 'reef-blinks');
+    expect(debut?.hazardEvents?.map((hazard) => hazard.type)).toEqual(['wormhole-spawn']);
+    expect(debut?.hazardEvents?.[0].enemyTypes).toEqual(['scout']);
+    const firstPortalMs = (debut?.hazardEvents?.[0].cadenceMs ?? 0) + 600;
+    expect(debut?.waves?.[0].atMs).toBeGreaterThan(firstPortalMs + 3000);
   });
 
   test('Aurora release preserves its duration and gives one readable side-lane task', () => {

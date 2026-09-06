@@ -45,7 +45,7 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
     phase2SpiralTurnRate: 94,
     phase2BulletSpeedScale: 1.05,
   },
-  bossTriggerProgress: 0.7,
+  bossTriggerProgress: 0.752,
   asteroidInterval: 3600,
   sections: [
     {
@@ -159,15 +159,17 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
       id: 'convoy-command',
       label: 'Command Arrival',
       startProgress: 0.68,
-      endProgress: 0.7,
+      endProgress: 0.752,
       phase: 'boss-approach',
-      summary: 'Siren lamps hush the gears for a breath before the Marshal presses the duel.',
-      spawnRateMultiplier: 0.92,
+      summary: 'Track the center shield while clearing single scouts before the Marshal duel.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 5200,
       recoveryDrops: [
         {
           id: 'l4-shield-preboss',
-          triggerProgress: 0.5,
+          triggerProgress: 0.02,
           type: 'shield',
           lane: 'center',
           notes: 'Relief beat: a breather shield before Marshal Vectra so pilots stabilize at the gate.',

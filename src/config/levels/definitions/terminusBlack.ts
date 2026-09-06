@@ -60,7 +60,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
     spacing: 34,
     followOffsetY: 18,
   },
-  bossTriggerProgress: 0.66,
+  bossTriggerProgress: 0.695,
   asteroidInterval: 2900,
   sections: [
     {
@@ -363,10 +363,12 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       id: 'eventide-axis',
       label: 'Axiom Gate',
       startProgress: 0.64,
-      endProgress: 0.66,
+      endProgress: 0.695,
       phase: 'boss-approach',
-      summary: 'The last gate: a relief beat, a final picket, and the engine falls silent before Omega Null.',
-      spawnRateMultiplier: 0.9,
+      summary: 'Clear the final picket and collect the center health drop before Omega Null.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 4800,
       waves: [
         {
@@ -383,7 +385,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       recoveryDrops: [
         {
           id: 'omega-breath',
-          triggerProgress: 0.5,
+          triggerProgress: 0.02,
           type: 'health',
           lane: 'center',
           notes: 'Final relief beat before Omega Null: stabilize, then step through the gate.',

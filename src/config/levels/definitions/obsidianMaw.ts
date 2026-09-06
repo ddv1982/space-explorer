@@ -59,7 +59,7 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
     spacing: 36,
     followOffsetY: 18,
   },
-  bossTriggerProgress: 0.68,
+  bossTriggerProgress: 0.718,
   asteroidInterval: 3000,
   sections: [
     {
@@ -255,10 +255,12 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
       id: 'hive-hush',
       label: 'Hive Hush',
       startProgress: 0.66,
-      endProgress: 0.68,
+      endProgress: 0.718,
       phase: 'boss-approach',
-      summary: 'A sudden hush in the hive: one thin brood, a shield relief beat, then the Maelstrom.',
-      spawnRateMultiplier: 0.9,
+      summary: 'Clear the thin final brood, then collect the center shield before the Maelstrom.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 4700,
       waves: [
         {
@@ -275,7 +277,7 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
       recoveryDrops: [
         {
           id: 'maelstrom-shield-relief',
-          triggerProgress: 0.45,
+          triggerProgress: 0.02,
           type: 'shield',
           lane: 'center',
           notes: 'Pre-boss relief beat: shield up before the Hive Maelstrom spins up.',

@@ -59,7 +59,7 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
     spacing: 40,
     followOffsetY: 18,
   },
-  bossTriggerProgress: 0.7,
+  bossTriggerProgress: 0.741,
   asteroidInterval: 3250,
   sections: [
     {
@@ -204,15 +204,17 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
       id: 'choir-regent-approach',
       label: 'Regent Approach',
       startProgress: 0.68,
-      endProgress: 0.7,
+      endProgress: 0.741,
       phase: 'boss-approach',
-      summary: 'The choir holds one soft chord, a breath before the Choir Regent begins the sermon.',
-      spawnRateMultiplier: 0.9,
+      summary: 'Move from the warp aisles to the center shield, clearing single scouts before the Regent duel.',
+      enemyFocus: [{ type: 'scout', weight: 1 }],
+      encounterSizeOverride: { min: 1, max: 1 },
+      spawnRateMultiplier: 0.45,
       asteroidInterval: 5000,
       recoveryDrops: [
         {
           id: 'pre-regent-shield',
-          triggerProgress: 0.4,
+          triggerProgress: 0.02,
           type: 'shield',
           lane: 'center',
           notes: 'Pre-boss Recovery Beat shield stabilizes the veil run before the pressure sermon.',

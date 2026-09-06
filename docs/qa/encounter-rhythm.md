@@ -6,7 +6,7 @@ Run `bun scripts/analyzeEncounterRhythm.ts` to inspect the current authored wind
 
 The baseline is commit `1200489`. A recovery pickup starts at y = -40 and descends at 60 px/s. Reaching a stationary player at 75% of an 844px portrait viewport takes 11.22 seconds. At 600px height it takes 8.17 seconds. These are geometric travel times, not observed collection rates. Moving upward can intercept earlier, but requiring that during the boss arrival defeats the advertised Recovery Beat.
 
-| Level | Approach duration before tuning | Shield drop to boss before tuning |
+| Level | Approach duration before tuning | Recovery drop to boss before tuning |
 | --- | ---: | ---: |
 | Ember Monsoon | 2.014s | 1.007s |
 | Clockwork Causeway | 2.222s | 1.111s |
@@ -57,3 +57,39 @@ The selected pilot windows are measured from the authored configuration:
 | Siege hazard emissions end | 14s into a 23.125s section | Leaves expiry time before the resource approach |
 
 The exact hazard trigger uses a strict cadence comparison and pressure budget, so first eligibility is just after the reported timestamp. Pressure can delay or suppress an emission; these values do not claim deterministic spawn sequences.
+
+## All-ten campaign matrix
+
+| Level and Dominant Motif | Introduction | Escalation | Recovery Beat and resource demand | Boss exam |
+| --- | --- | --- | --- | --- |
+| Aurora Threshold, Lane-Reading | Familiar scout lanes | Diver column, crossfire, warned vee | Midlevel health; Blue Quiet side-lane scout task | No boss; return through open center space |
+| Tideglass Shallows, Ambush Anticipation | Familiar scouts/divers, then scout-only portal | Dodger line after first portal; later ambush and portal remix | Midlevel health; Clearline release | No boss; read arrival before committing |
+| Ember Monsoon, mine denial | Fighter approach and sower drift | Minefield/debris, storm-front gunship column | Shield then health in the extended center approach; avoid losing hull in the mine peak | Pyre Herald barrage |
+| Clockwork Causeway, timed lane duels | Vanguard approach and warned lancer | Crossfire/mines, then corridor and storm lock | Existing center shield has 7.840s to arrive; single scouts during approach | Marshal Vectra pressure |
+| Shatter Reef, split/ambush priority | Splitter brood | Ambush current, Marked Ace priority check | Midlevel health; 7.860s pre-boss shield lead; leave surviving splitters behind | Reef Stalker pursuit |
+| Debris Gauntlet, hazard Lane-Reading | Visible flare edge and bottom escape | Lattice before cover, then siege remix | Switchback health; 7.806s shield lead; avoid spending reserves on beam traps | Bastion Bulwark shield cycle |
+| Hollow Choir, Ambush Anticipation | Warned lancer behind familiar pressure | Warp aisles, lancer reprise and elite beat | Aisle health; 7.888s shield lead; resolve late arrivals before following pickup | Choir Regent pressure |
+| Eclipse Narrows, convoy lane commits | Warned escort formations | Pincers, cover and vanguard elite | Crossfire health; final picket then 7.830s shield lead | Umbral Ark carrier summons |
+| Swarmfront, target priority at density | Swarm rings | Splitters, dodgers and elite density crest | Midlevel health; thin final brood then 7.894s shield lead | Hive Maelstrom counter-rotation |
+| Eventide Engine, ordered motif recall | Portal then minefield | Flare, lattice, corridor and convergence in sequence | Flare shield retained; final picket then 7.860s health lead | Omega Null pressure into maelstrom |
+
+P6 sets each remaining boss approach to approximately 8s and starts its existing recovery drop at 2% of the approach. It changes no earlier section boundary or scripted wave timestamp. Single-scout random arrivals replace mixed late-stage enemies during each approach; existing final picket and brood waves remain. Tideglass removes the nebula ambush from the portal introduction, uses familiar scouts in the first portals, and shifts the warned dodger line from 4.2s to 7.8s. Its entry roster contains only scouts and divers so random dodgers cannot preempt their introduction. Later remixes remain intact.
+
+The rejected version extended all approaches to 13–17s for passive lower-screen pickup collection and added 103.40s across the campaign. That would increase the very waiting this review aims to reduce. The selected version adds 43.88s across all eight approaches, each lasting 7.965–8.056s. Its first pickup reaches portrait midfield by boss arrival, asking the player to intercept it deliberately. The existing following Ember health can be intercepted near 42% height. Earlier waves stay fixed, and no pickup is duplicated. Human fatigue testing should still compare these shorter Recovery Beats.
+
+## Resource attrition audit
+
+The fresh-run state starts with 5 hull and 3 reserves. `advanceToNextLevel` refills hull to the purchased maximum and shields to the purchased shield tier. Hull and shield loss therefore accumulate within a level, not across normal level transitions. Reserves and unspent credits persist. Purchases subtract credits, and boss HP scales with purchased upgrades through the existing boss-scaling policy. The selected difficulty changes accepted hull damage only; none of these changes alter that contract.
+
+An authored health pickup restores 2 hull up to the maximum; a shield pickup adds one shield up to the existing cap, and each shield absorbs one hit. The campaign retains its existing total of nine authored health pickups and eight authored shield pickups. None is added by this tuning. Random drops, Marked Ace rewards, purchases, and pickup misses make actual resource trajectories player-dependent.
+
+A realistic campaign test should record level-entry reserves, credits, purchased tiers, restored hull/shields, then boss-entry resources and damage sources. Injecting low hull at every level start would not represent the normal progression contract. The harder question is whether reserve loss before the late campaign becomes unrecoverable despite the intermission refill. This audit does not invent a survival rate or change reserves without observed evidence.
+
+## Remaining validation, ranked
+
+1. Exercise beam overlaps with initial motion and surviving enemies, including upper-screen positions and three natural spawn samples. The geometric proof covers only the stated lower-screen beam samples.
+2. Observe pickup collection and the added 43.88s of campaign recovery with fresh players. Record confusion, upward chases, optional score pursuit, and perceived waiting by section timestamp.
+3. Run full campaigns with ordinary purchased loadouts. Separate reserve depletion from failure to read an individual hazard; retain each boss-entry resource record.
+4. Repeat on physical portrait and landscape phones, then measure voluntary retry and return counts. Automated completion does not answer either preference question.
+
+Local verification includes the all-level timing regression, actual LevelManager clock comparison, all choreographed wave windows, all eight approach midfield-interception windows, portal teaching order, and 108 beam-route samples. The ten-level validator ran after each of the seven P6 level edits. Browser and performance evidence are owned by the integrated build.
