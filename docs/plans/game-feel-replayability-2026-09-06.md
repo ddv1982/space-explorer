@@ -12,13 +12,15 @@ The program preserves the existing ten-level campaign, procedural worlds, cinema
 | --- | --- | --- | --- |
 | P0 | Local recording, baseline capture, playtest protocol | Technical evidence plus fresh-player observations and three common barriers | Recorder implemented; human observations pending |
 | P1 | Compare movement, braking, directional travel, and bank-directed aiming | Deliberate control on keyboard and physical touch devices | Implemented; native Arcade comparison and emulated-input checks pass |
-| P2 | Distinguish hit outcomes and explain deaths | Players identify damage and a plausible avoidance action | Implemented; typed source/outcome and terminal cause, integration checks in progress |
+| P2 | Distinguish hit outcomes and explain deaths | Players identify damage and a plausible avoidance action | Implemented; typed source/outcome, terminal cause, and real-collision checks |
 | P3 | Tune Aurora Threshold, Ember Monsoon, and Debris Gauntlet | Purposeful recovery, readable escalation, and feasible safe routes | Implemented; visible flare warnings, escape routes, and purposeful approaches |
 | P4 | Resolve the three most visible combat-art inconsistencies | Recognition at actual play size without changed geometry | Implemented; Diver, Gunship, and Sower compared at native scale |
 | P5 | Direct retry and useful existing run results | Repeated voluntary-play signal in fresh cohorts | Implemented; reset, settings, input, and ten-retry checks pass |
-| P6 | Apply proven tuning across the campaign | Sustained campaign and human evidence, plus release checks | Implemented; all-ten-level audit and tuning, final integration checks in progress |
+| P6 | Apply proven tuning across the campaign | Sustained campaign and human evidence, plus release checks | Implemented; all-ten-level audit, tuning, and staged level/boss checks |
 
 Implementation does not mark the human exit evidence as collected. Read [control measurements](../qa/player-controls-tuning.md), [encounter decisions and campaign matrix](../qa/encounter-rhythm.md), and [retry verification](../qa/direct-retry.md) for the technical evidence and its limits.
+
+The final integration also retains brief Escape presses across frame boundaries and refreshes final score at the game-over handoff. The latter includes an enemy-contact reward that completes after synchronous fatal damage. Both have failing-before regressions. Current CI results and runtime artifacts identify the validated revision; this document does not replace those receipts.
 
 ## Preserve the evidence boundaries
 
