@@ -31,7 +31,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-portrait-polish',
-      testMatch: '**/playerControls.spec.ts',
+      testMatch: ['**/playerControls.spec.ts', '**/directRetry.spec.ts'],
       use: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
     },
     {
@@ -64,6 +64,7 @@ export default defineConfig({
         '**/picketTurrets.spec.ts',
         '**/firstShot.spec.ts',
         '**/playerControls.spec.ts',
+        '**/directRetry.spec.ts',
         '**/gameFeel.evidence.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
@@ -81,6 +82,7 @@ export default defineConfig({
         '**/picketTurrets.spec.ts',
         '**/firstShot.spec.ts',
         '**/playerControls.spec.ts',
+        '**/directRetry.spec.ts',
         '**/gameFeel.evidence.spec.ts',
       ],
       use: {

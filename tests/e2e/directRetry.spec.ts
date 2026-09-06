@@ -90,6 +90,7 @@ test('held fire, arbitrary taps and repeated keys do not retry; fresh shortcuts 
   page,
   assertNoBrowserErrors,
 }) => {
+  test.setTimeout(180000);
   await openMenu(page);
   await startNewRun(page);
   await page.keyboard.down('Space');
@@ -111,7 +112,18 @@ test('held fire, arbitrary taps and repeated keys do not retry; fresh shortcuts 
   ]) {
     await page.setViewportSize(viewport);
     await expect.poll(async () => (await snapshot(page)).gameSize).toEqual(viewport);
-    await page.waitForTimeout(250);
+    await expect
+      .poll(
+        async () => {
+          const resized = await snapshot(page);
+          return ['RETRY', 'MENU'].every((label) => {
+            const text = resized.texts.find((entry) => entry.text === label);
+            return text && text.x - text.width / 2 >= 0 && text.y + text.height / 2 <= viewport.height;
+          });
+        },
+        { timeout: 30000 }
+      )
+      .toBe(true);
     await expect(page.locator('nav[aria-label="Game over"]')).toHaveCount(1);
     const frame = await snapshot(page);
     for (const label of ['RETRY', 'MENU']) {

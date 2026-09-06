@@ -8,6 +8,7 @@ import { UI_FONT_MONO } from '../utils/uiFonts';
 import { createActionButtonControl } from './shared/actionButtonControl';
 import { startFreshRun } from './shared/startRun';
 import { createGameOverLayout } from './gameOverScene/layout';
+import { getDeathCauseText } from './gameOverScene/deathCause';
 import { mountAccessibleActionLayer, type AccessibleActionLayerHandle } from './shared/accessibleActionLayer';
 import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_TEXT } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
@@ -81,7 +82,7 @@ export class GameOverScene extends Phaser.Scene {
       glowBright: '#ff756f',
     });
 
-    this.add
+    const score = this.add
       .text(centerX, frameY + plan.scoreY, `SCORE: ${runSummary.finalScore}`, {
         fontSize: '30px',
         color: NEON_TEXT.primary,
@@ -90,6 +91,7 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(12);
+    score.setScale(Math.min(1, (plan.width - 32) / score.width));
 
     this.add
       .text(centerX, frameY + plan.progressY, `REACHED LEVEL ${runSummary.levelReached}`, {
@@ -100,11 +102,20 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(12);
 
+    this.add
+      .text(centerX, frameY + plan.causeY, getDeathCauseText(runSummary.deathCause), {
+        fontSize: '13px',
+        color: NEON_TEXT.danger,
+        fontFamily: UI_FONT_MONO,
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
+
     const nextGoal =
       runSummary.finalScore > 0
         ? `NEXT RUN: BEAT ${runSummary.finalScore}`
         : `NEXT RUN: CLEAR LEVEL ${runSummary.levelReached}`;
-    this.add
+    const goal = this.add
       .text(centerX, frameY + plan.goalY, nextGoal, {
         fontSize: '15px',
         color: NEON_TEXT.primary,
@@ -112,6 +123,7 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(12);
+    goal.setScale(Math.min(1, (plan.width - 32) / goal.width));
 
     return nextGoal;
   }
@@ -162,7 +174,6 @@ export class GameOverScene extends Phaser.Scene {
 
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
-      // Native buttons own Enter and Space when focused, including the Menu action.
       if (event.target instanceof Element) {
         if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return;
         if (event.target.closest('button') && (event.code === 'Enter' || event.code === 'Space')) return;
@@ -178,7 +189,7 @@ export class GameOverScene extends Phaser.Scene {
     window.addEventListener('keydown', handleKeyDown);
     this.teardownAccessibleActions = mountAccessibleActionLayer({
       label: 'Game over',
-      summary: `Final score ${runSummary.finalScore}. Reached level ${runSummary.levelReached}. ${nextGoal}.`,
+      summary: `Final score ${runSummary.finalScore}. Reached level ${runSummary.levelReached}. ${getDeathCauseText(runSummary.deathCause)}. ${nextGoal}.`,
       actions: [
         { name: 'retry', label: 'Retry from level 1', activate: () => activate('retry') },
         { name: 'menu', label: 'Continue to command deck', activate: () => activate('menu') },

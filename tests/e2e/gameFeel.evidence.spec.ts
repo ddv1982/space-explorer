@@ -165,7 +165,7 @@ test('cleans up across caps, clear, scene restarts and game destruction', async 
       await window.__SPACE_EXPLORER_BROWSER_HARNESS__?.route('GameOver');
     });
     await waitForScene(page, 'GameOver');
-    await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape');
     await waitForScene(page, 'Menu');
     await startNewRun(page);
     await waitForFrames(page, (result) => result.frames.at(-1)?.segmentId === 4 + index * 3);

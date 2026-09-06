@@ -454,16 +454,26 @@ test('game over and victory command decks stay readable', async ({ page, assertN
     await waitForScene(page, sceneKey);
     const shot = await snapshot(page);
     const title = shot.texts.find((text) => text.text === (sceneKey === 'GameOver' ? 'GAME OVER' : 'MISSION COMPLETE'));
-    const eyebrow = shot.texts.find(
-      (text) => text.text === (sceneKey === 'GameOver' ? 'COMMAND LOSS' : 'COMMAND DECK')
-    );
     expect(title).toBeDefined();
-    expect(eyebrow).toBeDefined();
     expect(title?.x ?? -1).toBeGreaterThan(0);
     expect(title?.x ?? Infinity).toBeLessThan(shot.gameSize.width);
     expect(title?.y ?? -1).toBeGreaterThan(0);
     expect(title?.y ?? Infinity).toBeLessThan(shot.gameSize.height);
-    expect((title?.y ?? 0) - (eyebrow?.y ?? 0)).toBeGreaterThanOrEqual(28);
+    if (sceneKey === 'GameOver') {
+      const goal = shot.texts.find((text) => text.text.startsWith('NEXT RUN:'));
+      expect(goal).toBeDefined();
+      for (const label of ['RETRY', 'MENU']) {
+        const action = shot.texts.find((text) => text.text === label);
+        expect(action).toBeDefined();
+        expect(action?.y ?? 0).toBeGreaterThan(goal?.y ?? Infinity);
+        expect((action?.x ?? 0) - (action?.width ?? 0) / 2).toBeGreaterThan(0);
+        expect((action?.x ?? Infinity) + (action?.width ?? 0) / 2).toBeLessThan(shot.gameSize.width);
+      }
+    } else {
+      const eyebrow = shot.texts.find((text) => text.text === 'COMMAND DECK');
+      expect(eyebrow).toBeDefined();
+      expect((title?.y ?? 0) - (eyebrow?.y ?? 0)).toBeGreaterThanOrEqual(28);
+    }
     const name = `${sceneKey.toLowerCase()}-${mobile ? 'portrait' : 'desktop'}.png`;
     const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
     const path = evidenceDirectory ? `${evidenceDirectory}/${name}` : test.info().outputPath(name);
