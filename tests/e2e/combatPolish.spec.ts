@@ -2,7 +2,7 @@ import type { DamageSource } from '../../src/systems/PlayerDamage';
 import { evidenceRevision, saveBrowserEvidence } from './evidence';
 import { expect, openMenu, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
 
-async function recordCombat(page: Page): Promise<void> {
+async function recordCombat(page: Page, waitForFrame = true): Promise<void> {
   await page.evaluate(
     ({ revision, device }) => {
       const api = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
@@ -17,6 +17,7 @@ async function recordCombat(page: Page): Promise<void> {
     },
     { revision: evidenceRevision, device: test.info().project.name }
   );
+  if (!waitForFrame) return;
   await expect
     .poll(() => page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.gameFeel.read()?.frames.length ?? 0))
     .toBeGreaterThan(0);
@@ -52,8 +53,8 @@ async function setPaused(page: Page, paused: boolean, touch: boolean): Promise<v
   }
 }
 
-async function observeBeamCycle(page: Page) {
-  return page.evaluate(() => {
+async function observeBeamCycle(page: Page, watchdogMs: number) {
+  return page.evaluate((deadlineMs) => {
     const api = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
     if (!api) throw new Error('Missing browser harness');
     const initial = api.combatPolish.combatPolishState();
@@ -94,10 +95,10 @@ async function observeBeamCycle(page: Page) {
         }
         frame = requestAnimationFrame(sample);
       };
-      const timer = setTimeout(() => finish('watchdog'), 120000);
+      const timer = setTimeout(() => finish('watchdog'), deadlineMs);
       frame = requestAnimationFrame(sample);
     });
-  });
+  }, watchdogMs);
 }
 
 async function observeBossSpawn(page: Page) {
@@ -227,33 +228,45 @@ for (const pattern of ['flare', 'lattice'] as const) {
     isMobile,
     assertNoBrowserErrors,
   }) => {
-    test.setTimeout(180000);
+    // CI observed 3442ms of gameplay in 120s wall. The 6.53s desktop flare needs
+    // about 228s at that rate; 300s retains full expiry with margin for rendering.
+    const watchdogMs = pattern === 'flare' ? 300000 : 120000;
+    test.setTimeout(watchdogMs + 60000);
     await openMenu(page);
     await startNewRun(page);
     await setPaused(page, true, isMobile);
-    const staged = await page.evaluate(
-      (value) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBeamPattern(value),
-      pattern
-    );
-    const beforePause = await state(page);
-    expect(beforePause.beams.length).toBe(pattern === 'flare' ? 1 : 3);
-    expect(beforePause.beams.every((beam) => !beam.damaging)).toBe(true);
-    await page.waitForTimeout(900);
-    const paused = await state(page);
-    expect(paused.beams).toEqual(beforePause.beams);
-    expect(paused.gameplayMs).toBe(beforePause.gameplayMs);
-    await saveBrowserEvidence(page, `${pattern}-paused-telegraph`, { staged, beforePause, paused });
-    const observed = observeBeamCycle(page);
-    await setPaused(page, false, isMobile);
-    const receipt = await observed;
-    await saveBrowserEvidence(page, `${pattern}-beam-cycle`, receipt);
-    expect(receipt.outcome, JSON.stringify(receipt)).toBe('complete');
-    expect(receipt.active).not.toBeNull();
-    if (!receipt.active) throw new Error('Missing active beam observation');
-    expect(receipt.active.player?.hp).toBe(staged.hp);
-    expect(receipt.completed?.player?.hp).toBe(staged.hp);
-    expect(receipt.completed?.beams).toEqual([]);
-    expect(receipt.elapsedGameplayMs).toBeGreaterThan(pattern === 'flare' ? 700 : 800);
+    try {
+      const staged = await page.evaluate(
+        (value) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBeamPattern(value),
+        pattern
+      );
+      await recordCombat(page, false);
+      const beforePause = await state(page);
+      expect(beforePause.beams.length).toBe(pattern === 'flare' ? 1 : 3);
+      expect(beforePause.beams.every((beam) => !beam.damaging)).toBe(true);
+      await page.waitForTimeout(900);
+      const paused = await state(page);
+      expect(paused.beams).toEqual(beforePause.beams);
+      expect(paused.gameplayMs).toBe(beforePause.gameplayMs);
+      await saveBrowserEvidence(page, `${pattern}-paused-telegraph`, { staged, beforePause, paused });
+      const observed = observeBeamCycle(page, watchdogMs);
+      await setPaused(page, false, isMobile);
+      const receipt = await observed;
+      await saveBrowserEvidence(page, `${pattern}-beam-cycle`, {
+        staged,
+        ...receipt,
+        recording: await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop()),
+      });
+      expect(receipt.outcome, JSON.stringify(receipt)).toBe('complete');
+      expect(receipt.active).not.toBeNull();
+      if (!receipt.active) throw new Error('Missing active beam observation');
+      expect(receipt.active.player?.hp).toBe(staged.hp);
+      expect(receipt.completed?.player?.hp).toBe(staged.hp);
+      expect(receipt.completed?.beams).toEqual([]);
+      expect(receipt.elapsedGameplayMs).toBeGreaterThan(pattern === 'flare' ? 700 : 800);
+    } finally {
+      await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.combatPolish.endBeamFixture());
+    }
     assertNoBrowserErrors();
   });
 }

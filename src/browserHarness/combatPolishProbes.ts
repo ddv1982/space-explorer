@@ -19,6 +19,8 @@ import type { DamageSource, PlayerFatalResult, PlayerHitResult } from '@/systems
 import { getLevelConfig } from '@/config/LevelsConfig';
 import { getViewportBounds } from '@/utils/layout';
 import { startPreparedRun } from '@/scenes/shared/startRun';
+import { WaveManager } from '@/systems/WaveManager';
+import { suspendEncounterSpawning } from './suspendEncounterSpawning';
 
 function requireCombat(game: Phaser.Game) {
   const scene = game.scene.getScenes(true).find((candidate) => candidate.sys.settings.key === 'Game');
@@ -33,7 +35,9 @@ function requireCombat(game: Phaser.Game) {
     !('flow' in scene) ||
     !(scene.flow instanceof GameSceneFlowController) ||
     !('levelManager' in scene) ||
-    !(scene.levelManager instanceof LevelManager)
+    !(scene.levelManager instanceof LevelManager) ||
+    !('waveManager' in scene) ||
+    !(scene.waveManager instanceof WaveManager)
   ) {
     throw new Error('Combat polish evidence requires initialized gameplay');
   }
@@ -53,6 +57,7 @@ function requireCombat(game: Phaser.Game) {
     collisions: scene.collisionManager,
     flow: scene.flow,
     level: scene.levelManager,
+    waves: scene.waveManager,
     asteroids: owner.asteroidGroup,
     beams: owner.hazardBeamSystem,
   };
@@ -250,13 +255,28 @@ function stageBeamEscapeRoute(game: Phaser.Game) {
 }
 
 export function createCombatPolishProbes(game: Phaser.Game) {
+  let restoreBeamFixture: (() => void) | null = null;
+  const endBeamFixture = (): void => {
+    const restore = restoreBeamFixture;
+    restoreBeamFixture = null;
+    restore?.();
+  };
   return {
+    endBeamFixture,
     stageCollision: (source: Exclude<DamageSource, 'unknown'>, mode: 'shield' | 'hull' | 'fatal') =>
       stageCollision(game, source, mode),
     combatPolishState: () => combatPolishState(game),
     stageBeamEscapeRoute: () => stageBeamEscapeRoute(game),
     stageBeamPattern: (pattern: 'flare' | 'lattice') => {
+      endBeamFixture();
       const combat = requireCombat(game);
+      if (!combat.scene.physics.world.isPaused) throw new Error('Pause before staging an isolated beam fixture');
+      const restoreSpawning = suspendEncounterSpawning(combat.waves);
+      restoreBeamFixture = () => {
+        restoreSpawning();
+        combat.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
+      };
+      combat.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
       clearField(combat);
       const viewport = getViewportBounds(combat.scene);
       if (pattern === 'flare') combat.beams.spawnSolarFlare(0.8);
@@ -272,7 +292,12 @@ export function createCombatPolishProbes(game: Phaser.Game) {
       const gapX = pattern === 'lattice' && left && right ? (left.x + right.x) / 2 : viewport.centerX;
       combat.player.spawn(gapX, viewport.bottom - 40, { hp: combat.player.maxHp });
       combat.player.shields = 0;
-      return { pattern, route: 'staged in authored escape region', hp: combat.player.hp };
+      return {
+        pattern,
+        route: 'staged in authored escape region',
+        hp: combat.player.hp,
+        ordinarySpawning: 'suspended for beam-only fixture',
+      };
     },
     stageLevel: (level: number) => {
       const config = getLevelConfig(level);
