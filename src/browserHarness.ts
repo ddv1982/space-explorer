@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { createCombatPolishProbes } from './browserHarness/combatPolishProbes';
 import { createGameFeelProbes } from './browserHarness/gameFeelProbes';
 import { createCinematicProbes } from './browserHarness/cinematicProbes';
 import { createProceduralBackgroundProbes } from './browserHarness/proceduralBackgroundProbes';
@@ -51,6 +52,7 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
   });
 
   const api: BrowserHarnessApi = {
+    combatPolish: createCombatPolishProbes(game),
     gameFeel: createGameFeelProbes(game),
     destroyGame: () => game.destroy(true),
     snapshot: () => createBrowserHarnessSnapshot(game),
