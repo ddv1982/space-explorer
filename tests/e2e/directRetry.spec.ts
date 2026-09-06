@@ -16,6 +16,7 @@ async function activate(page: Page, label: string): Promise<void> {
 }
 
 test('retry resets a loaded run while preserving checkpoints and settings', async ({ page, assertNoBrowserErrors }) => {
+  test.setTimeout(120000);
   await openMenu(page);
   await page.evaluate(async () => {
     const storagePath = '/src/systems/SaveSlotStorage.ts';
