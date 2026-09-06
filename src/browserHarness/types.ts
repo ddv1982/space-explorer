@@ -1,3 +1,4 @@
+import type { createGameFeelProbes } from './gameFeelProbes';
 import type { RuntimePerformanceSnapshot } from '@/systems/RuntimePerformanceBudget';
 
 import type { BrowserHarnessSnapshot } from './snapshot';
@@ -91,6 +92,7 @@ export interface BrowserHarnessFrameDeliveryProbe {
 
 export interface BrowserHarnessApi
   extends ReturnType<typeof createCinematicProbes>, ReturnType<typeof createProceduralBackgroundProbes> {
+  gameFeel: ReturnType<typeof createGameFeelProbes>;
   destroyGame: () => void;
   snapshot: () => BrowserHarnessSnapshot;
   probeArcadeOverlap: () => Promise<boolean>;

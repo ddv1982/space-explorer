@@ -34,7 +34,8 @@
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "knip": "knip",
     "levels:validate": "bun scripts/validateLevels.ts",
-    "backgrounds:record": "bun scripts/recordLivingBackgrounds.ts"
+    "backgrounds:record": "bun scripts/recordLivingBackgrounds.ts",
+    "test:e2e:game-feel": "GAME_FEEL_EVIDENCE_PORT=4180 playwright test --project=chromium-desktop-game-feel --project=chromium-mobile-game-feel --project=chromium-portrait-game-feel --workers=1"
   },
   "knip": {
     "entry": [

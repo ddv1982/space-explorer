@@ -1,0 +1,287 @@
+{
+  "localLaunch": {
+    "buildSha": "fccb176a82542285807739f786a8fe661ccfb8d2-dirty",
+    "conditions": "same head, keyboard right + fire, 10 measured frames/2 warmup, software renderer results are diagnostic only",
+    "off": [
+      0.3999999761581421,
+      0.30000001192092896,
+      0.20000001788139343,
+      0.20000001788139343,
+      0.4000000059604645
+    ],
+    "on": [
+      0.20000001788139343,
+      0.30000001192092896,
+      0.29999998211860657,
+      0.30000001192092896,
+      0.29999998211860657
+    ],
+    "observerP95": [
+      0.09999999403953552,
+      0,
+      0,
+      0,
+      0.09999999403953552
+    ],
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "hardwareConcurrency": 10,
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "devicePixelRatio": 1
+      },
+      "gameSize": {
+        "width": 1280,
+        "height": 720
+      },
+      "quality": "standard",
+      "difficulty": "normal",
+      "startingPersistedPlayerState": {
+        "level": 1,
+        "score": 0,
+        "currentHp": 5,
+        "currentShields": 0,
+        "remainingLives": 3,
+        "upgrades": {
+          "hp": 0,
+          "damage": 0,
+          "fireRate": 0,
+          "shield": 0,
+          "turrets": 0
+        },
+        "helperWing": {
+          "slots": [],
+          "grantedSlots": 0
+        }
+      }
+    },
+    "rawSha256": "8927d799a7c0ff1cdd1f3c049795cd77c2eb9c45a8ed6470819b29b5ba075af8",
+    "updateWork": [
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 0.20000000298023224,
+          "p95Ms": 0.3999999761581421,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 0.12999999821186065,
+          "p95Ms": 0.20000001788139343,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 0.16999999582767486,
+          "p95Ms": 0.30000001192092896,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 0.19000000655651092,
+          "p95Ms": 0.30000001192092896,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 0.1600000023841858,
+          "p95Ms": 0.20000001788139343,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 0.13999999761581422,
+          "p95Ms": 0.29999998211860657,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 0.1800000011920929,
+          "p95Ms": 0.30000001192092896,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 0.1599999964237213,
+          "p95Ms": 0.20000001788139343,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 0.14000000357627868,
+          "p95Ms": 0.4000000059604645,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 0.17999999821186066,
+          "p95Ms": 0.29999998211860657,
+          "sampleCount": 10
+        }
+      }
+    ]
+  },
+  "ciLaunchOnMac": {
+    "buildSha": "fccb176a82542285807739f786a8fe661ccfb8d2-dirty",
+    "conditions": "same head, keyboard right + fire, 10 measured frames/2 warmup, software renderer results are diagnostic only",
+    "off": [
+      431.90000000596046,
+      445,
+      508.30000001192093,
+      486.5,
+      424.59999999403954
+    ],
+    "on": [
+      422.40000000596046,
+      426.59999999403954,
+      496.69999998807907,
+      486.30000001192093,
+      439.80000001192093
+    ],
+    "observerP95": [
+      0.09999999403953552,
+      0.10000002384185791,
+      0.10000002384185791,
+      0.09999999403953552,
+      0.09999999403953552
+    ],
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+      "hardwareConcurrency": 10,
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "devicePixelRatio": 1
+      },
+      "gameSize": {
+        "width": 1280,
+        "height": 720
+      },
+      "quality": "standard",
+      "difficulty": "normal",
+      "startingPersistedPlayerState": {
+        "level": 1,
+        "score": 0,
+        "currentHp": 5,
+        "currentShields": 0,
+        "remainingLives": 3,
+        "upgrades": {
+          "hp": 0,
+          "damage": 0,
+          "fireRate": 0,
+          "shield": 0,
+          "turrets": 0
+        },
+        "helperWing": {
+          "slots": [],
+          "grantedSlots": 0
+        }
+      }
+    },
+    "rawSha256": "8464813e0175b6921e8bb55bfdb5e4f724cfc11b8f9360ff2654cf314cdb77d1",
+    "updateWork": [
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 43.44000000357628,
+          "p95Ms": 431.90000000596046,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 42.44000000655651,
+          "p95Ms": 422.40000000596046,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 42.83000000119209,
+          "p95Ms": 426.59999999403954,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 44.64000000953674,
+          "p95Ms": 445,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 51.01000000238419,
+          "p95Ms": 508.30000001192093,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 49.859999996423724,
+          "p95Ms": 496.69999998807907,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 48.769999995827675,
+          "p95Ms": 486.30000001192093,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 48.859999996423724,
+          "p95Ms": 486.5,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": false,
+        "update": {
+          "averageMs": 42.619999995827676,
+          "p95Ms": 424.59999999403954,
+          "sampleCount": 10
+        }
+      },
+      {
+        "enabled": true,
+        "update": {
+          "averageMs": 44.17000000476837,
+          "p95Ms": 439.80000001192093,
+          "sampleCount": 10
+        }
+      }
+    ]
+  },
+  "interpretation": "Local-launch samples fit the provisional CPU recording allowance. CI-style launch on this Mac produced large outliers in both conditions. Neither run measures physical input-to-photon latency or establishes hardware frame delivery."
+}
