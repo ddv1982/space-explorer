@@ -24,9 +24,9 @@ describe('Player', () => {
     (player as unknown as Record<string, unknown>).flashShield = flashShield;
     (player as unknown as Record<string, unknown>).die = die;
 
-    const outcome = player.takeDamage(3);
+    const outcome = player.takeDamage({ amount: 3, source: 'bomb' });
 
-    expect(outcome).toBe('absorbed');
+    expect(outcome).toEqual({ outcome: 'absorbed', source: 'bomb', hullDamage: 0 });
     expect(player.shields).toBe(1);
     expect(player.hp).toBe(5);
     expect(setInvulnerable).toHaveBeenCalledWith(800);

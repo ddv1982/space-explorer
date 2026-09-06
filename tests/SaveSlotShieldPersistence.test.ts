@@ -47,7 +47,7 @@ describe('save-slot shield persistence', () => {
           upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 1, turrets: 0 },
           helperWing: { grantedSlots: 0, slots: [] },
         },
-        { finalScore: 800, levelReached: 2 },
+        { finalScore: 800, levelReached: 2, deathCause: null },
         new Date('2026-08-19T06:00:00.000Z')
       );
 

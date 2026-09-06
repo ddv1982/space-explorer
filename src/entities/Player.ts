@@ -6,8 +6,7 @@ import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } f
 import { GAME_SCENE_EVENTS } from '../systems/GameSceneEvents';
 import { ensurePlayerTexture } from '../utils/SpriteFactory';
 import { applyGameObjectGlow } from '../utils/renderingCompat';
-
-export type PlayerDamageOutcome = 'ignored' | 'absorbed' | 'damaged' | 'fatal';
+import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
 const NOMINAL_FRAME_MS = 1000 / 60;
 
@@ -63,16 +62,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.shields = state.currentShields;
   }
 
-  takeDamage(amount: number): PlayerDamageOutcome {
+  takeDamage(context: PlayerDamageContext): PlayerDamageResult {
     if (this.shouldIgnoreDamage()) {
-      return 'ignored';
+      return { outcome: 'ignored', source: context.source, hullDamage: 0 };
     }
 
     if (this.absorbShieldHit()) {
-      return 'absorbed';
+      return { outcome: 'absorbed', source: context.source, hullDamage: 0 };
     }
 
-    return this.applyHullDamage(amount);
+    return this.applyHullDamage(context);
   }
 
   playDeathAnimation(): void {
@@ -124,18 +123,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return true;
   }
 
-  private applyHullDamage(amount: number): PlayerDamageOutcome {
-    this.hp -= amount;
+  private applyHullDamage(context: PlayerDamageContext): PlayerDamageResult {
+    const hullDamage = Math.min(this.hp, context.amount);
+    this.hp -= context.amount;
 
     if (this.hp <= 0) {
       this.hp = 0;
-      this.die();
-      return 'fatal';
+      const result: PlayerFatalResult = { outcome: 'fatal', source: context.source, hullDamage };
+      this.die(result);
+      return result;
     }
 
     this.setInvulnerable(1500);
     this.flashWhite();
-    return 'damaged';
+    return { outcome: 'damaged', source: context.source, hullDamage };
   }
 
   private setInvulnerable(duration: number): void {
@@ -164,7 +165,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  private die(): void {
+  private die(result: PlayerFatalResult): void {
     if (this.deathStarted) {
       return;
     }
@@ -178,7 +179,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.applyDeathVisualState();
     this.disableBodyForDeath();
 
-    this.scene.events.emit(GAME_SCENE_EVENTS.playerDeath);
+    this.scene.events.emit(GAME_SCENE_EVENTS.playerDeath, result);
   }
 
   private applyDeathVisualState(): void {

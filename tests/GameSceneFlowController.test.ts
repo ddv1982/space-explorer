@@ -168,12 +168,38 @@ describe('GameSceneFlowController', () => {
     audioManager.stopMusic = originalStopMusic;
   });
 
+  test('terminal source is persisted before transition and cannot be overwritten by duplicate death', () => {
+    const controller = new GameSceneFlowController();
+    controller.reset(1);
+    const harness = createFlowHarness({ playerAlive: false });
+    controller.handlePlayerDeath(harness.context, 'beam');
+    expect(getRunSummary(harness.registry)).toEqual({ finalScore: 987, levelReached: 6, deathCause: 'beam' });
+    expect(harness.startScene).not.toHaveBeenCalled();
+    expect(controller.handlePlayerDeath(harness.context, 'bomb').status).toBe('ignored-terminal-active');
+    expect(getRunSummary(harness.registry).deathCause).toBe('beam');
+    harness.clock.fireNext(1500);
+    expect(harness.startScene).toHaveBeenCalledWith('GameOver');
+    expect(harness.startScene).toHaveBeenCalledTimes(1);
+    controller.shutdown(harness.collisionManager as never);
+  });
+
+  test('duplicate death during respawn consumes no second life and leaves terminal attribution empty', () => {
+    const controller = new GameSceneFlowController();
+    controller.reset(3);
+    const harness = createFlowHarness({ playerAlive: false });
+    controller.handlePlayerDeath(harness.context, 'mine');
+    expect(controller.handlePlayerDeath(harness.context, 'beam').status).toBe('ignored-terminal-active');
+    expect(controller.getRemainingLives()).toBe(2);
+    expect(getRunSummary(harness.registry).deathCause).toBeNull();
+    controller.shutdown(harness.collisionManager as never);
+  });
+
   test('handlePlayerDeath consumes a remaining life, reports respawn, and begins respawn when lives remain', () => {
     const controller = new GameSceneFlowController();
     controller.reset(2);
     const harness = createFlowHarness({ playerAlive: false });
 
-    const outcome = controller.handlePlayerDeath(harness.context);
+    const outcome = controller.handlePlayerDeath(harness.context, 'unknown');
 
     expect(outcome).toEqual({
       status: 'respawn-started',
@@ -218,7 +244,7 @@ describe('GameSceneFlowController', () => {
     expect(harness.clock.pendingTimer(LEVEL_COMPLETE_DELAY_MS)).not.toBeNull();
 
     harness.player.isAlive = false;
-    const outcome = controller.handlePlayerDeath(harness.context);
+    const outcome = controller.handlePlayerDeath(harness.context, 'unknown');
 
     expect(outcome).toEqual({
       status: 'respawn-started',
@@ -250,7 +276,7 @@ describe('GameSceneFlowController', () => {
     controller.reset(2);
     const harness = createFlowHarness({ playerAlive: false });
 
-    const deathOutcome = controller.handlePlayerDeath(harness.context);
+    const deathOutcome = controller.handlePlayerDeath(harness.context, 'unknown');
     expect(deathOutcome.status).toBe('respawn-started');
 
     controller.queueLevelComplete(harness.context);
@@ -277,7 +303,7 @@ describe('GameSceneFlowController', () => {
     harness.clock.fireNext(LEVEL_COMPLETE_DELAY_MS);
 
     harness.player.isAlive = false;
-    const outcome = controller.handlePlayerDeath(harness.context);
+    const outcome = controller.handlePlayerDeath(harness.context, 'unknown');
 
     expect(outcome).toEqual({
       status: 'ignored-terminal-active',
@@ -301,7 +327,7 @@ describe('GameSceneFlowController', () => {
     expect(levelCompleteTimer).not.toBeNull();
 
     harness.player.isAlive = false;
-    const outcome = controller.handlePlayerDeath(harness.context);
+    const outcome = controller.handlePlayerDeath(harness.context, 'unknown');
 
     expect(outcome).toEqual({
       status: 'game-over-started',
@@ -326,7 +352,7 @@ describe('GameSceneFlowController', () => {
     controller.reset(2);
     const harness = createFlowHarness({ playerAlive: false });
 
-    const outcome = controller.handlePlayerDeath(harness.context);
+    const outcome = controller.handlePlayerDeath(harness.context, 'unknown');
     expect(outcome.status).toBe('respawn-started');
 
     harness.clock.fireNext(PLAYER_RESPAWN_FREEZE_DELAY_MS);

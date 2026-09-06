@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { PlayerFatalResult, PlayerHitResult } from '@/systems/PlayerDamage';
 import { GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
 import { GameFeelRecording, type GameFeelEventDetail, type GameFeelOptions } from './gameFeelRecording';
 import { bindGameFeelRuntime, captureGameFeelOccupancy } from './gameFeelRuntime';
@@ -124,11 +125,11 @@ class GameFeelProbe {
       visible: document.visibilityState === 'visible',
     });
   };
-  private readonly onHit = (): void => {
-    this.event({ kind: 'player-hit', cause: 'unknown' });
+  private readonly onHit = (result: PlayerHitResult): void => {
+    this.event({ kind: 'player-hit', cause: result.source, outcome: result.outcome, hullDamage: result.hullDamage });
   };
-  private readonly onDeath = (): void => {
-    this.event({ kind: 'player-death', cause: 'unknown' });
+  private readonly onDeath = (result: PlayerFatalResult): void => {
+    this.event({ kind: 'player-death', cause: result.source, outcome: result.outcome, hullDamage: result.hullDamage });
   };
   private readonly onEnemyWarning = (): void => {
     this.event({ kind: 'enemy-spawn-warning' });

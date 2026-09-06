@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { DamageSource } from '@/systems/PlayerDamage';
 import { audioManager } from '@/systems/AudioManager';
 import { saveCurrentHp, saveRemainingLives, saveScoreToState, setRunSummary } from '@/systems/PlayerState';
 import { TERMINAL_TRANSITIONS, type TerminalTransitionState } from '@/systems/GameplayFlow';
@@ -88,8 +89,8 @@ export class GameSceneFlowController {
     return this.terminalTransitionState === TERMINAL_TRANSITIONS.playerDeath;
   }
 
-  handlePlayerDeath(context: GameSceneFlowContext): PlayerDeathFlowOutcome {
-    if (this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
+  handlePlayerDeath(context: GameSceneFlowContext, source: DamageSource): PlayerDeathFlowOutcome {
+    if (this.respawnInProgress || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none) {
       return this.createPlayerDeathOutcome('ignored-terminal-active');
     }
 
@@ -113,7 +114,7 @@ export class GameSceneFlowController {
 
     this.gameOver = true;
     this.scheduleGameOverTransition(context);
-    this.persistGameOverState(context, finalScore, level);
+    this.persistGameOverState(context, finalScore, level, source);
     return this.createPlayerDeathOutcome('game-over-started');
   }
 
@@ -243,11 +244,16 @@ export class GameSceneFlowController {
     this.respawnFrameProbe.abort();
   }
 
-  private persistGameOverState(context: GameSceneFlowContext, finalScore: number, level: number): void {
+  private persistGameOverState(
+    context: GameSceneFlowContext,
+    finalScore: number,
+    level: number,
+    deathCause: DamageSource
+  ): void {
     context.runBestEffort(() => audioManager.stopMusic());
     context.runBestEffort(() => saveRemainingLives(context.registry, 0));
     context.runBestEffort(() => saveScoreToState(context.registry, finalScore));
-    context.runBestEffort(() => setRunSummary(context.registry, { finalScore, levelReached: level }));
+    context.runBestEffort(() => setRunSummary(context.registry, { finalScore, levelReached: level, deathCause }));
   }
 
   private canFlushLevelCompleteTransition(context: GameSceneFlowContext): boolean {

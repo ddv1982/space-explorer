@@ -1,3 +1,4 @@
+import type { DamageSource } from '../PlayerDamage';
 import type { PlayerUpgradeLevels } from '@/config/UpgradesConfig';
 
 export interface PlayerStateData {
@@ -23,4 +24,5 @@ export interface PersistentHelperWingState {
 export interface RunSummaryData {
   finalScore: number;
   levelReached: number;
+  deathCause: DamageSource | null;
 }

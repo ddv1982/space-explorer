@@ -1,3 +1,4 @@
+import type { DamageSource } from '@/systems/PlayerDamage';
 import { getPlayerState } from '@/systems/PlayerState';
 import type { VisualQualityTier } from '@/config/visualQuality';
 import type { GameplayDifficultyTier } from '@/config/gameplayDifficulty';
@@ -70,7 +71,8 @@ export type GameFeelEventDetail =
       visible: boolean;
     }
   | { kind: 'scene'; action: 'entered' | 'shutdown' | 'destroy'; scene: string }
-  | { kind: 'player-hit' | 'player-death'; cause: 'unknown' }
+  | { kind: 'player-hit'; cause: DamageSource; outcome: 'absorbed' | 'damaged'; hullDamage: number }
+  | { kind: 'player-death'; cause: DamageSource; outcome: 'fatal'; hullDamage: number }
   | { kind: 'level-complete' | 'enemy-spawn-warning' | 'wormhole-telegraph' }
   | {
       kind: 'occupancy';

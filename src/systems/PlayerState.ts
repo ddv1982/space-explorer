@@ -1,3 +1,4 @@
+import { normalizeDeathCause } from './PlayerDamage';
 import { getUpgradeByKey, normalizeUpgradeLevel } from '../config/UpgradesConfig';
 import { normalizeAuthoredLevelNumber } from '../config/levels/selectors';
 import { PLAYER_CONFIG } from '../config/playerConfig';
@@ -15,10 +16,12 @@ const DEFAULT_REMAINING_LIVES = PLAYER_CONFIG.startingLives;
 const RUN_SUMMARY_KEYS = {
   finalScore: 'finalScore',
   levelReached: 'levelReached',
+  deathCause: 'deathCause',
 } as const;
 const DEFAULT_RUN_SUMMARY: RunSummaryData = {
   finalScore: 0,
   levelReached: 1,
+  deathCause: null,
 };
 const MAX_HELPER_WING_SLOTS = 4;
 export const MAX_CURRENT_SHIELDS = 8;
@@ -160,6 +163,7 @@ export function resetPlayerState(registry: PlayerStateRegistry): void {
 
 export function getRunSummary(registry: PlayerStateRegistry): RunSummaryData {
   return {
+    deathCause: normalizeDeathCause(registry.get(RUN_SUMMARY_KEYS.deathCause)),
     finalScore: normalizePersistedScore(
       registry.get(RUN_SUMMARY_KEYS.finalScore) as unknown,
       DEFAULT_RUN_SUMMARY.finalScore
@@ -173,12 +177,14 @@ export function getRunSummary(registry: PlayerStateRegistry): RunSummaryData {
 export function setRunSummary(registry: PlayerStateRegistry, summary: Partial<RunSummaryData>): RunSummaryData {
   const currentSummary = getRunSummary(registry);
   const nextSummary: RunSummaryData = {
+    deathCause: summary.deathCause === undefined ? currentSummary.deathCause : normalizeDeathCause(summary.deathCause),
     finalScore: normalizePersistedScore(summary.finalScore, currentSummary.finalScore),
     levelReached: normalizeAuthoredLevelNumber(
       normalizeFiniteNumber(summary.levelReached, currentSummary.levelReached)
     ),
   };
 
+  registry.set(RUN_SUMMARY_KEYS.deathCause, nextSummary.deathCause);
   registry.set(RUN_SUMMARY_KEYS.finalScore, nextSummary.finalScore);
   registry.set(RUN_SUMMARY_KEYS.levelReached, nextSummary.levelReached);
 
@@ -186,6 +192,7 @@ export function setRunSummary(registry: PlayerStateRegistry, summary: Partial<Ru
 }
 
 export function resetRunSummary(registry: PlayerStateRegistry): void {
+  registry.set(RUN_SUMMARY_KEYS.deathCause, null);
   registry.set(RUN_SUMMARY_KEYS.finalScore, DEFAULT_RUN_SUMMARY.finalScore);
   registry.set(RUN_SUMMARY_KEYS.levelReached, DEFAULT_RUN_SUMMARY.levelReached);
 }

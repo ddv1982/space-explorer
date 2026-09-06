@@ -162,7 +162,7 @@ export class SFXManager {
     osc.stop(ctx.currentTime + 0.05);
   }
 
-  playPlayerHit(): void {
+  playPlayerHit(outcome: 'absorbed' | 'damaged'): void {
     const output = this.getAudioOutput();
     if (!output) return;
 
@@ -170,11 +170,12 @@ export class SFXManager {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(200, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.15);
+    const shield = outcome === 'absorbed';
+    osc.type = shield ? 'sine' : 'sawtooth';
+    osc.frequency.setValueAtTime(shield ? 880 : 200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(shield ? 440 : 80, ctx.currentTime + 0.15);
 
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.setValueAtTime(shield ? 0.1 : 0.2, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
 
     osc.connect(gain);

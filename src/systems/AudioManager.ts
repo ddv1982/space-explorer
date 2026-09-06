@@ -65,8 +65,8 @@ export class AudioManager {
     if (this.pauseReasons.size === 0) this.contextManager.resumeFromUserGesture();
   }
 
-  playPlayerHit(): void {
-    this.sfxManager.playPlayerHit();
+  playPlayerHit(outcome: 'absorbed' | 'damaged'): void {
+    this.sfxManager.playPlayerHit(outcome);
   }
 
   playMusic(track: ProceduralMusicTrackConfig = DEFAULT_TRACK): void {

@@ -63,8 +63,22 @@ describe('bounded game feel recording', () => {
 
   test('event capacity and elapsed duration stop independently with one cleanup', () => {
     const bounded = setup({ maxEvents: 1 });
-    bounded.recorder.event({ kind: 'player-death', cause: 'unknown', wallMs: 1, segmentId: 1 });
-    bounded.recorder.event({ kind: 'player-death', cause: 'unknown', wallMs: 2, segmentId: 1 });
+    bounded.recorder.event({
+      kind: 'player-death',
+      cause: 'unknown',
+      outcome: 'fatal',
+      hullDamage: 1,
+      wallMs: 1,
+      segmentId: 1,
+    });
+    bounded.recorder.event({
+      kind: 'player-death',
+      cause: 'unknown',
+      outcome: 'fatal',
+      hullDamage: 1,
+      wallMs: 2,
+      segmentId: 1,
+    });
     expect(bounded.recorder.read()?.events).toHaveLength(1);
     expect(bounded.recorder.read()?.status).toEqual({ kind: 'stopped', reason: 'event-cap', wallMs: 1 });
     expect(bounded.cleanups()).toBe(1);
@@ -93,7 +107,14 @@ describe('bounded game feel recording', () => {
   test('exports are detached JSON values, including metadata and status', () => {
     const { recorder } = setup();
     recorder.frame(frame(1));
-    recorder.event({ kind: 'player-hit', cause: 'unknown', wallMs: 1, segmentId: 1 });
+    recorder.event({
+      kind: 'player-hit',
+      cause: 'unknown',
+      outcome: 'damaged',
+      hullDamage: 1,
+      wallMs: 1,
+      segmentId: 1,
+    });
     const exported = recorder.read();
     if (!exported) throw new Error('missing recording');
     expect(JSON.parse(JSON.stringify(exported))).toEqual(exported);

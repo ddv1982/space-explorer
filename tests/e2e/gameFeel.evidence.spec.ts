@@ -115,9 +115,16 @@ test('records delivered controls, applied movement, fire attempts and a separate
     true
   );
   expect(
-    exported.events
-      .filter((event) => event.kind === 'player-hit' || event.kind === 'player-death')
-      .every((event) => (event.kind === 'player-hit' || event.kind === 'player-death') && event.cause === 'unknown')
+    exported.events.some(
+      (event) =>
+        event.kind === 'player-hit' && event.cause === 'unknown' && event.outcome === 'damaged' && event.hullDamage > 0
+    )
+  ).toBe(true);
+  expect(
+    exported.events.some(
+      (event) =>
+        event.kind === 'player-death' && event.cause === 'unknown' && event.outcome === 'fatal' && event.hullDamage > 0
+    )
   ).toBe(true);
   const occupancy = exported.events.filter((event) => event.kind === 'occupancy');
   expect(occupancy.length).toBeGreaterThan(0);

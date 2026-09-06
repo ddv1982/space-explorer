@@ -1,3 +1,5 @@
+import type { PlayerDamageContext } from '@/systems/PlayerDamage';
+import type { Player } from '@/entities/Player';
 import Phaser from 'phaser';
 
 function findPlayer(scene: Phaser.Scene | undefined) {
@@ -37,7 +39,7 @@ export function createBrowserHarnessGameplayProbes(game: Phaser.Game) {
       const scene = game.scene.getScenes(true).find((candidate) => candidate.scene.key === 'Game');
       const player = findPlayer(scene) as
         | (Phaser.GameObjects.GameObject & {
-            takeDamage: (amount: number) => unknown;
+            takeDamage: Player['takeDamage'];
             tintMode: number;
             invulnerable: boolean;
             deathStarted: boolean;
@@ -52,7 +54,7 @@ export function createBrowserHarnessGameplayProbes(game: Phaser.Game) {
       player.deathStarted = false;
       player.shields = 0;
       player.hp = Math.max(player.hp, 2);
-      player.takeDamage(1);
+      player.takeDamage({ amount: 1, source: 'unknown' });
       const duringMode = player.tintMode;
       await new Promise<void>((resolve) => scene.time.delayedCall(200, resolve));
       return { duringMode, afterMode: player.tintMode };
@@ -60,7 +62,7 @@ export function createBrowserHarnessGameplayProbes(game: Phaser.Game) {
     probeAcceptedPlayerDamage: (amount = 1) => {
       const scene = game.scene.getScenes(true).find((candidate) => candidate.scene.key === 'Game') as
         | (Phaser.Scene & {
-            collisionManager?: { processAcceptedPlayerDamage: (options: { amount: number }) => void };
+            collisionManager?: { processAcceptedPlayerDamage: (options: PlayerDamageContext) => void };
           })
         | undefined;
       const player = findPlayer(scene) as
@@ -80,7 +82,7 @@ export function createBrowserHarnessGameplayProbes(game: Phaser.Game) {
       player.invulnerable = false;
       player.deathStarted = false;
       const beforeHp = player.hp;
-      scene.collisionManager.processAcceptedPlayerDamage({ amount });
+      scene.collisionManager.processAcceptedPlayerDamage({ amount, source: 'unknown' });
       const afterHp = player.hp;
       return { beforeHp, afterHp, damage: beforeHp - afterHp };
     },
