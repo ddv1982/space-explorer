@@ -36,4 +36,18 @@ The browser regression failed before the change on desktop and mobile, with zero
 
 With the CI-style local launcher and the unchanged ten-frame method, all five normal probes passed at 0.4 to 1.0 ms update p95. All five synthetic probes exceeded 5 ms at 6.3 to 6.8 ms, and the command exited nonzero as required. See [the raw gate report](game-feel-evidence/first-shot-gate.json). These results measure the named local environment, not every player device.
 
-All 119 unit-test files, both compiler checks, lint, formatting, architecture, unused-code checks, level validation, production build, and bundle budgets pass. Initialization carries the preparation work; a full human first-session and physical-device assessment remains part of the playtest program.
+At texture-preparation revision `1200489`, all 119 unit-test files, both compiler checks, lint, formatting, architecture, unused-code checks, level validation, production build, and bundle budgets pass. Initialization carries the preparation work; a full human first-session and physical-device assessment remains part of the playtest program.
+
+## Prepare the first physics object
+
+Integrated verification at `5fd40e3` found a smaller cold firing cost after texture preparation. A local CPU profile placed the first update in `BulletPool` object acquisition, Phaser sprite/body construction, and the upward muzzle calculation. The remote CI failure measured 6 ms on its first probe. A separate run spiked on its third probe, so cold allocation does not explain every remote outlier.
+
+The pool now prepares one disabled, invisible bullet during scene creation. Its first shot reuses that object; later acquisition and the 100-bullet capacity are unchanged. The muzzle calculation directly writes the upward position established by P1. A real Phaser regression checks dormant state, first reuse, kill/reuse, full capacity, and overflow rejection. Restoring the empty-pool implementation makes that regression fail.
+
+| Local diagnostic | Before | After |
+| --- | --- | --- |
+| First update p95, CPU profiler | 1.7 ms | 0.7 ms |
+| First update p95, profiler and 4x CPU throttle | 4.1 ms | 3.0 ms |
+| First acquisition, narrow timing and 4x throttle | 1.6 ms | 0.2 ms |
+
+These instrumented measurements identify work and compare the intervention; they are not device latency results. The unchanged normal gate passed five probes at 0.3 to 0.7 ms. The synthetic condition rejected all five at 6.2 to 6.6 ms. The ten-frame sample, two warm-up frames, 5 ms threshold, and 6 ms synthetic workload remain unchanged. See the [allocation measurements](game-feel-evidence/bullet-allocation-gate.json). Remote CI must validate the final integrated revision separately.

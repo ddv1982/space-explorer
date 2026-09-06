@@ -69,3 +69,26 @@ test('prepares the player bullet before firing without another canvas readback',
   }
   assertNoBrowserErrors();
 });
+
+test('prepares one dormant Arcade bullet and preserves reuse and capacity', async ({ page, assertNoBrowserErrors }) => {
+  await page.route('**/bullet-pool-probe', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+  );
+  await page.goto('/bullet-pool-probe');
+  const result = await page.evaluate(async () => {
+    const modulePath = '/tests/e2e/playerBulletPoolProbe.ts';
+    const probe: typeof import('./playerBulletPoolProbe') = await import(modulePath);
+    return probe.inspectPreparedBulletPool();
+  });
+  expect(result).toEqual({
+    initialCount: 1,
+    initiallyDormant: true,
+    reusedFirst: true,
+    firedState: true,
+    reusedAfterKill: true,
+    capacity: 100,
+    activeAtCapacity: 100,
+    rejectsOverflow: true,
+  });
+  assertNoBrowserErrors();
+});

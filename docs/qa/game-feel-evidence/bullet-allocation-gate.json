@@ -1,0 +1,169 @@
+{
+  "baselineRevision": "5fd40e35cad551faee72929e05b4aaa171473049",
+  "implementationRevision": "3d5923d8467a8a9f69927d2ea02589a1fa661aed",
+  "environment": "Local Chrome 151, CI-style SwiftShader flags, 1280x720; profiled/throttled measurements are diagnostic",
+  "reports": {
+    "before-native": {
+      "throttle": 1,
+      "measurements": [
+        {
+          "phase": "first",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 0.4499999970197678,
+            "p95Ms": 1.699999988079071,
+            "sampleCount": 10
+          }
+        },
+        {
+          "phase": "repeat",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 0.3,
+            "p95Ms": 0.5,
+            "sampleCount": 10
+          }
+        }
+      ]
+    },
+    "after-native": {
+      "throttle": 1,
+      "measurements": [
+        {
+          "phase": "first",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 0.3300000041723251,
+            "p95Ms": 0.7000000178813934,
+            "sampleCount": 10
+          }
+        },
+        {
+          "phase": "repeat",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 0.2500000029802322,
+            "p95Ms": 0.5,
+            "sampleCount": 10
+          }
+        }
+      ]
+    },
+    "before-throttled": {
+      "throttle": 4,
+      "measurements": [
+        {
+          "phase": "first",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 1.1600000023841859,
+            "p95Ms": 4.0999999940395355,
+            "sampleCount": 10
+          }
+        },
+        {
+          "phase": "repeat",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 1.0200000017881394,
+            "p95Ms": 2.0999999940395355,
+            "sampleCount": 10
+          }
+        }
+      ]
+    },
+    "after-throttled": {
+      "throttle": 4,
+      "measurements": [
+        {
+          "phase": "first",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 1.3900000035762787,
+            "p95Ms": 3,
+            "sampleCount": 10
+          }
+        },
+        {
+          "phase": "repeat",
+          "sampleCount": 10,
+          "warmupFrames": 2,
+          "update": {
+            "averageMs": 0.85,
+            "p95Ms": 2,
+            "sampleCount": 10
+          }
+        }
+      ]
+    },
+    "normal": {
+      "mode": "normal",
+      "environment": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+        "hardwareConcurrency": 10,
+        "deviceMemory": 16,
+        "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "signal": "workCost.update.p95Ms",
+      "thresholdMs": 5,
+      "sampleCount": 10,
+      "warmupFrames": 2,
+      "replicateCount": 5,
+      "syntheticUpdateWorkMs": 0,
+      "updateP95": {
+        "values": [
+          0.699999988079071,
+          0.3999999761581421,
+          0.4000000059604645,
+          0.30000001192092896,
+          0.30000001192092896
+        ],
+        "min": 0.30000001192092896,
+        "max": 0.699999988079071,
+        "median": 0.3999999761581421,
+        "mad": 0.09999996423721313,
+        "coefficientOfVariation": 0.34992708817903645
+      },
+      "thresholdFailureCount": 0,
+      "maxUpdateP95Ms": 0.699999988079071
+    },
+    "synthetic": {
+      "mode": "synthetic",
+      "environment": {
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+        "hardwareConcurrency": 10,
+        "deviceMemory": 16,
+        "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "signal": "workCost.update.p95Ms",
+      "thresholdMs": 5,
+      "sampleCount": 10,
+      "warmupFrames": 2,
+      "replicateCount": 5,
+      "syntheticUpdateWorkMs": 6,
+      "updateP95": {
+        "values": [
+          6.5999999940395355,
+          6.199999988079071,
+          6.300000011920929,
+          6.200000017881393,
+          6.199999988079071
+        ],
+        "min": 6.199999988079071,
+        "max": 6.5999999940395355,
+        "median": 6.200000017881393,
+        "mad": 2.9802322387695312e-08,
+        "coefficientOfVariation": 0.024590370207827283
+      },
+      "thresholdFailureCount": 5,
+      "maxUpdateP95Ms": 6.5999999940395355
+    }
+  }
+}

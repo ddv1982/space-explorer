@@ -102,10 +102,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   getMuzzlePosition(distance: number, out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
-    this.getFireDirection(out).scale(distance);
-    out.x += this.x;
-    out.y += this.y;
-    return out;
+    return out.set(this.x, this.y - distance);
   }
 
   private shouldIgnoreDamage(): boolean {

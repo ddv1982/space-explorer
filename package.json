@@ -42,6 +42,7 @@
       "index.html",
       "scripts/**/*.ts",
       "tests/e2e/playerControlsPhysics.ts",
+      "tests/e2e/playerBulletPoolProbe.ts",
       "tests/**/*.test.ts"
     ],
     "project": [

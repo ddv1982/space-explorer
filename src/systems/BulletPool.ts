@@ -22,6 +22,9 @@ export class BulletPool {
       classType: Bullet,
       runChildUpdate: true,
     });
+    const firstBullet = new Bullet(scene, 0, 0);
+    this.group.add(firstBullet);
+    firstBullet.kill();
   }
 
   fire(x: number, y: number, velocityX: number = 0, velocityY?: number): Bullet | null {
