@@ -52,6 +52,92 @@ async function setPaused(page: Page, paused: boolean, touch: boolean): Promise<v
   }
 }
 
+async function observeBeamCycle(page: Page) {
+  return page.evaluate(() => {
+    const api = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+    if (!api) throw new Error('Missing browser harness');
+    const initial = api.combatPolish.combatPolishState();
+    const startedAt = performance.now();
+    let active: typeof initial | null = null;
+    let completed: typeof initial | null = null;
+    let last = initial;
+    return new Promise<{
+      outcome: 'complete' | 'watchdog' | 'scene-ended';
+      initial: typeof initial;
+      active: typeof initial | null;
+      completed: typeof initial | null;
+      last: typeof initial;
+      elapsedGameplayMs: number;
+      elapsedWallMs: number;
+    }>((resolve) => {
+      let frame = 0;
+      const finish = (outcome: 'complete' | 'watchdog' | 'scene-ended') => {
+        cancelAnimationFrame(frame);
+        clearTimeout(timer);
+        resolve({
+          outcome,
+          initial,
+          active,
+          completed,
+          last,
+          elapsedGameplayMs: (last.gameplayMs ?? 0) - (initial.gameplayMs ?? 0),
+          elapsedWallMs: performance.now() - startedAt,
+        });
+      };
+      const sample = () => {
+        last = api.combatPolish.combatPolishState();
+        if (last.level === null) return finish('scene-ended');
+        if (!active && last.beams.some((beam) => beam.damaging)) active = last;
+        if (active && last.beams.length === 0) {
+          completed = last;
+          return finish('complete');
+        }
+        frame = requestAnimationFrame(sample);
+      };
+      const timer = setTimeout(() => finish('watchdog'), 120000);
+      frame = requestAnimationFrame(sample);
+    });
+  });
+}
+
+async function observeBossSpawn(page: Page) {
+  return page.evaluate(() => {
+    const api = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
+    if (!api) throw new Error('Missing browser harness');
+    const initial = api.combatPolish.combatPolishState();
+    const startedAt = performance.now();
+    let last = initial;
+    return new Promise<{
+      outcome: 'complete' | 'watchdog' | 'scene-ended';
+      initial: typeof initial;
+      last: typeof initial;
+      elapsedGameplayMs: number;
+      elapsedWallMs: number;
+    }>((resolve) => {
+      let frame = 0;
+      const finish = (outcome: 'complete' | 'watchdog' | 'scene-ended') => {
+        cancelAnimationFrame(frame);
+        clearTimeout(timer);
+        resolve({
+          outcome,
+          initial,
+          last,
+          elapsedGameplayMs: (last.gameplayMs ?? 0) - (initial.gameplayMs ?? 0),
+          elapsedWallMs: performance.now() - startedAt,
+        });
+      };
+      const sample = () => {
+        last = api.combatPolish.combatPolishState();
+        if (last.level !== initial.level) return finish('scene-ended');
+        if (last.bosses.length > 0) return finish('complete');
+        frame = requestAnimationFrame(sample);
+      };
+      const timer = setTimeout(() => finish('watchdog'), 120000);
+      frame = requestAnimationFrame(sample);
+    });
+  });
+}
+
 const causes = [
   ['enemy-bullet', 'LOST TO HOSTILE FIRE'],
   ['bomb', 'LOST TO A BOMB'],
@@ -61,7 +147,7 @@ const causes = [
   ['asteroid', 'LOST TO DEBRIS'],
 ] as const satisfies ReadonlyArray<readonly [Exclude<DamageSource, 'unknown'>, string]>;
 
-test('real pooled collisions distinguish shield, hull and every fatal cause through retry', async ({
+test('real pooled collisions distinguish shield absorption from hull damage', async ({
   page,
   assertNoBrowserErrors,
 }) => {
@@ -90,7 +176,15 @@ test('real pooled collisions distinguish shield, hull and every fatal cause thro
   expect(hull.playerTint).toBe(0xffffff);
   await saveBrowserEvidence(page, 'real-hull-impact', hull);
 
-  for (const [source, label] of causes) {
+  assertNoBrowserErrors();
+});
+
+for (const [source, label] of causes) {
+  test(`real ${source} fatal attribution survives GameOver and retry`, async ({ page, assertNoBrowserErrors }) => {
+    test.setTimeout(120000);
+    await openMenu(page);
+    await startNewRun(page);
+    await recordCombat(page);
     const fatal = await page.evaluate(
       (cause) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageCollision(cause, 'fatal'),
       source
@@ -119,23 +213,23 @@ test('real pooled collisions distinguish shield, hull and every fatal cause thro
     await expect
       .poll(() => page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.read()?.frames.at(-1)?.alive))
       .toBe(true);
-  }
-  await saveBrowserEvidence(page, 'six-retries-complete', {
-    state: await state(page),
-    recording: await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop()),
+    await saveBrowserEvidence(page, `retry-${source}-complete`, {
+      state: await state(page),
+      recording: await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop()),
+    });
+    assertNoBrowserErrors();
   });
-  assertNoBrowserErrors();
-});
+}
 
-test('authored beam escape regions stay safe and telegraphs survive pause', async ({
-  page,
-  isMobile,
-  assertNoBrowserErrors,
-}) => {
-  test.setTimeout(180000);
-  await openMenu(page);
-  await startNewRun(page);
-  for (const pattern of ['flare', 'lattice'] as const) {
+for (const pattern of ['flare', 'lattice'] as const) {
+  test(`authored ${pattern} escape region stays safe and telegraph survives pause`, async ({
+    page,
+    isMobile,
+    assertNoBrowserErrors,
+  }) => {
+    test.setTimeout(180000);
+    await openMenu(page);
+    await startNewRun(page);
     await setPaused(page, true, isMobile);
     const staged = await page.evaluate(
       (value) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBeamPattern(value),
@@ -149,19 +243,20 @@ test('authored beam escape regions stay safe and telegraphs survive pause', asyn
     expect(paused.beams).toEqual(beforePause.beams);
     expect(paused.gameplayMs).toBe(beforePause.gameplayMs);
     await saveBrowserEvidence(page, `${pattern}-paused-telegraph`, { staged, beforePause, paused });
+    const observed = observeBeamCycle(page);
     await setPaused(page, false, isMobile);
-    await expect
-      .poll(async () => (await state(page)).beams.some((beam) => beam.damaging), { timeout: 30000 })
-      .toBe(true);
-    const active = await state(page);
-    expect(active.player?.hp).toBe(staged.hp);
-    await saveBrowserEvidence(page, `${pattern}-active-escape-region`, { staged, active });
-    await expect.poll(async () => (await state(page)).beams.length, { timeout: 60000 }).toBe(0);
-    expect((await state(page)).player?.hp).toBe(staged.hp);
-    await saveBrowserEvidence(page, `${pattern}-completed-escape-region`, { staged, completed: await state(page) });
-  }
-  assertNoBrowserErrors();
-});
+    const receipt = await observed;
+    await saveBrowserEvidence(page, `${pattern}-beam-cycle`, receipt);
+    expect(receipt.outcome, JSON.stringify(receipt)).toBe('complete');
+    expect(receipt.active).not.toBeNull();
+    if (!receipt.active) throw new Error('Missing active beam observation');
+    expect(receipt.active.player?.hp).toBe(staged.hp);
+    expect(receipt.completed?.player?.hp).toBe(staged.hp);
+    expect(receipt.completed?.beams).toEqual([]);
+    expect(receipt.elapsedGameplayMs).toBeGreaterThan(pattern === 'flare' ? 700 : 800);
+    assertNoBrowserErrors();
+  });
+}
 
 test('delivered eight-direction input escapes overlapping beam danger before activation', async ({
   page,
@@ -238,14 +333,13 @@ test('minimum-quality shield feedback remains visible without expansion under re
   assertNoBrowserErrors();
 });
 
-test('all ten directly staged levels initialize and reach their natural boss trigger', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
-  test.setTimeout(120000);
-  await openMenu(page);
-  await startNewRun(page);
-  for (let level = 1; level <= 10; level++) {
+for (let level = 1; level <= 10; level++) {
+  test(`direct level ${level} initializes and reaches its authored boss trigger`, async ({
+    page,
+    assertNoBrowserErrors,
+  }) => {
+    test.setTimeout(180000);
+    await openMenu(page);
     const staged = await page.evaluate(
       (value) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageLevel(value),
       level
@@ -257,13 +351,18 @@ test('all ten directly staged levels initialize and reach their natural boss tri
     const trigger = await page.evaluate(() =>
       window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBossThreshold()
     );
-    if (trigger.hasBoss) await expect.poll(async () => (await state(page)).bosses.length, { timeout: 10000 }).toBe(1);
+    if (trigger.hasBoss) {
+      const receipt = await observeBossSpawn(page);
+      await saveBrowserEvidence(page, `level-${level}-boss-observation`, receipt);
+      expect(receipt.outcome, JSON.stringify(receipt)).toBe('complete');
+      expect(receipt.last.bosses).toHaveLength(1);
+    }
     await saveBrowserEvidence(page, `direct-level-${level}-boss-smoke`, {
       staged,
       trigger,
       state: await state(page),
       scope: 'Direct level and progress staging; verifies initialization and boss spawn, not complete campaign play.',
     });
-  }
-  assertNoBrowserErrors();
-});
+    assertNoBrowserErrors();
+  });
+}
