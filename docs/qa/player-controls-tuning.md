@@ -28,7 +28,7 @@ The native profile meets the planned limits of 40 px release distance, 350 ms re
 
 The browser spec also starts the actual campaign and delivers keyboard input on desktop and CDP touch input on emulated portrait and landscape phones. It verifies diagonal acceleration, a reached speed of at least 475 px/s, a total cap of 480 px/s, straight active projectiles while the player banks, and a release that stops within 200 ms and 40 px. Six browser scenarios passed across 1280×720, 844×390, and 390×844. These are software input and simulation checks, not physical-device latency or fresh-player preference measurements.
 
-Run the registered `playerControls.spec.ts` in the desktop and mobile Playwright projects. Evidence is saved under `output/player-controls/<project>/`, including the physics comparison JSON, delivered-control recording, and gameplay screenshot. The evidence uses the existing P0 recorder and does not read InputManager movement getters from diagnostics.
+Run the registered `playerControls.spec.ts` in the desktop and mobile Playwright projects. Evidence is saved under `output/verification/<Playwright-test-output-directory>/`, including the physics comparison JSON, delivered-control recording, and gameplay screenshot. The evidence uses the existing P0 recorder and does not read InputManager movement getters from diagnostics.
 
 Focused Player tests cover normalized diagonal acceleration, opposing-input cancellation, one read per direction, and banking equivalence across frame rates. Existing InputManager tests protect engage/release hysteresis, deliberate reversal, secondary-axis suppression, and touch-fire filtering. Typecheck, focused ESLint, and the architecture check pass without new architecture exceptions.
 

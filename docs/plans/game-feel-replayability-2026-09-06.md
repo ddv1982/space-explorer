@@ -20,7 +20,7 @@ The program preserves the existing ten-level campaign, procedural worlds, cinema
 
 Implementation does not mark the human exit evidence as collected. Read [control measurements](../qa/player-controls-tuning.md), [encounter decisions and campaign matrix](../qa/encounter-rhythm.md), and [retry verification](../qa/direct-retry.md) for the technical evidence and its limits.
 
-The final integration also retains brief Escape presses across frame boundaries and refreshes final score at the game-over handoff. The latter includes an enemy-contact reward that completes after synchronous fatal damage. Both have failing-before regressions. Current CI results and runtime artifacts identify the validated revision; this document does not replace those receipts.
+The final integration also retains brief Escape presses across frame boundaries and refreshes final score at the game-over handoff. The latter includes an enemy-contact reward that completes after synchronous fatal damage. Both have failing-before regressions. Final verification also prepares the first projectile physics object and keeps native intermission keys out of gameplay input, preventing double purchases and blocked Space activation. Current CI results and runtime artifacts identify the validated revision; this document does not replace those receipts.
 
 ## Preserve the evidence boundaries
 

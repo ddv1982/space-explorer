@@ -33,3 +33,11 @@ The four screenshots and scene snapshots are in `output/direct-retry/{selected,a
 Browser execution used a temporary Playwright configuration selecting this suite, desktop 1280×720, touch 844×390, one worker, and Vite port 4185. The resize scenario also verified 390×844. Root registers the committed suite with the normal projects for integrated reruns.
 
 The listener test first compared against startup and saw a decrease from three listeners to two on the first keyboard activation. It now establishes the post-first-retry baseline and checks nine further cycles for growth. No runtime change was needed for that test correction.
+
+## Preserve native actions after gameplay
+
+An actual Game-to-Intermission check exposed two input ownership defects. Enter on Buy Weapons also purchased the canvas-selected Hull upgrade. After guarding the intermission controller, native Space still failed because Phaser retained its global gameplay key capture.
+
+The accessible action layer now keeps Enter, Space, and Tab at the native navigation boundary without preventing their browser defaults. Escape, R, and M remain available to scene shortcuts. The intermission controller also rejects queued native-origin upgrade input and retains Escape continuation from a focused button.
+
+Both defects have failing-before regressions. Fifteen focused unit tests and six desktop/mobile accessible-action cases pass. The browser check verifies one 800-credit Weapons purchase, one 500-credit Hull purchase, native Tab navigation, and continuation to level 2 with exactly the resulting credits and upgrades. It starts gameplay before staging intermission so inherited global key capture is exercised.
