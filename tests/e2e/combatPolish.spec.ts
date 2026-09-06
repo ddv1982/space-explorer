@@ -30,6 +30,28 @@ async function state(page: Page) {
   });
 }
 
+async function setPaused(page: Page, paused: boolean, touch: boolean): Promise<void> {
+  if (touch) {
+    if (paused) {
+      const viewport = page.viewportSize();
+      if (!viewport) throw new Error('Missing touch viewport');
+      await page.touchscreen.tap(viewport.width - 44, 106);
+    } else {
+      const resume = (await snapshot(page)).texts.find((item) => item.text.endsWith('\nRESUME'));
+      if (!resume) throw new Error('Missing visible Resume action');
+      await page.touchscreen.tap(resume.x, resume.y);
+    }
+    await expect.poll(async () => (await state(page)).paused, { timeout: 15000 }).toBe(paused);
+    return;
+  }
+  await page.keyboard.down('Escape');
+  try {
+    await expect.poll(async () => (await state(page)).paused, { timeout: 15000 }).toBe(paused);
+  } finally {
+    await page.keyboard.up('Escape');
+  }
+}
+
 const causes = [
   ['enemy-bullet', 'LOST TO HOSTILE FIRE'],
   ['bomb', 'LOST TO A BOMB'],
@@ -104,13 +126,16 @@ test('real pooled collisions distinguish shield, hull and every fatal cause thro
   assertNoBrowserErrors();
 });
 
-test('authored beam escape regions stay safe and telegraphs survive pause', async ({ page, assertNoBrowserErrors }) => {
+test('authored beam escape regions stay safe and telegraphs survive pause', async ({
+  page,
+  isMobile,
+  assertNoBrowserErrors,
+}) => {
   test.setTimeout(180000);
   await openMenu(page);
   await startNewRun(page);
   for (const pattern of ['flare', 'lattice'] as const) {
-    await page.keyboard.press('Escape');
-    await expect.poll(async () => (await state(page)).paused).toBe(true);
+    await setPaused(page, true, isMobile);
     const staged = await page.evaluate(
       (value) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBeamPattern(value),
       pattern
@@ -123,7 +148,7 @@ test('authored beam escape regions stay safe and telegraphs survive pause', asyn
     expect(paused.beams).toEqual(beforePause.beams);
     expect(paused.gameplayMs).toBe(beforePause.gameplayMs);
     await saveBrowserEvidence(page, `${pattern}-paused-telegraph`, { staged, beforePause, paused });
-    await page.keyboard.press('Escape');
+    await setPaused(page, false, isMobile);
     await expect
       .poll(async () => (await state(page)).beams.some((beam) => beam.damaging), { timeout: 30000 })
       .toBe(true);
@@ -132,6 +157,7 @@ test('authored beam escape regions stay safe and telegraphs survive pause', asyn
     await saveBrowserEvidence(page, `${pattern}-active-escape-region`, { staged, active });
     await expect.poll(async () => (await state(page)).beams.length, { timeout: 60000 }).toBe(0);
     expect((await state(page)).player?.hp).toBe(staged.hp);
+    await saveBrowserEvidence(page, `${pattern}-completed-escape-region`, { staged, completed: await state(page) });
   }
   assertNoBrowserErrors();
 });
