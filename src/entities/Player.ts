@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { usesCinematicArt } from '../config/cinematicAssets';
 import { FLIGHT_CONFIG } from '../config/flightConfig';
-import { getFlightMode, type FlightMode } from '../config/flightMode';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import { V2_SHIPS, bankToFrame } from '../config/v2Ships';
 import { keyboardDesiredVelocity, stepFlight } from '../systems/flight/flightModel';
@@ -12,7 +11,6 @@ import { ensurePlayerTexture } from '../utils/SpriteFactory';
 import { applyGameObjectGlow } from '../utils/renderingCompat';
 import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
-const NOMINAL_FRAME_MS = 1000 / 60;
 /** The bank frames carry most of the visible roll; a small rotation adds a sense of yaw. */
 const MOMENTUM_BANK_ROTATION = (4 * Math.PI) / 180;
 const PLAYER_BANK_FRAMES = V2_SHIPS[0].bankFrames;
@@ -20,14 +18,6 @@ const PLAYER_BANK_FRAMES = V2_SHIPS[0].bankFrames;
 interface DesiredVelocity {
   vx: number;
   vy: number;
-}
-
-function getFrameDampingAlpha(frameAlpha: number, delta: number): number {
-  if (!Number.isFinite(delta) || delta <= 0) {
-    return 0;
-  }
-
-  return Phaser.Math.Clamp(1 - Math.pow(1 - frameAlpha, delta / NOMINAL_FRAME_MS), 0, 1);
 }
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
@@ -44,7 +34,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private exhaustTimer: number = 0;
   private readonly exhaustInterval: number = 50;
   private visualFlashToken = 0;
-  private flightMode: FlightMode = 'momentum';
   private bank = 0;
   /** Incremented on every spawn so a held touch drag re-anchors to the new ship. */
   private spawnGeneration = 0;
@@ -57,12 +46,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.flightMode = getFlightMode();
     this.setDepth(5);
     (this.body as Phaser.Physics.Arcade.Body).setSize(24, 32);
-    this.setDrag(this.flightMode === 'legacy' ? PLAYER_CONFIG.drag : 0);
-    this.setMaxVelocity(PLAYER_CONFIG.maxSpeed);
-    (this.body as Phaser.Physics.Arcade.Body).setMaxSpeed(PLAYER_CONFIG.maxSpeed);
+    this.setMaxVelocity(FLIGHT_CONFIG.maxSpeed);
+    (this.body as Phaser.Physics.Arcade.Body).setMaxSpeed(FLIGHT_CONFIG.maxSpeed);
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5);
 
@@ -223,11 +210,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const horizontal = (Number(inputManager.isRight()) - Number(inputManager.isLeft())) as -1 | 0 | 1;
     const vertical = (Number(inputManager.isDown()) - Number(inputManager.isUp())) as -1 | 0 | 1;
-    if (this.flightMode === 'legacy') {
-      this.updateLegacyFlight(horizontal, vertical, delta);
-    } else {
-      this.updateMomentumFlight(inputManager, horizontal, vertical, delta);
-    }
+    this.updateFlight(inputManager, horizontal, vertical, delta);
   }
 
   /** Current visual bank, -1 (full left) to 1 (full right). */
@@ -235,12 +218,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.bank;
   }
 
-  private updateMomentumFlight(
-    inputManager: InputManager,
-    horizontal: -1 | 0 | 1,
-    vertical: -1 | 0 | 1,
-    delta: number
-  ): void {
+  private updateFlight(inputManager: InputManager, horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
     const desired: DesiredVelocity =
       horizontal !== 0 || vertical !== 0
         ? keyboardDesiredVelocity(horizontal, vertical, FLIGHT_CONFIG.maxSpeed)
@@ -276,17 +254,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.bankFrame = frame;
   }
 
-  private updateLegacyFlight(horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
-    const acceleration =
-      horizontal !== 0 && vertical !== 0 ? PLAYER_CONFIG.acceleration * Math.SQRT1_2 : PLAYER_CONFIG.acceleration;
-    const ax = horizontal * acceleration;
-    const ay = vertical * acceleration;
-    this.setAcceleration(ax, ay);
-    this.updateRotationFromMovement(horizontal, delta);
-    this.isMovingUp = vertical < 0;
-    this.emitExhaustIfDue(delta, ax, ay);
-  }
-
   private updateInvulnerability(delta: number): void {
     if (!this.invulnerable) {
       return;
@@ -297,11 +264,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.invulnerable = false;
       this.setAlpha(1);
     }
-  }
-
-  private updateRotationFromMovement(horizontal: number, delta: number): void {
-    const targetRotation = horizontal * Phaser.Math.DegToRad(15);
-    this.rotation = Phaser.Math.Linear(this.rotation, targetRotation, getFrameDampingAlpha(0.1, delta));
   }
 
   private emitExhaustIfDue(delta: number, ax: number, ay: number): void {

@@ -43,8 +43,8 @@ describe('runGameSceneCreateBootstrap', () => {
         callLog.push('mobileControls.setPauseButtonHandler');
         pauseHandler = handler;
       },
-      setJoystickSuppressed(value: boolean) {
-        callLog.push('mobileControls.setJoystickSuppressed');
+      setTouchSteeringSuppressed(value: boolean) {
+        callLog.push('mobileControls.setTouchSteeringSuppressed');
         suppressedValues.push(value);
       },
     };

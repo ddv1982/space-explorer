@@ -1,7 +1,8 @@
 import type { HazardBeamLaunchConfig } from '../../src/entities/HazardBeam';
-import { PLAYER_CONFIG } from '../../src/config/playerConfig';
+import { FLIGHT_CONFIG } from '../../src/config/flightConfig';
+import { stepFlight, type FlightState } from '../../src/systems/flight/flightModel';
+import { dragDesiredVelocity } from '../../src/systems/input/relativeDrag';
 
-const { maxSpeed: SPEED, acceleration: ACCELERATION, drag: BRAKING } = PLAYER_CONFIG;
 const REACTION_MS = 250;
 const PLAYER_HALF_WIDTH = 12;
 const PLAYER_HALF_HEIGHT = 16;
@@ -31,17 +32,15 @@ export function proveLowerBeamRoute(input: {
   const dy = targetY - input.y;
   const distance = Math.hypot(dx, dy);
   let travelled = 0;
-  let speed = 0;
+  let flight: FlightState = { vx: 0, vy: 0, bank: 0 };
   let escapedAtMs: number | null = null;
   const stepMs = 1000 / 240;
   for (let time = 0; time < 12000; time += stepMs) {
     if (time >= REACTION_MS && travelled < distance) {
-      const remaining = distance - travelled;
-      speed =
-        (speed * speed) / (2 * BRAKING) >= remaining
-          ? Math.max(0, speed - (BRAKING * stepMs) / 1000)
-          : Math.min(SPEED, speed + (ACCELERATION * stepMs) / 1000);
-      travelled = Math.min(distance, travelled + (speed * stepMs) / 1000);
+      // Steer toward the escape point the way a drag player does, through the real flight model.
+      const desired = dragDesiredVelocity(travelled, 0, distance, 0, FLIGHT_CONFIG.maxSpeed);
+      flight = stepFlight(flight, desired.vx, 0, stepMs, FLIGHT_CONFIG);
+      travelled = Math.min(distance, Math.max(0, travelled + (flight.vx * stepMs) / 1000));
     }
     const fraction = distance === 0 ? 1 : travelled / distance;
     const x = input.x + dx * fraction;

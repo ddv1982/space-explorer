@@ -15,9 +15,9 @@ test('brief Escape presses pause once even when released between gameplay update
   assertNoBrowserErrors();
 });
 
-async function measureControls(page: import('@playwright/test').Page, search: string) {
+async function measureControls(page: import('@playwright/test').Page) {
   await page.route('**/controls-probe*', (route) => route.fulfill({ contentType: 'text/html', body: '<html></html>' }));
-  await page.goto(`/controls-probe${search}`);
+  await page.goto('/controls-probe');
   return page.evaluate(async () => {
     const modulePath = '/tests/e2e/playerControlsPhysics.ts';
     const probe: typeof import('./playerControlsPhysics') = await import(modulePath);
@@ -25,37 +25,21 @@ async function measureControls(page: import('@playwright/test').Page, search: st
   });
 }
 
-function expectSharedControlContract(item: Awaited<ReturnType<typeof measureControls>>[number]): void {
-  expect(item.cardinalSpeed).toBeCloseTo(480);
-  expect(item.diagonalSpeed / item.cardinalSpeed).toBeCloseTo(1, 2);
-  expect([item.bodyWidth, item.bodyHeight]).toEqual([24, 32]);
-  expect([item.fireX, item.fireY, item.muzzleX, item.muzzleY]).toEqual([0, -1, 0, -20]);
-  expect(item.rotation).toBeGreaterThan(0);
-}
-
 test('momentum flight glides to rest and stays normalized at 60 and 120 Hz', async ({
   page,
   assertNoBrowserErrors,
 }) => {
-  const result = await measureControls(page, '');
+  const result = await measureControls(page);
   expect(result).toHaveLength(3);
   for (const item of result) {
-    expectSharedControlContract(item);
+    expect(item.cardinalSpeed).toBeCloseTo(480);
+    expect(item.diagonalSpeed / item.cardinalSpeed).toBeCloseTo(1, 2);
+    expect([item.bodyWidth, item.bodyHeight]).toEqual([24, 32]);
+    expect([item.fireX, item.fireY, item.muzzleX, item.muzzleY]).toEqual([0, -1, 0, -20]);
+    expect(item.rotation).toBeGreaterThan(0);
     // A short glide: not a dead stop (v1 stopped within ~40px), not floaty.
     expect(item.releaseDistance).toBeGreaterThan(35);
     expect(item.releaseDistance).toBeLessThan(80);
-    expect(item.reversalMs).toBeLessThanOrEqual(350);
-  }
-  assertNoBrowserErrors();
-});
-
-test('?flight=legacy preserves v1 stopping at 60 and 120 Hz', async ({ page, assertNoBrowserErrors }) => {
-  const result = await measureControls(page, '?flight=legacy');
-  expect(result).toHaveLength(3);
-  for (const item of result) {
-    expectSharedControlContract(item);
-    expect(item.rotation).toBeGreaterThan(0.2);
-    expect(item.releaseDistance).toBeLessThanOrEqual(40);
     expect(item.reversalMs).toBeLessThanOrEqual(350);
   }
   assertNoBrowserErrors();

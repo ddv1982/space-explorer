@@ -49,8 +49,8 @@ export async function waitForScene(page: Page, sceneKey: string): Promise<void> 
     .toBe(true);
 }
 
-export async function openMenu(page: Page, extraQuery = ''): Promise<void> {
-  await page.goto(`/?browserHarness=1${extraQuery}`);
+export async function openMenu(page: Page): Promise<void> {
+  await page.goto('/?browserHarness=1');
   await expect(page.locator('#game-root > canvas')).toHaveCount(1);
   await waitForHarness(page);
   await waitForScene(page, 'Menu');

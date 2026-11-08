@@ -98,7 +98,6 @@ describe('InputManager touch momentum flight', () => {
       scene as never,
       {
         isTouchSteeringActive: () => true,
-        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
         isControlPointer: () => false,
         getDragDesiredVelocity: () => ({ vx: 12, vy: -3 }),
       } as never
@@ -107,131 +106,23 @@ describe('InputManager touch momentum flight', () => {
     expect(inputManager.isFiring()).toBe(true);
     expect(inputManager.getTouchDesiredVelocity(0, 0, 0, 480)).toEqual({ vx: 12, vy: -3 });
   });
-});
 
-describe('InputManager mobile fire-touch filtering', () => {
-  test('ignores pause/control touches on the right half of the screen', () => {
-    const pointer = { id: 7, isDown: true, downX: 320 };
-    const scene = createScene([pointer]);
-
+  test('a keyboard user on a touch device fires with Space or a held pointer, not automatically', () => {
+    const scene = createScene([]);
     const inputManager = new InputManager();
     inputManager.create(
       scene as never,
       {
-        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
         isTouchSteeringActive: () => false,
-        isControlPointer: (candidate: { id: number }) => candidate.id === 7,
+        isControlPointer: () => false,
+        getDragDesiredVelocity: () => null,
       } as never
     );
 
     expect(inputManager.isFiring()).toBe(false);
-  });
-
-  test('still treats non-control right-side touches as mobile fire input', () => {
-    const pointer = { id: 8, isDown: true, downX: 320 };
-    const scene = createScene([pointer]);
-
-    const inputManager = new InputManager();
-    inputManager.create(
-      scene as never,
-      {
-        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
-        isTouchSteeringActive: () => false,
-        isControlPointer: () => false,
-      } as never
-    );
-
+    scene.keys.get(32)!.isDown = true;
     expect(inputManager.isFiring()).toBe(true);
-  });
-});
-
-describe('InputManager mobile movement gating', () => {
-  test('requires deliberate movement before engaging a direction', () => {
-    const scene = createScene();
-    let vector = { x: 0.34, y: 0 };
-
-    const inputManager = new InputManager();
-    inputManager.create(
-      scene as never,
-      {
-        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-        isTouchSteeringActive: () => false,
-        isControlPointer: () => false,
-      } as never
-    );
-
-    expect(inputManager.isRight()).toBe(false);
-
-    vector = { x: 0.36, y: 0 };
-    expect(inputManager.isRight()).toBe(true);
-  });
-
-  test('uses hysteresis so an engaged direction stays stable until movement meaningfully relaxes', () => {
-    const scene = createScene();
-    let vector = { x: 0.4, y: 0 };
-
-    const inputManager = new InputManager();
-    inputManager.create(
-      scene as never,
-      {
-        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-        isTouchSteeringActive: () => false,
-        isControlPointer: () => false,
-      } as never
-    );
-
-    expect(inputManager.isRight()).toBe(true);
-
-    vector = { x: 0.2, y: 0 };
-    expect(inputManager.isRight()).toBe(true);
-
-    vector = { x: 0.17, y: 0 };
-    expect(inputManager.isRight()).toBe(false);
-  });
-
-  test('requires renewed commitment to reverse directions', () => {
-    const scene = createScene();
-    let vector = { x: 0.5, y: 0 };
-
-    const inputManager = new InputManager();
-    inputManager.create(
-      scene as never,
-      {
-        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-        isTouchSteeringActive: () => false,
-        isControlPointer: () => false,
-      } as never
-    );
-
-    expect(inputManager.isRight()).toBe(true);
-
-    vector = { x: -0.2, y: 0 };
-    expect(inputManager.isLeft()).toBe(false);
-
-    vector = { x: -0.36, y: 0 };
-    expect(inputManager.isLeft()).toBe(true);
-  });
-
-  test('suppresses weak secondary-axis drift while preserving intentional diagonals', () => {
-    const scene = createScene();
-    let vector = { x: 0.8, y: 0.45 };
-
-    const inputManager = new InputManager();
-    inputManager.create(
-      scene as never,
-      {
-        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
-        isTouchSteeringActive: () => false,
-        isControlPointer: () => false,
-      } as never
-    );
-
-    expect(inputManager.isRight()).toBe(true);
-    expect(inputManager.isDown()).toBe(false);
-
-    vector = { x: 0.8, y: 0.65 };
-    expect(inputManager.isRight()).toBe(true);
-    expect(inputManager.isDown()).toBe(true);
+    expect(inputManager.getTouchDesiredVelocity(0, 0, 0, 480)).toBeNull();
   });
 });
 

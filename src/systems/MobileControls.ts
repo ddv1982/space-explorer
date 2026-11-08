@@ -2,77 +2,40 @@ import Phaser from 'phaser';
 import { isTouchMobileDevice } from '../utils/device';
 import { getViewportBounds } from '../utils/layout';
 import { drawNeonFrame, NEON } from '../scenes/shared/neonUiTheme';
-import { getFlightMode } from '../config/flightMode';
 import { beginDrag, dragDesiredVelocity, dragTarget, type DragState } from './input/relativeDrag';
 
 const CONTROLS_DEPTH = 1000;
-const MAX_HORIZONTAL_INSET = 170;
-const MIN_HORIZONTAL_INSET = 104;
-const MAX_VERTICAL_INSET = 160;
-const MIN_VERTICAL_INSET = 112;
-const JOYSTICK_BASE_RADIUS = 62;
-const JOYSTICK_HIT_RADIUS = 96;
-const JOYSTICK_THUMB_RADIUS = 25;
-const JOYSTICK_MAX_DISTANCE = 44;
-const JOYSTICK_INPUT_DISTANCE = 52;
-const JOYSTICK_DEADZONE_DISTANCE = 12;
 const PAUSE_BUTTON_SIZE = 44;
 const PAUSE_BUTTON_TOP_INSET = 84;
 const PAUSE_BUTTON_RIGHT_INSET = 22;
 /** Keeps the dragged ship clear of the very edge so it stays fully visible. */
 const DRAG_EDGE_MARGIN = 18;
 
+/**
+ * Touch controls for momentum flight: drag anywhere and the ship follows the finger's movement,
+ * while the main gun autofires. A pause button stays available in the top-right corner.
+ */
 export class MobileControls {
   private scene: Phaser.Scene | null = null;
-  private joystickBase: Phaser.GameObjects.Arc | null = null;
-  private joystickCenter: Phaser.GameObjects.Arc | null = null;
-  private joystickThumb: Phaser.GameObjects.Arc | null = null;
   private pauseButtonBg: Phaser.GameObjects.Graphics | null = null;
   private pauseButtonIcon: Phaser.GameObjects.Graphics | null = null;
   private pauseButtonHitArea: Phaser.GameObjects.Zone | null = null;
   private enabledForTouchDevice: boolean = false;
   private blocked: boolean = false;
-  private joystickSuppressed: boolean = false;
-  private joystickPointerId: number | null = null;
+  /** Set once a hardware keyboard is in use; cleared by the next touch. */
+  private touchSteeringSuppressed: boolean = false;
   private pauseButtonPointerId: number | null = null;
-  private joystickX: number = 0;
-  private joystickY: number = 0;
   private pauseButtonX: number = 0;
   private pauseButtonY: number = 0;
   private pauseButtonHandler: (() => void) | null = null;
-  private readonly movementVector = new Phaser.Math.Vector2();
-  /** Momentum flight steers by relative drag instead of the joystick. */
-  private dragMode: boolean = false;
   private dragPointerId: number | null = null;
   private dragState: DragState | null = null;
   private dragFingerX: number = 0;
   private dragFingerY: number = 0;
   private dragShipGeneration: number | null = null;
 
-  private readonly handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
-    if (pointer.id === this.joystickPointerId) {
-      this.updateJoystick(pointer);
-    }
-    if (pointer.id === this.dragPointerId) {
-      this.dragFingerX = pointer.x;
-      this.dragFingerY = pointer.y;
-    }
-  };
-
-  private readonly handlePointerUp = (pointer: Phaser.Input.Pointer): void => {
-    if (pointer.id === this.joystickPointerId) {
-      this.releaseJoystick();
-    }
-    if (pointer.id === this.pauseButtonPointerId) {
-      this.releasePauseButton();
-    }
-    if (pointer.id === this.dragPointerId) {
-      this.releaseDrag();
-    }
-  };
-
-  private readonly handleDragPointerDown = (pointer: Phaser.Input.Pointer): void => {
-    if (!this.dragMode || !this.isEnabled() || this.dragPointerId !== null || this.isOverPauseButton(pointer)) {
+  private readonly handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
+    if (!this.isEnabled() || this.dragPointerId !== null || this.isOverPauseButton(pointer)) {
       return;
     }
 
@@ -84,12 +47,27 @@ export class MobileControls {
     this.dragShipGeneration = null;
   };
 
+  private readonly handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
+    if (pointer.id === this.dragPointerId) {
+      this.dragFingerX = pointer.x;
+      this.dragFingerY = pointer.y;
+    }
+  };
+
+  private readonly handlePointerUp = (pointer: Phaser.Input.Pointer): void => {
+    if (pointer.id === this.dragPointerId) {
+      this.releaseDrag();
+    }
+    if (pointer.id === this.pauseButtonPointerId) {
+      this.releasePauseButton();
+    }
+  };
+
   create(scene: Phaser.Scene): this {
     this.destroy();
 
     this.scene = scene;
     this.enabledForTouchDevice = isTouchMobileDevice();
-    this.dragMode = getFlightMode() === 'momentum';
     this.blocked = false;
 
     if (!this.enabledForTouchDevice) {
@@ -97,34 +75,11 @@ export class MobileControls {
     }
 
     const extraPointers = Math.max(0, 3 - scene.input.manager.pointersTotal);
-
     if (extraPointers > 0) {
       scene.input.addPointer(extraPointers);
     }
 
     this.updateControlAnchors();
-
-    if (!this.dragMode) {
-      this.joystickBase = scene.add
-        .circle(this.joystickX, this.joystickY, JOYSTICK_BASE_RADIUS, 0x0b1020, 0.4)
-        .setStrokeStyle(5, 0x88ccff, 0.8)
-        .setDepth(CONTROLS_DEPTH)
-        .setScrollFactor(0);
-      this.joystickBase.setInteractive(new Phaser.Geom.Circle(0, 0, JOYSTICK_HIT_RADIUS), Phaser.Geom.Circle.Contains);
-      this.joystickBase.on('pointerdown', this.handleJoystickDown, this);
-
-      this.joystickCenter = scene.add
-        .circle(this.joystickX, this.joystickY, 11, 0xdaf3ff, 0.3)
-        .setStrokeStyle(2, 0xe7f8ff, 0.45)
-        .setDepth(CONTROLS_DEPTH + 1)
-        .setScrollFactor(0);
-
-      this.joystickThumb = scene.add
-        .circle(this.joystickX, this.joystickY, JOYSTICK_THUMB_RADIUS, 0xa8e5ff, 0.95)
-        .setStrokeStyle(3, 0xe7f8ff, 0.95)
-        .setDepth(CONTROLS_DEPTH + 2)
-        .setScrollFactor(0);
-    }
 
     this.pauseButtonBg = scene.add.graphics().setDepth(CONTROLS_DEPTH).setScrollFactor(0);
     this.pauseButtonIcon = scene.add
@@ -139,13 +94,12 @@ export class MobileControls {
       .setInteractive({ useHandCursor: true });
     this.pauseButtonHitArea.on('pointerdown', this.handlePauseButtonDown, this);
 
-    scene.input.on('pointerdown', this.handleDragPointerDown);
+    scene.input.on('pointerdown', this.handlePointerDown);
     scene.input.on('pointermove', this.handlePointerMove);
     scene.input.on('pointerup', this.handlePointerUp);
     scene.input.on('pointerupoutside', this.handlePointerUp);
 
     this.refreshVisibility();
-    this.updateJoystickVisual();
     this.updatePauseButtonVisual();
 
     return this;
@@ -153,34 +107,25 @@ export class MobileControls {
 
   destroy(): void {
     if (this.scene) {
-      this.scene.input.off('pointerdown', this.handleDragPointerDown);
+      this.scene.input.off('pointerdown', this.handlePointerDown);
       this.scene.input.off('pointermove', this.handlePointerMove);
       this.scene.input.off('pointerup', this.handlePointerUp);
       this.scene.input.off('pointerupoutside', this.handlePointerUp);
     }
 
     this.releaseActiveTouches();
-
-    this.joystickBase?.off('pointerdown', this.handleJoystickDown, this);
     this.pauseButtonHitArea?.off('pointerdown', this.handlePauseButtonDown, this);
-
-    this.joystickBase?.destroy();
-    this.joystickCenter?.destroy();
-    this.joystickThumb?.destroy();
     this.pauseButtonBg?.destroy();
     this.pauseButtonIcon?.destroy();
     this.pauseButtonHitArea?.destroy();
 
     this.scene = null;
-    this.joystickBase = null;
-    this.joystickCenter = null;
-    this.joystickThumb = null;
     this.pauseButtonBg = null;
     this.pauseButtonIcon = null;
     this.pauseButtonHitArea = null;
     this.enabledForTouchDevice = false;
     this.blocked = false;
-    this.joystickSuppressed = false;
+    this.touchSteeringSuppressed = false;
     this.pauseButtonHandler = null;
   }
 
@@ -191,11 +136,6 @@ export class MobileControls {
 
     this.updateControlAnchors();
     this.releaseActiveTouches();
-
-    this.joystickBase?.setPosition(this.joystickX, this.joystickY);
-    this.joystickCenter?.setPosition(this.joystickX, this.joystickY);
-    this.joystickThumb?.setPosition(this.joystickX, this.joystickY);
-
     this.refreshVisibility();
     this.updatePauseButtonVisual();
   }
@@ -211,56 +151,31 @@ export class MobileControls {
     this.updatePauseButtonVisual();
   }
 
-  /**
-   * Hides the joystick once a hardware keyboard is in use. The pause button
-   * stays visible so tap-to-pause remains available on the touchscreen.
-   */
-  setJoystickSuppressed(suppressed: boolean): void {
-    if (this.joystickSuppressed === suppressed) {
-      return;
-    }
-
-    this.joystickSuppressed = suppressed;
-
+  /** A hardware keyboard takes over steering and firing; the next touch hands control back. */
+  setTouchSteeringSuppressed(suppressed: boolean): void {
+    this.touchSteeringSuppressed = suppressed;
     if (suppressed) {
-      this.releaseJoystick();
       this.releaseDrag();
     }
-
-    this.refreshVisibility();
   }
 
   isEnabled(): boolean {
     return this.enabledForTouchDevice && !this.blocked && this.scene !== null;
   }
 
-  getMovementVector(out: Phaser.Math.Vector2 = new Phaser.Math.Vector2()): Phaser.Math.Vector2 {
-    if (!this.isEnabled()) {
-      return out.set(0, 0);
-    }
-
-    return out.copy(this.movementVector);
+  /** True while touch is the active input, which also means the main gun autofires. */
+  isTouchSteeringActive(): boolean {
+    return this.isEnabled() && !this.touchSteeringSuppressed;
   }
 
   isControlPointer(pointer: Phaser.Input.Pointer): boolean {
-    if (!this.enabledForTouchDevice) {
-      return false;
-    }
-
     return (
-      pointer.id === this.joystickPointerId ||
-      pointer.id === this.pauseButtonPointerId ||
-      pointer.id === this.dragPointerId
+      this.enabledForTouchDevice && (pointer.id === this.pauseButtonPointerId || pointer.id === this.dragPointerId)
     );
   }
 
-  isDragMode(): boolean {
-    return this.dragMode;
-  }
-
-  /** True while touch steering is the active input, which also means the main gun autofires. */
-  isTouchSteeringActive(): boolean {
-    return this.dragMode && this.isEnabled() && !this.joystickSuppressed;
+  setPauseButtonHandler(handler: (() => void) | null): void {
+    this.pauseButtonHandler = handler;
   }
 
   /**
@@ -292,20 +207,6 @@ export class MobileControls {
     return dragDesiredVelocity(shipX, shipY, target.x, target.y, maxSpeed);
   }
 
-  setPauseButtonHandler(handler: (() => void) | null): void {
-    this.pauseButtonHandler = handler;
-  }
-
-  private handleJoystickDown(pointer: Phaser.Input.Pointer): void {
-    if (!this.isEnabled() || this.joystickSuppressed || this.joystickPointerId !== null) {
-      return;
-    }
-
-    this.joystickPointerId = pointer.id;
-    this.updateJoystick(pointer);
-    this.updateJoystickVisual();
-  }
-
   private handlePauseButtonDown(pointer: Phaser.Input.Pointer): void {
     if (!this.isEnabled()) {
       return;
@@ -316,70 +217,19 @@ export class MobileControls {
     this.pauseButtonHandler?.();
   }
 
-  private updateJoystick(pointer: Phaser.Input.Pointer): void {
-    const dx = pointer.x - this.joystickX;
-    const dy = pointer.y - this.joystickY;
-    const distance = Math.hypot(dx, dy);
-
-    if (distance === 0) {
-      this.movementVector.set(0, 0);
-      this.updateJoystickVisual();
-      return;
-    }
-
-    const limitedThumbDistance = Math.min(distance, JOYSTICK_MAX_DISTANCE);
-    const thumbScale = limitedThumbDistance / distance;
-    const limitedInputDistance = Math.min(distance, JOYSTICK_INPUT_DISTANCE);
-    // Remap the usable throw after a small deadzone so movement starts farther from center.
-    const magnitude = Phaser.Math.Clamp(
-      (limitedInputDistance - JOYSTICK_DEADZONE_DISTANCE) / (JOYSTICK_INPUT_DISTANCE - JOYSTICK_DEADZONE_DISTANCE),
-      0,
-      1
-    );
-
-    this.movementVector.set((dx / distance) * magnitude, (dy / distance) * magnitude);
-
-    this.joystickThumb?.setPosition(this.joystickX + dx * thumbScale, this.joystickY + dy * thumbScale);
-  }
-
-  private updateJoystickVisual(): void {
-    const active = this.joystickPointerId !== null && this.isEnabled();
-
-    if (!active) {
-      this.joystickThumb?.setPosition(this.joystickX, this.joystickY);
-    }
-
-    this.joystickBase
-      ?.setFillStyle(0x0b1020, active ? 0.48 : 0.4)
-      .setStrokeStyle(5, active ? 0xb2e4ff : 0x88ccff, active ? 0.95 : 0.8);
-    this.joystickCenter?.setAlpha(active ? 0.85 : 0.55).setScale(active ? 1.08 : 1);
-    this.joystickThumb
-      ?.setFillStyle(active ? 0xc5efff : 0xa8e5ff, active ? 1 : 0.95)
-      .setStrokeStyle(3, 0xe7f8ff, active ? 1 : 0.95)
-      .setScale(active ? 1.04 : 1);
-  }
-
   private refreshVisibility(): void {
-    const joystickVisible = this.isEnabled() && !this.joystickSuppressed;
     const pauseVisible = this.enabledForTouchDevice && this.scene !== null;
 
-    this.joystickBase?.setVisible(joystickVisible);
-    this.joystickCenter?.setVisible(joystickVisible);
-    this.joystickThumb?.setVisible(joystickVisible);
     this.pauseButtonBg?.setVisible(pauseVisible);
     this.pauseButtonIcon?.setVisible(pauseVisible);
     this.pauseButtonHitArea?.setVisible(pauseVisible);
 
-    if (this.joystickBase?.input) {
-      this.joystickBase.input.enabled = joystickVisible;
-    }
     if (this.pauseButtonHitArea?.input) {
       this.pauseButtonHitArea.input.enabled = pauseVisible && !this.blocked;
     }
   }
 
   private releaseActiveTouches(): void {
-    this.releaseJoystick();
     this.releasePauseButton();
     this.releaseDrag();
   }
@@ -390,20 +240,14 @@ export class MobileControls {
     this.dragShipGeneration = null;
   }
 
-  private isOverPauseButton(pointer: Phaser.Input.Pointer): boolean {
-    const half = PAUSE_BUTTON_SIZE / 2;
-    return Math.abs(pointer.x - this.pauseButtonX) <= half && Math.abs(pointer.y - this.pauseButtonY) <= half;
-  }
-
-  private releaseJoystick(): void {
-    this.joystickPointerId = null;
-    this.movementVector.set(0, 0);
-    this.updateJoystickVisual();
-  }
-
   private releasePauseButton(): void {
     this.pauseButtonPointerId = null;
     this.updatePauseButtonVisual();
+  }
+
+  private isOverPauseButton(pointer: Phaser.Input.Pointer): boolean {
+    const half = PAUSE_BUTTON_SIZE / 2;
+    return Math.abs(pointer.x - this.pauseButtonX) <= half && Math.abs(pointer.y - this.pauseButtonY) <= half;
   }
 
   private updateControlAnchors(): void {
@@ -412,11 +256,6 @@ export class MobileControls {
     }
 
     const viewport = getViewportBounds(this.scene);
-    const horizontalInset = Phaser.Math.Clamp(viewport.width * 0.13, MIN_HORIZONTAL_INSET, MAX_HORIZONTAL_INSET);
-    const verticalInset = Phaser.Math.Clamp(viewport.height * 0.22, MIN_VERTICAL_INSET, MAX_VERTICAL_INSET);
-
-    this.joystickX = viewport.left + horizontalInset;
-    this.joystickY = viewport.bottom - verticalInset;
     this.pauseButtonX = viewport.right - PAUSE_BUTTON_RIGHT_INSET - PAUSE_BUTTON_SIZE / 2;
     this.pauseButtonY = viewport.top + PAUSE_BUTTON_TOP_INSET + PAUSE_BUTTON_SIZE / 2;
   }

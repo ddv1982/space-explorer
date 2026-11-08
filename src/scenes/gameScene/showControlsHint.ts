@@ -1,13 +1,10 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '@/utils/layout';
 import { UI_FONT_MONO } from '@/utils/uiFonts';
-import { getFlightMode } from '@/config/flightMode';
 import { isHardwareKeyboardDetected, onHardwareKeyboardDetected } from '@/systems/hardwareKeyboardDetection';
 
-const LEGACY_MOBILE_TITLE = 'Use the joystick to move';
-const LEGACY_MOBILE_FIRE_HINT = 'Tap the right side to shoot';
-const DRAG_MOBILE_TITLE = 'Drag anywhere to fly';
-const DRAG_MOBILE_FIRE_HINT = 'Guns fire automatically';
+const MOBILE_TITLE = 'Drag anywhere to fly';
+const MOBILE_FIRE_HINT = 'Guns fire automatically';
 const KEYBOARD_TITLE = 'WASD / Arrows to Move';
 const KEYBOARD_FIRE_HINT = 'SPACE / Click to Fire';
 
@@ -22,9 +19,6 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
   tracked.__controlsHintCleanup?.();
 
   let mobile = options.mobile === true && !isHardwareKeyboardDetected();
-  const legacyFlight = getFlightMode() === 'legacy';
-  const mobileTitle = legacyFlight ? LEGACY_MOBILE_TITLE : DRAG_MOBILE_TITLE;
-  const mobileFireHint = legacyFlight ? LEGACY_MOBILE_FIRE_HINT : DRAG_MOBILE_FIRE_HINT;
   const hintWidth = 320;
   const hintHeight = 80;
 
@@ -32,7 +26,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
   bg.setDepth(200).setScrollFactor(0);
 
   const title = scene.add
-    .text(0, 0, mobile ? mobileTitle : KEYBOARD_TITLE, {
+    .text(0, 0, mobile ? MOBILE_TITLE : KEYBOARD_TITLE, {
       fontSize: '16px',
       color: '#88ccff',
       fontFamily: UI_FONT_MONO,
@@ -42,7 +36,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
     .setScrollFactor(0);
 
   const fireHint = scene.add
-    .text(0, 0, mobile ? mobileFireHint : KEYBOARD_FIRE_HINT, {
+    .text(0, 0, mobile ? MOBILE_FIRE_HINT : KEYBOARD_FIRE_HINT, {
       fontSize: '16px',
       color: '#88ccff',
       fontFamily: UI_FONT_MONO,

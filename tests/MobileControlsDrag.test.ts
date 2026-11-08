@@ -3,7 +3,6 @@ import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
 mock.module('../src/utils/device', () => ({ isTouchMobileDevice: () => true }));
-mock.module('../src/scenes/shared/neonUiTheme', () => ({ drawNeonFrame: () => {}, NEON: { cyan: 0, cyanBright: 0 } }));
 
 const { MobileControls } = await import('../src/systems/MobileControls');
 
@@ -51,12 +50,15 @@ function createControls(viewport?: { x: number; y: number; width: number; height
 const PAUSE = { x: 346, y: 106 };
 
 describe('MobileControls relative drag', () => {
-  test('momentum flight uses drag mode and autofires while touch steering is active', () => {
-    const { controls } = createControls();
-    expect(controls.isDragMode()).toBe(true);
+  test('touch steering is active until a hardware keyboard takes over, and a touch hands it back', () => {
+    const { controls, emit } = createControls();
     expect(controls.isTouchSteeringActive()).toBe(true);
-    controls.setJoystickSuppressed(true);
+    emit('pointerdown', { id: 1, x: 200, y: 700 });
+    controls.setTouchSteeringSuppressed(true);
     expect(controls.isTouchSteeringActive()).toBe(false);
+    expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toBeNull();
+    controls.setTouchSteeringSuppressed(false);
+    expect(controls.isTouchSteeringActive()).toBe(true);
   });
 
   test('ship follows the finger movement relative to where the drag began', () => {

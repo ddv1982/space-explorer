@@ -144,15 +144,15 @@ export function runGameSceneCreateBootstrap(
     pauseStateController.togglePauseRequest(host.isGameplayLocked());
   });
   const unsubscribeKeyboard = dependencies.onHardwareKeyboardDetected(() => {
-    input.mobileControls.setJoystickSuppressed(true);
+    input.mobileControls.setTouchSteeringSuppressed(true);
   });
-  const restoreJoystick = (): void => {
-    input.mobileControls.setJoystickSuppressed(false);
+  const restoreTouchSteering = (): void => {
+    input.mobileControls.setTouchSteeringSuppressed(false);
   };
-  host.scene.input.on('pointerdown', restoreJoystick);
+  host.scene.input.on('pointerdown', restoreTouchSteering);
   const unsubscribeInput = (): void => {
     unsubscribeKeyboard();
-    host.scene.input.off('pointerdown', restoreJoystick);
+    host.scene.input.off('pointerdown', restoreTouchSteering);
   };
   host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeInput);
   dependencies.showControlsHint(host.scene, { mobile: dependencies.isTouchMobileDevice() });
