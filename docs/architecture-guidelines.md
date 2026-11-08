@@ -5,7 +5,7 @@ This document describes the scene boundaries, system contracts, and coding rules
 ## Scene Responsibilities
 
 - `BootScene` and `PreloadScene` are thin startup scenes. Keep them focused on bootstrapping and startup handoff.
-- `scenes/shared/startRun.ts` owns fresh-run reset and asset-ready gameplay entry. `MenuScene` and `GameOverScene` invoke it with their own one-shot action guards.
+- `scenes/shared/startRun.ts` owns fresh-run reset and synchronous development texture preparation before gameplay entry. `MenuScene` and `GameOverScene` invoke it with their own one-shot action guards.
 - `GameScene` is the gameplay orchestrator. It builds the active level, connects systems, reacts to gameplay events, and is the only scene that decides when combat transitions to `PlanetIntermission` or `GameOver`.
 - `PlanetIntermissionScene` owns between-level upgrades and the handoff into the next gameplay scene or `Victory`.
 - `GameOverScene` and `VictoryScene` are terminal presentation scenes. They read the stored run summary and should not reconstruct gameplay state themselves.
@@ -48,8 +48,8 @@ This document describes the scene boundaries, system contracts, and coding rules
 - Authored stage moments should be represented as reusable `sections` / hazard descriptors in level config. Keep `WaveManager` responsible for interpreting them instead of pushing timeline logic into scenes.
 - Adding a new enemy type requires a full wiring pass:
   - Add the type to `EnemyType` and update level enemy weights.
-  - Add or update the pooled group and spawn method in `EnemyPool`.
-  - Register the type in `EnemyPool.getEnemyGroupRegistry()` so collisions and player-contact behavior stay complete.
+  - Add the constructor, capacity, and player-contact behavior to the ordered enemy descriptors in `EnemyPool`. Collision registration and ordinary-enemy enumeration derive from that roster.
+  - Add explicit spawn setup only when the enemy needs a special projectile pool, target, or split behavior.
   - Add a spawn handler in `WaveManager.enemySpawnHandlers` so config data can produce live spawns.
   - Wire any extra projectile or hazard pools the enemy needs during spawn setup.
 - Keep `WaveManager` data-driven. It should select from config and delegate concrete object creation to `EnemyPool` instead of embedding enemy-specific scene logic.
@@ -76,7 +76,7 @@ This document describes the scene boundaries, system contracts, and coding rules
 
 - `bun run architecture:check` rejects dependency cycles between `src` modules.
 - Modules above 500 lines or 25 internal imports are actionable architecture warnings unless they have a reviewed concentration policy. Actionable warnings fail the check; a policy prevents arbitrary slicing only when it records a category, rationale, regression evidence, and near-current budget.
-- Intentional authored data, composition roots, procedural drawing recipes, presentation builders, pure layouts, runtime coordinators, and test narratives remain visible in the report as retained policies. Growth beyond a policy budget fails the check; reduce or remove a budget whenever an extraction lands so the improvement cannot silently regress.
+- Intentional authored data, composition roots, procedural drawing recipes, presentation builders, pure layouts, runtime coordinators, and test narratives remain visible in the report as retained policies. Growth beyond a policy budget fails the check. Function policies must name measured symbols and remain near their current size and complexity. Removed or reduced functions require removing or tightening their policies.
 - Current budgeted composition roots are the browser diagnostics facade, `GameScene`, `WaveManager`, and the boss entity facade; the neon background recipe collection remains a budgeted authored drawing hotspot. Their budgets are near-current and must be reduced after further extraction. New files must use the default limits rather than joining this list without an architectural review.
 - Browser diagnostics are split by contract: snapshots, performance sampling, runtime controls, gameplay probes, navigation, and visual pilots remain development-only. The top-level API factory may compose them but should not absorb their implementations again.
 - Responsive layout functions are pure policies. Shared viewport vocabulary belongs in `scenes/shared/responsiveViewport.ts`; scene-specific geometry stays with its scene and is protected by table-driven viewport tests and visual evidence.

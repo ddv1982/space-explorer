@@ -223,7 +223,7 @@ For development comparisons, append `&background=legacy` to use the previous bac
 ## Release notes
 
 - [Changelog](CHANGELOG.md)
-- [Latest release notes](docs/releases/1.20.0.md)
+- [Latest release notes](docs/releases/1.20.1.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

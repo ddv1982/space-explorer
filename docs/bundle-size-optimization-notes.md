@@ -95,3 +95,9 @@
   - `dist/assets/PlanetIntermissionScene-CYbX0ezK.js`: 29.13 kB raw / 9.28 kB gzip.
 - Bundle report totals: 22 files, 2,206.59 kB raw / 885.98 kB gzip; JavaScript total 1,785.98 kB raw; application JavaScript 441.56 kB raw (Phaser excluded).
 - `bun run bundle:check` passed with thresholds: largest asset <= 3,500 kB, total <= 30,000 kB, largest JS <= 1,500 kB, total JS <= 1,900 kB, app JS <= 475 kB.
+
+## Maintenance isolation (2026-11-08)
+
+All current campaign scenes use living procedural backgrounds. The old procedural comparison renderer is constructed only in development. `prepareLegacyBackgroundTextures` is synchronous and does not delay production scene transitions. Cinematic assets still load at scene preload boundaries, and scene registration retains stale asynchronous request protection.
+
+`bun run bundle:check` now also rejects browser diagnostic and legacy renderer markers in application JavaScript. This guards development exclusion without claiming a rendering speedup. The earlier load-path sections describe historical releases.

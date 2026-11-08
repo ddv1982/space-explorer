@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.1] - 2026-11-08
+
+### Changed
+
+- Simplified gameplay frame ownership and combat wiring while retaining pause, firing, transition, and restart semantics.
+- Consolidated enemy roster metadata and HUD widget ownership without changing combat rules or authored presentation.
+- Isolated the legacy background comparison renderer from production and made development texture preparation explicitly synchronous.
+- Replaced untyped Bun test declarations and fabricated visual passes with installed types and actual Playwright results.
+- Made architecture exemptions track measured functions and reject stale allowances.
+- Patched Vite, brace-expansion, Zod, and source-map-js development tooling advisories.
+
 ## [1.20.0] - 2026-09-06
 
 ### Added
