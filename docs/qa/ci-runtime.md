@@ -4,7 +4,7 @@ The reference is [workflow 42518843671](https://github.com/ddv1982/space-explore
 
 ## Keep the workflow small
 
-CI has three job definitions: quality, browser, and performance. The browser matrix contains two desktop shards and one touch-portrait lane. Each runner has one browser worker. The performance test checks the same five normal and five injected regressions in one command, without an expected-failure shell protocol.
+CI has three job definitions: quality, browser, and performance. The browser matrix uses three built-in shards for each of the desktop and touch-portrait profiles. Each runner has one browser worker. The performance test checks the same five normal and five injected regressions in one command, without an expected-failure shell protocol.
 
 The initial alternative added 17 validation runners and a custom shard-inventory checker. It preserved every historical test, but increased machinery. The user requested simpler CI and necessary tests, so that unpushed candidate was superseded. Playwright's built-in sharding handles the small fixed matrix.
 
@@ -25,3 +25,9 @@ Recorder diagnostics remain manually available. Saves, fatal-hit precedence, ret
 ## Measure the result
 
 Use post-change Actions job start and completion times, test results, and runner time. Compare with the reference and disclose run count. No speedup is established until the revised workflow completes. [Playwright sharding](https://playwright.dev/docs/test-sharding) documents the built-in partitioning. [GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) documents conditional cancellation.
+
+## First cleanup measurement
+
+[Workflow 42524597057](https://github.com/ddv1982/space-explorer/actions/runs/42524597057) passed the cleaned-up suite. Recorded validation runner time fell from 6,948 to 4,391 seconds. The longest job fell from 1,802 to 1,511 seconds, with the single touch lane becoming the bottleneck. These are one observed run per version, not a repeated benchmark.
+
+The next scheduling adjustment uses the same three shards for each profile. This replaces special-case lane entries with a Cartesian matrix and keeps all retained tests unchanged. Measure the final run before claiming its elapsed-time improvement.

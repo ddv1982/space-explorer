@@ -68,13 +68,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - project: chromium-desktop
-            shard: 1/2
-          - project: chromium-desktop
-            shard: 2/2
-          - project: chromium-mobile
-            shard: 1/1
+        project: [chromium-desktop, chromium-mobile]
+        shard: [1, 2, 3]
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -91,7 +86,7 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Run browser lane
-        run: bunx playwright test --project=${{ matrix.project }} --shard=${{ matrix.shard }}
+        run: bunx playwright test --project=${{ matrix.project }} --shard=${{ matrix.shard }}/3
 
       - name: Upload browser test results
         if: always()
