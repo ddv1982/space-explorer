@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
+import { GameplayClock, runGameSceneUpdateFrame } from '../src/scenes/gameScene/updateFrame';
 
 mockPhaserModule();
 
@@ -100,6 +101,41 @@ describe('HelperShip', () => {
 
     expect(setPosition).toHaveBeenCalledWith(55, 108);
     expect(fireShot).toHaveBeenCalledWith(bulletPool, effectsManager);
+  });
+
+  test('pause preserves a real helper respawn deadline', () => {
+    const helper = Object.create(HelperShip.prototype) as HelperShipInstance;
+    const state = helper as unknown as Record<string, unknown>;
+    Object.assign(state, {
+      depleted: false,
+      active: false,
+      respawnAt: 500,
+      remainingLives: 1,
+      followOffsetX: 10,
+      followOffsetY: 16,
+    });
+    const spawnedAt: number[] = [];
+    state.spawn = (_x: number, _y: number, time: number) => {
+      spawnedAt.push(time);
+    };
+    const clock = new GameplayClock();
+    let paused = false;
+    const frame = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => paused,
+      updatePausedFrame: () => {},
+      updateGameplayFrame: (time: number, delta: number) =>
+        helper.updateWithPlayer({ x: 100, y: 200, isAlive: true } as never, time, delta, {} as never, {} as never),
+      updateHud: () => {},
+    };
+    runGameSceneUpdateFrame(frame, 499, 499, clock);
+    expect(spawnedAt).toEqual([]);
+    paused = true;
+    runGameSceneUpdateFrame(frame, 20_499, 20_000, clock);
+    expect(spawnedAt).toEqual([]);
+    paused = false;
+    runGameSceneUpdateFrame(frame, 20_500, 1, clock);
+    expect(spawnedAt).toEqual([500]);
   });
 
   test('follow damping reaches equivalent position and rotation over equal elapsed time', () => {

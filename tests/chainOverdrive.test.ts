@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
+import { GameplayClock, runGameSceneUpdateFrame } from '../src/scenes/gameScene/updateFrame';
 
 mockPhaserModule();
 
@@ -67,7 +68,8 @@ type GameplayDelegate = Parameters<typeof createGameSceneGameplayFrameBehavior>[
 function createFiringHarness(chainMultiplier: number) {
   const levelConfig = getLevelConfig(1);
   const firedAt: number[] = [];
-  let lastFireTime = 0;
+  let currentTime = 0;
+  let paused = false;
 
   const vector = { x: 0, y: 0 } as GameplayDelegate['shotDirection'];
   const delegate: GameplayDelegate = {
@@ -77,7 +79,7 @@ function createFiringHarness(chainMultiplier: number) {
     },
     pauseStateController: null,
     flow: {
-      isGameplayLocked: () => false,
+      isGameplayLocked: () => paused,
       sampleRespawnTransitionFrame: () => {},
       isTerminalTransitionActive: () => false,
     },
@@ -114,23 +116,32 @@ function createFiringHarness(chainMultiplier: number) {
     hud: { updateBossHp: () => {}, updateBossGuard: () => {} },
     bulletPool: {
       fire: () => {
-        firedAt.push(lastFireTime);
+        firedAt.push(currentTime);
       },
     },
     effectsManager: { createMuzzleFlash: () => {} },
     getBoss: () => null,
-    getLastFireTime: () => lastFireTime,
-    setLastFireTime: (nextTime) => {
-      lastFireTime = nextTime;
-    },
+    updateHud: () => {},
     shotDirection: vector,
     shotOrigin: { ...vector } as GameplayDelegate['shotOrigin'],
     muzzleFlashOrigin: { ...vector } as GameplayDelegate['muzzleFlashOrigin'],
   };
 
+  const behavior = createGameSceneGameplayFrameBehavior(delegate);
   return {
-    behavior: createGameSceneGameplayFrameBehavior(delegate),
+    behavior,
     firedAt,
+    setPaused: (value: boolean) => {
+      paused = value;
+    },
+    runFrame: (wallTime: number, delta: number, clock: GameplayClock) => {
+      currentTime = clock.now + delta;
+      runGameSceneUpdateFrame(behavior, wallTime, delta, clock);
+    },
+    update: (time: number) => {
+      currentTime = time;
+      behavior.updateGameplayFrame(time, 16);
+    },
   };
 }
 
@@ -138,34 +149,51 @@ describe('max-chain Overdrive firing cadence', () => {
   test('fires on the tightened cooldown while the chain sits at x5', () => {
     const harness = createFiringHarness(CHAIN_MAX_MULTIPLIER);
 
-    harness.behavior.updateGameplayFrame(101, 16);
+    harness.update(101);
     expect(harness.firedAt).toEqual([101]);
 
-    // The full 100ms cooldown would still be blocking here.
-    harness.behavior.updateGameplayFrame(187, 16);
+    harness.update(187);
     expect(harness.firedAt).toEqual([101, 187]);
 
-    // 187 + 85 = 272 is still inside the tightened gate; the next shot lands at 273.
-    harness.behavior.updateGameplayFrame(272, 16);
+    harness.update(272);
     expect(harness.firedAt).toEqual([101, 187]);
 
-    harness.behavior.updateGameplayFrame(273, 16);
+    harness.update(273);
     expect(harness.firedAt).toEqual([101, 187, 273]);
+  });
+
+  test('pause leaves the real firing cooldown intact and a new frame owner starts fresh', () => {
+    const harness = createFiringHarness(1);
+    const clock = new GameplayClock();
+    harness.runFrame(101, 101, clock);
+    expect(harness.firedAt).toEqual([101]);
+    harness.setPaused(true);
+    harness.runFrame(20_101, 20_000, clock);
+    expect(harness.behavior.getLastFireTime()).toBe(101);
+    harness.setPaused(false);
+    harness.runFrame(20_201, 100, clock);
+    expect(harness.firedAt).toEqual([101]);
+    harness.runFrame(20_202, 1, clock);
+    expect(harness.firedAt).toEqual([101, 202]);
+    const restarted = createFiringHarness(1);
+    expect(restarted.behavior.getLastFireTime()).toBe(0);
+    restarted.update(101);
+    expect(restarted.firedAt).toEqual([101]);
   });
 
   test('keeps the standard cooldown one tier below the cap', () => {
     const harness = createFiringHarness(CHAIN_MAX_MULTIPLIER - 1);
 
-    harness.behavior.updateGameplayFrame(101, 16);
+    harness.update(101);
     expect(harness.firedAt).toEqual([101]);
 
-    harness.behavior.updateGameplayFrame(187, 16);
+    harness.update(187);
     expect(harness.firedAt).toEqual([101]);
 
-    harness.behavior.updateGameplayFrame(201, 16);
+    harness.update(201);
     expect(harness.firedAt).toEqual([101]);
 
-    harness.behavior.updateGameplayFrame(202, 16);
+    harness.update(202);
     expect(harness.firedAt).toEqual([101, 202]);
   });
 });

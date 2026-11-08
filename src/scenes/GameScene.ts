@@ -45,7 +45,7 @@ import { resolveRespawnFrameProbeEnabled } from './gameScene/respawnFrameProbe';
 import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
 import { runGameSceneCreateBootstrap, type GameSceneBootstrapRuntime } from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
-import { GameplayClock, runGameSceneUpdateFrame, type GameSceneFrameDelegate } from './gameScene/updateFrame';
+import { GameplayClock, runGameSceneUpdateFrame } from './gameScene/updateFrame';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
@@ -74,7 +74,6 @@ export class GameScene extends Phaser.Scene {
   private scaledBossConfig: BossConfig | null = null;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
   private readonly flow = new GameSceneFlowController();
-  private lastFireTime: number = 0;
   private boss: Boss | null = null;
   private lastLifeHelperWing: LastLifeHelperWing | null = null;
   private picketTurrets: PicketTurretSystem | null = null;
@@ -83,10 +82,8 @@ export class GameScene extends Phaser.Scene {
   private readonly shotOrigin = new Phaser.Math.Vector2();
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
   private gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null = null;
-  private updateFrameDelegate: GameSceneFrameDelegate | null = null;
   private readonly gameplayClock = new GameplayClock();
-  private readonly combatFeedbackHandlers = this.createCombatFeedbackHandlers();
-  private readonly sceneEventBindings: SceneEventBinding[] = this.createSceneEventBindings();
+  private readonly sceneEventBindings: SceneEventBinding[] = [];
   private readonly runtimeLifecycle = this.createRuntimeLifecycle();
 
   constructor() {
@@ -117,9 +114,11 @@ export class GameScene extends Phaser.Scene {
       canSaveCurrentRun: () => this.canSaveCurrentRun(),
     });
     this.installBootstrapRuntime(runtime);
+    const handlers = this.createCombatFeedbackHandlers();
+    this.sceneEventBindings.push(...this.createSceneEventBindings(handlers));
+    this.runtimeLifecycle.registerSceneEventHandlers();
     this.syncLastLifeHelperWingState();
     this.gameplayFrameBehavior = this.createGameplayFrameBehavior();
-    this.updateFrameDelegate = this.createUpdateFrameDelegate();
   }
 
   private installBootstrapRuntime(runtime: GameSceneBootstrapRuntime): void {
@@ -146,14 +145,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resetRuntimeState(): void {
-    this.lastFireTime = 0;
+    this.runtimeLifecycle.removeSceneEventHandlers();
+    this.sceneEventBindings.length = 0;
     this.boss = null;
     this.lastLifeHelperWing = null;
     this.picketTurrets = null;
     this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
     this.gameplayFrameBehavior = null;
-    this.updateFrameDelegate = null;
   }
 
   private initializePlayerRunState(): ReturnType<typeof getPlayerState> {
@@ -166,25 +165,25 @@ export class GameScene extends Phaser.Scene {
   private createCombatFeedbackHandlers() {
     return createGameSceneCombatFeedbackHandlers({
       scene: this,
-      player: () => this.player,
-      scoreManager: () => this.scoreManager,
-      effectsManager: () => this.effectsManager,
-      flow: () => this.flow,
+      player: this.player,
+      scoreManager: this.scoreManager,
+      effectsManager: this.effectsManager,
+      flow: this.flow,
       getFlowContext: () => this.getFlowContext(),
-      levelManager: () => this.levelManager,
-      collisionManager: () => this.collisionManager,
-      waveManager: () => this.waveManager,
-      grazeSurge: () => this.grazeSurge,
-      enemyPool: () => this.enemyPool,
-      hud: () => this.hud,
+      levelManager: this.levelManager,
+      collisionManager: this.collisionManager,
+      waveManager: this.waveManager,
+      grazeSurge: this.grazeSurge,
+      enemyPool: this.enemyPool,
+      hud: this.hud,
       getBoss: () => this.boss,
       setBoss: (boss) => {
         this.boss = boss;
       },
-      getScaledBossConfig: () => this.scaledBossConfig,
-      getLastLifeHelperWing: () => this.lastLifeHelperWing,
-      getPicketTurrets: () => this.picketTurrets,
-      powerUpGroup: () => this.powerUpGroup,
+      scaledBossConfig: this.scaledBossConfig,
+      lastLifeHelperWing: this.lastLifeHelperWing,
+      picketTurrets: this.picketTurrets,
+      powerUpGroup: this.powerUpGroup,
       persistHelperWingState: () => this.persistHelperWingState(),
       syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
       getGameplayNow: () => this.gameplayClock.now,
@@ -198,26 +197,28 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private createSceneEventBindings(): SceneEventBinding[] {
+  private createSceneEventBindings(
+    handlers: ReturnType<typeof createGameSceneCombatFeedbackHandlers>
+  ): SceneEventBinding[] {
     return [
-      { event: GAME_SCENE_EVENTS.enemyDeath, handler: this.combatFeedbackHandlers.handleEnemyDeath },
-      { event: GAME_SCENE_EVENTS.playerDeath, handler: this.combatFeedbackHandlers.handlePlayerDeath },
-      { event: GAME_SCENE_EVENTS.playerFatalHit, handler: this.combatFeedbackHandlers.handlePlayerFatalHit },
-      { event: GAME_SCENE_EVENTS.levelComplete, handler: this.combatFeedbackHandlers.handleLevelComplete },
-      { event: GAME_SCENE_EVENTS.bossSpawn, handler: this.combatFeedbackHandlers.handleBossSpawn },
-      { event: GAME_SCENE_EVENTS.playerHit, handler: this.combatFeedbackHandlers.handlePlayerHit },
-      { event: GAME_SCENE_EVENTS.playerExhaust, handler: this.combatFeedbackHandlers.handlePlayerExhaust },
-      { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: this.combatFeedbackHandlers.handleEnemySpawnWarning },
-      { event: GAME_SCENE_EVENTS.wormholeTelegraph, handler: this.combatFeedbackHandlers.handleWormholeTelegraph },
-      { event: GAME_SCENE_EVENTS.eliteWave, handler: this.combatFeedbackHandlers.handleEliteWave },
-      { event: GAME_SCENE_EVENTS.bossDeath, handler: this.combatFeedbackHandlers.handleBossDeath },
-      { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: this.combatFeedbackHandlers.handleBossPhaseChange },
-      { event: GAME_SCENE_EVENTS.bossGuardBreak, handler: this.combatFeedbackHandlers.handleBossGuardBreak },
-      { event: GAME_SCENE_EVENTS.helperWingActivated, handler: this.combatFeedbackHandlers.handleHelperWingActivated },
-      { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: this.combatFeedbackHandlers.handleHelperWingDepleted },
-      { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: this.combatFeedbackHandlers.handlePlayerBulletTrail },
-      { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: this.combatFeedbackHandlers.handleEnemyBulletTrail },
-      { event: GAME_SCENE_EVENTS.picketOnline, handler: this.combatFeedbackHandlers.handlePicketOnline },
+      { event: GAME_SCENE_EVENTS.enemyDeath, handler: handlers.handleEnemyDeath },
+      { event: GAME_SCENE_EVENTS.playerDeath, handler: handlers.handlePlayerDeath },
+      { event: GAME_SCENE_EVENTS.playerFatalHit, handler: handlers.handlePlayerFatalHit },
+      { event: GAME_SCENE_EVENTS.levelComplete, handler: handlers.handleLevelComplete },
+      { event: GAME_SCENE_EVENTS.bossSpawn, handler: handlers.handleBossSpawn },
+      { event: GAME_SCENE_EVENTS.playerHit, handler: handlers.handlePlayerHit },
+      { event: GAME_SCENE_EVENTS.playerExhaust, handler: handlers.handlePlayerExhaust },
+      { event: GAME_SCENE_EVENTS.enemySpawnWarning, handler: handlers.handleEnemySpawnWarning },
+      { event: GAME_SCENE_EVENTS.wormholeTelegraph, handler: handlers.handleWormholeTelegraph },
+      { event: GAME_SCENE_EVENTS.eliteWave, handler: handlers.handleEliteWave },
+      { event: GAME_SCENE_EVENTS.bossDeath, handler: handlers.handleBossDeath },
+      { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: handlers.handleBossPhaseChange },
+      { event: GAME_SCENE_EVENTS.bossGuardBreak, handler: handlers.handleBossGuardBreak },
+      { event: GAME_SCENE_EVENTS.helperWingActivated, handler: handlers.handleHelperWingActivated },
+      { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: handlers.handleHelperWingDepleted },
+      { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: handlers.handlePlayerBulletTrail },
+      { event: GAME_SCENE_EVENTS.enemyBulletTrail, handler: handlers.handleEnemyBulletTrail },
+      { event: GAME_SCENE_EVENTS.picketOnline, handler: handlers.handlePicketOnline },
     ];
   }
 
@@ -253,9 +254,10 @@ export class GameScene extends Phaser.Scene {
         this.flow.shutdown(this.collisionManager);
       },
       resetRuntimeStateAfterShutdown: () => {
-        this.lastFireTime = 0;
         this.boss = null;
         this.lastHudShieldCount = null;
+        this.gameplayFrameBehavior = null;
+        this.sceneEventBindings.length = 0;
       },
     });
   }
@@ -416,42 +418,16 @@ export class GameScene extends Phaser.Scene {
       bulletPool: this.bulletPool,
       effectsManager: this.effectsManager,
       getBoss: () => this.boss,
-      getLastFireTime: () => this.lastFireTime,
-      setLastFireTime: (nextTime: number) => {
-        this.lastFireTime = nextTime;
-      },
+      updateHud: () => this.updateHud(),
       shotDirection: this.shotDirection,
       shotOrigin: this.shotOrigin,
       muzzleFlashOrigin: this.muzzleFlashOrigin,
     });
   }
 
-  private requireGameplayFrameBehavior(): GameSceneGameplayFrameBehavior {
-    return this.gameplayFrameBehavior ?? (this.gameplayFrameBehavior = this.createGameplayFrameBehavior());
-  }
-
-  private createUpdateFrameDelegate(): GameSceneFrameDelegate {
-    return {
-      handlePauseInput: () => this.requireGameplayFrameBehavior().handlePauseInput(),
-      isPausedOrLockedFrame: () => this.requireGameplayFrameBehavior().isPausedOrLockedFrame(),
-      updatePausedFrame: (pausedDelta) => {
-        this.requireGameplayFrameBehavior().updatePausedFrame(pausedDelta, () => this.updateHud());
-      },
-      updateGameplayFrame: (gameTime, gameDelta) => {
-        this.requireGameplayFrameBehavior().updateGameplayFrame(gameTime, gameDelta);
-      },
-      updateHud: () => this.updateHud(),
-    };
-  }
-
-  private ensureUpdateFrameDelegate(): GameSceneFrameDelegate {
-    if (!this.updateFrameDelegate) {
-      this.updateFrameDelegate = this.createUpdateFrameDelegate();
-    }
-    return this.updateFrameDelegate;
-  }
-
   update(time: number, delta: number): void {
-    runGameSceneUpdateFrame(this.ensureUpdateFrameDelegate(), time, delta, this.gameplayClock);
+    if (this.gameplayFrameBehavior) {
+      runGameSceneUpdateFrame(this.gameplayFrameBehavior, time, delta, this.gameplayClock);
+    }
   }
 }

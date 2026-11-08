@@ -8,7 +8,6 @@ import {
 } from './viewportScaleRegistration';
 
 interface GameSceneRuntimeLifecycleHandlers {
-  registerRuntimeHandlers(): void;
   registerLifecycleHandlers(): void;
   registerSceneEventHandlers(): void;
   registerScaleHandlers(): void;
@@ -104,12 +103,7 @@ export function createGameSceneRuntimeLifecycle(
     });
   };
 
-  const registerRuntimeHandlers = (): void => {
-    registerSceneEventHandlers();
-  };
-
   return {
-    registerRuntimeHandlers,
     registerLifecycleHandlers,
     registerSceneEventHandlers,
     registerScaleHandlers,

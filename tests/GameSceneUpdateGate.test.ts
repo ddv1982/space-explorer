@@ -1,6 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import type { GameSceneFrameDelegate } from '../src/scenes/gameScene/updateFrame';
 import type { GameSceneGameplayFrameBehavior } from '../src/scenes/gameScene/gameplayFrameBehavior';
 
 mock.module('phaser', () => ({
@@ -57,14 +56,10 @@ const { GameScene } = await import('../src/scenes/GameScene');
 const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
 type GameSceneInstance = InstanceType<typeof GameScene>;
 
-/**
- * Typed view of private GameScene fields used by the update-gate harness.
- * Prefer this over ad-hoc Record casts so field names stay checked.
- */
 type GameSceneTestState = {
   updateHud: () => void;
+  createGameplayFrameBehavior: () => GameSceneGameplayFrameBehavior;
   gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null;
-  updateFrameDelegate: GameSceneFrameDelegate | null;
   inputManager: {
     consumePauseToggleRequest: () => boolean;
     isFiring: () => boolean;
@@ -115,7 +110,6 @@ type GameSceneTestState = {
     updateBossHp: (hp: number, maxHp: number) => void;
   };
   boss: unknown;
-  lastFireTime: number;
   bulletPool: {
     fire: () => void;
   };
@@ -280,7 +274,6 @@ function createUpdateHarness(): UpdateHarness {
   };
 
   state.boss = null;
-  state.lastFireTime = 0;
   state.bulletPool = {
     fire: () => {
       calls.push('bulletPool.fire');
@@ -298,10 +291,11 @@ function createUpdateHarness(): UpdateHarness {
     },
   };
 
-  // createGameplayFrameBehavior closes over these vectors.
   state.shotDirection = { x: 0, y: 0 };
   state.shotOrigin = { x: 0, y: 0 };
   state.muzzleFlashOrigin = { x: 0, y: 0 };
+
+  state.gameplayFrameBehavior = state.createGameplayFrameBehavior();
 
   return {
     scene,
@@ -400,36 +394,20 @@ describe('GameScene update gate regression coverage', () => {
     expect(hudIndex).toBe(harness.calls.length - 1);
   });
 
-  test('reuses a stable update-frame delegate across consecutive frames', () => {
+  test('reuses the owned frame behavior across consecutive frames', () => {
     const harness = createUpdateHarness();
-
+    const behavior = harness.state.gameplayFrameBehavior;
     harness.scene.update(1000, 16);
-    const firstDelegate = harness.state.updateFrameDelegate;
-    const firstBehavior = harness.state.gameplayFrameBehavior;
-
     harness.scene.update(1016, 16);
-    const secondDelegate = harness.state.updateFrameDelegate;
-    const secondBehavior = harness.state.gameplayFrameBehavior;
-
-    expect(firstDelegate).not.toBeNull();
-    expect(firstBehavior).not.toBeNull();
-    expect(secondDelegate).toBe(firstDelegate);
-    expect(secondBehavior).toBe(firstBehavior);
+    expect(harness.state.gameplayFrameBehavior).toBe(behavior);
+    expect(harness.calls.filter((call) => call === 'player.update')).toHaveLength(2);
   });
 
-  test('re-materializes gameplay frame behavior when only the outer delegate remains', () => {
+  test('does not run gameplay before creation or after the frame owner is cleared', () => {
     const harness = createUpdateHarness();
-
-    harness.scene.update(1000, 16);
-    const cachedDelegate = harness.state.updateFrameDelegate;
-    expect(cachedDelegate).not.toBeNull();
-
     harness.state.gameplayFrameBehavior = null;
-    harness.scene.update(1016, 16);
-
-    expect(harness.state.updateFrameDelegate).toBe(cachedDelegate);
-    expect(harness.state.gameplayFrameBehavior).not.toBeNull();
-    expect(harness.calls).toContain('parallax.update');
+    harness.scene.update(1000, 16);
+    expect(harness.calls).toEqual([]);
   });
 
   test('reads lastLifeHelperWing live so mid-run replacement is visible to a cached behavior', () => {

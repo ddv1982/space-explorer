@@ -21,7 +21,7 @@ type LevelConfig = ReturnType<LevelManager['getLevelConfig']>;
 type InitialSection = ReturnType<typeof getActiveSection>;
 type RuntimeLifecycle = Pick<
   ReturnType<typeof createGameSceneRuntimeLifecycle>,
-  'registerLifecycleHandlers' | 'registerScaleHandlers' | 'registerRuntimeHandlers'
+  'registerLifecycleHandlers' | 'registerScaleHandlers'
 >;
 
 export type GameSceneBootstrapHost = {
@@ -156,7 +156,6 @@ export function runGameSceneCreateBootstrap(
   };
   host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeInput);
   dependencies.showControlsHint(host.scene, { mobile: dependencies.isTouchMobileDevice() });
-  host.runtimeLifecycle.registerRuntimeHandlers();
 
   return {
     levelManager: levelRuntime.levelManager,
