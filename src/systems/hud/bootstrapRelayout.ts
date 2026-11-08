@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { UI_FONT_MONO } from '../../utils/uiFonts';
 import { drawNeonFrame } from '../../scenes/shared/neonUiTheme';
-import { getLayoutMetrics, HP_BAR_TRACK_OFFSET, SURGE_BAR_HEIGHT } from './statusBarLayout';
+import { type HudLayoutMetrics, HP_BAR_TRACK_OFFSET, SURGE_BAR_HEIGHT } from './statusBarLayout';
 
 interface CreateHudWidgetsParams {
   scene: Phaser.Scene;
@@ -10,7 +10,7 @@ interface CreateHudWidgetsParams {
   sectorColor: string;
 }
 
-interface HudWidgets {
+export interface HudWidgets {
   topBarPanel: Phaser.GameObjects.Graphics;
   hpBarBg: Phaser.GameObjects.Graphics;
   hpBarFill: Phaser.GameObjects.Graphics;
@@ -172,64 +172,35 @@ export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }:
   };
 }
 
-interface RelayoutHudWidgetsParams {
-  scene: Phaser.Scene;
-  baseHpBarWidth: number;
-  baseProgressWidth: number;
-  baseBossBarWidth: number;
-  topBarPanel: Phaser.GameObjects.Graphics;
-  hpBarBg: Phaser.GameObjects.Graphics;
-  hpLabel: Phaser.GameObjects.Text;
-  hpText: Phaser.GameObjects.Text;
-  livesLabel: Phaser.GameObjects.Text;
-  livesText: Phaser.GameObjects.Text;
-  scoreText: Phaser.GameObjects.Text;
-  sectorText: Phaser.GameObjects.Text;
-  levelText: Phaser.GameObjects.Text;
-  progressBg: Phaser.GameObjects.Graphics;
-  progressLabel: Phaser.GameObjects.Text;
-  announcementText: Phaser.GameObjects.Text;
-  bossNameText: Phaser.GameObjects.Text;
-  chainText: Phaser.GameObjects.Text;
-  surgeBg: Phaser.GameObjects.Graphics;
+interface HudLayoutStyle {
   hpBarHeight: number;
   progressHeight: number;
   panelStrokeColor: number;
   hpBorderColor: number;
   progressBorderColor: number;
-  announcementTween: Phaser.Tweens.Tween | null;
-  setAnnouncementTween: (tween: Phaser.Tweens.Tween | null) => void;
 }
 
-export function relayoutHudWidgets({
-  scene,
-  baseHpBarWidth,
-  baseProgressWidth,
-  baseBossBarWidth,
-  topBarPanel,
-  hpBarBg,
-  hpLabel,
-  hpText,
-  livesLabel,
-  livesText,
-  scoreText,
-  sectorText,
-  levelText,
-  progressBg,
-  progressLabel,
-  announcementText,
-  bossNameText,
-  chainText,
-  surgeBg,
-  hpBarHeight,
-  progressHeight,
-  panelStrokeColor,
-  hpBorderColor,
-  progressBorderColor,
-  announcementTween,
-  setAnnouncementTween,
-}: RelayoutHudWidgetsParams): Phaser.Tweens.Tween | null {
-  const layout = getLayoutMetrics(scene, baseHpBarWidth, baseProgressWidth, baseBossBarWidth);
+export function relayoutHudWidgets(
+  widgets: HudWidgets,
+  layout: HudLayoutMetrics,
+  { hpBarHeight, progressHeight, panelStrokeColor, hpBorderColor, progressBorderColor }: HudLayoutStyle
+): void {
+  const {
+    topBarPanel,
+    hpBarBg,
+    hpLabel,
+    hpText,
+    livesLabel,
+    livesText,
+    scoreText,
+    sectorText,
+    levelText,
+    progressBg,
+    progressLabel,
+    bossNameText,
+    chainText,
+    surgeBg,
+  } = widgets;
 
   topBarPanel.clear();
   drawNeonFrame(topBarPanel, layout.left + 10, layout.top + 6, layout.topBarWidth, layout.topBarHeight, {
@@ -298,21 +269,5 @@ export function relayoutHudWidgets({
   }
   progressLabel.setPosition(layout.centerX, layout.progressLabelY);
 
-  announcementText.setPosition(layout.centerX, layout.announcementY);
-  if (announcementTween && announcementText.alpha > 0) {
-    announcementTween.stop();
-    announcementTween = scene.tweens.add({
-      targets: announcementText,
-      alpha: { from: announcementText.alpha, to: 0 },
-      duration: 900,
-      ease: 'Power2',
-      onComplete: () => {
-        setAnnouncementTween(null);
-      },
-    });
-  }
-
   bossNameText.setPosition(layout.centerX, layout.bossNameY);
-
-  return announcementTween;
 }

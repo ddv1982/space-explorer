@@ -44,6 +44,7 @@ mock.module('../src/utils/layout', () => ({
 }));
 
 const { createHudWidgets, relayoutHudWidgets } = await import('../src/systems/hud/bootstrapRelayout');
+const { getLayoutMetrics } = await import('../src/systems/hud/statusBarLayout');
 
 type Call = { method: string; args: unknown[] };
 
@@ -179,7 +180,7 @@ describe('bootstrapRelayout', () => {
     expect(texts[10]?.state.visible).toBe(false);
   });
 
-  test('relayoutHudWidgets repositions widgets and restarts announcement fade tween when visible', () => {
+  test('relayoutHudWidgets repositions meter labels and redraws the hull track', () => {
     const topBarPanel = createGraphicsStub();
     const hpBarBg = createGraphicsStub();
     const progressBg = createGraphicsStub();
@@ -196,53 +197,45 @@ describe('bootstrapRelayout', () => {
     const bossNameText = createTextStub('BOSS');
     const chainText = createTextStub('');
     const surgeBg = createGraphicsStub();
-    const stop = mock();
-    const tweensAdd = mock(() => ({ id: 'newTween' }));
-    let nextTween: unknown = null;
-
-    const result = relayoutHudWidgets({
-      scene: { tweens: { add: tweensAdd } } as never,
-      baseHpBarWidth: 200,
-      baseProgressWidth: 300,
-      baseBossBarWidth: 400,
-      topBarPanel: topBarPanel.graphics,
-      hpBarBg: hpBarBg.graphics,
-      hpLabel: hpLabel.text,
-      hpText: hpText.text,
-      livesLabel: livesLabel.text,
-      livesText: livesText.text,
-      scoreText: scoreText.text,
-      sectorText: sectorText.text,
-      levelText: levelText.text,
-      progressBg: progressBg.graphics,
-      progressLabel: progressLabel.text,
-      announcementText: announcementText.text,
-      bossNameText: bossNameText.text,
-      chainText: chainText.text,
-      surgeBg: surgeBg.graphics,
-      hpBarHeight: 16,
-      progressHeight: 6,
-      panelStrokeColor: 0x123456,
-      hpBorderColor: 0xabcdef,
-      progressBorderColor: 0x55aaff,
-      announcementTween: { stop } as never,
-      setAnnouncementTween: (tween) => {
-        nextTween = tween;
+    relayoutHudWidgets(
+      {
+        hpBarFill: createGraphicsStub().graphics,
+        progressFill: createGraphicsStub().graphics,
+        bossBarBg: createGraphicsStub().graphics,
+        bossBarFill: createGraphicsStub().graphics,
+        surgeFill: createGraphicsStub().graphics,
+        topBarPanel: topBarPanel.graphics,
+        hpBarBg: hpBarBg.graphics,
+        hpLabel: hpLabel.text,
+        hpText: hpText.text,
+        livesLabel: livesLabel.text,
+        livesText: livesText.text,
+        scoreText: scoreText.text,
+        sectorText: sectorText.text,
+        levelText: levelText.text,
+        progressBg: progressBg.graphics,
+        progressLabel: progressLabel.text,
+        announcementText: announcementText.text,
+        bossNameText: bossNameText.text,
+        chainText: chainText.text,
+        surgeBg: surgeBg.graphics,
       },
-    });
+      getLayoutMetrics({} as Phaser.Scene, 200, 300, 400),
+      {
+        hpBarHeight: 16,
+        progressHeight: 6,
+        panelStrokeColor: 0x123456,
+        hpBorderColor: 0xabcdef,
+        progressBorderColor: 0x55aaff,
+      }
+    );
 
     expect(hpLabel.state.x).toBe(16);
     expect(hpLabel.state.y).toBe(14);
     expect(hpBarBg.calls.find((call) => call.method === 'fillRoundedRect')?.args).toEqual([46, 16, 146, 16, 3]);
     expect(scoreText.state.x).toBe(784);
     expect(scoreText.state.y).toBe(13);
-    expect(announcementText.state.x).toBe(400);
-    expect(announcementText.state.y).toBe(240);
     expect(bossNameText.state.x).toBe(400);
     expect(bossNameText.state.y).toBe(560);
-    expect(stop).toHaveBeenCalledTimes(1);
-    expect(tweensAdd).toHaveBeenCalledTimes(1);
-    expect(result as unknown).toEqual({ id: 'newTween' });
-    expect(nextTween).toBeNull();
   });
 });
