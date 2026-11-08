@@ -81,18 +81,17 @@ test('keyboard and touch steer diagonally, glide to rest after release, and fire
   let touchActive = false;
   try {
     if (touch) {
-      const joystick = (await snapshot(page)).arcs.find((arc) => arc.radius === 62);
+      // Momentum flight on touch: drag anywhere, the ship follows the finger's movement and autofires.
       const viewport = page.viewportSize();
-      if (!joystick || !viewport) throw new Error('Missing touch controls');
-      const fire = { x: viewport.width * 0.77, y: viewport.height * 0.5, id: 2 };
-      await touch.send('Input.dispatchTouchEvent', {
-        type: 'touchStart',
-        touchPoints: [{ x: joystick.x, y: joystick.y, id: 1 }, fire],
-      });
+      if (!viewport) throw new Error('Missing viewport');
+      // Keep the finger inside the viewport: Chrome drops touch moves outside it.
+      const start = { x: viewport.width * 0.2, y: viewport.height * 0.85, id: 1 };
+      const reach = Math.min(250, viewport.width * 0.6, viewport.height * 0.6);
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
       touchActive = true;
       await touch.send('Input.dispatchTouchEvent', {
         type: 'touchMove',
-        touchPoints: [{ x: joystick.x + 40, y: joystick.y - 40, id: 1 }, fire],
+        touchPoints: [{ x: start.x + reach, y: start.y - reach, id: 1 }],
       });
     } else {
       await page.keyboard.down('ArrowRight');
@@ -107,7 +106,8 @@ test('keyboard and touch steer diagonally, glide to rest after release, and fire
             (frame) =>
               frame.velocityX > 0 &&
               frame.velocityY < 0 &&
-              Math.hypot(frame.velocityX, frame.velocityY) >= 475 &&
+              // A drag eases into its target, so touch need not reach full cruise speed.
+              Math.hypot(frame.velocityX, frame.velocityY) >= (touch ? 380 : 475) &&
               frame.lastFireGameplayMs > 0
           ),
         // Momentum needs ~0.3s of gameplay time to reach cruise speed.
@@ -116,7 +116,8 @@ test('keyboard and touch steer diagonally, glide to rest after release, and fire
       .toBe(true);
     const moving = await snapshot(page);
     const ship = moving.objects.find((object) => object.active && object.textureKey === 'player-ship');
-    expect(ship?.rotation).toBeGreaterThan(0);
+    // A drag can already have settled at its target, so only held keys guarantee an active bank here.
+    if (!touch) expect(ship?.rotation).toBeGreaterThan(0);
     const bullets = moving.objects.filter((object) => object.active && object.textureKey === 'player-bullet');
     expect(bullets.length).toBeGreaterThan(0);
     expect(bullets.every((bullet) => Math.abs(bullet.rotation) < 0.00001)).toBe(true);

@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { isTouchMobileDevice } from '../utils/device';
 import { getViewportBounds } from '../utils/layout';
 import { drawNeonFrame, NEON } from '../scenes/shared/neonUiTheme';
+import { getFlightMode } from '../config/flightMode';
+import { beginDrag, dragDesiredVelocity, dragTarget, type DragState } from './input/relativeDrag';
 
 const CONTROLS_DEPTH = 1000;
 const MAX_HORIZONTAL_INSET = 170;
@@ -17,6 +19,8 @@ const JOYSTICK_DEADZONE_DISTANCE = 12;
 const PAUSE_BUTTON_SIZE = 44;
 const PAUSE_BUTTON_TOP_INSET = 84;
 const PAUSE_BUTTON_RIGHT_INSET = 22;
+/** Keeps the dragged ship clear of the very edge so it stays fully visible. */
+const DRAG_EDGE_MARGIN = 18;
 
 export class MobileControls {
   private scene: Phaser.Scene | null = null;
@@ -37,10 +41,21 @@ export class MobileControls {
   private pauseButtonY: number = 0;
   private pauseButtonHandler: (() => void) | null = null;
   private readonly movementVector = new Phaser.Math.Vector2();
+  /** Momentum flight steers by relative drag instead of the joystick. */
+  private dragMode: boolean = false;
+  private dragPointerId: number | null = null;
+  private dragState: DragState | null = null;
+  private dragFingerX: number = 0;
+  private dragFingerY: number = 0;
+  private dragShipGeneration: number | null = null;
 
   private readonly handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
     if (pointer.id === this.joystickPointerId) {
       this.updateJoystick(pointer);
+    }
+    if (pointer.id === this.dragPointerId) {
+      this.dragFingerX = pointer.x;
+      this.dragFingerY = pointer.y;
     }
   };
 
@@ -51,6 +66,22 @@ export class MobileControls {
     if (pointer.id === this.pauseButtonPointerId) {
       this.releasePauseButton();
     }
+    if (pointer.id === this.dragPointerId) {
+      this.releaseDrag();
+    }
+  };
+
+  private readonly handleDragPointerDown = (pointer: Phaser.Input.Pointer): void => {
+    if (!this.dragMode || !this.isEnabled() || this.dragPointerId !== null || this.isOverPauseButton(pointer)) {
+      return;
+    }
+
+    this.dragPointerId = pointer.id;
+    this.dragFingerX = pointer.x;
+    this.dragFingerY = pointer.y;
+    // Anchored against the ship on the first velocity query, when the ship position is known.
+    this.dragState = null;
+    this.dragShipGeneration = null;
   };
 
   create(scene: Phaser.Scene): this {
@@ -58,6 +89,7 @@ export class MobileControls {
 
     this.scene = scene;
     this.enabledForTouchDevice = isTouchMobileDevice();
+    this.dragMode = getFlightMode() === 'momentum';
     this.blocked = false;
 
     if (!this.enabledForTouchDevice) {
@@ -72,25 +104,27 @@ export class MobileControls {
 
     this.updateControlAnchors();
 
-    this.joystickBase = scene.add
-      .circle(this.joystickX, this.joystickY, JOYSTICK_BASE_RADIUS, 0x0b1020, 0.4)
-      .setStrokeStyle(5, 0x88ccff, 0.8)
-      .setDepth(CONTROLS_DEPTH)
-      .setScrollFactor(0);
-    this.joystickBase.setInteractive(new Phaser.Geom.Circle(0, 0, JOYSTICK_HIT_RADIUS), Phaser.Geom.Circle.Contains);
-    this.joystickBase.on('pointerdown', this.handleJoystickDown, this);
+    if (!this.dragMode) {
+      this.joystickBase = scene.add
+        .circle(this.joystickX, this.joystickY, JOYSTICK_BASE_RADIUS, 0x0b1020, 0.4)
+        .setStrokeStyle(5, 0x88ccff, 0.8)
+        .setDepth(CONTROLS_DEPTH)
+        .setScrollFactor(0);
+      this.joystickBase.setInteractive(new Phaser.Geom.Circle(0, 0, JOYSTICK_HIT_RADIUS), Phaser.Geom.Circle.Contains);
+      this.joystickBase.on('pointerdown', this.handleJoystickDown, this);
 
-    this.joystickCenter = scene.add
-      .circle(this.joystickX, this.joystickY, 11, 0xdaf3ff, 0.3)
-      .setStrokeStyle(2, 0xe7f8ff, 0.45)
-      .setDepth(CONTROLS_DEPTH + 1)
-      .setScrollFactor(0);
+      this.joystickCenter = scene.add
+        .circle(this.joystickX, this.joystickY, 11, 0xdaf3ff, 0.3)
+        .setStrokeStyle(2, 0xe7f8ff, 0.45)
+        .setDepth(CONTROLS_DEPTH + 1)
+        .setScrollFactor(0);
 
-    this.joystickThumb = scene.add
-      .circle(this.joystickX, this.joystickY, JOYSTICK_THUMB_RADIUS, 0xa8e5ff, 0.95)
-      .setStrokeStyle(3, 0xe7f8ff, 0.95)
-      .setDepth(CONTROLS_DEPTH + 2)
-      .setScrollFactor(0);
+      this.joystickThumb = scene.add
+        .circle(this.joystickX, this.joystickY, JOYSTICK_THUMB_RADIUS, 0xa8e5ff, 0.95)
+        .setStrokeStyle(3, 0xe7f8ff, 0.95)
+        .setDepth(CONTROLS_DEPTH + 2)
+        .setScrollFactor(0);
+    }
 
     this.pauseButtonBg = scene.add.graphics().setDepth(CONTROLS_DEPTH).setScrollFactor(0);
     this.pauseButtonIcon = scene.add
@@ -105,6 +139,7 @@ export class MobileControls {
       .setInteractive({ useHandCursor: true });
     this.pauseButtonHitArea.on('pointerdown', this.handlePauseButtonDown, this);
 
+    scene.input.on('pointerdown', this.handleDragPointerDown);
     scene.input.on('pointermove', this.handlePointerMove);
     scene.input.on('pointerup', this.handlePointerUp);
     scene.input.on('pointerupoutside', this.handlePointerUp);
@@ -118,6 +153,7 @@ export class MobileControls {
 
   destroy(): void {
     if (this.scene) {
+      this.scene.input.off('pointerdown', this.handleDragPointerDown);
       this.scene.input.off('pointermove', this.handlePointerMove);
       this.scene.input.off('pointerup', this.handlePointerUp);
       this.scene.input.off('pointerupoutside', this.handlePointerUp);
@@ -188,6 +224,7 @@ export class MobileControls {
 
     if (suppressed) {
       this.releaseJoystick();
+      this.releaseDrag();
     }
 
     this.refreshVisibility();
@@ -210,7 +247,49 @@ export class MobileControls {
       return false;
     }
 
-    return pointer.id === this.joystickPointerId || pointer.id === this.pauseButtonPointerId;
+    return (
+      pointer.id === this.joystickPointerId ||
+      pointer.id === this.pauseButtonPointerId ||
+      pointer.id === this.dragPointerId
+    );
+  }
+
+  isDragMode(): boolean {
+    return this.dragMode;
+  }
+
+  /** True while touch steering is the active input, which also means the main gun autofires. */
+  isTouchSteeringActive(): boolean {
+    return this.dragMode && this.isEnabled() && !this.joystickSuppressed;
+  }
+
+  /**
+   * Desired ship velocity from the active drag, or null when no finger is steering.
+   * `shipGeneration` changes on every respawn so a held finger re-anchors to the new ship.
+   */
+  getDragDesiredVelocity(
+    shipX: number,
+    shipY: number,
+    shipGeneration: number,
+    maxSpeed: number
+  ): { vx: number; vy: number } | null {
+    if (!this.scene || !this.isEnabled() || this.dragPointerId === null) {
+      return null;
+    }
+
+    if (this.dragState === null || this.dragShipGeneration !== shipGeneration) {
+      this.dragState = beginDrag(this.dragFingerX, this.dragFingerY, shipX, shipY);
+      this.dragShipGeneration = shipGeneration;
+    }
+
+    const viewport = getViewportBounds(this.scene);
+    const target = dragTarget(this.dragState, this.dragFingerX, this.dragFingerY, {
+      left: viewport.left + DRAG_EDGE_MARGIN,
+      top: viewport.top + DRAG_EDGE_MARGIN,
+      right: viewport.right - DRAG_EDGE_MARGIN,
+      bottom: viewport.bottom - DRAG_EDGE_MARGIN,
+    });
+    return dragDesiredVelocity(shipX, shipY, target.x, target.y, maxSpeed);
   }
 
   setPauseButtonHandler(handler: (() => void) | null): void {
@@ -302,6 +381,18 @@ export class MobileControls {
   private releaseActiveTouches(): void {
     this.releaseJoystick();
     this.releasePauseButton();
+    this.releaseDrag();
+  }
+
+  private releaseDrag(): void {
+    this.dragPointerId = null;
+    this.dragState = null;
+    this.dragShipGeneration = null;
+  }
+
+  private isOverPauseButton(pointer: Phaser.Input.Pointer): boolean {
+    const half = PAUSE_BUTTON_SIZE / 2;
+    return Math.abs(pointer.x - this.pauseButtonX) <= half && Math.abs(pointer.y - this.pauseButtonY) <= half;
   }
 
   private releaseJoystick(): void {

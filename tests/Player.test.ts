@@ -121,7 +121,18 @@ describe('Player', () => {
   });
 
   describe('momentum flight', () => {
-    const idle = { isLeft: () => false, isRight: () => false, isUp: () => false, isDown: () => false };
+    let touchVelocity: { vx: number; vy: number } | null = null;
+    const touchCalls: number[] = [];
+    const idle = {
+      isLeft: () => false,
+      isRight: () => false,
+      isUp: () => false,
+      isDown: () => false,
+      getTouchDesiredVelocity: (_x: number, _y: number, generation: number) => {
+        touchCalls.push(generation);
+        return touchVelocity;
+      },
+    };
     const right = { ...idle, isRight: () => true };
 
     function createMomentumPlayer() {
@@ -134,7 +145,9 @@ describe('Player', () => {
       record.body = { velocity };
       record.flightMode = 'momentum';
       record.bank = 0;
-      record.desiredVelocityOverride = null;
+      record.spawnGeneration = 0;
+      touchVelocity = null;
+      touchCalls.length = 0;
       record.exhaustTimer = 10000;
       record.invulnerable = false;
       const setAcceleration = mock();
@@ -176,7 +189,6 @@ describe('Player', () => {
     test('spawn resets bank and drag override so the new ship starts at rest', () => {
       const { player, velocity, setVelocity } = createMomentumPlayer();
       for (let i = 0; i < 30; i++) player.update(right as never, 1000 / 60);
-      player.setDesiredVelocityOverride({ vx: 480, vy: 0 });
       const record = player as unknown as Record<string, unknown>;
       record.enableBody = mock();
       record.setVisible = mock();
@@ -188,16 +200,20 @@ describe('Player', () => {
         velocity.x = 0;
         velocity.y = 0;
       };
+      player.update(idle as never, 1000 / 60);
+      const generationBeforeSpawn = touchCalls.at(-1);
       player.spawn(10, 20);
       expect(player.getBank()).toBe(0);
       setVelocity.mockClear();
       player.update(idle as never, 1000 / 60);
       expect(setVelocity).toHaveBeenCalledWith(0, 0);
+      // A held finger must re-anchor to the respawned ship rather than steer it back.
+      expect(touchCalls.at(-1)).toBe(generationBeforeSpawn! + 1);
     });
 
-    test('keyboard input takes priority over a touch drag override', () => {
+    test('keyboard input takes priority over touch drag steering', () => {
       const { player, velocity } = createMomentumPlayer();
-      player.setDesiredVelocityOverride({ vx: -480, vy: 0 });
+      touchVelocity = { vx: -480, vy: 0 };
       player.update(right as never, 1000 / 60);
       const keyboardVx = velocity.x;
       expect(keyboardVx).toBeGreaterThan(0);

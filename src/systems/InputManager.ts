@@ -67,11 +67,26 @@ export class InputManager {
   }
 
   isFiring(): boolean {
+    if (this.mobileControls?.isTouchSteeringActive() === true) {
+      // Touch momentum flight autofires the main gun.
+      return true;
+    }
+
     if (this.mobileInputMode) {
       return this.space.isDown || this.hasMobileFireTouch();
     }
 
     return this.space.isDown || this.scene.input.activePointer.isDown;
+  }
+
+  /** Touch drag steering velocity for the ship at (x, y), or null when no finger is steering. */
+  getTouchDesiredVelocity(
+    shipX: number,
+    shipY: number,
+    shipGeneration: number,
+    maxSpeed: number
+  ): { vx: number; vy: number } | null {
+    return this.mobileControls?.getDragDesiredVelocity(shipX, shipY, shipGeneration, maxSpeed) ?? null;
   }
 
   consumePauseToggleRequest(): boolean {

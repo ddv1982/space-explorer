@@ -4,11 +4,11 @@ const JOYSTICK_BASE_RADIUS = 62;
 
 test.skip(({ isMobile }) => !isMobile, 'hardware keyboard behavior requires a touch device project');
 
-test('hides the joystick and swaps controls hints once a hardware keyboard is used', async ({
+test('?flight=legacy hides the joystick and swaps controls hints once a hardware keyboard is used', async ({
   page,
   assertNoBrowserErrors,
 }) => {
-  await openMenu(page);
+  await openMenu(page, '&flight=legacy');
   await startNewRun(page);
 
   const before = await snapshot(page);
@@ -42,6 +42,27 @@ test('hides the joystick and swaps controls hints once a hardware keyboard is us
       )?.visible;
     })
     .toBe(true);
+
+  assertNoBrowserErrors();
+});
+
+test('drag flight swaps to keyboard hints and stops touch autofire once a hardware keyboard is used', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  await openMenu(page);
+  await startNewRun(page);
+
+  const before = await snapshot(page);
+  expect(before.arcs.some((arc) => arc.radius === JOYSTICK_BASE_RADIUS)).toBe(false);
+  expect(before.texts.some((item) => item.text === 'Drag anywhere to fly')).toBe(true);
+
+  await page.keyboard.press('ArrowLeft');
+
+  await expect
+    .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'WASD / Arrows to Move'))
+    .toBe(true);
+  expect((await snapshot(page)).texts.some((item) => item.text === 'Drag anywhere to fly')).toBe(false);
 
   assertNoBrowserErrors();
 });

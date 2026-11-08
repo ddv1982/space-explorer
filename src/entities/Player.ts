@@ -14,7 +14,7 @@ import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from 
 const NOMINAL_FRAME_MS = 1000 / 60;
 const MOMENTUM_BANK_ROTATION = (12 * Math.PI) / 180;
 
-export interface DesiredVelocity {
+interface DesiredVelocity {
   vx: number;
   vy: number;
 }
@@ -43,7 +43,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private visualFlashToken = 0;
   private flightMode: FlightMode = 'momentum';
   private bank = 0;
-  private desiredVelocityOverride: DesiredVelocity | null = null;
+  /** Incremented on every spawn so a held touch drag re-anchors to the new ship. */
+  private spawnGeneration = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePlayerTexture(scene);
@@ -221,7 +222,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.flightMode === 'legacy') {
       this.updateLegacyFlight(horizontal, vertical, delta);
     } else {
-      this.updateMomentumFlight(horizontal, vertical, delta);
+      this.updateMomentumFlight(inputManager, horizontal, vertical, delta);
     }
   }
 
@@ -230,16 +231,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.bank;
   }
 
-  /** Touch drag steering; null hands control back to keyboard intent. */
-  setDesiredVelocityOverride(velocity: DesiredVelocity | null): void {
-    this.desiredVelocityOverride = velocity;
-  }
-
-  private updateMomentumFlight(horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
-    const desired =
+  private updateMomentumFlight(
+    inputManager: InputManager,
+    horizontal: -1 | 0 | 1,
+    vertical: -1 | 0 | 1,
+    delta: number
+  ): void {
+    const desired: DesiredVelocity =
       horizontal !== 0 || vertical !== 0
         ? keyboardDesiredVelocity(horizontal, vertical, FLIGHT_CONFIG.maxSpeed)
-        : (this.desiredVelocityOverride ?? { vx: 0, vy: 0 });
+        : (inputManager.getTouchDesiredVelocity(this.x, this.y, this.spawnGeneration, FLIGHT_CONFIG.maxSpeed) ?? {
+            vx: 0,
+            vy: 0,
+          });
     // The body is the velocity source of truth so respawns, bounds and push-backs are respected.
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     const next = stepFlight(
@@ -311,7 +315,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.isMovingUp = false;
     this.deathStarted = false;
     this.bank = 0;
-    this.desiredVelocityOverride = null;
+    this.spawnGeneration += 1;
     this.setAcceleration(0, 0);
     this.setVisible(true);
     this.setAlpha(1);

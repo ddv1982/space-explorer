@@ -90,6 +90,25 @@ function createScene(pointers: Array<{ id: number; isDown: boolean; downX: numbe
   };
 }
 
+describe('InputManager touch momentum flight', () => {
+  test('autofires while touch steering is active, even with no fire touch', () => {
+    const scene = createScene([]);
+    const inputManager = new InputManager();
+    inputManager.create(
+      scene as never,
+      {
+        isTouchSteeringActive: () => true,
+        getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
+        isControlPointer: () => false,
+        getDragDesiredVelocity: () => ({ vx: 12, vy: -3 }),
+      } as never
+    );
+
+    expect(inputManager.isFiring()).toBe(true);
+    expect(inputManager.getTouchDesiredVelocity(0, 0, 0, 480)).toEqual({ vx: 12, vy: -3 });
+  });
+});
+
 describe('InputManager mobile fire-touch filtering', () => {
   test('ignores pause/control touches on the right half of the screen', () => {
     const pointer = { id: 7, isDown: true, downX: 320 };
@@ -100,6 +119,7 @@ describe('InputManager mobile fire-touch filtering', () => {
       scene as never,
       {
         getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
+        isTouchSteeringActive: () => false,
         isControlPointer: (candidate: { id: number }) => candidate.id === 7,
       } as never
     );
@@ -116,6 +136,7 @@ describe('InputManager mobile fire-touch filtering', () => {
       scene as never,
       {
         getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(0, 0),
+        isTouchSteeringActive: () => false,
         isControlPointer: () => false,
       } as never
     );
@@ -134,6 +155,7 @@ describe('InputManager mobile movement gating', () => {
       scene as never,
       {
         getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isTouchSteeringActive: () => false,
         isControlPointer: () => false,
       } as never
     );
@@ -153,6 +175,7 @@ describe('InputManager mobile movement gating', () => {
       scene as never,
       {
         getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isTouchSteeringActive: () => false,
         isControlPointer: () => false,
       } as never
     );
@@ -175,6 +198,7 @@ describe('InputManager mobile movement gating', () => {
       scene as never,
       {
         getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isTouchSteeringActive: () => false,
         isControlPointer: () => false,
       } as never
     );
@@ -197,6 +221,7 @@ describe('InputManager mobile movement gating', () => {
       scene as never,
       {
         getMovementVector: (out: { set: (x: number, y: number) => unknown }) => out.set(vector.x, vector.y),
+        isTouchSteeringActive: () => false,
         isControlPointer: () => false,
       } as never
     );
