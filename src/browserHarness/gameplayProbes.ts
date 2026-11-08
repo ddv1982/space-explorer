@@ -1,6 +1,5 @@
 import type { PlayerDamageContext } from '@/systems/PlayerDamage';
-import type { Player } from '@/entities/Player';
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 
 function findPlayer(scene: Phaser.Scene | undefined) {
   return scene?.children.list.find((child) => {
@@ -34,30 +33,6 @@ export function createBrowserHarnessGameplayProbes(game: Phaser.Game) {
         collider = scene.physics.add.overlap(first, second, () => finish(true));
         timeout = scene.time.delayedCall(250, () => finish(false));
       });
-    },
-    probePlayerHitTint: async (): Promise<{ duringMode: number; afterMode: number }> => {
-      const scene = game.scene.getScenes(true).find((candidate) => candidate.scene.key === 'Game');
-      const player = findPlayer(scene) as
-        | (Phaser.GameObjects.GameObject & {
-            takeDamage: Player['takeDamage'];
-            tintMode: number;
-            invulnerable: boolean;
-            deathStarted: boolean;
-            shields: number;
-            hp: number;
-          })
-        | undefined;
-      if (!scene || !player || typeof player.takeDamage !== 'function') {
-        throw new Error('Browser harness cannot probe player hit tint without active gameplay');
-      }
-      player.invulnerable = false;
-      player.deathStarted = false;
-      player.shields = 0;
-      player.hp = Math.max(player.hp, 2);
-      player.takeDamage({ amount: 1, source: 'unknown' });
-      const duringMode = player.tintMode;
-      await new Promise<void>((resolve) => scene.time.delayedCall(200, resolve));
-      return { duringMode, afterMode: player.tintMode };
     },
     probeAcceptedPlayerDamage: (amount = 1) => {
       const scene = game.scene.getScenes(true).find((candidate) => candidate.scene.key === 'Game') as

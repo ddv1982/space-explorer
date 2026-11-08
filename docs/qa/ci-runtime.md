@@ -1,17 +1,27 @@
-# CI runtime
+# CI runtime and coverage
 
-The reference is [workflow 42518843671](https://github.com/ddv1982/space-explorer/actions/runs/42518843671) at `df95453`. It passed every quality and browser gate. Its slowest browser job took 1,802 seconds, including 1,770 seconds in the test command. The other desktop shard took 1,394 seconds. Dependency installation took at most one second, and browser installation took 17 to 26 seconds across lanes. No test retry inflated the desktop reference. These are observed run times, not a repeated benchmark.
+The reference is [workflow 42518843671](https://github.com/ddv1982/space-explorer/actions/runs/42518843671) at `df95453`. Its slowest browser job took 1,802 seconds, including 1,770 seconds in the test command. The other desktop shard took 1,394 seconds. Dependency installation took at most one second, and browser installation took 17 to 26 seconds. No test retry inflated the desktop reference. These are observed run times, not a repeated benchmark.
 
-## Scheduling decision
+## Keep the workflow small
 
-Use six desktop shards, four mobile shards, and two portrait shards. Keep the existing projects, assertions, skip conditions, retries, renderer configuration, one worker per runner, and separate performance gate. This makes 15 browser jobs plus the quality and performance-gate jobs. Account concurrency and uneven test durations can still cause queues or long shards.
+CI has three job definitions: quality, browser, and performance. The browser matrix contains two desktop shards and one touch-portrait lane. Each runner has one browser worker. The performance test checks the same five normal and five injected regressions in one command, without an expected-failure shell protocol.
 
-A second design would separate expensive renderer specs from ordinary functional specs. It adds another test-selection policy and risks project-name-dependent behavior, so the fixed-shard design is preferred. Setup caching cannot address the measured test-execution bottleneck.
+The initial alternative added 17 validation runners and a custom shard-inventory checker. It preserved every historical test, but increased machinery. The user requested simpler CI and necessary tests, so that unpushed candidate was superseded. Playwright's built-in sharding handles the small fixed matrix.
 
-## Coverage and timing proof
+## Remove work without removing contracts
 
-`bun run ci:coverage` lists each complete project and every configured shard through Playwright. It rejects omitted or duplicated test identities. Always-uploaded native JUnit results preserve actual failures, skips, and per-test durations. Large screenshots and traces remain failure-only artifacts.
+| Removed work | Retained regression proof |
+| --- | --- |
+| Repeated ten-world and ten-level sweeps under mobile emulation | Complete desktop campaign sweeps, plus touch combat, controls, rotation, and representative renderer checks |
+| Historical baseline/direct control profiles | Shipped native controls at 60 and 120 Hz, stopping, normalized movement, and firing direction |
+| Legacy-versus-current projectile-trail experiments | Normal update-cost acceptance, synthetic regression sensitivity, actual projectile and collision checks |
+| Capture-only quality/phase screenshots | Objective contrast, viewport bounds, textures, and layout assertions; failure screenshots and traces |
+| Two full games for cross-tab storage | Same-origin pages, real storage writes and events, visibility updates, and deletion |
+| Wrapper test that reran the architecture CLI and asserted report strings | The actual architecture CI check and focused policy fixtures |
+| Broad custom performance pass reports | Native Playwright test results and raw probe metrics |
 
-Measure post-change job start, queue, step, and completion times on GitHub Actions before claiming an improvement. Compare with the reference above and disclose run count. More runners may reduce elapsed time at the cost of additional setup and runner concurrency. No gameplay speedup is claimed.
+Recorder diagnostics remain manually available. Saves, fatal-hit precedence, retries, accessible actions, audio recovery, shader recovery, GPU teardown, and the performance limits remain protected. A smaller count alone does not establish adequate coverage; the retained behavior must pass on the actual browser.
 
-[Playwright sharding](https://playwright.dev/docs/test-sharding) documents test-level partitioning with fully parallel projects. [GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) documents conditional cancellation.
+## Measure the result
+
+Use post-change Actions job start and completion times, test results, and runner time. Compare with the reference and disclose run count. No speedup is established until the revised workflow completes. [Playwright sharding](https://playwright.dev/docs/test-sharding) documents the built-in partitioning. [GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) documents conditional cancellation.

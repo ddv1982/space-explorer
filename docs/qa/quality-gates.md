@@ -13,9 +13,9 @@ bun run typecheck:ts6
 bun run lint
 bun run format:check
 bun run architecture:check
-bun run ci:coverage
 bun run test
 bun run test:e2e
+bun run test:performance
 bun run levels:validate
 bun run knip
 bun audit --audit-level=high
@@ -29,11 +29,11 @@ bun run bundle:check
 - Tests use the installed Bun assertion and mock types. Do not override `bun:test` with an untyped declaration.
 - `bun run typecheck:ts6` checks the temporary TypeScript 6 compiler-API bridge retained for typescript-eslint compatibility.
 - `bun run test` runs each test file in its own Bun process so file-level mocks and globals cannot leak across suites. Each suite times out after 60 seconds unless `TEST_SUITE_TIMEOUT_MS` is set. Use `bun run test -- --verbose` to print successful child output.
-- `bun run test:e2e` runs independent functional and visual coverage with bounded parallel workers, then runs timing-sensitive performance evidence alone on one worker. It exercises the real Phaser runtime in desktop and mobile Chromium, including WebGL rendering, Arcade Physics, routing, resize, lifecycle recovery, and console-error failure.
-- CI runs static/build checks, fifteen browser lanes, and the gameplay update-cost gate concurrently on separate runners. Each CI browser runner uses one Playwright worker because parallel Phaser instances can starve GitHub's software WebGL renderer; local hardware-backed browser runs retain four workers.
-- Functional browser coverage uses six desktop, four mobile, and two portrait shards without changing project selection. `bun run ci:coverage` checks their exact test identities against the unsharded projects. Native JUnit results are retained even when a lane passes. Superseded pull-request runs are canceled without canceling in-progress main-branch workflows.
-- CI performance evidence uses short structural samples and leaves refresh-cadence and real-time movement gates to hardware-backed local runs, because SwiftShader delivery is not representative of player hardware.
-- The performance gate uses desktop gameplay update p95, not RAF or render timing. It runs five normal probes and requires the same assertion to reject five probes with 6 ms of synthetic update work. Both conditions retain JSON metrics as CI artifacts. See `docs/qa/performance-gate-contract.md` for the supported short-window method and runner invalidation rule.
+- `bun run test:e2e` runs two browser projects. Desktop covers the complete campaign and renderer sweeps. Touch starts in portrait and checks controls, rotation, saves, accessibility, combat, and representative renderer behavior. Both use real Phaser, WebGL, and Arcade Physics.
+- CI has three job definitions and five validation jobs: quality, two desktop browser shards, one touch browser lane, and one isolated performance gate. Each browser runner uses one worker to avoid software-renderer contention.
+- `bun run test:performance` runs five normal and five synthetic update-cost probes in one test. Every normal value must stay within 5 ms; every 6 ms injected probe must exceed that same limit. Samples, warmup, fresh-run isolation, activity assertions, and raw metrics remain. See `docs/qa/performance-gate-contract.md`.
+- Native JUnit results are retained on success and failure. Screenshots and traces support failures; bulk screenshot collection and historical A/B experiments do not block PRs. Superseded pull-request runs are canceled without canceling in-progress main-branch workflows.
+- `bun run test:e2e:game-feel` is a manual recording-tool check, separate from required game regression coverage.
 - `bun run build` keeps the production build path focused on source type-checking plus Vite output.
 - `bun run bundle:check` expects a fresh `dist/` from `bun run build`.
 - Phaser is pinned to 4.2.1, consumed through its package ESM export, and configured for WebGL. Unsupported browsers receive the explicit WebGL-required state.

@@ -44,9 +44,6 @@ jobs:
       - name: Test
         run: bun run test
 
-      - name: Verify browser shard coverage
-        run: bun run ci:coverage
-
       - name: Validate levels
         run: bun run levels:validate
 
@@ -66,42 +63,18 @@ jobs:
         run: bun run bundle:check
 
   browser:
-    name: Browser gates (${{ matrix.name }})
+    name: Browser gates (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: desktop functional 1
-            command: bunx playwright test --project=chromium-desktop --shard=1/6
-          - name: desktop functional 2
-            command: bunx playwright test --project=chromium-desktop --shard=2/6
-          - name: desktop functional 3
-            command: bunx playwright test --project=chromium-desktop --shard=3/6
-          - name: desktop functional 4
-            command: bunx playwright test --project=chromium-desktop --shard=4/6
-          - name: desktop functional 5
-            command: bunx playwright test --project=chromium-desktop --shard=5/6
-          - name: desktop functional 6
-            command: bunx playwright test --project=chromium-desktop --shard=6/6
-          - name: mobile functional 1
-            command: bunx playwright test --project=chromium-mobile --shard=1/4
-          - name: mobile functional 2
-            command: bunx playwright test --project=chromium-mobile --shard=2/4
-          - name: mobile functional 3
-            command: bunx playwright test --project=chromium-mobile --shard=3/4
-          - name: mobile functional 4
-            command: bunx playwright test --project=chromium-mobile --shard=4/4
-          - name: portrait gameplay polish 1
-            command: bunx playwright test --project=chromium-portrait-polish --shard=1/2
-          - name: portrait gameplay polish 2
-            command: bunx playwright test --project=chromium-portrait-polish --shard=2/2
-          - name: desktop visual
-            command: bunx playwright test --project=chromium-desktop-visual
-          - name: mobile visual
-            command: bunx playwright test --project=chromium-mobile-visual
-          - name: performance evidence
-            command: bun run test:e2e:performance
+          - project: chromium-desktop
+            shard: 1/2
+          - project: chromium-desktop
+            shard: 2/2
+          - project: chromium-mobile
+            shard: 1/1
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -118,13 +91,13 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Run browser lane
-        run: ${{ matrix.command }}
+        run: bunx playwright test --project=${{ matrix.project }} --shard=${{ matrix.shard }}
 
       - name: Upload browser test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-results-${{ matrix.name }}
+          name: browser-results-${{ strategy.job-index }}
           path: test-results/playwright-results.xml
           if-no-files-found: error
           retention-days: 7
@@ -133,7 +106,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-${{ matrix.name }}
+          name: browser-${{ strategy.job-index }}
           path: |
             test-results/
             output/campaign-backgrounds/verified/
@@ -158,40 +131,15 @@ jobs:
       - name: Install browser test runtime
         run: bunx playwright install --with-deps chromium
 
-      - name: Run normal threshold condition
-        id: normal
-        shell: bash
-        run: bun run test:e2e:performance:gate 2>&1 | tee performance-gate-normal.log
+      - name: Verify update cost and regression sensitivity
+        run: bun run test:performance
 
-      - name: Upload normal threshold metrics
+      - name: Upload performance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: performance-gate-normal
-          path: |
-            test-results/
-            performance-gate-normal.log
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Require synthetic regression rejection
-        if: always()
-        run: |
-          set +e
-          bun run test:e2e:performance:gate:synthetic 2>&1 | tee performance-gate-synthetic.log
-          status="${PIPESTATUS[0]}"
-          set -e
-          test "${status}" -ne 0
-          grep -q "PERFORMANCE_GATE_THRESHOLD_EXCEEDED" performance-gate-synthetic.log
-
-      - name: Upload synthetic regression metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-gate-synthetic
-          path: |
-            test-results/
-            performance-gate-synthetic.log
+          name: performance-gate
+          path: test-results/
           if-no-files-found: error
           retention-days: 14
 

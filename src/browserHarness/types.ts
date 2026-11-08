@@ -1,16 +1,9 @@
 import type { createGameFeelProbes } from './gameFeelProbes';
-import type { RuntimePerformanceSnapshot } from '@/systems/RuntimePerformanceBudget';
 import type { createCombatPolishProbes } from './combatPolishProbes';
 
 import type { BrowserHarnessSnapshot } from './snapshot';
 import type { createCinematicProbes } from './cinematicProbes';
 import type { createProceduralBackgroundProbes } from './proceduralBackgroundProbes';
-
-export interface BrowserHarnessFrameMetrics {
-  frameCount: number;
-  averageDelta: number;
-  maxDelta: number;
-}
 
 export interface BrowserHarnessRenderCost {
   averageMs: number;
@@ -78,19 +71,6 @@ export interface BrowserHarnessFramePacingProbe {
   }>;
 }
 
-export interface BrowserHarnessFrameDeliveryProbe {
-  sampleCount: number;
-  averageMs: number;
-  p50Ms: number;
-  p95Ms: number;
-  p99Ms: number;
-  maxMs: number;
-  cadenceDropThresholdMs: number;
-  cadenceDropCount: number;
-  cadenceDropRatio: number;
-  over33_33MsCount: number;
-}
-
 export interface BrowserHarnessApi
   extends ReturnType<typeof createCinematicProbes>, ReturnType<typeof createProceduralBackgroundProbes> {
   combatPolish: ReturnType<typeof createCombatPolishProbes>;
@@ -98,23 +78,13 @@ export interface BrowserHarnessApi
   destroyGame: () => void;
   snapshot: () => BrowserHarnessSnapshot;
   probeArcadeOverlap: () => Promise<boolean>;
-  probePlayerHitTint: () => Promise<{ duringMode: number; afterMode: number }>;
   probeAcceptedPlayerDamage: (amount?: number) => { beforeHp: number; afterHp: number; damage: number };
-  getFrameMetrics: () => BrowserHarnessFrameMetrics;
-  resetFrameMetrics: () => void;
-  setFpsLimit: (limit: number) => void;
-  setPlayerBulletTrailEmissionEnabled: (enabled: boolean) => number;
-  setProjectileTrailIntervals: (playerMs: number, enemyMs: number) => void;
-  stageProjectileTrailEvidence: () => { playerCount: number; enemyCount: number };
   setAudioResumeRequestsEnabled: (enabled: boolean) => void;
   suspendAudioContextForPolicyTest: () => Promise<void>;
-  setLaserSfxEnabled: (enabled: boolean) => void;
   probeFramePacing: (
     sampleCount?: number,
     options?: { warmupFrames?: number; syntheticUpdateWorkMs?: number }
   ) => Promise<BrowserHarnessFramePacingProbe>;
-  probeFrameDelivery: (sampleCount?: number) => Promise<BrowserHarnessFrameDeliveryProbe>;
-  getRuntimePerformanceSnapshot: () => RuntimePerformanceSnapshot;
   showLaneReadingPilot: (
     glowEnabled?: boolean,
     hazardType?: 'ring-crossfire' | 'debris-surge'

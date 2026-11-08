@@ -292,11 +292,6 @@ const TEST_CONCENTRATION_BUDGETS: Record<string, { lines: number; reason: string
     reason: 'single turret lifecycle fixture',
     evidence: 'picket turret regression suite',
   },
-  'tests/e2e/performance.evidence.spec.ts': {
-    lines: 575,
-    reason: 'single normal-and-synthetic performance-gate evidence narrative',
-    evidence: 'desktop and mobile performance projects with threshold-marker verification',
-  },
 };
 const CONCENTRATION_POLICIES: Record<string, ConcentrationPolicy> = {
   'src/config/levels/music/patterns/arpeggiatorPatterns.ts': {

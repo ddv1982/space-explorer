@@ -8,8 +8,11 @@ test('different-slot updates remain visible across same-origin pages', async ({
   assertNoBrowserErrors,
 }) => {
   const peer = await context.newPage();
-  await page.goto('/');
-  await peer.goto('/');
+  await context.route('**/storage-probe', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+  );
+  await page.goto('/storage-probe');
+  await peer.goto('/storage-probe');
 
   await page.evaluate((prefix) => {
     const target = window as Window & { __SAVE_SLOT_STORAGE_EVENTS__?: string[] };
