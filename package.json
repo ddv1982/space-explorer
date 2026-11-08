@@ -28,6 +28,7 @@
     "bundle:report": "bun scripts/bundle-report.ts",
     "bundle:check": "bun scripts/bundle-report.ts --check",
     "architecture:check": "bun scripts/checkArchitecture.ts",
+    "ci:coverage": "bun scripts/checkBrowserShards.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",

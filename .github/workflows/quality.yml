@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   id-token: none
@@ -40,6 +44,9 @@ jobs:
       - name: Test
         run: bun run test
 
+      - name: Verify browser shard coverage
+        run: bun run ci:coverage
+
       - name: Validate levels
         run: bun run levels:validate
 
@@ -66,15 +73,29 @@ jobs:
       matrix:
         include:
           - name: desktop functional 1
-            command: bunx playwright test --project=chromium-desktop --shard=1/2
+            command: bunx playwright test --project=chromium-desktop --shard=1/6
           - name: desktop functional 2
-            command: bunx playwright test --project=chromium-desktop --shard=2/2
+            command: bunx playwright test --project=chromium-desktop --shard=2/6
+          - name: desktop functional 3
+            command: bunx playwright test --project=chromium-desktop --shard=3/6
+          - name: desktop functional 4
+            command: bunx playwright test --project=chromium-desktop --shard=4/6
+          - name: desktop functional 5
+            command: bunx playwright test --project=chromium-desktop --shard=5/6
+          - name: desktop functional 6
+            command: bunx playwright test --project=chromium-desktop --shard=6/6
           - name: mobile functional 1
-            command: bunx playwright test --project=chromium-mobile --shard=1/2
+            command: bunx playwright test --project=chromium-mobile --shard=1/4
           - name: mobile functional 2
-            command: bunx playwright test --project=chromium-mobile --shard=2/2
-          - name: portrait gameplay polish
-            command: bunx playwright test --project=chromium-portrait-polish
+            command: bunx playwright test --project=chromium-mobile --shard=2/4
+          - name: mobile functional 3
+            command: bunx playwright test --project=chromium-mobile --shard=3/4
+          - name: mobile functional 4
+            command: bunx playwright test --project=chromium-mobile --shard=4/4
+          - name: portrait gameplay polish 1
+            command: bunx playwright test --project=chromium-portrait-polish --shard=1/2
+          - name: portrait gameplay polish 2
+            command: bunx playwright test --project=chromium-portrait-polish --shard=2/2
           - name: desktop visual
             command: bunx playwright test --project=chromium-desktop-visual
           - name: mobile visual
@@ -98,6 +119,15 @@ jobs:
 
       - name: Run browser lane
         run: ${{ matrix.command }}
+
+      - name: Upload browser test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-results-${{ matrix.name }}
+          path: test-results/playwright-results.xml
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload browser failure evidence
         if: failure()

@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 - Replaced untyped Bun test declarations and fabricated visual passes with installed types and actual Playwright results.
 - Made architecture exemptions track measured functions and reject stale allowances.
 - Patched Vite, brace-expansion, Zod, and source-map-js development tooling advisories.
+- Spread unchanged browser coverage across smaller isolated CI shards, verify exact test coverage, and retain timing reports on successful runs.
+- Cancel superseded pull-request workflows and use plain version release titles.
 
 ## [1.20.0] - 2026-09-06
 
