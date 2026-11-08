@@ -11,11 +11,14 @@ test('brief Escape presses pause once even when released between gameplay update
     await page.keyboard.press('Escape');
     await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(paused);
   }
-  await saveBrowserEvidence(page, 'brief-pause-input', await snapshot(page));
+  await saveBrowserEvidence('brief-pause-input', await snapshot(page));
   assertNoBrowserErrors();
 });
 
-test('compares real Arcade control profiles at 60 and 120 Hz', async ({ page, assertNoBrowserErrors }) => {
+test('shipped controls preserve stopping and normalized movement at 60 and 120 Hz', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
   await page.route('**/controls-probe', (route) => route.fulfill({ contentType: 'text/html', body: '<html></html>' }));
   await page.goto('/controls-probe');
   const result = await page.evaluate(async () => {
@@ -23,10 +26,8 @@ test('compares real Arcade control profiles at 60 and 120 Hz', async ({ page, as
     const probe: typeof import('./playerControlsPhysics') = await import(modulePath);
     return probe.measurePlayerControls();
   });
-  await saveBrowserEvidence(page, 'physics-comparison', result);
-  const native = result.filter((item) => item.profile === 'native');
-  expect(native).toHaveLength(3);
-  for (const item of native) {
+  expect(result).toHaveLength(3);
+  for (const item of result) {
     expect(item.releaseDistance).toBeLessThanOrEqual(40);
     expect(item.reversalMs).toBeLessThanOrEqual(350);
     expect(item.cardinalSpeed).toBeCloseTo(480);
@@ -35,9 +36,6 @@ test('compares real Arcade control profiles at 60 and 120 Hz', async ({ page, as
     expect([item.fireX, item.fireY, item.muzzleX, item.muzzleY]).toEqual([0, -1, 0, -20]);
     expect(item.rotation).toBeGreaterThan(0.2);
   }
-  const baseline = result.find((item) => item.profile === 'baseline' && item.updateHz === 60);
-  expect(baseline?.releaseDistance).toBeGreaterThan(700);
-  expect(baseline?.diagonalSpeed).toBeGreaterThan(1100);
   assertNoBrowserErrors();
 });
 
@@ -127,7 +125,7 @@ test('keyboard and touch steer diagonally, stop after release, and fire straight
     expect(stopped.gameplayMs - first.gameplayMs).toBeLessThanOrEqual(200);
     expect(Math.hypot(stopped.x - first.x, stopped.y - first.y)).toBeLessThanOrEqual(40);
     expect(captured.frames.every((frame) => Math.hypot(frame.velocityX, frame.velocityY) <= 480.01)).toBe(true);
-    await saveBrowserEvidence(page, 'delivered-controls', captured);
+    await saveBrowserEvidence('delivered-controls', captured);
   } finally {
     if (touch) {
       if (touchActive) await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });

@@ -18,7 +18,7 @@ import {
   type PlayerStateData,
 } from '@/systems/PlayerState';
 import { WarpTransition } from '@/systems/WarpTransition';
-import { ensurePremiumBackgroundAssets } from '@/systems/parallax/premiumBackgroundLoading';
+import { prepareLegacyBackgroundTextures } from '@/systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
 import { sharpenSceneText } from '@/utils/uiTextRendering';
 
@@ -95,9 +95,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       return;
     }
 
-    // Next Game scene uses state.level + 1 after advanceToNextLevel.
-    // releaseOutsideWindow defaults false so intermission / menu art stay intact.
-    ensurePremiumBackgroundAssets(this, this.state.level + 1, () => {});
+    prepareLegacyBackgroundTextures(this, this.state.level + 1);
   }
 
   private initializeSceneLifecycle(): void {
@@ -388,9 +386,8 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.warpTransition.play(() => {
       advanceToNextLevel(this.registry);
       const nextLevel = getPlayerState(this.registry).level;
-      ensurePremiumBackgroundAssets(this, nextLevel, () => {
-        startRegisteredScene(this, 'Game');
-      });
+      prepareLegacyBackgroundTextures(this, nextLevel);
+      startRegisteredScene(this, 'Game');
     });
   }
 

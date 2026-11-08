@@ -14,32 +14,12 @@ import {
   shouldRenderMeterRatio,
 } from './hud/statusBarLayout';
 import { HudShieldIconRenderer } from './hud/shieldIconRenderer';
-import { createHudWidgets, relayoutHudWidgets } from './hud/bootstrapRelayout';
+import { createHudWidgets, relayoutHudWidgets, type HudWidgets } from './hud/bootstrapRelayout';
 
 export class HUD {
   private scene!: Phaser.Scene;
-  private topBarPanel!: Phaser.GameObjects.Graphics;
-  private hpBarBg!: Phaser.GameObjects.Graphics;
-  private hpBarFill!: Phaser.GameObjects.Graphics;
-  private hpLabel!: Phaser.GameObjects.Text;
-  private hpText!: Phaser.GameObjects.Text;
-  private livesLabel!: Phaser.GameObjects.Text;
-  private livesText!: Phaser.GameObjects.Text;
-  private scoreText!: Phaser.GameObjects.Text;
-  private sectorText!: Phaser.GameObjects.Text;
-  private levelText!: Phaser.GameObjects.Text;
-  private progressBg!: Phaser.GameObjects.Graphics;
-  private progressFill!: Phaser.GameObjects.Graphics;
-  private progressLabel!: Phaser.GameObjects.Text;
-  private bossBarBg!: Phaser.GameObjects.Graphics;
-  private bossBarFill!: Phaser.GameObjects.Graphics;
-  private bossNameText!: Phaser.GameObjects.Text;
-  private announcementText!: Phaser.GameObjects.Text;
-  private announcementTween: Phaser.Tweens.Tween | null = null;
+  private widgets!: HudWidgets;
   private announcementTweens!: HudAnnouncementTweens;
-  private chainText!: Phaser.GameObjects.Text;
-  private surgeBg!: Phaser.GameObjects.Graphics;
-  private surgeFill!: Phaser.GameObjects.Graphics;
   private currentChainLabel: string | null = null;
   private currentSurgeRatio: number | null = null;
 
@@ -78,7 +58,6 @@ export class HUD {
     this.currentBossGuardRatio = null;
     this.currentBossGuardBroken = false;
     this.bossVisible = false;
-    this.announcementTween = null;
     this.currentChainLabel = null;
     this.currentSurgeRatio = null;
 
@@ -107,48 +86,18 @@ export class HUD {
       strokeThickness: 2,
     };
 
-    ({
-      topBarPanel: this.topBarPanel,
-      hpBarBg: this.hpBarBg,
-      hpBarFill: this.hpBarFill,
-      hpLabel: this.hpLabel,
-      hpText: this.hpText,
-      livesLabel: this.livesLabel,
-      livesText: this.livesText,
-      scoreText: this.scoreText,
-      sectorText: this.sectorText,
-      levelText: this.levelText,
-      progressBg: this.progressBg,
-      progressFill: this.progressFill,
-      progressLabel: this.progressLabel,
-      announcementText: this.announcementText,
-      bossBarBg: this.bossBarBg,
-      bossBarFill: this.bossBarFill,
-      bossNameText: this.bossNameText,
-      chainText: this.chainText,
-      surgeBg: this.surgeBg,
-      surgeFill: this.surgeFill,
-    } = createHudWidgets({
-      scene,
-      labelStyle,
-      valueStyle,
-      sectorColor,
-    }));
+    this.widgets = createHudWidgets({ scene, labelStyle, valueStyle, sectorColor });
 
     this.announcementTweens = new HudAnnouncementTweens({
       scene: this.scene,
-      announcementText: this.announcementText,
-      sectorText: this.sectorText,
-      levelText: this.levelText,
+      announcementText: this.widgets.announcementText,
+      sectorText: this.widgets.sectorText,
+      levelText: this.widgets.levelText,
       getLayoutMetrics: () =>
         getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth),
-      getAnnouncementTween: () => this.announcementTween,
-      setAnnouncementTween: (tween) => {
-        this.announcementTween = tween;
-      },
     });
 
-    this.setScrollFactor(0);
+    for (const widget of Object.values(this.widgets)) widget.setScrollFactor(0);
     this.relayout();
   }
 
@@ -157,36 +106,15 @@ export class HUD {
       return;
     }
 
-    this.announcementTween = relayoutHudWidgets({
-      scene: this.scene,
-      baseHpBarWidth: this.baseHpBarWidth,
-      baseProgressWidth: this.baseProgressWidth,
-      baseBossBarWidth: this.baseBossBarWidth,
-      topBarPanel: this.topBarPanel,
-      hpBarBg: this.hpBarBg,
-      hpLabel: this.hpLabel,
-      hpText: this.hpText,
-      livesLabel: this.livesLabel,
-      livesText: this.livesText,
-      scoreText: this.scoreText,
-      sectorText: this.sectorText,
-      levelText: this.levelText,
-      progressBg: this.progressBg,
-      progressLabel: this.progressLabel,
-      announcementText: this.announcementText,
-      bossNameText: this.bossNameText,
-      chainText: this.chainText,
-      surgeBg: this.surgeBg,
+    const layout = getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth);
+    relayoutHudWidgets(this.widgets, layout, {
       hpBarHeight: this.hpBarHeight,
       progressHeight: this.progressHeight,
       panelStrokeColor: this.panelStrokeColor,
       hpBorderColor: this.hpBorderColor,
       progressBorderColor: this.progressBorderColor,
-      announcementTween: this.announcementTween,
-      setAnnouncementTween: (tween) => {
-        this.announcementTween = tween;
-      },
     });
+    this.announcementTweens.relayout(layout);
 
     this.renderHpBar();
     this.renderProgressBar();
@@ -203,37 +131,14 @@ export class HUD {
     this.shieldIconRenderer.updateShields(shields, () => this.renderShieldIcons());
   }
 
-  private setScrollFactor(factor: number): void {
-    this.topBarPanel.setScrollFactor(factor);
-    this.hpBarBg.setScrollFactor(factor);
-    this.hpBarFill.setScrollFactor(factor);
-    this.hpLabel.setScrollFactor(factor);
-    this.hpText.setScrollFactor(factor);
-    this.livesLabel.setScrollFactor(factor);
-    this.livesText.setScrollFactor(factor);
-    this.scoreText.setScrollFactor(factor);
-    this.sectorText.setScrollFactor(factor);
-    this.levelText.setScrollFactor(factor);
-    this.progressBg.setScrollFactor(factor);
-    this.progressFill.setScrollFactor(factor);
-    this.progressLabel.setScrollFactor(factor);
-    this.bossBarBg.setScrollFactor(factor);
-    this.bossBarFill.setScrollFactor(factor);
-    this.bossNameText.setScrollFactor(factor);
-    this.announcementText.setScrollFactor(factor);
-    this.chainText.setScrollFactor(factor);
-    this.surgeBg.setScrollFactor(factor);
-    this.surgeFill.setScrollFactor(factor);
-  }
-
   showBossBar(name: string = 'BOSS'): void {
     if (this.bossVisible) return;
 
     this.bossVisible = true;
-    this.bossBarBg.setVisible(true);
-    this.bossBarFill.setVisible(true);
-    this.bossNameText.setVisible(true);
-    this.bossNameText.setText(name.toUpperCase());
+    this.widgets.bossBarBg.setVisible(true);
+    this.widgets.bossBarFill.setVisible(true);
+    this.widgets.bossNameText.setVisible(true);
+    this.widgets.bossNameText.setText(name.toUpperCase());
     this.renderBossBar();
   }
 
@@ -243,11 +148,11 @@ export class HUD {
     this.currentBossMaxHp = null;
     this.currentBossGuardRatio = null;
     this.currentBossGuardBroken = false;
-    this.bossBarBg.clear();
-    this.bossBarFill.clear();
-    this.bossBarBg.setVisible(false);
-    this.bossBarFill.setVisible(false);
-    this.bossNameText.setVisible(false);
+    this.widgets.bossBarBg.clear();
+    this.widgets.bossBarFill.clear();
+    this.widgets.bossBarBg.setVisible(false);
+    this.widgets.bossBarFill.setVisible(false);
+    this.widgets.bossNameText.setVisible(false);
   }
 
   updateBossHp(hp: number, maxHp: number): void {
@@ -281,17 +186,17 @@ export class HUD {
     if (hpChanged) {
       this.currentHp = hp;
       this.currentMaxHp = maxHp;
-      this.hpText.setText(`${hp}/${maxHp}`);
+      this.widgets.hpText.setText(`${hp}/${maxHp}`);
       this.renderHpBar();
     }
 
     if (this.currentLives !== lives) {
-      this.livesText.setText(lives.toString());
+      this.widgets.livesText.setText(lives.toString());
       this.currentLives = lives;
     }
 
     if (this.currentScore !== score) {
-      this.scoreText.setText(score.toString().padStart(8, '0'));
+      this.widgets.scoreText.setText(score.toString().padStart(8, '0'));
       this.currentScore = score;
     }
 
@@ -318,9 +223,9 @@ export class HUD {
     }
 
     this.currentChainLabel = readout.label;
-    this.chainText.setText(readout.label);
-    this.chainText.setColor(readout.color);
-    this.chainText.setVisible(readout.label !== '');
+    this.widgets.chainText.setText(readout.label);
+    this.widgets.chainText.setColor(readout.color);
+    this.widgets.chainText.setVisible(readout.label !== '');
   }
 
   updateSurge(ratio: number): void {
@@ -338,7 +243,7 @@ export class HUD {
 
   private renderSurge(): void {
     renderSurgeBar({
-      surgeFill: this.surgeFill,
+      surgeFill: this.widgets.surgeFill,
       currentSurgeRatio: this.currentSurgeRatio,
       hpBarHeight: this.hpBarHeight,
       layout: getLayoutMetrics(this.scene, this.baseHpBarWidth, this.baseProgressWidth, this.baseBossBarWidth),
@@ -375,7 +280,7 @@ export class HUD {
 
   private renderHpBar(): void {
     renderHpBar({
-      hpBarFill: this.hpBarFill,
+      hpBarFill: this.widgets.hpBarFill,
       currentHp: this.currentHp,
       currentMaxHp: this.currentMaxHp,
       hpBarHeight: this.hpBarHeight,
@@ -385,7 +290,7 @@ export class HUD {
 
   private renderProgressBar(): void {
     renderProgressBar({
-      progressFill: this.progressFill,
+      progressFill: this.widgets.progressFill,
       currentProgress: this.currentProgress,
       progressHeight: this.progressHeight,
       progressFillColor: this.progressFillColor,
@@ -404,8 +309,8 @@ export class HUD {
 
   private renderBossBar(): void {
     renderBossBar({
-      bossBarBg: this.bossBarBg,
-      bossBarFill: this.bossBarFill,
+      bossBarBg: this.widgets.bossBarBg,
+      bossBarFill: this.widgets.bossBarFill,
       bossVisible: this.bossVisible,
       currentBossHp: this.currentBossHp,
       currentBossMaxHp: this.currentBossMaxHp,

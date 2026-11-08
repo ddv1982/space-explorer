@@ -73,9 +73,6 @@ describe('runGameSceneCreateBootstrap', () => {
       registerScaleHandlers() {
         callLog.push('runtimeLifecycle.registerScaleHandlers');
       },
-      registerRuntimeHandlers() {
-        callLog.push('runtimeLifecycle.registerRuntimeHandlers');
-      },
     };
 
     const dependencies = {
@@ -284,7 +281,6 @@ describe('runGameSceneCreateBootstrap', () => {
       'onHardwareKeyboardDetected',
       'isTouchMobileDevice',
       'showControlsHint',
-      'runtimeLifecycle.registerRuntimeHandlers',
     ]);
 
     expect(runtime).toMatchObject({

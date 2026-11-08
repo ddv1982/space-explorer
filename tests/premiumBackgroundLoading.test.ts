@@ -1,9 +1,9 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
 
-const { ensurePremiumBackgroundAssets, releasePremiumBackgroundTexturesOutsideWindow } =
+const { prepareLegacyBackgroundTextures, releasePremiumBackgroundTexturesOutsideWindow } =
   await import('../src/systems/parallax/premiumBackgroundLoading');
 const { ensureNeonBackgroundTextures } = await import('../src/systems/parallax/neonBackgroundGenerator');
 
@@ -98,13 +98,11 @@ function createSceneHarness(existingKeys: string[] = []) {
 describe('premium background loading helpers', () => {
   test('legacy generation retains its composited drawing recipe', () => {
     const harness = createSceneHarness();
-    const onReady = mock();
 
     ensureNeonBackgroundTextures(harness.scene, 5);
-    ensurePremiumBackgroundAssets(harness.scene, 5, onReady);
+    prepareLegacyBackgroundTextures(harness.scene, 5);
 
     expect(harness.generatedKeys).toEqual(['bg_level05', 'bg_level05_nebula', 'bg_level05_mid', 'bg_level05_near']);
-    expect(onReady).toHaveBeenCalledTimes(1);
     expect(harness.compositeDraws).toEqual([
       { source: 'bg_level05', alpha: 1, operation: 'source-over' },
       { source: 'bg_level05_nebula', alpha: 0.9, operation: 'source-over' },
@@ -120,7 +118,7 @@ describe('premium background loading helpers', () => {
     expect(harness.hasTexture('bg_level05_nebula')).toBe(false);
   });
 
-  test('ensure skips layers that are already generated', () => {
+  test('preparation skips layers that are already generated', () => {
     const harness = createSceneHarness([
       'bg_level05',
       'bg_level05_nebula',
@@ -128,35 +126,29 @@ describe('premium background loading helpers', () => {
       'bg_level05_near',
       'bg_level05_overlay',
     ]);
-    const onReady = mock();
 
-    ensurePremiumBackgroundAssets(harness.scene, 5, onReady);
+    prepareLegacyBackgroundTextures(harness.scene, 5);
 
     expect(harness.generatedKeys).toEqual([]);
-    expect(onReady).toHaveBeenCalledTimes(1);
     expect(harness.hasTexture('bg_level01')).toBe(false);
   });
 
-  test('ensure keeps outside-window textures by default (outgoing scene may still use them)', () => {
+  test('preparation keeps outside-window textures by default (outgoing scene may still use them)', () => {
     const harness = createSceneHarness(['bg_level01', 'bg_level02_overlay']);
-    const onReady = mock();
 
-    ensurePremiumBackgroundAssets(harness.scene, 3, onReady);
+    prepareLegacyBackgroundTextures(harness.scene, 3);
 
-    expect(onReady).toHaveBeenCalledTimes(1);
     expect(harness.hasTexture('bg_level01')).toBe(true);
     expect(harness.hasTexture('bg_level02_overlay')).toBe(true);
   });
 
-  test('ensure can still release when explicitly requested', () => {
+  test('preparation can release when explicitly requested', () => {
     const harness = createSceneHarness(['bg_level01', 'bg_level02_nebula']);
-    const onReady = mock();
 
-    ensurePremiumBackgroundAssets(harness.scene, 3, onReady, {
+    prepareLegacyBackgroundTextures(harness.scene, 3, {
       releaseOutsideWindow: true,
     });
 
-    expect(onReady).toHaveBeenCalledTimes(1);
     expect(harness.hasTexture('bg_level01')).toBe(false);
     expect(harness.hasTexture('bg_level02_nebula')).toBe(false);
   });

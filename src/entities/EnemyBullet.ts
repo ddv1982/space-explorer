@@ -6,12 +6,8 @@ import { ensureEnemyBulletTexture } from '../utils/SpriteFactory';
 import { getRuntimeTrailInterval } from '../systems/RuntimePerformanceBudget';
 
 export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
-  private static trailIntervalMs = 150;
+  private static readonly trailIntervalMs = 150;
   private lastTrailTime = 0;
-
-  static setTrailIntervalMs(intervalMs: number): void {
-    EnemyBullet.trailIntervalMs = Math.max(0, intervalMs);
-  }
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureEnemyBulletTexture(scene);

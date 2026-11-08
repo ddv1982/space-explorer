@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
+import { GameplayClock, runGameSceneUpdateFrame } from '../src/scenes/gameScene/updateFrame';
 
 mockPhaserModule();
 
@@ -318,6 +319,30 @@ describe('PicketTurretSystem', () => {
     expect(harness.bolts).toHaveLength(2);
     system.update(1050);
     expect(harness.bolts).toHaveLength(3);
+  });
+
+  test('pause does not consume the real mount firing deadline', () => {
+    const harness = createHarness();
+    harness.scoutGroup.children.push(createEnemy(200, 300));
+    const system = createSystem(harness, 1);
+    const clock = new GameplayClock();
+    let paused = false;
+    const frame = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => paused,
+      updatePausedFrame: () => {},
+      updateGameplayFrame: (time: number) => system.update(time),
+      updateHud: () => {},
+    };
+    runGameSceneUpdateFrame(frame, 349, 349, clock);
+    expect(harness.bolts).toHaveLength(0);
+    paused = true;
+    runGameSceneUpdateFrame(frame, 20_349, 20_000, clock);
+    expect(harness.bolts).toHaveLength(0);
+    paused = false;
+    runGameSceneUpdateFrame(frame, 20_350, 1, clock);
+    expect(harness.bolts).toHaveLength(1);
+    expect(harness.bolts[0].active).toBe(true);
   });
 
   test('overclock tier fires on the faster cadence', () => {

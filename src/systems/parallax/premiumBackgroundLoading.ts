@@ -8,10 +8,10 @@ import {
   getPremiumBackgroundLevelWindow,
 } from './premiumBackgroundManifest';
 
-interface EnsurePremiumBackgroundAssetsOptions {
+interface PrepareLegacyBackgroundTexturesOptions {
   lookAhead?: number;
   /**
-   * When true, remove textures outside the level window before onReady.
+   * When true, remove textures outside the level window before returning.
    * Defaults to false so transition callers do not destroy textures still
    * displayed by the outgoing scene. Prefer releasing after Game create
    * via {@link releasePremiumBackgroundTexturesOutsideWindow}.
@@ -33,15 +33,10 @@ export function releasePremiumBackgroundTexturesOutsideWindow(
   }
 }
 
-/**
- * Prepares legacy planes only for development comparisons, then calls onReady
- * synchronously. Cinematic assets load at each scene preload boundary.
- */
-export function ensurePremiumBackgroundAssets(
+export function prepareLegacyBackgroundTextures(
   scene: Phaser.Scene,
   levelNumber: number,
-  onReady: () => void,
-  options: EnsurePremiumBackgroundAssetsOptions = {}
+  options: PrepareLegacyBackgroundTexturesOptions = {}
 ): void {
   const lookAhead = options.lookAhead ?? 0;
 
@@ -54,6 +49,4 @@ export function ensurePremiumBackgroundAssets(
   if (options.releaseOutsideWindow ?? false) {
     releasePremiumBackgroundTexturesOutsideWindow(scene, levelNumber, { lookAhead });
   }
-
-  onReady();
 }

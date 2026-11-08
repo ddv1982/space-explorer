@@ -6,9 +6,8 @@
     "strict": true,
     "types": ["bun"],
     "paths": {
-      "@/*": ["./src/*"],
-      "bun:test": ["./tests/types/bun-test"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "scripts/**/*.ts", "tests/**/*.ts", "tests/types/**/*.d.ts", "vite.config.ts"]
+  "include": ["src", "scripts/**/*.ts", "tests/**/*.ts", "vite.config.ts"]
 }

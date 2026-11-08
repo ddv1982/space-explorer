@@ -23,18 +23,6 @@ function setMusicIntensity(args: {
   return clampedIntensity;
 }
 
-function getMusicVolume(musicVolume: number): number {
-  return musicVolume;
-}
-
-function setMusicVolume(volume: number): number {
-  return clamp01(volume);
-}
-
-function getMusicRuntimeTuning(runtimeTuning: MusicRuntimeTuningValues): MusicRuntimeTuningValues {
-  return { ...runtimeTuning };
-}
-
 function setMusicRuntimeTuning(args: {
   runtimeTuning: MusicRuntimeTuningValues;
   nextTuning: Partial<MusicRuntimeTuningValues>;
@@ -44,10 +32,6 @@ function setMusicRuntimeTuning(args: {
     energy: clamp01(args.nextTuning.energy ?? args.runtimeTuning.energy),
     ambience: clamp01(args.nextTuning.ambience ?? args.runtimeTuning.ambience),
   };
-}
-
-function resetMusicRuntimeTuning(): MusicRuntimeTuningValues {
-  return { ...DEFAULT_MUSIC_RUNTIME_TUNING };
 }
 
 function applyAmbienceFromRuntimeTuning(args: {
@@ -126,11 +110,11 @@ export class MusicRuntimeControl {
   }
 
   getMusicVolume(): number {
-    return getMusicVolume(this.musicVolume);
+    return this.musicVolume;
   }
 
   setMusicVolume(volume: number): number {
-    this.musicVolume = setMusicVolume(volume);
+    this.musicVolume = clamp01(volume);
     this.applyMusicGainFromState();
     return this.musicVolume;
   }
@@ -152,7 +136,7 @@ export class MusicRuntimeControl {
   }
 
   getMusicRuntimeTuning(): MusicRuntimeTuningValues {
-    return getMusicRuntimeTuning(this.runtimeTuning);
+    return { ...this.runtimeTuning };
   }
 
   getResolvedRuntimeTuning(): ReturnType<typeof resolveMusicRuntimeTuning> {
@@ -171,7 +155,7 @@ export class MusicRuntimeControl {
   }
 
   resetMusicRuntimeTuning(): MusicRuntimeTuningValues {
-    this.runtimeTuning = resetMusicRuntimeTuning();
+    this.runtimeTuning = { ...DEFAULT_MUSIC_RUNTIME_TUNING };
     this.applyAmbienceFromRuntimeTuning();
     return this.getMusicRuntimeTuning();
   }

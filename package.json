@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "1.20.0",
+  "version": "1.20.1",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -12,16 +12,6 @@
     "art:evidence": "bun scripts/captureCinematicEvidence.ts",
     "backgrounds:compare": "bun scripts/compareProceduralBackgrounds.ts",
     "test": "bun scripts/run-tests.ts",
-    "test:e2e": "bun run test:e2e:fast && bun run test:e2e:performance && bun run test:e2e:performance:gate",
-    "test:e2e:fast": "playwright test --project=chromium-desktop --project=chromium-mobile --project=chromium-portrait-polish --project=chromium-desktop-visual --project=chromium-mobile-visual",
-    "test:e2e:smoke": "playwright test --project=chromium-desktop --project=chromium-mobile",
-    "test:e2e:visual": "playwright test --project=chromium-desktop-visual --project=chromium-mobile-visual",
-    "test:e2e:performance": "playwright test --project=chromium-desktop-performance --project=chromium-mobile-performance --workers=1",
-    "test:e2e:performance:gate": "PERFORMANCE_GATE_MODE=normal playwright test --project=chromium-desktop-performance-gate --workers=1",
-    "test:e2e:performance:gate:synthetic": "PERFORMANCE_GATE_MODE=synthetic playwright test --project=chromium-desktop-performance-gate --workers=1",
-    "test:e2e:evidence": "bun run test:e2e:visual && bun run test:e2e:performance",
-    "test:e2e:desktop": "playwright test --project=chromium-desktop",
-    "test:e2e:mobile": "playwright test --project=chromium-mobile",
     "typecheck": "node ./node_modules/@typescript/native/bin/tsc -p tsconfig.json && node ./node_modules/@typescript/native/bin/tsc -p tsconfig.test.json",
     "typecheck:ts6": "node ./node_modules/typescript/bin/tsc --stableTypeOrdering -p tsconfig.json && node ./node_modules/typescript/bin/tsc --stableTypeOrdering -p tsconfig.test.json",
     "build": "node ./node_modules/@typescript/native/bin/tsc -p tsconfig.json && vite build",
@@ -35,7 +25,9 @@
     "knip": "knip",
     "levels:validate": "bun scripts/validateLevels.ts",
     "backgrounds:record": "bun scripts/recordLivingBackgrounds.ts",
-    "test:e2e:game-feel": "GAME_FEEL_EVIDENCE_PORT=4180 playwright test --project=chromium-desktop-game-feel --project=chromium-mobile-game-feel --project=chromium-portrait-game-feel --workers=1"
+    "test:e2e:game-feel": "GAME_FEEL_EVIDENCE_PORT=4180 playwright test --project=chromium-desktop-game-feel --project=chromium-mobile-game-feel --project=chromium-portrait-game-feel --workers=1",
+    "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile",
+    "test:performance": "playwright test --project=chromium-performance --workers=1"
   },
   "knip": {
     "entry": [
@@ -48,7 +40,6 @@
     "project": [
       "src/**/*.ts",
       "tests/**/*.ts",
-      "tests/**/*.d.ts",
       "scripts/**/*.ts"
     ],
     "ignoreBinaries": [
@@ -69,10 +60,12 @@
     "prettier": "^3.9.6",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.65.0",
-    "vite": "^8.1.5"
+    "vite": "^8.1.6"
   },
   "overrides": {
-    "brace-expansion": "5.0.9",
-    "nanoid": "3.3.18"
+    "brace-expansion": "5.0.11",
+    "nanoid": "3.3.18",
+    "zod": "4.6.7",
+    "source-map-js": "1.2.2"
   }
 }

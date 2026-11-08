@@ -3,11 +3,7 @@ import Phaser from 'phaser';
 import type { AudioManager } from '../systems/AudioManager';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { createBrowserHarnessSnapshot } from './snapshot';
-import type {
-  BrowserHarnessFrameDeliveryProbe,
-  BrowserHarnessFramePacingProbe,
-  BrowserHarnessRenderCost,
-} from './types';
+import type { BrowserHarnessFramePacingProbe, BrowserHarnessRenderCost } from './types';
 
 export interface BrowserHarnessAudioContextManager {
   getCtx(): AudioContext | null;
@@ -15,7 +11,6 @@ export interface BrowserHarnessAudioContextManager {
 }
 
 export class BrowserHarnessPerformanceProbes {
-  private frameDeliveryProbeActive = false;
   private framePacingProbeActive = false;
 
   constructor(
@@ -23,93 +18,6 @@ export class BrowserHarnessPerformanceProbes {
     private readonly audioManager: AudioManager,
     private readonly audioContextManager: BrowserHarnessAudioContextManager
   ) {}
-
-  private summarizeFrameDelivery(samples: number[]): BrowserHarnessFrameDeliveryProbe {
-    const sorted = [...samples].sort((a, b) => a - b);
-    const percentile = (value: number): number => sorted[Math.max(0, Math.ceil(sorted.length * value) - 1)] ?? 0;
-    const p50Ms = percentile(0.5);
-    // A delivered frame is considered dropped when it is much closer to two
-    // refresh intervals than one. This adapts to 60/90/100/120 Hz displays.
-    const cadenceDropThresholdMs = Math.max(p50Ms * 1.65, p50Ms + 4);
-    const cadenceDropCount = samples.filter((sample) => sample > cadenceDropThresholdMs).length;
-
-    return Object.freeze({
-      sampleCount: samples.length,
-      averageMs: samples.reduce((total, sample) => total + sample, 0) / samples.length,
-      p50Ms,
-      p95Ms: percentile(0.95),
-      p99Ms: percentile(0.99),
-      maxMs: sorted[sorted.length - 1] ?? 0,
-      cadenceDropThresholdMs,
-      cadenceDropCount,
-      cadenceDropRatio: cadenceDropCount / samples.length,
-      over33_33MsCount: samples.filter((sample) => sample > 33.33).length,
-    });
-  }
-
-  probeFrameDelivery(sampleCount = 240): Promise<BrowserHarnessFrameDeliveryProbe> {
-    if (!Number.isInteger(sampleCount) || sampleCount < 1 || sampleCount > 1200) {
-      throw new Error('Browser harness frame-delivery sample count must be between 1 and 1200');
-    }
-
-    const gameScene = this.game.scene.getScenes(true).find((scene) => scene.scene.key === 'Game');
-    if (!gameScene || !gameScene.sys.isActive()) {
-      throw new Error('Browser harness cannot probe frame delivery without active gameplay');
-    }
-    if (this.frameDeliveryProbeActive) {
-      throw new Error('Browser harness frame-delivery probe is already active');
-    }
-
-    this.frameDeliveryProbeActive = true;
-    const activeGameScene = gameScene;
-    return new Promise<BrowserHarnessFrameDeliveryProbe>((resolve, reject) => {
-      const samples: number[] = [];
-      let lastFrameAt: number | null = null;
-      let animationFrame = 0;
-      let settled = false;
-      const timeout = window.setTimeout(
-        () => finish(new Error('Browser harness frame-delivery probe timed out')),
-        Math.max(15_000, sampleCount * 250)
-      );
-
-      const cleanup = (): void => {
-        window.clearTimeout(timeout);
-        window.cancelAnimationFrame(animationFrame);
-        this.game.events.off(Phaser.Core.Events.DESTROY, onDestroy);
-        this.frameDeliveryProbeActive = false;
-      };
-      const finish = (error?: Error): void => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        if (error) {
-          reject(error);
-        } else {
-          resolve(this.summarizeFrameDelivery(samples));
-        }
-      };
-      const onAnimationFrame = (frameAt: number): void => {
-        if (!activeGameScene.sys.isActive() || !this.game.scene.getScenes(true).includes(activeGameScene)) {
-          finish(new Error('Browser harness frame-delivery probe was interrupted by a gameplay transition'));
-          return;
-        }
-        if (lastFrameAt !== null) samples.push(frameAt - lastFrameAt);
-        lastFrameAt = frameAt;
-
-        if (samples.length >= sampleCount) {
-          finish();
-          return;
-        }
-        animationFrame = window.requestAnimationFrame(onAnimationFrame);
-      };
-      const onDestroy = (): void => {
-        finish(new Error('Browser harness frame-delivery probe was interrupted by game destruction'));
-      };
-
-      this.game.events.once(Phaser.Core.Events.DESTROY, onDestroy);
-      animationFrame = window.requestAnimationFrame(onAnimationFrame);
-    });
-  }
 
   probeFramePacing(
     sampleCount = 120,

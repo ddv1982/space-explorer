@@ -12,193 +12,95 @@ interface HudAnnouncementTweenDeps {
   sectorText: Phaser.GameObjects.Text;
   levelText: Phaser.GameObjects.Text;
   getLayoutMetrics: () => HudAnnouncementLayout;
-  getAnnouncementTween: () => Phaser.Tweens.Tween | null;
-  setAnnouncementTween: (tween: Phaser.Tweens.Tween | null) => void;
+}
+
+interface HudAnnouncement {
+  text: string;
+  color: string;
+  duration: number;
+  offset?: number;
+  exit?: 'level' | number;
+  delay?: number;
 }
 
 export class HudAnnouncementTweens {
+  private activeTween: Phaser.Tweens.Tween | null = null;
+
   constructor(private readonly deps: HudAnnouncementTweenDeps) {}
 
-  showLevelAnnouncement(levelName: string, levelNumber: number): void {
-    const layout = this.deps.getLayoutMetrics();
-
-    this.deps.sectorText.setText(`SECTOR ${levelNumber.toString().padStart(2, '0')}`);
-    this.deps.levelText.setText(levelName);
-    this.deps.announcementText.setText(`SECTOR ${levelNumber}`);
-    this.deps.announcementText.setColor('#ffffff');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        y: { from: layout.announcementY, to: layout.announcementExitY },
-        duration: 2000,
-        delay: 1000,
+  relayout(layout: HudAnnouncementLayout): void {
+    const text = this.deps.announcementText;
+    text.setPosition(layout.centerX, layout.announcementY);
+    if (this.activeTween && text.alpha > 0) {
+      this.activeTween.stop();
+      this.activeTween = this.deps.scene.tweens.add({
+        targets: text,
+        alpha: { from: text.alpha, to: 0 },
+        duration: 900,
         ease: 'Power2',
         onComplete: () => {
-          this.deps.setAnnouncementTween(null);
+          this.activeTween = null;
         },
-      })
-    );
+      });
+    }
+  }
+
+  showLevelAnnouncement(levelName: string, levelNumber: number): void {
+    this.deps.sectorText.setText(`SECTOR ${levelNumber.toString().padStart(2, '0')}`);
+    this.deps.levelText.setText(levelName);
+    this.show({ text: `SECTOR ${levelNumber}`, color: '#ffffff', duration: 2000, delay: 1000, exit: 'level' });
   }
 
   showBossWarning(): void {
-    const layout = this.deps.getLayoutMetrics();
-
-    this.deps.announcementText.setText('⚠ WARNING: BOSS INCOMING ⚠');
-    this.deps.announcementText.setColor('#ff4444');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        duration: 2500,
-        ease: 'Power2',
-        onComplete: () => {
-          this.deps.setAnnouncementTween(null);
-        },
-      })
-    );
+    this.show({ text: '⚠ WARNING: BOSS INCOMING ⚠', color: '#ff4444', duration: 2500 });
   }
 
   showBossPhaseAnnouncement(phase: number): void {
-    const layout = this.deps.getLayoutMetrics();
-
-    this.deps.announcementText.setText(`⚠ BOSS PHASE ${phase} ⚠`);
-    this.deps.announcementText.setColor('#ffcc44');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 8);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        y: { from: layout.announcementY - 8, to: layout.announcementY - 34 },
-        duration: 1400,
-        ease: 'Power2',
-        onComplete: () => {
-          this.deps.setAnnouncementTween(null);
-        },
-      })
-    );
+    this.show({ text: `⚠ BOSS PHASE ${phase} ⚠`, color: '#ffcc44', duration: 1400, offset: -8, exit: -34 });
   }
 
   showBossGuardBreakAnnouncement(): void {
-    const layout = this.deps.getLayoutMetrics();
-
-    this.deps.announcementText.setText('GUARD BREAK');
-    this.deps.announcementText.setColor('#ffd76a');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 8);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        y: { from: layout.announcementY - 8, to: layout.announcementY - 30 },
-        duration: 1300,
-        ease: 'Power2',
-        onComplete: () => this.deps.setAnnouncementTween(null),
-      })
-    );
+    this.show({ text: 'GUARD BREAK', color: '#ffd76a', duration: 1300, offset: -8, exit: -30 });
   }
 
   showHelperWingAnnouncement(helperCount: number): void {
-    const layout = this.deps.getLayoutMetrics();
-
-    this.deps.announcementText.setText(`ALLY WING ONLINE (${helperCount})`);
-    this.deps.announcementText.setColor('#6af6ff');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
-        duration: 1600,
-        ease: 'Power2',
-        onComplete: () => {
-          this.deps.setAnnouncementTween(null);
-        },
-      })
-    );
+    this.show({ text: `ALLY WING ONLINE (${helperCount})`, color: '#6af6ff', duration: 1600, offset: -6, exit: -28 });
   }
 
   showEliteWaveAnnouncement(): void {
-    const layout = this.deps.getLayoutMetrics();
-
-    this.deps.announcementText.setText('⚠ ELITE WAVE ⚠');
-    this.deps.announcementText.setColor('#c99bff');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        y: { from: layout.announcementY - 6, to: layout.announcementY - 30 },
-        duration: 1500,
-        ease: 'Power2',
-        onComplete: () => {
-          this.deps.setAnnouncementTween(null);
-        },
-      })
-    );
+    this.show({ text: '⚠ ELITE WAVE ⚠', color: '#c99bff', duration: 1500, offset: -6, exit: -30 });
   }
 
   showPicketOnlineAnnouncement(): void {
-    const layout = this.deps.getLayoutMetrics();
-
-    this.deps.announcementText.setText('PICKET ONLINE');
-    this.deps.announcementText.setColor('#ffcf7a');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 6);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        y: { from: layout.announcementY - 6, to: layout.announcementY - 28 },
-        duration: 1500,
-        ease: 'Power2',
-        onComplete: () => {
-          this.deps.setAnnouncementTween(null);
-        },
-      })
-    );
+    this.show({ text: 'PICKET ONLINE', color: '#ffcf7a', duration: 1500, offset: -6, exit: -28 });
   }
 
   showHelperWingDepletedAnnouncement(): void {
+    this.show({ text: 'ALLY WING LOST', color: '#ff8899', duration: 1400, offset: -4 });
+  }
+
+  private show({ text, color, duration, offset = 0, exit, delay }: HudAnnouncement): void {
     const layout = this.deps.getLayoutMetrics();
+    const announcement = this.deps.announcementText;
+    const startY = layout.announcementY + offset;
+    announcement.setText(text);
+    announcement.setColor(color);
+    announcement.setAlpha(1);
+    announcement.setPosition(layout.centerX, startY);
+    this.activeTween?.stop();
 
-    this.deps.announcementText.setText('ALLY WING LOST');
-    this.deps.announcementText.setColor('#ff8899');
-    this.deps.announcementText.setAlpha(1);
-    this.deps.announcementText.setPosition(layout.centerX, layout.announcementY - 4);
-    this.deps.getAnnouncementTween()?.stop();
-
-    this.deps.setAnnouncementTween(
-      this.deps.scene.tweens.add({
-        targets: this.deps.announcementText,
-        alpha: { from: 1, to: 0 },
-        duration: 1400,
-        ease: 'Power2',
-        onComplete: () => {
-          this.deps.setAnnouncementTween(null);
-        },
-      })
-    );
+    this.activeTween = this.deps.scene.tweens.add({
+      targets: announcement,
+      alpha: { from: 1, to: 0 },
+      ...(exit === undefined
+        ? {}
+        : { y: { from: startY, to: exit === 'level' ? layout.announcementExitY : layout.announcementY + exit } }),
+      duration,
+      ...(delay === undefined ? {} : { delay }),
+      ease: 'Power2',
+      onComplete: () => {
+        this.activeTween = null;
+      },
+    });
   }
 }

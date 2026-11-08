@@ -182,7 +182,8 @@ bun run dev      # start local dev server
 bun run typecheck # type-check source, scripts, config, and tests
 bun run typecheck:ts6 # compare against the temporary TypeScript 6 compatibility compiler
 bun run test     # run unit/regression tests with per-file isolation
-bun run test:e2e # run parallel functional/visual checks, then isolated performance evidence
+bun run test:e2e # run desktop and touch-portrait browser regressions
+bun run test:performance # check normal cost and injected regression sensitivity
 bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
@@ -223,7 +224,7 @@ For development comparisons, append `&background=legacy` to use the previous bac
 ## Release notes
 
 - [Changelog](CHANGELOG.md)
-- [Latest release notes](docs/releases/1.20.0.md)
+- [Latest release notes](docs/releases/1.20.1.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

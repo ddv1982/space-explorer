@@ -164,7 +164,7 @@ test('real pooled collisions distinguish shield absorption from hull damage', as
   expect(shield.shields).toBe(0);
   expect(shield.playerTint).toBe(0x44aaff);
   expect(shield.blueShieldRings).toBeGreaterThan(0);
-  await saveBrowserEvidence(page, 'real-shield-impact', shield);
+  await saveBrowserEvidence('real-shield-impact', shield);
   // Separate accepted hit feedback by more than its existing 75ms presentation cooldown.
   await page.waitForTimeout(100);
   const hull = await page.evaluate(() =>
@@ -175,7 +175,7 @@ test('real pooled collisions distinguish shield absorption from hull damage', as
   expect(hull.beforeHp - hull.afterHp).toBe(hull.result.hullDamage);
   expect(hull.result.hullDamage).toBeGreaterThan(0);
   expect(hull.playerTint).toBe(0xffffff);
-  await saveBrowserEvidence(page, 'real-hull-impact', hull);
+  await saveBrowserEvidence('real-hull-impact', hull);
 
   assertNoBrowserErrors();
 });
@@ -205,7 +205,7 @@ for (const [source, label] of causes) {
           event.hullDamage === 0.25
       )
     ).toBe(true);
-    await saveBrowserEvidence(page, `fatal-${source}`, { fatal, state: await state(page), recording });
+    await saveBrowserEvidence(`fatal-${source}`, { fatal, state: await state(page), recording });
     await page.getByRole('button', { name: 'Retry from level 1' }).focus();
     await page.keyboard.press('Enter');
     await waitForScene(page, 'Game');
@@ -214,7 +214,7 @@ for (const [source, label] of causes) {
     await expect
       .poll(() => page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.read()?.frames.at(-1)?.alive))
       .toBe(true);
-    await saveBrowserEvidence(page, `retry-${source}-complete`, {
+    await saveBrowserEvidence(`retry-${source}-complete`, {
       state: await state(page),
       recording: await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop()),
     });
@@ -248,11 +248,11 @@ for (const pattern of ['flare', 'lattice'] as const) {
       const paused = await state(page);
       expect(paused.beams).toEqual(beforePause.beams);
       expect(paused.gameplayMs).toBe(beforePause.gameplayMs);
-      await saveBrowserEvidence(page, `${pattern}-paused-telegraph`, { staged, beforePause, paused });
+      await saveBrowserEvidence(`${pattern}-paused-telegraph`, { staged, beforePause, paused });
       const observed = observeBeamCycle(page, watchdogMs);
       await setPaused(page, false, isMobile);
       const receipt = await observed;
-      await saveBrowserEvidence(page, `${pattern}-beam-cycle`, {
+      await saveBrowserEvidence(`${pattern}-beam-cycle`, {
         staged,
         ...receipt,
         recording: await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop()),
@@ -285,7 +285,7 @@ test('delivered eight-direction input escapes overlapping beam danger before act
     window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBeamEscapeRoute()
   );
   expect(staged.start.y).toBeLessThan(staged.goal.y);
-  await saveBrowserEvidence(page, 'escape-danger-start', { staged, state: await state(page) });
+  await saveBrowserEvidence('escape-danger-start', { staged, state: await state(page) });
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await state(page)).paused).toBe(false);
   const startedAt = (await state(page)).gameplayMs;
@@ -315,7 +315,7 @@ test('delivered eight-direction input escapes overlapping beam danger before act
     expect(escaped.player?.hp).toBe(staged.hp);
     const recording = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.gameFeel.stop());
     expect(recording?.events.some((event) => event.kind === 'key' && event.code === 'ArrowDown')).toBe(true);
-    await saveBrowserEvidence(page, 'delivered-beam-escape', { staged, escaped, recording });
+    await saveBrowserEvidence('delivered-beam-escape', { staged, escaped, recording });
   } finally {
     await page.keyboard.up('ArrowRight');
     await page.keyboard.up('ArrowDown');
@@ -327,7 +327,7 @@ test('minimum-quality shield feedback remains visible without expansion under re
   page,
   assertNoBrowserErrors,
 }) => {
-  test.skip(!test.info().project.name.includes('portrait'), 'minimum-width preference coverage');
+  test.skip(!test.info().project.name.includes('mobile'), 'minimum-width touch preference coverage');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openMenu(page);
   const low = page.getByRole('button', { name: 'Set visual quality low', exact: true });
@@ -342,40 +342,41 @@ test('minimum-quality shield feedback remains visible without expansion under re
   expect(shield.afterHp).toBe(shield.beforeHp);
   expect(shield.shieldRingScales).toEqual([1]);
   expect(shield.playerTint).toBe(0x44aaff);
-  await saveBrowserEvidence(page, 'reduced-motion-shield', shield);
+  await saveBrowserEvidence('reduced-motion-shield', shield);
   assertNoBrowserErrors();
 });
 
 for (let level = 1; level <= 10; level++) {
-  test(`direct level ${level} initializes and reaches its authored boss trigger`, async ({
-    page,
-    assertNoBrowserErrors,
-  }) => {
-    test.setTimeout(180000);
-    await openMenu(page);
-    const staged = await page.evaluate(
-      (value) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageLevel(value),
-      level
-    );
-    await waitForScene(page, 'Game');
-    await expect.poll(async () => (await state(page)).level).toBe(level);
-    await page.waitForTimeout(200);
-    expect((await state(page)).player?.alive).toBe(true);
-    const trigger = await page.evaluate(() =>
-      window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBossThreshold()
-    );
-    if (trigger.hasBoss) {
-      const receipt = await observeBossSpawn(page);
-      await saveBrowserEvidence(page, `level-${level}-boss-observation`, receipt);
-      expect(receipt.outcome, JSON.stringify(receipt)).toBe('complete');
-      expect(receipt.last.bosses).toHaveLength(1);
+  test(
+    `direct level ${level} initializes and reaches its authored boss trigger`,
+    { tag: '@desktop-only' },
+    async ({ page, assertNoBrowserErrors }) => {
+      test.setTimeout(180000);
+      await openMenu(page);
+      const staged = await page.evaluate(
+        (value) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageLevel(value),
+        level
+      );
+      await waitForScene(page, 'Game');
+      await expect.poll(async () => (await state(page)).level).toBe(level);
+      await page.waitForTimeout(200);
+      expect((await state(page)).player?.alive).toBe(true);
+      const trigger = await page.evaluate(() =>
+        window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.stageBossThreshold()
+      );
+      if (trigger.hasBoss) {
+        const receipt = await observeBossSpawn(page);
+        await saveBrowserEvidence(`level-${level}-boss-observation`, receipt);
+        expect(receipt.outcome, JSON.stringify(receipt)).toBe('complete');
+        expect(receipt.last.bosses).toHaveLength(1);
+      }
+      await saveBrowserEvidence(`direct-level-${level}-boss-smoke`, {
+        staged,
+        trigger,
+        state: await state(page),
+        scope: 'Direct level and progress staging; verifies initialization and boss spawn, not complete campaign play.',
+      });
+      assertNoBrowserErrors();
     }
-    await saveBrowserEvidence(page, `direct-level-${level}-boss-smoke`, {
-      staged,
-      trigger,
-      state: await state(page),
-      scope: 'Direct level and progress staging; verifies initialization and boss spawn, not complete campaign play.',
-    });
-    assertNoBrowserErrors();
-  });
+  );
 }

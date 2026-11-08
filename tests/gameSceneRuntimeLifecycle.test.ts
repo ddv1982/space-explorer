@@ -92,10 +92,10 @@ function createRuntimeLifecycleHarness() {
 }
 
 describe('createGameSceneRuntimeLifecycle', () => {
-  test('registerRuntimeHandlers does not sync helper-wing state', () => {
+  test('registerSceneEventHandlers does not sync helper-wing state', () => {
     const { lifecycle, log } = createRuntimeLifecycleHarness();
 
-    lifecycle.registerRuntimeHandlers();
+    lifecycle.registerSceneEventHandlers();
 
     expect(log.includes('syncLastLifeHelperWingState')).toBe(false);
     expect(log).toContain('off:enemy-death');

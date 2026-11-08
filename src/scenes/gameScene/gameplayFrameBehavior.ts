@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import type { GameSceneFrameDelegate } from './updateFrame';
 import { BULLET_SPEED } from '@/utils/constants';
 import { getActiveSection, getSectionProgress } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
@@ -73,18 +74,14 @@ interface GameSceneGameplayFrameDelegate {
     createMuzzleFlash(x: number, y: number): void;
   };
   getBoss(): Boss | null;
-  getLastFireTime(): number;
-  setLastFireTime(time: number): void;
+  updateHud(): void;
   shotDirection: Phaser.Math.Vector2;
   shotOrigin: Phaser.Math.Vector2;
   muzzleFlashOrigin: Phaser.Math.Vector2;
 }
 
-export interface GameSceneGameplayFrameBehavior {
-  handlePauseInput(): void;
-  isPausedOrLockedFrame(): boolean;
-  updatePausedFrame(delta: number, updateHud: () => void): void;
-  updateGameplayFrame(time: number, delta: number): void;
+export interface GameSceneGameplayFrameBehavior extends GameSceneFrameDelegate {
+  getLastFireTime(): number;
 }
 
 export function createGameSceneGameplayFrameBehavior(
@@ -92,6 +89,7 @@ export function createGameSceneGameplayFrameBehavior(
 ): GameSceneGameplayFrameBehavior {
   type ActiveSection = ReturnType<typeof getActiveSection>;
 
+  let lastFireTime = 0;
   let cachedLevelConfig: Parameters<typeof getActiveSection>[0] | null = null;
   let cachedSection: ActiveSection = null;
   let lastPresentedSection: ActiveSection | undefined;
@@ -110,9 +108,9 @@ export function createGameSceneGameplayFrameBehavior(
     return !!delegate.pauseStateController?.isGameplayPaused() || delegate.flow.isGameplayLocked();
   };
 
-  const updatePausedFrame = (delta: number, updateHud: () => void): void => {
+  const updatePausedFrame = (delta: number): void => {
     delegate.flow.sampleRespawnTransitionFrame(delta);
-    updateHud();
+    delegate.updateHud();
   };
 
   const updatePlayerFiring = (time: number): void => {
@@ -120,17 +118,15 @@ export function createGameSceneGameplayFrameBehavior(
       return;
     }
 
-    // Max-chain Overdrive tightens the cooldown while the chain sits at its
-    // cap; the live chain read drops the benefit the moment the chain falls.
     const fireCooldown = resolvePlayerFireCooldownMs(
       delegate.player.fireRate,
       delegate.scoreManager.getChainState(time).multiplier
     );
-    if (time <= delegate.getLastFireTime() + fireCooldown) {
+    if (time <= lastFireTime + fireCooldown) {
       return;
     }
 
-    delegate.setLastFireTime(time);
+    lastFireTime = time;
 
     const shotSpeed = Math.abs(BULLET_SPEED);
     const shotDirection = delegate.player.getFireDirection(delegate.shotDirection);
@@ -230,5 +226,7 @@ export function createGameSceneGameplayFrameBehavior(
     isPausedOrLockedFrame,
     updatePausedFrame,
     updateGameplayFrame,
+    updateHud: delegate.updateHud,
+    getLastFireTime: () => lastFireTime,
   };
 }

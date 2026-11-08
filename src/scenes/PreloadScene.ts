@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { finishCinematicLoading, queueCinematicAssets } from '../utils/cinematicAssets';
-import { ensurePremiumBackgroundAssets } from '../systems/parallax/premiumBackgroundLoading';
+import { prepareLegacyBackgroundTextures } from '../systems/parallax/premiumBackgroundLoading';
 import { getViewportLayout } from '../utils/layout';
 import { queueAllPlanetPortraits } from './planetIntermission/planetPortraits';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
@@ -57,7 +57,7 @@ export class PreloadScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanupLoaderProgress);
     this.events.once(Phaser.Scenes.Events.DESTROY, cleanupLoaderProgress);
 
-    ensurePremiumBackgroundAssets(this, 1, () => {});
+    prepareLegacyBackgroundTextures(this, 1);
 
     // Authored planet portraits are real raster files (~18 kB each): cache
     // the full campaign set now so intermissions never hit the network

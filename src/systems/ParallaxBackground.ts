@@ -3,75 +3,18 @@ import { createLivingBackground, type LivingBackground } from './parallax/Living
 import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../config/LevelsConfig';
 import { applyHazardTelegraphGlow } from '../utils/renderingCompat';
 import { resolveSectionAtmosphereTargets } from './parallax/atmosphereProfile';
-import {
-  scrollStarLayers,
-  updateDebrisMoteMotion,
-  updatePassingPlanetMotion,
-  updatePlanetLayerMotion,
-  updateTwinkleMotion,
-} from './parallax/backgroundMotion';
-import {
-  createStarfieldTileSprites,
-  destroyStarfieldTileSprites,
-  layoutStarfieldTileSprites,
-  STARFIELD_LAYER_CONFIGS,
-  STARFIELD_TILE_DEPTHS,
-} from './parallax/starfieldTileSpriteLifecycle';
-import {
-  createPremiumBackgroundLayers as createPremiumBackgroundLayersHelper,
-  destroyPremiumBackgroundLayers as destroyPremiumBackgroundLayersHelper,
-  layoutPremiumBackgroundLayers as layoutPremiumBackgroundLayersHelper,
-  rebuildPremiumBackgroundLayers as rebuildPremiumBackgroundLayersHelper,
-  scrollPremiumBackgroundLayers as scrollPremiumBackgroundLayersHelper,
-  type PremiumBackgroundLayerState,
-} from './parallax/premiumBackgroundLayers';
 import { updateHazardOverlay as updateHazardOverlayRuntime } from './parallax/hazardOverlayRuntime';
-import {
-  getPassingPlanetOffscreenThreshold,
-  resetPassingPlanetPosition,
-  type PassingPlanetState,
-} from './parallax/passingPlanetLifecycle';
-import {
-  createPlanetLayer as createPlanetLayerHelper,
-  destroyPlanetLayer as destroyPlanetLayerHelper,
-  layoutPlanetLayer as layoutPlanetLayerHelper,
-  type PlanetLayerState,
-} from './parallax/distantPlanetLayerLifecycle';
-import { type TwinkleState } from './parallax/starTwinkleLifecycle';
-import {
-  createDebrisMotes as createDebrisMotesHelper,
-  destroyDebrisMotes as destroyDebrisMotesHelper,
-  type DebrisMoteState,
-} from './parallax/debrisMoteLifecycle';
-import {
-  resizeParallaxBackground,
-  type ResizeRebuildOrchestrationContext,
-} from './parallax/resizeRebuildOrchestration';
-import {
-  createLevelVisualLayers,
-  destroyLevelVisualLayers,
-  rebuildLevelVisualLayers,
-  type LevelVisualLayerLifecycleContext,
-} from './parallax/levelVisualLayerLifecycle';
+import { LegacyBackground } from './parallax/LegacyBackground';
 import { runtimePerformanceBudget, type RuntimePerformanceSnapshot } from './RuntimePerformanceBudget';
-
-const PASSING_PLANET_RESPAWN_MIN_X = 100;
-const PASSING_PLANET_RESPAWN_MAX_X = 400;
-const PASSING_PLANET_OFFSCREEN_PADDING = 220;
 
 export class ParallaxBackground {
   private scene: Phaser.Scene | null = null;
   private livingBackground: LivingBackground | null = null;
   private levelConfig?: LevelConfig;
-  private tileSprites: Phaser.GameObjects.TileSprite[] = [];
-  private planetLayer: PlanetLayerState | null = null;
-  private debrisMotes: DebrisMoteState[] = [];
-  private twinkles: TwinkleState[] = [];
-  private passingPlanetSprites: PassingPlanetState[] = [];
+  private legacyBackground: LegacyBackground | null = null;
   private elapsed = 0;
   private currentWidth = 0;
   private currentHeight = 0;
-  private pendingRebuildEvent: Phaser.Time.TimerEvent | null = null;
   private atmosphereAlpha = 1;
   private targetAtmosphereAlpha = 1;
   private atmosphereDrift = 1;
@@ -84,7 +27,6 @@ export class ParallaxBackground {
   private targetHazardOverlayAlpha = 0;
   private activeHazards: ScriptedHazardConfig[] = [];
   private hazardOverlay: Phaser.GameObjects.Graphics | null = null;
-  private premiumBackgroundLayers: PremiumBackgroundLayerState[] = [];
   private unsubscribePerformanceBudget: (() => void) | null = null;
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
@@ -92,7 +34,6 @@ export class ParallaxBackground {
     this.initializeSceneState(scene, levelConfig);
     this.createSceneLayers(scene, levelConfig);
     this.createHazardOverlay(scene, levelConfig?.accentColor ?? 0x88c8ff);
-    this.layoutSceneLayers();
     this.unsubscribePerformanceBudget = runtimePerformanceBudget.subscribe((snapshot) => {
       this.applyRuntimePerformanceBudget(snapshot);
     });
@@ -102,133 +43,30 @@ export class ParallaxBackground {
   private initializeSceneState(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.scene = scene;
     this.levelConfig = levelConfig;
-    this.tileSprites = [];
-    this.debrisMotes = [];
     this.resetRuntimeFieldState(scene.cameras.main.width, scene.cameras.main.height);
   }
 
   private createSceneLayers(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.livingBackground = createLivingBackground(scene, levelConfig?.name);
     if (this.livingBackground) return;
-    const hasPremiumBackgroundLayers = levelConfig ? this.createPremiumBackgroundLayers(scene, levelConfig) : false;
-
-    this.tileSprites = hasPremiumBackgroundLayers
-      ? []
-      : createStarfieldTileSprites(scene, levelConfig, this.currentWidth, this.currentHeight);
-
-    if (levelConfig) {
-      this.createLevelVisualLayers(scene, levelConfig);
+    if (import.meta.env.DEV) {
+      this.legacyBackground = new LegacyBackground();
+      this.legacyBackground.create(scene, levelConfig);
     }
   }
 
   private createHazardOverlay(scene: Phaser.Scene, accentColor: number): void {
     this.hazardOverlay = scene.add.graphics();
     this.hazardOverlay.setDepth(-5);
-    // Keep authored hazard tells legible over detailed backplates without adding
-    // new danger geometry or changing their lane information.
     applyHazardTelegraphGlow(this.hazardOverlay, accentColor);
   }
 
-  private layoutSceneLayers(): void {
-    this.layoutTileSprites();
-    this.layoutPremiumBackgroundLayers();
-  }
-
-  private getViewportSize(): { width: number; height: number } {
-    return {
-      width: this.currentWidth,
-      height: this.currentHeight,
-    };
-  }
-
-  private createPremiumBackgroundLayers(scene: Phaser.Scene, config: LevelConfig): boolean {
-    return createPremiumBackgroundLayersHelper(scene, config, this.getViewportSize(), this.premiumBackgroundLayers);
-  }
-
-  private destroyPremiumBackgroundLayers(): void {
-    destroyPremiumBackgroundLayersHelper(this.premiumBackgroundLayers);
-  }
-
-  private rebuildPremiumBackgroundLayers(scene: Phaser.Scene, config: LevelConfig): void {
-    rebuildPremiumBackgroundLayersHelper({
-      scene,
-      config,
-      viewport: this.getViewportSize(),
-      premiumBackgroundLayers: this.premiumBackgroundLayers,
-      layoutPremiumBackgroundLayers: () => this.layoutPremiumBackgroundLayers(),
-    });
-  }
-
-  private setPassingPlanetSprites(states: PassingPlanetState[]): void {
-    this.passingPlanetSprites = states;
-  }
-
-  private setTwinkles(states: TwinkleState[]): void {
-    this.twinkles = states;
-  }
-
-  private getLevelVisualLayerLifecycleContext(): LevelVisualLayerLifecycleContext {
-    return {
-      scene: this.scene,
-      currentWidth: this.currentWidth,
-      currentHeight: this.currentHeight,
-      passingPlanetSprites: this.passingPlanetSprites,
-      twinkles: this.twinkles,
-      passingPlanetRespawnMinX: PASSING_PLANET_RESPAWN_MIN_X,
-      passingPlanetRespawnMaxX: PASSING_PLANET_RESPAWN_MAX_X,
-      starfieldTileDepths: STARFIELD_TILE_DEPTHS,
-      createPlanetLayer: this.createPlanetLayer.bind(this),
-      createDebrisMotes: this.createDebrisMotes.bind(this),
-      destroyPlanetLayer: this.destroyPlanetLayer.bind(this),
-      destroyDebrisMotes: this.destroyDebrisMotes.bind(this),
-      setPassingPlanetSprites: (states) => this.setPassingPlanetSprites(states),
-      setTwinkles: (states) => this.setTwinkles(states),
-    };
-  }
-
-  private createLevelVisualLayers(scene: Phaser.Scene, config: LevelConfig): void {
-    createLevelVisualLayers(this.getLevelVisualLayerLifecycleContext(), scene, config);
-  }
-
-  private destroyLevelVisualLayers(): void {
-    destroyLevelVisualLayers(this.getLevelVisualLayerLifecycleContext());
-  }
-
-  private rebuildLevelVisualLayers(scene: Phaser.Scene, config: LevelConfig): void {
-    rebuildLevelVisualLayers(this.getLevelVisualLayerLifecycleContext(), scene, config);
-  }
-
   resize(width: number, height: number): void {
-    if (this.livingBackground && width > 0 && height > 0) {
-      this.currentWidth = width;
-      this.currentHeight = height;
-      this.livingBackground.resize(width, height);
-      return;
-    }
-    resizeParallaxBackground(this.getResizeRebuildOrchestrationContext(), width, height);
-  }
-
-  private getResizeRebuildOrchestrationContext(): ResizeRebuildOrchestrationContext {
-    return {
-      getScene: () => this.scene,
-      getLevelConfig: () => this.levelConfig,
-      getCurrentWidth: () => this.currentWidth,
-      getCurrentHeight: () => this.currentHeight,
-      setCurrentSize: (width, height) => {
-        this.currentWidth = width;
-        this.currentHeight = height;
-      },
-      getPremiumBackgroundLayerCount: () => this.premiumBackgroundLayers.length,
-      getPendingRebuildEvent: () => this.pendingRebuildEvent,
-      setPendingRebuildEvent: (event) => {
-        this.pendingRebuildEvent = event;
-      },
-      layoutTileSprites: () => this.layoutTileSprites(),
-      layoutPremiumBackgroundLayers: () => this.layoutPremiumBackgroundLayers(),
-      layoutLevelVisualLayers: () => this.layoutLevelVisualLayers(),
-      rebuildPremiumBackgroundLayers: (scene, config) => this.rebuildPremiumBackgroundLayers(scene, config),
-      rebuildLevelVisualLayers: (scene, config) => this.rebuildLevelVisualLayers(scene, config),
-    };
+    if (!this.scene || width <= 0 || height <= 0) return;
+    this.currentWidth = width;
+    this.currentHeight = height;
+    this.livingBackground?.resize(width, height);
+    this.legacyBackground?.resize(width, height);
   }
 
   destroy(): void {
@@ -236,10 +74,8 @@ export class ParallaxBackground {
     this.livingBackground = null;
     this.unsubscribePerformanceBudget?.();
     this.unsubscribePerformanceBudget = null;
-    this.clearPendingRebuildEvent();
-    this.destroyLevelVisualLayers();
-    this.destroyPremiumBackgroundLayers();
-    this.tileSprites = destroyStarfieldTileSprites(this.tileSprites);
+    this.legacyBackground?.destroy();
+    this.legacyBackground = null;
     this.scene = null;
     this.levelConfig = undefined;
     this.resetRuntimeFieldState(0, 0);
@@ -249,21 +85,10 @@ export class ParallaxBackground {
 
   private applyRuntimePerformanceBudget(snapshot: RuntimePerformanceSnapshot): void {
     this.livingBackground?.setPressure(snapshot.pressureLevel);
-    this.premiumBackgroundLayers.forEach((layer, index) => {
-      layer.sprite.setVisible(index < snapshot.backgroundLayerLimit);
-    });
+    this.legacyBackground?.setLayerLimit(snapshot.backgroundLayerLimit);
     for (const filter of this.hazardOverlay?.filters?.internal.list ?? []) {
       filter.setActive(snapshot.glowEnabled);
     }
-  }
-
-  private clearPendingRebuildEvent(): void {
-    if (!this.pendingRebuildEvent) {
-      return;
-    }
-
-    this.pendingRebuildEvent.remove(false);
-    this.pendingRebuildEvent = null;
   }
 
   setSectionAtmosphere(section: LevelSectionConfig | null, sectionProgress: number): void {
@@ -294,26 +119,6 @@ export class ParallaxBackground {
     this.activeHazards = [];
   }
 
-  // ---------------------------------------------------------------------------
-  // Distant planet layer
-  // ---------------------------------------------------------------------------
-
-  private createPlanetLayer(scene: Phaser.Scene, config: LevelConfig): void {
-    this.planetLayer = createPlanetLayerHelper(scene, config, this.getViewportSize());
-  }
-
-  // ---------------------------------------------------------------------------
-  // Debris motes (small floating particles)
-  // ---------------------------------------------------------------------------
-
-  private createDebrisMotes(scene: Phaser.Scene, config: LevelConfig): void {
-    createDebrisMotesHelper(scene, config, this.getViewportSize(), this.debrisMotes);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Update
-  // ---------------------------------------------------------------------------
-
   update(delta: number): void {
     this.elapsed += delta;
     this.updateAtmosphereState(delta);
@@ -342,24 +147,13 @@ export class ParallaxBackground {
       this.livingBackground.update(delta, this.atmosphereDrift, this.atmosphereAlpha, this.landmarkAlpha);
       return;
     }
-    scrollStarLayers(this.tileSprites, STARFIELD_LAYER_CONFIGS, delta);
-    this.scrollPremiumBackgroundLayers(delta);
-    updatePlanetLayerMotion(this.planetLayer, this.elapsed, this.atmosphereAlpha, this.landmarkAlpha);
-    updateDebrisMoteMotion(this.debrisMotes, this.elapsed, delta, this.atmosphereAlpha);
-    updateTwinkleMotion(this.twinkles, this.elapsed, this.atmosphereTwinkle);
-    updatePassingPlanetMotion(
-      this.passingPlanetSprites,
+    this.legacyBackground?.update(
       delta,
+      this.elapsed,
+      this.atmosphereDrift,
       this.atmosphereAlpha,
-      this.landmarkAlpha,
-      (sprite) => getPassingPlanetOffscreenThreshold(sprite, PASSING_PLANET_OFFSCREEN_PADDING),
-      (planet) =>
-        resetPassingPlanetPosition(
-          planet,
-          this.currentWidth,
-          PASSING_PLANET_RESPAWN_MIN_X,
-          PASSING_PLANET_RESPAWN_MAX_X
-        )
+      this.atmosphereTwinkle,
+      this.landmarkAlpha
     );
   }
 
@@ -378,51 +172,7 @@ export class ParallaxBackground {
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Layout
-  // ---------------------------------------------------------------------------
-
-  private layoutTileSprites(): void {
-    layoutStarfieldTileSprites(this.tileSprites, this.currentWidth, this.currentHeight);
-  }
-
-  private layoutPremiumBackgroundLayers(): void {
-    layoutPremiumBackgroundLayersHelper(this.premiumBackgroundLayers, this.getViewportSize());
-  }
-
-  private layoutLevelVisualLayers(): void {
-    this.layoutPlanetLayer();
-  }
-
-  private scrollPremiumBackgroundLayers(delta: number): void {
-    scrollPremiumBackgroundLayersHelper({
-      premiumBackgroundLayers: this.premiumBackgroundLayers,
-      delta,
-      currentWidth: this.currentWidth,
-      currentHeight: this.currentHeight,
-      atmosphereDrift: this.atmosphereDrift,
-      atmosphereAlpha: this.atmosphereAlpha,
-      elapsed: this.elapsed,
-    });
-  }
-
-  private layoutPlanetLayer(): void {
-    layoutPlanetLayerHelper(this.planetLayer, this.getViewportSize());
-  }
-
   getLivingBackgroundSnapshot() {
     return this.livingBackground?.snapshot() ?? null;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Cleanup
-  // ---------------------------------------------------------------------------
-
-  private destroyPlanetLayer(): void {
-    this.planetLayer = destroyPlanetLayerHelper(this.scene, this.planetLayer);
-  }
-
-  private destroyDebrisMotes(): void {
-    this.debrisMotes = destroyDebrisMotesHelper(this.debrisMotes);
   }
 }

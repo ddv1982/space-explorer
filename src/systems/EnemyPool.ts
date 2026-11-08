@@ -26,8 +26,34 @@ type GroupClass = abstract new (...args: never[]) => unknown;
 type GroupDescriptor = {
   maxSize: number;
   classType: GroupClass;
-  runChildUpdate: boolean;
 };
+interface EnemyDescriptor extends GroupDescriptor {
+  playerCollisionBehavior: EnemyPlayerCollisionBehavior;
+  armed?: true;
+}
+
+const ENEMY_DESCRIPTORS = {
+  scout: { maxSize: 50, classType: Scout, playerCollisionBehavior: 'kamikaze' },
+  fighter: { maxSize: 30, classType: Fighter, playerCollisionBehavior: 'impact', armed: true },
+  bomber: { maxSize: 20, classType: Bomber, playerCollisionBehavior: 'impact' },
+  swarm: { maxSize: 40, classType: Swarm, playerCollisionBehavior: 'kamikaze' },
+  gunship: { maxSize: 15, classType: Gunship, playerCollisionBehavior: 'impact', armed: true },
+  diver: { maxSize: 24, classType: Diver, playerCollisionBehavior: 'kamikaze' },
+  dodger: { maxSize: 16, classType: Dodger, playerCollisionBehavior: 'impact', armed: true },
+  sower: { maxSize: 10, classType: Sower, playerCollisionBehavior: 'impact' },
+  lancer: { maxSize: 8, classType: Lancer, playerCollisionBehavior: 'impact' },
+  splitter: { maxSize: 16, classType: Splitter, playerCollisionBehavior: 'impact' },
+  swarmling: { maxSize: 32, classType: Swarmling, playerCollisionBehavior: 'kamikaze' },
+} satisfies Record<EnemyType, EnemyDescriptor>;
+const ENEMY_TYPES = Object.keys(ENEMY_DESCRIPTORS) as EnemyType[];
+const GROUP_DESCRIPTORS: Record<PoolGroupKey, GroupDescriptor> = {
+  ...ENEMY_DESCRIPTORS,
+  boss: { maxSize: 1, classType: Boss },
+  bomb: { maxSize: 30, classType: BomberBomb },
+  mine: { maxSize: 24, classType: Mine },
+  enemyBullet: { maxSize: 80, classType: EnemyBullet },
+};
+
 interface EnemyGroupRegistration {
   key: EnemyPoolGroupKey;
   group: Phaser.Physics.Arcade.Group;
@@ -38,84 +64,6 @@ export class EnemyPool {
   private scene!: Phaser.Scene;
   private groups: Partial<Record<PoolGroupKey, Phaser.Physics.Arcade.Group>> = {};
   private targetProvider: (() => { x: number; y: number } | null) | null = null;
-
-  private readonly groupDescriptors: Record<PoolGroupKey, GroupDescriptor> = {
-    scout: {
-      maxSize: 50,
-      classType: Scout,
-      runChildUpdate: true,
-    },
-    fighter: {
-      maxSize: 30,
-      classType: Fighter,
-      runChildUpdate: true,
-    },
-    bomber: {
-      maxSize: 20,
-      classType: Bomber,
-      runChildUpdate: true,
-    },
-    swarm: {
-      maxSize: 40,
-      classType: Swarm,
-      runChildUpdate: true,
-    },
-    gunship: {
-      maxSize: 15,
-      classType: Gunship,
-      runChildUpdate: true,
-    },
-    diver: {
-      maxSize: 24,
-      classType: Diver,
-      runChildUpdate: true,
-    },
-    dodger: {
-      maxSize: 16,
-      classType: Dodger,
-      runChildUpdate: true,
-    },
-    sower: {
-      maxSize: 10,
-      classType: Sower,
-      runChildUpdate: true,
-    },
-    lancer: {
-      maxSize: 8,
-      classType: Lancer,
-      runChildUpdate: true,
-    },
-    splitter: {
-      maxSize: 16,
-      classType: Splitter,
-      runChildUpdate: true,
-    },
-    swarmling: {
-      maxSize: 32,
-      classType: Swarmling,
-      runChildUpdate: true,
-    },
-    boss: {
-      maxSize: 1,
-      classType: Boss,
-      runChildUpdate: true,
-    },
-    bomb: {
-      maxSize: 30,
-      classType: BomberBomb,
-      runChildUpdate: true,
-    },
-    mine: {
-      maxSize: 24,
-      classType: Mine,
-      runChildUpdate: true,
-    },
-    enemyBullet: {
-      maxSize: 80,
-      classType: EnemyBullet,
-      runChildUpdate: true,
-    },
-  };
 
   private acquireFromGroup<T>(group: Phaser.Physics.Arcade.Group, x: number, y: number): T | null {
     const existing = group.getFirstDead(false) as T | null;
@@ -144,11 +92,11 @@ export class EnemyPool {
       return existing;
     }
 
-    const descriptor = this.groupDescriptors[key];
+    const descriptor = GROUP_DESCRIPTORS[key];
     const group = this.scene.physics.add.group({
       maxSize: descriptor.maxSize,
       classType: descriptor.classType,
-      runChildUpdate: descriptor.runChildUpdate,
+      runChildUpdate: true,
     });
 
     this.groups[key] = group;
@@ -253,28 +201,20 @@ export class EnemyPool {
 
   spawnEnemy(type: EnemyType, x: number, y: number): EnemyBase | null {
     switch (type) {
-      case 'scout':
-        return this.spawnScout(x, y);
-      case 'fighter':
-        return this.spawnFighter(x, y);
       case 'bomber':
         return this.spawnBomber(x, y);
-      case 'swarm':
-        return this.spawnSwarm(x, y);
-      case 'gunship':
-        return this.spawnGunship(x, y);
-      case 'diver':
-        return this.spawnDiver(x, y);
-      case 'dodger':
-        return this.spawnDodger(x, y);
       case 'sower':
         return this.spawnSower(x, y);
       case 'lancer':
         return this.spawnLancer(x, y);
       case 'splitter':
         return this.spawnSplitter(x, y);
-      case 'swarmling':
-        return this.spawnSwarmling(x, y);
+      default: {
+        const descriptor = ENEMY_DESCRIPTORS[type];
+        return 'armed' in descriptor
+          ? this.spawnArmedEnemy<Fighter | Gunship | Dodger>(type, x, y)
+          : this.spawnFromGroup<EnemyBase>(type, x, y);
+      }
     }
   }
 
@@ -359,29 +299,14 @@ export class EnemyPool {
     return this.ensureGroup('enemyBullet');
   }
 
-  private createEnemyGroupRegistration(
-    key: EnemyPoolGroupKey,
-    group: Phaser.Physics.Arcade.Group,
-    playerCollisionBehavior: EnemyPlayerCollisionBehavior
-  ): EnemyGroupRegistration {
-    return { key, group, playerCollisionBehavior };
-  }
-
   getEnemyGroupRegistry(): EnemyGroupRegistration[] {
-    return [
-      this.createEnemyGroupRegistration('scout', this.getScoutGroup(), 'kamikaze'),
-      this.createEnemyGroupRegistration('fighter', this.getFighterGroup(), 'impact'),
-      this.createEnemyGroupRegistration('bomber', this.getBomberGroup(), 'impact'),
-      this.createEnemyGroupRegistration('swarm', this.getSwarmGroup(), 'kamikaze'),
-      this.createEnemyGroupRegistration('gunship', this.getGunshipGroup(), 'impact'),
-      this.createEnemyGroupRegistration('diver', this.getDiverGroup(), 'kamikaze'),
-      this.createEnemyGroupRegistration('dodger', this.getDodgerGroup(), 'impact'),
-      this.createEnemyGroupRegistration('sower', this.getSowerGroup(), 'impact'),
-      this.createEnemyGroupRegistration('lancer', this.getLancerGroup(), 'impact'),
-      this.createEnemyGroupRegistration('splitter', this.getSplitterGroup(), 'impact'),
-      this.createEnemyGroupRegistration('swarmling', this.getSwarmlingGroup(), 'kamikaze'),
-      this.createEnemyGroupRegistration('boss', this.getBossGroup(), 'none'),
-    ];
+    const enemies: EnemyGroupRegistration[] = ENEMY_TYPES.map((key) => ({
+      key,
+      group: key === 'bomber' ? this.getBomberGroup() : this.ensureGroup(key),
+      playerCollisionBehavior: ENEMY_DESCRIPTORS[key].playerCollisionBehavior,
+    }));
+    enemies.push({ key: 'boss', group: this.getBossGroup(), playerCollisionBehavior: 'none' });
+    return enemies;
   }
 
   private appendGroupChildren(enemies: Phaser.Physics.Arcade.Sprite[], key: PoolGroupKey, ensure = false): void {
@@ -405,23 +330,9 @@ export class EnemyPool {
   getAllEnemies(): Phaser.Physics.Arcade.Sprite[] {
     const enemies: Phaser.Physics.Arcade.Sprite[] = [];
 
-    this.appendGroupChildren(enemies, 'scout', true);
-    this.appendGroupChildren(enemies, 'fighter', true);
-
-    const optionalGroups: PoolGroupKey[] = [
-      'bomber',
-      'swarm',
-      'gunship',
-      'diver',
-      'dodger',
-      'sower',
-      'lancer',
-      'splitter',
-      'swarmling',
-    ];
-    optionalGroups.forEach((key) => {
-      this.appendGroupChildren(enemies, key);
-    });
+    for (const key of ENEMY_TYPES) {
+      this.appendGroupChildren(enemies, key, key === 'scout' || key === 'fighter');
+    }
 
     return enemies;
   }

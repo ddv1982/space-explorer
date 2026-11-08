@@ -8,14 +8,14 @@ const record = {
   runSummary: { finalScore: 4200, levelReached: 8 },
   label: { levelName: 'Halo Cartography' },
 };
-const ensurePremiumBackgroundAssets = mock();
+const prepareLegacyBackgroundTextures = mock();
 const setPlayerState = mock();
 const setRunSummary = mock();
 const callLog: string[] = [];
 let capturedSaveSlotAdapter: { load: (slotId: string) => { ok: boolean; message: string } } | undefined;
 
 mock.module('@/systems/parallax/premiumBackgroundLoading', () => ({
-  ensurePremiumBackgroundAssets,
+  prepareLegacyBackgroundTextures,
 }));
 
 mock.module('@/systems/PlayerState', () => ({
@@ -57,17 +57,13 @@ mock.module('../src/scenes/sceneRegistry', () => ({
 const { createPauseViewportWiring } = await import('../src/scenes/gameScene/pauseViewportWiring');
 
 describe('pause viewport wiring premium background transition', () => {
-  test('waits for the checkpoint level window and applies state during Game shutdown handoff', () => {
+  test('prepares the checkpoint level and applies state during Game shutdown handoff', () => {
     callLog.length = 0;
-    ensurePremiumBackgroundAssets.mockClear();
+    prepareLegacyBackgroundTextures.mockClear();
     setPlayerState.mockClear();
     setRunSummary.mockClear();
 
-    let onReady: (() => void) | undefined;
     let shutdownHandler: (() => void) | undefined;
-    ensurePremiumBackgroundAssets.mockImplementation((_scene, _level, callback) => {
-      onReady = callback;
-    });
 
     const registry = {};
     const scene = {
@@ -90,11 +86,9 @@ describe('pause viewport wiring premium background transition', () => {
     const result = capturedSaveSlotAdapter?.load('slot-1');
 
     expect(result?.ok).toBe(true);
-    expect(ensurePremiumBackgroundAssets).toHaveBeenCalledWith(scene, 8, expect.any(Function));
-    expect(callLog).toEqual([]);
+    expect(prepareLegacyBackgroundTextures).toHaveBeenCalledWith(scene, 8);
     expect(setPlayerState).not.toHaveBeenCalled();
 
-    onReady?.();
     expect(callLog).toEqual(['startRegisteredScene:Game']);
 
     shutdownHandler?.();

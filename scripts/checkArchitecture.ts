@@ -1,8 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
-import ts from 'typescript';
 
-import { isConcentrationBudgetLoose } from './architectureBudget';
+import { getFunctionPolicyIssue, isConcentrationBudgetLoose, measureFunctions } from './architectureBudget';
 
 const SOURCE_ROOT = resolve('src');
 const WARN_LINES = 500;
@@ -37,18 +36,25 @@ interface ConcentrationPolicy extends PolicyRationale {
 }
 
 const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
-  'src/browserHarness.ts#createBrowserHarnessApi': {
-    lines: 370,
-    complexity: 50,
-    category: 'composition-root',
-    reason: 'development-only diagnostics composition root backed by focused command modules',
-    evidence: 'browser harness API contract and production bundle exclusion checks',
+  'src/browserHarness/gameFeelRuntime.ts#bindGameFeelRuntime': {
+    lines: 60,
+    complexity: 24,
+    category: 'runtime-coordinator',
+    reason: 'development diagnostic boundary validates the live runtime before capturing frames',
+    evidence: 'game-feel browser recording and runtime adapter tests',
   },
   'src/browserHarness/performanceProbes.ts#probeFramePacing': {
     lines: 230,
     complexity: 45,
     category: 'runtime-coordinator',
     reason: 'single sampling transaction with symmetric instrumentation cleanup',
+    evidence: 'browser performance probe coverage',
+  },
+  'src/browserHarness/performanceProbes.ts#<anonymous>': {
+    lines: 180,
+    complexity: 26,
+    category: 'runtime-coordinator',
+    reason: 'local sampling transaction owns instrumentation state and symmetric cleanup',
     evidence: 'browser performance probe coverage',
   },
   'src/scenes/gameScene/pauseOverlay/view.ts#getPauseOverlayLayout': {
@@ -60,7 +66,7 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
   },
   'src/scenes/menuScene/layout.ts#createMenuLayoutPlan': {
     lines: 130,
-    complexity: 58,
+    complexity: 28,
     category: 'pure-layout',
     reason: 'pure responsive policy covered by the viewport scenario matrix',
     evidence: 'responsive layout matrix and browser visual evidence',
@@ -282,14 +288,9 @@ const TEST_CONCENTRATION_BUDGETS: Record<string, { lines: number; reason: string
     evidence: 'enemy pool regression suite',
   },
   'tests/PicketTurretSystem.test.ts': {
-    lines: 515,
+    lines: 535,
     reason: 'single turret lifecycle fixture',
     evidence: 'picket turret regression suite',
-  },
-  'tests/e2e/performance.evidence.spec.ts': {
-    lines: 575,
-    reason: 'single normal-and-synthetic performance-gate evidence narrative',
-    evidence: 'desktop and mobile performance projects with threshold-marker verification',
   },
 };
 const CONCENTRATION_POLICIES: Record<string, ConcentrationPolicy> = {
@@ -376,55 +377,7 @@ const concentrations: Array<{ file: string; lines: number; imports: number }> = 
 const surfaceWarnings: Array<{ file: string; exports: number }> = [];
 const functionWarnings: Array<{ file: string; name: string; lines: number; complexity: number }> = [];
 
-function getFunctionName(node: ts.FunctionLikeDeclarationBase): string {
-  if ('name' in node && node.name) return node.name.getText();
-  const parent = node.parent;
-  if (ts.isPropertyAssignment(parent) || ts.isVariableDeclaration(parent)) return parent.name.getText();
-  return '<anonymous>';
-}
-
-function inspectFunctions(file: string, source: string): void {
-  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
-  const visit = (node: ts.Node): void => {
-    if (ts.isFunctionLike(node) && 'body' in node && node.body) {
-      const functionNode = node as ts.FunctionLikeDeclaration;
-      const body = functionNode.body;
-      if (!body) return;
-      let complexity = 1;
-      const countBranches = (child: ts.Node): void => {
-        if (
-          ts.isIfStatement(child) ||
-          ts.isIterationStatement(child, false) ||
-          ts.isCaseClause(child) ||
-          ts.isCatchClause(child) ||
-          ts.isConditionalExpression(child) ||
-          (ts.isBinaryExpression(child) && ['&&', '||', '??'].includes(child.operatorToken.getText()))
-        )
-          complexity += 1;
-        ts.forEachChild(child, countBranches);
-      };
-      ts.forEachChild(body, countBranches);
-      const lines =
-        sourceFile.getLineAndCharacterOfPosition(node.end).line -
-        sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line +
-        1;
-      if (lines > WARN_FUNCTION_LINES || complexity > WARN_COMPLEXITY) {
-        const relativeFile = relative(process.cwd(), file);
-        const name = getFunctionName(functionNode);
-        const budget = FUNCTION_POLICIES[`${relativeFile}#${name}`];
-        if (budget && lines <= budget.lines && complexity <= budget.complexity) return;
-        functionWarnings.push({
-          file: relativeFile,
-          name,
-          lines,
-          complexity,
-        });
-      }
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sourceFile);
-}
+const functionMeasurements = new Map<string, ReturnType<typeof measureFunctions>>();
 
 for (const file of sourceFiles) {
   const source = readFileSync(file, 'utf8');
@@ -443,7 +396,20 @@ for (const file of sourceFiles) {
     ),
   ].length;
   if (exports > WARN_EXPORTS) surfaceWarnings.push({ file: relative(process.cwd(), file), exports });
-  inspectFunctions(file, source);
+  const relativeFile = relative(process.cwd(), file);
+  for (const measurement of measureFunctions(source)) {
+    const key = `${relativeFile}#${measurement.name}`;
+    const measurements = functionMeasurements.get(key) ?? [];
+    measurements.push(measurement);
+    functionMeasurements.set(key, measurements);
+    const budget = FUNCTION_POLICIES[key];
+    if (
+      (measurement.lines > WARN_FUNCTION_LINES || measurement.complexity > WARN_COMPLEXITY) &&
+      (!budget || measurement.lines > budget.lines || measurement.complexity > budget.complexity)
+    ) {
+      functionWarnings.push({ file: relativeFile, ...measurement });
+    }
+  }
 }
 
 const visiting = new Set<string>();
@@ -492,20 +458,15 @@ for (const warning of surfaceWarnings) {
 for (const warning of functionWarnings) {
   console.warn(`warning: ${warning.file}#${warning.name} (${warning.lines} lines, complexity ${warning.complexity})`);
 }
-const trackedFunctions = Object.entries(FUNCTION_POLICIES).filter(([name]) => {
-  const separator = name.lastIndexOf('#');
-  const file = name.slice(0, separator);
-  const symbol = name.slice(separator + 1);
-  return (
-    sourceFiles.some((sourceFile) => relative(process.cwd(), sourceFile) === file) &&
-    !functionWarnings.some((warning) => warning.file === file && warning.name === symbol)
-  );
+const functionPolicyIssues = Object.entries(FUNCTION_POLICIES).flatMap(([name, policy]) => {
+  const issue = getFunctionPolicyIssue(functionMeasurements.get(name) ?? [], policy);
+  return issue ? [{ name, issue }] : [];
 });
-const staleFunctionPolicies = Object.keys(FUNCTION_POLICIES).filter(
-  (name) => !trackedFunctions.some(([trackedName]) => trackedName === name)
+const trackedFunctions = Object.entries(FUNCTION_POLICIES).filter(
+  ([name]) => !functionPolicyIssues.some((entry) => entry.name === name)
 );
-if (staleFunctionPolicies.length > 0) {
-  for (const name of staleFunctionPolicies) console.error(`stale or exceeded function policy: ${name}`);
+for (const { name, issue } of functionPolicyIssues) {
+  console.error(`${issue} function policy: ${name}`);
 }
 
 const testConcentrations = collectTypeScriptFiles(resolve('tests'))
@@ -562,7 +523,7 @@ if (
   surfaceWarnings.length > 0 ||
   functionWarnings.length > 0 ||
   testConcentrations.length > 0 ||
-  staleFunctionPolicies.length > 0 ||
+  functionPolicyIssues.length > 0 ||
   staleConcentrationPolicies.length > 0 ||
   looseConcentrationPolicies.length > 0
 ) {

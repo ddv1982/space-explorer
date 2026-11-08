@@ -11,7 +11,7 @@ import {
   readSaveSlot,
   writeSaveSlot,
 } from '@/systems/SaveSlotStorage';
-import { ensurePremiumBackgroundAssets } from '@/systems/parallax/premiumBackgroundLoading';
+import { prepareLegacyBackgroundTextures } from '@/systems/parallax/premiumBackgroundLoading';
 import { startRegisteredScene } from '../sceneRegistry';
 
 interface PauseViewportWiringContext {
@@ -62,9 +62,8 @@ function createPauseSaveSlotAdapter(context: PauseViewportWiringContext): PauseS
         setPlayerState(context.scene.registry, record.playerState);
         setRunSummary(context.scene.registry, record.runSummary);
       });
-      ensurePremiumBackgroundAssets(context.scene, record.playerState.level, () => {
-        startRegisteredScene(context.scene, 'Game');
-      });
+      prepareLegacyBackgroundTextures(context.scene, record.playerState.level);
+      startRegisteredScene(context.scene, 'Game');
       return { ok: true, message: `Loading ${record.label.levelName} checkpoint...` };
     },
     delete: (slotId) => {

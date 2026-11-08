@@ -17,11 +17,12 @@ export default defineConfig({
     timeout: process.env.CI ? 15_000 : 5_000,
   },
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  reporter: [[process.env.CI ? 'github' : 'list'], ['junit', { outputFile: 'test-results/playwright-results.xml' }]],
   use: {
     baseURL,
     browserName: 'chromium',
     trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
     launchOptions: process.env.CI
       ? {
           args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader'],
@@ -29,11 +30,6 @@ export default defineConfig({
       : undefined,
   },
   projects: [
-    {
-      name: 'chromium-portrait-polish',
-      testMatch: ['**/playerControls.spec.ts', '**/directRetry.spec.ts', '**/combatPolish.spec.ts'],
-      use: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
-    },
     {
       name: 'chromium-desktop-game-feel',
       testMatch: '**/gameFeel.evidence.spec.ts',
@@ -53,7 +49,6 @@ export default defineConfig({
     },
     {
       name: 'chromium-desktop',
-      grepInvert: /recording overhead/,
       testMatch: [
         '**/smoke.spec.ts',
         '**/cinematic.spec.ts',
@@ -66,13 +61,13 @@ export default defineConfig({
         '**/playerControls.spec.ts',
         '**/directRetry.spec.ts',
         '**/combatPolish.spec.ts',
-        '**/gameFeel.evidence.spec.ts',
+        '**/presentation.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
     },
     {
       name: 'chromium-mobile',
-      grepInvert: /recording overhead/,
+      grepInvert: /@desktop-only/,
       testMatch: [
         '**/smoke.spec.ts',
         '**/interaction.spec.ts',
@@ -85,48 +80,19 @@ export default defineConfig({
         '**/playerControls.spec.ts',
         '**/directRetry.spec.ts',
         '**/combatPolish.spec.ts',
-        '**/gameFeel.evidence.spec.ts',
+        '**/presentation.spec.ts',
       ],
       use: {
-        viewport: { width: 844, height: 390 },
+        viewport: { width: 390, height: 844 },
         hasTouch: true,
         isMobile: true,
       },
     },
     {
-      name: 'chromium-desktop-visual',
-      testMatch: '**/visual.evidence.spec.ts',
-      use: { viewport: { width: 1280, height: 720 } },
-    },
-    {
-      name: 'chromium-mobile-visual',
-      testMatch: '**/visual.evidence.spec.ts',
-      use: {
-        viewport: { width: 844, height: 390 },
-        hasTouch: true,
-        isMobile: true,
-      },
-    },
-    {
-      name: 'chromium-desktop-performance',
-      testMatch: '**/performance.evidence.spec.ts',
-      use: { viewport: { width: 1280, height: 720 } },
-    },
-    {
-      name: 'chromium-desktop-performance-gate',
-      testMatch: '**/performance.evidence.spec.ts',
-      grep: /enforces the approved gameplay update-cost threshold/,
+      name: 'chromium-performance',
+      testMatch: '**/performance.spec.ts',
       retries: 0,
       use: { viewport: { width: 1280, height: 720 } },
-    },
-    {
-      name: 'chromium-mobile-performance',
-      testMatch: '**/performance.evidence.spec.ts',
-      use: {
-        viewport: { width: 844, height: 390 },
-        hasTouch: true,
-        isMobile: true,
-      },
     },
   ],
   webServer: {

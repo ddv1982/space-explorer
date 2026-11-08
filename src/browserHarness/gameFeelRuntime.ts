@@ -22,17 +22,20 @@ export function bindGameFeelRuntime(scene: Phaser.Scene) {
     !(scene.pauseStateController instanceof PauseStateController) ||
     !('flow' in scene) ||
     !(scene.flow instanceof GameSceneFlowController) ||
-    !('lastFireTime' in scene) ||
-    typeof scene.lastFireTime !== 'number' ||
-    !Number.isFinite(scene.lastFireTime)
+    !('gameplayFrameBehavior' in scene) ||
+    !scene.gameplayFrameBehavior ||
+    typeof scene.gameplayFrameBehavior !== 'object' ||
+    !('getLastFireTime' in scene.gameplayFrameBehavior) ||
+    typeof scene.gameplayFrameBehavior.getLastFireTime !== 'function'
   ) {
     throw new Error('Game feel runtime adapter is unavailable');
   }
   const { player, inputManager, levelManager, gameplayClock, pauseStateController, flow } = scene;
   if (!(player.body instanceof Phaser.Physics.Arcade.Body)) throw new Error('Player physics body is unavailable');
   const body = player.body;
+  const getLastFireTime = scene.gameplayFrameBehavior.getLastFireTime;
   return (wallMs: number, segmentId: number, deltaMs: number): GameFeelFrame => {
-    const lastFireTime = scene.lastFireTime;
+    const lastFireTime: unknown = getLastFireTime();
     if (typeof lastFireTime !== 'number' || !Number.isFinite(lastFireTime))
       throw new Error('Fire clock is unavailable');
     return {
