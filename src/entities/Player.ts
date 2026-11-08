@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { usesCinematicArt } from '../config/cinematicAssets';
+import { FLIGHT_CONFIG } from '../config/flightConfig';
+import { getFlightMode, type FlightMode } from '../config/flightMode';
 import { PLAYER_CONFIG } from '../config/playerConfig';
+import { keyboardDesiredVelocity, stepFlight } from '../systems/flight/flightModel';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
 import { GAME_SCENE_EVENTS } from '../systems/GameSceneEvents';
@@ -9,6 +12,12 @@ import { applyGameObjectGlow } from '../utils/renderingCompat';
 import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
 const NOMINAL_FRAME_MS = 1000 / 60;
+const MOMENTUM_BANK_ROTATION = (12 * Math.PI) / 180;
+
+export interface DesiredVelocity {
+  vx: number;
+  vy: number;
+}
 
 function getFrameDampingAlpha(frameAlpha: number, delta: number): number {
   if (!Number.isFinite(delta) || delta <= 0) {
@@ -32,6 +41,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private exhaustTimer: number = 0;
   private readonly exhaustInterval: number = 50;
   private visualFlashToken = 0;
+  private flightMode: FlightMode = 'momentum';
+  private bank = 0;
+  private desiredVelocityOverride: DesiredVelocity | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePlayerTexture(scene);
@@ -40,9 +52,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
+    this.flightMode = getFlightMode();
     this.setDepth(5);
     (this.body as Phaser.Physics.Arcade.Body).setSize(24, 32);
-    this.setDrag(PLAYER_CONFIG.drag);
+    this.setDrag(this.flightMode === 'legacy' ? PLAYER_CONFIG.drag : 0);
     this.setMaxVelocity(PLAYER_CONFIG.maxSpeed);
     (this.body as Phaser.Physics.Arcade.Body).setMaxSpeed(PLAYER_CONFIG.maxSpeed);
     this.setCollideWorldBounds(true);
@@ -203,8 +216,48 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.updateInvulnerability(delta);
 
-    const horizontal = Number(inputManager.isRight()) - Number(inputManager.isLeft());
-    const vertical = Number(inputManager.isDown()) - Number(inputManager.isUp());
+    const horizontal = (Number(inputManager.isRight()) - Number(inputManager.isLeft())) as -1 | 0 | 1;
+    const vertical = (Number(inputManager.isDown()) - Number(inputManager.isUp())) as -1 | 0 | 1;
+    if (this.flightMode === 'legacy') {
+      this.updateLegacyFlight(horizontal, vertical, delta);
+    } else {
+      this.updateMomentumFlight(horizontal, vertical, delta);
+    }
+  }
+
+  /** Current visual bank, -1 (full left) to 1 (full right). */
+  getBank(): number {
+    return this.bank;
+  }
+
+  /** Touch drag steering; null hands control back to keyboard intent. */
+  setDesiredVelocityOverride(velocity: DesiredVelocity | null): void {
+    this.desiredVelocityOverride = velocity;
+  }
+
+  private updateMomentumFlight(horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
+    const desired =
+      horizontal !== 0 || vertical !== 0
+        ? keyboardDesiredVelocity(horizontal, vertical, FLIGHT_CONFIG.maxSpeed)
+        : (this.desiredVelocityOverride ?? { vx: 0, vy: 0 });
+    // The body is the velocity source of truth so respawns, bounds and push-backs are respected.
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    const next = stepFlight(
+      { vx: body?.velocity.x ?? 0, vy: body?.velocity.y ?? 0, bank: this.bank },
+      desired.vx,
+      desired.vy,
+      delta,
+      FLIGHT_CONFIG
+    );
+    this.setAcceleration(0, 0);
+    this.setVelocity(next.vx, next.vy);
+    this.bank = next.bank;
+    this.rotation = next.bank * MOMENTUM_BANK_ROTATION;
+    this.isMovingUp = desired.vy < 0;
+    this.emitExhaustIfDue(delta, desired.vx, desired.vy);
+  }
+
+  private updateLegacyFlight(horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
     const acceleration =
       horizontal !== 0 && vertical !== 0 ? PLAYER_CONFIG.acceleration * Math.SQRT1_2 : PLAYER_CONFIG.acceleration;
     const ax = horizontal * acceleration;
@@ -257,6 +310,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.isAlive = true;
     this.isMovingUp = false;
     this.deathStarted = false;
+    this.bank = 0;
+    this.desiredVelocityOverride = null;
     this.setAcceleration(0, 0);
     this.setVisible(true);
     this.setAlpha(1);

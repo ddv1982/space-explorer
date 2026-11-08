@@ -61,7 +61,8 @@ export function measurePlayerControls(): Promise<Measurement[]> {
             const cardinalSpeed = body.velocity.length();
             const releaseStart = body.x;
             let releaseMs = 0;
-            while (body.velocity.length() > 0.01 && releaseMs < 4000) {
+            // Momentum flight decays exponentially, so "at rest" means below 1 px/s.
+            while (body.velocity.length() > 1 && releaseMs < 4000) {
               step(0);
               releaseMs += stepMs;
             }
@@ -69,7 +70,7 @@ export function measurePlayerControls(): Promise<Measurement[]> {
             reset();
             for (let frame = 0; frame < updateHz * 3; frame++) step(1);
             let reversalMs = 0;
-            while (body.velocity.x > -cardinalSpeed + 0.01 && reversalMs < 4000) {
+            while (body.velocity.x > -cardinalSpeed * 0.9 && reversalMs < 4000) {
               step(-1);
               reversalMs += stepMs;
             }

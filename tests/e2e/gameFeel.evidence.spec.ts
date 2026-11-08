@@ -76,7 +76,7 @@ test('records delivered controls, applied movement, fire attempts and a separate
     await page.keyboard.down('Space');
   }
   await waitForFrames(page, (result) =>
-    result.frames.some((frame) => frame.accelerationX > 0 && frame.firingIntent && frame.lastFireGameplayMs > 0)
+    result.frames.some((frame) => frame.velocityX > 0 && frame.firingIntent && frame.lastFireGameplayMs > 0)
   );
   await waitForFrames(page, (result) => result.frames.some((frame) => frame.velocityX > 0));
   if (session) await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
