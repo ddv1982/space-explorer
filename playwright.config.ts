@@ -17,7 +17,7 @@ export default defineConfig({
     timeout: process.env.CI ? 15_000 : 5_000,
   },
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  reporter: [[process.env.CI ? 'github' : 'list'], ['junit', { outputFile: 'test-results/playwright-results.xml' }]],
   use: {
     baseURL,
     browserName: 'chromium',

@@ -220,6 +220,12 @@ async function main() {
   }
 
   const violations: string[] = [];
+  for (const item of appJsReport) {
+    const source = await fs.readFile(path.resolve(item.file), 'utf8');
+    for (const marker of ['__SPACE_EXPLORER_BROWSER_HARNESS__', 'debris-mote-', 'far-stars']) {
+      if (source.includes(marker)) violations.push(`Development-only code ${marker} found in ${item.file}`);
+    }
+  }
   const largest = report[0];
 
   if ((largest?.rawBytes ?? 0) > maxAssetKb * 1024) {
