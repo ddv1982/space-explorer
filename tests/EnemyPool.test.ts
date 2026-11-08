@@ -90,9 +90,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Fighter) {
       const fighter = {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
         setEnemyBulletGroupArgs: [] as unknown[],
         setEnemyBulletGroup(group: unknown) {
           this.setEnemyBulletGroupArgs.push(group);
@@ -106,9 +104,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Gunship) {
       const gunship = {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
         setEnemyBulletGroupArgs: [] as unknown[],
         setEnemyBulletGroup(group: unknown) {
           this.setEnemyBulletGroupArgs.push(group);
@@ -122,9 +118,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Bomber) {
       const bomber = {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
         setBombGroupArgs: [] as unknown[],
         setBombGroup(group: unknown) {
           this.setBombGroupArgs.push(group);
@@ -138,9 +132,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Dodger) {
       const dodger = {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
         setEnemyBulletGroupArgs: [] as unknown[],
         setEnemyBulletGroup(group: unknown) {
           this.setEnemyBulletGroupArgs.push(group);
@@ -154,9 +146,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Lancer) {
       const lancer = {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
         setEnemyBulletGroupArgs: [] as unknown[],
         setEnemyBulletGroup(group: unknown) {
           this.setEnemyBulletGroupArgs.push(group);
@@ -174,9 +164,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Sower) {
       const sower = {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
         setMineGroupArgs: [] as unknown[],
         setMineGroup(group: unknown) {
           this.setMineGroupArgs.push(group);
@@ -190,9 +178,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Splitter) {
       const splitter = {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
         splitHandler: null as ((x: number, y: number) => void) | null,
         setSplitHandler(handler: (x: number, y: number) => void) {
           this.splitHandler = handler;
@@ -219,9 +205,7 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Boss) {
       const boss = {
         active: true,
-        spawn: (_x: number, _y: number, _config?: unknown) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number, _config?: unknown) => {},
         setEnemyBulletGroupArgs: [] as unknown[],
         summonHandler: null as NonNullable<EnemyPoolHarness['lastBoss']>['summonHandler'],
         setEnemyBulletGroup(group: unknown) {
@@ -239,20 +223,14 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
     if (classType === Scout || classType === Swarm || classType === EnemyBullet || classType === BomberBomb) {
       return {
         active: true,
-        spawn: (_x: number, _y: number) => {
-          // noop
-        },
-        fire: (_x: number, _y: number) => {
-          // noop
-        },
+        spawn: (_x: number, _y: number) => {},
+        fire: (_x: number, _y: number) => {},
       };
     }
 
     return {
       active: true,
-      spawn: (_x: number, _y: number) => {
-        // noop
-      },
+      spawn: (_x: number, _y: number) => {},
     };
   };
 
@@ -331,10 +309,6 @@ describe('EnemyPool regression coverage', () => {
       EXPECTED_GROUP_CONFIGS.get(Fighter)!,
       EXPECTED_GROUP_CONFIGS.get(EnemyBullet)!,
     ]);
-
-    expect(harness.pool.getScoutGroup() as unknown).toBe(harness.groupsByClassType.get(Scout));
-    expect(harness.pool.getFighterGroup() as unknown).toBe(harness.groupsByClassType.get(Fighter));
-    expect(harness.pool.getEnemyBulletGroup() as unknown).toBe(harness.groupsByClassType.get(EnemyBullet));
   });
 
   test('enemy registry order is stable and repeated accessor calls do not duplicate groups', () => {
@@ -343,54 +317,38 @@ describe('EnemyPool regression coverage', () => {
     const registryA = harness.pool.getEnemyGroupRegistry();
     const registryB = harness.pool.getEnemyGroupRegistry();
 
-    harness.pool.getBomberGroup();
-    harness.pool.getBombGroup();
-    harness.pool.getBossGroup();
-
-    expect(registryA.map((entry) => entry.key)).toEqual([
-      'scout',
-      'fighter',
-      'bomber',
-      'swarm',
-      'gunship',
-      'diver',
-      'dodger',
-      'sower',
-      'lancer',
-      'splitter',
-      'swarmling',
-      'boss',
+    expect(registryA.map(({ key, playerCollisionBehavior }) => [key, playerCollisionBehavior])).toEqual([
+      ['scout', 'kamikaze'],
+      ['fighter', 'impact'],
+      ['bomber', 'impact'],
+      ['swarm', 'kamikaze'],
+      ['gunship', 'impact'],
+      ['diver', 'kamikaze'],
+      ['dodger', 'impact'],
+      ['sower', 'impact'],
+      ['lancer', 'impact'],
+      ['splitter', 'impact'],
+      ['swarmling', 'kamikaze'],
+      ['boss', 'none'],
     ]);
-    expect(registryB.map((entry) => entry.key)).toEqual([
-      'scout',
-      'fighter',
-      'bomber',
-      'swarm',
-      'gunship',
-      'diver',
-      'dodger',
-      'sower',
-      'lancer',
-      'splitter',
-      'swarmling',
-      'boss',
-    ]);
+    expect(registryB).toEqual(registryA);
 
-    const classTypeCalls = harness.groupCreateCalls.map((call) => call.classType);
-    expect(classTypeCalls.filter((type) => type === Bomber).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Swarm).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Gunship).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Diver).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Dodger).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Sower).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Lancer).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Splitter).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Swarmling).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Boss).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === BomberBomb).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Scout).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === Fighter).length).toBe(1);
-    expect(classTypeCalls.filter((type) => type === EnemyBullet).length).toBe(1);
+    expect(harness.groupCreateCalls.map((call) => call.classType)).toEqual([
+      Scout,
+      Fighter,
+      EnemyBullet,
+      Bomber,
+      BomberBomb,
+      Swarm,
+      Gunship,
+      Diver,
+      Dodger,
+      Sower,
+      Lancer,
+      Splitter,
+      Swarmling,
+      Boss,
+    ]);
 
     for (const call of harness.groupCreateCalls) {
       expect(call).toEqual(EXPECTED_GROUP_CONFIGS.get(call.classType)!);
@@ -502,6 +460,60 @@ describe('EnemyPool regression coverage', () => {
     harness.lastBoss?.summonHandler?.('scout', 42, 64);
 
     expect(delegated).toEqual([{ type: 'scout', x: 42, y: 64 }]);
+  });
+
+  test('ordinary enumeration is ordered without initializing unused groups or including boss and projectiles', () => {
+    const harness = createEnemyPoolHarness();
+    expect(harness.pool.getAllEnemies()).toEqual([]);
+    expect(harness.groupCreateCalls).toHaveLength(3);
+
+    const types = [
+      'scout',
+      'fighter',
+      'bomber',
+      'swarm',
+      'gunship',
+      'diver',
+      'dodger',
+      'sower',
+      'lancer',
+      'splitter',
+      'swarmling',
+    ] as const;
+    const enemies = types.map((type) => {
+      const enemy = harness.pool.spawnEnemy(type, 10, 20);
+      if (!enemy) throw new Error(`Failed to spawn ${type}`);
+      return enemy;
+    });
+    harness.pool.spawnBoss(30, 40);
+    for (const group of [
+      harness.pool.getBombGroup(),
+      harness.pool.getMineGroup(),
+      harness.pool.getEnemyBulletGroup(),
+    ]) {
+      group.get(50, 60);
+    }
+
+    expect(harness.pool.getAllEnemies()).toEqual(enemies);
+    const bulletGroup = harness.pool.getEnemyBulletGroup();
+    expect(harness.lastFighter?.setEnemyBulletGroupArgs).toEqual([bulletGroup]);
+    expect(harness.lastGunship?.setEnemyBulletGroupArgs).toEqual([bulletGroup]);
+    expect(harness.lastDodger?.setEnemyBulletGroupArgs).toEqual([bulletGroup]);
+    expect(harness.lastLancer?.setEnemyBulletGroupArgs).toEqual([bulletGroup]);
+    expect(harness.lastBomber?.setBombGroupArgs).toEqual([harness.pool.getBombGroup()]);
+    expect(harness.lastSower?.setMineGroupArgs).toEqual([harness.pool.getMineGroup()]);
+  });
+
+  test('spawning reuses an inactive entity before creating another', () => {
+    const harness = createEnemyPoolHarness();
+    const calls: number[][] = [];
+    const reused = { spawn: (x: number, y: number) => calls.push([x, y]) };
+    const group = harness.groupsByClassType.get(Scout)!;
+    group.getFirstDead = () => reused;
+
+    expect(harness.pool.spawnEnemy('scout', 42, 64) as unknown).toBe(reused);
+    expect(calls).toEqual([[42, 64]]);
+    expect(group.createdCount).toBe(0);
   });
 
   test('getAllEnemies skips groups whose children were invalidated during teardown', () => {
