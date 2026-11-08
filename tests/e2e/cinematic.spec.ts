@@ -143,9 +143,15 @@ test('cinematic image alpha and later-level entry remain valid', async ({ page, 
   await waitForScene(page, 'Game');
   const alpha = await page.evaluate(async () => {
     return Promise.all(
-      ['player', 'scout', 'fighter', 'bomber', 'boss'].map(async (file) => {
+      [
+        'assets/v2/player.webp',
+        'assets/cinematic/scout.webp',
+        'assets/v2/fighter.webp',
+        'assets/cinematic/bomber.webp',
+        'assets/cinematic/boss.webp',
+      ].map(async (file) => {
         const image = new Image();
-        image.src = `assets/cinematic/${file}.webp`;
+        image.src = file;
         await image.decode();
         const canvas = document.createElement('canvas');
         canvas.width = image.width;
@@ -178,7 +184,7 @@ test('cinematic image alpha and later-level entry remain valid', async ({ page, 
 });
 
 loaderTest('missing cinematic artwork blocks gameplay and retries successfully', async ({ page }) => {
-  await page.route('**/assets/cinematic/player.webp', (route) => route.abort());
+  await page.route('**/assets/v2/player.webp', (route) => route.abort());
   await page.goto('/?browserHarness=1&startLevel=1');
   await expect
     .poll(() =>
@@ -190,7 +196,7 @@ loaderTest('missing cinematic artwork blocks gameplay and retries successfully',
     )
     .toBe(true);
   expect((await snapshot(page)).activeScenes).not.toContain('Game');
-  await page.unroute('**/assets/cinematic/player.webp');
+  await page.unroute('**/assets/v2/player.webp');
   await expect(page.getByRole('button', { name: 'Retry artwork', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Retry artwork', exact: true }).focus();
   await page.keyboard.press('Enter');
@@ -203,7 +209,7 @@ loaderTest('missing cinematic artwork blocks gameplay and retries successfully',
 
 loaderTest('invalid hull dimensions require a successful retry', async ({ page }) => {
   await page.route('**/assets/cinematic/scout.webp', (route) =>
-    route.fulfill({ path: 'public/assets/cinematic/fighter.webp', contentType: 'image/webp' })
+    route.fulfill({ path: 'public/assets/cinematic/bomber.webp', contentType: 'image/webp' })
   );
   await page.goto('/?browserHarness=1&startLevel=1');
   await expect

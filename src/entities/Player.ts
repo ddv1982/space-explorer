@@ -3,6 +3,7 @@ import { usesCinematicArt } from '../config/cinematicAssets';
 import { FLIGHT_CONFIG } from '../config/flightConfig';
 import { getFlightMode, type FlightMode } from '../config/flightMode';
 import { PLAYER_CONFIG } from '../config/playerConfig';
+import { V2_SHIPS, bankToFrame } from '../config/v2Ships';
 import { keyboardDesiredVelocity, stepFlight } from '../systems/flight/flightModel';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
@@ -12,7 +13,9 @@ import { applyGameObjectGlow } from '../utils/renderingCompat';
 import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
 const NOMINAL_FRAME_MS = 1000 / 60;
-const MOMENTUM_BANK_ROTATION = (12 * Math.PI) / 180;
+/** The bank frames carry most of the visible roll; a small rotation adds a sense of yaw. */
+const MOMENTUM_BANK_ROTATION = (4 * Math.PI) / 180;
+const PLAYER_BANK_FRAMES = V2_SHIPS[0].bankFrames;
 
 interface DesiredVelocity {
   vx: number;
@@ -45,6 +48,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private bank = 0;
   /** Incremented on every spawn so a held touch drag re-anchors to the new ship. */
   private spawnGeneration = 0;
+  private bankFrame = -1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePlayerTexture(scene);
@@ -257,8 +261,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(next.vx, next.vy);
     this.bank = next.bank;
     this.rotation = next.bank * MOMENTUM_BANK_ROTATION;
+    this.applyBankFrame();
     this.isMovingUp = desired.vy < 0;
     this.emitExhaustIfDue(delta, desired.vx, desired.vy);
+  }
+
+  /** Shows the rendered bank frame for the current bank when the v2 sheet is loaded. */
+  private applyBankFrame(): void {
+    const frame = bankToFrame(this.bank, PLAYER_BANK_FRAMES);
+    if (frame === this.bankFrame || this.texture?.has(String(frame)) !== true) {
+      return;
+    }
+    this.setFrame(frame, false, false);
+    this.bankFrame = frame;
   }
 
   private updateLegacyFlight(horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
@@ -316,6 +331,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.deathStarted = false;
     this.bank = 0;
     this.spawnGeneration += 1;
+    this.applyBankFrame();
     this.setAcceleration(0, 0);
     this.setVisible(true);
     this.setAlpha(1);

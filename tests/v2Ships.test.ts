@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { CINEMATIC_DENSITY } from '../src/config/cinematicAssets';
 import { V2_SHIPS, bankToFrame, sheetLayout, v2AssetUrl } from '../src/config/v2Ships';
 
-const player = V2_SHIPS.find((ship) => ship.key === 'v2-player')!;
-const fighter = V2_SHIPS.find((ship) => ship.key === 'v2-fighter')!;
+const player = V2_SHIPS.find((ship) => ship.file === 'player')!;
+const fighter = V2_SHIPS.find((ship) => ship.file === 'fighter')!;
 
 describe('v2 ship sheets', () => {
   test('player sheet is 9 frames of 144x176 in one row', () => {

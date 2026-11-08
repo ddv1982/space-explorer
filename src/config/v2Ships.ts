@@ -13,8 +13,9 @@ export interface V2ShipSpec {
 }
 
 export const V2_SHIPS = [
-  { key: 'v2-player', file: 'player', width: 36, height: 44, bankFrames: 9, maxBankDeg: 35 },
-  { key: 'v2-fighter', file: 'fighter', width: 36, height: 36, bankFrames: 1, maxBankDeg: 0 },
+  // Keys match the v1 textures so every system that looks ships up by key keeps working.
+  { key: 'player-ship', file: 'player', width: 36, height: 44, bankFrames: 9, maxBankDeg: 35 },
+  { key: 'fighter-texture', file: 'fighter', width: 36, height: 36, bankFrames: 1, maxBankDeg: 0 },
 ] as const satisfies readonly V2ShipSpec[];
 
 export function v2AssetUrl(file: string, normal = false): string {

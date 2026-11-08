@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { mountAccessibleActionLayer } from '../scenes/shared/accessibleActionLayer';
 import { CINEMATIC_DENSITY, CINEMATIC_SHIPS, cinematicAssetUrl, usesCinematicArt } from '../config/cinematicAssets';
+import { V2_SHIPS, sheetLayout, v2AssetUrl } from '../config/v2Ships';
 
 export function queueCinematicAssets(scene: Phaser.Scene): void {
   if (!usesCinematicArt()) return;
@@ -8,6 +9,45 @@ export function queueCinematicAssets(scene: Phaser.Scene): void {
   for (const asset of CINEMATIC_SHIPS) {
     if (!scene.textures.exists(asset.key)) scene.load.image(asset.key, cinematicAssetUrl(asset.file));
   }
+  for (const ship of V2_SHIPS) {
+    if (scene.textures.exists(ship.key)) continue;
+    const layout = sheetLayout(ship, CINEMATIC_DENSITY);
+    scene.load.spritesheet({
+      key: ship.key,
+      url: v2AssetUrl(ship.file),
+      normalMap: v2AssetUrl(ship.file, true),
+      frameConfig: { frameWidth: layout.frameWidth, frameHeight: layout.frameHeight },
+    });
+  }
+}
+
+/** Validates a v2 bank-frame sheet and maps every frame to its logical size, like the cinematic hulls. */
+function registerV2ShipFrames(scene: Phaser.Scene): boolean {
+  let ready = true;
+  for (const ship of V2_SHIPS) {
+    if (!scene.textures.exists(ship.key)) {
+      ready = false;
+      continue;
+    }
+    const texture = scene.textures.get(ship.key);
+    const layout = sheetLayout(ship, CINEMATIC_DENSITY);
+    const frames = Array.from({ length: ship.bankFrames }, (_, index) =>
+      texture.has(String(index)) ? texture.get(index) : null
+    );
+    const valid =
+      texture.dataSource.length > 0 &&
+      frames.every((frame) => frame?.cutWidth === layout.frameWidth && frame.cutHeight === layout.frameHeight);
+    if (!valid) {
+      scene.textures.remove(ship.key);
+      ready = false;
+      continue;
+    }
+    for (const source of [...texture.source, ...texture.dataSource]) source.resolution = CINEMATIC_DENSITY;
+    for (const frame of frames) frame!.setTrim(ship.width, ship.height, 0, 0, ship.width, ship.height);
+    // Default to the level frame so an unspecified frame never shows a banked pose.
+    texture.firstFrame = String((ship.bankFrames - 1) / 2);
+  }
+  return ready;
 }
 
 function registerCinematicFrames(scene: Phaser.Scene): boolean {
@@ -31,7 +71,9 @@ function registerCinematicFrames(scene: Phaser.Scene): boolean {
 }
 
 export function finishCinematicLoading(scene: Phaser.Scene): boolean {
-  if (!usesCinematicArt() || registerCinematicFrames(scene)) return true;
+  if (!usesCinematicArt()) return true;
+  const cinematicReady = registerCinematicFrames(scene);
+  if (registerV2ShipFrames(scene) && cinematicReady) return true;
 
   const width = Number(scene.scale.width);
   const height = Number(scene.scale.height);

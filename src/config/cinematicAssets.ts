@@ -1,7 +1,6 @@
+// The player ship and Fighter moved to code-built v2 sheets (see `v2Ships.ts`).
 export const CINEMATIC_SHIPS = [
-  { key: 'player-ship', file: 'player', width: 36, height: 44 },
   { key: 'scout-texture', file: 'scout', width: 26, height: 28 },
-  { key: 'fighter-texture', file: 'fighter', width: 36, height: 36 },
   { key: 'bomber-texture', file: 'bomber', width: 44, height: 38 },
   { key: 'cinematic-pyre-herald', file: 'boss', width: 88, height: 56 },
 ] as const;

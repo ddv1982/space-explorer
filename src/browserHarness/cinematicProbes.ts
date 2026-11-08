@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CINEMATIC_SHIPS } from '../config/cinematicAssets';
+import { V2_SHIPS } from '../config/v2Ships';
 import { getLevelConfig } from '../config/LevelsConfig';
 import { Boss } from '../entities/enemies/Boss';
 import { Scout } from '../entities/enemies/Scout';
@@ -9,7 +10,7 @@ export function createCinematicProbes(game: Phaser.Game) {
   return {
     getCinematicSnapshot: () => {
       const scene = game.scene.getScene('Game');
-      const keys = new Set<string>(CINEMATIC_SHIPS.map((asset) => asset.key));
+      const keys = new Set<string>([...CINEMATIC_SHIPS, ...V2_SHIPS].map((asset) => asset.key));
       const sprites = scene.children.list.filter(
         (child): child is Phaser.Physics.Arcade.Sprite =>
           child instanceof Phaser.Physics.Arcade.Sprite && keys.has(child.texture.key)
