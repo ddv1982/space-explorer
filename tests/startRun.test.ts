@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type Phaser from 'phaser';
 
 mock.module('phaser', () => ({ default: { Scenes: { Events: { SHUTDOWN: 'shutdown', DESTROY: 'destroy' } } } }));
-const ensureAssets = mock();
+const prepareTextures = mock();
 const startScene = mock();
 mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
-  ensurePremiumBackgroundAssets: ensureAssets,
+  prepareLegacyBackgroundTextures: prepareTextures,
 }));
 mock.module('../src/scenes/sceneRegistry', () => ({ startRegisteredScene: startScene }));
 const { startFreshRun, startPreparedRun } = await import('../src/scenes/shared/startRun');
@@ -26,12 +26,12 @@ function fixture() {
 }
 
 beforeEach(() => {
-  ensureAssets.mockReset();
+  prepareTextures.mockReset();
   startScene.mockReset();
 });
 
 describe('canonical new run action', () => {
-  test('resets all run state before preparing level 1, without touching unrelated registry data', () => {
+  test('resets all run state before preparing and starting level 1, without touching unrelated registry data', () => {
     const { scene, registry, events } = fixture();
     setPlayerState(registry, {
       level: 8,
@@ -44,11 +44,9 @@ describe('canonical new run action', () => {
     });
     setRunSummary(registry, { finalScore: 16000, levelReached: 8 });
     registry.set('unrelated', 'preserved');
-    let ready = () => {};
-    ensureAssets.mockImplementation((_scene, level, callback) => {
+    prepareTextures.mockImplementation((_scene, level) => {
       expect(level).toBe(1);
       expect(getPlayerState(registry)).toMatchObject({ score: 0, level: 1 });
-      ready = callback;
     });
     startFreshRun(scene);
     expect(getPlayerState(registry)).toEqual({
@@ -62,36 +60,17 @@ describe('canonical new run action', () => {
     });
     expect(getRunSummary(registry)).toMatchObject({ finalScore: 0, levelReached: 1 });
     expect(registry.get('unrelated')).toBe('preserved');
-    expect(startScene).not.toHaveBeenCalled();
-    ready();
-    ready();
     expect(startScene).toHaveBeenCalledTimes(1);
     expect(startScene).toHaveBeenCalledWith(scene, 'Game');
     expect(events.eventNames()).toEqual([]);
   });
 
-  for (const event of ['shutdown', 'destroy']) {
-    test(`discards a late asset-ready callback after ${event}`, () => {
-      const { scene, events } = fixture();
-      let ready = () => {};
-      ensureAssets.mockImplementation((_scene, _level, callback) => {
-        ready = callback;
-      });
-      startFreshRun(scene);
-      events.emit(event);
-      ready();
-      expect(startScene).not.toHaveBeenCalled();
-      expect(events.eventNames()).toEqual([]);
-    });
-  }
-
   test('prepared starts preserve the state loaded from a checkpoint', () => {
     const { scene, registry } = fixture();
     const loaded = { ...getPlayerState(registry), level: 6, score: 4300 };
     setPlayerState(registry, loaded);
-    ensureAssets.mockImplementation((_scene, _level, callback) => callback());
     startPreparedRun(scene);
-    expect(ensureAssets).toHaveBeenCalledWith(scene, 6, expect.any(Function));
+    expect(prepareTextures).toHaveBeenCalledWith(scene, 6);
     expect(getPlayerState(registry)).toEqual(loaded);
     expect(startScene).toHaveBeenCalledTimes(1);
   });

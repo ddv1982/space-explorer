@@ -21,16 +21,13 @@ mock.module('phaser', () => ({
 }));
 
 const { ParallaxBackground } = await import('../src/systems/ParallaxBackground');
+const { LegacyBackground } = await import('../src/systems/parallax/LegacyBackground');
 const { resolveSectionAtmosphereTargets } = await import('../src/systems/parallax/atmosphereProfile');
 const { createAuroraRibbonPath, drawSmoothNebulaCircle, usesSmoothNebulaGradient } =
   await import('../src/systems/parallax/neonBackgroundGenerator');
 const { getPremiumBackgroundManifest } = await import('../src/systems/parallax/premiumBackgroundManifest');
 type ParallaxBackgroundInstance = InstanceType<typeof ParallaxBackground>;
 
-/**
- * Typed view of private ParallaxBackground fields/methods used by unit harnesses.
- * Prefer this over ad-hoc `Record<string, unknown>` casts so field names stay checked.
- */
 type ParallaxTestState = {
   scene: {
     time: {
@@ -38,8 +35,7 @@ type ParallaxTestState = {
     };
   } | null;
   levelConfig?: { name: string };
-  currentWidth: number;
-  currentHeight: number;
+  viewport: { width: number; height: number };
   pendingRebuildEvent: { remove: (dispatchCallback: boolean) => void } | null;
   premiumBackgroundLayers: unknown[];
   tileSprites: unknown[];
@@ -87,7 +83,7 @@ type ParallaxTestState = {
   updateHazardOverlay: (delta: number) => number;
 };
 
-function stateOf(parallax: ParallaxBackgroundInstance): ParallaxTestState {
+function stateOf(parallax: ParallaxBackgroundInstance | InstanceType<typeof LegacyBackground>): ParallaxTestState {
   return parallax as unknown as ParallaxTestState;
 }
 
@@ -119,13 +115,12 @@ function createResizeHarness(options?: { withLevelConfig?: boolean; withPremiumL
     },
   };
 
-  const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
+  const parallax = Object.create(LegacyBackground.prototype) as InstanceType<typeof LegacyBackground>;
   const state = stateOf(parallax);
 
   state.scene = scene;
   state.levelConfig = options?.withLevelConfig ? { name: 'Test Level' } : undefined;
-  state.currentWidth = 800;
-  state.currentHeight = 600;
+  state.viewport = { width: 800, height: 600 };
   state.pendingRebuildEvent = null;
   state.premiumBackgroundLayers = options?.withPremiumLayers ? [{}] : [];
 
@@ -236,10 +231,9 @@ describe('ParallaxBackground premium-background presentation regression coverage
       },
     };
 
-    const parallax = Object.create(ParallaxBackground.prototype) as ParallaxBackgroundInstance;
+    const parallax = Object.create(LegacyBackground.prototype) as InstanceType<typeof LegacyBackground>;
     const state = stateOf(parallax);
-    state.currentWidth = 800;
-    state.currentHeight = 600;
+    state.viewport = { width: 800, height: 600 };
     state.premiumBackgroundLayers = [];
     state.tileSprites = ['stale'];
     state.createLevelVisualLayers = () => undefined;
@@ -367,7 +361,7 @@ describe('ParallaxBackground update orchestration regression coverage', () => {
   });
 });
 
-describe('ParallaxBackground resize debounce regression coverage', () => {
+describe('LegacyBackground resize debounce regression coverage', () => {
   test('resize schedules a debounced rebuild on size changes when level config exists', () => {
     const { parallax, calls, delayedCalls } = createResizeHarness({ withLevelConfig: true, withPremiumLayers: false });
 
@@ -413,10 +407,35 @@ describe('ParallaxBackground resize debounce regression coverage', () => {
     const { parallax, calls, delayedCalls } = createResizeHarness({ withLevelConfig: true, withPremiumLayers: false });
 
     parallax.resize(900, 700);
-    stateOf(parallax).currentWidth = 901;
+    stateOf(parallax).viewport.width = 901;
     delayedCalls[0]?.callback();
 
     expect(calls).not.toContain('rebuildPremiumBackgroundLayers');
     expect(calls).not.toContain('rebuildLevelVisualLayers');
+  });
+
+  test('destroy cancels resize work and releases every owned layer before a stale callback', () => {
+    const { parallax, calls, delayedCalls } = createResizeHarness({ withLevelConfig: true });
+    const released: string[] = [];
+    const sprite = (name: string) => ({ destroy: () => released.push(name) });
+    Object.assign(parallax, {
+      tileSprites: [sprite('stars')],
+      premiumBackgroundLayers: [{ sprite: sprite('premium') }],
+      passingPlanetSprites: [{ sprite: sprite('passing') }],
+      planetLayer: { sprite: sprite('planet'), textureKey: 'planet-test' },
+      debrisMotes: [{ sprite: sprite('debris') }],
+      twinkles: [{ sprite: sprite('twinkle') }],
+    });
+    Object.assign(stateOf(parallax).scene!, {
+      textures: { exists: () => true, remove: (key: string) => released.push(key) },
+    });
+    parallax.resize(900, 700);
+    parallax.destroy();
+    delayedCalls[0]?.callback();
+
+    expect(released).toEqual(['passing', 'planet', 'planet-test', 'debris', 'twinkle', 'premium', 'stars']);
+    expect(delayedCalls[0]?.removeCalls).toEqual([false]);
+    expect(calls).toEqual(['layoutTileSprites', 'layoutPremiumBackgroundLayers']);
+    expect(stateOf(parallax).scene).toBeNull();
   });
 });

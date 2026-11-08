@@ -13,11 +13,11 @@ mock.module('phaser', () => ({
   },
 }));
 
-const ensurePremiumBackgroundAssets = mock();
+const prepareLegacyBackgroundTextures = mock();
 const startRegisteredScene = mock();
 
 mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
-  ensurePremiumBackgroundAssets,
+  prepareLegacyBackgroundTextures,
 }));
 
 mock.module('../src/scenes/sceneRegistry', () => ({
@@ -104,14 +104,9 @@ describe('MenuScene', () => {
     expect(reloadForVisualQualityChange).not.toHaveBeenCalled();
   });
 
-  test('waits for the saved level premium background window before starting Game', () => {
-    ensurePremiumBackgroundAssets.mockClear();
+  test('prepares the saved level before starting Game', () => {
+    prepareLegacyBackgroundTextures.mockClear();
     startRegisteredScene.mockClear();
-
-    let onReady: (() => void) | undefined;
-    ensurePremiumBackgroundAssets.mockImplementation((_scene, _level, callback) => {
-      onReady = callback;
-    });
 
     const values = new Map<string, unknown>();
     const registry = {
@@ -136,10 +131,7 @@ describe('MenuScene', () => {
 
     (scene as unknown as { startGameScene: () => void }).startGameScene();
 
-    expect(ensurePremiumBackgroundAssets).toHaveBeenCalledWith(scene, 7, expect.any(Function));
-    expect(startRegisteredScene).not.toHaveBeenCalled();
-
-    onReady?.();
+    expect(prepareLegacyBackgroundTextures).toHaveBeenCalledWith(scene, 7);
 
     expect(startRegisteredScene).toHaveBeenCalledWith(scene, 'Game');
   });

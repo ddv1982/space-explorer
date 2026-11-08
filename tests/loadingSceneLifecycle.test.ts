@@ -57,9 +57,8 @@ mock.module('../src/utils/cinematicAssets', () => ({
   finishCinematicLoading: () => true,
 }));
 mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
-  ensurePremiumBackgroundAssets: (_scene: unknown, level: number, onReady: () => void) => {
+  prepareLegacyBackgroundTextures: (_scene: unknown, level: number) => {
     ensuredLevels.push(level);
-    onReady();
   },
 }));
 mock.module('../src/utils/layout', () => ({

@@ -3,12 +3,12 @@ import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
 
-const ensurePremiumBackgroundAssets = mock();
+const prepareLegacyBackgroundTextures = mock();
 const startRegisteredScene = mock();
 let currentLevel = 4;
 
 mock.module('@/systems/parallax/premiumBackgroundLoading', () => ({
-  ensurePremiumBackgroundAssets,
+  prepareLegacyBackgroundTextures,
 }));
 
 mock.module('@/systems/PlayerState', () => ({
@@ -29,15 +29,10 @@ const { PlanetIntermissionScene } = await import('../src/scenes/PlanetIntermissi
 type PlanetIntermissionSceneInstance = InstanceType<typeof PlanetIntermissionScene>;
 
 describe('PlanetIntermissionScene premium background transition', () => {
-  test('advances state and waits for the next level window before starting Game', () => {
+  test('advances state and prepares the next level before starting Game', () => {
     currentLevel = 4;
-    ensurePremiumBackgroundAssets.mockClear();
+    prepareLegacyBackgroundTextures.mockClear();
     startRegisteredScene.mockClear();
-
-    let onReady: (() => void) | undefined;
-    ensurePremiumBackgroundAssets.mockImplementation((_scene, _level, callback) => {
-      onReady = callback;
-    });
 
     const scene = Object.create(PlanetIntermissionScene.prototype) as PlanetIntermissionSceneInstance;
     (scene as unknown as Record<string, unknown>).registry = {};
@@ -48,10 +43,7 @@ describe('PlanetIntermissionScene premium background transition', () => {
     (scene as unknown as { transitionToNextGameLevel: () => void }).transitionToNextGameLevel();
 
     expect(currentLevel).toBe(5);
-    expect(ensurePremiumBackgroundAssets).toHaveBeenCalledWith(scene, 5, expect.any(Function));
-    expect(startRegisteredScene).not.toHaveBeenCalled();
-
-    onReady?.();
+    expect(prepareLegacyBackgroundTextures).toHaveBeenCalledWith(scene, 5);
 
     expect(startRegisteredScene).toHaveBeenCalledWith(scene, 'Game');
   });
