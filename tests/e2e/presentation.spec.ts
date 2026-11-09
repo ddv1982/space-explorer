@@ -117,7 +117,7 @@ test('gameplay corridor preserves a dark field with brighter desktop edges', asy
     .poll(
       async () =>
         (await snapshot(page)).texts.some(
-          (item) => item.shown && (item.text === 'SECTOR 1' || item.text.includes('to Move'))
+          (item) => item.shown && (item.text === 'SECTOR 1' || /to Move|to fly/.test(item.text))
         ),
       { message: 'wait for the level-intro overlays to fade', timeout: 45_000 }
     )
