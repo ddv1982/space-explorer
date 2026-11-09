@@ -10,7 +10,7 @@ const families = [
 
 class CombatArtSheet extends Phaser.Scene {
   preload(): void {
-    this.load.image('reference', '/assets/cinematic/fighter.webp');
+    this.load.image('reference', '/assets/v2/fighter.webp');
   }
 
   create(): void {
@@ -65,9 +65,9 @@ class CombatArtSheet extends Phaser.Scene {
         this.textures.remove(key);
       }
       const reference = this.textures.get('reference').getSourceImage();
-      if (!(reference instanceof HTMLImageElement)) throw new Error('Cinematic reference did not load');
+      if (!(reference instanceof HTMLImageElement)) throw new Error('v2 fighter reference did not load');
       context.fillStyle = '#92a4b9';
-      context.fillText('Cinematic fighter', 688, top + 8);
+      context.fillText('v2 fighter', 688, top + 8);
       context.imageSmoothingEnabled = true;
       context.drawImage(reference, 744, top + 20, 36, 36);
       context.drawImage(reference, 690, top + 72, 144, 144);
