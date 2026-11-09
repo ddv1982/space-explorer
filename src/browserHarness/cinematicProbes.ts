@@ -61,6 +61,30 @@ export function createCinematicProbes(game: Phaser.Game) {
       boss.takeDamage(boss.maxHp * 0.55);
       return { reused, hp: boss.hp, maxHp: boss.maxHp };
     },
+    getLightingSnapshot: () => {
+      const scene = game.scene.getScene('Game') as Phaser.Scene & {
+        player?: Phaser.GameObjects.Sprite & { lighting?: boolean };
+      };
+      const lit = (key: string) =>
+        scene.children.list.some(
+          (child) =>
+            child instanceof Phaser.GameObjects.Sprite &&
+            child.active &&
+            child.texture.key === key &&
+            (child as Phaser.GameObjects.Sprite & { lighting?: boolean }).lighting === true
+        );
+      return {
+        playerLit: lit('player-ship'),
+        fighterLit: lit('fighter-texture'),
+        lightCount: scene.lights.lights.length,
+      };
+    },
+    pulseLightAt: (x: number, y: number, durationMs = 400): void => {
+      const scene = game.scene.getScene('Game') as Phaser.Scene & {
+        effectsManager?: { pulseLight(x: number, y: number, c: number, r: number, i: number, d: number): void };
+      };
+      scene.effectsManager?.pulseLight(x, y, 0xffb066, 150, 1.1, durationMs);
+    },
     stageCinematicEncounter: (boss = false): void => {
       const scene = game.scene.getScene('Game');
       if (!('enemyPool' in scene) || !(scene.enemyPool instanceof EnemyPool)) {

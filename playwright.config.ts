@@ -62,6 +62,8 @@ export default defineConfig({
         '**/directRetry.spec.ts',
         '**/combatPolish.spec.ts',
         '**/presentation.spec.ts',
+        '**/v2Ships.spec.ts',
+        '**/v2Lighting.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
     },

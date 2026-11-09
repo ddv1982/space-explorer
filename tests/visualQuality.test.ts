@@ -58,6 +58,9 @@ describe('visual quality profiles', () => {
       particleBurstScale: 0.9,
       particleQuantityScale: 0.8,
       menuAtmosphere: 2,
+      dynamicLights: 4,
+      normalMapLighting: true,
+      bloom: 'soft',
     });
   });
 
@@ -73,6 +76,9 @@ describe('visual quality profiles', () => {
         particleBurstScale: 0.75,
         particleQuantityScale: 0.6,
         menuAtmosphere: 1,
+        dynamicLights: 0,
+        normalMapLighting: false,
+        bloom: 'off',
       },
       standard: {
         entityTextureResolution: 4,
@@ -83,6 +89,9 @@ describe('visual quality profiles', () => {
         particleBurstScale: 0.9,
         particleQuantityScale: 0.8,
         menuAtmosphere: 2,
+        dynamicLights: 4,
+        normalMapLighting: true,
+        bloom: 'soft',
       },
       high: {
         entityTextureResolution: 4,
@@ -93,6 +102,9 @@ describe('visual quality profiles', () => {
         particleBurstScale: 1.15,
         particleQuantityScale: 1,
         menuAtmosphere: 3,
+        dynamicLights: 8,
+        normalMapLighting: true,
+        bloom: 'full',
       },
       auto: {
         entityTextureResolution: 4,
@@ -103,6 +115,9 @@ describe('visual quality profiles', () => {
         particleBurstScale: 1.15,
         particleQuantityScale: 1,
         menuAtmosphere: 3,
+        dynamicLights: 8,
+        normalMapLighting: true,
+        bloom: 'full',
       },
     } as const;
 

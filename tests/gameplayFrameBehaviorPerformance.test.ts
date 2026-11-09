@@ -86,7 +86,7 @@ function createHarness(level = 1): {
     events: { emit: () => {} },
     hud: { updateBossHp: () => {}, updateBossGuard: () => {} },
     bulletPool: { fire: () => {} },
-    effectsManager: { createMuzzleFlash: () => {} },
+    effectsManager: { createMuzzleFlash: () => {}, updateLighting: () => {} },
     getBoss: () => null,
     updateHud: () => {},
     shotDirection: vector,

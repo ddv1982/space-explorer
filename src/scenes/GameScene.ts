@@ -138,6 +138,7 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = runtime.scoreManager;
     this.grazeSurge = runtime.grazeSurge;
     this.powerUpGroup = runtime.powerUpGroup;
+    this.effectsManager.addEngineLight(this.player);
     this.hud = runtime.hud;
     this.warpTransition = runtime.warpTransition;
     this.lastHudShieldCount = runtime.lastHudShieldCount;

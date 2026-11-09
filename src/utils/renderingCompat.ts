@@ -23,7 +23,7 @@ interface CameraPulseValues {
   saturation?: number;
 }
 
-export function applyGameObjectGlow(
+function applyGameObjectGlow(
   gameObject: FilterableGameObject,
   color: number,
   options: {

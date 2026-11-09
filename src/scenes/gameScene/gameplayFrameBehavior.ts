@@ -72,6 +72,7 @@ interface GameSceneGameplayFrameDelegate {
   };
   effectsManager: {
     createMuzzleFlash(x: number, y: number): void;
+    updateLighting(delta: number): void;
   };
   getBoss(): Boss | null;
   updateHud(): void;
@@ -212,6 +213,7 @@ export function createGameSceneGameplayFrameBehavior(
   const updateGameplayFrame = (time: number, delta: number): void => {
     delegate.parallax.update(delta);
     delegate.player.update(delegate.inputManager, delta);
+    delegate.effectsManager.updateLighting(delta);
     delegate.getLastLifeHelperWing()?.update(time, delta);
     delegate.getPicketTurrets()?.update(time);
     delegate.grazeSurge.update();

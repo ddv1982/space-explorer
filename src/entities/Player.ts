@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { usesCinematicArt } from '../config/cinematicAssets';
 import { FLIGHT_CONFIG } from '../config/flightConfig';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import { V2_SHIPS, bankToFrame } from '../config/v2Ships';
@@ -8,7 +7,6 @@ import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
 import { GAME_SCENE_EVENTS } from '../systems/GameSceneEvents';
 import { ensurePlayerTexture } from '../utils/SpriteFactory';
-import { applyGameObjectGlow } from '../utils/renderingCompat';
 import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
 /** The bank frames carry most of the visible roll; a small rotation adds a sense of yaw. */
@@ -52,11 +50,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     (this.body as Phaser.Physics.Arcade.Body).setMaxSpeed(FLIGHT_CONFIG.maxSpeed);
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5);
-
-    applyGameObjectGlow(this, 0x00aaff, {
-      clearFirst: false,
-      ...(usesCinematicArt() ? { outerStrength: 0.25, innerStrength: 0, scale: 0.3 } : {}),
-    });
   }
 
   applyState(state: PlayerStateData): void {

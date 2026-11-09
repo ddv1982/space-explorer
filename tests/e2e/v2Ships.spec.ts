@@ -1,7 +1,5 @@
 import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
 
-test.skip(({ isMobile }) => isMobile, 'bank frames are driven the same way on every device; keyboard is deterministic');
-
 test('v2 player sheet shows the level frame at rest and a banked frame while strafing', async ({
   page,
   assertNoBrowserErrors,
