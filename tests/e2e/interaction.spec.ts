@@ -1,4 +1,4 @@
-import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
+import { expect, openMenu, openMenuSettings, snapshot, startNewRun, test, waitForScene } from './fixtures';
 
 test('visual quality is selectable, responsive, and persists without a URL setting', async ({
   page,
@@ -14,6 +14,7 @@ test('visual quality is selectable, responsive, and persists without a URL setti
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await openMenu(page);
+    await openMenuSettings(page);
     const menu = await snapshot(page);
     const qualityLabel = menu.texts.find((item) => item.text === 'QUALITY: STANDARD');
     const difficultyLabel = menu.texts.find((item) => item.text === 'DIFFICULTY: NORMAL');
@@ -37,6 +38,7 @@ test('visual quality is selectable, responsive, and persists without a URL setti
 
     await Promise.all([page.waitForEvent('load'), page.mouse.click(highButton?.x ?? 0, highButton?.y ?? 0)]);
     await waitForScene(page, 'Menu');
+    await openMenuSettings(page);
     await expect
       .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'QUALITY: HIGH'))
       .toBe(true);

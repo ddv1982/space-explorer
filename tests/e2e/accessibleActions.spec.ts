@@ -1,4 +1,4 @@
-import { expect, openMenu, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
+import { expect, openMenu, openMenuSettings, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
 
 async function namedActions(page: import('@playwright/test').Page, label: string): Promise<string[]> {
   return page
@@ -39,6 +39,7 @@ test('exposes named menu, pause, and intermission actions without a second paint
   await expect(page.getByRole('button', { name: 'Set difficulty low' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#accessible-action-layer-status')).toContainText('Difficulty set to LOW');
 
+  await openMenuSettings(page);
   const menu = await snapshot(page);
   const creativityLabel = menu.texts.find((item) => item.text === 'CREATIVITY');
   const creativityValue = menu.texts

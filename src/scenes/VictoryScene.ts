@@ -8,7 +8,15 @@ import { UI_FONT_MONO } from '../utils/uiFonts';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { mountAccessibleActionLayer, type AccessibleActionLayerHandle } from './shared/accessibleActionLayer';
 import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
-import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_FONT, NEON_TEXT } from './shared/neonUiTheme';
+import {
+  addNeonTitle,
+  drawNeonDivider,
+  drawNeonFrame,
+  fitNeonTitleFontSize,
+  NEON,
+  NEON_FONT,
+  NEON_TEXT,
+} from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class VictoryScene extends Phaser.Scene {
@@ -33,73 +41,7 @@ export class VictoryScene extends Phaser.Scene {
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, bgConfig);
 
-    const frameWidth = Math.min(620, layout.width - 48);
-    const frameHeight = 340;
-    const frameX = layout.centerX - frameWidth / 2;
-    const frameY = layout.centerY - frameHeight / 2;
-
-    const frame = this.add.graphics();
-    frame.setDepth(10);
-    drawNeonFrame(frame, frameX, frameY, frameWidth, frameHeight, {
-      accentColor: NEON.amber,
-      fillAlpha: 0.6,
-      strokeAlpha: 0.75,
-      cornerCut: 24,
-      glow: true,
-    });
-    drawNeonDivider(frame, layout.centerX, frameY + 32, frameWidth - 150, NEON.amber);
-    drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 32, frameWidth - 150, NEON.teal);
-
-    this.add
-      .text(layout.centerX, layout.centerY - 138, 'COMMAND DECK', {
-        fontSize: '12px',
-        color: NEON_TEXT.cyan,
-        fontFamily: NEON_FONT.mono,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-
-    addNeonTitle(this, layout.centerX, layout.centerY - 108, 'MISSION COMPLETE', 44, 11, {
-      glowDark: '#8c6a1f',
-      glowMid: '#d9a638',
-      glowBright: '#ffc36e',
-    });
-
-    this.add
-      .text(layout.centerX, layout.centerY - 52, 'ALL SECTORS CLEARED', {
-        fontSize: '20px',
-        color: '#58f0d8',
-        fontFamily: UI_FONT_MONO,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-
-    const finalScore = getRunSummary(this.registry).finalScore;
-    this.add
-      .text(layout.centerX, layout.centerY + 4, `FINAL SCORE: ${finalScore}`, {
-        fontSize: '28px',
-        color: NEON_TEXT.primary,
-        fontFamily: UI_FONT_MONO,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-
-    const totalLevels = getTotalLevels();
-    this.add
-      .text(layout.centerX, layout.centerY + 46, `${totalLevels}/${totalLevels} LEVELS COMPLETED`, {
-        fontSize: '15px',
-        color: NEON_TEXT.muted,
-        fontFamily: UI_FONT_MONO,
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-
-    createPromptText(this, layout.centerX, layout.centerY + 118, CONTINUE_PROMPT, {
-      color: '#dce8ff',
-    });
+    const { finalScore, totalLevels } = this.createSummaryPanel(layout);
 
     const continueToMenu = () => {
       audioManager.playClick();
@@ -122,6 +64,96 @@ export class VictoryScene extends Phaser.Scene {
       this.teardownAccessibleActions = undefined;
       this.parallax.destroy();
     });
+  }
+
+  /** Frame, title and run summary. Returns the numbers the accessible summary repeats. */
+  private createSummaryPanel(layout: ReturnType<typeof getViewportLayout>): {
+    finalScore: number;
+    totalLevels: number;
+  } {
+    // Every line is placed from the frame's top edge and fitted to its width, so nothing spills
+    // past the frame on a 390 px phone or collides with the divider ornaments.
+    const frameWidth = Math.min(620, layout.width - 32);
+    const frameHeight = 360;
+    const frameX = layout.centerX - frameWidth / 2;
+    const frameY = layout.centerY - frameHeight / 2;
+    const contentWidth = frameWidth - 40;
+    const fitWidth = (text: Phaser.GameObjects.Text): void => {
+      text.setScale(Math.min(1, contentWidth / Math.max(1, text.width)));
+    };
+
+    const frame = this.add.graphics();
+    frame.setDepth(10);
+    drawNeonFrame(frame, frameX, frameY, frameWidth, frameHeight, {
+      accentColor: NEON.amber,
+      fillAlpha: 0.6,
+      strokeAlpha: 0.75,
+      cornerCut: 24,
+      glow: true,
+    });
+    drawNeonDivider(frame, layout.centerX, frameY + 22, frameWidth - 150, NEON.amber);
+    drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 22, frameWidth - 150, NEON.teal);
+
+    this.add
+      .text(layout.centerX, frameY + 48, 'COMMAND DECK', {
+        fontSize: '12px',
+        color: NEON_TEXT.cyan,
+        fontFamily: NEON_FONT.mono,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
+
+    const titleSize = fitNeonTitleFontSize(this, 'MISSION COMPLETE', 44, contentWidth);
+    addNeonTitle(this, layout.centerX, frameY + 92, 'MISSION COMPLETE', titleSize, 11, {
+      glowDark: '#8c6a1f',
+      glowMid: '#d9a638',
+      glowBright: '#ffc36e',
+    });
+
+    fitWidth(
+      this.add
+        .text(layout.centerX, frameY + 144, 'ALL SECTORS CLEARED', {
+          fontSize: '20px',
+          color: '#58f0d8',
+          fontFamily: UI_FONT_MONO,
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5)
+        .setDepth(12)
+    );
+
+    const finalScore = getRunSummary(this.registry).finalScore;
+    fitWidth(
+      this.add
+        .text(layout.centerX, frameY + 192, `FINAL SCORE: ${finalScore}`, {
+          fontSize: '28px',
+          color: NEON_TEXT.primary,
+          fontFamily: UI_FONT_MONO,
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5)
+        .setDepth(12)
+    );
+
+    const totalLevels = getTotalLevels();
+    this.add
+      .text(layout.centerX, frameY + 232, `${totalLevels}/${totalLevels} LEVELS COMPLETED`, {
+        fontSize: '15px',
+        color: NEON_TEXT.muted,
+        fontFamily: UI_FONT_MONO,
+      })
+      .setOrigin(0.5)
+      .setDepth(12);
+
+    const prompt = createPromptText(this, layout.centerX, frameY + 292, CONTINUE_PROMPT, {
+      color: '#dce8ff',
+      fontSize: frameWidth < 420 ? '18px' : '22px',
+    });
+    prompt.setDepth(12);
+    fitWidth(prompt);
+
+    return { finalScore, totalLevels };
   }
 
   update(_time: number, delta: number): void {

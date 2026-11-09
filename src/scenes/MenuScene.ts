@@ -42,11 +42,17 @@ import {
   createSaveSlotEntryPanel,
   type MenuSaveSlotPanel,
 } from './menuScene/panels';
+import { createMenuHero, type MenuHero } from './menuScene/hero';
+import { createMenuSettingsSheet, type MenuSettingsSheet } from './menuScene/settingsSheet';
+import { createActionButtonControl, type ActionButtonControl } from './shared/actionButtonControl';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
   private saveSlotPanel: MenuSaveSlotPanel | null = null;
   private settingsPanel: SettingsPanel | null = null;
+  private settingsSheet: MenuSettingsSheet | null = null;
+  private settingsButton: ActionButtonControl | null = null;
+  private hero: MenuHero | null = null;
   private gameTransitionQueued = false;
   private devLevelJumpConsumed = false;
   private deleteArm?: ArmingAction<SaveSlotId>;
@@ -125,6 +131,7 @@ export class MenuScene extends Phaser.Scene {
   private createMenuPanels(layoutPlan: ReturnType<typeof createMenuLayoutPlan>, accentColor: number): void {
     createMenuBackdrop(this, layoutPlan, accentColor);
     createMenuTitle(this, layoutPlan);
+    this.hero = createMenuHero(this, layoutPlan);
     this.saveSlotPanel = createSaveSlotEntryPanel(
       this,
       layoutPlan,
@@ -132,6 +139,11 @@ export class MenuScene extends Phaser.Scene {
       this.createSaveSlotPanelHandlers(),
       isSaveStorageAvailable()
     );
+    this.createSettings(layoutPlan);
+  }
+
+  /** Difficulty, quality and audio live on a settings sheet opened from the footer button. */
+  private createSettings(layoutPlan: ReturnType<typeof createMenuLayoutPlan>): void {
     this.settingsPanel = createSettingsPanel(this, {
       layout: layoutPlan.settingsLayout,
       difficulty: this.getCurrentGameplayDifficultyTier(),
@@ -140,7 +152,23 @@ export class MenuScene extends Phaser.Scene {
       onSelectQuality: (tier) => this.selectVisualQualityTier(tier),
       onMusicValueChanged: () => this.syncAccessibleActions(),
     });
-    this.settingsPanel.setDepth(11);
+    this.settingsSheet = createMenuSettingsSheet(this, layoutPlan, this.settingsPanel, () => this.playMenuClick());
+    const button = layoutPlan.settingsButton;
+    this.settingsButton = createActionButtonControl(this, {
+      label: 'SETTINGS',
+      width: button.width,
+      height: button.height,
+      variant: 'secondary',
+      fontSize: '14px',
+      onClick: () => this.settingsSheet?.open(),
+    });
+    this.settingsButton.setPosition(button.x, button.y);
+    this.settingsButton.setDepth(11);
+    this.input.keyboard?.on('keydown-ESC', this.closeSettingsSheet, this);
+  }
+
+  private closeSettingsSheet(): void {
+    this.settingsSheet?.close();
   }
 
   private selectGameplayDifficultyTier(tier: GameplayDifficultyTier): boolean {
@@ -203,6 +231,7 @@ export class MenuScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.parallax?.update(delta);
+    this.hero?.update(delta);
   }
 
   private startNewRun(): void {
@@ -420,6 +449,13 @@ export class MenuScene extends Phaser.Scene {
     this.parallax?.destroy();
     this.saveSlotPanel?.destroy();
     this.saveSlotPanel = null;
+    this.input.keyboard?.off('keydown-ESC', this.closeSettingsSheet, this);
+    this.settingsSheet?.destroy();
+    this.settingsSheet = null;
+    this.settingsButton?.destroy();
+    this.settingsButton = null;
+    this.hero?.destroy();
+    this.hero = null;
     this.settingsPanel?.destroy();
     this.settingsPanel = null;
   }

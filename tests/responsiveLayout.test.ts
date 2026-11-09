@@ -157,12 +157,19 @@ function assertPauseRequiredControlsDoNotOverlap(viewport: { width: number; heig
 
 function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }): void {
   const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
-  const bands = [plan.titleBand, plan.missionBand, plan.tuningBand, plan.runSelectionBand, plan.statusBand];
+  // Home view: title lockup, hero ship, run tiles, then the settings button and status.
+  const bands = [plan.titleBand, plan.heroBand, plan.runSelectionBand, plan.footerBand];
   for (let index = 1; index < bands.length; index += 1) {
     expect(bands[index]?.top ?? 0).toBeGreaterThanOrEqual(bands[index - 1]?.bottom ?? 0);
   }
   expect(plan.titleBand.top).toBeGreaterThanOrEqual(plan.outerFrameY);
-  expect(plan.statusBand.bottom).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
+  expect(plan.footerBand.bottom).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
+  expect(plan.settingsButton.y).toBeGreaterThanOrEqual(plan.footerBand.top);
+  expect(plan.statusY + plan.statusHeight / 2).toBeLessThanOrEqual(plan.footerBand.bottom);
+  if (plan.hero) {
+    expect(plan.hero.y - plan.hero.shipHeight / 2).toBeGreaterThanOrEqual(plan.heroBand.top);
+    expect(plan.hero.y + plan.hero.shipHeight * 0.8).toBeLessThanOrEqual(plan.heroBand.bottom);
+  }
 
   if (plan.eyebrowVisible) {
     const eyebrowBottom = plan.eyebrowY + (plan.compact ? 10 : 12) / 2;
@@ -174,13 +181,22 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
   const subtitleTop = plan.subtitleY - plan.subtitleFontSize / 2;
   expect(subtitleTop).toBeGreaterThanOrEqual(titleBottom);
 
+  // Settings sheet: heading, tier rows, sliders, then DONE, all inside the sheet and the viewport.
+  const modal = plan.settingsModal;
+  expect(modal.x).toBeGreaterThanOrEqual(0);
+  expect(modal.x + modal.width).toBeLessThanOrEqual(viewport.width);
+  expect(modal.y).toBeGreaterThanOrEqual(0);
+  expect(modal.y + modal.height).toBeLessThanOrEqual(viewport.height);
+  expect(modal.missionBand.top).toBeGreaterThanOrEqual(modal.titleY + modal.titleFontSize / 2);
+  expect(modal.tuningBand.top).toBeGreaterThanOrEqual(modal.missionBand.bottom);
+  expect(modal.doneButton.y).toBeGreaterThanOrEqual(modal.tuningBand.bottom);
+  expect(modal.doneButton.y + modal.doneButton.height).toBeLessThanOrEqual(modal.y + modal.height);
   for (const position of plan.settingsLayout.sliderPositions) {
-    expect(position.y).toBeGreaterThanOrEqual(plan.tuningBand.top);
-    expect(position.y + 52).toBeLessThanOrEqual(plan.tuningBand.bottom + 8);
-    expect(position.y + 52).toBeLessThanOrEqual(plan.runSelectionBand.top);
-    expect(position.x).toBeGreaterThanOrEqual(0);
+    expect(position.y).toBeGreaterThanOrEqual(modal.tuningBand.top);
+    expect(position.y + 52).toBeLessThanOrEqual(modal.tuningBand.bottom);
+    expect(position.x).toBeGreaterThanOrEqual(modal.x);
     expect(position.x + (plan.settingsLayout.sliderWidth ?? plan.settingsLayout.width)).toBeLessThanOrEqual(
-      viewport.width
+      modal.x + modal.width
     );
   }
 }
@@ -321,19 +337,19 @@ describe('responsive save-slot layouts', () => {
   test.each([
     { width: 360, height: 600 },
     { width: 480, height: 500 },
-  ])('menu layout keeps the shared settings panel available when screens are short', (viewport) => {
+    { width: 1024, height: 600 },
+  ])('menu layout keeps the shared settings sheet available when screens are short', (viewport) => {
     const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
 
-    expect(plan.musicPanelHeight).toBeGreaterThan(0);
+    expect(plan.settingsModal.height).toBeGreaterThan(0);
     expect(plan.settingsLayout.sliderPositions).toHaveLength(4);
+    assertMenuBandsDoNotOverlap(viewport);
   });
 
-  test('menu settings visibility is independent of the old music height threshold', () => {
-    const hiddenPlan = createMenuLayoutPlan(createScene(1024, 600) as never);
-    const visiblePlan = createMenuLayoutPlan(createScene(1024, 601) as never);
-
-    expect(hiddenPlan.musicPanelHeight).toBeGreaterThan(0);
-    expect(visiblePlan.musicPanelHeight).toBeGreaterThan(0);
+  test('the hero ship shows on roomy screens and steps aside when the home view is too short', () => {
+    expect(createMenuLayoutPlan(createScene(1280, 720) as never).hero?.shipHeight).toBeGreaterThan(120);
+    expect(createMenuLayoutPlan(createScene(390, 844) as never).hero?.shipHeight).toBeGreaterThan(100);
+    expect(createMenuLayoutPlan(createScene(480, 320) as never).hero).toBeNull();
   });
 
   test('menu compact mode stays pinned to 720h/800w breakpoints', () => {
@@ -429,14 +445,8 @@ describe('responsive save-slot layouts', () => {
     { width: 1024, height: 768 },
     { width: 1280, height: 800 },
     { width: 1366, height: 768 },
-  ])('menu layout keeps the music panel inside common desktop viewports', (viewport) => {
-    const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
-
-    expect(plan.musicPanelY).toBeGreaterThanOrEqual(0);
-    expect(plan.musicPanelY + plan.musicPanelHeight).toBeLessThanOrEqual(viewport.height);
-    expect(Math.max(...plan.settingsLayout.sliderPositions.map((position) => position.y + 52))).toBeLessThanOrEqual(
-      viewport.height
-    );
+  ])('menu layout keeps the settings sheet inside common desktop viewports', (viewport) => {
+    assertMenuBandsDoNotOverlap(viewport);
   });
 
   test.each([

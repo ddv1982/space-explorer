@@ -61,7 +61,7 @@ export function measurePlayerControls(): Promise<Measurement[]> {
             const cardinalSpeed = body.velocity.length();
             const releaseStart = body.x;
             let releaseMs = 0;
-            // Momentum flight decays exponentially, so "at rest" means below 1 px/s.
+            // Inertial flight sheds speed at 400 px/s², so "at rest" means below 1 px/s.
             while (body.velocity.length() > 1 && releaseMs < 4000) {
               step(0);
               releaseMs += stepMs;
