@@ -1,4 +1,4 @@
-import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
+import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test, waitForScene } from './fixtures';
 import {
   assertLevelOneEvidenceEntities,
   sampleEvidenceThreatContrast,
@@ -107,6 +107,9 @@ test('gameplay corridor preserves a dark field with brighter desktop edges', asy
 }) => {
   const mobile = test.info().project.name.includes('mobile');
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 984, height: 768 });
+  // Low keeps the game clock moving on CI's software renderer, so the intro overlays below fade in
+  // seconds; the corridor mask is the same on every tier.
+  await pinQualityTier(page, 'low');
   await openMenu(page);
   await startNewRun(page);
   const shot = await snapshot(page);
