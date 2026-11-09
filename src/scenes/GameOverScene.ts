@@ -77,9 +77,8 @@ export class GameOverScene extends Phaser.Scene {
     runSummary: ReturnType<typeof getRunSummary>
   ): string {
     addNeonTitle(this, centerX, frameY + plan.titleY, 'GAME OVER', plan.titleSize, 11, {
-      glowDark: '#8c1f28',
-      glowMid: '#d93843',
-      glowBright: '#ff756f',
+      glow: '#ff5a55',
+      base: '#ffb3ad',
     });
 
     const score = this.add

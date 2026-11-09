@@ -106,9 +106,8 @@ export class VictoryScene extends Phaser.Scene {
 
     const titleSize = fitNeonTitleFontSize(this, 'MISSION COMPLETE', 44, contentWidth);
     addNeonTitle(this, layout.centerX, frameY + 92, 'MISSION COMPLETE', titleSize, 11, {
-      glowDark: '#8c6a1f',
-      glowMid: '#d9a638',
-      glowBright: '#ffc36e',
+      glow: '#ffb84a',
+      base: '#ffe2a6',
     });
 
     fitWidth(

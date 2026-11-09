@@ -67,6 +67,8 @@ export class PreloadScene extends Phaser.Scene {
     if (fontFaceSet?.load) {
       this.fontsReady = Promise.all([
         fontFaceSet.load('700 32px Orbitron', 'SPACE EXPLORER'),
+        fontFaceSet.load('400 16px Rajdhani', 'Choose a run'),
+        fontFaceSet.load('700 16px Rajdhani', 'NEW RUN'),
         fontFaceSet.load('400 16px "Share Tech Mono"', 'SCORE 0123456789'),
       ]).catch((): unknown[] => []);
     }
