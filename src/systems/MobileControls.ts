@@ -35,7 +35,9 @@ export class MobileControls {
   private dragAnchorGeneration: number | null = null;
 
   private readonly handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
-    if (!this.isEnabled() || this.dragPointerId !== null || this.isOverPauseButton(pointer)) {
+    // Drag steering is a touch control: trackpad or mouse presses on hybrid devices never start it.
+    // Suppression is not checked here because this listener runs before the bootstrap's touch restore.
+    if (!pointer.wasTouch || !this.isEnabled() || this.dragPointerId !== null || this.isOverPauseButton(pointer)) {
       return;
     }
 

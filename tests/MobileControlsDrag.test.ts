@@ -34,8 +34,8 @@ function createScene(viewport = { x: 0, y: 0, width: 390, height: 844 }) {
     },
     scale: { getViewPort: () => viewport },
   };
-  const emit = (event: string, pointer: { id: number; x: number; y: number }) => {
-    for (const handler of handlers.get(event) ?? []) handler(pointer);
+  const emit = (event: string, pointer: { id: number; x: number; y: number; wasTouch?: boolean }) => {
+    for (const handler of handlers.get(event) ?? []) handler({ wasTouch: true, ...pointer });
   };
   return { scene, emit, viewport };
 }
@@ -69,6 +69,13 @@ describe('MobileControls relative drag', () => {
     const velocity = controls.getDragDesiredVelocity(195, 760, 0, 480);
     expect(velocity?.vx).toBe(480);
     expect(velocity?.vy).toBe(0);
+  });
+
+  test('a mouse or trackpad press never starts a touch drag', () => {
+    const { controls, emit } = createControls();
+    emit('pointerdown', { id: 5, x: 200, y: 700, wasTouch: false });
+    expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toBeNull();
+    expect(controls.isControlPointer({ id: 5 } as never)).toBe(false);
   });
 
   test('a pause-button touch never starts a drag', () => {
