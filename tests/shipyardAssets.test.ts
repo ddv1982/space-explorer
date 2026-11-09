@@ -33,7 +33,7 @@ function chainable(): Record<string, unknown> {
   return proxy;
 }
 
-function createScene(options: { shrinkPlayerFrames?: boolean } = {}) {
+function createScene(options: { shrinkPlayerFrames?: boolean; oversizedScoutSheet?: boolean } = {}) {
   const removed: string[] = [];
   const textures = new Map<string, Record<string, unknown>>();
   for (const ship of SHIPYARD_SPRITES) {
@@ -43,7 +43,13 @@ function createScene(options: { shrinkPlayerFrames?: boolean } = {}) {
     textures.set(ship.key, {
       frames,
       firstFrame: '0',
-      source: [{ resolution: 1 }],
+      source: [
+        {
+          resolution: 1,
+          width: options.oversizedScoutSheet && ship.file === 'scout' ? layout.sheetWidth * 2 : layout.sheetWidth,
+          height: layout.sheetHeight,
+        },
+      ],
       dataSource: [{ resolution: 1 }],
       has: (name: string) => Number(name) < frames.length,
       get: (index: number) => frames[index],
@@ -96,5 +102,11 @@ describe('shipyard sheet loading', () => {
     const { scene, removed } = createScene({ shrinkPlayerFrames: true });
     expect(finishShipyardLoading(scene as never)).toBe(false);
     expect(removed).toContain('player-ship');
+  });
+
+  test('rejects a wrong, larger image even though it slices into correctly sized frames', () => {
+    const { scene, removed } = createScene({ oversizedScoutSheet: true });
+    expect(finishShipyardLoading(scene as never)).toBe(false);
+    expect(removed).toEqual(['scout-texture']);
   });
 });

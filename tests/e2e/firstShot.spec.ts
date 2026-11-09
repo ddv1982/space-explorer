@@ -3,24 +3,21 @@ import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
 
 declare global {
   interface Window {
-    __PLAYER_BULLET_READBACK_COUNT__?: number;
+    __PLAYER_BULLET_PAINT_COUNT__?: number;
   }
 }
 
-test('prepares the player bullet before firing without another canvas readback', async ({
-  page,
-  isMobile,
-  assertNoBrowserErrors,
-}) => {
+test('paints the player bullet once before firing and reuses it', async ({ page, isMobile, assertNoBrowserErrors }) => {
   await page.addInitScript(() => {
-    window.__PLAYER_BULLET_READBACK_COUNT__ = 0;
-    const original = CanvasRenderingContext2D.prototype.getImageData;
-    CanvasRenderingContext2D.prototype.getImageData = function (
+    // The bolt is painted once into a 4x-density 14x30 canvas (56x120 physical) with one sheath gradient.
+    window.__PLAYER_BULLET_PAINT_COUNT__ = 0;
+    const original = CanvasRenderingContext2D.prototype.createLinearGradient;
+    CanvasRenderingContext2D.prototype.createLinearGradient = function (
       this: CanvasRenderingContext2D,
       ...args: Parameters<typeof original>
     ) {
-      if (this.canvas.width === 8 && this.canvas.height === 18 && args[2] === 8 && args[3] === 18) {
-        window.__PLAYER_BULLET_READBACK_COUNT__ = (window.__PLAYER_BULLET_READBACK_COUNT__ ?? 0) + 1;
+      if (this.canvas.width === 56 && this.canvas.height === 120) {
+        window.__PLAYER_BULLET_PAINT_COUNT__ = (window.__PLAYER_BULLET_PAINT_COUNT__ ?? 0) + 1;
       }
       return original.apply(this, args);
     };
@@ -28,10 +25,10 @@ test('prepares the player bullet before firing without another canvas readback',
 
   await openMenu(page);
   await startNewRun(page);
-  const beforeFire = await page.evaluate(() => window.__PLAYER_BULLET_READBACK_COUNT__);
-  const beforePath = test.info().outputPath('before-fire-readbacks.json');
+  const beforeFire = await page.evaluate(() => window.__PLAYER_BULLET_PAINT_COUNT__);
+  const beforePath = test.info().outputPath('before-fire-paints.json');
   writeFileSync(beforePath, JSON.stringify({ beforeFire }));
-  await test.info().attach('before-fire-readbacks.json', { path: beforePath, contentType: 'application/json' });
+  await test.info().attach('before-fire-paints.json', { path: beforePath, contentType: 'application/json' });
   expect(beforeFire, 'player bullet texture must be ready before the first firing update').toBe(1);
 
   const touch = isMobile ? await page.context().newCDPSession(page) : null;
@@ -51,11 +48,11 @@ test('prepares the player bullet before firing without another canvas readback',
         (await snapshot(page)).objects.some((object) => object.active && object.textureKey === 'player-bullet')
       )
       .toBe(true);
-    const afterFire = await page.evaluate(() => window.__PLAYER_BULLET_READBACK_COUNT__);
+    const afterFire = await page.evaluate(() => window.__PLAYER_BULLET_PAINT_COUNT__);
     expect(afterFire, 'firing must reuse the prepared player bullet texture').toBe(beforeFire);
-    const resultPath = test.info().outputPath('first-shot-readbacks.json');
+    const resultPath = test.info().outputPath('first-shot-paints.json');
     writeFileSync(resultPath, JSON.stringify({ beforeFire, afterFire, input: isMobile ? 'touch' : 'keyboard' }));
-    await test.info().attach('first-shot-readbacks.json', { path: resultPath, contentType: 'application/json' });
+    await test.info().attach('first-shot-paints.json', { path: resultPath, contentType: 'application/json' });
     const screenshotPath = test.info().outputPath('first-shot.png');
     await page.screenshot({ path: screenshotPath });
     await test.info().attach('first-shot.png', { path: screenshotPath, contentType: 'image/png' });

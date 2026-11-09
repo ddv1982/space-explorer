@@ -7,7 +7,7 @@ const dimensions = {
   'scout-texture': [26, 28, 26, 28],
   'fighter-texture': [36, 36, 36, 36],
   'bomber-texture': [44, 38, 44, 38],
-  'boss-pursuit': [88, 56, 88, 56],
+  'boss-barrage': [88, 56, 88, 56],
 } as const;
 
 test('shipyard ships retain their logical geometry during real combat', async ({ page, assertNoBrowserErrors }) => {
@@ -86,7 +86,7 @@ test('shipyard frames survive pooling, boss phases, respawn, resize, and level h
         () =>
           window
             .__SPACE_EXPLORER_BROWSER_HARNESS__!.getShipyardSnapshot()
-            .sprites.find((sprite) => sprite.key === 'boss-pursuit')?.phase
+            .sprites.find((sprite) => sprite.key === 'boss-barrage')?.phase
       )
     )
     .toBeGreaterThan(1);

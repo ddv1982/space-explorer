@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { bankToFrame, PLAYER_SPRITE } from '../../config/shipyardSprites';
+import { getVisualQualityProfile } from '../../config/visualQuality';
 import { PARTICLE, generateEffectsParticleTextures } from '../../systems/effects/particleTextureFactory';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
 import { NEON, prefersReducedMotion } from '../shared/neonUiTheme';
@@ -28,7 +29,8 @@ interface HeroLights {
  * its plates, and a cyan engine light washes the tail.
  */
 function lightHero(scene: Phaser.Scene, ship: Phaser.GameObjects.Image, shipHeight: number): HeroLights | null {
-  if (ship.texture.dataSource.length === 0) return null;
+  // Low tier keeps the baked look, matching gameplay (no normal-map lighting, no dynamic lights).
+  if (!getVisualQualityProfile().normalMapLighting || ship.texture.dataSource.length === 0) return null;
   scene.lights.enable();
   scene.lights.setAmbientColor(0x8c96a8);
   ship.setLighting(true);

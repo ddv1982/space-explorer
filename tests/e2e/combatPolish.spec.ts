@@ -366,7 +366,8 @@ test('minimum-quality shield feedback remains visible without expansion under re
   );
   expect(shield.result.outcome).toBe('absorbed');
   expect(shield.afterHp).toBe(shield.beforeHp);
-  expect(shield.shieldRingScales).toEqual([1]);
+  // The 128px ring texture shown at a constant 0.25 scale: visible, but no expansion.
+  expect(shield.shieldRingScales).toEqual([0.25]);
   expect(shield.playerTint).toBe(0x44aaff);
   await saveBrowserEvidence('reduced-motion-shield', shield);
   assertNoBrowserErrors();

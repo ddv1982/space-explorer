@@ -228,7 +228,7 @@ For development comparisons, append `&atmosphere=live` to compare live noise cal
 ## Release notes
 
 - [Changelog](CHANGELOG.md)
-- [Latest release notes](docs/releases/1.22.1.md)
+- [Latest release notes](docs/releases/1.23.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

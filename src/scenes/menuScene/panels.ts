@@ -11,7 +11,6 @@ import {
   NEON,
   NEON_FONT,
   NEON_TEXT,
-  prefersReducedMotion,
 } from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
 import { MIN_TOUCH_TARGET_PX } from '../shared/touchTarget';
@@ -99,15 +98,6 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
     Math.max(180, plan.outerFrameWidth - 96)
   );
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
-  if (!prefersReducedMotion()) {
-    // A slow specular glint sweeps across the chrome lettering.
-    Phaser.Actions.AddEffectShine(titleText, {
-      duration: 2600,
-      repeatDelay: 4200,
-      radius: 0.18,
-      colorFactor: [1.6, 1.8, 2, 1],
-    });
-  }
 
   const wings = scene.add.graphics();
   const halfTitleWidth = titleText.width / 2;

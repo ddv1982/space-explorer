@@ -38,7 +38,11 @@ function registerShipyardFrames(scene: Phaser.Scene): boolean {
     const frames = Array.from({ length: sprite.frames }, (_, index) =>
       texture.has(String(index)) ? texture.get(index) : null
     );
+    // A larger wrong image still slices into correctly sized frames, so check the whole sheet too.
+    const source = texture.source[0];
     const valid =
+      source?.width === layout.sheetWidth &&
+      source.height === layout.sheetHeight &&
       texture.dataSource.length > 0 &&
       frames.every((frame) => frame?.cutWidth === layout.frameWidth && frame.cutHeight === layout.frameHeight);
     if (!valid) {

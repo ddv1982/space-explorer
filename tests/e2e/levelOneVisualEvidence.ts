@@ -6,8 +6,9 @@ const entityDimensions = {
   'fighter-texture': { width: 36, height: 36 },
   'diver-texture': { width: 24, height: 30 },
   'asteroid-texture': { width: 44, height: 44 },
-  'player-bullet': { width: 8, height: 18 },
-  'enemy-bullet': { width: 8, height: 8 },
+  // Bolt textures are larger than their 8x18 / 8x8 hitboxes to hold their glow.
+  'player-bullet': { width: 14, height: 30 },
+  'enemy-bullet': { width: 18, height: 18 },
 } as const;
 
 export interface LevelOneEvidenceEntity {
@@ -31,7 +32,8 @@ export function assertLevelOneEvidenceEntities(entities: LevelOneEvidenceEntity[
     expect(entity.displayScale).toBe(1);
     expect(expected).toBeDefined();
     expect({ width: entity.logicalWidth, height: entity.logicalHeight }).toEqual(expected);
-    const density = entity.sourceIsCanvas ? 1 : 4;
+    // Shipyard sheets and canvas-painted bolts both keep 4x source pixels.
+    const density = 4;
     expect({ width: entity.sourceCanvasWidth, height: entity.sourceCanvasHeight }).toEqual({
       width: expected.width * density,
       height: expected.height * density,

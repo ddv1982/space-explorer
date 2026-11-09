@@ -82,7 +82,7 @@ Low uses a static 320px atmosphere target, Standard uses 480px, and High/Auto us
 - Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles. V2 command-deck chrome (menu, pause, game over, victory, intermission frame) shares that language and scales glow with `uiGlowStrength` / `menuAtmosphere`.
 - Typography: bundled display font (Orbitron) with system fallback stack; mono for numeric readouts.
 - Gameplay hierarchy: `HULL` and `RES` anchor the left status cluster, score/sector anchor the right, and the center `FLIGHT VECTOR` is a ten-segment continuous progress readout. The compact layout moves progress to the lower edge of the panel to avoid overlap at phone widths.
-- Main menu: the lit hero ship (an orbiting key light rolls highlights across its normal map) idles over a launch pad with scan rings, a planet horizon rises behind the run tiles, shooting stars cross the sky and the title carries a periodic shine.
+- Main menu: the lit hero ship (an orbiting key light rolls highlights across its normal map) idles over a launch pad with scan rings, a planet horizon rises behind the run tiles and shooting stars cross the sky.
 - Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planet bodies are the authored raster portraits (exception below), framed by the existing neon halo, orbit, route, and satellite chrome.
 
 ## Planet arrival portraits (approved raster exception)

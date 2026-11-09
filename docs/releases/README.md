@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.23.0`](./1.23.0.md) - lit 3D models for every ship, boss and asteroid, layered explosions, a deep starfield and a living command deck
 - [`1.22.1`](./1.22.1.md) - quicker flight response with the same top speed and slide
 - [`1.22.0`](./1.22.0.md) - floatier v1.19 flight, full-height flares and edge-to-edge laser curtains, and a hero-ship command deck with a settings sheet
 - [`1.21.0`](./1.21.0.md) - momentum flight, touch drag steering, and lit 3D-rendered player and Fighter ships (v2 phase 0)
