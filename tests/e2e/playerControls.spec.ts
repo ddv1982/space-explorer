@@ -50,8 +50,9 @@ test('keyboard and touch steer diagonally, glide to rest after release, and fire
   isMobile,
   assertNoBrowserErrors,
 }) => {
-  // Reaching cruise speed and gliding to rest need ~1s of gameplay time; Low keeps software-rendered
-  // CI frames affordable (lit Standard rendering ran at ~1 fps there).
+  // Reaching cruise speed and gliding to rest need ~1s of gameplay (~60 frames). CI desktop runners
+  // have recorded ~700 ms per frame even on Low, so the waits and test budget are sized for that.
+  test.setTimeout(180_000);
   await pinQualityTier(page, 'low');
   await openMenu(page);
   await startNewRun(page);
@@ -98,7 +99,7 @@ test('keyboard and touch steer diagonally, glide to rest after release, and fire
               frame.lastFireGameplayMs > 0
           ),
         // Momentum needs ~0.3s of gameplay time to reach cruise speed.
-        { timeout: 20_000 }
+        { timeout: 60_000 }
       )
       .toBe(true);
     const moving = await snapshot(page);
@@ -121,7 +122,7 @@ test('keyboard and touch steer diagonally, glide to rest after release, and fire
       Math.hypot(frame.velocityX, frame.velocityY) < 5;
     // The glide spans ~0.4s of gameplay time; loaded CI browsers can run far slower than wall time.
     await expect
-      .poll(async () => (await read())?.frames.slice(beforeRelease).some(isAtRest), { timeout: 20_000 })
+      .poll(async () => (await read())?.frames.slice(beforeRelease).some(isAtRest), { timeout: 60_000 })
       .toBe(true);
     const captured = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.gameFeel.stop());
     if (!captured) throw new Error('Missing controls recording');
