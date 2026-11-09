@@ -1,22 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-type MutableCanvasPool = {
-  create2D: (parent: unknown, width?: number, height?: number) => HTMLCanvasElement;
-  remove: (canvas: unknown) => void;
-};
-
-const canvasPool: MutableCanvasPool = {
-  create2D: () => {
-    throw new Error('Unexpected CanvasPool.create2D call');
-  },
-  remove: () => {
-    throw new Error('Unexpected CanvasPool.remove call');
-  },
-};
-
-mock.module('phaser', () => ({
-  default: { Display: { Canvas: { CanvasPool: canvasPool } } },
-}));
+mock.module('phaser', () => ({ default: {} }));
 
 const { withCanvasTexture, withGeneratedTexture } = await import('../src/utils/generatedTexture');
 
@@ -25,9 +9,6 @@ function fakeContext() {
   return {
     calls,
     context: {
-      clearRect: () => calls.push('clear'),
-      save: () => calls.push('save'),
-      restore: () => calls.push('restore'),
       scale: (x: number, y: number) => calls.push(`scale ${x} ${y}`),
     },
   };
@@ -99,45 +80,53 @@ describe('withGeneratedTexture', () => {
 });
 
 describe('withCanvasTexture', () => {
-  test('paints at density in logical units and registers a logical-size frame', () => {
+  function stubCanvas() {
     const { context, calls } = fakeContext();
     const canvas = { width: 0, height: 0, getContext: () => context };
+    const previous = globalThis.document;
+    globalThis.document = { createElement: () => canvas } as never;
+    return { canvas, calls, restore: () => (globalThis.document = previous) };
+  }
+
+  test('paints at density in logical units and registers a logical-size frame', () => {
+    const { canvas, calls, restore } = stubCanvas();
     const frame = fakeFrame();
     const source = { resolution: 1 };
-    let allocated: [number?, number?] = [];
-    canvasPool.create2D = (_parent, width, height) => {
-      allocated = [width, height];
-      canvas.width = width ?? 0;
-      canvas.height = height ?? 0;
-      return canvas as never;
-    };
+    let registered: unknown[] = [];
+    let baseFrame: unknown[] = [];
     const drawnSize: number[] = [];
     const scene = {
       textures: {
         exists: () => false,
-        addCanvas: () => ({ source: [source], dataSource: [], get: () => frame }),
+        create: (...args: unknown[]) => {
+          registered = args;
+          return { source: [source], dataSource: [], add: (...cut: unknown[]) => (baseFrame = cut), get: () => frame };
+        },
       },
     };
 
-    withCanvasTexture(scene as never, 'bolt', 14, 30, (_context, width, height) => drawnSize.push(width, height), 4);
+    try {
+      withCanvasTexture(scene as never, 'bolt', 14, 30, (_context, width, height) => drawnSize.push(width, height), 4);
+    } finally {
+      restore();
+    }
 
-    expect(allocated).toEqual([56, 120]);
-    expect(calls).toEqual(['clear', 'save', 'scale 4 4', 'restore']);
+    expect(registered).toEqual(['bolt', canvas, 56, 120]);
+    expect(baseFrame).toEqual(['__BASE', 0, 0, 0, 56, 120]);
+    expect(calls).toEqual(['scale 4 4']);
     expect(drawnSize).toEqual([14, 30]);
     expect(source.resolution).toBe(4);
     expect(frame.trim).toEqual([14, 30, 0, 0, 14, 30]);
   });
 
-  test('returns the canvas to the pool when registration fails', () => {
-    const { context } = fakeContext();
-    const canvas = { width: 8, height: 8, getContext: () => context };
-    let removed: unknown = null;
-    canvasPool.create2D = () => canvas as never;
-    canvasPool.remove = (target) => (removed = target);
-    const scene = { textures: { exists: () => false, addCanvas: () => null } };
-
-    expect(() => withCanvasTexture(scene as never, 'lost', 8, 8, () => {})).toThrow('Unable to register');
-    expect(removed).toBe(canvas);
+  test('throws when the texture cannot be registered', () => {
+    const { restore } = stubCanvas();
+    const scene = { textures: { exists: () => false, create: () => null } };
+    try {
+      expect(() => withCanvasTexture(scene as never, 'lost', 8, 8, () => {})).toThrow('Unable to register');
+    } finally {
+      restore();
+    }
   });
 
   test('is idempotent when the texture key already exists', () => {

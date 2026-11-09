@@ -2,7 +2,7 @@
 
 Every hull in the game — player, helper wing, all eleven enemy families, the six bosses, picket turrets, mines and the four asteroid shapes — is a code-built 3D model rendered by the **shipyard** (`scripts/shipyard`, three.js at build time only) into WebP sprite sheets: an albedo pass with a baked upper-left key light plus a matching normal map. In game, `LightingRig` lights every normal-mapped sprite per pixel, so explosions, engines and pulses shade nearby hulls. See [ADR 0005](adr/0005-shipyard-roster.md) for the contract and [ADR 0004](adr/0004-living-procedural-backgrounds.md) for backgrounds.
 
-Light itself — bolts, orbs, beams, fire, smoke, sparks, flares, glows — is painted procedurally with Canvas 2D gradients (`withCanvasTexture`), never modelled: it has to stay soft, additive and cheap.
+Light itself — bolts, orbs, beams, fire, smoke, sparks, flares, glows — is painted procedurally with Canvas 2D gradients (`withCanvasTexture`), never modelled: it has to stay soft, additive and cheap. Canvas textures register as plain texture sources, never Phaser `CanvasTexture`s, whose `getImageData` readback stalls software renderers for seconds.
 
 ## Shipyard hulls
 
@@ -66,7 +66,7 @@ Per-level identity: each level keeps its `accentColor` from the level definition
 
 ## Backgrounds
 
-All ten worlds use `LivingBackground`. Aurora has folded light curtains and an edge planet; the other worlds use distinct caustics, ember fronts, mechanical rings, crystals, wreckage, arches, an eclipse, hive membranes, or an orbital well. A three-depth starfield (`livingStarfield.ts`: dense faint stars, haloed mid stars, sparse bright stars with diffraction spikes, in stellar colours) scrolls at three speeds over the bounded atmosphere texture, and a vignette darkens the corners under gameplay. The center-lane mask uses viewport coordinates.
+All ten worlds use `LivingBackground`. Aurora has folded light curtains and an edge planet; the other worlds use distinct caustics, ember fronts, mechanical rings, crystals, wreckage, arches, an eclipse, hive membranes, or an orbital well. A three-depth starfield (`livingStarfield.ts`: dense faint stars, haloed mid stars, sparse bright stars with diffraction spikes, in stellar colours, the mid layer tinted toward the world's star accent) scrolls at three speeds over the bounded atmosphere texture. Its layer textures are painted once and shared by every world, and a vignette darkens the corners under gameplay. The center-lane mask uses viewport coordinates.
 
 Low uses a static 320px atmosphere target, Standard uses 480px, and High/Auto use 640px. Reduced motion freezes the environment. Section lighting still responds to gameplay. See [ADR 0004](adr/0004-living-procedural-backgrounds.md) for ownership and recovery.
 

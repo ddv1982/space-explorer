@@ -60,9 +60,9 @@ for (const { level, world } of LIVING_CAMPAIGN) {
       await page.goto(`/?browserHarness=1&startLevel=${level}`);
       await waitForScene(page, 'Game');
       expect((await background(page)).background?.world).toBe(world);
-      // noise, atmosphere, three starfield layers, and the landmark when the world has one.
+      // Noise and atmosphere, plus the landmark when the world has one; the starfield is shared.
       expect((await background(page)).textureKeys).toHaveLength(
-        LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 5 : 6
+        LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 2 : 3
       );
       await stage(page, 4000);
       const before = await page.screenshot();
@@ -229,7 +229,7 @@ test('procedural GPU resources remain bounded across menu and game ownership', a
     await button.press('Enter');
     await waitForScene(page, 'Menu');
     const current = await background(page);
-    expect(current.textureKeys).toHaveLength(5);
+    expect(current.textureKeys).toHaveLength(2);
     samples.push({ buffers: current.buffers, vaos: current.vaos });
   }
   expect(samples[3]).toEqual(samples[1]);
@@ -259,7 +259,7 @@ test(
         const current = await background(page);
         expect(current.background?.world).toBe(world);
         expect(current.backgroundVaos).toBe(1);
-        expect(current.textureKeys).toHaveLength(LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 5 : 6);
+        expect(current.textureKeys).toHaveLength(LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 2 : 3);
       }
       await page.keyboard.down('Escape');
       try {
@@ -270,7 +270,7 @@ test(
       await page.getByRole('button', { name: 'Main menu', exact: true }).press('Enter');
       await waitForScene(page, 'Menu');
       const menu = await background(page);
-      expect(menu.textureKeys).toHaveLength(5);
+      expect(menu.textureKeys).toHaveLength(2);
       expect(menu.backgroundPrograms).toBeGreaterThanOrEqual(LIVING_CAMPAIGN.length);
       menus.push({
         buffers: menu.buffers,

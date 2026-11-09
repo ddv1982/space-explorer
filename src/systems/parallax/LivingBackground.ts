@@ -85,8 +85,7 @@ export class LivingBackground {
     this.shader.setRenderToTexture(outputKey).setVisible(false);
     if (hasOwnedShaderProgram(this.shader)) this.renderCount += 1;
     this.image = scene.add.image(0, 0, outputKey).setDepth(-20);
-    this.stars = new LivingStarfield(scene, this.prefix, this.profile.starAccent, world, -19);
-    this.textureKeys.push(...this.stars.textureKeys);
+    this.stars = new LivingStarfield(scene, this.profile.starAccent, -19);
     this.vignette = addSpaceVignette(scene, -16);
     this.occluder = this.profile.occluder ? scene.add.circle(0, 0, 1, 0x020309).setDepth(-18) : null;
     if (this.profile.landmark.kind !== 'none') {

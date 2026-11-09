@@ -5,7 +5,10 @@ import { withCanvasTexture } from '../../utils/generatedTexture';
  * Three-depth starfield over the living atmosphere: a dense field of faint distant stars, a mid layer
  * of brighter haloed stars, and a sparse near layer of bright stars with diffraction spikes. Each layer
  * scrolls at its own speed, so flight reads as depth. Stars take real stellar colours — blue-white,
- * white, warm yellow and orange — with the world's accent sprinkled in.
+ * white, warm yellow and orange — and the mid layer is tinted toward the world's accent.
+ *
+ * The layer textures are painted once and shared by every world: repainting 1.5M pixels of canvas per
+ * scene start stalls software renderers for seconds.
  */
 interface StarLayerSpec {
   name: string;
@@ -15,6 +18,8 @@ interface StarLayerSpec {
   speed: number;
   alpha: number;
   additive: boolean;
+  /** How far the layer's tint moves from white toward the world accent. */
+  accentTint: number;
   paint: (context: CanvasRenderingContext2D, x: number, y: number, color: string, random: () => number) => void;
 }
 
@@ -72,6 +77,7 @@ const LAYERS: readonly StarLayerSpec[] = [
     speed: 0.004,
     alpha: 1,
     additive: false,
+    accentTint: 0,
     paint: (context, x, y, color, random) => dot(context, x, y, 0.35 + random() * 0.45, color, 0.22 + random() * 0.5),
   },
   {
@@ -81,6 +87,7 @@ const LAYERS: readonly StarLayerSpec[] = [
     speed: 0.009,
     alpha: 0.95,
     additive: true,
+    accentTint: 0.45,
     paint: (context, x, y, color, random) => {
       glow(context, x, y, 3 + random() * 2.5, color, 0.35);
       dot(context, x, y, 0.7 + random() * 0.5, '#ffffff', 0.75 + random() * 0.25);
@@ -93,6 +100,7 @@ const LAYERS: readonly StarLayerSpec[] = [
     speed: 0.017,
     alpha: 0.9,
     additive: true,
+    accentTint: 0,
     paint: (context, x, y, color, random) => {
       const reach = 9 + random() * 9;
       glow(context, x, y, reach * 0.75, color, 0.5);
@@ -103,15 +111,23 @@ const LAYERS: readonly StarLayerSpec[] = [
   },
 ];
 
-function paintLayer(context: CanvasRenderingContext2D, spec: StarLayerSpec, accent: string, seed: string): void {
-  const random = seeded(`${seed}-${spec.name}`);
+function paintLayer(context: CanvasRenderingContext2D, spec: StarLayerSpec): void {
+  const random = seeded(`starfield-${spec.name}`);
   const margin = 12;
   for (let index = 0; index < spec.count; index += 1) {
     const x = margin + random() * (spec.size - margin * 2);
     const y = margin + random() * (spec.size - margin * 2);
-    const color = index % 9 === 0 ? accent : STELLAR_COLORS[Math.floor(random() * STELLAR_COLORS.length)]!;
+    const color = STELLAR_COLORS[Math.floor(random() * STELLAR_COLORS.length)]!;
     spec.paint(context, x, y, color, random);
   }
+}
+
+function towardAccent(accent: number, amount: number): number {
+  const mix = (shift: number): number => {
+    const channel = (accent >> shift) & 0xff;
+    return Math.round(255 + (channel - 255) * amount) << shift;
+  };
+  return mix(16) | mix(8) | mix(0);
 }
 
 const VIGNETTE_KEY = 'space-vignette';
@@ -137,16 +153,14 @@ export function addSpaceVignette(scene: Phaser.Scene, depth: number): Phaser.Gam
 
 export class LivingStarfield {
   private readonly layers: Array<{ sprite: Phaser.GameObjects.TileSprite; spec: StarLayerSpec }> = [];
-  readonly textureKeys: string[] = [];
 
-  constructor(scene: Phaser.Scene, keyPrefix: string, accent: number, seed: string, depth: number) {
-    const accentCss = `#${accent.toString(16).padStart(6, '0')}`;
+  constructor(scene: Phaser.Scene, accent: number, depth: number) {
     for (const spec of LAYERS) {
-      const key = `${keyPrefix}-stars-${spec.name}`;
-      withCanvasTexture(scene, key, spec.size, spec.size, (context) => paintLayer(context, spec, accentCss, seed));
-      this.textureKeys.push(key);
+      const key = `starfield-${spec.name}`;
+      withCanvasTexture(scene, key, spec.size, spec.size, (context) => paintLayer(context, spec));
       const sprite = scene.add.tileSprite(0, 0, 1, 1, key).setDepth(depth).setAlpha(spec.alpha);
       if (spec.additive) sprite.setBlendMode(Phaser.BlendModes.ADD);
+      if (spec.accentTint > 0) sprite.setTint(towardAccent(accent, spec.accentTint));
       this.layers.push({ sprite, spec });
     }
   }

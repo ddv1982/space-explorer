@@ -40,6 +40,9 @@ export function withGeneratedTexture(
  * for soft light — glows, fire, smoke, bolts — where stacked flat fills would band. `draw` works in
  * logical pixels; with `density` > 1 the canvas holds that many physical pixels per logical pixel and
  * the frame keeps its logical size, so small sprites stay crisp on high-DPI screens.
+ *
+ * The canvas is registered as a plain texture source, not a Phaser CanvasTexture: a CanvasTexture reads
+ * every pixel back with getImageData, which stalls GPU-backed canvases (and software renderers) badly.
  */
 export function withCanvasTexture(
   scene: Phaser.Scene,
@@ -50,23 +53,17 @@ export function withCanvasTexture(
   density = 1
 ): string {
   if (scene.textures.exists(key)) return key;
-  const canvas = Phaser.Display.Canvas.CanvasPool.create2D(scene.textures, width * density, height * density);
-  let registered = false;
-  try {
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error(`Unable to paint canvas texture: ${key}`);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.save();
-    context.scale(density, density);
-    draw(context, width, height);
-    context.restore();
-    const texture = scene.textures.addCanvas(key, canvas);
-    if (!texture) throw new Error(`Unable to register canvas texture: ${key}`);
-    registered = true;
-    if (density > 1) setLogicalFrameSize(texture, density, width, height);
-  } finally {
-    if (!registered) Phaser.Display.Canvas.CanvasPool.remove(canvas);
-  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width * density;
+  canvas.height = height * density;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error(`Unable to paint canvas texture: ${key}`);
+  context.scale(density, density);
+  draw(context, width, height);
+  const texture = scene.textures.create(key, canvas, canvas.width, canvas.height);
+  if (!texture) throw new Error(`Unable to register canvas texture: ${key}`);
+  texture.add('__BASE', 0, 0, 0, canvas.width, canvas.height);
+  if (density > 1) setLogicalFrameSize(texture, density, width, height);
   return key;
 }
 
