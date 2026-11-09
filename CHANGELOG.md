@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - v2 overhaul, Phase 0
+## [1.21.0] - 2026-11-09
 
 ### Added
 
@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 - Touch drag steering: drag anywhere and the ship follows your finger's movement, with the main gun firing automatically.
 - Shipyard: the player interceptor and the Fighter are built as 3D models in code and rendered into bank-frame sprite sheets with normal maps (`bun run art:shipyard`).
 - Dynamic lighting: explosions light nearby ships, engines glow on the hull, and bloom catches emissives and fire, budgeted per visual quality tier.
+
+### Fixed
+
+- Light pulses keep fading through respawn and level transitions. A true pause still freezes them.
+- Keyboard steering while a finger is held re-anchors the touch drag. Only real touches start a drag or re-enable touch autofire on hybrid devices.
 
 ### Removed
 

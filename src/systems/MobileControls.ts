@@ -32,6 +32,9 @@ export class MobileControls {
   private dragState: DragState | null = null;
   private dragFingerX: number = 0;
   private dragFingerY: number = 0;
+  /** Touch-down point, used for the first anchor so movement before the next ship update still counts. */
+  private dragDownX: number = 0;
+  private dragDownY: number = 0;
   private dragAnchorGeneration: number | null = null;
 
   private readonly handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
@@ -44,6 +47,8 @@ export class MobileControls {
     this.dragPointerId = pointer.id;
     this.dragFingerX = pointer.x;
     this.dragFingerY = pointer.y;
+    this.dragDownX = pointer.x;
+    this.dragDownY = pointer.y;
     // Anchored against the ship on the first velocity query, when the ship position is known.
     this.dragState = null;
     this.dragAnchorGeneration = null;
@@ -195,7 +200,11 @@ export class MobileControls {
       return null;
     }
 
-    if (this.dragState === null || this.dragAnchorGeneration !== anchorGeneration) {
+    if (this.dragState === null) {
+      this.dragState = beginDrag(this.dragDownX, this.dragDownY, shipX, shipY);
+      this.dragAnchorGeneration = anchorGeneration;
+    } else if (this.dragAnchorGeneration !== anchorGeneration) {
+      // The ship moved without the drag (respawn, keyboard): re-anchor where the finger is now.
       this.dragState = beginDrag(this.dragFingerX, this.dragFingerY, shipX, shipY);
       this.dragAnchorGeneration = anchorGeneration;
     }
