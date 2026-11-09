@@ -115,6 +115,7 @@ type GameSceneTestState = {
   };
   effectsManager: {
     createMuzzleFlash: (x: number, y: number) => void;
+    updateLighting: (delta: number) => void;
   };
   events: {
     emit: (eventName: string) => void;
@@ -283,6 +284,7 @@ function createUpdateHarness(): UpdateHarness {
     createMuzzleFlash: (_x: number, _y: number) => {
       calls.push('effectsManager.createMuzzleFlash');
     },
+    updateLighting: () => {},
   };
 
   state.events = {

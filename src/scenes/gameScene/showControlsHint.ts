@@ -3,8 +3,8 @@ import { centerHorizontally, getViewportLayout } from '@/utils/layout';
 import { UI_FONT_MONO } from '@/utils/uiFonts';
 import { isHardwareKeyboardDetected, onHardwareKeyboardDetected } from '@/systems/hardwareKeyboardDetection';
 
-const MOBILE_TITLE = 'Use the joystick to move';
-const MOBILE_FIRE_HINT = 'Tap the right side to shoot';
+const MOBILE_TITLE = 'Drag anywhere to fly';
+const MOBILE_FIRE_HINT = 'Guns fire automatically';
 const KEYBOARD_TITLE = 'WASD / Arrows to Move';
 const KEYBOARD_FIRE_HINT = 'SPACE / Click to Fire';
 

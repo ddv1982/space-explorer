@@ -28,6 +28,7 @@ export interface BrowserHarnessSnapshot {
   texts: readonly Readonly<{ text: string; x: number; y: number; width: number; height: number }>[];
   objects: readonly Readonly<{
     textureKey: string;
+    frameName: string | null;
     x: number;
     y: number;
     active: boolean;
@@ -50,21 +51,41 @@ function freezeList<T extends object>(items: T[]): readonly Readonly<T>[] {
   return Object.freeze(items.map((item) => Object.freeze(item)));
 }
 
+type ObjectSnapshot = BrowserHarnessSnapshot['objects'][number];
+
+function createObjectSnapshot(child: Phaser.GameObjects.GameObject): ObjectSnapshot | null {
+  const textured = child as Phaser.GameObjects.GameObject & {
+    texture?: Phaser.Textures.Texture;
+    x?: number;
+    y?: number;
+    active?: boolean;
+    body?: unknown;
+    rotation?: number;
+    tintMode?: number;
+    tintTopLeft?: number;
+    frame?: { name?: string | number };
+  };
+  const textureKey = textured.texture?.key;
+  if (!textureKey) return null;
+  return {
+    textureKey,
+    frameName: textured.frame?.name === undefined ? null : String(textured.frame.name),
+    x: textured.x ?? 0,
+    y: textured.y ?? 0,
+    active: textured.active ?? true,
+    hasBody: Boolean(textured.body),
+    rotation: textured.rotation ?? 0,
+    tintMode: textured.tintMode ?? null,
+    tintTopLeft: textured.tintTopLeft ?? null,
+  };
+}
+
 export function createBrowserHarnessSnapshot(game: Phaser.Game): BrowserHarnessSnapshot {
   const activeScenes = game.scene.getScenes(true);
   const primaryScene = activeScenes[0];
   const sceneManager = game.scene as Phaser.Scenes.SceneManager & { keys?: Record<string, unknown> };
   const texts: Array<{ text: string; x: number; y: number; width: number; height: number }> = [];
-  const objects: Array<{
-    textureKey: string;
-    x: number;
-    y: number;
-    active: boolean;
-    hasBody: boolean;
-    rotation: number;
-    tintMode: number | null;
-    tintTopLeft: number | null;
-  }> = [];
+  const objects: ObjectSnapshot[] = [];
   const arcs: Array<{ x: number; y: number; radius: number; visible: boolean }> = [];
   let cameraFilterCount = 0;
   let particleEmitterCount = 0;
@@ -86,29 +107,8 @@ export function createBrowserHarnessSnapshot(game: Phaser.Game): BrowserHarnessS
         texts.push(createTextSnapshot(child));
       }
 
-      const texturedChild = child as Phaser.GameObjects.GameObject & {
-        texture?: Phaser.Textures.Texture;
-        x?: number;
-        y?: number;
-        active?: boolean;
-        body?: unknown;
-        rotation?: number;
-        tintMode?: number;
-        tintTopLeft?: number;
-      };
-      const textureKey = texturedChild.texture?.key;
-      if (textureKey) {
-        objects.push({
-          textureKey,
-          x: texturedChild.x ?? 0,
-          y: texturedChild.y ?? 0,
-          active: texturedChild.active ?? true,
-          hasBody: Boolean(texturedChild.body),
-          rotation: texturedChild.rotation ?? 0,
-          tintMode: texturedChild.tintMode ?? null,
-          tintTopLeft: texturedChild.tintTopLeft ?? null,
-        });
-      }
+      const object = createObjectSnapshot(child);
+      if (object) objects.push(object);
     }
   }
 

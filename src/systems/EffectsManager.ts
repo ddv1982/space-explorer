@@ -20,7 +20,14 @@ import {
   getPowerUpBurstConfig,
   getSparkConfig,
 } from './effects/emitterSetup';
-import { scaleRuntimeParticleQuantity, shouldRenderRuntimeSecondaryEffects } from './RuntimePerformanceBudget';
+import {
+  runtimePerformanceBudget,
+  scaleRuntimeParticleQuantity,
+  shouldRenderRuntimeSecondaryEffects,
+} from './RuntimePerformanceBudget';
+import { LightingRig } from './lighting/LightingRig';
+import { resolveLightingBudget } from './lighting/lightingBudget';
+import { isTouchMobileDevice } from '../utils/device';
 
 export class EffectsManager {
   private static readonly SCORE_POPUP_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -45,6 +52,8 @@ export class EffectsManager {
   private exhaustConfigCount = -1;
   private currentLevelConfig: LevelConfig | null = null;
   private colorPulseToken = 0;
+  private lighting: LightingRig | null = null;
+  private unsubscribeLightingBudget: (() => void) | null = null;
 
   private getParticleQuantity(quantity: number): number {
     return scaleRuntimeParticleQuantity(quantity * getVisualQualityProfile().particleQuantityScale);
@@ -55,10 +64,42 @@ export class EffectsManager {
     this.clearCameraFX();
     this.generateParticleTextures();
     this.createParticleEmitters();
+    this.lighting = new LightingRig(scene, this.resolveLightingBudget());
+    this.unsubscribeLightingBudget = runtimePerformanceBudget.subscribe(() =>
+      this.lighting?.setBudget(this.resolveLightingBudget())
+    );
+  }
+
+  /** Advances light pulses on gameplay time; not called while the game is paused. */
+  updateLighting(delta: number): void {
+    this.lighting?.update(delta);
+  }
+
+  /** A short dynamic light flash (no particles); respects the tier's light budget. */
+  pulseLight(x: number, y: number, color: number, radius: number, intensity: number, durationMs: number): void {
+    this.lighting?.pulse(x, y, color, radius, intensity, durationMs);
+  }
+
+  /** Cyan glow from the ship's exhausts, lighting its tail rather than washing out the whole hull. */
+  addEngineLight(target: { x: number; y: number; visible?: boolean }): () => void {
+    return this.lighting?.follow(target, 0x5ff2ff, 36, 0.4, 26) ?? (() => {});
+  }
+
+  private resolveLightingBudget() {
+    return resolveLightingBudget(getVisualQualityProfile(), {
+      touchDevice: isTouchMobileDevice(),
+      pressureLevel: runtimePerformanceBudget.getSnapshot().pressureLevel,
+      reducedMotion:
+        typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false),
+    });
   }
 
   destroy(): void {
     this.colorPulseToken += 1;
+    this.unsubscribeLightingBudget?.();
+    this.unsubscribeLightingBudget = null;
+    this.lighting?.destroy();
+    this.lighting = null;
     this.destroyEmitters();
     this.clearCameraFX();
     this.colorMatrix = null;
@@ -179,6 +220,7 @@ export class EffectsManager {
     this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount));
     this.explosionEmitter.explode(this.getParticleQuantity(particleCount), x, y);
     this.createExplosionShockwave(x, y, intensity, 0xffb066);
+    this.lighting?.pulse(x, y, 0xffb066, 150 * intensity, 1.1 * intensity, 420);
 
     // Add debris for larger explosions
     if (intensity >= 1.0 && this.debrisEmitter) {
@@ -197,6 +239,7 @@ export class EffectsManager {
     this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount, style.palette));
     this.explosionEmitter.explode(this.getParticleQuantity(particleCount), x, y);
     this.createExplosionShockwave(x, y, intensity, style.ringTint, style.ringScaleX, style.ringScaleY);
+    this.lighting?.pulse(x, y, style.ringTint, 140 * intensity, 1 * intensity, 380);
 
     if (this.debrisEmitter && ['bomber', 'gunship', 'sower', 'lancer'].includes(enemyType)) {
       this.debrisEmitter.explode(this.getParticleQuantity(6), x, y);

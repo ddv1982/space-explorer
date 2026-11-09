@@ -26,6 +26,9 @@ _Avoid_: surprise, cheap shot
 
 ## Decisions
 
+**v2 overhaul supersedes the frozen-grammar rules (2026-11)**:
+The user authorized a complete redesign of graphics, ships, levels, controls, and sound (`docs/superpowers/specs/2026-11-09-space-explorer-overhaul-design.md`). The "presentation remake does not change encounter grammar" and "textures stay procedural" decisions below no longer bind v2 work, and v1 code is replaced outright rather than kept behind toggles. Pause freezing gameplay clocks, both touch orientations, and difficulty-as-forgiveness still hold. Phase 0 replaced acceleration/drag movement with exponential momentum flight (`FLIGHT_CONFIG`: 480 px/s cap, 70 ms response, 110 ms glide time constants; tuned with the user in the playtest), replaced the joystick with relative touch drag plus autofire, and introduced code-built 3D ships rendered to normal-mapped sheets lit by a per-tier lighting rig. v2 work lands on the `v2` branch until the v2.0.0 release.
+
 **Play-feel implementation (2026-09)**:
 The user authorized autonomous implementation of the complete play-feel plan. Movement now uses normalized intent, native Arcade acceleration of 3,200 px/s², a total speed cap of 480 px/s, and drag of 4,000 px/s². Hull banking is visual; shots follow the upward centerline. Damage attribution comes from the actual collision before the death event, and direct retry shares Menu's fresh-run contract. Flare warnings appear inside the viewport and leave a lower escape route. Boss approaches allow a deliberate midfield pickup intercept, with about 44 seconds added across the campaign. Human preference and physical-device results remain unmeasured. See `docs/plans/game-feel-replayability-2026-09-06.md` and its evidence links.
 

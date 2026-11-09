@@ -13,6 +13,8 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 720,
   transparent: false,
   backgroundColor: '#000011',
+  // Compiled into the lighting shader; the active count is budgeted per quality tier.
+  maxLights: 8,
   physics: {
     default: 'arcade',
     arcade: {

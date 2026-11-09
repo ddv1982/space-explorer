@@ -72,6 +72,7 @@ interface GameSceneGameplayFrameDelegate {
   };
   effectsManager: {
     createMuzzleFlash(x: number, y: number): void;
+    updateLighting(delta: number): void;
   };
   getBoss(): Boss | null;
   updateHud(): void;
@@ -82,6 +83,14 @@ interface GameSceneGameplayFrameDelegate {
 
 export interface GameSceneGameplayFrameBehavior extends GameSceneFrameDelegate {
   getLastFireTime(): number;
+}
+
+/**
+ * Respawn and transition locks keep particles moving on the scene clock, so lights keep fading with
+ * them; only a true pause freezes lighting alongside the gameplay clocks.
+ */
+function updateLockedFrameLighting(delegate: GameSceneGameplayFrameDelegate, delta: number): void {
+  if (!delegate.pauseStateController?.isGameplayPaused()) delegate.effectsManager.updateLighting(delta);
 }
 
 export function createGameSceneGameplayFrameBehavior(
@@ -110,6 +119,7 @@ export function createGameSceneGameplayFrameBehavior(
 
   const updatePausedFrame = (delta: number): void => {
     delegate.flow.sampleRespawnTransitionFrame(delta);
+    updateLockedFrameLighting(delegate, delta);
     delegate.updateHud();
   };
 
@@ -212,6 +222,7 @@ export function createGameSceneGameplayFrameBehavior(
   const updateGameplayFrame = (time: number, delta: number): void => {
     delegate.parallax.update(delta);
     delegate.player.update(delegate.inputManager, delta);
+    delegate.effectsManager.updateLighting(delta);
     delegate.getLastLifeHelperWing()?.update(time, delta);
     delegate.getPicketTurrets()?.update(time);
     delegate.grazeSurge.update();

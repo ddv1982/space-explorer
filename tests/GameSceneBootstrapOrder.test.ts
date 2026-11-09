@@ -33,7 +33,8 @@ describe('GameScene create bootstrap order', () => {
         events.emit(GAME_SCENE_EVENTS.helperWingActivated, 2);
       },
     };
-    currentRuntime = { hud, lastLifeHelperWing: helper } as unknown as GameSceneBootstrapRuntime;
+    const effectsManager = { addEngineLight: () => () => {} };
+    currentRuntime = { hud, lastLifeHelperWing: helper, effectsManager } as unknown as GameSceneBootstrapRuntime;
     Object.assign(scene, {
       events,
       flow,
@@ -60,6 +61,7 @@ describe('GameScene create bootstrap order', () => {
     currentRuntime = {
       hud: { showHelperWingAnnouncement: (count: number) => restartedAnnouncements.push(count) },
       lastLifeHelperWing: helper,
+      effectsManager,
     } as unknown as GameSceneBootstrapRuntime;
     scene.create();
     expect(lives).toEqual([1, 1]);
