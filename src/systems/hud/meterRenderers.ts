@@ -112,12 +112,23 @@ export function renderSurgeBar(graphics: Graphics, ratio: number | null, layout:
   graphics.fillPath();
 }
 
-/** Shield charges: small blue crests right-aligned on the hull label row. */
+/** Where the hull label and its numeric readout end on the label row; shield pips stay right of it. */
+export const HULL_READOUT_WIDTH = 86;
+const SHIELD_PIP_STEP = 13;
+
+/**
+ * Shield charges: small blue crests right-aligned on the hull label row. A full rack on a narrow
+ * cluster closes up and overlaps like fanned cards instead of running into the hull readout.
+ */
 export function renderShieldPips(graphics: Graphics, shields: number, layout: HudLayoutMetrics): void {
   graphics.clear();
 
-  for (let index = 0; index < shields; index += 1) {
-    const centerX = layout.hullX + layout.hullWidth - 5 - index * 13;
+  const room = layout.hullWidth - HULL_READOUT_WIDTH - 10;
+  const step = shields > 1 ? Math.min(SHIELD_PIP_STEP, room / (shields - 1)) : SHIELD_PIP_STEP;
+  // Drawn right to left would bury each crest under its neighbour: start at the far end so the
+  // rightmost pip, the next charge to be spent, sits on top.
+  for (let index = shields - 1; index >= 0; index -= 1) {
+    const centerX = layout.hullX + layout.hullWidth - 5 - index * step;
     const y = layout.hullLabelY + 2;
     graphics.fillStyle(SHIELD_COLOR, 0.95);
     graphics.beginPath();

@@ -40,6 +40,7 @@ import { callsTo, createRecordingStub } from './helpers/recordingStub';
 
 const { getLayoutMetrics } = await import('../src/systems/hud/statusBarLayout');
 const {
+  HULL_READOUT_WIDTH,
   hullColor,
   renderBossBar,
   renderChainBadge,
@@ -95,6 +96,13 @@ describe('HUD meter renderers', () => {
     const shields = graphics();
     renderShieldPips(shields.stub, 2, layout);
     expect(count(shields.calls, 'fillPath')).toBe(2);
+
+    // A full rack on a phone closes up instead of running into the hull readout.
+    const phone = layoutFor(390, 844);
+    const rack = graphics();
+    renderShieldPips(rack.stub, 8, phone);
+    const leftmostPipEdge = Math.min(...callsTo(rack.calls, 'moveTo').map(([x]) => x as number));
+    expect(leftmostPipEdge).toBeGreaterThanOrEqual(phone.hullX + HULL_READOUT_WIDTH);
 
     const reserve = graphics();
     renderReserveIcons(reserve.stub, 3, layout);
