@@ -25,7 +25,7 @@ async function measureControls(page: import('@playwright/test').Page) {
   });
 }
 
-test('inertial flight (v1.19 handling) slides to rest and stays normalized at 60 and 120 Hz', async ({
+test('inertial flight slides to rest and stays normalized at 60 and 120 Hz', async ({
   page,
   assertNoBrowserErrors,
 }) => {
@@ -42,9 +42,9 @@ test('inertial flight (v1.19 handling) slides to rest and stays normalized at 60
     expect(item.releaseDistance).toBeLessThan(840);
     expect(item.releaseMs).toBeGreaterThan(1900);
     expect(item.releaseMs).toBeLessThan(2100);
-    // Reversing to 90% of full speed the other way takes 1,520 px/s at 800 px/s².
-    expect(item.reversalMs).toBeGreaterThan(1800);
-    expect(item.reversalMs).toBeLessThan(2000);
+    // Reversing to 90% of full speed the other way takes 1,520 px/s at 1600 px/s².
+    expect(item.reversalMs).toBeGreaterThan(900);
+    expect(item.reversalMs).toBeLessThan(1000);
   }
   assertNoBrowserErrors();
 });

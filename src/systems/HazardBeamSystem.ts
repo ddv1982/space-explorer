@@ -10,11 +10,11 @@ const SOLAR_FLARE_MIN_GAP = 120;
 const SOLAR_FLARE_MAX_GAP = 170;
 /**
  * Lattice telegraph = reaction + reach × √(farthest distance to the gap in px). An inertial ship
- * (800 px/s² thrust, braking at 600) covers d px in about 76 × √d ms, so this leaves a margin.
+ * (1600 px/s² thrust, braking at 600) covers d px in about 68 × √d ms, so this leaves a margin.
  */
 const LATTICE_TELEGRAPH_BASE_MS = 450;
 const LATTICE_TELEGRAPH_REACH_MS = 80;
-/** How far a follow-up lattice's gap may move: an inertial ship covers 200 px in about 1.1 s. */
+/** How far a follow-up lattice's gap may move: an inertial ship covers 200 px in about 1 s. */
 const LATTICE_FOLLOW_UP_REACH = 200;
 /** Dark space between neighbouring curtain beams' hit cores; below the ship's 24 px width. */
 const LATTICE_CORE_SPACING = 16;

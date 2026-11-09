@@ -304,16 +304,34 @@ test('delivered eight-direction input escapes overlapping beam danger before act
   try {
     await page.keyboard.down('ArrowRight');
     await page.keyboard.down('ArrowDown');
-    await page.waitForFunction(
-      (goal) => (window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().player?.x ?? 0) >= goal,
-      staged.goal.x
+    // Release each key in-page on the frame its goal is reached. A Playwright round trip per key-up
+    // lets the ship keep thrusting for a few hundred ms on slow browsers, and the slide grows with it.
+    await page.evaluate(
+      (goal) =>
+        new Promise<void>((resolve) => {
+          const release = (key: string, keyCode: number): void => {
+            const event = new KeyboardEvent('keyup', { key, code: key });
+            Object.defineProperty(event, 'keyCode', { value: keyCode });
+            window.dispatchEvent(event);
+          };
+          let rightHeld = true;
+          const check = (): void => {
+            const player = window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().player;
+            if (rightHeld && (player?.x ?? 0) >= goal.x) {
+              release('ArrowRight', 39);
+              rightHeld = false;
+            }
+            if (!rightHeld && (player?.y ?? 0) >= goal.y) {
+              release('ArrowDown', 40);
+              resolve();
+              return;
+            }
+            requestAnimationFrame(check);
+          };
+          check();
+        }),
+      staged.goal
     );
-    await page.keyboard.up('ArrowRight');
-    await page.waitForFunction(
-      (goal) => (window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().player?.y ?? 0) >= goal,
-      staged.goal.y
-    );
-    await page.keyboard.up('ArrowDown');
     await page.waitForFunction(() => {
       const beams = window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().beams;
       return beams.length > 4 && beams.every((beam) => beam.damaging);

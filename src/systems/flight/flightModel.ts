@@ -22,7 +22,7 @@ function approach(current: number, target: number, dtMs: number, tauMs: number):
 
 /**
  * Advances inertial flight by one frame: velocity moves toward the desired velocity at a fixed
- * thrust (or drag, once released), like the Arcade acceleration/drag handling of v1.19.
+ * thrust (or drag, once released), with the long v1.19 drag slide.
  * Pure and frame-rate independent.
  */
 export function stepFlight(
