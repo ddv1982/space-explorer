@@ -16,6 +16,8 @@ type SceneWithControlsHint = Phaser.Scene & { __controlsHintCleanup?: () => void
 
 const CARD_WIDTH = 332;
 const CARD_HEIGHT = 78;
+/** The card sits below centre so it clears the sector title card that opens every level. */
+const CARD_DROP = 64;
 const ICON_COLUMN = 84;
 const HINT_DEPTH = 200;
 
@@ -82,13 +84,14 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
   const relayout = (): void => {
     const layout = getViewportLayout(scene);
     const cardX = centerHorizontally(layout, CARD_WIDTH);
-    const cardY = layout.centerY - CARD_HEIGHT / 2;
+    const cardCenterY = layout.centerY + CARD_DROP;
+    const cardY = cardCenterY - CARD_HEIGHT / 2;
 
     bg.clear();
     drawNeonFrame(bg, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, { fillAlpha: 0.78, cornerCut: 14 });
-    (mobile ? drawDragGlyph : drawKeyCluster)(bg, cardX + ICON_COLUMN / 2 + 4, layout.centerY);
-    title.setPosition(cardX + ICON_COLUMN, layout.centerY - 12);
-    fireHint.setPosition(cardX + ICON_COLUMN, layout.centerY + 12);
+    (mobile ? drawDragGlyph : drawKeyCluster)(bg, cardX + ICON_COLUMN / 2 + 4, cardCenterY);
+    title.setPosition(cardX + ICON_COLUMN, cardCenterY - 12);
+    fireHint.setPosition(cardX + ICON_COLUMN, cardCenterY + 12);
   };
 
   const stopKeyboardWatch = onHardwareKeyboardDetected(() => {

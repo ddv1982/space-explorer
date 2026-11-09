@@ -111,6 +111,17 @@ test('gameplay corridor preserves a dark field with brighter desktop edges', asy
   await startNewRun(page);
   const shot = await snapshot(page);
   expect(shot.objects.some((object) => object.textureKey === 'player-ship' && object.active)).toBe(true);
+  // The corridor contract is about scenery: wait out the sector title card and the controls hint,
+  // which open every level in the middle of the lane.
+  await expect
+    .poll(
+      async () =>
+        (await snapshot(page)).texts.some(
+          (item) => item.shown && (item.text === 'SECTOR 1' || item.text.includes('to Move'))
+        ),
+      { message: 'wait for the level-intro overlays to fade', timeout: 45_000 }
+    )
+    .toBe(false);
   const luminance = await sampleGameplayLaneLuminance(page);
   expect(luminance.center).toBeGreaterThan(5);
   expect(luminance.edges).toBeGreaterThan(5);
