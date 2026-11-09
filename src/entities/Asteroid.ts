@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
+import { ASTEROID_VARIANTS } from '../config/shipyardSprites';
 import { ASTEROID_HP } from '../utils/constants';
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
-import { ensureAsteroidTexture } from '../utils/SpriteFactory';
 
 export interface AsteroidSpawnConfig {
   velocityX?: number;
@@ -31,8 +31,6 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
   private visualFlashToken = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureAsteroidTexture(scene);
-
     super(scene, x, y, 'asteroid-texture');
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -57,6 +55,8 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
     this.baseTint = config.tint ?? null;
 
     this.setDepth(config.depth ?? 2);
+    // Each spawn picks one of the shipyard's distinct rock shapes.
+    this.setFrame(Phaser.Math.Between(0, ASTEROID_VARIANTS - 1));
     this.setVelocity(config.velocityX ?? 0, speed);
     this.rotSpeed = Phaser.Math.FloatBetween(
       config.angularVelocityRange?.min ?? -2,

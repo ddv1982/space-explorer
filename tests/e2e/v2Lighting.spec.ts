@@ -5,7 +5,7 @@ async function openLevelOne(page: Page, tier: 'low' | 'standard'): Promise<void>
   await pinQualityTier(page, tier);
   await page.goto('/?browserHarness=1&startLevel=1&upgrades=0');
   await waitForScene(page, 'Game');
-  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.stageCinematicEncounter());
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.stageShipyardEncounter());
   // Let the ship finish settling from its spawn before sampling.
   await page.waitForTimeout(600);
 }

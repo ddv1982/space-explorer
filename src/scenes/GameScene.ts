@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { finishCinematicLoading, queueCinematicAssets } from '../utils/cinematicAssets';
+import { finishShipyardLoading, queueShipyardAssets } from '../utils/shipyardAssets';
 
 import { getActiveSection, getSectionProgress, type BossConfig } from '@/config/LevelsConfig';
 import type { Player } from '@/entities/Player';
@@ -91,11 +91,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload(): void {
-    queueCinematicAssets(this);
+    queueShipyardAssets(this);
   }
 
   create(): void {
-    if (!finishCinematicLoading(this)) return;
+    if (!finishShipyardLoading(this)) return;
     this.gameplayClock.reset();
     const runtime = runGameSceneCreateBootstrap({
       scene: this,
@@ -138,7 +138,7 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = runtime.scoreManager;
     this.grazeSurge = runtime.grazeSurge;
     this.powerUpGroup = runtime.powerUpGroup;
-    this.effectsManager.addEngineLight(this.player);
+    this.effectsManager.attachEngine(this.player);
     this.hud = runtime.hud;
     this.warpTransition = runtime.warpTransition;
     this.lastHudShieldCount = runtime.lastHudShieldCount;

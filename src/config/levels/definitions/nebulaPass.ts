@@ -16,8 +16,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
   journeyNote: 'The route wades through glass-bright shallows where portals ripple before enemies arrive.',
   bgColor: '#031018',
   accentColor: 0x6ed8ff,
-  nebulaColor: 0x14425e,
-  nebulaAlpha: 0.15,
   colorGrade: { brightness: 0.06, contrast: 1.08, saturation: 1.1 },
   planetPalette: [0x2a7fa8, 0xa8ecff],
   enemies: [
@@ -49,7 +47,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 0.92,
         driftScale: 0.94,
-        twinkleScale: 0.9,
         landmarkAlpha: 0.86,
       },
       tensionArc: 'constant',
@@ -90,7 +87,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.02,
         driftScale: 1.04,
-        twinkleScale: 1.02,
         landmarkAlpha: 0.96,
         hazardResponseScale: 1.08,
       },
@@ -143,7 +139,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.06,
         driftScale: 1.05,
-        twinkleScale: 1.08,
         landmarkAlpha: 1.02,
         hazardResponseScale: 1.12,
       },
@@ -172,7 +167,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.1,
         driftScale: 1.08,
-        twinkleScale: 1.12,
         landmarkAlpha: 1.08,
         hazardResponseScale: 1.18,
       },
@@ -192,7 +186,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 0.9,
         driftScale: 0.92,
-        twinkleScale: 0.82,
         landmarkAlpha: 0.8,
       },
       tensionArc: 'constant',
@@ -296,30 +289,4 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       },
     },
   }),
-  passingPlanets: [
-    {
-      scrollSpeed: 0.015,
-      planetPalette: [0x2a7fa8, 0xa8ecff],
-      size: 200,
-      yPosition: 0.18,
-      alpha: 0.2,
-      ringChance: 0.5,
-    },
-    {
-      scrollSpeed: 0.025,
-      planetPalette: [0x3d8f99, 0x87fff0],
-      size: 100,
-      yPosition: 0.72,
-      alpha: 0.15,
-      ringChance: 0.3,
-    },
-    {
-      scrollSpeed: 0.008,
-      planetPalette: [0x8a5533, 0xffcc88],
-      size: 300,
-      yPosition: 0.45,
-      alpha: 0.1,
-      ringChance: 0.7,
-    },
-  ],
 };

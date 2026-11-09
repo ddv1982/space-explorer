@@ -190,9 +190,9 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 ## 4. Re-theme sync points
 
 - All 10 levels get new names/planets/palettes (above). These must be synced to:
-  `premiumBackgroundManifest.ts` (name-keyed), `neonBackgroundGenerator.ts` LEVEL_MOTIFS
-  (10 new motifs: aurora, glass tide, ember storm, clockwork, coral reef, wreckage ramparts,
-  cathedral, eclipse, hive, singularity engine), `VictoryScene.ts` (level 10 reference),
+  `livingBackgroundProfile.ts` LIVING_CAMPAIGN (name-keyed living worlds: aurora, glass tide,
+  ember storm, clockwork, coral reef, wreckage ramparts, cathedral, eclipse, hive, singularity
+  engine), `VictoryScene.ts` (level 10 reference),
   Menu/Preload/intermission lookups (all name/index driven, no code change).
 - Music: each level keeps a `createSignatureMusic` block with a new seed, mood, and tempo matching
   its concept.

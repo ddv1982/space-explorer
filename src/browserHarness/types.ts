@@ -2,7 +2,8 @@ import type { createGameFeelProbes } from './gameFeelProbes';
 import type { createCombatPolishProbes } from './combatPolishProbes';
 
 import type { BrowserHarnessSnapshot } from './snapshot';
-import type { createCinematicProbes } from './cinematicProbes';
+import type { createShipyardProbes } from './shipyardProbes';
+import type { createEffectsProbes } from './effectsProbes';
 import type { createProceduralBackgroundProbes } from './proceduralBackgroundProbes';
 
 export interface BrowserHarnessRenderCost {
@@ -36,7 +37,6 @@ export interface BrowserHarnessVisualPilotEvidence {
   sectionId: string;
   motionPhase: number;
   qualityTier: string;
-  entityTextureResolution: number;
   entities: BrowserHarnessVisualPilotEntity[];
 }
 
@@ -72,7 +72,10 @@ export interface BrowserHarnessFramePacingProbe {
 }
 
 export interface BrowserHarnessApi
-  extends ReturnType<typeof createCinematicProbes>, ReturnType<typeof createProceduralBackgroundProbes> {
+  extends
+    ReturnType<typeof createShipyardProbes>,
+    ReturnType<typeof createEffectsProbes>,
+    ReturnType<typeof createProceduralBackgroundProbes> {
   combatPolish: ReturnType<typeof createCombatPolishProbes>;
   gameFeel: ReturnType<typeof createGameFeelProbes>;
   destroyGame: () => void;

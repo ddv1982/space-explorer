@@ -16,8 +16,6 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   journeyNote: 'The choir sings through portals; every verse arrives armed.',
   bgColor: '#0a0614',
   accentColor: 0xc99bff,
-  nebulaColor: 0x2c1440,
-  nebulaAlpha: 0.14,
   colorGrade: { brightness: 0.04, contrast: 1.12, saturation: 1.05 },
   planetPalette: [0x5c2a8f, 0xe2c8ff],
   enemies: [

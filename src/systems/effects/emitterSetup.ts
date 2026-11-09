@@ -1,157 +1,169 @@
 import Phaser from 'phaser';
-import { usesCinematicArt } from '../../config/cinematicAssets';
 import { getVisualQualityProfile } from '../../config/visualQuality';
-import { scaleRuntimeParticleQuantity } from '../RuntimePerformanceBudget';
+import { PARTICLE } from './particleTextureFactory';
+
+type EmitterConfig = Phaser.Types.GameObjects.Particles.ParticleEmitterConfig;
 
 function burstScale(value: number): number {
   return value * getVisualQualityProfile().particleBurstScale;
 }
 
-function burstQuantity(value: number): number {
-  return scaleRuntimeParticleQuantity(value * getVisualQualityProfile().particleQuantityScale);
+/** Keeps streak textures pointing along their travel (Phaser assigns velocity after onEmit). */
+const ALIGN_TO_VELOCITY = {
+  onUpdate: (particle?: Phaser.GameObjects.Particles.Particle) =>
+    particle ? Phaser.Math.RadToDeg(Math.atan2(particle.velocityY, particle.velocityX)) : 0,
+};
+
+/** Pooled, non-emitting particle emitters, one per effect layer. Depth decides draw order. */
+export const EMITTERS = {
+  smoke: { texture: PARTICLE.smoke, depth: 5, reserve: 48 },
+  fire: { texture: PARTICLE.fire, depth: 6, reserve: 96 },
+  ember: { texture: PARTICLE.glow, depth: 6, reserve: 96 },
+  spark: { texture: PARTICLE.spark, depth: 7, reserve: 96 },
+  debris: { texture: PARTICLE.debris, depth: 5, reserve: 48 },
+  muzzle: { texture: PARTICLE.flare, depth: 6, reserve: 16 },
+  exhaust: { texture: PARTICLE.glow, depth: 3, reserve: 64 },
+  trail: { texture: PARTICLE.glow, depth: 3, reserve: 96 },
+  enemyTrail: { texture: PARTICLE.glow, depth: 3, reserve: 64 },
+  burst: { texture: PARTICLE.glow, depth: 8, reserve: 32 },
+} as const;
+
+export type EmitterName = keyof typeof EMITTERS;
+
+/** Hot fireball: white core cooling through yellow and orange to a dull red as it billows out. */
+export function getFireConfig(intensity: number): EmitterConfig {
+  return {
+    speed: { min: 8, max: 62 * intensity },
+    angle: { min: 0, max: 360 },
+    scale: { start: burstScale(0.44 * intensity), end: burstScale(0.8 * intensity) },
+    alpha: { start: 0.75, end: 0 },
+    rotate: { min: 0, max: 360 },
+    lifespan: { min: 360, max: 720 },
+    blendMode: Phaser.BlendModes.ADD,
+    color: [0xffffff, 0xfff0c0, 0xffb050, 0xe05020, 0x501408],
+    colorEase: 'Linear',
+  };
+}
+
+/** Dark smoke that lingers after the fire, drawn normally so it occludes the stars behind it. */
+export function getSmokeConfig(intensity: number): EmitterConfig {
+  return {
+    speed: { min: 8, max: 46 * intensity },
+    angle: { min: 0, max: 360 },
+    scale: { start: burstScale(0.3 * intensity), end: burstScale(0.95 * intensity) },
+    alpha: { start: 0.7, end: 0 },
+    rotate: { min: 0, max: 360 },
+    lifespan: { min: 800, max: 1400 },
+    blendMode: Phaser.BlendModes.NORMAL,
+    tint: [0x4a4452, 0x5a5262, 0x3a3644],
+  };
+}
+
+export function getSparkConfig(palette: readonly number[], intensity = 1): EmitterConfig {
+  return {
+    speed: { min: 140, max: 420 * Math.max(0.7, intensity) },
+    angle: { min: 0, max: 360 },
+    scaleX: { start: burstScale(0.8), end: 0.1 },
+    scaleY: { start: burstScale(0.9), end: 0.3 },
+    lifespan: { min: 160, max: 400 },
+    blendMode: Phaser.BlendModes.ADD,
+    rotate: ALIGN_TO_VELOCITY,
+    tint: [...palette],
+  };
+}
+
+/** Slow glowing motes that drift out of the blast and wink out. */
+export function getEmberConfig(palette: readonly number[]): EmitterConfig {
+  return {
+    speed: { min: 30, max: 150 },
+    angle: { min: 0, max: 360 },
+    scale: { start: burstScale(0.12), end: 0 },
+    alpha: { start: 1, end: 0.2 },
+    lifespan: { min: 450, max: 950 },
+    blendMode: Phaser.BlendModes.ADD,
+    tint: [...palette],
+  };
+}
+
+export function getDebrisConfig(tint: readonly number[] = [0xc9c0a7, 0x6a7078, 0x938268]): EmitterConfig {
+  return {
+    speed: { min: 70, max: 260 },
+    angle: { min: 0, max: 360 },
+    scale: { start: burstScale(1), end: 0.4 },
+    lifespan: { min: 380, max: 800 },
+    alpha: { start: 1, end: 0 },
+    blendMode: Phaser.BlendModes.NORMAL,
+    rotate: { start: 0, end: 540 },
+    tint: [...tint],
+  };
+}
+
+export function getMuzzleConfig(): EmitterConfig {
+  return {
+    speed: { min: 0, max: 20 },
+    scale: { start: burstScale(0.32), end: 0 },
+    alpha: { start: 0.9, end: 0 },
+    lifespan: { min: 60, max: 110 },
+    blendMode: Phaser.BlendModes.ADD,
+    tint: [0x9fe9ff, 0xdffbff],
+  };
+}
+
+export function getExhaustConfig(intensity: number): EmitterConfig {
+  return {
+    speed: { min: 40, max: 90 + intensity * 60 },
+    angle: { min: 84, max: 96 },
+    scale: { start: burstScale(0.16 + intensity * 0.05), end: 0 },
+    lifespan: { min: 90, max: 220 },
+    blendMode: Phaser.BlendModes.ADD,
+    alpha: { start: 0.8, end: 0 },
+    color: [0xffffff, 0x9fe9ff, 0x2f94ff, 0x0b2a66],
+  };
+}
+
+export function getBulletTrailConfig(): EmitterConfig {
+  return {
+    speed: { min: 4, max: 14 },
+    angle: { min: 80, max: 100 },
+    scale: { start: burstScale(0.14), end: 0 },
+    lifespan: { min: 140, max: 260 },
+    blendMode: Phaser.BlendModes.ADD,
+    tint: [0x5bd8ff, 0xbff6ff],
+    alpha: { start: 0.6, end: 0 },
+  };
+}
+
+export function getEnemyBulletTrailConfig(): EmitterConfig {
+  return {
+    speed: { min: 4, max: 14 },
+    angle: { min: 260, max: 280 },
+    scale: { start: burstScale(0.12), end: 0 },
+    lifespan: { min: 100, max: 190 },
+    blendMode: Phaser.BlendModes.ADD,
+    tint: [0xff4d8d, 0xff9bc4],
+    alpha: { start: 0.7, end: 0 },
+  };
+}
+
+export function getPowerUpBurstConfig(color = 0xffee88): EmitterConfig {
+  return {
+    speed: { min: 60, max: 180 },
+    angle: { min: 0, max: 360 },
+    scale: { start: burstScale(0.22), end: 0 },
+    lifespan: { min: 320, max: 640 },
+    blendMode: Phaser.BlendModes.ADD,
+    tint: [0xffffff, color],
+  };
 }
 
 export function createPooledEmitter(
   scene: Phaser.Scene,
-  textureKey: string,
-  config: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
-  depth: number,
-  reserveCount: number
+  name: EmitterName,
+  config: EmitterConfig
 ): Phaser.GameObjects.Particles.ParticleEmitter {
-  const emitter = scene.add.particles(0, 0, textureKey, {
-    ...config,
-    emitting: false,
-  });
-
+  const { texture, depth, reserve } = EMITTERS[name];
+  const emitter = scene.add.particles(0, 0, texture, { ...config, emitting: false });
   emitter.setDepth(depth);
-  emitter.reserve(reserveCount);
-
+  emitter.reserve(reserve);
   return emitter;
-}
-
-export function getExplosionConfig(
-  intensity: number,
-  quantity: number,
-  tint: number[] = [0xff4444, 0xff8800, 0xffcc00, 0xffff44]
-): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 50, max: burstScale(200 * intensity) },
-    angle: { min: 0, max: 360 },
-    scale: { start: burstScale((usesCinematicArt() ? 0.55 : 0.8) * intensity), end: 0 },
-    lifespan: usesCinematicArt() ? { min: 120, max: 280 } : { min: 300, max: 600 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(quantity),
-    tint,
-  };
-}
-
-export function getSparkConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 30, max: 100 },
-    angle: { min: 0, max: 360 },
-    scale: { start: burstScale(0.5), end: 0 },
-    lifespan: { min: 100, max: 300 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(8),
-    rotate: {
-      // Phaser runs rotate.onEmit before assigning the particle's velocity, so
-      // aligning on emit would read stale (or zero) velocity. onUpdate runs after
-      // velocity integration and keeps the streak aligned with its travel direction.
-      onUpdate: (particle?: Phaser.GameObjects.Particles.Particle) =>
-        particle ? Phaser.Math.RadToDeg(Math.atan2(particle.velocityY, particle.velocityX)) : 0,
-    },
-    tint: usesCinematicArt() ? [0xffb861, 0xffdfad, 0xffffff] : [0x5bd8ff, 0xbff6ff, 0xffffff],
-  };
-}
-
-export function getMuzzleConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 20, max: 80 },
-    angle: { min: 240, max: 300 },
-    scale: { start: burstScale(0.6), end: 0 },
-    lifespan: { min: 60, max: 120 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(5),
-    tint: [0x5bd8ff, 0xbff6ff, 0xffffff, 0x2f94ff],
-  };
-}
-
-export function getExhaustConfig(
-  intensity: number,
-  quantity: number
-): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 30, max: 60 + intensity * 40 },
-    angle: { min: 250, max: 290 },
-    scale: { start: burstScale(0.4), end: 0 },
-    lifespan: { min: 80, max: 200 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(quantity),
-    alpha: { start: 0.7, end: 0 },
-    tint: [0x2f94ff, 0x5bd8ff, 0x58f0d8, 0xbff6ff],
-  };
-}
-
-export function getBulletTrailConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 5, max: 15 },
-    angle: { min: 80, max: 100 },
-    scale: { start: burstScale(0.3), end: 0 },
-    lifespan: { min: 100, max: 200 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(1),
-    tint: [0x5bd8ff, 0xbff6ff],
-    alpha: { start: 0.5, end: 0 },
-  };
-}
-
-export function getEnemyBulletTrailConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 5, max: 15 },
-    angle: { min: 260, max: 280 },
-    scale: { start: burstScale(0.25), end: 0 },
-    lifespan: { min: 80, max: 150 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(1),
-    tint: [0xff4d8d, 0xff9bc4, 0xffe0ee],
-    alpha: { start: 0.7, end: 0 },
-  };
-}
-
-export function getHitSplashConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 40, max: 120 },
-    angle: { min: 0, max: 360 },
-    scale: { start: burstScale(0.5), end: 0 },
-    lifespan: { min: 150, max: 350 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(10),
-    tint: [0xffffff, 0xffcc44, 0xff8800],
-  };
-}
-
-export function getPowerUpBurstConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 60, max: 160 },
-    angle: { min: 0, max: 360 },
-    scale: { start: burstScale(0.5), end: 0 },
-    lifespan: { min: 300, max: 600 },
-    blendMode: Phaser.BlendModes.ADD,
-    quantity: burstQuantity(14),
-    tint: [0xffffff, 0xffee88],
-  };
-}
-
-export function getDebrisConfig(): Phaser.Types.GameObjects.Particles.ParticleEmitterConfig {
-  return {
-    speed: { min: 80, max: 250 },
-    angle: { min: 0, max: 360 },
-    scale: { start: burstScale(0.4), end: 0.1 },
-    lifespan: usesCinematicArt() ? { min: 280, max: 550 } : { min: 400, max: 800 },
-    alpha: { start: 1, end: 0 },
-    blendMode: Phaser.BlendModes.NORMAL,
-    quantity: burstQuantity(12),
-    rotate: { min: 0, max: 360 },
-    tint: usesCinematicArt() ? [0xc9c0a7, 0x565e63, 0x938268] : [0x886644, 0x665533, 0x998866],
-  };
 }

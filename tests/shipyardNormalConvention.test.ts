@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import probe from '../assets/source/v2/_probe_normals.json';
+import probe from '../assets/source/shipyard/_probe_normals.json';
 
 /**
  * Phaser decodes normal maps as `rgb * 2 - 1` against gl_FragCoord (y up), so a surface facing the

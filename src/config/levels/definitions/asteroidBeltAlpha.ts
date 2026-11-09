@@ -16,8 +16,6 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
   journeyNote: 'Pilots ride a luminous aurora current toward Lumen Gate, more overture than warzone.',
   bgColor: '#040d14',
   accentColor: 0x6af6d8,
-  nebulaColor: 0x1c4a5c,
-  nebulaAlpha: 0.16,
   colorGrade: { brightness: 0.1, contrast: 1.05, saturation: 1.1 },
   planetPalette: [0x2f8f7a, 0x9ff5e2],
   enemies: [

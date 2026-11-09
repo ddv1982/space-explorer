@@ -18,6 +18,7 @@ mock.module('../src/utils/renderingCompat', () => ({
 }));
 
 mock.module('../src/systems/effects/particleTextureFactory', () => ({
+  PARTICLE: {},
   generateEffectsParticleTextures: mock(),
 }));
 
@@ -27,15 +28,17 @@ mock.module('../src/systems/effects/ephemeralOverlayTweens', () => ({
 }));
 
 mock.module('../src/systems/effects/emitterSetup', () => ({
+  EMITTERS: {},
   createPooledEmitter: mock(),
   getBulletTrailConfig: mock(() => ({})),
   getDebrisConfig: mock(() => ({})),
+  getEmberConfig: mock(() => ({})),
   getEnemyBulletTrailConfig: mock(() => ({})),
   getExhaustConfig: mock(() => ({})),
-  getExplosionConfig: mock(() => ({})),
-  getHitSplashConfig: mock(() => ({})),
+  getFireConfig: mock(() => ({})),
   getMuzzleConfig: mock(() => ({})),
   getPowerUpBurstConfig: mock(() => ({})),
+  getSmokeConfig: mock(() => ({})),
   getSparkConfig: mock(() => ({})),
 }));
 
@@ -59,7 +62,7 @@ function createEffectsHarness() {
     },
   };
 
-  const effects = Object.create(EffectsManager.prototype) as InstanceType<typeof EffectsManager>;
+  const effects = new EffectsManager();
   (effects as unknown as Record<string, unknown>).scene = scene;
   (effects as unknown as Record<string, unknown>).colorMatrix = null;
   (effects as unknown as Record<string, unknown>).currentLevelConfig = {

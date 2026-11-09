@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { withGeneratedTexture } from '../../utils/generatedTexture';
-import { LIVING_WORLD_PROFILES, visualNoise, type LivingWorld } from './livingBackgroundProfile';
+import { visualNoise, type LivingWorld } from './livingBackgroundProfile';
 
 export function createLivingNoise(scene: Phaser.Scene, key: string): void {
   const texture = scene.textures.createCanvas(key, 65, 65);
@@ -18,21 +18,6 @@ export function createLivingNoise(scene: Phaser.Scene, key: string): void {
   }
   texture.context.putImageData(pixels, 0, 0);
   texture.refresh();
-}
-
-export function createLivingStars(scene: Phaser.Scene, key: string, world: LivingWorld): void {
-  const random = new Phaser.Math.RandomDataGenerator([world, 'living-stars-v1']);
-  withGeneratedTexture(scene, key, 512, 512, (graphics) => {
-    for (let index = 0; index < 68; index += 1) {
-      const x = random.between(4, 508);
-      const y = random.between(4, 508);
-      graphics.fillStyle(
-        index % 7 === 0 ? LIVING_WORLD_PROFILES[world].starAccent : 0xa0a9b5,
-        random.realInRange(0.1, 0.3)
-      );
-      graphics.fillCircle(x, y, index % 11 === 0 ? 1.15 : 0.65);
-    }
-  });
 }
 
 export function createLivingRing(scene: Phaser.Scene, key: string, world: LivingWorld, isClockwork: boolean): void {

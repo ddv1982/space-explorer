@@ -7,7 +7,6 @@ import type { EnemyPool } from './EnemyPool';
 import { GAME_SCENE_EVENTS } from './GameplayFlow';
 import { getViewportBounds } from '../utils/layout';
 import { resolveCollisionTarget } from '../utils/resolveCollisionTarget';
-import { ensurePicketTurretTexture } from '../utils/SpriteFactory';
 import {
   getPicketTierConfig,
   normalizePicketTier,
@@ -161,8 +160,6 @@ export class PicketTurretSystem {
   }
 
   private createMounts(): void {
-    ensurePicketTurretTexture(this.scene);
-
     const now = 0;
     const sides: (-1 | 1)[] = [-1, 1];
     for (const [index, side] of sides.entries()) {

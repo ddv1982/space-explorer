@@ -18,6 +18,9 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
 
     despawnEntity(this);
     this.setDepth(4);
+    this.setBlendMode(Phaser.BlendModes.ADD);
+    // The texture carries a glow halo; the hitbox stays the original 8x18 bolt.
+    (this.body as Phaser.Physics.Arcade.Body | null)?.setSize(8, 18);
   }
 
   fire(x: number, y: number, velocityX: number = 0, velocityY?: number): void {

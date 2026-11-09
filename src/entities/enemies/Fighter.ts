@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { FIGHTER_HP, FIGHTER_SPEED, FIGHTER_FIRE_RATE } from '../../utils/constants';
 import { EnemyBullet } from '../EnemyBullet';
-import { ensureFighterTexture } from '../../utils/SpriteFactory';
 
 export class Fighter extends EnemyBase {
   startX: number = 0;
@@ -14,8 +13,6 @@ export class Fighter extends EnemyBase {
   private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureFighterTexture(scene);
-
     super(scene, x, y, 'fighter-texture');
     this.maxHp = FIGHTER_HP;
     this.hp = FIGHTER_HP;

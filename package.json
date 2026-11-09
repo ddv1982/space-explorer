@@ -8,8 +8,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "art:export": "bun scripts/exportCinematicAssets.ts",
-    "art:evidence": "bun scripts/captureCinematicEvidence.ts",
     "art:shipyard": "bun scripts/shipyard/renderShips.ts",
     "backgrounds:compare": "bun scripts/compareProceduralBackgrounds.ts",
     "test": "bun scripts/run-tests.ts",

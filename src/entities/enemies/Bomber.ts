@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { BomberBomb } from '../BomberBomb';
 import { BOMBER_BOMB_COOLDOWN, BOMBER_HP, BOMBER_SCORE, BOMBER_SPEED } from '../../utils/constants';
-import { ensureBomberTexture } from '../../utils/SpriteFactory';
 
 export class Bomber extends EnemyBase {
   private lastBombTime: number = 0;
@@ -10,8 +9,6 @@ export class Bomber extends EnemyBase {
   private bombGroup: Phaser.Physics.Arcade.Group | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureBomberTexture(scene);
-
     super(scene, x, y, 'bomber-texture');
     this.maxHp = BOMBER_HP;
     this.hp = BOMBER_HP;

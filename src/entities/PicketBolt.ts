@@ -17,6 +17,9 @@ export class PicketBolt extends Phaser.Physics.Arcade.Sprite {
 
     despawnEntity(this);
     this.setDepth(4);
+    this.setBlendMode(Phaser.BlendModes.ADD);
+    // The texture carries a glow halo; the hitbox stays the original 6x12 bolt.
+    (this.body as Phaser.Physics.Arcade.Body | null)?.setSize(6, 12);
   }
 
   fire(x: number, y: number, velocityX: number, velocityY: number): void {

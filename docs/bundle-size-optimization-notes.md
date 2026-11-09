@@ -98,6 +98,6 @@
 
 ## Maintenance isolation (2026-11-08)
 
-All current campaign scenes use living procedural backgrounds. The old procedural comparison renderer is constructed only in development. `prepareLegacyBackgroundTextures` is synchronous and does not delay production scene transitions. Cinematic assets still load at scene preload boundaries, and scene registration retains stale asynchronous request protection.
+All current campaign scenes use living procedural backgrounds. The old procedural comparison renderer and its texture preparation (`prepareLegacyBackgroundTextures`) have since been deleted outright. Cinematic assets still load at scene preload boundaries, and scene registration retains stale asynchronous request protection.
 
-`bun run bundle:check` now also rejects browser diagnostic and legacy renderer markers in application JavaScript. This guards development exclusion without claiming a rendering speedup. The earlier load-path sections describe historical releases.
+`bun run bundle:check` now also rejects browser diagnostic markers in application JavaScript. This guards development exclusion without claiming a rendering speedup. The earlier load-path sections describe historical releases.

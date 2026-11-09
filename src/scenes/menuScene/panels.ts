@@ -11,6 +11,7 @@ import {
   NEON,
   NEON_FONT,
   NEON_TEXT,
+  prefersReducedMotion,
 } from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
 import { MIN_TOUCH_TARGET_PX } from '../shared/touchTarget';
@@ -34,15 +35,10 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
   const atmosphere = getVisualQualityProfile().menuAtmosphere;
   const grid = scene.add.graphics();
 
-  grid.fillStyle(0x01040a, 0.46);
+  // A light wash keeps panel text legible while the vista (stars, planet horizon) shows through.
+  grid.fillStyle(0x01040a, 0.22);
   grid.fillRect(0, 0, width, height);
-  grid.fillStyle(accentColor, scaleUiGlowAlpha(0.05));
-  grid.fillCircle(
-    plan.centerX,
-    plan.outerFrameY + plan.outerFrameHeight + 20,
-    Math.min(220, plan.outerFrameWidth * 0.28)
-  );
-  grid.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.07));
+  grid.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.045));
   const scanStep = atmosphere >= 3 ? 22 : atmosphere >= 2 ? 28 : 36;
   for (let y = 0; y < height; y += scanStep) {
     grid.lineBetween(0, y, width, y);
@@ -103,6 +99,15 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
     Math.max(180, plan.outerFrameWidth - 96)
   );
   const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
+  if (!prefersReducedMotion()) {
+    // A slow specular glint sweeps across the chrome lettering.
+    Phaser.Actions.AddEffectShine(titleText, {
+      duration: 2600,
+      repeatDelay: 4200,
+      radius: 0.18,
+      colorFactor: [1.6, 1.8, 2, 1],
+    });
+  }
 
   const wings = scene.add.graphics();
   const halfTitleWidth = titleText.width / 2;

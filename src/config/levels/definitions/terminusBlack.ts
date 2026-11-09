@@ -16,8 +16,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   journeyNote: 'The Eventide Engine powers down only for the worthy.',
   bgColor: '#04060f',
   accentColor: 0x8fd3ff,
-  nebulaColor: 0x1c1440,
-  nebulaAlpha: 0.14,
   colorGrade: { brightness: 0.05, contrast: 1.14, saturation: 1.08 },
   planetPalette: [0x2c2a8f, 0xc8e2ff],
   enemies: [
@@ -149,7 +147,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.02,
         driftScale: 1.08,
-        twinkleScale: 1.06,
         landmarkAlpha: 1.06,
         hazardResponseScale: 1.22,
       },
@@ -197,7 +194,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.06,
         driftScale: 1.1,
-        twinkleScale: 1.08,
         landmarkAlpha: 1.08,
         hazardResponseScale: 1.24,
       },
@@ -246,7 +242,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.1,
         driftScale: 1.12,
-        twinkleScale: 1.1,
         landmarkAlpha: 1.12,
         hazardResponseScale: 1.28,
       },
@@ -289,7 +284,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.14,
         driftScale: 1.14,
-        twinkleScale: 1.12,
         landmarkAlpha: 1.16,
         hazardResponseScale: 1.3,
       },
@@ -352,7 +346,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.18,
         driftScale: 1.16,
-        twinkleScale: 1.14,
         landmarkAlpha: 1.18,
         hazardResponseScale: 1.34,
       },
@@ -395,7 +388,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 0.88,
         driftScale: 0.86,
-        twinkleScale: 0.6,
         landmarkAlpha: 1.2,
         hazardResponseScale: 0.92,
       },

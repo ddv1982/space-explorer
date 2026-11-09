@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { DIVER_DIVE_SPEED, DIVER_HP, DIVER_SCORE, DIVER_SPEED } from '../../utils/constants';
-import { ensureDiverTexture } from '../../utils/SpriteFactory';
 
 type DiverPhase = 'enter' | 'dive';
 
@@ -12,8 +11,6 @@ export class Diver extends EnemyBase {
   private diveY: number = 180;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureDiverTexture(scene);
-
     super(scene, x, y, 'diver-texture');
     this.maxHp = DIVER_HP;
     this.hp = DIVER_HP;

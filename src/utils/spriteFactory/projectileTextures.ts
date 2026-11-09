@@ -1,115 +1,171 @@
-import Phaser from 'phaser';
-import { usesCinematicArt } from '../../config/cinematicAssets';
-import { withGeneratedEntityTexture } from '../generatedTexture';
-import { NEON_ENTITY, fillHotCore, fillNeonCircle, fillNeonPolygon, strokeNeonLine } from './neonStyle';
+import type Phaser from 'phaser';
+import { BEAM_TEXTURE_WIDTH } from '../../entities/hazardBeamGeometry';
+import { withCanvasTexture } from '../generatedTexture';
+
+/**
+ * Projectiles are light, so they are painted with soft gradients rather than lit 3D models. Textures
+ * are larger than the Arcade bodies to hold their glow; each entity sets its own body size.
+ */
+const DENSITY = 4;
+
+type Rgb = readonly [number, number, number];
+
+function rgba([r, g, b]: Rgb, alpha: number): string {
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/** Soft elliptical glow stretched along Y. */
+function glowEllipse(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radiusX: number,
+  radiusY: number,
+  color: Rgb,
+  alpha: number
+): void {
+  context.save();
+  context.translate(x, y);
+  context.scale(1, radiusY / radiusX);
+  const gradient = context.createRadialGradient(0, 0, 0, 0, 0, radiusX);
+  gradient.addColorStop(0, rgba(color, alpha));
+  gradient.addColorStop(0.45, rgba(color, alpha * 0.4));
+  gradient.addColorStop(1, rgba(color, 0));
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, radiusX, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function capsule(context: CanvasRenderingContext2D, x: number, top: number, bottom: number, radius: number): void {
+  context.beginPath();
+  context.arc(x, top + radius, radius, Math.PI, 0);
+  context.lineTo(x + radius, bottom - radius);
+  context.arc(x, bottom - radius, radius, 0, Math.PI);
+  context.closePath();
+}
+
+/** Hot plasma lance: a white core in a cyan sheath, brightest at the leading tip. */
+function paintBolt(context: CanvasRenderingContext2D, width: number, height: number, color: Rgb, core: Rgb): void {
+  const x = width / 2;
+  glowEllipse(context, x, height * 0.45, width / 2, height / 2, color, 0.55);
+  const sheath = context.createLinearGradient(0, 0, 0, height);
+  sheath.addColorStop(0, rgba(core, 1));
+  sheath.addColorStop(0.35, rgba(color, 0.95));
+  sheath.addColorStop(1, rgba(color, 0));
+  context.fillStyle = sheath;
+  capsule(context, x, height * 0.14, height * 0.92, width * 0.2);
+  context.fill();
+  context.fillStyle = rgba([255, 255, 255], 1);
+  capsule(context, x, height * 0.16, height * 0.6, width * 0.09);
+  context.fill();
+  glowEllipse(context, x, height * 0.2, width * 0.3, width * 0.3, [255, 255, 255], 0.9);
+}
 
 export function ensurePlayerBulletTexture(scene: Phaser.Scene): string {
-  return withGeneratedEntityTexture(scene, 'player-bullet', 8, 18, (g) => {
-    const palette = NEON_ENTITY.player;
-
-    // Layered glow capsule with a hot tip.
-    g.fillStyle(palette.glow, 0.22);
-    g.fillRect(1, 5, 6, 13);
-    g.fillStyle(palette.glow, 0.45);
-    g.fillRect(2, 2, 4, 15);
-
-    strokeNeonLine(g, 4, 2, 4, 17, palette.outline, 1.5);
-
-    g.fillStyle(palette.hot, 1);
-    g.fillRect(3, 1, 2, 5);
-    fillHotCore(g, 4, 2, 1, 0xffffff);
-  });
+  return withCanvasTexture(
+    scene,
+    'player-bullet',
+    14,
+    30,
+    (context, width, height) => paintBolt(context, width, height, [70, 200, 255], [225, 250, 255]),
+    DENSITY
+  );
 }
 
+/** Turret fire: a slimmer, warmer bolt so it never reads as the player's shot. */
+export function ensurePicketBoltTexture(scene: Phaser.Scene): string {
+  return withCanvasTexture(
+    scene,
+    'picket-bolt',
+    10,
+    22,
+    (context, width, height) => paintBolt(context, width, height, [255, 190, 80], [255, 246, 220]),
+    DENSITY
+  );
+}
+
+/**
+ * Hostile plasma orb. A dark rim keeps it readable over bright nebulae; the magenta body and white
+ * core glow through bloom.
+ */
 export function ensureEnemyBulletTexture(scene: Phaser.Scene): string {
-  return withGeneratedEntityTexture(scene, 'enemy-bullet', 8, 8, (g) => {
-    const palette = NEON_ENTITY.enemyFire;
-
-    if (usesCinematicArt()) {
-      g.fillStyle(0x070711, 0.95);
-      g.fillCircle(4, 4, 3.8);
-      g.lineStyle(0.7, palette.outline, 1);
-      g.strokeCircle(4, 4, 2.8);
-      g.fillStyle(palette.outline, 1);
-      g.fillCircle(4, 4, 1.8);
-      fillHotCore(g, 4, 4, 1, palette.hot);
-      return;
-    }
-
-    fillNeonCircle(g, 4, 4, 2.2, palette, {
-      haloScale: 1.9,
-      midScale: 1.45,
-      outlineWidth: 0,
-      solidCore: true,
-    });
-    fillHotCore(g, 4, 4, 0.9, palette.hot);
-  });
+  return withCanvasTexture(
+    scene,
+    'enemy-bullet',
+    18,
+    18,
+    (context, width) => {
+      const c = width / 2;
+      glowEllipse(context, c, c, c, c, [255, 60, 140], 0.6);
+      context.fillStyle = 'rgba(20,4,16,0.9)';
+      context.beginPath();
+      context.arc(c, c, 4.6, 0, Math.PI * 2);
+      context.fill();
+      const body = context.createRadialGradient(c - 0.8, c - 0.8, 0, c, c, 4);
+      body.addColorStop(0, 'rgba(255,255,255,1)');
+      body.addColorStop(0.35, 'rgba(255,170,215,1)');
+      body.addColorStop(0.75, 'rgba(255,60,140,1)');
+      body.addColorStop(1, 'rgba(190,20,90,1)');
+      context.fillStyle = body;
+      context.beginPath();
+      context.arc(c, c, 3.8, 0, Math.PI * 2);
+      context.fill();
+    },
+    DENSITY
+  );
 }
 
+/** Armed ordnance: dark shell, glowing charge band and a pulsing fuse at the nose. */
 export function ensureBomberBombTexture(scene: Phaser.Scene): string {
-  return withGeneratedEntityTexture(scene, 'bomber-bomb', 14, 18, (g) => {
-    const palette = NEON_ENTITY.bomber;
-
-    // Faceted ordnance shell.
-    fillNeonPolygon(
-      g,
-      [
-        { x: 7, y: 1 },
-        { x: 11, y: 4 },
-        { x: 13, y: 10 },
-        { x: 11, y: 15 },
-        { x: 7, y: 17 },
-        { x: 3, y: 15 },
-        { x: 1, y: 10 },
-        { x: 3, y: 4 },
-      ],
-      palette,
-      { haloScale: 1.12, outlineWidth: 1 }
-    );
-
-    // Armed charge band and fuse.
-    strokeNeonLine(g, 3, 9, 11, 9, palette.hot, 1.5);
-    fillNeonCircle(g, 7, 3, 1.6, palette, { haloScale: 1.6, midScale: 1.25, outlineWidth: 0 });
-    fillHotCore(g, 7, 3, 0.7, 0xffffff);
-  });
+  return withCanvasTexture(
+    scene,
+    'bomber-bomb',
+    14,
+    18,
+    (context, width, height) => {
+      const x = width / 2;
+      glowEllipse(context, x, height / 2, width / 2, height / 2, [255, 150, 60], 0.45);
+      const shell = context.createLinearGradient(x - 5, 0, x + 5, 0);
+      shell.addColorStop(0, '#3a3a44');
+      shell.addColorStop(0.35, '#9a9aa8');
+      shell.addColorStop(1, '#1c1c24');
+      context.fillStyle = shell;
+      context.beginPath();
+      context.ellipse(x, height / 2 + 0.5, 4.6, 7, 0, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = '#ffb14b';
+      context.fillRect(x - 4.6, height / 2, 9.2, 1.6);
+      glowEllipse(context, x, height / 2 + 0.8, 6, 2.5, [255, 200, 120], 0.8);
+      glowEllipse(context, x, 3.2, 3, 3, [255, 240, 200], 1);
+    },
+    DENSITY
+  );
 }
 
-export function ensureMineTexture(scene: Phaser.Scene): string {
-  return withGeneratedEntityTexture(scene, 'sower-mine', 16, 16, (g) => {
-    const palette = NEON_ENTITY.mine;
-
-    // Spiked proximity orb.
-    fillNeonCircle(g, 8, 8, 4, palette, { haloScale: 1.4, midScale: 1.2 });
-
-    strokeNeonLine(g, 8, 1, 8, 4, palette.outline, 1);
-    strokeNeonLine(g, 8, 12, 8, 15, palette.outline, 1);
-    strokeNeonLine(g, 1, 8, 4, 8, palette.outline, 1);
-    strokeNeonLine(g, 12, 8, 15, 8, palette.outline, 1);
-    strokeNeonLine(g, 3, 3, 5, 5, palette.glow, 1);
-    strokeNeonLine(g, 13, 3, 11, 5, palette.glow, 1);
-    strokeNeonLine(g, 3, 13, 5, 11, palette.glow, 1);
-    strokeNeonLine(g, 13, 13, 11, 11, palette.glow, 1);
-
-    fillHotCore(g, 8, 8, 1.4, palette.hot);
-  });
-}
-
+/**
+ * Laser hazard bar, tinted at runtime: a long smooth falloff around a white core. Width matches
+ * BEAM_TEXTURE_WIDTH so the bright core lines up with BEAM_HIT_FRACTION.
+ */
 export function ensureBeamTexture(scene: Phaser.Scene): string {
-  return withGeneratedEntityTexture(scene, 'hazard-beam', 32, 128, (g) => {
-    // Soft beam bar tinted at runtime: wide glow falloff with a hot core.
-    g.fillStyle(0xffffff, 0.08);
-    g.fillRect(0, 0, 32, 128);
-    g.fillStyle(0xffffff, 0.18);
-    g.fillRect(5, 0, 22, 128);
-    g.fillStyle(0xffffff, 0.36);
-    g.fillRect(10, 0, 12, 128);
-    g.fillStyle(0xffffff, 0.7);
-    g.fillRect(13, 0, 6, 128);
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(15, 0, 2, 128);
-    g.fillStyle(0xffffff, 0.22);
-    g.fillRect(8, 0, 1, 128);
-    g.fillStyle(0xffffff, 0.22);
-    g.fillRect(23, 0, 1, 128);
+  return withCanvasTexture(scene, 'hazard-beam', BEAM_TEXTURE_WIDTH, 128, (context, width, height) => {
+    const profile = context.createLinearGradient(0, 0, width, 0);
+    // The bright band (alpha >= 0.45) spans exactly the hurting core, 0.28-0.72 of the width.
+    for (const [offset, alpha] of [
+      [0, 0],
+      [0.14, 0.1],
+      [0.28, 0.45],
+      [0.42, 0.85],
+      [0.5, 1],
+      [0.58, 0.85],
+      [0.72, 0.45],
+      [0.86, 0.1],
+      [1, 0],
+    ] as const) {
+      profile.addColorStop(offset, `rgba(255,255,255,${alpha})`);
+    }
+    context.fillStyle = profile;
+    context.fillRect(0, 0, width, height);
   });
 }

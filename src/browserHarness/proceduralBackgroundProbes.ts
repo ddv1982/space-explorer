@@ -104,7 +104,6 @@ export function createProceduralBackgroundProbes(game: Phaser.Game) {
         scene: current?.scene.sys.settings.key ?? null,
         background: current?.parallax.getLivingBackgroundSnapshot() ?? null,
         textureKeys: game.textures.getTextureKeys().filter((key) => key.startsWith('living-')),
-        replacedLegacyKeys: game.textures.getTextureKeys().filter((key) => /^bg_level\d\d/.test(key)),
         buffers: renderer.glBufferWrappers.length,
         vaos: renderer.glVAOWrappers.length,
         backgroundPrograms: renderer.glProgramWrappers.filter((program) =>

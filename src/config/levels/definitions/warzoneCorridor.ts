@@ -16,8 +16,6 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
   journeyNote: 'Every gear of Gearhaven turns on the beat; so do its defenders.',
   bgColor: '#100c06',
   accentColor: 0xf7c86a,
-  nebulaColor: 0x4a3a14,
-  nebulaAlpha: 0.12,
   colorGrade: { brightness: 0.07, contrast: 1.1, saturation: 0.98 },
   planetPalette: [0x8f6f2a, 0xf5e2a8],
   enemies: [

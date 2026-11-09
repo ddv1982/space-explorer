@@ -16,8 +16,6 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   journeyNote: 'The reef shatters beautifully; every kill multiplies the danger.',
   bgColor: '#0c0714',
   accentColor: 0xff7ab8,
-  nebulaColor: 0x3d1440,
-  nebulaAlpha: 0.13,
   colorGrade: { brightness: 0.05, contrast: 1.12, saturation: 1.1 },
   planetPalette: [0x8f2a5c, 0x7af5d8],
   enemies: [

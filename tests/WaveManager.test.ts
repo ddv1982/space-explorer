@@ -53,8 +53,6 @@ function createLevelConfig(overrides: Partial<LevelConfig> = {}): LevelConfig {
     planetName: 'Test Planet',
     bgColor: '#000000',
     accentColor: 0xffffff,
-    nebulaColor: 0x000000,
-    nebulaAlpha: 0.4,
     colorGrade: null,
     planetPalette: [0xffffff, 0x111111],
     enemies: [{ type: 'scout', weight: 1 }],

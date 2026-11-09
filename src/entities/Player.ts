@@ -1,17 +1,16 @@
 import Phaser from 'phaser';
 import { FLIGHT_CONFIG } from '../config/flightConfig';
 import { PLAYER_CONFIG } from '../config/playerConfig';
-import { V2_SHIPS, bankToFrame } from '../config/v2Ships';
+import { PLAYER_SPRITE, bankToFrame } from '../config/shipyardSprites';
 import { keyboardDesiredVelocity, stepFlight } from '../systems/flight/flightModel';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
 import { GAME_SCENE_EVENTS } from '../systems/GameSceneEvents';
-import { ensurePlayerTexture } from '../utils/SpriteFactory';
 import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
 /** The bank frames carry most of the visible roll; a small rotation adds a sense of yaw. */
 const MOMENTUM_BANK_ROTATION = (4 * Math.PI) / 180;
-const PLAYER_BANK_FRAMES = V2_SHIPS[0].bankFrames;
+const PLAYER_BANK_FRAMES = PLAYER_SPRITE.frames;
 
 interface DesiredVelocity {
   vx: number;
@@ -41,8 +40,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private bankFrame = -1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensurePlayerTexture(scene);
-
     super(scene, x, y, 'player-ship');
     scene.add.existing(this);
     scene.physics.add.existing(this);

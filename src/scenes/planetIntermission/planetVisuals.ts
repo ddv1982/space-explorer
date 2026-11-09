@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 
 import type { LevelConfig } from '../../config/LevelsConfig';
-import { getPremiumBackgroundManifest } from '../../systems/parallax/premiumBackgroundManifest';
 import { getViewportLayout } from '../../utils/layout';
 import { UI_FONT_MONO } from '../../utils/uiFonts';
 import type { IntermissionLayoutMetrics } from './presentation';
@@ -33,20 +32,6 @@ export function createIntermissionBackdrop(
   layout: IntermissionLayoutMetrics
 ): void {
   const viewport = getViewportLayout(scene);
-  const manifest = getPremiumBackgroundManifest(levelConfig.name);
-
-  if (manifest) {
-    const backdropLayers = manifest.runtimeLayers.filter((layer) => scene.textures.exists(layer.key));
-    backdropLayers.forEach((layer, index) => {
-      scene.add
-        .image(viewport.centerX, viewport.centerY, layer.key)
-        .setDisplaySize(viewport.width, viewport.height)
-        .setAlpha((layout.mode === 'desktop' ? 0.43 : 0.34) * (index === 0 ? 1 : 0.72))
-        .setBlendMode(layer.blendMode ?? Phaser.BlendModes.NORMAL)
-        .setDepth(-12 + index);
-    });
-  }
-
   const backdrop = scene.add.graphics().setDepth(-9);
   backdrop.fillStyle(0x01040b, layout.mode === 'portrait' ? 0.52 : 0.4);
   backdrop.fillRect(viewport.left, viewport.top, viewport.width, viewport.height);

@@ -50,11 +50,7 @@ describe('visual quality profiles', () => {
     expect(getVisualQualityTier(null)).toBe('standard');
     expect(getVisualQualityProfile(null)).toEqual({
       tier: 'standard',
-      entityTextureResolution: 4,
-      particleTextureResolution: 1,
-      backgroundLayerCount: 2,
       uiGlowStrength: 0.8,
-      motifDensity: 1,
       particleBurstScale: 0.9,
       particleQuantityScale: 0.8,
       menuAtmosphere: 2,
@@ -68,11 +64,7 @@ describe('visual quality profiles', () => {
     const storage = new MemoryStorage();
     const expected = {
       low: {
-        entityTextureResolution: 4,
-        particleTextureResolution: 1,
-        backgroundLayerCount: 2,
         uiGlowStrength: 0.4,
-        motifDensity: 0.6,
         particleBurstScale: 0.75,
         particleQuantityScale: 0.6,
         menuAtmosphere: 1,
@@ -81,11 +73,7 @@ describe('visual quality profiles', () => {
         bloom: 'off',
       },
       standard: {
-        entityTextureResolution: 4,
-        particleTextureResolution: 1,
-        backgroundLayerCount: 2,
         uiGlowStrength: 0.8,
-        motifDensity: 1,
         particleBurstScale: 0.9,
         particleQuantityScale: 0.8,
         menuAtmosphere: 2,
@@ -94,11 +82,7 @@ describe('visual quality profiles', () => {
         bloom: 'soft',
       },
       high: {
-        entityTextureResolution: 4,
-        particleTextureResolution: 2,
-        backgroundLayerCount: 3,
         uiGlowStrength: 1,
-        motifDensity: 1.25,
         particleBurstScale: 1.15,
         particleQuantityScale: 1,
         menuAtmosphere: 3,
@@ -107,11 +91,7 @@ describe('visual quality profiles', () => {
         bloom: 'full',
       },
       auto: {
-        entityTextureResolution: 4,
-        particleTextureResolution: 2,
-        backgroundLayerCount: 3,
         uiGlowStrength: 1,
-        motifDensity: 1.25,
         particleBurstScale: 1.15,
         particleQuantityScale: 1,
         menuAtmosphere: 3,
@@ -154,7 +134,6 @@ describe('visual quality profiles', () => {
     expect(getVisualQualityProfile(storage)).toMatchObject({
       tier: 'standard',
       uiGlowStrength: 0.8,
-      motifDensity: 1,
       particleBurstScale: 0.9,
       particleQuantityScale: 0.8,
       menuAtmosphere: 2,

@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { sheetLayout, type V2ShipSpec } from '../../src/config/v2Ships';
-import { buildFighter } from './models/fighter';
-import { buildPlayerShip } from './models/playerShip';
+import { sheetLayout, type ShipyardSpriteSpec } from '../../src/config/shipyardSprites';
+import { MODEL_BUILDERS } from './models';
 
 /**
  * Runs inside headless Chromium (bundled by renderShips.ts). Renders each bank frame twice:
@@ -14,9 +13,8 @@ const SUPERSAMPLE = 2;
 /** Transparent border kept around every frame, in logical pixels. */
 export const FRAME_MARGIN = 2;
 
-const BUILDERS: Record<string, () => THREE.Object3D> = {
-  player: buildPlayerShip,
-  fighter: buildFighter,
+const BUILDERS: Record<string, (frame: number) => THREE.Object3D> = {
+  ...MODEL_BUILDERS,
   probe: () => {
     const dome = new THREE.Mesh(
       new THREE.SphereGeometry(14, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2),
@@ -31,7 +29,7 @@ const BUILDERS: Record<string, () => THREE.Object3D> = {
 };
 
 interface RenderRequest {
-  spec: V2ShipSpec;
+  spec: ShipyardSpriteSpec;
   density: number;
 }
 
@@ -49,13 +47,17 @@ function createRenderer(width: number, height: number): THREE.WebGLRenderer {
   return renderer;
 }
 
-function createLitScene(renderer: THREE.WebGLRenderer): THREE.Scene {
+/**
+ * Ships fly upright, so their albedo bakes a strong upper-left key. Variant sheets (asteroids) spin
+ * in game, so they get a softer key and more ambient: the normal map supplies directional shading.
+ */
+function createLitScene(renderer: THREE.WebGLRenderer, spinning: boolean): THREE.Scene {
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.55;
-  scene.add(new THREE.HemisphereLight('#b8c8ff', '#1c232c', 0.7));
-  const key = new THREE.DirectionalLight('#fff4e6', 2.4);
+  scene.environmentIntensity = spinning ? 0.8 : 0.55;
+  scene.add(new THREE.HemisphereLight('#b8c8ff', '#1c232c', spinning ? 1.1 : 0.7));
+  const key = new THREE.DirectionalLight('#fff4e6', spinning ? 1.2 : 2.4);
   key.position.set(-50, 60, 65);
   scene.add(key);
   const fill = new THREE.DirectionalLight('#6f86ff', 0.45);
@@ -85,7 +87,7 @@ function borderIsClear(context: CanvasRenderingContext2D, x: number, w: number, 
  * Uniformly scales a model so its level pose fits the logical frame minus the transparent margin,
  * and returns a root whose rotation is free for banking.
  */
-function fitToFrame(model: THREE.Object3D, spec: V2ShipSpec): THREE.Group {
+function fitToFrame(model: THREE.Object3D, spec: ShipyardSpriteSpec): THREE.Group {
   const bounds = new THREE.Box3().setFromObject(model);
   const halfX = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x));
   const halfY = Math.max(Math.abs(bounds.min.y), Math.abs(bounds.max.y));
@@ -103,7 +105,7 @@ function fitToFrame(model: THREE.Object3D, spec: V2ShipSpec): THREE.Group {
 function renderShipSheet({ spec, density }: RenderRequest): RenderResult {
   const layout = sheetLayout(spec, density);
   const renderer = createRenderer(layout.frameWidth * SUPERSAMPLE, layout.frameHeight * SUPERSAMPLE);
-  const scene = createLitScene(renderer);
+  const scene = createLitScene(renderer, spec.pose === 'variant');
   const camera = new THREE.OrthographicCamera(
     -spec.width / 2,
     spec.width / 2,
@@ -116,10 +118,10 @@ function renderShipSheet({ spec, density }: RenderRequest): RenderResult {
   camera.up.set(0, 1, 0);
   camera.lookAt(0, 0, 0);
 
-  const built = BUILDERS[spec.file]?.();
-  if (!built) throw new Error(`No shipyard model for "${spec.file}"`);
-  const model = fitToFrame(built, spec);
-  scene.add(model);
+  const build = BUILDERS[spec.file];
+  if (!build) throw new Error(`No shipyard model for "${spec.file}"`);
+  // Bank sheets roll one model; variant sheets build a fresh shape per frame.
+  const shared = spec.pose === 'bank' ? fitToFrame(build(0), spec) : null;
   const normalMaterial = new THREE.MeshNormalMaterial();
 
   const sheets = { albedo: document.createElement('canvas'), normal: document.createElement('canvas') };
@@ -132,6 +134,8 @@ function renderShipSheet({ spec, density }: RenderRequest): RenderResult {
   let borderClear = true;
 
   layout.frameBankDeg.forEach((bankDeg, frame) => {
+    const model = shared ?? fitToFrame(build(frame), spec);
+    scene.add(model);
     // Banking right dips the right wing away from the camera: roll about the forward (Y) axis.
     model.rotation.set(0, THREE.MathUtils.degToRad(bankDeg), 0);
     const x = frame * layout.frameWidth;
@@ -150,6 +154,7 @@ function renderShipSheet({ spec, density }: RenderRequest): RenderResult {
     drawDownsampled(renderer.domElement, normalContext, x, layout.frameWidth, layout.frameHeight);
 
     borderClear &&= borderIsClear(albedoContext, x, layout.frameWidth, layout.frameHeight, FRAME_MARGIN * density);
+    scene.remove(model);
   });
 
   renderer.dispose();

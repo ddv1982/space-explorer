@@ -94,13 +94,11 @@ describe('runGameSceneCreateBootstrap', () => {
         getPlayerSpawnPoint: () => { x: number; y: number };
         registerScaleHandlers: () => void;
         levelConfig: unknown;
-        levelNumber: number;
         initialSection: unknown;
         initialSectionProgress: number;
       }) => {
         callLog.push('createWorldPresentation');
         expect(params.levelConfig).toBe(levelConfig);
-        expect(params.levelNumber).toBe(state.level);
         expect(params.initialSection).toBe(initialSection);
         expect(params.initialSectionProgress).toBe(0.25);
         params.syncViewportBounds();

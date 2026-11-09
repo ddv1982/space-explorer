@@ -104,7 +104,6 @@ export function runGameSceneCreateBootstrap(
   const world = dependencies.createWorldPresentation({
     scene: host.scene,
     levelConfig: levelRuntime.levelConfig,
-    levelNumber: state.level,
     initialSection: audio.initialSection,
     initialSectionProgress: audio.initialSectionProgress,
     syncViewportBounds: host.syncViewportBounds,

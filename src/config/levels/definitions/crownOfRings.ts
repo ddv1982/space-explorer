@@ -16,8 +16,6 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   journeyNote: 'In the shadow of the eclipse, the convoy runs the narrows with the Ark astern.',
   bgColor: '#060608',
   accentColor: 0xffe08f,
-  nebulaColor: 0x1c1c24,
-  nebulaAlpha: 0.12,
   colorGrade: { brightness: 0.05, contrast: 1.16, saturation: 0.92 },
   planetPalette: [0x3c3c48, 0xfff2c8],
   enemies: [

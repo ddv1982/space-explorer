@@ -16,8 +16,6 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   journeyNote: 'The hive never stops; survival is the only objective.',
   bgColor: '#0a1006',
   accentColor: 0xb8f75a,
-  nebulaColor: 0x2c3c12,
-  nebulaAlpha: 0.13,
   colorGrade: { brightness: 0.06, contrast: 1.12, saturation: 1.05 },
   planetPalette: [0x5c8f1f, 0xe2f5a8],
   enemies: [

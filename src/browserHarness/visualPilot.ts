@@ -3,15 +3,7 @@ import Phaser from 'phaser';
 import { getLevelConfig, getSectionProgress } from '@/config/LevelsConfig';
 import { getVisualQualityProfile } from '@/config/visualQuality';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
-import {
-  ensureAsteroidTexture,
-  ensureDiverTexture,
-  ensureEnemyBulletTexture,
-  ensureFighterTexture,
-  ensurePlayerBulletTexture,
-  ensurePlayerTexture,
-  ensureScoutTexture,
-} from '@/utils/SpriteFactory';
+import { ensureEnemyBulletTexture, ensurePlayerBulletTexture } from '@/utils/SpriteFactory';
 
 import type {
   BrowserHarnessRenderCost,
@@ -68,7 +60,6 @@ export class BrowserHarnessVisualPilot {
       sectionId: section.id,
       motionPhase,
       qualityTier: quality.tier,
-      entityTextureResolution: quality.entityTextureResolution,
       entities: entities.map((entity) => this.describeEntity(entity)),
     };
   }
@@ -76,11 +67,11 @@ export class BrowserHarnessVisualPilot {
   private stageEntityMotionEvidence(scene: Phaser.Scene, motionPhase: number): Phaser.GameObjects.Image[] {
     if (!this.stagedEntities || this.stagedEntities.scene !== scene) {
       const textureKeys = [
-        ensurePlayerTexture(scene),
-        ensureScoutTexture(scene),
-        ensureFighterTexture(scene),
-        ensureDiverTexture(scene),
-        ensureAsteroidTexture(scene),
+        'player-ship',
+        'scout-texture',
+        'fighter-texture',
+        'diver-texture',
+        'asteroid-texture',
         ensurePlayerBulletTexture(scene),
         ensureEnemyBulletTexture(scene),
       ];

@@ -43,6 +43,7 @@ import {
   type MenuSaveSlotPanel,
 } from './menuScene/panels';
 import { createMenuHero, type MenuHero } from './menuScene/hero';
+import { createMenuVista, type MenuVista } from './menuScene/vista';
 import { createMenuSettingsSheet, type MenuSettingsSheet } from './menuScene/settingsSheet';
 import { createActionButtonControl, type ActionButtonControl } from './shared/actionButtonControl';
 
@@ -53,6 +54,7 @@ export class MenuScene extends Phaser.Scene {
   private settingsSheet: MenuSettingsSheet | null = null;
   private settingsButton: ActionButtonControl | null = null;
   private hero: MenuHero | null = null;
+  private vista: MenuVista | null = null;
   private gameTransitionQueued = false;
   private devLevelJumpConsumed = false;
   private deleteArm?: ArmingAction<SaveSlotId>;
@@ -129,6 +131,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private createMenuPanels(layoutPlan: ReturnType<typeof createMenuLayoutPlan>, accentColor: number): void {
+    this.vista = createMenuVista(this);
     createMenuBackdrop(this, layoutPlan, accentColor);
     createMenuTitle(this, layoutPlan);
     this.hero = createMenuHero(this, layoutPlan);
@@ -456,6 +459,8 @@ export class MenuScene extends Phaser.Scene {
     this.settingsButton = null;
     this.hero?.destroy();
     this.hero = null;
+    this.vista?.destroy();
+    this.vista = null;
     this.settingsPanel?.destroy();
     this.settingsPanel = null;
   }

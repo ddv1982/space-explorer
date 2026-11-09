@@ -18,6 +18,8 @@ export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
 
     despawnEntity(this);
     this.setDepth(3);
+    // The texture carries a glow halo; the hitbox stays the original 8x8 orb.
+    (this.body as Phaser.Physics.Arcade.Body | null)?.setSize(8, 8);
   }
 
   fire(x: number, y: number): void {

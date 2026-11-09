@@ -104,10 +104,6 @@ export const LIVING_WORLD_PROFILES: Record<LivingWorld, WorldProfile> = {
 };
 
 export function selectLivingWorld(levelName?: string): LivingWorld | null {
-  if (import.meta.env.DEV && typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('background') === 'legacy' || params.get('art') === 'neon') return null;
-  }
   return LIVING_CAMPAIGN.find((entry) => entry.name === levelName)?.world ?? null;
 }
 

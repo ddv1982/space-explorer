@@ -19,7 +19,6 @@ describe('RuntimePerformanceBudget', () => {
       pressureLevel: 3,
       particleScale: 0.42,
       trailIntervalScale: 2.25,
-      backgroundLayerLimit: 2,
       glowEnabled: false,
     });
   });
