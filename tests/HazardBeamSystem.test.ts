@@ -223,6 +223,19 @@ describe('HazardBeamSystem', () => {
     expect(result.safe).toBe(false);
   });
 
+  test('a follow-up lattice keeps its gap within 200 px of the last one on wide screens', () => {
+    const harness = createHarness(2560, 1440, 'max');
+    harness.system.spawnLaserLattice(0.55);
+    const first = latticeGap(harness.launches, 1440)!;
+    harness.launches.length = 0;
+    randomPick = 'min';
+    harness.system.spawnLaserLattice(0.55);
+    const second = latticeGap(harness.launches, 1440)!;
+    const centre = (gap: { left: number; right: number }) => (gap.left + gap.right) / 2;
+    expect(centre(first)).toBeCloseTo(1920, 0);
+    expect(centre(first) - centre(second)).toBeCloseTo(200, 0);
+  });
+
   test('higher intensity narrows the lattice safe gap', () => {
     const gentle = createHarness();
     gentle.system.spawnLaserLattice(0);

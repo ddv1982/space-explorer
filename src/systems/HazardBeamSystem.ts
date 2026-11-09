@@ -14,6 +14,8 @@ const SOLAR_FLARE_MAX_GAP = 170;
  */
 const LATTICE_TELEGRAPH_BASE_MS = 450;
 const LATTICE_TELEGRAPH_REACH_MS = 80;
+/** How far a follow-up lattice's gap may move: an inertial ship covers 200 px in about 1.1 s. */
+const LATTICE_FOLLOW_UP_REACH = 200;
 /** Dark space between neighbouring curtain beams' hit cores; below the ship's 24 px width. */
 const LATTICE_CORE_SPACING = 16;
 const LASER_LATTICE_ACTIVE_MS = 2200;
@@ -21,8 +23,11 @@ const LASER_LATTICE_ACTIVE_MS = 2200;
 export class HazardBeamSystem {
   private scene!: Phaser.Scene;
   private group!: Phaser.Physics.Arcade.Group;
+  /** Gap centre of the last lattice, so a quick follow-up curtain keeps its gap within reach. */
+  private lastLatticeGapCenter: number | null = null;
 
   create(scene: Phaser.Scene): void {
+    this.lastLatticeGapCenter = null;
     this.scene = scene;
     this.group = scene.physics.add.group({
       // Uncapped: a wide-screen lattice curtain alone can need 60+ beams, and two can overlap.
@@ -89,10 +94,18 @@ export class HazardBeamSystem {
     const viewport = getViewportBounds(this.scene);
     const thickness = 22 + intensity * 10;
     const gapWidth = Phaser.Math.Clamp(130 - intensity * 40, 80, 130);
-    const gapCenter = Phaser.Math.Between(
-      Math.round(viewport.left + viewport.width * 0.25),
-      Math.round(viewport.right - viewport.width * 0.25)
-    );
+    // Back-to-back lattices (Terminus fires one every 3.4 s) leave ~1.2 s between the previous
+    // curtain expiring and the next one firing, while the ship is still held in the previous gap.
+    // Keeping the new gap within LATTICE_FOLLOW_UP_REACH of the last one keeps that reachable.
+    const fullMin = viewport.left + viewport.width * 0.25;
+    const fullMax = viewport.right - viewport.width * 0.25;
+    // After a resize the last gap can sit outside the new range; anchor on its nearest valid point.
+    const anchor =
+      this.lastLatticeGapCenter === null ? null : Phaser.Math.Clamp(this.lastLatticeGapCenter, fullMin, fullMax);
+    const minCenter = anchor === null ? fullMin : Math.max(fullMin, anchor - LATTICE_FOLLOW_UP_REACH);
+    const maxCenter = anchor === null ? fullMax : Math.min(fullMax, anchor + LATTICE_FOLLOW_UP_REACH);
+    const gapCenter = Phaser.Math.Between(Math.round(minCenter), Math.round(maxCenter));
+    this.lastLatticeGapCenter = gapCenter;
     const farthest = Math.max(gapCenter - viewport.left, viewport.right - gapCenter);
     const telegraphMs = Math.round(LATTICE_TELEGRAPH_BASE_MS + LATTICE_TELEGRAPH_REACH_MS * Math.sqrt(farthest));
     const beam = {
