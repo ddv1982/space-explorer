@@ -28,8 +28,9 @@ Open `http://localhost:5173` in your browser.
 |-------|--------|
 | Arrow keys / WASD | Move ship |
 | Space / Click | Fire weapons |
+| Esc | Pause (closes the settings sheet on the menu) |
 
-The ship flies with momentum: it winds up when you start moving and glides briefly to rest.
+The ship flies with inertia: it builds speed over about a second and slides after you let go.
 
 On touch devices, drag anywhere to fly: the ship follows your finger's movement and the main gun
 fires automatically. Pressing a key on a hardware keyboard hands steering and firing to the
@@ -227,7 +228,7 @@ For development comparisons, append `&background=legacy` to use the previous bac
 ## Release notes
 
 - [Changelog](CHANGELOG.md)
-- [Latest release notes](docs/releases/1.21.0.md)
+- [Latest release notes](docs/releases/1.22.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements
