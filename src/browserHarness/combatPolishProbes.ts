@@ -275,14 +275,14 @@ function stageBeamEscapeRoute(game: Phaser.Game) {
   // Start in the curtain gap's column but above the flare gap, in the flare's path. Each key is
   // released well short of the gap: the inertial ship's slide (v²/800 px) carries it the rest of the
   // way, landing near the centre of both gaps.
-  const startX = gapCenterX - 30;
+  const startX = gapCenterX - 40;
   const startY = gaps.flare.top - body.halfHeight - 8;
   combat.player.spawn(startX, startY, { hp: combat.player.maxHp });
   combat.player.shields = 0;
   return {
     start: { x: combat.player.x, y: combat.player.y },
     // Early releases leave margin for key-up latency on slow, software-rendered test browsers.
-    goal: { x: startX + 2, y: startY + 24 },
+    goal: { x: startX + 2, y: startY + 12 },
     hp: combat.player.hp,
   };
 }

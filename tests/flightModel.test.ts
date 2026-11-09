@@ -23,11 +23,10 @@ function run(
   return { state: current, distanceX };
 }
 
-describe('flightModel (v1.19 inertial handling)', () => {
-  test('builds speed gradually: about a second from rest to full speed', () => {
-    expect(run(REST, MAX, 0, 250, 1000 / 60).state.vx).toBeCloseTo(200, 0);
-    expect(run(REST, MAX, 0, 500, 1000 / 60).state.vx).toBeCloseTo(400, 0);
-    expect(run(REST, MAX, 0, 1000, 1000 / 60).state.vx).toBeCloseTo(MAX, 0);
+describe('flightModel (inertial handling)', () => {
+  test('builds speed quickly: half a second from rest to full speed', () => {
+    expect(run(REST, MAX, 0, 250, 1000 / 60).state.vx).toBeCloseTo(400, 0);
+    expect(run(REST, MAX, 0, 500, 1000 / 60).state.vx).toBeCloseTo(MAX, 0);
   });
 
   test('slides after release: 400 px/s² drag, about 2 s and 800 px from full speed', () => {
@@ -42,7 +41,7 @@ describe('flightModel (v1.19 inertial handling)', () => {
 
   test('a reversal uses thrust, not drag', () => {
     const cruising: FlightState = { vx: 480, vy: 0, bank: 1 };
-    expect(run(cruising, -MAX, 0, 600, 1000 / 60).state.vx).toBeCloseTo(0, 0);
+    expect(run(cruising, -MAX, 0, 300, 1000 / 60).state.vx).toBeCloseTo(0, 0);
   });
 
   test('is frame-rate independent', () => {

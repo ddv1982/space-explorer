@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.1] - 2026-11-09
+
+### Changed
+
+- The ship answers the movement controls sooner: thrust doubled to 1600 px/s², so it reaches full speed in about half a second and reverses in under a second. Top speed and the long slide after you let go are unchanged.
+
 ## [1.22.0] - 2026-11-09
 
 ### Changed
