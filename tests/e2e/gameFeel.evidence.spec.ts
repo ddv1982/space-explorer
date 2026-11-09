@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { GameFeelExport } from '../../src/browserHarness/gameFeelRecording';
-import { expect, openMenu, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
+import { expect, openMenu, startNewRun, test, waitForScene, type Page } from './fixtures';
 
 const buildSha =
   execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() +
@@ -58,25 +58,21 @@ test('records delivered controls, applied movement, fire attempts and a separate
   await waitForFrames(page, (result) => result.frames.length > 1);
   const session = isMobile ? await page.context().newCDPSession(page) : null;
   if (session) {
-    const joystick = (await snapshot(page)).arcs.find((arc) => arc.radius === 62);
-    if (!joystick) throw new Error('Missing touch joystick');
     const viewport = page.viewportSize();
     if (!viewport) throw new Error('Missing viewport');
-    const fire = { x: viewport.width * 0.77, y: viewport.height * 0.5, id: 2 };
-    await session.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [{ x: joystick.x, y: joystick.y, id: 1 }, fire],
-    });
+    // Momentum flight on touch: drag right from anywhere; the main gun autofires.
+    const start = { x: viewport.width * 0.3, y: viewport.height * 0.8, id: 1 };
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
     await session.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ x: joystick.x + 48, y: joystick.y, id: 1 }, fire],
+      touchPoints: [{ x: start.x + 120, y: start.y, id: 1 }],
     });
   } else {
     await page.keyboard.down('ArrowRight');
     await page.keyboard.down('Space');
   }
   await waitForFrames(page, (result) =>
-    result.frames.some((frame) => frame.accelerationX > 0 && frame.firingIntent && frame.lastFireGameplayMs > 0)
+    result.frames.some((frame) => frame.velocityX > 0 && frame.firingIntent && frame.lastFireGameplayMs > 0)
   );
   await waitForFrames(page, (result) => result.frames.some((frame) => frame.velocityX > 0));
   if (session) await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -86,7 +82,8 @@ test('records delivered controls, applied movement, fire attempts and a separate
   }
   await waitForFrames(
     page,
-    (result) => result.frames.at(-1)?.accelerationX === 0 && result.frames.at(-1)?.firingIntent === false
+    // Touch momentum flight keeps autofiring after the finger lifts; keyboard fire stops on release.
+    (result) => result.frames.at(-1)?.firingIntent === Boolean(session)
   );
   await page.keyboard.down('Escape');
   await waitForFrames(page, (result) => result.frames.at(-1)?.manualPause === true);

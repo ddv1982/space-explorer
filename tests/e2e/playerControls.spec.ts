@@ -1,5 +1,5 @@
 import { evidenceRevision, saveBrowserEvidence } from './evidence';
-import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
+import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test } from './fixtures';
 
 test('brief Escape presses pause once even when released between gameplay updates', async ({
   page,
@@ -15,35 +15,45 @@ test('brief Escape presses pause once even when released between gameplay update
   assertNoBrowserErrors();
 });
 
-test('shipped controls preserve stopping and normalized movement at 60 and 120 Hz', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
-  await page.route('**/controls-probe', (route) => route.fulfill({ contentType: 'text/html', body: '<html></html>' }));
+async function measureControls(page: import('@playwright/test').Page) {
+  await page.route('**/controls-probe*', (route) => route.fulfill({ contentType: 'text/html', body: '<html></html>' }));
   await page.goto('/controls-probe');
-  const result = await page.evaluate(async () => {
+  return page.evaluate(async () => {
     const modulePath = '/tests/e2e/playerControlsPhysics.ts';
     const probe: typeof import('./playerControlsPhysics') = await import(modulePath);
     return probe.measurePlayerControls();
   });
+}
+
+test('momentum flight glides to rest and stays normalized at 60 and 120 Hz', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  const result = await measureControls(page);
   expect(result).toHaveLength(3);
   for (const item of result) {
-    expect(item.releaseDistance).toBeLessThanOrEqual(40);
-    expect(item.reversalMs).toBeLessThanOrEqual(350);
     expect(item.cardinalSpeed).toBeCloseTo(480);
     expect(item.diagonalSpeed / item.cardinalSpeed).toBeCloseTo(1, 2);
     expect([item.bodyWidth, item.bodyHeight]).toEqual([24, 32]);
     expect([item.fireX, item.fireY, item.muzzleX, item.muzzleY]).toEqual([0, -1, 0, -20]);
-    expect(item.rotation).toBeGreaterThan(0.2);
+    expect(item.rotation).toBeGreaterThan(0);
+    // A short glide: not a dead stop (v1 stopped within ~40px), not floaty.
+    expect(item.releaseDistance).toBeGreaterThan(35);
+    expect(item.releaseDistance).toBeLessThan(80);
+    expect(item.reversalMs).toBeLessThanOrEqual(350);
   }
   assertNoBrowserErrors();
 });
 
-test('keyboard and touch steer diagonally, stop after release, and fire straight while banking', async ({
+test('keyboard and touch steer diagonally, glide to rest after release, and fire straight while banking', async ({
   page,
   isMobile,
   assertNoBrowserErrors,
 }) => {
+  // Reaching cruise speed and gliding to rest need ~1s of gameplay (~60 frames). CI desktop runners
+  // have recorded ~700 ms per frame even on Low, so the waits and test budget are sized for that.
+  test.setTimeout(180_000);
+  await pinQualityTier(page, 'low');
   await openMenu(page);
   await startNewRun(page);
   await page.evaluate((revision) => {
@@ -59,18 +69,17 @@ test('keyboard and touch steer diagonally, stop after release, and fire straight
   let touchActive = false;
   try {
     if (touch) {
-      const joystick = (await snapshot(page)).arcs.find((arc) => arc.radius === 62);
+      // Momentum flight on touch: drag anywhere, the ship follows the finger's movement and autofires.
       const viewport = page.viewportSize();
-      if (!joystick || !viewport) throw new Error('Missing touch controls');
-      const fire = { x: viewport.width * 0.77, y: viewport.height * 0.5, id: 2 };
-      await touch.send('Input.dispatchTouchEvent', {
-        type: 'touchStart',
-        touchPoints: [{ x: joystick.x, y: joystick.y, id: 1 }, fire],
-      });
+      if (!viewport) throw new Error('Missing viewport');
+      // Keep the finger inside the viewport: Chrome drops touch moves outside it.
+      const start = { x: viewport.width * 0.2, y: viewport.height * 0.85, id: 1 };
+      const reach = Math.min(250, viewport.width * 0.6, viewport.height * 0.6);
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
       touchActive = true;
       await touch.send('Input.dispatchTouchEvent', {
         type: 'touchMove',
-        touchPoints: [{ x: joystick.x + 40, y: joystick.y - 40, id: 1 }, fire],
+        touchPoints: [{ x: start.x + reach, y: start.y - reach, id: 1 }],
       });
     } else {
       await page.keyboard.down('ArrowRight');
@@ -79,19 +88,24 @@ test('keyboard and touch steer diagonally, stop after release, and fire straight
     }
     const read = () => page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.gameFeel.read());
     await expect
-      .poll(async () =>
-        (await read())?.frames.some(
-          (frame) =>
-            frame.accelerationX > 0 &&
-            frame.accelerationY < 0 &&
-            Math.hypot(frame.velocityX, frame.velocityY) >= 475 &&
-            frame.lastFireGameplayMs > 0
-        )
+      .poll(
+        async () =>
+          (await read())?.frames.some(
+            (frame) =>
+              frame.velocityX > 0 &&
+              frame.velocityY < 0 &&
+              // A drag eases into its target, so touch need not reach full cruise speed.
+              Math.hypot(frame.velocityX, frame.velocityY) >= (touch ? 380 : 475) &&
+              frame.lastFireGameplayMs > 0
+          ),
+        // Momentum needs ~0.3s of gameplay time to reach cruise speed.
+        { timeout: 60_000 }
       )
       .toBe(true);
     const moving = await snapshot(page);
     const ship = moving.objects.find((object) => object.active && object.textureKey === 'player-ship');
-    expect(ship?.rotation).toBeGreaterThan(0);
+    // A drag can already have settled at its target, so only held keys guarantee an active bank here.
+    if (!touch) expect(ship?.rotation).toBeGreaterThan(0);
     const bullets = moving.objects.filter((object) => object.active && object.textureKey === 'player-bullet');
     expect(bullets.length).toBeGreaterThan(0);
     expect(bullets.every((bullet) => Math.abs(bullet.rotation) < 0.00001)).toBe(true);
@@ -104,26 +118,21 @@ test('keyboard and touch steer diagonally, stop after release, and fire straight
       await page.keyboard.up('ArrowUp');
       await page.keyboard.up('Space');
     }
+    const isAtRest = (frame: { velocityX: number; velocityY: number }) =>
+      Math.hypot(frame.velocityX, frame.velocityY) < 5;
+    // The glide spans ~0.4s of gameplay time; loaded CI browsers can run far slower than wall time.
     await expect
-      .poll(async () =>
-        (await read())?.frames
-          .slice(beforeRelease)
-          .some(
-            (frame) =>
-              frame.accelerationX === 0 && frame.accelerationY === 0 && frame.velocityX === 0 && frame.velocityY === 0
-          )
-      )
+      .poll(async () => (await read())?.frames.slice(beforeRelease).some(isAtRest), { timeout: 60_000 })
       .toBe(true);
     const captured = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.gameFeel.stop());
     if (!captured) throw new Error('Missing controls recording');
-    const released = captured.frames
-      .slice(beforeRelease)
-      .filter((frame) => frame.accelerationX === 0 && frame.accelerationY === 0);
+    const released = captured.frames.slice(beforeRelease);
     const first = released[0];
-    const stopped = released.find((frame) => frame.velocityX === 0 && frame.velocityY === 0);
+    const stopped = released.find(isAtRest);
     if (!first || !stopped) throw new Error('Missing release samples');
-    expect(stopped.gameplayMs - first.gameplayMs).toBeLessThanOrEqual(200);
-    expect(Math.hypot(stopped.x - first.x, stopped.y - first.y)).toBeLessThanOrEqual(40);
+    // Momentum glide (~55px at full speed) plus a few frames of key-release latency from the harness.
+    expect(stopped.gameplayMs - first.gameplayMs).toBeLessThanOrEqual(600);
+    expect(Math.hypot(stopped.x - first.x, stopped.y - first.y)).toBeLessThanOrEqual(120);
     expect(captured.frames.every((frame) => Math.hypot(frame.velocityX, frame.velocityY) <= 480.01)).toBe(true);
     await saveBrowserEvidence('delivered-controls', captured);
   } finally {

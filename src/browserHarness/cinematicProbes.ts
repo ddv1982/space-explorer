@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CINEMATIC_SHIPS } from '../config/cinematicAssets';
+import { V2_SHIPS } from '../config/v2Ships';
 import { getLevelConfig } from '../config/LevelsConfig';
 import { Boss } from '../entities/enemies/Boss';
 import { Scout } from '../entities/enemies/Scout';
@@ -9,7 +10,7 @@ export function createCinematicProbes(game: Phaser.Game) {
   return {
     getCinematicSnapshot: () => {
       const scene = game.scene.getScene('Game');
-      const keys = new Set<string>(CINEMATIC_SHIPS.map((asset) => asset.key));
+      const keys = new Set<string>([...CINEMATIC_SHIPS, ...V2_SHIPS].map((asset) => asset.key));
       const sprites = scene.children.list.filter(
         (child): child is Phaser.Physics.Arcade.Sprite =>
           child instanceof Phaser.Physics.Arcade.Sprite && keys.has(child.texture.key)
@@ -59,6 +60,30 @@ export function createCinematicProbes(game: Phaser.Game) {
       const reused = scene.enemyPool.spawnScout(Number(game.scale.width) * 0.3, 180) === scout;
       boss.takeDamage(boss.maxHp * 0.55);
       return { reused, hp: boss.hp, maxHp: boss.maxHp };
+    },
+    getLightingSnapshot: () => {
+      const scene = game.scene.getScene('Game') as Phaser.Scene & {
+        player?: Phaser.GameObjects.Sprite & { lighting?: boolean };
+      };
+      const lit = (key: string) =>
+        scene.children.list.some(
+          (child) =>
+            child instanceof Phaser.GameObjects.Sprite &&
+            child.active &&
+            child.texture.key === key &&
+            (child as Phaser.GameObjects.Sprite & { lighting?: boolean }).lighting === true
+        );
+      return {
+        playerLit: lit('player-ship'),
+        fighterLit: lit('fighter-texture'),
+        lightCount: scene.lights.lights.length,
+      };
+    },
+    pulseLightAt: (x: number, y: number, durationMs = 400): void => {
+      const scene = game.scene.getScene('Game') as Phaser.Scene & {
+        effectsManager?: { pulseLight(x: number, y: number, c: number, r: number, i: number, d: number): void };
+      };
+      scene.effectsManager?.pulseLight(x, y, 0xffb066, 150, 1.1, durationMs);
     },
     stageCinematicEncounter: (boss = false): void => {
       const scene = game.scene.getScene('Game');

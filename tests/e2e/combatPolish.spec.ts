@@ -1,6 +1,6 @@
 import type { DamageSource } from '../../src/systems/PlayerDamage';
 import { evidenceRevision, saveBrowserEvidence } from './evidence';
-import { expect, openMenu, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
+import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
 
 async function recordCombat(page: Page, waitForFrame = true): Promise<void> {
   await page.evaluate(
@@ -232,6 +232,8 @@ for (const pattern of ['flare', 'lattice'] as const) {
     // about 228s at that rate; 300s retains full expiry with margin for rendering.
     const watchdogMs = pattern === 'flare' ? 300000 : 120000;
     test.setTimeout(watchdogMs + 60000);
+    // The beam cycle needs seconds of gameplay time; Low keeps software-rendered CI frames affordable.
+    await pinQualityTier(page, 'low');
     await openMenu(page);
     await startNewRun(page);
     await setPaused(page, true, isMobile);

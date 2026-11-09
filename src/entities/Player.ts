@@ -1,21 +1,21 @@
 import Phaser from 'phaser';
-import { usesCinematicArt } from '../config/cinematicAssets';
+import { FLIGHT_CONFIG } from '../config/flightConfig';
 import { PLAYER_CONFIG } from '../config/playerConfig';
+import { V2_SHIPS, bankToFrame } from '../config/v2Ships';
+import { keyboardDesiredVelocity, stepFlight } from '../systems/flight/flightModel';
 import { InputManager } from '../systems/InputManager';
 import { PlayerStateData, getPlayerMaxHp, getPlayerFireRate, getPlayerDamage } from '../systems/PlayerState';
 import { GAME_SCENE_EVENTS } from '../systems/GameSceneEvents';
 import { ensurePlayerTexture } from '../utils/SpriteFactory';
-import { applyGameObjectGlow } from '../utils/renderingCompat';
 import type { PlayerDamageContext, PlayerDamageResult, PlayerFatalResult } from '../systems/PlayerDamage';
 
-const NOMINAL_FRAME_MS = 1000 / 60;
+/** The bank frames carry most of the visible roll; a small rotation adds a sense of yaw. */
+const MOMENTUM_BANK_ROTATION = (4 * Math.PI) / 180;
+const PLAYER_BANK_FRAMES = V2_SHIPS[0].bankFrames;
 
-function getFrameDampingAlpha(frameAlpha: number, delta: number): number {
-  if (!Number.isFinite(delta) || delta <= 0) {
-    return 0;
-  }
-
-  return Phaser.Math.Clamp(1 - Math.pow(1 - frameAlpha, delta / NOMINAL_FRAME_MS), 0, 1);
+interface DesiredVelocity {
+  vx: number;
+  vy: number;
 }
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
@@ -32,6 +32,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private exhaustTimer: number = 0;
   private readonly exhaustInterval: number = 50;
   private visualFlashToken = 0;
+  private bank = 0;
+  /**
+   * Changes whenever the ship moved without the drag (a respawn or keyboard steering), so a held
+   * touch drag re-anchors to the ship's current position instead of pulling it back.
+   */
+  private dragAnchorGeneration = 0;
+  private bankFrame = -1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePlayerTexture(scene);
@@ -42,16 +49,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setDepth(5);
     (this.body as Phaser.Physics.Arcade.Body).setSize(24, 32);
-    this.setDrag(PLAYER_CONFIG.drag);
-    this.setMaxVelocity(PLAYER_CONFIG.maxSpeed);
-    (this.body as Phaser.Physics.Arcade.Body).setMaxSpeed(PLAYER_CONFIG.maxSpeed);
+    this.setMaxVelocity(FLIGHT_CONFIG.maxSpeed);
+    (this.body as Phaser.Physics.Arcade.Body).setMaxSpeed(FLIGHT_CONFIG.maxSpeed);
     this.setCollideWorldBounds(true);
     this.setOrigin(0.5);
-
-    applyGameObjectGlow(this, 0x00aaff, {
-      clearFirst: false,
-      ...(usesCinematicArt() ? { outerStrength: 0.25, innerStrength: 0, scale: 0.3 } : {}),
-    });
   }
 
   applyState(state: PlayerStateData): void {
@@ -203,16 +204,51 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.updateInvulnerability(delta);
 
-    const horizontal = Number(inputManager.isRight()) - Number(inputManager.isLeft());
-    const vertical = Number(inputManager.isDown()) - Number(inputManager.isUp());
-    const acceleration =
-      horizontal !== 0 && vertical !== 0 ? PLAYER_CONFIG.acceleration * Math.SQRT1_2 : PLAYER_CONFIG.acceleration;
-    const ax = horizontal * acceleration;
-    const ay = vertical * acceleration;
-    this.setAcceleration(ax, ay);
-    this.updateRotationFromMovement(horizontal, delta);
-    this.isMovingUp = vertical < 0;
-    this.emitExhaustIfDue(delta, ax, ay);
+    const horizontal = (Number(inputManager.isRight()) - Number(inputManager.isLeft())) as -1 | 0 | 1;
+    const vertical = (Number(inputManager.isDown()) - Number(inputManager.isUp())) as -1 | 0 | 1;
+    this.updateFlight(inputManager, horizontal, vertical, delta);
+  }
+
+  /** Current visual bank, -1 (full left) to 1 (full right). */
+  getBank(): number {
+    return this.bank;
+  }
+
+  private updateFlight(inputManager: InputManager, horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
+    const keyboardSteering = horizontal !== 0 || vertical !== 0;
+    if (keyboardSteering) this.dragAnchorGeneration += 1;
+    const desired: DesiredVelocity = keyboardSteering
+      ? keyboardDesiredVelocity(horizontal, vertical, FLIGHT_CONFIG.maxSpeed)
+      : (inputManager.getTouchDesiredVelocity(this.x, this.y, this.dragAnchorGeneration, FLIGHT_CONFIG.maxSpeed) ?? {
+          vx: 0,
+          vy: 0,
+        });
+    // The body is the velocity source of truth so respawns, bounds and push-backs are respected.
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    const next = stepFlight(
+      { vx: body?.velocity.x ?? 0, vy: body?.velocity.y ?? 0, bank: this.bank },
+      desired.vx,
+      desired.vy,
+      delta,
+      FLIGHT_CONFIG
+    );
+    this.setAcceleration(0, 0);
+    this.setVelocity(next.vx, next.vy);
+    this.bank = next.bank;
+    this.rotation = next.bank * MOMENTUM_BANK_ROTATION;
+    this.applyBankFrame();
+    this.isMovingUp = desired.vy < 0;
+    this.emitExhaustIfDue(delta, desired.vx, desired.vy);
+  }
+
+  /** Shows the rendered bank frame for the current bank when the v2 sheet is loaded. */
+  private applyBankFrame(): void {
+    const frame = bankToFrame(this.bank, PLAYER_BANK_FRAMES);
+    if (frame === this.bankFrame || this.texture?.has(String(frame)) !== true) {
+      return;
+    }
+    this.setFrame(frame, false, false);
+    this.bankFrame = frame;
   }
 
   private updateInvulnerability(delta: number): void {
@@ -225,11 +261,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.invulnerable = false;
       this.setAlpha(1);
     }
-  }
-
-  private updateRotationFromMovement(horizontal: number, delta: number): void {
-    const targetRotation = horizontal * Phaser.Math.DegToRad(15);
-    this.rotation = Phaser.Math.Linear(this.rotation, targetRotation, getFrameDampingAlpha(0.1, delta));
   }
 
   private emitExhaustIfDue(delta: number, ax: number, ay: number): void {
@@ -257,6 +288,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.isAlive = true;
     this.isMovingUp = false;
     this.deathStarted = false;
+    this.bank = 0;
+    this.dragAnchorGeneration += 1;
+    this.applyBankFrame();
     this.setAcceleration(0, 0);
     this.setVisible(true);
     this.setAlpha(1);

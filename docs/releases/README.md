@@ -2,6 +2,7 @@
 
 Latest first.
 
+- [`1.21.0`](./1.21.0.md) - momentum flight, touch drag steering, and lit 3D-rendered player and Fighter ships (v2 phase 0)
 - [`1.20.1`](./1.20.1.md) - simpler runtime ownership, development-only legacy rendering, and accurate verification reports
 - [`1.20.0`](./1.20.0.md) - tighter flight, distinct damage feedback, direct retry, and tuned campaign approaches
 - [`1.19.0`](./1.19.0.md) - living procedural environments and cinematic ship artwork

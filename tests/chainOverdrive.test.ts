@@ -119,7 +119,7 @@ function createFiringHarness(chainMultiplier: number) {
         firedAt.push(currentTime);
       },
     },
-    effectsManager: { createMuzzleFlash: () => {} },
+    effectsManager: { createMuzzleFlash: () => {}, updateLighting: () => {} },
     getBoss: () => null,
     updateHud: () => {},
     shotDirection: vector,

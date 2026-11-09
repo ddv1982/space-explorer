@@ -100,7 +100,7 @@ describe('showControlsHint hardware keyboard handling', () => {
     const { scene, texts } = createFakeScene();
     showControlsHint(scene as never, { mobile: true });
 
-    expect(texts.map((text) => text.text)).toEqual(['Use the joystick to move', 'Tap the right side to shoot']);
+    expect(texts.map((text) => text.text)).toEqual(['Drag anywhere to fly', 'Guns fire automatically']);
     expect(detectionSubscribers.length).toBe(1);
   });
 
