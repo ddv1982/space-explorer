@@ -127,7 +127,7 @@ function fillGlassSheen(
   }
 }
 
-export function defaultCornerCut(width: number, height: number): number {
+function defaultCornerCut(width: number, height: number): number {
   return Math.min(18, Math.max(5, Math.min(width, height) * 0.07));
 }
 
@@ -183,35 +183,6 @@ export function drawNeonFrame(
   graphics.lineTo(x + width - cut, y + height);
   graphics.lineTo(x + width - cut - reach, y + height);
   graphics.strokePath();
-}
-
-/** Hairline rule that fades out toward both ends, pinned by a small diamond. */
-export function drawNeonDivider(
-  graphics: Phaser.GameObjects.Graphics,
-  centerX: number,
-  y: number,
-  width: number,
-  color: number = NEON.cyan
-): void {
-  const gap = 12;
-  const wing = Math.max(24, width / 2 - gap);
-  const steps = [0.42, 0.24, 0.1];
-  steps.forEach((alpha, index) => {
-    const from = gap + (wing * index) / steps.length;
-    const to = gap + (wing * (index + 1)) / steps.length;
-    graphics.lineStyle(1, color, alpha);
-    graphics.lineBetween(centerX - to, y, centerX - from, y);
-    graphics.lineBetween(centerX + from, y, centerX + to, y);
-  });
-
-  graphics.fillStyle(mixColor(color, 0xffffff, 0.5), scaleUiGlowAlpha(0.95));
-  graphics.beginPath();
-  graphics.moveTo(centerX, y - 4);
-  graphics.lineTo(centerX + 4, y);
-  graphics.lineTo(centerX, y + 4);
-  graphics.lineTo(centerX - 4, y);
-  graphics.closePath();
-  graphics.fillPath();
 }
 
 interface NeonTitleColors {

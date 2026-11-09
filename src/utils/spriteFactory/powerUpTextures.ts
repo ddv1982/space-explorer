@@ -2,10 +2,16 @@ import type Phaser from 'phaser';
 import { withCanvasTexture } from '../generatedTexture';
 
 const DENSITY = 4;
-const SIZE = 20;
+/** Painted canvas, halo included. The pickup's Arcade body stays `POWER_UP_BODY_SIZE` square. */
+const SIZE = 44;
+export const POWER_UP_BODY_SIZE = 20;
+const ORB_RADIUS = 10;
+/** Glyphs are authored in a 20-unit box around the orb centre. */
+const GLYPH_BOX = 20;
+const GLYPH_SCALE = 1.25;
 
 interface PowerUpLook {
-  /** Rim glow and glyph colour. */
+  /** Rim, halo and bracket colour. */
   accent: string;
   /** Glass body gradient, centre to edge. */
   inner: string;
@@ -13,49 +19,76 @@ interface PowerUpLook {
 }
 
 const LOOKS = {
-  health: { accent: '#5dffa0', inner: '#1d7a45', outer: '#06210f' },
-  shield: { accent: '#9cd6ff', inner: '#2a5ea8', outer: '#061430' },
-  rapidfire: { accent: '#ffe066', inner: '#9a7410', outer: '#2a1d02' },
+  health: { accent: '#5dffa0', inner: '#1f8a4d', outer: '#04180b' },
+  shield: { accent: '#9cd6ff', inner: '#2f68b8', outer: '#040f26' },
+  rapidfire: { accent: '#ffe066', inner: '#a67c12', outer: '#211702' },
 } as const satisfies Record<string, PowerUpLook>;
 
 type PowerUpKind = keyof typeof LOOKS;
 
-/** Glossy glass orb with a glowing rim, a specular highlight and an emissive glyph. */
+/**
+ * Luminous pickup: a wide soft halo, a pair of orbit brackets, a glass orb with a hot rim and a
+ * specular highlight, and a white emissive glyph.
+ */
 function paintOrb(context: CanvasRenderingContext2D, look: PowerUpLook, glyph: (c: CanvasRenderingContext2D) => void) {
   const c = SIZE / 2;
-  const halo = context.createRadialGradient(c, c, 6, c, c, c);
+
+  const halo = context.createRadialGradient(c, c, ORB_RADIUS * 0.5, c, c, c);
   halo.addColorStop(0, look.accent);
+  halo.addColorStop(0.45, look.accent);
   halo.addColorStop(1, 'rgba(0,0,0,0)');
-  context.globalAlpha = 0.55;
+  context.globalAlpha = 0.42;
   context.fillStyle = halo;
   context.fillRect(0, 0, SIZE, SIZE);
+
+  // Orbit brackets: two arcs left open at the sides.
+  context.globalAlpha = 0.7;
+  context.strokeStyle = look.accent;
+  context.lineWidth = 1;
+  context.lineCap = 'round';
+  for (const start of [-Math.PI * 0.82, Math.PI * 0.18]) {
+    context.beginPath();
+    context.arc(c, c, ORB_RADIUS + 4.5, start, start + Math.PI * 0.64);
+    context.stroke();
+  }
   context.globalAlpha = 1;
 
-  const glass = context.createRadialGradient(c - 2, c - 2.5, 0.5, c, c, 8);
+  const glass = context.createRadialGradient(c - 2.5, c - 3, 0.5, c, c, ORB_RADIUS);
   glass.addColorStop(0, look.inner);
   glass.addColorStop(1, look.outer);
   context.fillStyle = glass;
   context.beginPath();
-  context.arc(c, c, 7.6, 0, Math.PI * 2);
+  context.arc(c, c, ORB_RADIUS, 0, Math.PI * 2);
   context.fill();
-  context.strokeStyle = look.accent;
-  context.lineWidth = 1.2;
-  context.stroke();
 
   context.save();
   context.shadowColor = look.accent;
-  context.shadowBlur = 3;
+  context.shadowBlur = 5;
+  context.strokeStyle = look.accent;
+  context.lineWidth = 1.6;
+  context.stroke();
+  context.restore();
+  context.strokeStyle = 'rgba(255,255,255,0.55)';
+  context.lineWidth = 0.6;
+  context.stroke();
+
+  context.save();
+  context.translate(c, c);
+  context.scale(GLYPH_SCALE, GLYPH_SCALE);
+  context.translate(-GLYPH_BOX / 2, -GLYPH_BOX / 2);
+  context.shadowColor = look.accent;
+  context.shadowBlur = 4;
   context.fillStyle = '#ffffff';
   context.strokeStyle = '#ffffff';
   glyph(context);
   context.restore();
 
-  const shine = context.createLinearGradient(c, c - 7, c, c - 1);
-  shine.addColorStop(0, 'rgba(255,255,255,0.55)');
+  const shine = context.createLinearGradient(c, c - ORB_RADIUS, c, c - 1);
+  shine.addColorStop(0, 'rgba(255,255,255,0.5)');
   shine.addColorStop(1, 'rgba(255,255,255,0)');
   context.fillStyle = shine;
   context.beginPath();
-  context.ellipse(c - 1, c - 4, 4.6, 2.6, -0.3, 0, Math.PI * 2);
+  context.ellipse(c - 1, c - ORB_RADIUS * 0.52, ORB_RADIUS * 0.6, ORB_RADIUS * 0.32, -0.3, 0, Math.PI * 2);
   context.fill();
 }
 

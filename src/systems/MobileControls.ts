@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { isTouchMobileDevice } from '../utils/device';
 import { getViewportBounds } from '../utils/layout';
-import { drawNeonFrame, NEON } from '../scenes/shared/neonUiTheme';
+import { drawAngledRectPath, NEON } from '../scenes/shared/neonUiTheme';
+import { scaleUiGlowAlpha } from '../utils/renderingCompat';
 import { beginDrag, dragDesiredVelocity, dragTarget, type DragState } from './input/relativeDrag';
 
 const CONTROLS_DEPTH = 1000;
@@ -278,21 +279,25 @@ export class MobileControls {
     const y = this.pauseButtonY;
     const half = PAUSE_BUTTON_SIZE / 2;
 
-    this.pauseButtonBg?.clear();
-    if (this.pauseButtonBg) {
-      drawNeonFrame(this.pauseButtonBg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, {
-        accentColor: active ? NEON.cyanBright : NEON.cyan,
-        fillAlpha: active ? 0.82 : 0.62,
-        strokeAlpha: 0.92,
-        cornerCut: 12,
-        glow: true,
-      });
+    // Glass key in the shared cut-corner shape; pressing it lights it solid like a primary button.
+    const bg = this.pauseButtonBg;
+    if (bg) {
+      bg.clear();
+      drawAngledRectPath(bg, x - half - 2, y - half - 2, PAUSE_BUTTON_SIZE + 4, PAUSE_BUTTON_SIZE + 4, 12);
+      bg.lineStyle(3, NEON.cyan, scaleUiGlowAlpha(active ? 0.3 : 0.1));
+      bg.strokePath();
+      drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
+      bg.fillStyle(active ? NEON.cyan : NEON.panel, active ? 0.95 : 0.7);
+      bg.fillPath();
+      drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
+      bg.lineStyle(1.5, active ? NEON.cyanBright : NEON.cyan, active ? 1 : 0.75);
+      bg.strokePath();
     }
 
     this.pauseButtonIcon?.clear();
-    this.pauseButtonIcon?.fillStyle(0xe8f9ff, active ? 1 : 0.92);
-    this.pauseButtonIcon?.fillRoundedRect(x - 8, y - 10, 5, 20, 2);
-    this.pauseButtonIcon?.fillRoundedRect(x + 3, y - 10, 5, 20, 2);
+    this.pauseButtonIcon?.fillStyle(active ? NEON.ink : 0xe8f9ff, 1);
+    this.pauseButtonIcon?.fillRect(x - 7, y - 8, 4.5, 16);
+    this.pauseButtonIcon?.fillRect(x + 2.5, y - 8, 4.5, 16);
     this.pauseButtonHitArea?.setPosition(x, y);
   }
 }

@@ -44,7 +44,7 @@ const {
   PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
 } = await import('../src/scenes/gameScene/pauseOverlay/view');
 const { createMenuLayoutPlan } = await import('../src/scenes/menuScene/layout');
-const { getIntermissionLayout } = await import('../src/scenes/planetIntermission/presentation');
+const { getIntermissionLayout } = await import('../src/scenes/planetIntermission/layout');
 
 type SceneLike = {
   scale: {
@@ -91,79 +91,56 @@ function getPauseFooterRects(layout: ReturnType<typeof getPauseOverlayLayout>): 
 
 function assertPauseRequiredControlsDoNotOverlap(viewport: { width: number; height: number }): void {
   const layout = getPauseOverlayLayout(createScene(viewport.width, viewport.height) as never);
-  const statusRect = {
-    x: 0,
-    y: layout.statusY - 10,
-    width: viewport.width,
-    height: 20,
-  };
-  const saveHeaderRect = {
-    x: layout.saveHeaderX,
-    y: layout.saveHeaderY - 8,
-    width: layout.slotRows[0]?.width ?? viewport.width,
-    height: 16,
-  };
-  const subtitleRect = {
-    x: 0,
-    y: layout.subtitleY - 10,
-    width: viewport.width,
-    height: 20,
-  };
-  const hintRect = {
-    x: 0,
-    y: layout.hintY - 10,
-    width: viewport.width,
-    height: 20,
-  };
-  const tabRect = {
-    x: layout.checkpointTabX,
-    y: layout.tabY,
-    width: layout.tabWidth * 2 + 10,
-    height: layout.tabHeight,
-  };
+  const context = `${viewport.width}x${viewport.height}`;
+  const statusRect = { x: 0, y: layout.statusY - 10, width: viewport.width, height: 20 };
+  const tabRect = { x: layout.tabsX, y: layout.tabY, width: layout.tabWidth * 2, height: layout.tabHeight };
   const footerRects = getPauseFooterRects(layout);
+  const panelBottom = layout.panelY + layout.panelHeight;
 
-  if (layout.saveHeaderVisible) {
-    expectNoOverlap(tabRect, saveHeaderRect, `${viewport.width}x${viewport.height} tabs/header`);
-  }
-  if (layout.subtitleVisible) {
-    expectNoOverlap(subtitleRect, tabRect);
-  }
-  if (layout.hintVisible) {
-    expectNoOverlap(hintRect, tabRect);
+  expect(layout.panelY).toBeGreaterThanOrEqual(0);
+  expect(panelBottom).toBeLessThanOrEqual(viewport.height);
+  expect(tabRect.x).toBeGreaterThanOrEqual(layout.panelX);
+  expect(tabRect.x + tabRect.width).toBeLessThanOrEqual(layout.panelX + layout.panelWidth);
+  if (layout.titleCentered) {
+    expect(layout.titleY + layout.titleFontSize / 2).toBeLessThanOrEqual(layout.tabY);
   }
 
   for (const row of layout.slotRows) {
-    expectNoOverlap(row, statusRect);
-    if (layout.saveHeaderVisible) {
-      expectNoOverlap(row, saveHeaderRect);
-    }
-    if (layout.subtitleVisible) {
-      expectNoOverlap(row, subtitleRect);
-    }
-    if (layout.hintVisible) {
-      expectNoOverlap(row, hintRect);
-    }
-    expectNoOverlap(row, tabRect, `${viewport.width}x${viewport.height} row/tabs`);
+    expectNoOverlap(row, statusRect, `${context} row/status`);
+    expectNoOverlap(row, tabRect, `${context} row/tabs`);
     for (const footerRect of footerRects) {
-      expectNoOverlap(row, footerRect);
+      expectNoOverlap(row, footerRect, `${context} row/footer`);
     }
   }
 
   for (const footerRect of footerRects) {
-    expectNoOverlap(statusRect, footerRect);
+    expectNoOverlap(statusRect, footerRect, `${context} status/footer`);
+    expect(footerRect.y + footerRect.height).toBeLessThanOrEqual(panelBottom);
+  }
+  if (layout.keyHintVisible) {
+    expect(layout.keyHintY - 8).toBeGreaterThanOrEqual(layout.menuButtonY + PAUSE_OVERLAY_BUTTON_HEIGHT);
+    expect(layout.keyHintY + 8).toBeLessThanOrEqual(panelBottom);
   }
 }
 
 function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }): void {
   const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
-  // Home view: title lockup, hero ship, run tiles, then the settings button and status.
-  const bands = [plan.titleBand, plan.heroBand, plan.runSelectionBand, plan.footerBand];
-  for (let index = 1; index < bands.length; index += 1) {
-    expect(bands[index]?.top ?? 0).toBeGreaterThanOrEqual(bands[index - 1]?.bottom ?? 0);
+  // Home view: title lockup on top; under it either one stack (hero, run selection, footer) or two
+  // columns (hero over the settings button, beside the run selection).
+  const columns = plan.sideBySide
+    ? [
+        [plan.titleBand, plan.heroBand, plan.footerBand],
+        [plan.titleBand, plan.runSelectionBand],
+      ]
+    : [[plan.titleBand, plan.heroBand, plan.runSelectionBand, plan.footerBand]];
+  for (const bands of columns) {
+    for (let index = 1; index < bands.length; index += 1) {
+      expect(bands[index]?.top ?? 0).toBeGreaterThanOrEqual(bands[index - 1]?.bottom ?? 0);
+    }
   }
-  expect(plan.titleBand.top).toBeGreaterThanOrEqual(plan.outerFrameY);
-  expect(plan.footerBand.bottom).toBeLessThanOrEqual(plan.outerFrameY + plan.outerFrameHeight);
+  expect(plan.titleBand.top).toBeGreaterThanOrEqual(0);
+  expect(plan.footerBand.bottom).toBeLessThanOrEqual(viewport.height);
+  expect(plan.runSelectionBand.bottom).toBeLessThanOrEqual(viewport.height);
   expect(plan.settingsButton.y).toBeGreaterThanOrEqual(plan.footerBand.top);
   expect(plan.statusY + plan.statusHeight / 2).toBeLessThanOrEqual(plan.footerBand.bottom);
   if (plan.hero) {
@@ -171,15 +148,28 @@ function assertMenuBandsDoNotOverlap(viewport: { width: number; height: number }
     expect(plan.hero.y + plan.hero.shipHeight * 0.8).toBeLessThanOrEqual(plan.heroBand.bottom);
   }
 
-  if (plan.eyebrowVisible) {
-    const eyebrowBottom = plan.eyebrowY + (plan.compact ? 10 : 12) / 2;
+  // Run selection: the launch button, then the slot cards, none overlapping and all on screen.
+  const runRects = [plan.launchButton, ...plan.slotCards];
+  for (const [index, rect] of runRects.entries()) {
+    expect(rect.x).toBeGreaterThanOrEqual(0);
+    expect(rect.x + rect.width).toBeLessThanOrEqual(viewport.width);
+    expect(rect.y).toBeGreaterThanOrEqual(plan.runSelectionBand.top);
+    expect(rect.y + rect.height).toBeLessThanOrEqual(plan.runSelectionBand.bottom);
+    expect(rect.height).toBeGreaterThanOrEqual(44);
+    for (const other of runRects.slice(index + 1)) expectNoOverlap(rect, other, 'menu run selection');
+  }
+  expectNoOverlap(plan.settingsButton, plan.launchButton, 'menu settings/launch');
+  for (const card of plan.slotCards) expectNoOverlap(plan.settingsButton, card, 'menu settings/slot');
+
+  if (plan.kickerVisible) {
+    const kickerBottom = plan.kickerY + plan.kickerFontSize / 2;
     const titleTop = plan.titleY - plan.titleFontSize / 2;
-    expect(titleTop - eyebrowBottom).toBeGreaterThanOrEqual(4);
+    expect(titleTop - kickerBottom).toBeGreaterThanOrEqual(4);
   }
 
   const titleBottom = plan.titleY + plan.titleFontSize / 2;
-  const subtitleTop = plan.subtitleY - plan.subtitleFontSize / 2;
-  expect(subtitleTop).toBeGreaterThanOrEqual(titleBottom);
+  const taglineTop = plan.taglineY - plan.taglineFontSize / 2;
+  expect(taglineTop).toBeGreaterThanOrEqual(titleBottom);
 
   // Settings sheet: heading, tier rows, sliders, then DONE, all inside the sheet and the viewport.
   const modal = plan.settingsModal;
@@ -322,16 +312,8 @@ describe('responsive save-slot layouts', () => {
     { width: 360, height: 640 },
     { width: 320, height: 640 },
     { width: 480, height: 320 },
-  ])('menu layout keeps save-slot tiles reachable and horizontally inside the viewport', (viewport) => {
-    const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
-    const left = Math.min(...plan.tilePositions.map((tile) => tile.x));
-    const right = Math.max(...plan.tilePositions.map((tile) => tile.x + plan.tileWidth));
-    const bottom = Math.max(...plan.tilePositions.map((tile) => tile.y + plan.tileHeight));
-
-    expect(left).toBeGreaterThanOrEqual(0);
-    expect(right).toBeLessThanOrEqual(viewport.width);
-    expect(plan.tileRowY).toBeGreaterThanOrEqual(0);
-    expect(bottom).toBeLessThanOrEqual(viewport.height);
+  ])('menu layout keeps the launch button and save-slot cards reachable inside the viewport', (viewport) => {
+    assertMenuBandsDoNotOverlap(viewport);
   });
 
   test.each([
@@ -349,7 +331,8 @@ describe('responsive save-slot layouts', () => {
   test('the hero ship shows on roomy screens and steps aside when the home view is too short', () => {
     expect(createMenuLayoutPlan(createScene(1280, 720) as never).hero?.shipHeight).toBeGreaterThan(120);
     expect(createMenuLayoutPlan(createScene(390, 844) as never).hero?.shipHeight).toBeGreaterThan(100);
-    expect(createMenuLayoutPlan(createScene(480, 320) as never).hero).toBeNull();
+    expect(createMenuLayoutPlan(createScene(480, 320) as never).hero?.shipHeight).toBeGreaterThanOrEqual(64);
+    expect(createMenuLayoutPlan(createScene(480, 220) as never).hero).toBeNull();
   });
 
   test('menu compact mode stays pinned to 720h/800w breakpoints', () => {
@@ -374,7 +357,8 @@ describe('responsive save-slot layouts', () => {
     const plan = createMenuLayoutPlan(createScene(viewport.width, viewport.height) as never);
 
     expect(plan.profile).toBe(profile);
-    expect(plan.eyebrowVisible).toBe(profile === 'desktop' || profile === 'tablet' || profile === 'phone-portrait');
+    expect(plan.kickerVisible).toBe(profile === 'desktop' || profile === 'tablet' || profile === 'phone-portrait');
+    expect(plan.sideBySide).toBe(profile === 'phone-landscape');
     assertMenuBandsDoNotOverlap(viewport);
   });
 
@@ -386,13 +370,25 @@ describe('responsive save-slot layouts', () => {
     expect((row?.x ?? 0) + (row?.width ?? 0) / 2).toBe(layout.centerX);
   });
 
-  test('pause overlay drops subtitle and hint bands on ultra-short phone landscape viewports', () => {
+  test('pause overlay puts the title beside the tabs on phone landscape viewports', () => {
     const layout = getPauseOverlayLayout(createScene(812, 375) as never);
 
-    expect(layout.subtitleVisible).toBe(false);
-    expect(layout.hintVisible).toBe(false);
-    expect(layout.titleFontSize).toBeLessThan(86);
+    expect(layout.titleCentered).toBe(false);
+    expect(layout.titleY).toBe(layout.tabY + layout.tabHeight / 2);
+    expect(layout.keyHintVisible).toBe(false);
     assertPauseRequiredControlsDoNotOverlap({ width: 812, height: 375 });
+  });
+
+  test.each([
+    { width: 1280, height: 720 },
+    { width: 844, height: 390 },
+    { width: 390, height: 844 },
+  ])('pause overlay fits the settings subview inside its panel', (viewport) => {
+    const layout = getPauseOverlayLayout(createScene(viewport.width, viewport.height) as never);
+    const sliderBottom = Math.max(...layout.settingsLayout.sliderPositions.map((position) => position.y)) + 52;
+
+    expect(layout.settingsLayout.difficultyY).toBeGreaterThanOrEqual(layout.tabY + layout.tabHeight);
+    expect(sliderBottom).toBeLessThanOrEqual(layout.statusY - 10);
   });
 
   test.each([
@@ -405,12 +401,11 @@ describe('responsive save-slot layouts', () => {
     const layout = getPauseOverlayLayout(createScene(viewport.width, viewport.height) as never);
     const row = layout.slotRows[0];
 
-    expect(layout.saveSlotsVisible).toBe(true);
-    expect(row?.width).toBe(640);
+    expect(row?.width).toBe(624);
     expect((row?.x ?? 0) + (row?.width ?? 0) / 2).toBe(layout.centerX);
-    expect(layout.resumeButtonX + PAUSE_OVERLAY_BUTTON_WIDTH + 22).toBe(layout.menuButtonX);
-    expect(layout.saveHeaderY).toBeGreaterThan(layout.hintY + 20);
-    expect((layout.slotRows[0]?.y ?? 0) - layout.saveHeaderY).toBeGreaterThanOrEqual(28);
+    expect(layout.resumeButtonX + PAUSE_OVERLAY_BUTTON_WIDTH + 16).toBe(layout.menuButtonX);
+    expect(layout.menuButtonY).toBe(layout.resumeButtonY);
+    expect(row?.y ?? 0).toBeGreaterThanOrEqual(layout.tabY + layout.tabHeight + 8);
     assertPauseRequiredControlsDoNotOverlap(viewport);
   });
 
@@ -422,7 +417,7 @@ describe('responsive save-slot layouts', () => {
     { width: 320, height: 360 },
     { width: 280, height: 360 },
   ])(
-    'pause overlay keeps save header and text bands above save-slot rows across desktop and ultra-compact heights',
+    'pause overlay keeps tabs, checkpoint cards, status and footer apart across desktop and ultra-compact heights',
     (viewport) => {
       assertPauseRequiredControlsDoNotOverlap(viewport);
     }
@@ -435,7 +430,7 @@ describe('responsive save-slot layouts', () => {
     { width: 480, height: 500 },
     { width: 640, height: 360 },
   ])(
-    'menu layout keeps title, music band, tile block, and status in separate vertical bands on compact/mobile viewports',
+    'menu layout keeps title, hero, run selection and footer in separate bands on compact/mobile viewports',
     (viewport) => {
       assertMenuBandsDoNotOverlap(viewport);
     }

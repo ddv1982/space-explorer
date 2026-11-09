@@ -78,7 +78,7 @@ test('resizes, pauses, resumes, restores visibility, and lazy-routes scenes', as
       if (!mobile) await page.keyboard.up('Escape');
     }
     if (mobile) {
-      const resume = (await snapshot(page)).texts.find((item) => item.text.endsWith('\nRESUME'));
+      const resume = (await snapshot(page)).texts.find((item) => item.text === 'RESUME');
       expect(resume).toBeDefined();
       await page.touchscreen.tap(resume?.x ?? 0, resume?.y ?? 0);
     } else {
@@ -159,7 +159,7 @@ test('pause settings persist quality without reloading or leaving the active run
   expect(page.url()).toBe(urlBefore);
   expect(after.texts.some((item) => item.text.includes('Restart required'))).toBe(true);
 
-  const resume = after.texts.find((item) => item.text.endsWith('\nRESUME'));
+  const resume = after.texts.find((item) => item.text === 'RESUME');
   expect(resume).toBeDefined();
   await page.mouse.click(resume?.x ?? 0, resume?.y ?? 0);
   await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(false);

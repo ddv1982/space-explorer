@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { UpgradeEvaluation } from '../../config/UpgradesConfig';
+import { drawAngledRectPath, NEON } from '../shared/neonUiTheme';
 import type { UpgradeButton } from './shared';
 
 type EvaluateButton = (button: UpgradeButton) => UpgradeEvaluation;
@@ -161,41 +162,34 @@ export function findNextPurchasableAfter(
   return -1;
 }
 
+function strokeCardOutline(
+  graphics: Phaser.GameObjects.Graphics,
+  button: UpgradeButton,
+  outset: number,
+  lineWidth: number,
+  color: number,
+  alpha: number
+): void {
+  drawAngledRectPath(
+    graphics,
+    button.x - outset,
+    button.y - outset,
+    button.width + outset * 2,
+    button.height + outset * 2,
+    button.cornerCut + outset / 2
+  );
+  graphics.lineStyle(lineWidth, color, alpha);
+  graphics.strokePath();
+}
+
 export function drawFocusIndicator(graphics: Phaser.GameObjects.Graphics, button: UpgradeButton | undefined): void {
   graphics.clear();
   if (!button) {
     return;
   }
 
-  const padding = 4;
-  const glowSize = 3;
-
-  graphics.lineStyle(glowSize, 0x79a9ff, 0.22);
-  graphics.strokeRoundedRect(
-    button.x - padding - glowSize,
-    button.y - padding - glowSize,
-    button.width + (padding + glowSize) * 2,
-    button.height + (padding + glowSize) * 2,
-    button.borderRadius + padding
-  );
-
-  graphics.lineStyle(2, 0xaaccff, 0.95);
-  graphics.strokeRoundedRect(
-    button.x - padding,
-    button.y - padding,
-    button.width + padding * 2,
-    button.height + padding * 2,
-    button.borderRadius + padding / 2
-  );
-
-  graphics.lineStyle(1, 0xe8f3ff, 0.9);
-  graphics.strokeRoundedRect(
-    button.x - padding + 2,
-    button.y - padding + 2,
-    button.width + (padding - 2) * 2,
-    button.height + (padding - 2) * 2,
-    button.borderRadius
-  );
+  strokeCardOutline(graphics, button, 7, 3, NEON.cyan, 0.24);
+  strokeCardOutline(graphics, button, 4, 2, NEON.cyanBright, 0.98);
 }
 
 export function drawHoverIndicator(graphics: Phaser.GameObjects.Graphics, button: UpgradeButton | undefined): void {
@@ -204,23 +198,8 @@ export function drawHoverIndicator(graphics: Phaser.GameObjects.Graphics, button
     return;
   }
 
-  const padding = 2;
-
-  graphics.fillStyle(0x66aaff, 0.15);
-  graphics.fillRoundedRect(
-    button.x + padding,
-    button.y + padding,
-    button.width - padding * 2,
-    button.height - padding * 2,
-    button.borderRadius - 2
-  );
-
-  graphics.lineStyle(1, 0xaaccff, 0.6);
-  graphics.strokeRoundedRect(
-    button.x + padding,
-    button.y + padding,
-    button.width - padding * 2,
-    button.height - padding * 2,
-    button.borderRadius - 2
-  );
+  drawAngledRectPath(graphics, button.x, button.y, button.width, button.height, button.cornerCut);
+  graphics.fillStyle(0xffffff, 0.07);
+  graphics.fillPath();
+  strokeCardOutline(graphics, button, 0, 1.5, NEON.cyanBright, 0.85);
 }

@@ -43,7 +43,7 @@ const {
   PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
 } = await import('../src/scenes/gameScene/pauseOverlay/view');
 const { createMenuLayoutPlan } = await import('../src/scenes/menuScene/layout');
-const { getIntermissionLayout } = await import('../src/scenes/planetIntermission/presentation');
+const { getIntermissionLayout } = await import('../src/scenes/planetIntermission/layout');
 const { MIN_TOUCH_TARGET_PX } = await import('../src/scenes/shared/touchTarget');
 
 function createScene(width: number, height: number) {
@@ -74,7 +74,8 @@ describe('touch target floors', () => {
         width: menu.settingsLayout.width,
         height: Math.max(menu.settingsLayout.tierHeight, MIN_TOUCH_TARGET_PX),
       },
-      { name: 'menu-tile', width: menu.tileWidth, height: menu.tileHeight },
+      { name: 'menu-launch', width: menu.launchButton.width, height: menu.launchButton.height },
+      ...menu.slotCards.map((card, index) => ({ name: `menu-slot-${index + 1}`, ...card })),
       { name: 'menu-del', width: MIN_TOUCH_TARGET_PX, height: MIN_TOUCH_TARGET_PX },
       {
         name: 'pause-resume',

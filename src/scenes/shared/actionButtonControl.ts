@@ -111,20 +111,28 @@ function drawButtonBackground(
   graphic.fillStyle(hovered ? palette.hoverFill : palette.fill, hovered ? palette.hoverFillAlpha : palette.fillAlpha);
   graphic.fillPath();
 
-  // Top half catches the light.
-  graphic.fillStyle(0xffffff, solid ? 0.2 : 0.045);
-  graphic.beginPath();
-  graphic.moveTo(cornerCut, 0);
-  graphic.lineTo(width, 0);
-  graphic.lineTo(width, height * 0.46);
-  graphic.lineTo(0, height * 0.46);
-  graphic.lineTo(0, cornerCut);
-  graphic.closePath();
-  graphic.fillPath();
+  // The top of the key catches the light: two stacked bands soften the edge of the sheen.
+  for (const share of [0.5, 0.26]) {
+    graphic.fillStyle(0xffffff, solid ? 0.1 : 0.025);
+    graphic.beginPath();
+    graphic.moveTo(cornerCut, 0);
+    graphic.lineTo(width, 0);
+    graphic.lineTo(width, height * share);
+    graphic.lineTo(0, height * share);
+    graphic.lineTo(0, cornerCut);
+    graphic.closePath();
+    graphic.fillPath();
+  }
 
   drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
   graphic.lineStyle(1, hovered ? palette.hoverBorder : palette.border, hovered ? 1 : solid ? 0.9 : 0.55);
   graphic.strokePath();
+}
+
+function inkButtonLabel(label: Phaser.GameObjects.Text, variant: ActionButtonVariant): void {
+  label.setColor(variant === 'disabled' ? DISABLED_TEXT : BUTTON_PALETTE[variant].text);
+  // Ink on a lit key gets a hairline of its own colour so gameplay bloom cannot wash small labels out.
+  label.setStroke(NEON_TEXT.ink, variant === 'primary' ? 0.8 : 0);
 }
 
 export function createActionButtonControl(scene: Phaser.Scene, config: CreateActionButtonConfig): ActionButtonControl {
@@ -201,8 +209,7 @@ export function createActionButtonControl(scene: Phaser.Scene, config: CreateAct
   const redraw = (): void => {
     const enabledVariant = control.enabled ? variant : 'disabled';
     drawButtonBackground(background, width, height, enabledVariant, control.enabled, control.hovered);
-    const palette = enabledVariant === 'disabled' ? null : BUTTON_PALETTE[enabledVariant];
-    label.setColor(control.enabled && palette ? palette.text : DISABLED_TEXT);
+    inkButtonLabel(label, enabledVariant);
   };
 
   const refreshInteractiveState = (): void => {

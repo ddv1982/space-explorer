@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import { MAX_CURRENT_SHIELDS } from './PlayerState';
-import { UI_FONT_MONO } from '../utils/uiFonts';
+import { colorToHexString } from '../utils/colorUtils';
 import { Player } from '../entities/Player';
 import { PowerUp, PowerUpType } from '../entities/PowerUp';
 import { EffectsManager } from './EffectsManager';
 import { audioManager } from './AudioManager';
+import { createPickupLabel } from './effects/ephemeralOverlayTweens';
 export { GAME_SCENE_EVENTS } from './GameSceneEvents';
 export type { GameSceneEventHandler, GameSceneEventName } from './GameSceneEvents';
 
@@ -26,16 +27,11 @@ const POWER_UP_LABELS: Record<PowerUpType, string> = {
   rapidfire: 'FIRE RATE UP',
 };
 
-const POWER_UP_COLORS: Record<PowerUpType, string> = {
-  health: '#00ff44',
-  shield: '#4488ff',
-  rapidfire: '#ffcc00',
-};
-
+/** Matches the pickup orbs painted in `powerUpTextures.ts`. */
 const POWER_UP_TINTS: Record<PowerUpType, number> = {
-  health: 0x00ff44,
-  shield: 0x4488ff,
-  rapidfire: 0xffcc00,
+  health: 0x5dffa0,
+  shield: 0x9cd6ff,
+  rapidfire: 0xffe066,
 };
 
 export function trySpawnRandomPowerUp(group: Phaser.Physics.Arcade.Group, x: number, y: number): void {
@@ -86,22 +82,5 @@ export function applyPowerUpPickup(
   effectsManager.createSparkBurst(player.x, player.y);
   effectsManager.createPowerUpBurst(player.x, player.y, POWER_UP_TINTS[type]);
 
-  const text = scene.add
-    .text(player.x, player.y - 40, POWER_UP_LABELS[type], {
-      fontSize: '14px',
-      color: POWER_UP_COLORS[type],
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-    })
-    .setOrigin(0.5)
-    .setDepth(50);
-
-  scene.tweens.add({
-    targets: text,
-    y: player.y - 70,
-    alpha: { from: 1, to: 0 },
-    duration: 600,
-    ease: 'Power2',
-    onComplete: () => text.destroy(),
-  });
+  createPickupLabel(scene, player.x, player.y, POWER_UP_LABELS[type], colorToHexString(POWER_UP_TINTS[type]));
 }

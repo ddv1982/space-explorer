@@ -1,299 +1,211 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '@/utils/layout';
-import { getVisualQualityProfile } from '../../../config/visualQuality';
-import { scaleUiGlowAlpha } from '../../../utils/renderingCompat';
-import { drawNeonDivider, drawNeonFrame, NEON } from '../../shared/neonUiTheme';
-import type { PauseOverlayLayout, PauseOverlayMessage } from './types';
-import { isNarrowViewport, isShortViewport } from '../../shared/responsiveViewport';
+import { drawNeonFrame, NEON } from '../../shared/neonUiTheme';
+import type { PauseOverlayLayout, PauseSaveSlotRowLayout } from './types';
 
-const PAUSE_OVERLAY_PANEL_WIDTH = 940;
-const PAUSE_OVERLAY_PANEL_HEIGHT = 700;
-const PAUSE_OVERLAY_COMPACT_PANEL_WIDTH = 540;
-const PAUSE_OVERLAY_COMPACT_PANEL_HEIGHT = 620;
 export const PAUSE_OVERLAY_BUTTON_WIDTH = 150;
-export const PAUSE_OVERLAY_BUTTON_HEIGHT = 52;
-const PAUSE_OVERLAY_BUTTON_GAP = 22;
+export const PAUSE_OVERLAY_BUTTON_HEIGHT = 48;
+const PAUSE_OVERLAY_BUTTON_GAP = 16;
 export const PAUSE_OVERLAY_SLOT_BUTTON_WIDTH = 68;
 export const PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT = 30;
 export const PAUSE_OVERLAY_SLOT_BUTTON_GAP = 8;
-export const PAUSE_OVERLAY_SLOT_ROW_HEIGHT = 72;
-const PAUSE_OVERLAY_SLOT_ROW_MAX_WIDTH = 640;
+/** Buttons keep this distance from the right edge of their slot card. */
+const SLOT_BUTTON_INSET = 10;
+const SLOT_TEXT_INSET = 14;
+/** Cards this tall put the checkpoint text above the buttons instead of beside them. */
+const STACKED_SLOT_ROW_HEIGHT = 88;
+const SIDE_BY_SIDE_SLOT_ROW_HEIGHT = 60;
 
-const PAUSE_BREAKPOINT_NARROW_WIDTH = 720;
+/** Height of one shared music slider row. */
+const SLIDER_ROW_HEIGHT = 52;
+
+const PAUSE_PANEL_MAX_WIDTH = 680;
+const PAUSE_PANEL_MARGIN = 12;
 const PAUSE_BREAKPOINT_SHORT_HEIGHT = 520;
-const PAUSE_BREAKPOINT_VERY_SHORT_HEIGHT = 400;
-const PAUSE_BREAKPOINT_ULTRA_COMPACT_WIDTH = 340;
-const PAUSE_BREAKPOINT_ULTRA_COMPACT_HEIGHT = 380;
+const PAUSE_STACKED_CARDS_MAX_PANEL_WIDTH = 496;
+const PAUSE_STACKED_CARDS_MIN_HEIGHT = 640;
+/** Below this the settings sliders stack in one column. */
+const PAUSE_SETTINGS_TWO_COLUMN_MIN_WIDTH = 390;
+/** One width for every viewport: tier buttons keep the size they were built with across resizes. */
+const PAUSE_SETTINGS_MAX_WIDTH = 330;
+/** Viewports at least this wide are assumed to have a keyboard worth hinting at. */
+const PAUSE_KEY_HINT_MIN_WIDTH = 720;
 
-interface PauseLayoutFlags {
-  short: boolean;
-  veryShort: boolean;
-  compact: boolean;
-  compressedPortrait: boolean;
-  ultraCompact: boolean;
-  buttonsStacked: boolean;
+interface SlotTextBand {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
 }
 
-function resolvePauseFooterMargin(flags: PauseLayoutFlags): number {
-  if (flags.ultraCompact) return 4;
-  if (flags.buttonsStacked) return 10;
-  if (flags.short) return 6;
-  if (flags.compact) return 20;
-  return 36;
-}
-
-function resolvePauseSlotMetrics(flags: PauseLayoutFlags): { height: number; gap: number } {
-  if (flags.ultraCompact) return { height: 32, gap: 0 };
-  if (flags.veryShort) return { height: 36, gap: 2 };
-  if (flags.compressedPortrait) return { height: 60, gap: 4 };
-  if (flags.short) return { height: 44, gap: 4 };
-  if (flags.buttonsStacked || flags.compact) return { height: PAUSE_OVERLAY_SLOT_ROW_HEIGHT, gap: 4 };
-  return { height: PAUSE_OVERLAY_SLOT_ROW_HEIGHT, gap: 10 };
+interface SlotButtonRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 interface PauseSaveSlotRowControlLayout {
-  title: { x: number; y: number; width: number; height: number; visible: boolean };
-  subtitle: { x: number; y: number; width: number; height: number; visible: boolean };
-  savedAt: { x: number; y: number; width: number; height: number; visible: boolean };
-  saveButton: { x: number; y: number; width: number; height: number };
-  loadButton: { x: number; y: number; width: number; height: number };
-  deleteButton: { x: number; y: number; width: number; height: number };
+  title: SlotTextBand;
+  subtitle: SlotTextBand;
+  savedAt: SlotTextBand;
+  saveButton: SlotButtonRect;
+  loadButton: SlotButtonRect;
+  deleteButton: SlotButtonRect;
 }
 
+/** Width reserved for the saved-at timestamp (`2026-04-27 12:34` in the readout face). */
+const SAVED_AT_WIDTH = 116;
+
+/**
+ * Places a slot card's text and buttons. Empty cards have no timestamp, so pass `occupied: false`
+ * to centre their two remaining lines.
+ */
 export function getPauseSaveSlotRowControlLayout(
-  row: PauseOverlayLayout['slotRows'][number]
+  row: PauseSaveSlotRowLayout,
+  occupied = true
 ): PauseSaveSlotRowControlLayout {
-  const deleteX = row.x + row.width - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH - 10;
+  const deleteX = row.x + row.width - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH - SLOT_BUTTON_INSET;
   const loadX = deleteX - PAUSE_OVERLAY_SLOT_BUTTON_GAP - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH;
   const saveX = loadX - PAUSE_OVERLAY_SLOT_BUTTON_GAP - PAUSE_OVERLAY_SLOT_BUTTON_WIDTH;
-  const compactRow = row.height < 60;
-  const ultraCompactRow = row.height <= 40;
-  const narrowRow = row.width < 300;
-  const textX = row.x + 14;
+  const textX = row.x + SLOT_TEXT_INSET;
+  const stacked = row.height >= STACKED_SLOT_ROW_HEIGHT;
+  const buttonY = stacked
+    ? row.y + row.height - PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT - 10
+    : row.y + (row.height - PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT) / 2;
+  const button = (x: number): SlotButtonRect => ({
+    x,
+    y: buttonY,
+    width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
+    height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
+  });
+  const band = (x: number, y: number, width: number, height: number): SlotTextBand => ({
+    x,
+    y,
+    width,
+    height,
+    visible: true,
+  });
+  const hidden: SlotTextBand = { x: textX, y: row.y, width: 0, height: 0, visible: false };
+  const buttons = { saveButton: button(saveX), loadButton: button(loadX), deleteButton: button(deleteX) };
 
-  if (narrowRow) {
-    const buttonY = row.y + Math.max(1, row.height - PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT - 1);
-    const titleY = row.y + 8;
-    const titleVisible = !compactRow && !ultraCompactRow;
-
-    return {
-      title: { x: textX, y: titleY, width: row.width - 28, height: 14, visible: titleVisible },
-      subtitle: { x: textX, y: titleY, width: 0, height: 0, visible: false },
-      savedAt: { x: textX, y: titleY, width: 0, height: 0, visible: false },
-      saveButton: {
-        x: saveX,
-        y: buttonY,
-        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
-        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
-      },
-      loadButton: {
-        x: loadX,
-        y: buttonY,
-        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
-        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
-      },
-      deleteButton: {
-        x: deleteX,
-        y: buttonY,
-        width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
-        height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
-      },
-    };
+  // Text column: the full card when stacked above the buttons, otherwise what is left beside them.
+  const textWidth = stacked ? row.width - SLOT_TEXT_INSET * 2 : Math.max(0, saveX - textX - 10);
+  if (textWidth < 40) {
+    return { title: hidden, subtitle: hidden, savedAt: hidden, ...buttons };
   }
 
-  const buttonY = row.y + row.height - PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT - 8;
-  const availableTextWidth = Math.max(0, saveX - textX - 8);
+  // The timestamp shares a line with other text, right-aligned, whenever the column is wide enough.
+  const savedAtFits = occupied && textWidth >= SAVED_AT_WIDTH * 2.4;
+  const savedAtX = textX + textWidth - SAVED_AT_WIDTH;
+  const besideSavedAt = savedAtFits ? textWidth - SAVED_AT_WIDTH - 10 : textWidth;
 
+  if (stacked) {
+    return {
+      title: band(textX, row.y + 9, textWidth, 18),
+      subtitle: band(textX, row.y + 29, besideSavedAt, 16),
+      savedAt: savedAtFits ? band(savedAtX, row.y + 30, SAVED_AT_WIDTH, 14) : hidden,
+      ...buttons,
+    };
+  }
+  if (row.height < 42) {
+    return {
+      title: band(textX, row.y + (row.height - 18) / 2, besideSavedAt, 18),
+      subtitle: hidden,
+      savedAt: savedAtFits ? band(savedAtX, row.y + (row.height - 14) / 2, SAVED_AT_WIDTH, 14) : hidden,
+      ...buttons,
+    };
+  }
+  const titleY = row.y + row.height / 2 - 19;
   return {
-    title: {
-      x: textX,
-      y: row.y + (ultraCompactRow ? 12 : compactRow ? 7 : 10),
-      width: availableTextWidth,
-      height: 14,
-      visible: true,
-    },
-    subtitle: {
-      x: textX,
-      y: row.y + (compactRow ? 24 : 30),
-      width: availableTextWidth,
-      height: 12,
-      visible: !ultraCompactRow,
-    },
-    savedAt: {
-      x: textX,
-      y: row.y + (compactRow ? 39 : 51),
-      width: availableTextWidth,
-      height: 10,
-      visible: !ultraCompactRow,
-    },
-    saveButton: {
-      x: saveX,
-      y: buttonY,
-      width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
-      height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
-    },
-    loadButton: {
-      x: loadX,
-      y: buttonY,
-      width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
-      height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
-    },
-    deleteButton: {
-      x: deleteX,
-      y: buttonY,
-      width: PAUSE_OVERLAY_SLOT_BUTTON_WIDTH,
-      height: PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT,
-    },
+    title: band(textX, titleY, besideSavedAt, 18),
+    subtitle: band(textX, titleY + 20, textWidth, 16),
+    savedAt: savedAtFits ? band(savedAtX, titleY + 2, SAVED_AT_WIDTH, 14) : hidden,
+    ...buttons,
   };
 }
 
+/**
+ * The panel is a single column: header (title + tabs), the active subview, one status line and the
+ * footer actions. Its height is the sum of those bands, so it hugs its content at every size.
+ */
 export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
   const viewport = getViewportLayout(scene);
-  const shortViewport = isShortViewport(viewport, PAUSE_BREAKPOINT_SHORT_HEIGHT);
-  const veryShortViewport = viewport.height < PAUSE_BREAKPOINT_VERY_SHORT_HEIGHT;
-  const compact = isNarrowViewport(viewport, PAUSE_BREAKPOINT_NARROW_WIDTH);
-  const stackedLayout = compact || shortViewport;
-  const ultraCompactViewport =
-    viewport.width <= PAUSE_BREAKPOINT_ULTRA_COMPACT_WIDTH && viewport.height <= PAUSE_BREAKPOINT_ULTRA_COMPACT_HEIGHT;
-  const safeViewportWidth = Math.max(280, viewport.width);
-  const widePanelWidth = Math.min(PAUSE_OVERLAY_PANEL_WIDTH, safeViewportWidth - 32);
-  const panelWidth = stackedLayout
-    ? Math.min(PAUSE_OVERLAY_COMPACT_PANEL_WIDTH, safeViewportWidth - 24)
-    : Math.min(PAUSE_OVERLAY_PANEL_WIDTH, safeViewportWidth - 24, widePanelWidth);
-  const panelHeight = Math.min(
-    shortViewport
-      ? PAUSE_OVERLAY_PANEL_HEIGHT
-      : compact
-        ? PAUSE_OVERLAY_COMPACT_PANEL_HEIGHT
-        : PAUSE_OVERLAY_PANEL_HEIGHT,
-    viewport.height - 24
-  );
-  const panelX = centerHorizontally(viewport, panelWidth);
-  const panelY = viewport.centerY - panelHeight / 2;
-  const panelBottom = panelY + panelHeight;
-  const compressedPortrait = compact && !shortViewport && panelWidth < 322;
-  const contentInset = ultraCompactViewport ? 12 : shortViewport || compact ? 22 : 42;
+  const panelWidth = Math.min(PAUSE_PANEL_MAX_WIDTH, Math.max(256, viewport.width - PAUSE_PANEL_MARGIN * 2));
+  // Narrow panels stack their checkpoint cards, which needs more height before the roomy layout fits.
+  const short =
+    viewport.height <= PAUSE_BREAKPOINT_SHORT_HEIGHT ||
+    (panelWidth < PAUSE_STACKED_CARDS_MAX_PANEL_WIDTH && viewport.height < PAUSE_STACKED_CARDS_MIN_HEIGHT);
+  const pad = panelWidth < 300 ? 8 : short || panelWidth < 420 ? 14 : 28;
+  const contentWidth = panelWidth - pad * 2;
+  const contentX = viewport.centerX - contentWidth / 2;
+  const availableHeight = viewport.height - 16;
+
+  // Header: short viewports put the title beside the tabs when both fit on one line.
+  const inlineHeader = short && contentWidth >= 400;
+  const titleFontSize = short ? (inlineHeader ? 26 : 22) : panelWidth < 420 ? 40 : 52;
+  const titleBand = inlineHeader ? 0 : short ? 30 : titleFontSize + 30;
+  const tabHeight = short ? (inlineHeader ? 38 : 32) : 40;
+  const tabWidth = inlineHeader ? 132 : Math.min(180, contentWidth / 2);
+  const topPad = short ? 6 : 18;
+  const tabToContentGap = short ? 8 : 16;
+
+  const statusBand = short ? 24 : 36;
   const twoButtonsWidth = PAUSE_OVERLAY_BUTTON_WIDTH * 2 + PAUSE_OVERLAY_BUTTON_GAP;
-  const buttonsStacked = panelWidth < twoButtonsWidth + 8;
-  const flags: PauseLayoutFlags = {
-    short: shortViewport,
-    veryShort: veryShortViewport,
-    compact,
-    compressedPortrait,
-    ultraCompact: ultraCompactViewport,
-    buttonsStacked,
-  };
-  const saveSlotsVisible = true;
-  const footerBottomMargin = resolvePauseFooterMargin(flags);
-  const footerButtonGap = ultraCompactViewport ? 6 : PAUSE_OVERLAY_BUTTON_GAP;
-  const menuButtonY = panelBottom - PAUSE_OVERLAY_BUTTON_HEIGHT - footerBottomMargin;
-  const footerTop = buttonsStacked ? menuButtonY - footerButtonGap - PAUSE_OVERLAY_BUTTON_HEIGHT : menuButtonY;
-  const resumeButtonY = footerTop;
-  const statusTextHeight = 20;
-  const statusY = footerTop - 8 - statusTextHeight / 2;
-  const { height: slotRowHeight, gap: slotRowGap } = resolvePauseSlotMetrics(flags);
-  const slotRowWidth = Math.min(PAUSE_OVERLAY_SLOT_ROW_MAX_WIDTH, panelWidth - contentInset * 2);
-  const slotBlockHeight = slotRowHeight * 3 + slotRowGap * 2;
-  const titleFontSize = shortViewport ? 42 : 74;
-  const subtitleFontSize = veryShortViewport ? 14 : 16;
-  const hintFontSize = veryShortViewport ? 12 : 14;
-  const titleY = panelY + (shortViewport ? 30 : 88);
-  const baseSubtitleY = panelY + (veryShortViewport ? 94 : shortViewport ? 72 : 164);
-  const baseHintY = panelY + (veryShortViewport ? 118 : shortViewport ? 96 : 202);
-  const tabWidth = Math.min(180, (panelWidth - 54) / 2);
-  const tabHeight = shortViewport ? 26 : 32;
-  const tabY = panelY + (shortViewport ? 62 : compressedPortrait ? 140 : compact ? 222 : 230);
-  const saveHeaderGap = stackedLayout ? (ultraCompactViewport ? 16 : veryShortViewport ? 18 : 22) : 28;
-  const tabContentStartY = tabY + tabHeight + saveHeaderGap + 8;
-  const desiredSlotStartY = stackedLayout
-    ? Math.max(
-        panelY + (ultraCompactViewport ? 68 : veryShortViewport ? 104 : shortViewport ? 118 : 170),
-        tabContentStartY
-      )
-    : panelY + 300;
-  const earliestSlotStartY =
-    panelY + (ultraCompactViewport ? 34 : veryShortViewport ? 36 : shortViewport ? 24 : stackedLayout ? 130 : 150);
-  const latestSlotStartY = statusY - statusTextHeight / 2 - 8 - slotBlockHeight;
+  const buttonsStacked = panelWidth - 16 < twoButtonsWidth;
+  const footerGap = short ? 6 : PAUSE_OVERLAY_BUTTON_GAP;
+  const footerHeight = buttonsStacked ? PAUSE_OVERLAY_BUTTON_HEIGHT * 2 + footerGap : PAUSE_OVERLAY_BUTTON_HEIGHT;
+  const keyHintVisible = !short && viewport.width >= PAUSE_KEY_HINT_MIN_WIDTH;
+  const keyHintBand = keyHintVisible ? 26 : 0;
+  const bottomPad = short ? 8 : keyHintVisible ? 14 : 22;
+  const chromeHeight =
+    topPad + titleBand + tabHeight + tabToContentGap + statusBand + footerHeight + keyHintBand + bottomPad;
 
-  let subtitleVisible = !shortViewport && !compressedPortrait;
-  let hintVisible = !shortViewport && !compressedPortrait;
-  let subtitleY = baseSubtitleY;
-  let hintY = baseHintY;
-  const textToSlotsGap = stackedLayout ? 10 : 14;
+  // Settings: two tier selectors above the music sliders.
+  const settingsWidth = Math.min(PAUSE_SETTINGS_MAX_WIDTH, contentWidth);
+  const settingsTwoColumns = viewport.width >= PAUSE_SETTINGS_TWO_COLUMN_MIN_WIDTH;
+  const settingsColumnGap = short ? 12 : 16;
+  const tierHeight = short ? 24 : 28;
+  const tierPitch = short ? 32 : 40;
+  const sliderPitch = SLIDER_ROW_HEIGHT + (short ? 4 : 8);
+  const sliderRows = settingsTwoColumns ? 2 : 4;
+  const tiersToSlidersGap = short ? 10 : 16;
+  const settingsHeight =
+    tierPitch + tierHeight + tiersToSlidersGap + sliderPitch * (sliderRows - 1) + SLIDER_ROW_HEIGHT;
 
-  const getTopBandBottom = (): number => {
-    if (hintVisible) {
-      return hintY + 12;
-    }
-    if (subtitleVisible) {
-      return subtitleY + 12;
-    }
-    return titleY + 26;
-  };
+  // Checkpoint cards: short viewports stretch them over whatever height the subview has.
+  const slotGap = short ? 4 : 8;
+  const roomForContent = availableHeight - chromeHeight;
+  const slotHeight = short
+    ? Math.max(32, Math.min(56, Math.floor((Math.min(settingsHeight, roomForContent) - slotGap * 2) / 3)))
+    : panelWidth < PAUSE_STACKED_CARDS_MAX_PANEL_WIDTH
+      ? STACKED_SLOT_ROW_HEIGHT
+      : SIDE_BY_SIDE_SLOT_ROW_HEIGHT;
+  const slotsHeight = slotHeight * 3 + slotGap * 2;
 
-  const recomputeTextBand = (): number => {
-    const topBandBottomLimit = latestSlotStartY - textToSlotsGap;
+  const contentHeight = Math.max(slotsHeight, Math.min(settingsHeight, roomForContent));
+  const panelHeight = chromeHeight + contentHeight;
+  const panelX = centerHorizontally(viewport, panelWidth);
+  const panelY = Math.max(viewport.top + 4, viewport.centerY - panelHeight / 2);
 
-    if (subtitleVisible) {
-      const minSubtitleY = titleY + 20;
-      const subtitleBottomLimit = topBandBottomLimit - (hintVisible ? 24 : 10);
-      subtitleY = Math.max(minSubtitleY, Math.min(baseSubtitleY, subtitleBottomLimit));
-    }
+  const headerY = panelY + topPad;
+  const tabY = headerY + titleBand;
+  const tabsX = inlineHeader ? contentX + contentWidth - tabWidth * 2 : viewport.centerX - tabWidth;
+  const contentY = tabY + tabHeight + tabToContentGap;
+  const statusY = contentY + contentHeight + statusBand / 2;
+  const footerY = contentY + contentHeight + statusBand;
+  const footerLeft = viewport.centerX - (buttonsStacked ? PAUSE_OVERLAY_BUTTON_WIDTH : twoButtonsWidth) / 2;
 
-    if (hintVisible) {
-      const minHintY = subtitleVisible ? subtitleY + 18 : titleY + 24;
-      const hintBottomLimit = topBandBottomLimit - 2;
-      hintY = Math.max(minHintY, Math.min(baseHintY, hintBottomLimit));
-    }
-
-    return Math.max(earliestSlotStartY, getTopBandBottom() + textToSlotsGap);
-  };
-
-  let minimumSlotStartY = Math.max(recomputeTextBand(), tabContentStartY);
-  if (minimumSlotStartY > latestSlotStartY && hintVisible) {
-    hintVisible = false;
-    hintY = baseHintY;
-    minimumSlotStartY = Math.max(recomputeTextBand(), tabContentStartY);
-  }
-  if (minimumSlotStartY > latestSlotStartY && subtitleVisible) {
-    subtitleVisible = false;
-    subtitleY = baseSubtitleY;
-    minimumSlotStartY = Math.max(recomputeTextBand(), tabContentStartY);
-  }
-
-  minimumSlotStartY = Math.min(minimumSlotStartY, latestSlotStartY);
-  const slotStartY = Math.max(minimumSlotStartY, Math.min(desiredSlotStartY, latestSlotStartY));
-
-  const saveHeaderY = slotStartY - saveHeaderGap;
-  const saveHeaderVisible = !shortViewport;
-  const slotX = viewport.centerX - slotRowWidth / 2;
-  const compactResumeX = buttonsStacked
-    ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2
-    : viewport.centerX - twoButtonsWidth / 2;
-  const compactMenuX = buttonsStacked
-    ? viewport.centerX - PAUSE_OVERLAY_BUTTON_WIDTH / 2
-    : viewport.centerX - twoButtonsWidth / 2 + PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP;
-  const settingsWidth = Math.min(330, panelWidth - 48);
   const settingsX = viewport.centerX - settingsWidth / 2;
-  const settingsDifficultyY = panelY + (shortViewport ? 94 : 270);
-  const settingsQualityY = settingsDifficultyY + (shortViewport ? 29 : 38);
-  const settingsSliderY = settingsQualityY + (shortViewport || compact ? 34 : 48);
-  const settingsTwoColumns = viewport.width >= 390;
-  const settingsColumnGap = 20;
-  const settingsSliderWidth = settingsTwoColumns
-    ? Math.min(settingsWidth, (panelWidth - settingsColumnGap - 24) / 2)
+  const sliderWidth = settingsTwoColumns
+    ? Math.min(settingsWidth, (contentWidth - settingsColumnGap) / 2)
     : settingsWidth;
-  const settingsLeftX = settingsTwoColumns ? viewport.centerX - settingsSliderWidth - settingsColumnGap / 2 : settingsX;
-  const settingsRightX = viewport.centerX + settingsColumnGap / 2;
-  const settingsRowGap = shortViewport ? 56 : 62;
-  const settingsSliderPositions = settingsTwoColumns
-    ? [
-        { x: settingsLeftX, y: settingsSliderY },
-        { x: settingsRightX, y: settingsSliderY },
-        { x: settingsLeftX, y: settingsSliderY + settingsRowGap },
-        { x: settingsRightX, y: settingsSliderY + settingsRowGap },
-      ]
-    : [0, 1, 2, 3].map((index) => ({ x: settingsX, y: settingsSliderY + index * settingsRowGap }));
+  const sliderLeftX = settingsTwoColumns ? viewport.centerX - sliderWidth - settingsColumnGap / 2 : settingsX;
+  const sliderRightX = viewport.centerX + settingsColumnGap / 2;
+  const slotsY = contentY + (contentHeight - slotsHeight) / 2;
+  const settingsY = contentY + Math.max(0, (contentHeight - settingsHeight) / 2);
+  const sliderY = settingsY + tierPitch + tierHeight + tiersToSlidersGap;
 
   return {
     left: viewport.left,
@@ -306,101 +218,66 @@ export function getPauseOverlayLayout(scene: Phaser.Scene): PauseOverlayLayout {
     panelWidth,
     panelHeight,
     titleFontSize,
-    subtitleFontSize,
-    hintFontSize,
-    titleY,
-    subtitleY,
-    subtitleVisible,
-    hintY,
-    hintVisible,
-    saveSlotsVisible,
-    saveHeaderVisible,
-    saveHeaderX: slotX,
-    saveHeaderY,
-    slotRows: [0, 1, 2].map((index) => ({
-      x: slotX,
-      y: slotStartY + index * (slotRowHeight + slotRowGap),
-      width: slotRowWidth,
-      height: slotRowHeight,
-    })),
-    statusX: viewport.centerX,
-    statusY,
-    resumeButtonX: compactResumeX,
-    resumeButtonY,
-    menuButtonX: compactMenuX,
-    menuButtonY,
-    buttonY: footerTop,
-    checkpointTabX: viewport.centerX - tabWidth - 5,
-    settingsTabX: viewport.centerX + 5,
+    titleX: inlineHeader ? contentX : viewport.centerX,
+    titleY: inlineHeader ? tabY + tabHeight / 2 : headerY + titleBand / 2,
+    titleCentered: !inlineHeader,
+    tabsX,
     tabY,
     tabWidth,
     tabHeight,
+    tabRuleX: contentX,
+    tabRuleWidth: contentWidth,
+    slotRows: [0, 1, 2].map((index) => ({
+      x: contentX,
+      y: slotsY + index * (slotHeight + slotGap),
+      width: contentWidth,
+      height: slotHeight,
+    })),
+    statusX: viewport.centerX,
+    statusY,
+    statusWrapWidth: contentWidth,
+    resumeButtonX: footerLeft,
+    resumeButtonY: footerY,
+    menuButtonX: buttonsStacked ? footerLeft : footerLeft + PAUSE_OVERLAY_BUTTON_WIDTH + PAUSE_OVERLAY_BUTTON_GAP,
+    menuButtonY: buttonsStacked ? footerY + PAUSE_OVERLAY_BUTTON_HEIGHT + footerGap : footerY,
+    buttonY: footerY,
+    keyHintY: footerY + footerHeight + keyHintBand / 2 + 2,
+    keyHintVisible,
     settingsLayout: {
       x: settingsX,
       width: settingsWidth,
-      sliderWidth: settingsSliderWidth,
-      difficultyY: settingsDifficultyY,
-      qualityY: settingsQualityY,
-      tierHeight: 24,
-      compact: compact || shortViewport,
-      sliderPositions: settingsSliderPositions,
+      sliderWidth,
+      difficultyY: settingsY,
+      qualityY: settingsY + tierPitch,
+      tierHeight,
+      compact: short || panelWidth < 420,
+      sliderPositions: settingsTwoColumns
+        ? [
+            { x: sliderLeftX, y: sliderY },
+            { x: sliderRightX, y: sliderY },
+            { x: sliderLeftX, y: sliderY + sliderPitch },
+            { x: sliderRightX, y: sliderY + sliderPitch },
+          ]
+        : [0, 1, 2, 3].map((index) => ({ x: settingsX, y: sliderY + index * sliderPitch })),
     },
   };
 }
 
+/** Scrim that keeps the frozen battlefield legible, and the glass panel over it. */
 export function drawPauseOverlayBackdrop(
   dimmer: Phaser.GameObjects.Graphics,
   panel: Phaser.GameObjects.Graphics,
   layout: PauseOverlayLayout
 ): void {
   dimmer.clear();
-  dimmer.fillStyle(0x00030a, 0.86);
+  dimmer.fillStyle(0x010409, 0.72);
   dimmer.fillRect(layout.left, layout.top, layout.width, layout.height);
-  dimmer.fillStyle(0x071b35, 0.2);
-  dimmer.fillRect(layout.left, layout.top, layout.width, layout.height * 0.26);
-  dimmer.lineStyle(1, 0x17314d, scaleUiGlowAlpha(0.22));
-  const atmosphere = getVisualQualityProfile().menuAtmosphere;
-  const scanlineStep = atmosphere >= 3 ? 18 : atmosphere >= 2 ? 22 : 30;
-  for (let y = layout.top; y < layout.top + layout.height; y += scanlineStep) {
-    dimmer.lineBetween(layout.left, y, layout.left + layout.width, y);
-  }
 
   panel.clear();
   drawNeonFrame(panel, layout.panelX, layout.panelY, layout.panelWidth, layout.panelHeight, {
     accentColor: NEON.cyan,
-    fillAlpha: 0.9,
-    strokeAlpha: 0.94,
-    cornerCut: 32,
+    fillAlpha: 0.94,
+    cornerCut: Math.min(22, layout.panelWidth * 0.05),
     glow: true,
   });
-
-  drawNeonDivider(
-    panel,
-    layout.centerX,
-    Math.max(layout.panelY + 24, layout.titleY - 48),
-    Math.min(620, layout.panelWidth - 160)
-  );
-  if (layout.hintVisible) {
-    drawNeonDivider(
-      panel,
-      layout.centerX,
-      Math.min(layout.saveHeaderY - 16, layout.hintY + 24),
-      Math.min(520, layout.panelWidth - 180)
-    );
-  }
-  drawNeonDivider(panel, layout.centerX, layout.buttonY - 28, Math.min(540, layout.panelWidth - 160));
-
-  panel.fillStyle(0x0e2b45, 0.35);
-  panel.fillRect(layout.panelX + 18, layout.panelY + 12, layout.panelWidth - 36, 1);
-  panel.fillRect(layout.panelX + 18, layout.panelY + layout.panelHeight - 13, layout.panelWidth - 36, 1);
-}
-
-export function getPauseOverlayMessage(): PauseOverlayMessage {
-  return {
-    title: 'PAUSED',
-    subtitle: 'Press ESC or tap RESUME to continue.',
-    checkpointHint: 'Choose a slot to save, restore, or clear your run.',
-    settingsHint: 'Tune difficulty, quality, and music for this run.',
-    resumeLabel: '▶\nRESUME',
-  };
 }

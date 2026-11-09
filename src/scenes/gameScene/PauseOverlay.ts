@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 import { getGameplayDifficultyTier } from '../../config/gameplayDifficulty';
 import { getVisualQualityTier } from '../../config/visualQuality';
 import { audioManager } from '../../systems/AudioManager';
-import { UI_FONT_DISPLAY, UI_FONT_MONO } from '../../utils/uiFonts';
 import {
   mountAccessibleActionLayer,
   type AccessibleAction,
   type AccessibleActionLayerHandle,
 } from '../shared/accessibleActionLayer';
 import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
+import { addNeonTitle, NEON_TEXT, neonLabelStyle } from '../shared/neonUiTheme';
 import { createSettingsPanel, type SettingsPanel } from '../shared/settingsPanel';
 import {
   createPauseSaveSlotRows,
@@ -19,14 +19,21 @@ import {
   setPauseSaveSlotRowsVisible,
   type PauseSaveSlotRows,
 } from './pauseOverlay/controls';
-import type { PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
+import { createPauseTabs, type PauseTabs } from './pauseOverlay/tabs';
+import type { PauseOverlayHandlers, PauseOverlayLayout, PauseOverlayState, PauseSubview } from './pauseOverlay/types';
 import {
   drawPauseOverlayBackdrop,
   getPauseOverlayLayout,
-  getPauseOverlayMessage,
   PAUSE_OVERLAY_BUTTON_HEIGHT,
   PAUSE_OVERLAY_BUTTON_WIDTH,
 } from './pauseOverlay/view';
+
+const OVERLAY_DEPTH = 900;
+/** Shown under the settings subview until the controller reports something more specific. */
+const SETTINGS_NOTE = 'Quality applies after restart.';
+/** Announced to assistive technology only; sighted players read the slot cards instead. */
+const CHECKPOINTS_SPOKEN_NOTE = 'Save, load or delete a checkpoint slot.';
+const STORAGE_UNAVAILABLE_NOTE = 'Checkpoint storage unavailable in this browser.';
 
 function createDefaultPauseOverlayState(): PauseOverlayState {
   return {
@@ -48,22 +55,16 @@ export class PauseOverlay {
   private dimmer: Phaser.GameObjects.Graphics | null = null;
   private panel: Phaser.GameObjects.Graphics | null = null;
   private titleText: Phaser.GameObjects.Text | null = null;
-  private subtitleText: Phaser.GameObjects.Text | null = null;
-  private hintText: Phaser.GameObjects.Text | null = null;
-  private savesHeaderText: Phaser.GameObjects.Text | null = null;
   private statusText: Phaser.GameObjects.Text | null = null;
+  private keyHintText: Phaser.GameObjects.Text | null = null;
   private resumeButton: ActionButtonControl | null = null;
   private menuButton: ActionButtonControl | null = null;
-  private checkpointTab: ActionButtonControl | null = null;
-  private settingsTab: ActionButtonControl | null = null;
+  private tabs: PauseTabs | null = null;
   private settingsPanel: SettingsPanel | null = null;
   private teardownAccessibleActions?: AccessibleActionLayerHandle;
   private saveSlotRows: PauseSaveSlotRows | null = null;
-  private saveSlotsVisible = true;
-  private saveHeaderVisible = true;
-  private subtitleVisible = true;
-  private hintVisible = true;
-  private activeSubview: 'checkpoints' | 'settings' = 'checkpoints';
+  private keyHintVisible = false;
+  private activeSubview: PauseSubview = 'checkpoints';
   private accessibleStatusMessage = '';
   private paintedStatusMessage = '';
 
@@ -84,48 +85,10 @@ export class PauseOverlay {
 
     this.dimmer = scene.add.graphics();
     this.panel = scene.add.graphics();
-    this.titleText = scene.add
-      .text(0, 0, 'PAUSED', {
-        fontSize: '86px',
-        color: '#eefbff',
-        fontStyle: 'bold',
-        fontFamily: UI_FONT_DISPLAY,
-        stroke: '#42c9ff',
-        strokeThickness: 2,
-      })
-      .setOrigin(0.5);
-    this.subtitleText = scene.add
-      .text(0, 0, '', {
-        fontSize: '16px',
-        color: '#d5e6f6',
-        fontFamily: UI_FONT_MONO,
-        align: 'center',
-      })
-      .setOrigin(0.5);
-    this.hintText = scene.add
-      .text(0, 0, '', {
-        fontSize: '14px',
-        color: '#7fa8df',
-        fontFamily: UI_FONT_MONO,
-        align: 'center',
-        wordWrap: { width: 650 },
-      })
-      .setOrigin(0.5);
-    this.savesHeaderText = scene.add.text(0, 0, 'CHECKPOINT SLOTS', {
-      fontSize: '14px',
-      color: '#ffbf6b',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-    });
     this.statusText = scene.add
-      .text(0, 0, '', {
-        fontSize: '13px',
-        color: '#72ecff',
-        fontFamily: UI_FONT_MONO,
-        align: 'center',
-        wordWrap: { width: 620 },
-      })
+      .text(0, 0, '', { ...neonLabelStyle(14, NEON_TEXT.cyan, 0.8), align: 'center' })
       .setOrigin(0.5);
+    this.keyHintText = scene.add.text(0, 0, 'ESC  RESUME', neonLabelStyle(12, NEON_TEXT.muted, 2)).setOrigin(0.5);
 
     const initialLayout = getPauseOverlayLayout(scene);
     this.settingsPanel = createSettingsPanel(scene, {
@@ -142,37 +105,24 @@ export class PauseOverlay {
       onDeleteSlot: (slotId) => this.handlers?.onDeleteSlot(slotId),
     });
     this.resumeButton = createActionButtonControl(scene, {
-      label: '▶\nRESUME',
+      label: 'RESUME',
       width: PAUSE_OVERLAY_BUTTON_WIDTH,
       height: PAUSE_OVERLAY_BUTTON_HEIGHT,
       onClick: () => this.handlers?.onResume(),
       variant: 'primary',
+      fontSize: '18px',
     });
     this.menuButton = createActionButtonControl(scene, {
-      label: '⌂\nMAIN MENU',
+      label: 'MAIN MENU',
       width: PAUSE_OVERLAY_BUTTON_WIDTH,
       height: PAUSE_OVERLAY_BUTTON_HEIGHT,
       onClick: () => this.handlers?.onMainMenu(),
       variant: 'secondary',
+      fontSize: '18px',
     });
-    this.checkpointTab = createActionButtonControl(scene, {
-      label: 'CHECKPOINTS',
-      width: initialLayout.tabWidth,
-      height: initialLayout.tabHeight,
-      onClick: () => this.selectSubview('checkpoints'),
-      variant: 'primary',
-      fontSize: '11px',
-    });
-    this.settingsTab = createActionButtonControl(scene, {
-      label: 'SETTINGS',
-      width: initialLayout.tabWidth,
-      height: initialLayout.tabHeight,
-      onClick: () => this.selectSubview('settings'),
-      variant: 'secondary',
-      fontSize: '11px',
-    });
+    this.tabs = createPauseTabs(scene, (subview) => this.selectSubview(subview));
 
-    this.setDepth(900);
+    this.setDepth(OVERLAY_DEPTH);
 
     scene.scale.off(Phaser.Scale.Events.RESIZE, this.relayout, this);
     scene.scale.on(Phaser.Scale.Events.RESIZE, this.relayout, this);
@@ -205,16 +155,12 @@ export class PauseOverlay {
       !this.blocker ||
       !this.dimmer ||
       !this.panel ||
-      !this.titleText ||
-      !this.subtitleText ||
-      !this.hintText ||
-      !this.savesHeaderText ||
       !this.statusText ||
+      !this.keyHintText ||
       !this.resumeButton ||
       !this.menuButton ||
       !this.settingsPanel ||
-      !this.checkpointTab ||
-      !this.settingsTab ||
+      !this.tabs ||
       !this.saveSlotRows
     ) {
       return;
@@ -225,33 +171,18 @@ export class PauseOverlay {
     this.blocker.setPosition(layout.left, layout.top);
     this.blocker.setSize(layout.width, layout.height);
     drawPauseOverlayBackdrop(this.dimmer, this.panel, layout);
+    this.paintTitle(this.scene, layout);
 
-    this.titleText.setFontSize(layout.titleFontSize);
-    const maxTitleWidth = Math.max(180, layout.panelWidth - 64);
-    if (this.titleText.width > maxTitleWidth) {
-      const scaled = Math.floor((layout.titleFontSize * maxTitleWidth) / this.titleText.width);
-      this.titleText.setFontSize(Math.max(28, scaled));
-    }
-    this.subtitleText.setFontSize(layout.subtitleFontSize);
-    this.hintText.setFontSize(layout.hintFontSize);
-    this.titleText.setPosition(layout.centerX, layout.titleY);
-    this.subtitleText.setPosition(layout.centerX, layout.subtitleY);
-    this.hintText.setPosition(layout.centerX, layout.hintY);
-    this.hintText.setWordWrapWidth(Math.max(280, layout.panelWidth - 88));
-    this.saveSlotsVisible = layout.saveSlotsVisible;
-    this.saveHeaderVisible = layout.saveHeaderVisible;
-    this.subtitleVisible = layout.subtitleVisible;
-    this.hintVisible = layout.hintVisible;
-    this.savesHeaderText.setPosition(layout.saveHeaderX, layout.saveHeaderY);
     this.statusText.setPosition(layout.statusX, layout.statusY);
-    this.statusText.setWordWrapWidth(Math.max(280, layout.panelWidth - 96));
+    this.statusText.setWordWrapWidth(layout.statusWrapWidth);
+    this.keyHintText.setPosition(layout.centerX, layout.keyHintY);
+    this.keyHintVisible = layout.keyHintVisible;
 
+    this.tabs.setLayout(layout);
     this.settingsPanel.setLayout(layout.settingsLayout);
     setPauseSaveSlotRowsPosition(this.saveSlotRows, layout.slotRows);
     this.resumeButton.setPosition(layout.resumeButtonX, layout.resumeButtonY);
     this.menuButton.setPosition(layout.menuButtonX, layout.menuButtonY);
-    this.checkpointTab.setPosition(layout.checkpointTabX, layout.tabY);
-    this.settingsTab.setPosition(layout.settingsTabX, layout.tabY);
     this.applyState();
   }
 
@@ -266,8 +197,7 @@ export class PauseOverlay {
 
     this.resumeButton?.destroy();
     this.menuButton?.destroy();
-    this.checkpointTab?.destroy();
-    this.settingsTab?.destroy();
+    this.tabs?.destroy();
     this.settingsPanel?.destroy();
     destroyPauseSaveSlotRows(this.saveSlotRows);
 
@@ -275,46 +205,46 @@ export class PauseOverlay {
     this.dimmer?.destroy();
     this.panel?.destroy();
     this.titleText?.destroy();
-    this.subtitleText?.destroy();
-    this.hintText?.destroy();
-    this.savesHeaderText?.destroy();
     this.statusText?.destroy();
+    this.keyHintText?.destroy();
 
     this.blocker = null;
     this.dimmer = null;
     this.panel = null;
     this.titleText = null;
-    this.subtitleText = null;
-    this.hintText = null;
-    this.savesHeaderText = null;
     this.statusText = null;
+    this.keyHintText = null;
     this.resumeButton = null;
     this.menuButton = null;
-    this.checkpointTab = null;
-    this.settingsTab = null;
+    this.tabs = null;
     this.settingsPanel = null;
     this.saveSlotRows = null;
     this.handlers = null;
     this.scene = null;
   }
 
+  /** The glowing title bakes its size into its texture, so a relayout repaints it. */
+  private paintTitle(scene: Phaser.Scene, layout: PauseOverlayLayout): void {
+    this.titleText?.destroy();
+    this.titleText = addNeonTitle(
+      scene,
+      layout.titleX,
+      layout.titleY,
+      'PAUSED',
+      layout.titleFontSize,
+      OVERLAY_DEPTH + 3
+    ).setOrigin(layout.titleCentered ? 0.5 : 0, 0.5);
+  }
+
   private setDepth(depth: number): void {
     this.blocker?.setDepth(depth);
     this.dimmer?.setDepth(depth + 1);
     this.panel?.setDepth(depth + 2);
-    this.titleText?.setDepth(depth + 3);
-    this.subtitleText?.setDepth(depth + 3);
-    this.hintText?.setDepth(depth + 3);
-    this.savesHeaderText?.setDepth(depth + 3);
     this.statusText?.setDepth(depth + 3);
-    if (this.resumeButton) {
-      this.resumeButton.setDepth(depth + 3);
-    }
-    if (this.menuButton) {
-      this.menuButton.setDepth(depth + 3);
-    }
-    this.checkpointTab?.setDepth(depth + 3);
-    this.settingsTab?.setDepth(depth + 3);
+    this.keyHintText?.setDepth(depth + 3);
+    this.resumeButton?.setDepth(depth + 3);
+    this.menuButton?.setDepth(depth + 3);
+    this.tabs?.setDepth(depth + 3);
     this.settingsPanel?.setDepth(depth + 3);
     if (this.saveSlotRows) {
       setPauseSaveSlotRowsDepth(this.saveSlotRows, depth + 3);
@@ -324,68 +254,52 @@ export class PauseOverlay {
   private applyState(): void {
     if (
       !this.titleText ||
-      !this.subtitleText ||
-      !this.hintText ||
-      !this.savesHeaderText ||
       !this.statusText ||
+      !this.keyHintText ||
       !this.resumeButton ||
       !this.menuButton ||
       !this.blocker ||
       !this.dimmer ||
       !this.panel ||
       !this.settingsPanel ||
-      !this.checkpointTab ||
-      !this.settingsTab ||
+      !this.tabs ||
       !this.saveSlotRows
     ) {
       return;
     }
 
     const shouldShow = this.state.visible;
-    const canResume = this.state.canResume;
-    const message = getPauseOverlayMessage();
-    const statusMessage =
-      this.state.statusMessage ||
-      (this.activeSubview === 'settings'
-        ? 'Quality applies after restart.'
-        : this.state.storageAvailable
-          ? 'Select SAVE to overwrite a slot, LOAD to restore, or DEL to clear.'
-          : 'Checkpoint storage unavailable in this browser.');
+    const onCheckpoints = this.activeSubview === 'checkpoints';
+    const storageMissing = onCheckpoints && !this.state.storageAvailable;
+    const note = onCheckpoints ? (storageMissing ? STORAGE_UNAVAILABLE_NOTE : '') : SETTINGS_NOTE;
+    const statusMessage = this.state.statusMessage || note;
     this.paintedStatusMessage = statusMessage;
 
-    this.titleText.setText(message.title);
-    this.subtitleText.setText(message.subtitle);
-    this.hintText.setText(this.activeSubview === 'settings' ? message.settingsHint : message.checkpointHint);
-    this.resumeButton.setLabel(message.resumeLabel);
     this.statusText.setText(statusMessage);
     this.statusText.setColor(
-      this.state.statusOk === false || (this.activeSubview === 'checkpoints' && !this.state.storageAvailable)
-        ? '#ff9c7f'
-        : '#72ecff'
+      this.state.statusOk === false || storageMissing
+        ? NEON_TEXT.danger
+        : this.state.statusMessage
+          ? NEON_TEXT.cyan
+          : NEON_TEXT.muted
     );
 
-    this.resumeButton.setEnabled(canResume);
+    this.resumeButton.setEnabled(this.state.canResume);
     this.menuButton.setEnabled(true);
+    this.tabs.setActive(this.activeSubview);
     setPauseSaveSlotRowsState(this.saveSlotRows, this.state);
 
     this.blocker.setVisible(shouldShow);
     this.dimmer.setVisible(shouldShow);
     this.panel.setVisible(shouldShow);
     this.titleText.setVisible(shouldShow);
-    this.subtitleText.setVisible(shouldShow && this.subtitleVisible);
-    this.hintText.setVisible(shouldShow && this.hintVisible);
-    const checkpointsVisible = shouldShow && this.activeSubview === 'checkpoints';
-    const settingsVisible = shouldShow && this.activeSubview === 'settings';
-    this.savesHeaderText.setVisible(checkpointsVisible && this.saveSlotsVisible && this.saveHeaderVisible);
     this.statusText.setVisible(shouldShow);
+    this.keyHintText.setVisible(shouldShow && this.keyHintVisible);
     this.resumeButton.setVisible(shouldShow);
     this.menuButton.setVisible(shouldShow);
-    this.checkpointTab.setVisible(shouldShow);
-    this.settingsTab.setVisible(shouldShow);
-    this.checkpointTab.setVariant(this.activeSubview === 'checkpoints' ? 'primary' : 'secondary');
-    this.settingsTab.setVariant(this.activeSubview === 'settings' ? 'primary' : 'secondary');
-    this.settingsPanel.setVisible(settingsVisible);
-    setPauseSaveSlotRowsVisible(this.saveSlotRows, checkpointsVisible && this.saveSlotsVisible);
+    this.tabs.setVisible(shouldShow);
+    this.settingsPanel.setVisible(shouldShow && !onCheckpoints);
+    setPauseSaveSlotRowsVisible(this.saveSlotRows, shouldShow && onCheckpoints);
     this.syncAccessibleActions(shouldShow);
   }
 
@@ -441,7 +355,11 @@ export class PauseOverlay {
       label: 'Paused',
       summary: `${this.activeSubview === 'checkpoints' ? 'Checkpoint controls' : 'Game and music settings'}. Gameplay remains paused.`,
       status: {
-        message: this.accessibleStatusMessage || this.state.statusMessage || this.paintedStatusMessage,
+        message:
+          this.accessibleStatusMessage ||
+          this.state.statusMessage ||
+          this.paintedStatusMessage ||
+          CHECKPOINTS_SPOKEN_NOTE,
         politeness:
           !this.accessibleStatusMessage && this.state.statusOk === false ? ('assertive' as const) : ('polite' as const),
       },
@@ -510,7 +428,7 @@ export class PauseOverlay {
     this.syncAccessibleActions(true);
   }
 
-  private selectSubview(subview: 'checkpoints' | 'settings'): void {
+  private selectSubview(subview: PauseSubview): void {
     if (subview === this.activeSubview) return;
     this.activeSubview = subview;
     this.accessibleStatusMessage = '';

@@ -5,4 +5,4 @@ export {
   ensurePicketBoltTexture,
   ensurePlayerBulletTexture,
 } from './spriteFactory/projectileTextures';
-export { ensurePowerUpTextures } from './spriteFactory/powerUpTextures';
+export { ensurePowerUpTextures, POWER_UP_BODY_SIZE } from './spriteFactory/powerUpTextures';

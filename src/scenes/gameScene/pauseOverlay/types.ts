@@ -23,13 +23,7 @@ export interface PauseOverlayState {
   statusOk?: boolean;
 }
 
-export interface PauseOverlayMessage {
-  title: string;
-  subtitle: string;
-  checkpointHint: string;
-  settingsHint: string;
-  resumeLabel: string;
-}
+export type PauseSubview = 'checkpoints' | 'settings';
 
 export interface PauseSaveSlotRowLayout {
   x: number;
@@ -49,29 +43,29 @@ export interface PauseOverlayLayout {
   panelWidth: number;
   panelHeight: number;
   titleFontSize: number;
-  subtitleFontSize: number;
-  hintFontSize: number;
+  titleX: number;
   titleY: number;
-  subtitleY: number;
-  subtitleVisible: boolean;
-  hintY: number;
-  hintVisible: boolean;
-  saveSlotsVisible: boolean;
-  saveHeaderVisible: boolean;
-  saveHeaderX: number;
-  saveHeaderY: number;
+  /** False when the title sits left of the tabs on one header line. */
+  titleCentered: boolean;
+  /** Left edge of the first tab; the second follows directly. */
+  tabsX: number;
+  tabY: number;
+  tabWidth: number;
+  tabHeight: number;
+  /** The hairline the tabs sit on spans the whole content column. */
+  tabRuleX: number;
+  tabRuleWidth: number;
   slotRows: PauseSaveSlotRowLayout[];
   statusX: number;
   statusY: number;
+  statusWrapWidth: number;
   resumeButtonX: number;
   resumeButtonY: number;
   menuButtonX: number;
   menuButtonY: number;
+  /** Top of the footer actions. */
   buttonY: number;
-  checkpointTabX: number;
-  settingsTabX: number;
-  tabY: number;
-  tabWidth: number;
-  tabHeight: number;
+  keyHintY: number;
+  keyHintVisible: boolean;
   settingsLayout: SettingsPanelLayout;
 }

@@ -2,7 +2,13 @@ import Phaser from 'phaser';
 import { finishShipyardLoading, queueShipyardAssets } from '../utils/shipyardAssets';
 import { getViewportLayout } from '../utils/layout';
 import { queueAllPlanetPortraits } from './planetIntermission/planetPortraits';
+import { addNeonTitle, fitNeonTitleFontSize, NEON, NEON_TEXT, neonLabelStyle } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
+
+const RAIL_OFFSET_Y = 30;
+const RAIL_HEIGHT = 3;
+const TITLE = 'SPACE EXPLORER';
+const TITLE_OFFSET_Y = -24;
 
 export class PreloadScene extends Phaser.Scene {
   private menuTransitionStarted = false;
@@ -29,16 +35,30 @@ export class PreloadScene extends Phaser.Scene {
     queueShipyardAssets(this);
 
     const layout = getViewportLayout(this);
+    const railWidth = Math.min(280, layout.width - 96);
+    const railX = layout.centerX - railWidth / 2;
+    const railY = layout.centerY + RAIL_OFFSET_Y;
+    // Mirrors the HTML boot splash in index.html, so the hand-over from page to canvas is seamless.
     const loadingText = this.add
-      .text(layout.centerX, layout.centerY, 'LOADING... 0%', {
-        fontSize: '32px',
-        color: '#ffffff',
-      })
+      .text(layout.centerX, railY + 22, 'LOADING... 0%', neonLabelStyle(13, NEON_TEXT.secondary, 3))
       .setOrigin(0.5);
+    const rail = this.add.graphics();
+
+    const drawRail = (progress: number): void => {
+      rail.clear();
+      rail.fillStyle(NEON.cyan, 0.18);
+      rail.fillRect(railX, railY, railWidth, RAIL_HEIGHT);
+      rail.fillStyle(NEON.cyan, 1);
+      rail.fillRect(railX, railY, railWidth * progress, RAIL_HEIGHT);
+      rail.fillStyle(0xffffff, 1);
+      rail.fillRect(railX + railWidth * progress - 2, railY - 1, 4, RAIL_HEIGHT + 2);
+    };
+    drawRail(0);
 
     const updateProgress = (progress: number): void => {
       const normalizedProgress = Math.min(1, Math.max(0, progress));
       loadingText.setText(`LOADING... ${Math.round(normalizedProgress * 100)}%`);
+      drawRail(normalizedProgress);
     };
 
     const cleanupLoaderProgress = (): void => {
@@ -65,8 +85,16 @@ export class PreloadScene extends Phaser.Scene {
     // Kick off the bundled UI faces so the Menu transition can wait for them.
     const fontFaceSet = typeof document !== 'undefined' ? document.fonts : undefined;
     if (fontFaceSet?.load) {
+      const lifecycleGeneration = this.lifecycleGeneration;
+      const displayFace = fontFaceSet.load('700 32px Orbitron', TITLE);
+      // The wordmark can only be drawn once its face has arrived; canvas text never re-renders on swap.
+      void displayFace.then(() => {
+        if (this.lifecycleGeneration !== lifecycleGeneration || this.menuTransitionStarted) return;
+        const titleSize = fitNeonTitleFontSize(this, TITLE, 44, layout.width - 48);
+        addNeonTitle(this, layout.centerX, layout.centerY + TITLE_OFFSET_Y, TITLE, titleSize, 1);
+      });
       this.fontsReady = Promise.all([
-        fontFaceSet.load('700 32px Orbitron', 'SPACE EXPLORER'),
+        displayFace,
         fontFaceSet.load('400 16px Rajdhani', 'Choose a run'),
         fontFaceSet.load('700 16px Rajdhani', 'NEW RUN'),
         fontFaceSet.load('400 16px "Share Tech Mono"', 'SCORE 0123456789'),

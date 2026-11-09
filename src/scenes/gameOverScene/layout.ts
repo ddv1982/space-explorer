@@ -1,51 +1,69 @@
 import type { ViewportDimensions } from '../shared/responsiveViewport';
 
-const PORTRAIT = {
-  height: 440,
-  titleY: 78,
-  scoreY: 142,
-  progressY: 179,
-  causeY: 212,
-  goalY: 250,
-  retryY: 286,
-  menuY: 346,
-  hintY: 414,
-};
-const LANDSCAPE = {
-  height: 330,
-  titleY: 60,
-  scoreY: 110,
-  progressY: 145,
-  causeY: 177,
-  goalY: 210,
-  retryY: 244,
-  menuY: 244,
-  hintY: 312,
-};
-const SHORT = {
-  height: 304,
-  titleY: 54,
-  scoreY: 101,
-  progressY: 133,
-  causeY: 164,
-  goalY: 191,
-  retryY: 222,
-  menuY: 222,
-  hintY: 288,
-};
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
+/**
+ * Lays the Game Over summary out as one column flowing from the top of a content block: title,
+ * cause, stat cells, next-run goal, actions, key hint. All coordinates are relative to the block's
+ * top-left corner; the scene centres the block in the viewport.
+ */
 export function createGameOverLayout(viewport: ViewportDimensions) {
   const stacked = viewport.width < 560 && viewport.height > 480;
-  const profile = stacked ? PORTRAIT : viewport.height < 360 ? SHORT : LANDSCAPE;
-  const width = Math.min(560, viewport.width - 32);
-  const buttonWidth = stacked ? width - 48 : (width - 60) / 2;
+  const short = viewport.height < 360;
+  const roomy = !stacked && viewport.height >= 560;
+  const width = Math.min(stacked ? 420 : 760, viewport.width - 32);
+  const gap = roomy ? 22 : short ? 8 : 12;
+  const titleSize = roomy ? 88 : stacked ? (width < 340 ? 40 : 50) : short ? 44 : 54;
+  const cellHeight = roomy ? 104 : short ? 62 : 72;
+  const cellGap = 12;
+  const buttonHeight = roomy ? 54 : 48;
+  const buttonWidth = stacked ? width : Math.min(250, (width - cellGap) / 2);
+
+  let y = 0;
+  const eyebrowY = short ? null : y + 8;
+  if (!short) y += 16 + gap * 0.5;
+  const titleY = y + titleSize * 0.55;
+  y += titleSize * 1.1 + gap * 0.4;
+  const causeY = y + 9;
+  y += 18 + gap;
+
+  const cellWidth = stacked ? width : (width - cellGap) / 2;
+  const score: Rect = { x: 0, y, width: cellWidth, height: cellHeight };
+  const sector: Rect = stacked
+    ? { x: 0, y: y + cellHeight + cellGap, width: cellWidth, height: cellHeight }
+    : { x: cellWidth + cellGap, y, width: cellWidth, height: cellHeight };
+  y = sector.y + cellHeight + gap;
+
+  const goalY = y + 9;
+  y += 18 + gap;
+
+  const buttonsLeft = stacked ? 0 : (width - buttonWidth * 2 - cellGap) / 2;
+  const retry = { x: buttonsLeft, y };
+  const menu = stacked ? { x: 0, y: y + buttonHeight + cellGap } : { x: buttonsLeft + buttonWidth + cellGap, y };
+  y = menu.y + buttonHeight + gap;
+
+  const hintY = y + 7;
+  y += 14;
+
   return {
-    ...profile,
     width,
-    titleSize: viewport.width < 400 ? 40 : 48,
+    height: y,
+    titleSize,
+    eyebrowY,
+    titleY,
+    causeY,
+    score,
+    sector,
+    goalY,
     buttonWidth,
-    buttonHeight: 48,
-    retry: { x: 24, y: profile.retryY },
-    menu: { x: stacked ? 24 : 36 + buttonWidth, y: profile.menuY },
+    buttonHeight,
+    retry,
+    menu,
+    hintY,
   };
 }

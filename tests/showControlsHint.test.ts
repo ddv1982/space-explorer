@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 
 mock.module('phaser', () => ({
   default: {
+    Math: { Clamp: (value: number, min: number, max: number) => Math.min(Math.max(value, min), max) },
     Scale: { Events: { RESIZE: 'resize' } },
     Scenes: { Events: { SHUTDOWN: 'shutdown', DESTROY: 'destroy' } },
   },
@@ -10,10 +11,6 @@ mock.module('phaser', () => ({
 mock.module('@/utils/layout', () => ({
   centerHorizontally: () => 240,
   getViewportLayout: () => ({ centerX: 400, centerY: 300 }),
-}));
-
-mock.module('@/utils/uiFonts', () => ({
-  UI_FONT_MONO: 'monospace',
 }));
 
 let hardwareDetected = false;
@@ -65,14 +62,8 @@ function createFakeText(initial: string): FakeText & Record<string, unknown> {
 
 function createFakeScene() {
   const texts: FakeText[] = [];
-  const graphics = {
-    setDepth: () => graphics,
-    setScrollFactor: () => graphics,
-    clear: () => graphics,
-    fillStyle: () => graphics,
-    fillRoundedRect: () => graphics,
-    destroy: (): void => undefined,
-  };
+  // The card art is drawn with many chained Graphics calls; every one of them returns the stub.
+  const graphics: Record<string, unknown> = new Proxy({}, { get: () => (): unknown => graphics });
   const scene = {
     add: {
       graphics: () => graphics,

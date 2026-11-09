@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { UI_FONT_MONO } from '../../utils/uiFonts';
-import { prefersReducedMotion } from './neonUiTheme';
+import { NEON_TEXT, neonLabelStyle, prefersReducedMotion } from './neonUiTheme';
 
-export const CONTINUE_PROMPT = 'Click, Tap, or Press Any Key';
+export const CONTINUE_PROMPT = 'CLICK, TAP, OR PRESS ANY KEY';
 
 interface PromptTextOptions {
   color?: string;
@@ -16,14 +15,9 @@ export function createPromptText(
   text: string,
   options: PromptTextOptions = {}
 ): Phaser.GameObjects.Text {
+  const fontSize = Number.parseFloat(options.fontSize ?? '24px');
   const prompt = scene.add
-    .text(x, y, text, {
-      fontSize: options.fontSize ?? '24px',
-      color: options.color ?? '#cfefff',
-      fontFamily: UI_FONT_MONO,
-      stroke: '#040b12',
-      strokeThickness: 2,
-    })
+    .text(x, y, text, neonLabelStyle(fontSize, options.color ?? NEON_TEXT.secondary, fontSize * 0.14))
     .setOrigin(0.5);
 
   if (!prefersReducedMotion()) {

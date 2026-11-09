@@ -1,7 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import type Phaser from 'phaser';
 
-import { HudAnnouncementTweens } from '../src/systems/hud/announcementTweens';
+import { callsTo, createRecordingStub } from './helpers/recordingStub';
+
+mock.module('phaser', () => ({
+  default: { Math: { Clamp: (value: number, min: number, max: number) => Math.min(max, Math.max(min, value)) } },
+}));
+
+const { HudAnnouncementTweens } = await import('../src/systems/hud/announcementTweens');
+type HudAnnouncementTweens = InstanceType<typeof HudAnnouncementTweens>;
 
 type MockTweenConfig = {
   targets: unknown;
@@ -15,6 +22,7 @@ type MockTweenConfig = {
 
 function createMockText(initialText = '') {
   const state = { text: initialText, color: '#ffffff', alpha: 0, x: 0, y: 0 };
+  const scales: number[] = [];
   const text = {
     get alpha() {
       return state.alpha;
@@ -36,8 +44,18 @@ function createMockText(initialText = '') {
       state.y = y;
       return text;
     },
+    setShadow() {
+      return text;
+    },
+    setScale(value: number) {
+      scales.push(value);
+      return text;
+    },
+    width: 600,
+    displayWidth: 600,
+    displayHeight: 70,
   };
-  return { text: text as unknown as Phaser.GameObjects.Text, state };
+  return { text: text as unknown as Phaser.GameObjects.Text, state, scales };
 }
 
 function createFixture() {
@@ -61,14 +79,17 @@ function createFixture() {
     },
   } as unknown as Phaser.Scene;
 
+  const rule = createRecordingStub<Phaser.GameObjects.Graphics>();
   const helper = new HudAnnouncementTweens({
     scene,
     announcementText: announcementText.text,
+    announcementRule: rule.stub,
+    glowPadding: 18,
     sectorText: sectorText.text,
     levelText: levelText.text,
-    getLayoutMetrics: () => ({ centerX: 512, announcementY: 300, announcementExitY: 250 }),
+    getLayoutMetrics: () => ({ centerX: 512, announcementY: 300, announcementExitY: 250, announcementMaxWidth: 480 }),
   });
-  return { helper, announcementText, sectorText, levelText, tweenConfigs, stopCounts };
+  return { helper, announcementText, rule, sectorText, levelText, tweenConfigs, stopCounts };
 }
 
 describe('HudAnnouncementTweens', () => {
@@ -77,7 +98,11 @@ describe('HudAnnouncementTweens', () => {
     fixture.helper.showLevelAnnouncement('Nebula Pass', 3);
     expect(fixture.sectorText.state.text).toBe('SECTOR 03');
     expect(fixture.levelText.state.text).toBe('Nebula Pass');
-    expect(fixture.announcementText.state).toEqual({ text: 'SECTOR 3', color: '#ffffff', alpha: 1, x: 512, y: 300 });
+    expect(fixture.announcementText.state).toEqual({ text: 'SECTOR 3', color: '#dbf6ff', alpha: 1, x: 512, y: 300 });
+    // The title card shrinks to the viewport and its rule rides the same tween.
+    expect(fixture.announcementText.scales).toEqual([0.8]);
+    expect(fixture.tweenConfigs[0].targets).toEqual([fixture.announcementText.text, fixture.rule.stub]);
+    expect(callsTo(fixture.rule.calls, 'setPosition')).toEqual([[512, 300]]);
     expect(fixture.tweenConfigs[0]).toMatchObject({
       alpha: { from: 1, to: 0 },
       y: { from: 300, to: 250 },
@@ -90,15 +115,15 @@ describe('HudAnnouncementTweens', () => {
   const cases = [
     {
       show: (helper: HudAnnouncementTweens) => helper.showBossWarning(),
-      text: '⚠ WARNING: BOSS INCOMING ⚠',
-      color: '#ff4444',
+      text: 'WARNING: BOSS INCOMING',
+      color: '#ffd8dc',
       duration: 2500,
       y: 300,
     },
     {
       show: (helper: HudAnnouncementTweens) => helper.showBossPhaseAnnouncement(2),
-      text: '⚠ BOSS PHASE 2 ⚠',
-      color: '#ffcc44',
+      text: 'BOSS PHASE 2',
+      color: '#fff2df',
       duration: 1400,
       y: 292,
       exitY: 266,
@@ -106,7 +131,7 @@ describe('HudAnnouncementTweens', () => {
     {
       show: (helper: HudAnnouncementTweens) => helper.showBossGuardBreakAnnouncement(),
       text: 'GUARD BREAK',
-      color: '#ffd76a',
+      color: '#fff6de',
       duration: 1300,
       y: 292,
       exitY: 270,
@@ -114,15 +139,15 @@ describe('HudAnnouncementTweens', () => {
     {
       show: (helper: HudAnnouncementTweens) => helper.showHelperWingAnnouncement(4),
       text: 'ALLY WING ONLINE (4)',
-      color: '#6af6ff',
+      color: '#defdff',
       duration: 1600,
       y: 294,
       exitY: 272,
     },
     {
       show: (helper: HudAnnouncementTweens) => helper.showEliteWaveAnnouncement(),
-      text: '⚠ ELITE WAVE ⚠',
-      color: '#c99bff',
+      text: 'ELITE WAVE',
+      color: '#f3e9ff',
       duration: 1500,
       y: 294,
       exitY: 270,
@@ -130,7 +155,7 @@ describe('HudAnnouncementTweens', () => {
     {
       show: (helper: HudAnnouncementTweens) => helper.showPicketOnlineAnnouncement(),
       text: 'PICKET ONLINE',
-      color: '#ffcf7a',
+      color: '#fff4e2',
       duration: 1500,
       y: 294,
       exitY: 272,
@@ -138,7 +163,7 @@ describe('HudAnnouncementTweens', () => {
     {
       show: (helper: HudAnnouncementTweens) => helper.showHelperWingDepletedAnnouncement(),
       text: 'ALLY WING LOST',
-      color: '#ff8899',
+      color: '#ffe5e9',
       duration: 1400,
       y: 296,
     },
@@ -175,10 +200,10 @@ describe('HudAnnouncementTweens', () => {
     const fixture = createFixture();
     fixture.helper.showBossPhaseAnnouncement(2);
     fixture.announcementText.state.alpha = 0.45;
-    fixture.helper.relayout({ centerX: 195, announcementY: 362, announcementExitY: 322 });
+    fixture.helper.relayout({ centerX: 195, announcementY: 362, announcementExitY: 322, announcementMaxWidth: 358 });
     expect(fixture.announcementText.state).toEqual({
-      text: '⚠ BOSS PHASE 2 ⚠',
-      color: '#ffcc44',
+      text: 'BOSS PHASE 2',
+      color: '#fff2df',
       alpha: 0.45,
       x: 195,
       y: 362,
@@ -193,11 +218,11 @@ describe('HudAnnouncementTweens', () => {
 
   test('resize moves hidden or completed announcements without restarting a fade', () => {
     const fixture = createFixture();
-    fixture.helper.relayout({ centerX: 195, announcementY: 362, announcementExitY: 322 });
+    fixture.helper.relayout({ centerX: 195, announcementY: 362, announcementExitY: 322, announcementMaxWidth: 358 });
     expect(fixture.tweenConfigs).toHaveLength(0);
     fixture.helper.showBossWarning();
     fixture.announcementText.state.alpha = 0;
-    fixture.helper.relayout({ centerX: 400, announcementY: 240, announcementExitY: 200 });
+    fixture.helper.relayout({ centerX: 400, announcementY: 240, announcementExitY: 200, announcementMaxWidth: 768 });
     expect(fixture.tweenConfigs).toHaveLength(1);
     expect(fixture.stopCounts).toEqual([0]);
     expect(fixture.announcementText.state).toMatchObject({ x: 400, y: 240 });

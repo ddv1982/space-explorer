@@ -69,7 +69,7 @@ export class MenuScene extends Phaser.Scene {
   create(): void {
     const menuConfig = getLevelConfig(1);
     const layoutPlan = this.initializeMenuScene(menuConfig);
-    this.createMenuPanels(layoutPlan, menuConfig.accentColor);
+    this.createMenuPanels(layoutPlan);
     this.refreshSaveSlots('');
     this.syncAccessibleActions();
     this.maybeStartDevLevelJump();
@@ -130,15 +130,14 @@ export class MenuScene extends Phaser.Scene {
     this.parallax.create(this, menuConfig);
   }
 
-  private createMenuPanels(layoutPlan: ReturnType<typeof createMenuLayoutPlan>, accentColor: number): void {
+  private createMenuPanels(layoutPlan: ReturnType<typeof createMenuLayoutPlan>): void {
     this.vista = createMenuVista(this);
-    createMenuBackdrop(this, layoutPlan, accentColor);
+    createMenuBackdrop(this);
     createMenuTitle(this, layoutPlan);
     this.hero = createMenuHero(this, layoutPlan);
     this.saveSlotPanel = createSaveSlotEntryPanel(
       this,
       layoutPlan,
-      accentColor,
       this.createSaveSlotPanelHandlers(),
       isSaveStorageAvailable()
     );
@@ -162,7 +161,7 @@ export class MenuScene extends Phaser.Scene {
       width: button.width,
       height: button.height,
       variant: 'secondary',
-      fontSize: '14px',
+      fontSize: '15px',
       onClick: () => this.settingsSheet?.open(),
     });
     this.settingsButton.setPosition(button.x, button.y);

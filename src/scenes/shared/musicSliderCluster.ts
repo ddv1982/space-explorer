@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { audioManager } from '../../systems/AudioManager';
 import { applyMusicRuntimeTuningValue, type MusicTuningSliders } from './musicRuntimeTuning';
 import { createMusicSliderControl, type MusicSliderControl } from './musicSliderControl';
-import { drawBoltIcon, drawBrainIcon, drawNoteIcon, drawWaveformIcon } from './musicSliderIcons';
 
 export type MusicSliderCluster = MusicTuningSliders & {
   volume: MusicSliderControl;
@@ -25,7 +24,6 @@ export function createMusicSliderCluster(
       label: 'CREATIVITY',
       value: tuning.creativity,
       width: config.width,
-      icon: drawBrainIcon,
       onChange: (value) => {
         audioManager.resumeFromUserGesture();
         applyMusicRuntimeTuningValue('creativity', value, config.getSliders());
@@ -36,7 +34,6 @@ export function createMusicSliderCluster(
       label: 'ENERGY',
       value: tuning.energy,
       width: config.width,
-      icon: drawBoltIcon,
       onChange: (value) => {
         audioManager.resumeFromUserGesture();
         applyMusicRuntimeTuningValue('energy', value, config.getSliders());
@@ -47,7 +44,6 @@ export function createMusicSliderCluster(
       label: 'AMBIENCE',
       value: tuning.ambience,
       width: config.width,
-      icon: drawWaveformIcon,
       onChange: (value) => {
         audioManager.resumeFromUserGesture();
         applyMusicRuntimeTuningValue('ambience', value, config.getSliders());
@@ -58,7 +54,6 @@ export function createMusicSliderCluster(
       label: 'MUSIC VOLUME',
       value: audioManager.getMusicVolume(),
       width: config.width,
-      icon: drawNoteIcon,
       onChange: (value) => {
         audioManager.resumeFromUserGesture();
         const nextVolume = audioManager.setMusicVolume(value);
