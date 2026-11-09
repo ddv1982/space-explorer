@@ -29,10 +29,13 @@ Open `http://localhost:5173` in your browser.
 | Arrow keys / WASD | Move ship |
 | Space / Click | Fire weapons |
 
-On touch devices the on-screen joystick and tap-to-fire are active by default; when a hardware
-keyboard is used, the first keypress switches to keyboard controls and hides the joystick for the
-rest of the session (tap-to-pause stays available). Phones and tablets play in both portrait and
-landscape; on phones, portrait gives the longest vertical read on incoming threats.
+The ship flies with momentum: it winds up when you start moving and glides briefly to rest.
+
+On touch devices, drag anywhere to fly: the ship follows your finger's movement and the main gun
+fires automatically. Pressing a key on a hardware keyboard hands steering and firing to the
+keyboard, and the next touch hands them back (tap-to-pause stays available). Phones and tablets
+play in both portrait and landscape; on phones, portrait gives the longest vertical read on
+incoming threats.
 
 ## Game overview
 
@@ -224,7 +227,7 @@ For development comparisons, append `&background=legacy` to use the previous bac
 ## Release notes
 
 - [Changelog](CHANGELOG.md)
-- [Latest release notes](docs/releases/1.20.1.md)
+- [Latest release notes](docs/releases/1.21.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements
