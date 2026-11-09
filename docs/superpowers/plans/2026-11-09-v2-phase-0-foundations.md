@@ -20,7 +20,7 @@
 ## Global Constraints
 
 - **Branching:** all v2 work happens on the long-lived branch `v2` (created from `main` in Task 1). Phase work merges into `v2`. `main` stays as v1 until the v2.0.0 release.
-- **Comparison toggle:** `?flight=legacy` restores v1 movement and the v1 joystick, in **all** builds on `v2`, until Phase 5 removes it. The default is the new momentum flight.
+- **No legacy toggle (amended 2026-11-09):** the user chose a full redesign with no preserved v1 code, so momentum flight and touch drag replace v1 movement and the joystick outright. The planned `?flight=legacy` toggle was built in Tasks 2–3 and then removed. Compare against the live v1 site instead.
 - **Quality gates must pass** at the end of every task: `bun run typecheck`, `bun run lint`, `bun run format:check`, `bun run test`, `bun run knip`, `bun run architecture:check`, `bun run build`, `bun run bundle:check`.
 - **Bundle limits are unchanged:** app JS 475 KB, total JS 1.9 MB, 3.5 MB per asset, 30 MB total. three.js must never appear in `dist/`.
 - **Logical sprite sizes and Arcade bodies are unchanged in Phase 0.** Player is 36×44 with a 24×32 body; Fighter is 36×36. v2 sheets are authored at 4× density (`CINEMATIC_DENSITY`).
