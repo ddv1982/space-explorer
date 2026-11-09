@@ -1,5 +1,5 @@
 import { evidenceRevision, saveBrowserEvidence } from './evidence';
-import { expect, openMenu, snapshot, startNewRun, test } from './fixtures';
+import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test } from './fixtures';
 
 test('brief Escape presses pause once even when released between gameplay updates', async ({
   page,
@@ -50,6 +50,9 @@ test('keyboard and touch steer diagonally, glide to rest after release, and fire
   isMobile,
   assertNoBrowserErrors,
 }) => {
+  // Reaching cruise speed and gliding to rest need ~1s of gameplay time; Low keeps software-rendered
+  // CI frames affordable (lit Standard rendering ran at ~1 fps there).
+  await pinQualityTier(page, 'low');
   await openMenu(page);
   await startNewRun(page);
   await page.evaluate((revision) => {

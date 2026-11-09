@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
-import { expect, snapshot, test, waitForScene } from './fixtures';
+import { expect, pinQualityTier, snapshot, test, waitForScene } from './fixtures';
 
 async function openLevelOne(page: Page, tier: 'low' | 'standard'): Promise<void> {
-  await page.addInitScript((value) => window.localStorage.setItem('space-explorer.visualQuality.v1', value), tier);
+  await pinQualityTier(page, tier);
   await page.goto('/?browserHarness=1&startLevel=1&upgrades=0');
   await waitForScene(page, 'Game');
   await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.stageCinematicEncounter());
@@ -53,6 +53,8 @@ test('standard tier lights v2 ships with normal maps and an explosion pulse brig
   page,
   assertNoBrowserErrors,
 }) => {
+  // Lit software rendering in CI can drop to ~1 fps; screenshots and settling need room.
+  test.setTimeout(180_000);
   await openLevelOne(page, 'standard');
   await expect
     .poll(() => page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.getLightingSnapshot()))
@@ -65,6 +67,8 @@ test('low tier keeps the baked look: no normal-map lighting and pulses change no
   page,
   assertNoBrowserErrors,
 }) => {
+  // Lit software rendering in CI can drop to ~1 fps; screenshots and settling need room.
+  test.setTimeout(180_000);
   await openLevelOne(page, 'low');
   expect(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.getLightingSnapshot())).toEqual({
     playerLit: false,
