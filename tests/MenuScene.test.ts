@@ -13,12 +13,7 @@ mock.module('phaser', () => ({
   },
 }));
 
-const prepareLegacyBackgroundTextures = mock();
 const startRegisteredScene = mock();
-
-mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
-  prepareLegacyBackgroundTextures,
-}));
 
 mock.module('../src/scenes/sceneRegistry', () => ({
   startRegisteredScene,
@@ -104,8 +99,7 @@ describe('MenuScene', () => {
     expect(reloadForVisualQualityChange).not.toHaveBeenCalled();
   });
 
-  test('prepares the saved level before starting Game', () => {
-    prepareLegacyBackgroundTextures.mockClear();
+  test('startGameScene starts Game', () => {
     startRegisteredScene.mockClear();
 
     const values = new Map<string, unknown>();
@@ -130,8 +124,6 @@ describe('MenuScene', () => {
     (scene as unknown as Record<string, unknown>).events = new EventEmitter();
 
     (scene as unknown as { startGameScene: () => void }).startGameScene();
-
-    expect(prepareLegacyBackgroundTextures).toHaveBeenCalledWith(scene, 7);
 
     expect(startRegisteredScene).toHaveBeenCalledWith(scene, 'Game');
   });

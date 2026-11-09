@@ -54,16 +54,16 @@ for (const { level, world } of LIVING_CAMPAIGN) {
       const rasterRequests: string[] = [];
       page.on('request', (request) => {
         const url = request.url();
-        if (/\/assets\/.*\.(png|jpe?g|webp|avif)/.test(url) && !/\/assets\/(cinematic|planets|v2)\//.test(url))
+        if (/\/assets\/.*\.(png|jpe?g|webp|avif)/.test(url) && !/\/assets\/(shipyard|planets)\//.test(url))
           rasterRequests.push(url);
       });
       await page.goto(`/?browserHarness=1&startLevel=${level}`);
       await waitForScene(page, 'Game');
       expect((await background(page)).background?.world).toBe(world);
+      // Noise and atmosphere, plus the landmark when the world has one; the starfield is shared.
       expect((await background(page)).textureKeys).toHaveLength(
-        LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 3 : 4
+        LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 2 : 3
       );
-      expect((await background(page)).replacedLegacyKeys).toEqual([]);
       await stage(page, 4000);
       const before = await page.screenshot();
       await stage(page, 3000);
@@ -162,7 +162,7 @@ test(
       const blocked = new Promise<void>((resolve) => {
         unblock = resolve;
       });
-      await page.route('**/assets/v2/player.webp', async (route) => {
+      await page.route('**/assets/shipyard/player.webp', async (route) => {
         await blocked;
         await route.continue();
       });
@@ -183,7 +183,7 @@ test(
       const light = await sampleGameplayLaneLuminance(page);
       expect(light.edges).toBeGreaterThan(light.center + 0.5);
       expect((await background(page)).background?.elapsed).toBe(0);
-      await page.unroute('**/assets/v2/player.webp');
+      await page.unroute('**/assets/shipyard/player.webp');
     }
     assertNoBrowserErrors();
   }
@@ -229,7 +229,7 @@ test('procedural GPU resources remain bounded across menu and game ownership', a
     await button.press('Enter');
     await waitForScene(page, 'Menu');
     const current = await background(page);
-    expect(current.textureKeys).toHaveLength(3);
+    expect(current.textureKeys).toHaveLength(2);
     samples.push({ buffers: current.buffers, vaos: current.vaos });
   }
   expect(samples[3]).toEqual(samples[1]);
@@ -259,8 +259,7 @@ test(
         const current = await background(page);
         expect(current.background?.world).toBe(world);
         expect(current.backgroundVaos).toBe(1);
-        expect(current.textureKeys).toHaveLength(LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 3 : 4);
-        expect(current.replacedLegacyKeys).toEqual([]);
+        expect(current.textureKeys).toHaveLength(LIVING_WORLD_PROFILES[world].landmark.kind === 'none' ? 2 : 3);
       }
       await page.keyboard.down('Escape');
       try {
@@ -271,7 +270,7 @@ test(
       await page.getByRole('button', { name: 'Main menu', exact: true }).press('Enter');
       await waitForScene(page, 'Menu');
       const menu = await background(page);
-      expect(menu.textureKeys).toHaveLength(3);
+      expect(menu.textureKeys).toHaveLength(2);
       expect(menu.backgroundPrograms).toBeGreaterThanOrEqual(LIVING_CAMPAIGN.length);
       menus.push({
         buffers: menu.buffers,

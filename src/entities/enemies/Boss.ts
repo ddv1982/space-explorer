@@ -7,7 +7,7 @@ import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, updateBossMovement } from './boss/behavior';
 import { resolveBossPhaseTransition } from './boss/phaseTransition';
 import { getViewportBounds } from '../../utils/layout';
-import { ensureBossTextureVariant } from '../../utils/SpriteFactory';
+import { bossTextureKey } from '../../config/shipyardSprites';
 import { BossVisualRig } from './boss/BossVisualRig';
 import { advanceBossGuard, applyBossGuardHit } from './boss/BossGuardController';
 import { BossAttackRuntime } from './boss/BossAttackRuntime';
@@ -66,7 +66,7 @@ export class Boss extends EnemyBase {
   private attackRuntime!: BossAttackRuntime;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const textureKey = ensureBossTextureVariant(scene, DEFAULT_BOSS_CONFIG.attackStyle, DEFAULT_BOSS_CONFIG.name);
+    const textureKey = bossTextureKey(DEFAULT_BOSS_CONFIG.attackStyle);
 
     super(scene, x, y, textureKey);
     this.maxHp = DEFAULT_BOSS_CONFIG.maxHp;
@@ -147,7 +147,7 @@ export class Boss extends EnemyBase {
   spawn(x: number, y: number, config: BossConfig = DEFAULT_BOSS_CONFIG): void {
     this.bossFlashToken += 1;
     this.applyConfig(config);
-    this.setTexture(ensureBossTextureVariant(this.scene, config.attackStyle, config.name));
+    this.setTexture(bossTextureKey(config.attackStyle));
     super.spawn(x, y);
     this.resetCombatState();
   }
@@ -253,7 +253,7 @@ export class Boss extends EnemyBase {
     this.lastFireTime = transition.nextFireTime;
     if (transition.textureChanges) {
       this.attackStyle = transition.attackStyle;
-      this.setTexture(ensureBossTextureVariant(this.scene, this.attackStyle, this.bossName));
+      this.setTexture(bossTextureKey(this.attackStyle));
     }
     this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
     this.flashPhaseChange();

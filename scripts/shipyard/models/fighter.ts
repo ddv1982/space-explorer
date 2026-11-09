@@ -1,5 +1,10 @@
 import * as THREE from 'three';
-import { MATERIALS, PALETTE, box, ellipsoid, mirrored, podY, slab } from './kit';
+import { MATERIALS, PALETTE, box, mirrored, podY, slab } from './kit';
+import { canopy, engine, strip, vents } from './lightCraftParts';
+
+const HOT = '#ffe2c4';
+/** Strip glow: deeper than the engine glow so tone mapping keeps the orange. */
+const STRIP_GLOW = '#e8601c';
 
 /** Enemy fighter: broad angular titanium arrowhead with red-orange armour. 36×36 logical, nose down. */
 export function buildFighter(): THREE.Group {
@@ -8,7 +13,7 @@ export function buildFighter(): THREE.Group {
   const ceramic = MATERIALS.ceramic();
   const recess = MATERIALS.recess();
   const armour = MATERIALS.armour(PALETTE.enemyAccent);
-  const glow = MATERIALS.glow(PALETTE.enemyGlow, 3);
+  const stripGlow = MATERIALS.glow(STRIP_GLOW, 2.8);
 
   hull.add(
     slab(
@@ -41,6 +46,10 @@ export function buildFighter(): THREE.Group {
         2.2
       )
     );
+    // Armour seam, glowing leading-edge strip and a titanium panel line behind the armour.
+    hull.add(strip(side * 8.4, 0.3, side * 8.4, -4.7, 0.55, 2.9, recess));
+    hull.add(strip(side * 6, 4, side * 13.8, -3.4, 0.65, 2.3, stripGlow));
+    hull.add(strip(side * 7.2, -5.6, side * 13.4, -7.6, 0.5, 2.3, recess));
     hull.add(podY(side * 8.2, 3, 2.2, 0.7, 7.5, recess));
     hull.add(podY(side * 8.2, 7, 2.2, 0.4, 1.4, ceramic));
   }
@@ -59,12 +68,13 @@ export function buildFighter(): THREE.Group {
       2
     )
   );
-  hull.add(box(0, -3, 3.9, 0.9, 11, 0.3, recess));
+  hull.add(box(0, -1, 3.9, 0.9, 7, 0.3, recess));
+  hull.add(vents(0, -7.6, 3.85, 3, 3, 3, recess));
 
   // Narrow glowing canopy slit and three tail engines.
-  hull.add(ellipsoid(0, 7, 3.7, 1.3, 2.6, 0.7, MATERIALS.glass(PALETTE.enemyGlow)));
-  hull.add(ellipsoid(0, -14.4, 1.6, 1.5, 0.9, 1.3, glow));
-  for (const side of [1, -1]) hull.add(ellipsoid(side * 3.2, -13.4, 1.4, 1.05, 0.7, 1, glow));
+  hull.add(canopy(0, 7, 3.7, 1.3, 2.6, 0.7, PALETTE.enemyGlow));
+  hull.add(engine(0, -13.4, 1.6, 1.15, titanium, PALETTE.enemyGlow, HOT, 2.6));
+  for (const side of [1, -1]) hull.add(engine(side * 3.2, -12.8, 1.4, 0.85, titanium, PALETTE.enemyGlow, HOT, 2));
 
   // Enemies fly toward the player, so the nose points down the screen.
   const ship = new THREE.Group();

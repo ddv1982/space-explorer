@@ -18,7 +18,6 @@ import {
   type PlayerStateData,
 } from '@/systems/PlayerState';
 import { WarpTransition } from '@/systems/WarpTransition';
-import { prepareLegacyBackgroundTextures } from '@/systems/parallax/premiumBackgroundLoading';
 import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
 import { sharpenSceneText } from '@/utils/uiTextRendering';
 
@@ -70,7 +69,6 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     const intermissionLayout = this.initializeIntermissionState();
     const completedLevelConfig = getLevelConfig(this.state.level);
     const profile = getPlanetIntermissionProfile(this.state.level);
-    this.warmNextLevelBackgroundAssets();
     createIntermissionBackdrop(this, completedLevelConfig, this.state.level, intermissionLayout);
     createPlanetArrivalVisual(this, completedLevelConfig, this.state.level, profile, intermissionLayout);
     this.scoreText = createIntermissionHeader(this, intermissionLayout, {
@@ -88,14 +86,6 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.createContinuePrompt(intermissionLayout);
     sharpenSceneText(this);
     this.bindContinueInputs();
-  }
-
-  private warmNextLevelBackgroundAssets(): void {
-    if (this.isFinalMissionComplete) {
-      return;
-    }
-
-    prepareLegacyBackgroundTextures(this, this.state.level + 1);
   }
 
   private initializeSceneLifecycle(): void {
@@ -385,8 +375,6 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private transitionToNextGameLevel(): void {
     this.warpTransition.play(() => {
       advanceToNextLevel(this.registry);
-      const nextLevel = getPlayerState(this.registry).level;
-      prepareLegacyBackgroundTextures(this, nextLevel);
       startRegisteredScene(this, 'Game');
     });
   }

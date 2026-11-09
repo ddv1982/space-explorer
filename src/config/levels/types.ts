@@ -148,7 +148,6 @@ export interface RecoveryDropConfig {
 interface LevelSectionVisualModifierConfig {
   atmosphereAlpha?: number;
   driftScale?: number;
-  twinkleScale?: number;
   landmarkAlpha?: number;
   hazardResponseScale?: number;
 }
@@ -186,8 +185,6 @@ export interface LevelConfig extends LevelThemeSummary {
   planetName: string;
   bgColor: string;
   accentColor: number;
-  nebulaColor: number;
-  nebulaAlpha: number;
   colorGrade: { brightness: number; contrast: number; saturation: number } | null;
   planetPalette: [number, number];
   enemies: EnemySpawnConfig[];
@@ -202,14 +199,4 @@ export interface LevelConfig extends LevelThemeSummary {
   asteroidInterval: number;
   sections: LevelSectionConfig[];
   music: LevelMusicConfig;
-  passingPlanets?: PassingPlanetConfig[];
-}
-
-export interface PassingPlanetConfig {
-  scrollSpeed: number;
-  planetPalette: [number, number];
-  size: number;
-  yPosition: number;
-  alpha: number;
-  ringChance: number;
 }

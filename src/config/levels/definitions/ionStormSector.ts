@@ -16,8 +16,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
   journeyNote: 'The frontier shifts from weather to warfare as ember rain heralds the Pyre Herald.',
   bgColor: '#140806',
   accentColor: 0xff9a4d,
-  nebulaColor: 0x5c2412,
-  nebulaAlpha: 0.13,
   colorGrade: { brightness: 0.08, contrast: 1.1, saturation: 1.0 },
   planetPalette: [0xa8481f, 0xffc27a],
   enemies: [
@@ -59,7 +57,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 0.95,
         driftScale: 0.96,
-        twinkleScale: 0.88,
         landmarkAlpha: 0.92,
       },
       tensionArc: 'constant',
@@ -94,7 +91,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.02,
         driftScale: 1.06,
-        twinkleScale: 0.98,
         landmarkAlpha: 1.0,
         hazardResponseScale: 1.14,
       },
@@ -139,7 +135,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.06,
         driftScale: 1.08,
-        twinkleScale: 1.02,
         landmarkAlpha: 1.06,
         hazardResponseScale: 1.18,
       },
@@ -173,7 +168,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.12,
         driftScale: 1.1,
-        twinkleScale: 1.06,
         landmarkAlpha: 1.12,
         hazardResponseScale: 1.24,
       },
@@ -212,7 +206,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 0.92,
         driftScale: 0.9,
-        twinkleScale: 0.72,
         landmarkAlpha: 1.08,
       },
       tensionArc: 'constant',

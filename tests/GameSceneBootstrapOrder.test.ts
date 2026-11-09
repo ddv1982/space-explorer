@@ -4,9 +4,9 @@ import { mockPhaserModule } from './helpers/phaserMock';
 import type { GameSceneBootstrapRuntime } from '../src/scenes/gameScene/runGameSceneCreateBootstrap';
 
 mockPhaserModule();
-mock.module('../src/utils/cinematicAssets', () => ({
-  finishCinematicLoading: () => true,
-  queueCinematicAssets: () => {},
+mock.module('../src/utils/shipyardAssets', () => ({
+  finishShipyardLoading: () => true,
+  queueShipyardAssets: () => {},
 }));
 let currentRuntime: GameSceneBootstrapRuntime;
 mock.module('../src/scenes/gameScene/runGameSceneCreateBootstrap', () => ({
@@ -33,7 +33,7 @@ describe('GameScene create bootstrap order', () => {
         events.emit(GAME_SCENE_EVENTS.helperWingActivated, 2);
       },
     };
-    const effectsManager = { addEngineLight: () => () => {} };
+    const effectsManager = { attachEngine: () => () => {} };
     currentRuntime = { hud, lastLifeHelperWing: helper, effectsManager } as unknown as GameSceneBootstrapRuntime;
     Object.assign(scene, {
       events,

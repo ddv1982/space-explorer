@@ -4,14 +4,12 @@ import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../c
 import { applyHazardTelegraphGlow } from '../utils/renderingCompat';
 import { resolveSectionAtmosphereTargets } from './parallax/atmosphereProfile';
 import { updateHazardOverlay as updateHazardOverlayRuntime } from './parallax/hazardOverlayRuntime';
-import { LegacyBackground } from './parallax/LegacyBackground';
 import { runtimePerformanceBudget, type RuntimePerformanceSnapshot } from './RuntimePerformanceBudget';
 
 export class ParallaxBackground {
   private scene: Phaser.Scene | null = null;
   private livingBackground: LivingBackground | null = null;
   private levelConfig?: LevelConfig;
-  private legacyBackground: LegacyBackground | null = null;
   private elapsed = 0;
   private currentWidth = 0;
   private currentHeight = 0;
@@ -19,8 +17,6 @@ export class ParallaxBackground {
   private targetAtmosphereAlpha = 1;
   private atmosphereDrift = 1;
   private targetAtmosphereDrift = 1;
-  private atmosphereTwinkle = 1;
-  private targetAtmosphereTwinkle = 1;
   private landmarkAlpha = 1;
   private targetLandmarkAlpha = 1;
   private hazardOverlayAlpha = 0;
@@ -48,11 +44,6 @@ export class ParallaxBackground {
 
   private createSceneLayers(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.livingBackground = createLivingBackground(scene, levelConfig?.name);
-    if (this.livingBackground) return;
-    if (import.meta.env.DEV) {
-      this.legacyBackground = new LegacyBackground();
-      this.legacyBackground.create(scene, levelConfig);
-    }
   }
 
   private createHazardOverlay(scene: Phaser.Scene, accentColor: number): void {
@@ -66,7 +57,6 @@ export class ParallaxBackground {
     this.currentWidth = width;
     this.currentHeight = height;
     this.livingBackground?.resize(width, height);
-    this.legacyBackground?.resize(width, height);
   }
 
   destroy(): void {
@@ -74,8 +64,6 @@ export class ParallaxBackground {
     this.livingBackground = null;
     this.unsubscribePerformanceBudget?.();
     this.unsubscribePerformanceBudget = null;
-    this.legacyBackground?.destroy();
-    this.legacyBackground = null;
     this.scene = null;
     this.levelConfig = undefined;
     this.resetRuntimeFieldState(0, 0);
@@ -85,7 +73,6 @@ export class ParallaxBackground {
 
   private applyRuntimePerformanceBudget(snapshot: RuntimePerformanceSnapshot): void {
     this.livingBackground?.setPressure(snapshot.pressureLevel);
-    this.legacyBackground?.setLayerLimit(snapshot.backgroundLayerLimit);
     for (const filter of this.hazardOverlay?.filters?.internal.list ?? []) {
       filter.setActive(snapshot.glowEnabled);
     }
@@ -96,7 +83,6 @@ export class ParallaxBackground {
 
     this.targetAtmosphereAlpha = targets.atmosphereAlpha;
     this.targetAtmosphereDrift = targets.atmosphereDrift;
-    this.targetAtmosphereTwinkle = targets.atmosphereTwinkle;
     this.targetLandmarkAlpha = targets.landmarkAlpha;
     this.targetHazardOverlayAlpha = targets.hazardOverlayAlpha;
     this.activeHazards = targets.activeHazards;
@@ -110,8 +96,6 @@ export class ParallaxBackground {
     this.targetAtmosphereAlpha = 1;
     this.atmosphereDrift = 1;
     this.targetAtmosphereDrift = 1;
-    this.atmosphereTwinkle = 1;
-    this.targetAtmosphereTwinkle = 1;
     this.landmarkAlpha = 1;
     this.targetLandmarkAlpha = 1;
     this.hazardOverlayAlpha = 0;
@@ -138,23 +122,11 @@ export class ParallaxBackground {
     const alpha = this.getFrameDampingAlpha(0.08, delta);
     this.atmosphereAlpha = Phaser.Math.Linear(this.atmosphereAlpha, this.targetAtmosphereAlpha, alpha);
     this.atmosphereDrift = Phaser.Math.Linear(this.atmosphereDrift, this.targetAtmosphereDrift, alpha);
-    this.atmosphereTwinkle = Phaser.Math.Linear(this.atmosphereTwinkle, this.targetAtmosphereTwinkle, alpha);
     this.landmarkAlpha = Phaser.Math.Linear(this.landmarkAlpha, this.targetLandmarkAlpha, alpha);
   }
 
   private updateVisualLayers(delta: number): void {
-    if (this.livingBackground) {
-      this.livingBackground.update(delta, this.atmosphereDrift, this.atmosphereAlpha, this.landmarkAlpha);
-      return;
-    }
-    this.legacyBackground?.update(
-      delta,
-      this.elapsed,
-      this.atmosphereDrift,
-      this.atmosphereAlpha,
-      this.atmosphereTwinkle,
-      this.landmarkAlpha
-    );
+    this.livingBackground?.update(delta, this.atmosphereDrift, this.atmosphereAlpha, this.landmarkAlpha);
   }
 
   private updateHazardOverlay(delta: number): number {

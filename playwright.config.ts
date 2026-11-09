@@ -51,7 +51,7 @@ export default defineConfig({
       name: 'chromium-desktop',
       testMatch: [
         '**/smoke.spec.ts',
-        '**/cinematic.spec.ts',
+        '**/shipyard.spec.ts',
         '**/proceduralBackground.spec.ts',
         '**/interaction.spec.ts',
         '**/accessibleActions.spec.ts',
@@ -76,7 +76,7 @@ export default defineConfig({
         '**/accessibleActions.spec.ts',
         '**/hardwareKeyboard.spec.ts',
         '**/proceduralBackground.spec.ts',
-        '**/cinematic.spec.ts',
+        '**/shipyard.spec.ts',
         '**/picketTurrets.spec.ts',
         '**/firstShot.spec.ts',
         '**/playerControls.spec.ts',

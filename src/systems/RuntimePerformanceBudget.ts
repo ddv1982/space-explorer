@@ -5,17 +5,16 @@ export interface RuntimePerformanceSnapshot {
   pressureLevel: number;
   particleScale: number;
   trailIntervalScale: number;
-  backgroundLayerLimit: number;
   glowEnabled: boolean;
   sampleCount: number;
   droppedFrameRatio: number;
 }
 
 const LEVELS = [
-  { particleScale: 1, trailIntervalScale: 1, backgroundLayerLimit: 3, glowEnabled: true },
-  { particleScale: 0.78, trailIntervalScale: 1.35, backgroundLayerLimit: 3, glowEnabled: false },
-  { particleScale: 0.58, trailIntervalScale: 1.75, backgroundLayerLimit: 2, glowEnabled: false },
-  { particleScale: 0.42, trailIntervalScale: 2.25, backgroundLayerLimit: 2, glowEnabled: false },
+  { particleScale: 1, trailIntervalScale: 1, glowEnabled: true },
+  { particleScale: 0.78, trailIntervalScale: 1.35, glowEnabled: false },
+  { particleScale: 0.58, trailIntervalScale: 1.75, glowEnabled: false },
+  { particleScale: 0.42, trailIntervalScale: 2.25, glowEnabled: false },
 ] as const;
 
 const SAMPLE_WINDOW = 120;

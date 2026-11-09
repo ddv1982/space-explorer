@@ -7,7 +7,6 @@ let parallaxCreateArgs: { scene: unknown; levelConfig: unknown } | null = null;
 let parallaxAtmosphereArgs: { section: unknown; progress: number } | null = null;
 let effectsSetupScene: unknown = null;
 let effectsColorGradeConfig: unknown = null;
-let releasedLevel: number | null = null;
 
 const { createWorldPresentation } = await import('../src/scenes/gameScene/createWorldPresentation');
 
@@ -18,7 +17,6 @@ describe('createWorldPresentation', () => {
     parallaxAtmosphereArgs = null;
     effectsSetupScene = null;
     effectsColorGradeConfig = null;
-    releasedLevel = null;
 
     const scene = {
       cameras: {
@@ -56,13 +54,8 @@ describe('createWorldPresentation', () => {
             effectsColorGradeConfig = levelConfig;
           },
         }) as never,
-      releaseOutsidePremiumWindow: (_scene, levelNumber) => {
-        callLog.push('releaseOutsidePremiumWindow');
-        releasedLevel = levelNumber;
-      },
       scene: scene as Parameters<typeof createWorldPresentation>[0]['scene'],
       levelConfig: levelConfig as Parameters<typeof createWorldPresentation>[0]['levelConfig'],
-      levelNumber: 4,
       initialSection: initialSection as Parameters<typeof createWorldPresentation>[0]['initialSection'],
       initialSectionProgress: 0.4,
       syncViewportBounds: () => {
@@ -82,13 +75,11 @@ describe('createWorldPresentation', () => {
       'syncViewportBounds',
       'getPlayerSpawnPoint',
       'parallax.create',
-      'releaseOutsidePremiumWindow',
       'parallax.setSectionAtmosphere',
       'registerScaleHandlers',
       'effects.setup',
       'effects.applyLevelColorGrade',
     ]);
-    expect(releasedLevel as number | null).toBe(4);
     expect(parallaxCreateArgs as { scene: unknown; levelConfig: unknown } | null).toEqual({ scene, levelConfig });
     expect(parallaxAtmosphereArgs as { section: unknown; progress: number } | null).toEqual({
       section: initialSection,

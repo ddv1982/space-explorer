@@ -51,15 +51,9 @@ mock.module('phaser', () => ({
   },
 }));
 
-let ensuredLevels: number[] = [];
-mock.module('../src/utils/cinematicAssets', () => ({
-  queueCinematicAssets: () => undefined,
-  finishCinematicLoading: () => true,
-}));
-mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
-  prepareLegacyBackgroundTextures: (_scene: unknown, level: number) => {
-    ensuredLevels.push(level);
-  },
+mock.module('../src/utils/shipyardAssets', () => ({
+  queueShipyardAssets: () => undefined,
+  finishShipyardLoading: () => true,
 }));
 mock.module('../src/utils/layout', () => ({
   getViewportLayout: () => ({ centerX: 400, centerY: 300 }),
@@ -142,13 +136,11 @@ describe('boot and preload loader lifecycle', () => {
     expect(startCalls).toEqual(['Preload']);
   });
 
-  test('warms the first level window via procedural generation and transitions at create', () => {
-    ensuredLevels = [];
+  test('reports loader progress and transitions at create', () => {
     const harness = createPreloadHarness();
 
     harness.scene.init();
     harness.scene.preload();
-    expect(ensuredLevels).toEqual([1]);
     expect(harness.startCalls).toEqual([]);
 
     harness.loadEvents.emit('progress', -0.2);
@@ -181,20 +173,17 @@ describe('boot and preload loader lifecycle', () => {
   });
 
   test('create completes the transition without requiring loader progress', () => {
-    ensuredLevels = [];
     const harness = createPreloadHarness();
 
     harness.scene.init();
     harness.scene.preload();
     harness.scene.create();
 
-    expect(ensuredLevels).toEqual([1]);
     expect(harness.startCalls).toEqual(['Menu']);
     expect(harness.displayedText).toEqual(['LOADING... 0%']);
   });
 
   test('shutdown removes old-run progress callbacks before recreate', () => {
-    ensuredLevels = [];
     const harness = createPreloadHarness();
 
     harness.scene.init();

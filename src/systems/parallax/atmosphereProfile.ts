@@ -4,13 +4,11 @@ import type { LevelSectionConfig, ScriptedHazardConfig } from '../../config/Leve
 interface PhaseBias {
   alpha: number;
   drift: number;
-  twinkle: number;
 }
 
 interface SectionAtmosphereTargets {
   atmosphereAlpha: number;
   atmosphereDrift: number;
-  atmosphereTwinkle: number;
   landmarkAlpha: number;
   hazardOverlayAlpha: number;
   activeHazards: ScriptedHazardConfig[];
@@ -19,16 +17,16 @@ interface SectionAtmosphereTargets {
 function getSectionPhaseAtmosphereBias(phase: LevelSectionConfig['phase']): PhaseBias {
   switch (phase) {
     case 'build':
-      return { alpha: 0.04, drift: 0.03, twinkle: 0.03 };
+      return { alpha: 0.04, drift: 0.03 };
     case 'hazard':
-      return { alpha: 0.07, drift: 0.06, twinkle: 0.04 };
+      return { alpha: 0.07, drift: 0.06 };
     case 'climax':
-      return { alpha: 0.1, drift: 0.08, twinkle: 0.06 };
+      return { alpha: 0.1, drift: 0.08 };
     case 'boss-approach':
-      return { alpha: -0.04, drift: -0.03, twinkle: -0.16 };
+      return { alpha: -0.04, drift: -0.03 };
     case 'intro':
     default:
-      return { alpha: -0.02, drift: -0.01, twinkle: -0.03 };
+      return { alpha: -0.02, drift: -0.01 };
   }
 }
 
@@ -49,7 +47,6 @@ export function resolveSectionAtmosphereTargets(
     return {
       atmosphereAlpha: 1,
       atmosphereDrift: 1,
-      atmosphereTwinkle: 1,
       landmarkAlpha: 1,
       hazardOverlayAlpha: 0,
       activeHazards: [],
@@ -62,7 +59,6 @@ export function resolveSectionAtmosphereTargets(
   const visualModifiers = section.visualModifiers;
   const atmosphereScale = visualModifiers?.atmosphereAlpha ?? 1;
   const driftScale = visualModifiers?.driftScale ?? 1;
-  const twinkleScale = visualModifiers?.twinkleScale ?? 1;
   const landmarkScale = visualModifiers?.landmarkAlpha ?? 1;
   const hazardResponseScale = visualModifiers?.hazardResponseScale ?? 1;
   const activeHazards = section.hazardEvents ?? [];
@@ -77,10 +73,6 @@ export function resolveSectionAtmosphereTargets(
     Phaser.Math.Clamp(0.95 + musicIntensity * 0.08 + tension * 0.08 + phaseBias.drift, 0.9, 1.16) * driftScale;
   atmosphereDrift = Phaser.Math.Clamp(atmosphereDrift, 0.88, 1.2);
 
-  let atmosphereTwinkle =
-    Phaser.Math.Clamp(0.92 + musicIntensity * 0.1 + tension * 0.06 + phaseBias.twinkle, 0.72, 1.18) * twinkleScale;
-  atmosphereTwinkle = Phaser.Math.Clamp(atmosphereTwinkle, 0.65, 1.22);
-
   const landmarkAlpha = Phaser.Math.Clamp((0.94 + tension * 0.12 + progress * 0.05) * landmarkScale, 0.78, 1.22);
 
   const hazardIntensity = getHazardVisualIntensity(activeHazards);
@@ -89,7 +81,6 @@ export function resolveSectionAtmosphereTargets(
   return {
     atmosphereAlpha,
     atmosphereDrift,
-    atmosphereTwinkle,
     landmarkAlpha,
     hazardOverlayAlpha,
     activeHazards,

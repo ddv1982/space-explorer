@@ -2,15 +2,12 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { SOWER_HP, SOWER_MINE_COOLDOWN, SOWER_SCORE, SOWER_SPEED } from '../../utils/constants';
 import { Mine } from '../Mine';
-import { ensureSowerTexture } from '../../utils/SpriteFactory';
 
 export class Sower extends EnemyBase {
   private mineGroup: Phaser.Physics.Arcade.Group | null = null;
   private lastMineTime: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureSowerTexture(scene);
-
     super(scene, x, y, 'sower-texture');
     this.maxHp = SOWER_HP;
     this.hp = SOWER_HP;

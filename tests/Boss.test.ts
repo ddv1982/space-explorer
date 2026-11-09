@@ -101,7 +101,7 @@ describe('Boss', () => {
     expect((boss as unknown as Record<string, unknown>).phase).toBe(2);
     expect((boss as unknown as Record<string, unknown>).attackStyle).toBe('maelstrom');
     expect(setTexture).toHaveBeenCalledTimes(1);
-    expect(setTexture.mock.calls[0]?.[0] as string).toContain('boss-texture-maelstrom-');
+    expect(setTexture.mock.calls[0]?.[0] as string).toBe('boss-maelstrom');
     expect(flashPhaseChange).toHaveBeenCalledTimes(1);
   });
 

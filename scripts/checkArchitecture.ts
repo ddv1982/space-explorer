@@ -225,41 +225,6 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
     reason: 'single projection of responsive HUD geometry onto the widget set',
     evidence: 'HUD responsive layout tests',
   },
-  'src/systems/parallax/neonBackgroundGenerator.ts#ensureNeonBackgroundTextures': {
-    lines: 95,
-    complexity: 25,
-    category: 'drawing-recipe',
-    reason: 'idempotent texture registration whose branch structure mirrors generated texture variants',
-    evidence: 'parallax texture lifecycle tests and visual evidence',
-  },
-  'src/systems/parallax/planetTextureGenerator.ts#generatePlanetTexture': {
-    lines: 112,
-    complexity: 9,
-    category: 'drawing-recipe',
-    reason: 'ordered deterministic planet texture recipe',
-    evidence: 'planet texture cache tests and intermission visual evidence',
-  },
-  'src/systems/parallax/planetTextureGenerator.ts#<anonymous>': {
-    lines: 104,
-    complexity: 9,
-    category: 'drawing-recipe',
-    reason: 'local canvas recipe retains one coordinate system and explicit draw order',
-    evidence: 'planet texture cache tests and intermission visual evidence',
-  },
-  'src/utils/spriteFactory/bossTextures.ts#ensureBossTextureVariant': {
-    lines: 245,
-    complexity: 11,
-    category: 'drawing-recipe',
-    reason: 'idempotent boss-variant recipe whose visual passes share variant geometry',
-    evidence: 'boss texture registration tests and gameplay visual evidence',
-  },
-  'src/utils/spriteFactory/bossTextures.ts#<anonymous>': {
-    lines: 236,
-    complexity: 11,
-    category: 'drawing-recipe',
-    reason: 'local canvas recipe preserves explicit layer order and shared coordinate state',
-    evidence: 'boss texture registration tests and gameplay visual evidence',
-  },
 };
 const TEST_CONCENTRATION_BUDGETS: Record<string, { lines: number; reason: string; evidence: string }> = {
   'tests/SaveSlotStorage.test.ts': {
@@ -327,14 +292,7 @@ const CONCENTRATION_POLICIES: Record<string, ConcentrationPolicy> = {
     imports: 37,
     category: 'composition-root',
     reason: 'Phaser gameplay composition root with authored-asset preload boundary',
-    evidence: 'game scene composition, cinematic loading, and lifecycle tests',
-  },
-  'src/systems/parallax/neonBackgroundGenerator.ts': {
-    lines: 800,
-    imports: 8,
-    category: 'drawing-recipe',
-    reason: 'procedural drawing recipe collection',
-    evidence: 'parallax texture lifecycle tests, visual evidence, and frame-pacing probes',
+    evidence: 'game scene composition, shipyard sheet loading, and lifecycle tests',
   },
   'src/systems/WaveManager.ts': {
     lines: 460,

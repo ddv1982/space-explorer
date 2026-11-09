@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { finishCinematicLoading, queueCinematicAssets } from '../utils/cinematicAssets';
-import { prepareLegacyBackgroundTextures } from '../systems/parallax/premiumBackgroundLoading';
+import { finishShipyardLoading, queueShipyardAssets } from '../utils/shipyardAssets';
 import { getViewportLayout } from '../utils/layout';
 import { queueAllPlanetPortraits } from './planetIntermission/planetPortraits';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
@@ -27,7 +26,7 @@ export class PreloadScene extends Phaser.Scene {
 
   preload(): void {
     registerRestartOnResize(this);
-    queueCinematicAssets(this);
+    queueShipyardAssets(this);
 
     const layout = getViewportLayout(this);
     const loadingText = this.add
@@ -57,8 +56,6 @@ export class PreloadScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanupLoaderProgress);
     this.events.once(Phaser.Scenes.Events.DESTROY, cleanupLoaderProgress);
 
-    prepareLegacyBackgroundTextures(this, 1);
-
     // Authored planet portraits are real raster files (~18 kB each): cache
     // the full campaign set now so intermissions never hit the network
     // mid-run. The intermission scene re-queues its own portrait on direct
@@ -79,7 +76,7 @@ export class PreloadScene extends Phaser.Scene {
     // create is Phaser's completion boundary for preload, including an empty or
     // already-cached queue. Do not report completion or advance before it runs.
     this.cleanupLoaderProgress?.();
-    if (!finishCinematicLoading(this)) return;
+    if (!finishShipyardLoading(this)) return;
 
     if (this.menuTransitionStarted) {
       return;

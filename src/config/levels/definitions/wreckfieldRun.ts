@@ -16,8 +16,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
   journeyNote: 'Bastion Fall is a wall of wreckage; the gauntlet tests nerve over firepower.',
   bgColor: '#0a0c10',
   accentColor: 0xffb066,
-  nebulaColor: 0x2c3038,
-  nebulaAlpha: 0.12,
   colorGrade: { brightness: 0.06, contrast: 1.14, saturation: 0.95 },
   planetPalette: [0x5c6672, 0xffd8a8],
   enemies: [
@@ -72,7 +70,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 0.97,
         driftScale: 0.96,
-        twinkleScale: 0.86,
         landmarkAlpha: 0.96,
       },
       tensionArc: 'constant',
@@ -114,7 +111,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.02,
         driftScale: 1.04,
-        twinkleScale: 0.94,
         landmarkAlpha: 1.02,
         hazardResponseScale: 1.12,
       },
@@ -192,7 +188,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.07,
         driftScale: 1.06,
-        twinkleScale: 0.98,
         landmarkAlpha: 1.08,
         hazardResponseScale: 1.18,
       },
@@ -244,7 +239,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 1.12,
         driftScale: 1.08,
-        twinkleScale: 1.02,
         landmarkAlpha: 1.12,
         hazardResponseScale: 1.22,
       },
@@ -275,7 +269,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       visualModifiers: {
         atmosphereAlpha: 0.9,
         driftScale: 0.9,
-        twinkleScale: 0.72,
         landmarkAlpha: 1.06,
       },
       tensionArc: 'constant',

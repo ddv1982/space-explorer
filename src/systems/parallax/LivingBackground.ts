@@ -9,9 +9,9 @@ import {
 } from './livingBackgroundProfile';
 import { createLivingBackgroundFragment } from './livingBackgroundShader';
 import { bindOwnedShaderCleanup, hasOwnedShaderProgram } from './livingBackgroundShaderOwner';
-import { createLivingNoise, createLivingStars } from './livingBackgroundTextures';
-
+import { createLivingNoise } from './livingBackgroundTextures';
 import { createLivingLandmark } from './livingCampaignLandmarks';
+import { LivingStarfield, addSpaceVignette } from './livingStarfield';
 
 let nextOwner = 0;
 
@@ -25,7 +25,8 @@ export class LivingBackground {
   private readonly prefix: string;
   private readonly shader: Phaser.GameObjects.Shader;
   private readonly image: Phaser.GameObjects.Image;
-  private readonly stars: Phaser.GameObjects.TileSprite;
+  private readonly stars: LivingStarfield;
+  private readonly vignette: Phaser.GameObjects.Image;
   private readonly landmarks: Phaser.GameObjects.Image[] = [];
   private readonly occluder: Phaser.GameObjects.Arc | null;
   private readonly textureKeys: string[];
@@ -55,11 +56,9 @@ export class LivingBackground {
     this.prefix = `living-${scene.sys.settings.key}-${nextOwner++}`;
     this.viewport = [Number(scene.scale.width), Number(scene.scale.height)];
     const noiseKey = `${this.prefix}-noise`;
-    const starsKey = `${this.prefix}-stars`;
     const outputKey = `${this.prefix}-atmosphere`;
-    this.textureKeys = [noiseKey, starsKey, outputKey];
+    this.textureKeys = [noiseKey, outputKey];
     createLivingNoise(scene, noiseKey);
-    createLivingStars(scene, starsKey, world);
     const [width, height] = getAtmosphereSize(...this.viewport, this.tier);
     this.shader = scene.add
       .shader(
@@ -86,10 +85,8 @@ export class LivingBackground {
     this.shader.setRenderToTexture(outputKey).setVisible(false);
     if (hasOwnedShaderProgram(this.shader)) this.renderCount += 1;
     this.image = scene.add.image(0, 0, outputKey).setDepth(-20);
-    this.stars = scene.add
-      .tileSprite(0, 0, ...this.viewport, starsKey)
-      .setDepth(-19)
-      .setAlpha(0.7);
+    this.stars = new LivingStarfield(scene, this.profile.starAccent, -19);
+    this.vignette = addSpaceVignette(scene, -16);
     this.occluder = this.profile.occluder ? scene.add.circle(0, 0, 1, 0x020309).setDepth(-18) : null;
     if (this.profile.landmark.kind !== 'none') {
       const landmarkKey = `${this.prefix}-landmark`;
@@ -131,7 +128,8 @@ export class LivingBackground {
       .updateDisplayOrigin()
       .setDisplaySize(width, height)
       .setPosition(width / 2, height / 2);
-    this.stars.setSize(width, height).setPosition(width / 2, height / 2);
+    this.stars.resize(width, height);
+    this.vignette.setDisplaySize(width, height).setPosition(width / 2, height / 2);
     const body = this.profile.occluder;
     if (body)
       this.occluder
@@ -172,7 +170,7 @@ export class LivingBackground {
       this.invalidate();
     }
     if (!this.motionQuery?.matches) {
-      this.stars.tilePositionY -= motionDelta * 0.008 * drift;
+      this.stars.scroll(motionDelta, drift);
       if (this.tier !== 'low' && this.pressure < 3) {
         this.landmarks.forEach((landmark, index) => {
           landmark.rotation += motionDelta * this.placements[index].spin;
@@ -209,6 +207,7 @@ export class LivingBackground {
     this.motionQuery?.removeEventListener('change', this.invalidate);
     this.image.destroy();
     this.stars.destroy();
+    this.vignette.destroy();
     this.occluder?.destroy();
     this.landmarks.forEach((landmark) => landmark.destroy());
     this.shader.destroy();

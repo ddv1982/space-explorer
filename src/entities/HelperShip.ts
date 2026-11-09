@@ -3,7 +3,6 @@ import { BULLET_SPEED } from '../utils/constants';
 import { BulletPool } from '../systems/BulletPool';
 import { EffectsManager } from '../systems/EffectsManager';
 import { Player } from './Player';
-import { ensureHelperShipTexture } from '../utils/SpriteFactory';
 
 type HelperShipDamageResult = 'ignored' | 'active' | 'respawning' | 'depleted';
 
@@ -49,8 +48,6 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
   private visualFlashToken = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureHelperShipTexture(scene);
-
     super(scene, x, y, 'helper-ship');
     scene.add.existing(this);
     scene.physics.add.existing(this);

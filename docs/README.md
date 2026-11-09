@@ -39,7 +39,7 @@ main
 
 - [Play feel and replayability](./plans/game-feel-replayability-2026-09-06.md). Active phased program beginning with local recording and a fresh-player baseline.
 
-- [Cinematic hull contract](./adr/0003-cinematic-frontier-pilot.md). Source artwork, loading, logical dimensions, and the retired raster pilot.
+- [Shipyard roster](./adr/0005-shipyard-roster.md). Every hull as a code-built, normal-mapped 3D sprite sheet: manifest, loading, logical dimensions and the render pipeline. Supersedes the [cinematic hull pilot](./adr/0003-cinematic-frontier-pilot.md).
 - [Procedural background research](./procedural-background-research-2026-09-05.md). Follow-up direction from pilot feedback: evolving Phaser atmosphere and generated landmarks alongside cinematic hulls.
 - [Living procedural backgrounds](./adr/0004-living-procedural-backgrounds.md). Implemented worlds, shader ownership, quality limits, and verification requirements.
 

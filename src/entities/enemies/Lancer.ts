@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { LANCER_FIRE_RATE, LANCER_HP, LANCER_SCORE, LANCER_SPEED, LANCER_TELEGRAPH_MS } from '../../utils/constants';
 import { EnemyBullet } from '../EnemyBullet';
-import { ensureLancerTexture } from '../../utils/SpriteFactory';
 
 type LancerPhase = 'descend' | 'idle' | 'telegraph';
 type TargetProvider = () => { x: number; y: number } | null;
@@ -16,8 +15,6 @@ export class Lancer extends EnemyBase {
   private telegraphStart: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureLancerTexture(scene);
-
     super(scene, x, y, 'lancer-texture');
     this.maxHp = LANCER_HP;
     this.hp = LANCER_HP;

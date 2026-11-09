@@ -3,11 +3,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type Phaser from 'phaser';
 
 mock.module('phaser', () => ({ default: { Scenes: { Events: { SHUTDOWN: 'shutdown', DESTROY: 'destroy' } } } }));
-const prepareTextures = mock();
 const startScene = mock();
-mock.module('../src/systems/parallax/premiumBackgroundLoading', () => ({
-  prepareLegacyBackgroundTextures: prepareTextures,
-}));
 mock.module('../src/scenes/sceneRegistry', () => ({ startRegisteredScene: startScene }));
 const { startFreshRun, startPreparedRun } = await import('../src/scenes/shared/startRun');
 const { getPlayerState, setPlayerState, getRunSummary, setRunSummary } = await import('../src/systems/PlayerState');
@@ -26,12 +22,11 @@ function fixture() {
 }
 
 beforeEach(() => {
-  prepareTextures.mockReset();
   startScene.mockReset();
 });
 
 describe('canonical new run action', () => {
-  test('resets all run state before preparing and starting level 1, without touching unrelated registry data', () => {
+  test('resets all run state before starting level 1, without touching unrelated registry data', () => {
     const { scene, registry, events } = fixture();
     setPlayerState(registry, {
       level: 8,
@@ -44,10 +39,6 @@ describe('canonical new run action', () => {
     });
     setRunSummary(registry, { finalScore: 16000, levelReached: 8 });
     registry.set('unrelated', 'preserved');
-    prepareTextures.mockImplementation((_scene, level) => {
-      expect(level).toBe(1);
-      expect(getPlayerState(registry)).toMatchObject({ score: 0, level: 1 });
-    });
     startFreshRun(scene);
     expect(getPlayerState(registry)).toEqual({
       level: 1,
@@ -70,7 +61,6 @@ describe('canonical new run action', () => {
     const loaded = { ...getPlayerState(registry), level: 6, score: 4300 };
     setPlayerState(registry, loaded);
     startPreparedRun(scene);
-    expect(prepareTextures).toHaveBeenCalledWith(scene, 6);
     expect(getPlayerState(registry)).toEqual(loaded);
     expect(startScene).toHaveBeenCalledTimes(1);
   });

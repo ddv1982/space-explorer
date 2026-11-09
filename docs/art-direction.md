@@ -1,42 +1,30 @@
 # Space Explorer art direction
 
-The ship direction is Cinematic Frontier, with authored ceramic and titanium hulls and procedural combat signals. Gameplay environments are generated in Phaser. All ten campaign environments now use evolving procedural atmosphere with generated landmarks. Their palettes and gameplay contrast still follow the world identities below. See [ADR 0004](adr/0004-living-procedural-backgrounds.md) for the current background contract and [ADR 0003](adr/0003-cinematic-frontier-pilot.md) for the hull pilot's history.
+Every hull in the game — player, helper wing, all eleven enemy families, the six bosses, picket turrets, mines and the four asteroid shapes — is a code-built 3D model rendered by the **shipyard** (`scripts/shipyard`, three.js at build time only) into WebP sprite sheets: an albedo pass with a baked upper-left key light plus a matching normal map. In game, `LightingRig` lights every normal-mapped sprite per pixel, so explosions, engines and pulses shade nearby hulls. See [ADR 0005](adr/0005-shipyard-roster.md) for the contract and [ADR 0004](adr/0004-living-procedural-backgrounds.md) for backgrounds.
 
-The five cinematic hulls use retained 4× image pixels with logical frame dimensions at scale 1. This differs from procedural supersampling, which resolves drawings back to logical-size canvases. Keep player 36×44, scout 26×28, fighter 36×36, bomber 44×38, and Pyre Herald 88×56. Collision bodies stay unchanged. Pale armor, dark recesses, and small engine apertures carry the new material language; broad bloom must not obscure them.
+Light itself — bolts, orbs, beams, fire, smoke, sparks, flares, glows — is painted procedurally with Canvas 2D gradients (`withCanvasTexture`), never modelled: it has to stay soft, additive and cheap. Canvas textures register as plain texture sources, never Phaser `CanvasTexture`s, whose `getImageData` readback stalls software renderers for seconds.
 
-The v2 contract remains the baseline for unmigrated assets. Cinematic Frontier changes presentation while preserving encounter grammar. The superseded `background-art-bible.md` remains historical reference.
+## Shipyard hulls
 
-## Procedural combat hull materials
-
-Diver, Gunship, and Sower share the cinematic hulls' material values. Titanium `#485460` carries the body; ceramic `#c4ccd2` covers small forward plates. Recesses use `#101a27`, and short lit edges use `#e0e5e8`. Flat material regions remain legible at 24–40 pixels. They do not add photographic texture, animated layers, filters, or new assets to runtime.
-
-Threat colors still identify each family. Diver keeps its magenta swept crescent and central engine. Gunship keeps its blue twin cannon rails, command pod, and paired engines. Sower keeps its purple broad pod and two bright mine bays. Canopies are small colored apertures inside dark recesses. White highlights stay on short forward edges, leaving fire and damage effects brighter than the armor.
-
-| Family | Logical texture | Material placement |
-| --- | --- | --- |
-| Diver | 24×30 | Ceramic swept wing plates, recessed central spine, narrow magenta canopy |
-| Gunship | 40×40 | Ceramic rail faces, dark barrel channels and command recess, blue canopy |
-| Sower | 34×34 | Ceramic shoulders, recessed paired mine bay, purple canopy |
-
-The original polygon vertices, texture keys, logical dimensions, and collision bodies are preserved. These three hulls use a one-pixel threat-colored outline and a tighter baked halo. All quality tiers still generate at 4× and resolve to logical pixels. Other procedural enemy families retain the v2 recipe.
-
-The comparison uses actual Phaser-generated texture pixels at native size and at 4× inspection size beside the cinematic fighter. The full ceramic-body candidate loses separation between the wing plates and body. The selected titanium-body hybrid keeps those regions distinct while preserving the colored silhouette. This is an art-direction judgment from a static comparison. Fresh-player recognition and preference remain unmeasured.
-
-To reproduce the current contact sheet, start `bun run dev --host 127.0.0.1 --port 4194`, then run `bun scripts/captureCombatArt.ts`. `COMBAT_ART_ORIGIN` can select another development server. The script writes `output/combat-art/contact-sheet.png` and `texture-metrics.json`. It checks the logical sizes, opaque hull coverage, and visible highlights for all three families at Low, Standard, and High. The 4× inspection row enlarges the resolved pixels; judge recognition from the native row.
+- **Logical sizes are gameplay contracts.** Sheets live in `SHIPYARD_SPRITES` (`src/config/shipyardSprites.ts`) at 4× density; frames are trimmed to the logical size the Arcade bodies were tuned with (player 36×44, scout 26×28, fighter 36×36, bomber 44×38, gunship 40×40, bosses 88×56, asteroids 44×44 …). Changing art never changes a hitbox.
+- **Factions by material.** The player and helper wear pale ceramic over titanium with cyan / teal emissives. Hostiles are dark gunmetal with armour panels and glowing accents in their family colour (scout red, fighter orange, diver magenta, dodger cyan, gunship blue, sower violet, bomber amber, lancer steel, splitter orange, swarm yellow, swarmling pink). Bosses are capital ships in their attack style's colour.
+- **Silhouette first.** Hulls display at 14–88 px, so readable outlines and plate value contrast beat micro-detail. Emissives use intensity ≥ 2.5 so bloom picks them out.
+- **Asteroids** are neutral grey stone so level MULTIPLY tints recolour them; they spin, so their sheet bakes a softer key and relies on the normal map for direction.
+- Regenerate with `bun run art:shipyard` (or `--only a,b`); each run writes `assets/source/shipyard/_preview.png` for review.
 
 ## V2 remake contract
 
 - **Readable pressure first.** The center 45–55% of the playfield stays darker and calmer than entities, bullets, hazards, and pickups so Lane-Reading and Ambush Anticipation stay intact. Scenery and HUD chrome never win contrast in that corridor.
 - **Gameplay clocks stay frozen on pause.** Telegraph windows, beam phases, and choreographed waves still count accumulated gameplay delta. Presentation motion may tween on the scene clock; it must not schedule combat consequences from scene time.
 - **Both orientations stay first-class.** There is no rotate block. Phone-portrait 390px remains a required layout. Decorative chrome must collapse before it clips a primary action.
-- **Scoped hybrid art.** Authored cinematic hulls join the ten planet-arrival portraits. Gameplay backgrounds are procedural. Required hull image failures block entry with retry; they must not masquerade as a successful procedural fallback.
-- **Quality tiers budget spectacle.** Low / standard / high stay the only player-facing quality axis. Remake FX budgets live on `VisualQualityProfile` as `uiGlowStrength`, `motifDensity`, `particleBurstScale`, `particleQuantityScale`, and `menuAtmosphere`. The living atmosphere uses the bounded target sizes below; particle budgets remain tiered. Main-menu quality changes persist and reload; pause quality changes persist and report that a restart is required; storage failures stay non-fatal and keep the prior tier.
-- **Glow stays cheap.** Per-object Glow remains reserved for the player and telegraphs. Entity and pickup glow is baked into generated textures. Camera ColorMatrix stays subtle.
+- **Scoped hybrid art.** Shipyard hull sheets join the ten planet-arrival portraits. Gameplay backgrounds are procedural. Required hull sheet failures block entry with retry; they must not masquerade as a successful procedural fallback.
+- **Quality tiers budget spectacle.** Low / standard / high stay the only player-facing quality axis. Remake FX budgets live on `VisualQualityProfile` as `uiGlowStrength`, `particleBurstScale`, `particleQuantityScale`, and `menuAtmosphere`. The living atmosphere uses the bounded target sizes below; particle budgets remain tiered. Main-menu quality changes persist and reload; pause quality changes persist and report that a restart is required; storage failures stay non-fatal and keep the prior tier.
+- **Glow stays cheap.** Per-object Glow remains reserved for the player and telegraphs. Bolts and pickups bake their glow into canvas-painted textures (larger than their bodies; entities pin the original hitbox); hull emissives glow through camera bloom. Camera ColorMatrix stays subtle.
 
 ## Pillars
 
-1. **Neon vector** — clean geometric silhouettes, hot cores, layered glow halos, crisp outlines. Geometry Wars readability with a modern space-opera palette.
-2. **Bounded authored assets** — the cinematic hulls use compressed WebP images, retained source density, and explicit cache ownership. Procedural textures remain appropriate for readable combat signals and unmigrated content. The retired 25 MB painterly background pack stays retired.
+1. **Lit hardware, neon light** — solid, normal-mapped 3D hulls; everything that is light (bolts, fire, beams, engines) is soft, additive and saturated.
+2. **Bounded authored assets** — shipyard sheets are compressed WebP generated from code under a download budget, with retained source density and explicit cache ownership. The retired 25 MB painterly background pack stays retired.
 3. **Readable pressure** — the center gameplay lane stays dark and calm. Bullets, enemies, hazards, and pickups win attention with saturated neon cores; scenery never crosses their luminance in the lane.
 
 ## Palette System
@@ -50,7 +38,7 @@ Global base (from `scenes/shared/neonUiTheme.ts`):
 - Danger red: `#ff756f`, amber warning: `#ffc36e`
 - Text/white-hot: `#f4fdff`
 
-Per-level identity: each level keeps its `accentColor` / `nebulaColor` from the level definition; the neon background generator derives the level's glow palette from those two values plus a per-level motif (arcs, crystals, grid, shards, rings).
+Per-level identity: each level keeps its `accentColor` from the level definition; its background world (palette, atmosphere, landmark) is authored in `livingBackgroundProfile.ts`.
 
 ### Entity color coding (gameplay readability, fixed regardless of level)
 
@@ -71,25 +59,22 @@ Per-level identity: each level keeps its `accentColor` / `nebulaColor` from the 
 
 ## Shape Language
 
-- **Player**: sleek forward dart; twin prongs; engine cores glow. Banking conveyed by rotation (code-driven, no extra frames).
-- **Enemies**: single-gesture silhouettes (dart, chevron, hex, twin-prong, tri-shard) readable at 20–44 px.
-- **Bosses**: wide multi-part hulls with concentric rings / arc motifs; pulsing core.
-- **Glow recipe** (unmigrated procedural entities): halo pass (shape scaled up, low alpha) → mid glow pass → near-black body fill tinted with hue → bright neon outline → white-hot core accents (cockpit, engine dots).
-- **Asteroids**: faceted wireframe polygons, dim inner fill, neon edge strokes; rotating.
+- **Player**: sleek twin-fork interceptor; nine rendered bank frames carry the roll, a small rotation adds yaw; a flickering twin engine flame stretches with forward thrust.
+- **Enemies**: single-gesture silhouettes (dart, chevron, hex, twin-prong, tri-shard) readable at 14–44 px, built as plated 3D hulls.
+- **Bosses**: wide multi-part capital ships, one silhouette per attack style; glowing reactor cores and engine banks.
+- **Asteroids**: four lumpy, cratered stone shapes; each spawn picks one and spins it.
 
 ## Backgrounds
 
-All ten worlds use `LivingBackground`. Aurora has folded light curtains and an edge planet; the other worlds use distinct caustics, ember fronts, mechanical rings, crystals, wreckage, arches, an eclipse, hive membranes, or an orbital well. Stars and optional landmark images render separately from the bounded atmosphere texture. The center-lane mask uses viewport coordinates.
+All ten worlds use `LivingBackground`. Aurora has folded light curtains and an edge planet; the other worlds use distinct caustics, ember fronts, mechanical rings, crystals, wreckage, arches, an eclipse, hive membranes, or an orbital well. A three-depth starfield (`livingStarfield.ts`: dense faint stars, haloed mid stars, sparse bright stars with diffraction spikes, in stellar colours, the mid layer tinted toward the world's star accent) scrolls at three speeds over the bounded atmosphere texture. Its layer textures are painted once and shared by every world, and a vignette darkens the corners under gameplay. The center-lane mask uses viewport coordinates.
 
 Low uses a static 320px atmosphere target, Standard uses 480px, and High/Auto use 640px. Reduced motion freezes the environment. Section lighting still responds to gameplay. See [ADR 0004](adr/0004-living-procedural-backgrounds.md) for ownership and recovery.
 
-The previous plane compositor and supplemental scenery remain available through the development-only `background=legacy` comparison. They are not created for the living campaign.
-
 ## VFX
 
-- Explosions: white-hot flash → expanding neon ring → line-burst sparks → shard debris (additive). Enemy classes apply their own palette and shockwave aspect (wide dodger, tall lancer/diver, heavy bomber, yellow swarm) without changing particle budgets.
-- Muzzle flash: four-point star flare. Exhaust: soft glow orbs. Bullet trails: small glow dots.
-- Hit splash: sharp cross flare. Power-up burst: halo ring + sparks in pickup color.
+- Explosions (`EffectsManager.detonate`): white-hot lens flare and glow → billowing fireball cooling white → yellow → orange → red → expanding shockwave ring → sparks and drifting embers in the hull's accent → lingering smoke, plus debris for heavy hulls, and a dynamic light pulse. Styles per family live in `effects/explosionStyles.ts`; quantities scale with quality tier and runtime pressure.
+- Bolts: player plasma lances (white core in a cyan sheath, additive), turret bolts amber, hostile orbs magenta with a dark rim for contrast. Muzzle flash: lens flare. Exhaust and trails: soft glow motes.
+- Hit splash: flare plus sparks. Power-up burst: glow motes in pickup color.
 - Warp transition: vertical speed-line streaks in cyan/white.
 
 ## UI
@@ -97,6 +82,7 @@ The previous plane compositor and supplemental scenery remain available through 
 - Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles. V2 command-deck chrome (menu, pause, game over, victory, intermission frame) shares that language and scales glow with `uiGlowStrength` / `menuAtmosphere`.
 - Typography: bundled display font (Orbitron) with system fallback stack; mono for numeric readouts.
 - Gameplay hierarchy: `HULL` and `RES` anchor the left status cluster, score/sector anchor the right, and the center `FLIGHT VECTOR` is a ten-segment continuous progress readout. The compact layout moves progress to the lower edge of the panel to avoid overlap at phone widths.
+- Main menu: the lit hero ship (an orbiting key light rolls highlights across its normal map) idles over a launch pad with scan rings, a planet horizon rises behind the run tiles and shooting stars cross the sky.
 - Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planet bodies are the authored raster portraits (exception below), framed by the existing neon halo, orbit, route, and satellite chrome.
 
 ## Planet arrival portraits (approved raster exception)
@@ -111,7 +97,7 @@ Approved 2026-08 as a scoped exception to the procedural-only rule. The ten plan
 
 ## Performance Rules
 
-- Procedural entities draw at 4× on every quality tier and resolve to logical-size textures. Authored cinematic hulls retain 4× source pixels with logical metadata. Low/Standard particles use 1× generation; High/Auto use 2×. Sprite display dimensions and Arcade Physics bodies never change with quality.
+- Shipyard sheets and canvas-painted bolts and pickups retain 4× source pixels with logical frame trims. Sprite display dimensions and Arcade Physics bodies never change with quality.
 - Main and pause menus use the same settings surface: difficulty (low/normal/high), visual quality (low/standard/high), and creativity, energy, ambience, and music-volume sliders. Difficulty and music changes apply to the active runtime; difficulty changes forgiveness only and never encounter grammar. Main-menu quality changes persist and reload so generated assets share one profile. Pause-menu quality changes persist without discarding the run and clearly report that a restart is required. Storage failures remain non-fatal and leave the prior tier selected.
 - Pause separates checkpoint actions and settings into explicit subviews. Reopening pause deterministically starts on checkpoints; switching subviews or resizing never changes the physics/audio pause contract. Both subviews retain reachable controls in desktop, phone portrait, and phone landscape compositions.
 - Additive glow is expensive: cap simultaneous ADD-blend layers, keep halos inside texture canvases, prefer texture-baked glow over runtime filters for pooled objects.

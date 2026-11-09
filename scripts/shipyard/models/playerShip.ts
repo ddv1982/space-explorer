@@ -1,5 +1,10 @@
 import * as THREE from 'three';
-import { MATERIALS, PALETTE, box, ellipsoid, mirrored, podY, slab } from './kit';
+import { MATERIALS, PALETTE, box, mirrored, podY, slab } from './kit';
+import { canopy, engine, strip, vents } from './lightCraftParts';
+
+/** Strip glow: a deeper cyan than the palette accent so tone mapping keeps the hue. */
+const STRIP_GLOW = '#18c4e0';
+const HOT = '#dffbff';
 
 /** Player interceptor: twin-fork nose, pale ceramic armour over titanium, cyan engines. 36×44 logical. */
 export function buildPlayerShip(): THREE.Group {
@@ -8,8 +13,7 @@ export function buildPlayerShip(): THREE.Group {
   const ceramic = MATERIALS.ceramic();
   const recess = MATERIALS.recess();
   const edge = MATERIALS.edge();
-  const engineGlow = MATERIALS.glow(PALETTE.playerAccent, 3.2);
-  const accent = MATERIALS.glow(PALETTE.playerAccent, 1.6);
+  const accent = MATERIALS.glow(STRIP_GLOW, 2.8);
 
   // Broad swept titanium wing.
   ship.add(
@@ -59,13 +63,17 @@ export function buildPlayerShip(): THREE.Group {
       )
     );
     // Cyan leading-edge light and wingtip cannon.
-    const strip = box(side * 9.4, 1.4, 2.05, 9.5, 0.4, 0.2, accent);
-    strip.rotation.z = side * -0.86;
-    ship.add(strip);
+    const edgeLight = box(side * 9.4, 1.4, 2.05, 9.5, 0.6, 0.2, accent);
+    edgeLight.rotation.z = side * -0.86;
+    ship.add(edgeLight);
     ship.add(podY(side * 15.6, -7.4, 1.0, 0.8, 8, titanium));
     ship.add(podY(side * 15.6, -2.8, 1.0, 0.42, 1.4, edge));
     // Intake scoops beside the cockpit.
     ship.add(box(side * 3.6, 3.5, 2.4, 1.2, 4.5, 1.1, recess));
+    // Seam across the inner wing armour, vents on the bare titanium behind it, cannon muzzle light.
+    ship.add(strip(side * 7, 2.6, side * 8.6, -1.6, 0.5, 2.05, recess));
+    ship.add(vents(side * 7.4, -7.6, 1.6, 2.4, 2.4, 3, recess));
+    ship.add(podY(side * 15.6, -2.2, 1.0, 0.3, 0.6, accent));
   }
 
   // Titanium fuselage base with the twin-fork nose.
@@ -109,18 +117,18 @@ export function buildPlayerShip(): THREE.Group {
   // Ceramic tips on the nose forks.
   for (const side of [1, -1]) ship.add(box(side * 3.25, 16.5, 3.1, 1.3, 4.6, 0.7, ceramic));
 
+  // Flank light strips along the titanium either side of the dorsal armour.
+  for (const side of [1, -1]) ship.add(strip(side * 3.8, -5, side * 3.8, -13.4, 0.6, 3.15, accent, 0.2));
+
   // Recessed spine seams.
   ship.add(box(0, -4.5, 4.25, 0.9, 12, 0.25, recess));
   for (const y of [-2, -10]) ship.add(box(0, y, 4.2, 5.2, 0.3, 0.25, recess));
 
   // Canopy.
-  ship.add(ellipsoid(0, 6.4, 4.1, 1.7, 3.4, 1.1, MATERIALS.glass(PALETTE.playerAccent)));
+  ship.add(canopy(0, 6.4, 4.1, 1.7, 3.4, 1.1, PALETTE.playerAccent));
 
   // Twin engines whose exhausts extend past the tail so the glow reads from above.
-  for (const side of [1, -1]) {
-    ship.add(podY(side * 2.5, -16.5, 2, 1.6, 4, titanium));
-    ship.add(ellipsoid(side * 2.5, -19.4, 2, 1.35, 1.6, 1.25, engineGlow));
-  }
+  for (const side of [1, -1]) ship.add(engine(side * 2.5, -18.4, 2, 1.5, titanium, PALETTE.playerAccent, HOT, 4));
 
   return ship;
 }

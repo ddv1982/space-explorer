@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { SPLITTER_HP, SPLITTER_SCORE, SPLITTER_SPEED } from '../../utils/constants';
-import { ensureSplitterTexture } from '../../utils/SpriteFactory';
 
 type SplitHandler = (x: number, y: number) => void;
 
@@ -11,8 +10,6 @@ export class Splitter extends EnemyBase {
   private sineTime: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureSplitterTexture(scene);
-
     super(scene, x, y, 'splitter-texture');
     this.maxHp = SPLITTER_HP;
     this.hp = SPLITTER_HP;

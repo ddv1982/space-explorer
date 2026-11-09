@@ -1,15 +1,12 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { SWARM_HP, SWARM_SCORE, SWARM_SPEED } from '../../utils/constants';
-import { ensureSwarmTexture } from '../../utils/SpriteFactory';
 
 export class Swarm extends EnemyBase {
   private wobbleAngle: number = 0;
   private angularSpeed: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureSwarmTexture(scene);
-
     super(scene, x, y, 'swarm-texture');
     this.maxHp = SWARM_HP;
     this.hp = SWARM_HP;

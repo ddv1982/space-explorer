@@ -1,7 +1,8 @@
 import type Phaser from 'phaser';
 import { createCombatPolishProbes } from './browserHarness/combatPolishProbes';
 import { createGameFeelProbes } from './browserHarness/gameFeelProbes';
-import { createCinematicProbes } from './browserHarness/cinematicProbes';
+import { createShipyardProbes } from './browserHarness/shipyardProbes';
+import { createEffectsProbes } from './browserHarness/effectsProbes';
 import { createProceduralBackgroundProbes } from './browserHarness/proceduralBackgroundProbes';
 
 import { createBrowserHarnessGameplayProbes } from './browserHarness/gameplayProbes';
@@ -59,7 +60,8 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
     },
     probeFramePacing: (sampleCount, options) => performanceProbes.probeFramePacing(sampleCount, options),
     ...gameplayProbes,
-    ...createCinematicProbes(game),
+    ...createShipyardProbes(game),
+    ...createEffectsProbes(game),
     ...createProceduralBackgroundProbes(game),
     showLaneReadingPilot: (glowEnabled = true, hazardType = 'ring-crossfire') =>
       visualPilot.show(glowEnabled, hazardType),

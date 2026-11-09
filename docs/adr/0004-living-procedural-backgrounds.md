@@ -40,6 +40,6 @@ The dedicated browser checks compare actual shader pixels, exercise all ten worl
 
 The cached/live comparison measured nearly identical costs in the available SwiftShader environment. The sampling path is retained for its bounded repeated work; no meaningful speedup or physical-device frame-rate claim follows from those timings. Real laptop and phone frame delivery, memory peaks, and thermal behavior remain qualification work.
 
-Developer comparisons require a reload: `?background=legacy` selects the previous procedural presentation with cinematic ships; `?atmosphere=live` selects the live noise calculation. The legacy texture generator is retained only in development and is removed from the production bundle. These are not player-facing quality settings and are removed as executable URL checks from production builds.
+Developer comparisons require a reload: `?atmosphere=live` selects the live noise calculation. (The earlier `?background=legacy` comparison and its texture generator were deleted outright in the v2 overhaul.) These are not player-facing quality settings and are removed as executable URL checks from production builds.
 
 Generated captures and measurements go to the ignored `output/campaign-backgrounds` folder. `bun run backgrounds:compare` reproduces the sampling comparison with the dev server on port 4173. `bun run backgrounds:record` records all ten worlds in desktop and portrait gameplay.

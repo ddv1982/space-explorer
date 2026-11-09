@@ -215,7 +215,7 @@ The level shortcut runs once per page load. Returning to the main menu stays in 
 
 All ten campaign levels use evolving procedural atmosphere and generated landmarks, with a distinct composition for each world. Their expensive shader work runs in a bounded texture; Low and reduced-motion settings retain a stable composition. Cinematic hulls remain separate from the background renderer. See [the background contract](docs/adr/0004-living-procedural-backgrounds.md).
 
-For development comparisons, append `&background=legacy` to use the previous background with the cinematic ships, or `&atmosphere=live` to compare live noise calculation against cached-field sampling. Reload between comparisons. `bun run backgrounds:compare` captures serial rendering evidence against the dev server on port 4173.
+For development comparisons, append `&atmosphere=live` to compare live noise calculation against cached-field sampling. Reload between comparisons. `bun run backgrounds:compare` captures serial rendering evidence against the dev server on port 4173.
 
 ## Docs
 
@@ -228,7 +228,7 @@ For development comparisons, append `&background=legacy` to use the previous bac
 ## Release notes
 
 - [Changelog](CHANGELOG.md)
-- [Latest release notes](docs/releases/1.22.1.md)
+- [Latest release notes](docs/releases/1.23.0.md)
 - [Release archive](docs/releases/README.md)
 
 ## Acknowledgements

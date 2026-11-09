@@ -9,7 +9,6 @@ import {
   DODGER_STRAFE_SPEED,
 } from '../../utils/constants';
 import { EnemyBullet } from '../EnemyBullet';
-import { ensureDodgerTexture } from '../../utils/SpriteFactory';
 
 export class Dodger extends EnemyBase {
   private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
@@ -18,8 +17,6 @@ export class Dodger extends EnemyBase {
   private lastFireTime: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureDodgerTexture(scene);
-
     super(scene, x, y, 'dodger-texture');
     this.maxHp = DODGER_HP;
     this.hp = DODGER_HP;

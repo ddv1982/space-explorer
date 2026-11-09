@@ -1,11 +1,5 @@
 import Phaser from 'phaser';
 
-import { getVisualQualityProfile } from '../config/visualQuality';
-
-interface GeneratedTextureOptions {
-  resolution?: number;
-}
-
 function cleanupWithoutMasking(cleanup: () => void, primaryOperationFailed: boolean): void {
   try {
     cleanup();
@@ -14,105 +8,23 @@ function cleanupWithoutMasking(cleanup: () => void, primaryOperationFailed: bool
   }
 }
 
-function generateResolvedTexture(
-  scene: Phaser.Scene,
-  key: string,
-  width: number,
-  height: number,
-  resolution: number,
-  graphics: Phaser.GameObjects.Graphics
-): void {
-  const drawWidth = width * resolution;
-  const drawHeight = height * resolution;
-  const drawCanvas = Phaser.Display.Canvas.CanvasPool.create2D(graphics, drawWidth, drawHeight);
-  let generationFailed = false;
-
-  try {
-    graphics.generateTexture(drawCanvas, drawWidth, drawHeight);
-    const resolvedCanvas = Phaser.Display.Canvas.CanvasPool.create2D(scene.textures, width, height);
-    let resolvedCanvasOwned = true;
-
-    try {
-      const context = resolvedCanvas.getContext('2d');
-      if (!context) {
-        throw new Error(`Unable to resolve generated texture: ${key}`);
-      }
-
-      context.save();
-      let resolveFailed = false;
-      try {
-        context.clearRect(0, 0, width, height);
-        context.imageSmoothingEnabled = true;
-        context.imageSmoothingQuality = 'high';
-
-        // drawImage performs interpolation in the browser's premultiplied-alpha
-        // pipeline, avoiding the dark fringes produced by averaging raw RGBA data.
-        context.drawImage(drawCanvas, 0, 0, drawWidth, drawHeight, 0, 0, width, height);
-      } catch (error) {
-        resolveFailed = true;
-        throw error;
-      } finally {
-        cleanupWithoutMasking(() => context.restore(), resolveFailed);
-      }
-
-      const texture = scene.textures.addCanvas(key, resolvedCanvas);
-      if (!texture) {
-        throw new Error(`Unable to register generated texture: ${key}`);
-      }
-      resolvedCanvasOwned = false;
-    } catch (error) {
-      // addCanvas registers before emitting ADD. Once registered, its texture owns
-      // the canvas and removing by key lets CanvasTexture release it.
-      try {
-        if (scene.textures.exists(key)) {
-          resolvedCanvasOwned = false;
-          scene.textures.remove(key);
-        }
-      } catch {
-        // Preserve the original resolve or registration failure.
-      }
-      if (resolvedCanvasOwned) {
-        try {
-          Phaser.Display.Canvas.CanvasPool.remove(resolvedCanvas);
-        } catch {
-          // Preserve the original resolve or registration failure.
-        }
-      }
-      throw error;
-    }
-  } catch (error) {
-    generationFailed = true;
-    throw error;
-  } finally {
-    cleanupWithoutMasking(() => Phaser.Display.Canvas.CanvasPool.remove(drawCanvas), generationFailed);
-  }
-}
-
+/** Draws with a throwaway Graphics object and bakes it into a texture once per key. */
 export function withGeneratedTexture(
   scene: Phaser.Scene,
   key: string,
   width: number,
   height: number,
-  draw: (graphics: Phaser.GameObjects.Graphics) => void,
-  options: GeneratedTextureOptions = {}
+  draw: (graphics: Phaser.GameObjects.Graphics) => void
 ): string {
   if (scene.textures.exists(key)) {
     return key;
   }
 
-  const resolution = Math.max(1, Math.floor(options.resolution ?? 1));
   const graphics = scene.add.graphics();
   let generationFailed = false;
   try {
-    if (resolution > 1) {
-      graphics.setScale(resolution);
-    }
     draw(graphics);
-    if (resolution === 1) {
-      graphics.generateTexture(key, width, height);
-    } else {
-      generateResolvedTexture(scene, key, width, height, resolution, graphics);
-    }
+    graphics.generateTexture(key, width, height);
   } catch (error) {
     generationFailed = true;
     throw error;
@@ -123,26 +35,49 @@ export function withGeneratedTexture(
   return key;
 }
 
-export function withGeneratedEntityTexture(
+/**
+ * Paints a texture with the Canvas 2D API (gradients, compositing) instead of Phaser Graphics. Used
+ * for soft light — glows, fire, smoke, bolts — where stacked flat fills would band. `draw` works in
+ * logical pixels; with `density` > 1 the canvas holds that many physical pixels per logical pixel and
+ * the frame keeps its logical size, so small sprites stay crisp on high-DPI screens.
+ *
+ * The canvas is registered as a plain texture source, not a Phaser CanvasTexture: a CanvasTexture reads
+ * every pixel back with getImageData, which stalls GPU-backed canvases (and software renderers) badly.
+ */
+export function withCanvasTexture(
   scene: Phaser.Scene,
   key: string,
   width: number,
   height: number,
-  draw: (graphics: Phaser.GameObjects.Graphics) => void
+  draw: (context: CanvasRenderingContext2D, width: number, height: number) => void,
+  density = 1
 ): string {
-  return withGeneratedTexture(scene, key, width, height, draw, {
-    resolution: getVisualQualityProfile().entityTextureResolution,
-  });
+  if (scene.textures.exists(key)) return key;
+  const canvas = document.createElement('canvas');
+  canvas.width = width * density;
+  canvas.height = height * density;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error(`Unable to paint canvas texture: ${key}`);
+  context.scale(density, density);
+  draw(context, width, height);
+  const texture = scene.textures.create(key, canvas, canvas.width, canvas.height);
+  if (!texture) throw new Error(`Unable to register canvas texture: ${key}`);
+  texture.add('__BASE', 0, 0, 0, canvas.width, canvas.height);
+  if (density > 1) setLogicalFrameSize(texture, density, width, height);
+  return key;
 }
 
-export function withGeneratedParticleTexture(
-  scene: Phaser.Scene,
-  key: string,
+/**
+ * Makes a texture authored at `density` physical pixels per logical pixel display and collide at its
+ * logical size: Phaser draws the physical cut at source resolution while bounds use the trim.
+ */
+export function setLogicalFrameSize(
+  texture: Phaser.Textures.Texture,
+  density: number,
   width: number,
   height: number,
-  draw: (graphics: Phaser.GameObjects.Graphics) => void
-): string {
-  return withGeneratedTexture(scene, key, width, height, draw, {
-    resolution: getVisualQualityProfile().particleTextureResolution,
-  });
+  frames: readonly Phaser.Textures.Frame[] = [texture.get()]
+): void {
+  for (const source of [...texture.source, ...texture.dataSource]) source.resolution = density;
+  for (const frame of frames) frame.setTrim(width, height, 0, 0, width, height);
 }

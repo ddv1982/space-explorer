@@ -1,6 +1,6 @@
 # Cinematic hulls
 
-Date: 2026-09-05. Status: implemented. The original raster background pilot was superseded by [the procedural campaign](0004-living-procedural-backgrounds.md).
+Date: 2026-09-05. Status: **superseded** by [ADR 0005](0005-shipyard-roster.md) — the authored WebP hulls, `?art=neon` mode and `art:export` / `art:evidence` scripts were removed in v1.23.0. The original raster background pilot was superseded by [the procedural campaign](0004-living-procedural-backgrounds.md).
 
 The player, scout, fighter, bomber, and Pyre Herald use authored WebP hull images. Other ships and bosses retain their generated textures. The five hulls retain 4× source pixels with Phaser's logical frame metadata at scale 1. Display sizes, origins, Arcade bodies, and gameplay remain unchanged.
 

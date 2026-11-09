@@ -3,22 +3,27 @@ import type { LevelConfig } from '../config/LevelsConfig';
 import { getVisualQualityProfile } from '../config/visualQuality';
 import { UI_FONT_MONO } from '../utils/uiFonts';
 import { applyCameraColorGrade, applyCameraColorPulse, clearCameraFilters } from '../utils/renderingCompat';
-import { generateEffectsParticleTextures } from './effects/particleTextureFactory';
+import { PARTICLE, generateEffectsParticleTextures } from './effects/particleTextureFactory';
+import { EngineFlame, type EngineFlameTarget } from './effects/engineFlame';
+import { NEUTRAL_EXPLOSION_STYLE, getEnemyExplosionStyle, type ExplosionStyle } from './effects/explosionStyles';
 import {
   createScorePopup as createOverlayScorePopup,
   createSpawnWarning as createOverlaySpawnWarning,
 } from './effects/ephemeralOverlayTweens';
 import {
+  EMITTERS,
   createPooledEmitter,
   getBulletTrailConfig,
   getDebrisConfig,
+  getEmberConfig,
   getEnemyBulletTrailConfig,
   getExhaustConfig,
-  getExplosionConfig,
-  getHitSplashConfig,
+  getFireConfig,
   getMuzzleConfig,
   getPowerUpBurstConfig,
+  getSmokeConfig,
   getSparkConfig,
+  type EmitterName,
 } from './effects/emitterSetup';
 import {
   runtimePerformanceBudget,
@@ -39,20 +44,12 @@ export class EffectsManager {
 
   private scene!: Phaser.Scene;
   private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
-  private explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private muzzleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private exhaustEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private bulletTrailEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private enemyBulletTrailEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private hitSplashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private powerUpBurstEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private debrisEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private emitters: Partial<Record<EmitterName, Phaser.GameObjects.Particles.ParticleEmitter>> = {};
   private exhaustConfigIntensityTenths = -1;
-  private exhaustConfigCount = -1;
   private currentLevelConfig: LevelConfig | null = null;
   private colorPulseToken = 0;
   private lighting: LightingRig | null = null;
+  private engineFlames: EngineFlame[] = [];
   private unsubscribeLightingBudget: (() => void) | null = null;
 
   private getParticleQuantity(quantity: number): number {
@@ -80,9 +77,19 @@ export class EffectsManager {
     this.lighting?.pulse(x, y, color, radius, intensity, durationMs);
   }
 
-  /** Cyan glow from the ship's exhausts, lighting its tail rather than washing out the whole hull. */
-  addEngineLight(target: { x: number; y: number; visible?: boolean }): () => void {
-    return this.lighting?.follow(target, 0x5ff2ff, 36, 0.4, 26) ?? (() => {});
+  /**
+   * Burning engines for a ship: a flickering twin flame plus a cyan light that shades its tail rather
+   * than washing out the whole hull. Returns a release function.
+   */
+  attachEngine(target: EngineFlameTarget): () => void {
+    const flame = new EngineFlame(this.scene, target);
+    this.engineFlames.push(flame);
+    const releaseLight = this.lighting?.follow(target, 0x5ff2ff, 36, 0.4, 26);
+    return () => {
+      releaseLight?.();
+      const index = this.engineFlames.indexOf(flame);
+      if (index >= 0) this.engineFlames.splice(index, 1)[0]!.destroy();
+    };
   }
 
   private resolveLightingBudget() {
@@ -100,11 +107,11 @@ export class EffectsManager {
     this.unsubscribeLightingBudget = null;
     this.lighting?.destroy();
     this.lighting = null;
+    for (const flame of this.engineFlames) flame.destroy();
+    this.engineFlames = [];
     this.destroyEmitters();
     this.clearCameraFX();
     this.colorMatrix = null;
-    this.exhaustConfigIntensityTenths = -1;
-    this.exhaustConfigCount = -1;
     this.currentLevelConfig = null;
   }
 
@@ -152,24 +159,36 @@ export class EffectsManager {
 
   private createParticleEmitters(): void {
     this.destroyEmitters();
-    this.exhaustConfigIntensityTenths = -1;
-    this.exhaustConfigCount = -1;
+    const configs: Record<EmitterName, Phaser.Types.GameObjects.Particles.ParticleEmitterConfig> = {
+      smoke: getSmokeConfig(1),
+      fire: getFireConfig(1),
+      ember: getEmberConfig(NEUTRAL_EXPLOSION_STYLE.palette),
+      spark: getSparkConfig(NEUTRAL_EXPLOSION_STYLE.palette),
+      debris: getDebrisConfig(),
+      muzzle: getMuzzleConfig(),
+      exhaust: getExhaustConfig(1),
+      trail: getBulletTrailConfig(),
+      enemyTrail: getEnemyBulletTrailConfig(),
+      burst: getPowerUpBurstConfig(),
+    };
+    for (const name of Object.keys(EMITTERS) as EmitterName[]) {
+      this.emitters[name] = createPooledEmitter(this.scene, name, configs[name]);
+    }
+  }
 
-    this.explosionEmitter = createPooledEmitter(this.scene, 'particle-explosion', getExplosionConfig(1, 20), 6, 192);
-    this.sparkEmitter = createPooledEmitter(this.scene, 'particle-spark', getSparkConfig(), 6, 48);
-    this.muzzleEmitter = createPooledEmitter(this.scene, 'particle-muzzle', getMuzzleConfig(), 6, 48);
-    this.exhaustEmitter = createPooledEmitter(this.scene, 'particle-exhaust', getExhaustConfig(1, 2), 4, 64);
-    this.bulletTrailEmitter = createPooledEmitter(this.scene, 'particle-trail', getBulletTrailConfig(), 3, 64);
-    this.enemyBulletTrailEmitter = createPooledEmitter(
-      this.scene,
-      'particle-trail',
-      getEnemyBulletTrailConfig(),
-      3,
-      48
-    );
-    this.hitSplashEmitter = createPooledEmitter(this.scene, 'particle-hit', getHitSplashConfig(), 7, 32);
-    this.powerUpBurstEmitter = createPooledEmitter(this.scene, 'particle-burst', getPowerUpBurstConfig(), 8, 32);
-    this.debrisEmitter = createPooledEmitter(this.scene, 'particle-debris', getDebrisConfig(), 5, 48);
+  /** Re-tints a pooled emitter and bursts it; quantity is scaled by quality tier and runtime pressure. */
+  private burst(
+    name: EmitterName,
+    quantity: number,
+    x: number,
+    y: number,
+    config?: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig
+  ): void {
+    const emitter = this.emitters[name];
+    if (!emitter) return;
+    if (config) emitter.updateConfig(config);
+    const count = this.getParticleQuantity(quantity);
+    if (count > 0) emitter.explode(count, x, y);
   }
 
   private clearCameraFX(): void {
@@ -182,27 +201,9 @@ export class EffectsManager {
   }
 
   private destroyEmitters(): void {
-    this.explosionEmitter?.destroy();
-    this.sparkEmitter?.destroy();
-    this.muzzleEmitter?.destroy();
-    this.exhaustEmitter?.destroy();
-    this.bulletTrailEmitter?.destroy();
-    this.enemyBulletTrailEmitter?.destroy();
-    this.hitSplashEmitter?.destroy();
-    this.powerUpBurstEmitter?.destroy();
-    this.debrisEmitter?.destroy();
-
-    this.explosionEmitter = null;
-    this.sparkEmitter = null;
-    this.muzzleEmitter = null;
-    this.exhaustEmitter = null;
-    this.bulletTrailEmitter = null;
-    this.enemyBulletTrailEmitter = null;
-    this.hitSplashEmitter = null;
-    this.powerUpBurstEmitter = null;
-    this.debrisEmitter = null;
+    for (const emitter of Object.values(this.emitters)) emitter?.destroy();
+    this.emitters = {};
     this.exhaustConfigIntensityTenths = -1;
-    this.exhaustConfigCount = -1;
   }
 
   // ---------------------------------------------------------------------------
@@ -210,130 +211,93 @@ export class EffectsManager {
   // ---------------------------------------------------------------------------
 
   createExplosion(x: number, y: number, intensity: number = 1, particleBudgetScale: number = 1): void {
-    if (!this.explosionEmitter) {
-      return;
-    }
-
-    const burstScale = Phaser.Math.Clamp(particleBudgetScale, 0.1, 1);
-    const particleCount = Math.max(1, Math.floor(20 * intensity * burstScale));
-
-    this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount));
-    this.explosionEmitter.explode(this.getParticleQuantity(particleCount), x, y);
-    this.createExplosionShockwave(x, y, intensity, 0xffb066);
-    this.lighting?.pulse(x, y, 0xffb066, 150 * intensity, 1.1 * intensity, 420);
-
-    // Add debris for larger explosions
-    if (intensity >= 1.0 && this.debrisEmitter) {
-      const debrisCount = Math.max(1, Math.floor(8 * intensity * burstScale));
-      this.debrisEmitter.explode(this.getParticleQuantity(debrisCount), x, y);
-    }
+    this.detonate(x, y, intensity, NEUTRAL_EXPLOSION_STYLE, Phaser.Math.Clamp(particleBudgetScale, 0.1, 1));
   }
 
   createEnemyExplosion(x: number, y: number, enemyType: string, intensity: number = 1): void {
-    if (!this.explosionEmitter) {
-      return;
-    }
-
-    const style = this.getEnemyExplosionStyle(enemyType);
-    const particleCount = Math.max(1, Math.floor(20 * intensity));
-    this.explosionEmitter.updateConfig(getExplosionConfig(intensity, particleCount, style.palette));
-    this.explosionEmitter.explode(this.getParticleQuantity(particleCount), x, y);
-    this.createExplosionShockwave(x, y, intensity, style.ringTint, style.ringScaleX, style.ringScaleY);
-    this.lighting?.pulse(x, y, style.ringTint, 140 * intensity, 1 * intensity, 380);
-
-    if (this.debrisEmitter && ['bomber', 'gunship', 'sower', 'lancer'].includes(enemyType)) {
-      this.debrisEmitter.explode(this.getParticleQuantity(6), x, y);
-    }
+    this.detonate(x, y, intensity, getEnemyExplosionStyle(enemyType), 1);
   }
 
-  private getEnemyExplosionStyle(enemyType: string): {
-    palette: number[];
-    ringTint: number;
-    ringScaleX: number;
-    ringScaleY: number;
-  } {
-    if (enemyType === 'swarm' || enemyType === 'swarmling') {
-      return { palette: [0xffff5d, 0xffd73d, 0xffffff], ringTint: 0xffff73, ringScaleX: 1, ringScaleY: 0.72 };
+  /**
+   * Layered blast: a white flash and flare, a billowing fireball cooling from white to red, sparks and
+   * embers in the hull's accent, a shockwave ring, lingering smoke and (for heavy hulls) debris, plus a
+   * dynamic light pulse that shades nearby lit sprites.
+   */
+  private detonate(x: number, y: number, intensity: number, style: ExplosionStyle, budget: number): void {
+    if (!this.emitters.fire) return;
+    const scaled = (count: number) => Math.max(1, Math.round(count * intensity * budget));
+    this.burst('fire', scaled(12), x, y, getFireConfig(intensity));
+    this.burst('spark', scaled(12), x, y, getSparkConfig(style.palette, intensity));
+    this.burst('ember', scaled(7), x, y, getEmberConfig(style.palette));
+    if (shouldRenderRuntimeSecondaryEffects()) {
+      this.burst('smoke', scaled(style.heavy ? 7 : 4), x, y, getSmokeConfig(intensity));
+      this.createExplosionShockwave(x, y, intensity, style);
     }
-    if (enemyType === 'diver' || enemyType === 'splitter') {
-      return { palette: [0xff5df0, 0xff5d9e, 0xffffff], ringTint: 0xff73df, ringScaleX: 0.72, ringScaleY: 1.2 };
-    }
-    if (enemyType === 'dodger' || enemyType === 'gunship') {
-      return { palette: [0x4bf0ff, 0x63a4ff, 0xffffff], ringTint: 0x63dfff, ringScaleX: 1.3, ringScaleY: 0.7 };
-    }
-    if (enemyType === 'bomber' || enemyType === 'sower') {
-      return { palette: [0xffb14b, 0xff6a3d, 0xfff0c4], ringTint: 0xffa45d, ringScaleX: 1.18, ringScaleY: 1.18 };
-    }
-    if (enemyType === 'lancer') {
-      return { palette: [0xd8e9ff, 0x8bb9ff, 0xffffff], ringTint: 0xc9e3ff, ringScaleX: 0.58, ringScaleY: 1.45 };
-    }
-    if (enemyType === 'fighter') {
-      return { palette: [0x52f28e, 0x2fbd70, 0xe2ffed], ringTint: 0x69f6a1, ringScaleX: 1, ringScaleY: 1 };
-    }
-    return { palette: [0xff5d73, 0xff8c52, 0xffe0e5], ringTint: 0xff6f82, ringScaleX: 1, ringScaleY: 1 };
+    if (style.heavy && intensity >= 0.9) this.burst('debris', scaled(7), x, y);
+    this.lighting?.pulse(x, y, style.ringTint, 160 * intensity, 1.2 * intensity, 460);
   }
 
-  /** White-hot flash pop followed by an expanding neon shockwave ring. */
-  private createExplosionShockwave(
-    x: number,
-    y: number,
-    intensity: number,
-    ringTint: number,
-    ringScaleX: number = 1,
-    ringScaleY: number = 1
-  ): void {
-    if (!shouldRenderRuntimeSecondaryEffects()) return;
-    const flash = this.scene.add
-      .image(x, y, 'particle-burst')
-      .setDepth(7)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setTint(0xffe6b0)
-      .setScale(0.4 * intensity);
-
+  /** White-hot flash and lens flare, then an expanding shockwave ring shaped to the hull. */
+  private createExplosionShockwave(x: number, y: number, intensity: number, style: ExplosionStyle): void {
+    const flare = this.addFlash(x, y, PARTICLE.flare, 0xffffff, 0.3 * intensity);
     this.scene.tweens.add({
-      targets: flash,
-      scale: 1.6 * intensity,
+      targets: flare,
+      scale: 0.9 * intensity,
       alpha: 0,
-      duration: 140,
+      duration: 160,
       ease: 'Cubic.easeOut',
-      onComplete: () => flash.destroy(),
+      onComplete: () => flare.destroy(),
     });
 
-    const ring = this.scene.add
-      .image(x, y, 'particle-ring')
-      .setDepth(7)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setTint(ringTint)
-      .setScale(0.25 * intensity * ringScaleX, 0.25 * intensity * ringScaleY);
+    const glow = this.addFlash(x, y, PARTICLE.glow, 0xffd59a, 0.5 * intensity);
+    this.scene.tweens.add({
+      targets: glow,
+      scale: 1.8 * intensity,
+      alpha: 0,
+      duration: 260,
+      ease: 'Quad.easeOut',
+      onComplete: () => glow.destroy(),
+    });
 
+    const ring = this.addFlash(x, y, PARTICLE.ring, style.ringTint, 0.08 * intensity);
+    ring.setScale(0.08 * intensity * style.ringScaleX, 0.08 * intensity * style.ringScaleY);
     this.scene.tweens.add({
       targets: ring,
-      scaleX: 2.4 * intensity * ringScaleX,
-      scaleY: 2.4 * intensity * ringScaleY,
+      scaleX: 0.7 * intensity * style.ringScaleX,
+      scaleY: 0.7 * intensity * style.ringScaleY,
       alpha: 0,
-      duration: 320,
+      duration: 380,
       ease: 'Cubic.easeOut',
       onComplete: () => ring.destroy(),
     });
   }
 
+  private addFlash(x: number, y: number, texture: string, tint: number, scale: number): Phaser.GameObjects.Image {
+    return this.scene.add
+      .image(x, y, texture)
+      .setDepth(8)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(tint)
+      .setScale(scale);
+  }
+
   createSparkBurst(x: number, y: number): void {
-    this.sparkEmitter?.explode(this.getParticleQuantity(8), x, y);
+    this.burst('spark', 8, x, y, getSparkConfig(NEUTRAL_EXPLOSION_STYLE.palette, 0.7));
   }
 
   createShieldImpact(x: number, y: number): void {
     const reducedMotion =
       typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
     const ring = this.scene.add
-      .image(x, y, 'particle-ring')
+      .image(x, y, PARTICLE.ring)
       .setDepth(7)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setTint(0x44aaff)
-      .setScale(reducedMotion ? 1 : 0.45)
+      .setScale(reducedMotion ? 0.25 : 0.11)
       .setAlpha(0.8);
     this.scene.tweens.add({
       targets: ring,
-      scale: reducedMotion ? 1 : 1.05,
+      scale: reducedMotion ? 0.25 : 0.27,
       alpha: 0,
       duration: 180,
       ease: 'Cubic.easeOut',
@@ -342,21 +306,21 @@ export class EffectsManager {
   }
 
   createGrazeSpark(x: number, y: number): void {
-    this.sparkEmitter?.explode(this.getParticleQuantity(3), x, y);
+    this.burst('spark', 3, x, y, getSparkConfig([0x9fe9ff, 0xdffbff], 0.6));
   }
 
   /** Cyan Surge Pulse: soft flash pop plus a wide expanding neon ring. */
   createSurgePulse(x: number, y: number): void {
     const flash = this.scene.add
-      .image(x, y, 'particle-burst')
+      .image(x, y, PARTICLE.glow)
       .setDepth(7)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setTint(0xd6f6ff)
-      .setScale(0.6);
+      .setScale(0.13);
 
     this.scene.tweens.add({
       targets: flash,
-      scale: 2.2,
+      scale: 0.5,
       alpha: 0,
       duration: 180,
       ease: 'Cubic.easeOut',
@@ -364,15 +328,15 @@ export class EffectsManager {
     });
 
     const ring = this.scene.add
-      .image(x, y, 'particle-ring')
+      .image(x, y, PARTICLE.ring)
       .setDepth(7)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setTint(0x9be8ff)
-      .setScale(0.4);
+      .setScale(0.1);
 
     this.scene.tweens.add({
       targets: ring,
-      scale: 3.4,
+      scale: 0.85,
       alpha: 0,
       duration: 380,
       ease: 'Cubic.easeOut',
@@ -381,24 +345,15 @@ export class EffectsManager {
   }
 
   createMuzzleFlash(x: number, y: number): void {
-    this.muzzleEmitter?.explode(this.getParticleQuantity(5), x, y);
+    this.burst('muzzle', 1, x, y);
   }
 
   createEngineExhaust(x: number, y: number, intensity: number): void {
-    if (!this.exhaustEmitter) {
-      return;
-    }
-
-    const count = Math.ceil(intensity * 2);
+    // Re-configuring every frame would churn the emitter; only re-tune when the throttle changes.
     const intensityTenths = Math.round(intensity * 10);
-
-    if (this.exhaustConfigIntensityTenths !== intensityTenths || this.exhaustConfigCount !== count) {
-      this.exhaustEmitter.updateConfig(getExhaustConfig(intensity, count));
-      this.exhaustConfigIntensityTenths = intensityTenths;
-      this.exhaustConfigCount = count;
-    }
-
-    this.exhaustEmitter.explode(this.getParticleQuantity(count), x, y);
+    const config = intensityTenths === this.exhaustConfigIntensityTenths ? undefined : getExhaustConfig(intensity);
+    this.exhaustConfigIntensityTenths = intensityTenths;
+    this.burst('exhaust', Math.ceil(intensity * 2), x, y, config);
   }
 
   createSpawnWarning(x: number): void {
@@ -408,16 +363,16 @@ export class EffectsManager {
   /** Wormhole warp-in telegraph: neon ring shrinking onto the arrival point. */
   createWormholeTelegraph(x: number, y: number): void {
     const ring = this.scene.add
-      .image(x, y, 'particle-ring')
+      .image(x, y, PARTICLE.ring)
       .setDepth(7)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setTint(0xb48cff)
-      .setScale(2.2)
+      .setScale(0.55)
       .setAlpha(0.9);
 
     this.scene.tweens.add({
       targets: ring,
-      scale: 0.35,
+      scale: 0.09,
       alpha: 0.25,
       duration: 600,
       ease: 'Cubic.easeIn',
@@ -425,16 +380,16 @@ export class EffectsManager {
     });
 
     const core = this.scene.add
-      .image(x, y, 'particle-burst')
+      .image(x, y, PARTICLE.glow)
       .setDepth(7)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setTint(0xd9c8ff)
-      .setScale(0.2)
+      .setScale(0.05)
       .setAlpha(0);
 
     this.scene.tweens.add({
       targets: core,
-      scale: 1.1,
+      scale: 0.25,
       alpha: { from: 0, to: 0.85 },
       duration: 600,
       ease: 'Quad.easeIn',
@@ -447,31 +402,31 @@ export class EffectsManager {
   }
 
   createBulletTrail(x: number, y: number): void {
-    this.bulletTrailEmitter?.explode(1, x, y);
+    this.emitters.trail?.explode(1, x, y);
   }
 
   createEnemyBulletTrail(x: number, y: number): void {
-    this.enemyBulletTrailEmitter?.explode(1, x, y);
+    this.emitters.enemyTrail?.explode(1, x, y);
   }
 
   createHitSplash(x: number, y: number): void {
-    this.hitSplashEmitter?.explode(this.getParticleQuantity(10), x, y);
+    this.burst('spark', 6, x, y, getSparkConfig([0xffffff, 0xffcc44, 0xff8800], 0.6));
+    const flare = this.addFlash(x, y, PARTICLE.flare, 0xffe2b0, 0.16);
+    this.scene.tweens.add({
+      targets: flare,
+      scale: 0.3,
+      alpha: 0,
+      duration: 90,
+      onComplete: () => flare.destroy(),
+    });
   }
 
   createPowerUpBurst(x: number, y: number, color?: number): void {
-    if (!this.powerUpBurstEmitter) return;
-
-    if (color) {
-      this.powerUpBurstEmitter.updateConfig({
-        ...getPowerUpBurstConfig(),
-        tint: [0xffffff, color],
-      });
-    }
-
-    this.powerUpBurstEmitter.explode(this.getParticleQuantity(14), x, y);
+    this.burst('burst', 14, x, y, getPowerUpBurstConfig(color));
   }
 
   createAsteroidDebris(x: number, y: number): void {
-    this.debrisEmitter?.explode(this.getParticleQuantity(10), x, y);
+    this.burst('debris', 10, x, y);
+    this.burst('smoke', 3, x, y, getSmokeConfig(0.6));
   }
 }

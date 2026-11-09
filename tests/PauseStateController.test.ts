@@ -16,11 +16,7 @@ mock.module('../src/config/visualQuality', () => ({
   setVisualQualityTier,
   getVisualQualityProfile: () => ({
     tier: 'standard',
-    entityTextureResolution: 2,
-    particleTextureResolution: 2,
-    backgroundLayerCount: 3,
     uiGlowStrength: 0.8,
-    motifDensity: 1,
     particleBurstScale: 1,
     particleQuantityScale: 1,
     menuAtmosphere: 2,

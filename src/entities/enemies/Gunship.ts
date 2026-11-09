@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { EnemyBullet } from '../EnemyBullet';
 import { ENEMY_BULLET_SPEED, GUNSHIP_FIRE_RATE, GUNSHIP_HP, GUNSHIP_SCORE, GUNSHIP_SPEED } from '../../utils/constants';
-import { ensureGunshipTexture } from '../../utils/SpriteFactory';
 
 export class Gunship extends EnemyBase {
   startX: number = 0;
@@ -14,8 +13,6 @@ export class Gunship extends EnemyBase {
   private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureGunshipTexture(scene);
-
     super(scene, x, y, 'gunship-texture');
     this.maxHp = GUNSHIP_HP;
     this.hp = GUNSHIP_HP;

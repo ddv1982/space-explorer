@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.0] - 2026-11-09
+
+### Added
+
+- Every ship is now a lit 3D model: the player, the helper wing, all eleven enemy families, six distinct boss capital ships (one per attack style), picket turrets, mines and four asteroid shapes. Explosions, engine lights and pulses shade their hulls in real time. Hitboxes and sizes are unchanged.
+- Layered explosions: a white-hot flash and lens flare, a billowing fireball cooling from white to red, sparks and embers in the ship's colour, a shockwave ring, lingering smoke and debris.
+- Glowing plasma bolts, hostile plasma orbs with a dark rim, smoother laser beams, glossy pickup orbs, and a flickering twin engine flame on your ship that stretches when you thrust forward.
+- A three-layer starfield in real star colours, with bright diffraction-spiked stars drifting past at different depths, and a vignette around the playfield.
+- The main menu: the hero ship is lit by an orbiting light over an animated launch pad with scan rings and live engine exhaust, a planet horizon rises behind the run tiles, and shooting stars cross the sky.
+
+### Removed
+
+- The old flat neon ship drawings, the image-based ship artwork pipeline and the development-only legacy background system (about 6,400 lines).
+
 ## [1.22.1] - 2026-11-09
 
 ### Changed

@@ -2,26 +2,30 @@
 import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, type Page } from '@playwright/test';
-import { CINEMATIC_DENSITY } from '../../src/config/cinematicAssets';
-import { V2_SHIPS, type V2ShipSpec } from '../../src/config/v2Ships';
+import { SHIPYARD_SPRITES, SPRITE_DENSITY, type ShipyardSpriteSpec } from '../../src/config/shipyardSprites';
 
 /**
- * Shipyard: renders the code-built 3D ships in headless Chromium into albedo + normal sprite
+ * Shipyard: renders the code-built 3D models in headless Chromium into albedo + normal sprite
  * sheets, then encodes WebP for the game. three.js stays a build-time devDependency.
  *
- *   bun run art:shipyard           render every V2_SHIPS sheet
- *   bun run art:shipyard --probe   render the normal-convention probe and record sample pixels
+ *   bun run art:shipyard                 render every SHIPYARD_SPRITES sheet
+ *   bun run art:shipyard --only a,b      render only the named sheet files (no budget check)
+ *   bun run art:shipyard --probe         render the normal-convention probe and record sample pixels
+ *
+ * Every run also writes `_preview.png` (or `_preview-<files>.png` with --only): the rendered albedo
+ * frames at 2× on a dark backdrop.
  */
 
-const SOURCE_DIRECTORY = 'assets/source/v2';
-const PUBLIC_DIRECTORY = 'public/assets/v2';
-const DOWNLOAD_BUDGET_BYTES = 600 * 1024;
-export const PROBE_SPEC: V2ShipSpec = {
+const SOURCE_DIRECTORY = 'assets/source/shipyard';
+const PUBLIC_DIRECTORY = 'public/assets/shipyard';
+const DOWNLOAD_BUDGET_BYTES = 1200 * 1024;
+export const PROBE_SPEC: ShipyardSpriteSpec = {
   key: 'probe',
   file: 'probe',
   width: 36,
   height: 36,
-  bankFrames: 1,
+  frames: 1,
+  pose: 'bank',
   maxBankDeg: 0,
 };
 
@@ -60,15 +64,47 @@ function encodeWebp(input: string, output: string, lossless: boolean): void {
   if (result.exitCode !== 0) throw new Error(result.stderr.toString() || `cwebp failed for ${input}`);
 }
 
-async function renderShips(page: Page): Promise<void> {
+async function writePreview(page: Page, albedos: string[], name: string): Promise<void> {
+  const dataUrl = await page.evaluate(async (urls) => {
+    const images = await Promise.all(
+      urls.map(async (url) => {
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        return image;
+      })
+    );
+    const gap = 16;
+    const width = Math.max(...images.map((image) => image.width * 2)) + gap * 2;
+    const height = images.reduce((sum, image) => sum + image.height * 2 + gap, gap);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = '#0a0f18';
+    context.fillRect(0, 0, width, height);
+    let y = gap;
+    for (const image of images) {
+      context.drawImage(image, gap, y, image.width * 2, image.height * 2);
+      y += image.height * 2 + gap;
+    }
+    return canvas.toDataURL('image/png');
+  }, albedos);
+  writeFileSync(join(SOURCE_DIRECTORY, name), decodeDataUrl(dataUrl));
+}
+
+async function renderShips(page: Page, only: Set<string> | null): Promise<void> {
   mkdirSync(PUBLIC_DIRECTORY, { recursive: true });
   let totalBytes = 0;
-  for (const spec of V2_SHIPS) {
+  const albedos: string[] = [];
+  for (const spec of SHIPYARD_SPRITES) {
+    if (only && !only.has(spec.file)) continue;
     const result = await page.evaluate((request) => window.renderShipSheet(request), {
       spec,
-      density: CINEMATIC_DENSITY,
+      density: SPRITE_DENSITY,
     });
-    if (!result.borderClear) throw new Error(`${spec.file}: a bank frame touches its 2px transparent margin`);
+    if (!result.borderClear) throw new Error(`${spec.file}: a frame touches its 2px transparent margin`);
+    albedos.push(result.albedo);
     for (const [suffix, dataUrl, lossless] of [
       ['', result.albedo, false],
       ['_n', result.normal, true],
@@ -82,15 +118,18 @@ async function renderShips(page: Page): Promise<void> {
       process.stdout.write(`${webp}\t${bytes} bytes\n`);
     }
   }
-  if (totalBytes > DOWNLOAD_BUDGET_BYTES) throw new Error(`v2 ship download exceeds 600 KiB: ${totalBytes} bytes`);
-  process.stdout.write(`v2 ship download: ${totalBytes} bytes\n`);
+  await writePreview(page, albedos, only ? `_preview-${[...only].join('-')}.png` : '_preview.png');
+  if (!only && totalBytes > DOWNLOAD_BUDGET_BYTES) {
+    throw new Error(`Shipyard download exceeds ${DOWNLOAD_BUDGET_BYTES / 1024} KiB: ${totalBytes} bytes`);
+  }
+  process.stdout.write(`Shipyard download: ${totalBytes} bytes\n`);
 }
 
 /** Samples the hemisphere probe so tests can pin the normal-map convention Phaser expects. */
 async function renderProbe(page: Page): Promise<void> {
   const result = await page.evaluate((request) => window.renderShipSheet(request), {
     spec: PROBE_SPEC,
-    density: CINEMATIC_DENSITY,
+    density: SPRITE_DENSITY,
   });
   writeFileSync(join(SOURCE_DIRECTORY, '_probe_n.png'), decodeDataUrl(result.normal));
   const samples = await page.evaluate(async (dataUrl) => {
@@ -118,8 +157,10 @@ if (import.meta.main) {
   try {
     const page = await browser.newPage();
     await openShipyard(page);
+    const onlyIndex = process.argv.indexOf('--only');
+    const only = onlyIndex >= 0 ? new Set((process.argv[onlyIndex + 1] ?? '').split(',').filter(Boolean)) : null;
     if (process.argv.includes('--probe')) await renderProbe(page);
-    else await renderShips(page);
+    else await renderShips(page, only);
   } finally {
     await browser.close();
   }

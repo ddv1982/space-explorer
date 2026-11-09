@@ -1,15 +1,12 @@
 import Phaser from 'phaser';
 import { MINE_DRIFT_SPEED } from '../utils/constants';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
-import { ensureMineTexture } from '../utils/SpriteFactory';
 
 export class Mine extends Phaser.Physics.Arcade.Sprite {
   hp: number = 1;
   private driftPhase: number = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    ensureMineTexture(scene);
-
     super(scene, x, y, 'sower-mine');
     scene.add.existing(this);
     scene.physics.add.existing(this);

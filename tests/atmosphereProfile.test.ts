@@ -32,7 +32,6 @@ describe('resolveSectionAtmosphereTargets', () => {
     expect(targets).toEqual({
       atmosphereAlpha: 1,
       atmosphereDrift: 1,
-      atmosphereTwinkle: 1,
       landmarkAlpha: 1,
       hazardOverlayAlpha: 0,
       activeHazards: [],
@@ -52,7 +51,6 @@ describe('resolveSectionAtmosphereTargets', () => {
       visualModifiers: {
         atmosphereAlpha: 1.1,
         driftScale: 0.9,
-        twinkleScale: 1.05,
         landmarkAlpha: 0.95,
         hazardResponseScale: 1.2,
       },
@@ -62,7 +60,6 @@ describe('resolveSectionAtmosphereTargets', () => {
 
     expect(targets.atmosphereAlpha).toBeCloseTo(1.18, 6);
     expect(targets.atmosphereDrift).toBeCloseTo(1.0278, 6);
-    expect(targets.atmosphereTwinkle).toBeCloseTo(1.1508, 6);
     expect(targets.landmarkAlpha).toBeCloseTo(0.98515, 6);
     expect(targets.hazardOverlayAlpha).toBeCloseTo(0.1944, 6);
     expect(targets.activeHazards).toBe(hazards);
