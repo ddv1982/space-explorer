@@ -143,16 +143,21 @@ export function runGameSceneCreateBootstrap(
   input.mobileControls.setPauseButtonHandler(() => {
     pauseStateController.togglePauseRequest(host.isGameplayLocked());
   });
-  const unsubscribeKeyboard = dependencies.onHardwareKeyboardDetected(() => {
+  // Every keypress hands steering to the keyboard (stopping touch autofire); only a real touch hands it
+  // back, so trackpad or mouse clicks on hybrid devices never re-enable autofire.
+  const suppressTouchSteering = (): void => {
     input.mobileControls.setTouchSteeringSuppressed(true);
-  });
-  const restoreTouchSteering = (): void => {
-    input.mobileControls.setTouchSteeringSuppressed(false);
+  };
+  const unsubscribeKeyboard = dependencies.onHardwareKeyboardDetected(suppressTouchSteering);
+  const restoreTouchSteering = (pointer: Phaser.Input.Pointer): void => {
+    if (pointer.wasTouch) input.mobileControls.setTouchSteeringSuppressed(false);
   };
   host.scene.input.on('pointerdown', restoreTouchSteering);
+  host.scene.input.keyboard?.on('keydown', suppressTouchSteering);
   const unsubscribeInput = (): void => {
     unsubscribeKeyboard();
     host.scene.input.off('pointerdown', restoreTouchSteering);
+    host.scene.input.keyboard?.off('keydown', suppressTouchSteering);
   };
   host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeInput);
   dependencies.showControlsHint(host.scene, { mobile: dependencies.isTouchMobileDevice() });

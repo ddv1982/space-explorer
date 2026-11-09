@@ -193,7 +193,7 @@ describe('runGameSceneCreateBootstrap', () => {
       },
     };
 
-    const pointerHandlers = new Map<string, () => void>();
+    const pointerHandlers = new Map<string, (pointer?: unknown) => void>();
     const phaserScene = {
       events: {
         once: (event: string, callback: () => void) => {
@@ -202,11 +202,19 @@ describe('runGameSceneCreateBootstrap', () => {
         },
       },
       input: {
-        on: (event: string, callback: () => void) => {
+        on: (event: string, callback: (pointer: unknown) => void) => {
           pointerHandlers.set(event, callback);
         },
         off: (event: string) => {
           pointerHandlers.delete(event);
+        },
+        keyboard: {
+          on: (event: string, callback: (pointer: unknown) => void) => {
+            pointerHandlers.set(`keyboard:${event}`, callback);
+          },
+          off: (event: string) => {
+            pointerHandlers.delete(`keyboard:${event}`);
+          },
         },
       },
     } as never;
@@ -312,9 +320,17 @@ describe('runGameSceneCreateBootstrap', () => {
     expect(keyboardDetectedHandler).not.toBeNull();
     (keyboardDetectedHandler as (() => void) | null)?.();
     expect(suppressedValues).toEqual([true]);
-    pointerHandlers.get('pointerdown')?.();
+    // A trackpad or mouse click on a hybrid device must not hand steering (and autofire) back to touch.
+    pointerHandlers.get('pointerdown')?.({ wasTouch: false });
+    expect(suppressedValues).toEqual([true]);
+    pointerHandlers.get('pointerdown')?.({ wasTouch: true });
     expect(suppressedValues).toEqual([true, false]);
+    // Every later keypress hands control back to the keyboard, not just the first detection.
+    pointerHandlers.get('keyboard:keydown')?.({});
+    expect(suppressedValues).toEqual([true, false, true]);
     (shutdownUnsubscribe as (() => void) | null)?.();
+    expect(pointerHandlers.has('pointerdown')).toBe(false);
+    expect(pointerHandlers.has('keyboard:keydown')).toBe(false);
     expect(callLog.slice(-1)).toEqual(['unsubscribeHardwareKeyboardDetected']);
 
     (pauseHandler as (() => void) | null)?.();
