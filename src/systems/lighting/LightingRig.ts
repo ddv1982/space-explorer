@@ -21,6 +21,18 @@ interface PooledLight {
   startedAt: number;
 }
 
+type FollowTarget = { x: number; y: number; visible?: boolean };
+
+/** A requested follow light; `slot` is null while the light budget cannot afford it. */
+interface FollowerRegistration {
+  target: FollowTarget;
+  color: number;
+  radius: number;
+  intensity: number;
+  offsetY: number;
+  slot: PooledLight | null;
+}
+
 type Lightable = Phaser.GameObjects.GameObject & {
   texture?: Phaser.Textures.Texture;
   setLighting?: (enable: boolean) => unknown;
@@ -34,6 +46,7 @@ type Lightable = Phaser.GameObjects.GameObject & {
  */
 export class LightingRig {
   private readonly pool: PooledLight[] = [];
+  private readonly followers: FollowerRegistration[] = [];
   private bloom: { parallelFilters: { destroy(): void } } | null = null;
   private budget: LightingBudget;
   private sequence = 0;
@@ -74,24 +87,15 @@ export class LightingRig {
    * Persistent light that tracks a target, `offsetY` px below it (hidden while the target is invisible).
    * Returns a release function.
    */
-  follow(
-    target: { x: number; y: number; visible?: boolean },
-    color: number,
-    radius: number,
-    intensity: number,
-    offsetY = 0
-  ) {
-    const slot = this.acquire(true);
-    if (!slot) return () => {};
-    slot.follow = { target, intensity, offsetY };
-    slot.remainingMs = Number.POSITIVE_INFINITY;
-    slot.light.setRadius(radius);
-    slot.light.z = radius * LIGHT_HEIGHT;
-    slot.light.setColor(color);
-    slot.light.setPosition(target.x, target.y + offsetY);
-    slot.light.setIntensity(target.visible === false ? 0 : intensity);
+  follow(target: FollowTarget, color: number, radius: number, intensity: number, offsetY = 0): () => void {
+    const registration: FollowerRegistration = { target, color, radius, intensity, offsetY, slot: null };
+    this.followers.push(registration);
+    this.attachFollower(registration);
     return () => {
-      if (slot.follow?.target === target) this.release(slot);
+      const index = this.followers.indexOf(registration);
+      if (index >= 0) this.followers.splice(index, 1);
+      if (registration.slot) this.release(registration.slot);
+      registration.slot = null;
     };
   }
 
@@ -115,8 +119,16 @@ export class LightingRig {
     if (this.destroyed) return;
     this.budget = budget;
     while (this.pool.length > budget.lights) {
-      const slot = this.pool.pop()!;
-      this.scene.lights.removeLight(slot.light);
+      // Shed pulses before follow lights; a shed follower waits for the budget to recover.
+      let pulseIndex = this.pool.length - 1;
+      while (pulseIndex >= 0 && this.pool[pulseIndex]!.follow) pulseIndex -= 1;
+      const [slot] = this.pool.splice(pulseIndex >= 0 ? pulseIndex : this.pool.length - 1, 1);
+      const owner = this.followers.find((registration) => registration.slot === slot);
+      if (owner) owner.slot = null;
+      this.scene.lights.removeLight(slot!.light);
+    }
+    for (const registration of this.followers) {
+      if (!registration.slot) this.attachFollower(registration);
     }
     this.scene.lights.setAmbientColor(budget.normalMapLighting ? LIT_AMBIENT : 0xffffff);
     this.applyBloom();
@@ -128,8 +140,23 @@ export class LightingRig {
     this.scene.events.off(Phaser.Scenes.Events.ADDED_TO_SCENE, this.handleAddedToScene);
     for (const slot of this.pool) this.scene.lights.removeLight(slot.light);
     this.pool.length = 0;
+    this.followers.length = 0;
     this.bloom?.parallelFilters.destroy();
     this.bloom = null;
+  }
+
+  private attachFollower(registration: FollowerRegistration): void {
+    const slot = this.acquire(true);
+    if (!slot) return;
+    const { target, color, radius, intensity, offsetY } = registration;
+    registration.slot = slot;
+    slot.follow = { target, intensity, offsetY };
+    slot.remainingMs = Number.POSITIVE_INFINITY;
+    slot.light.setRadius(radius);
+    slot.light.z = radius * LIGHT_HEIGHT;
+    slot.light.setColor(color);
+    slot.light.setPosition(target.x, target.y + offsetY);
+    slot.light.setIntensity(target.visible === false ? 0 : intensity);
   }
 
   private applyLighting(object: Lightable): void {

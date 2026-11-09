@@ -166,6 +166,23 @@ describe('LightingRig', () => {
     expect(lights[0]!.intensity).toBe(0);
   });
 
+  test('the engine light returns after Auto pressure drops the light budget to zero and recovers', () => {
+    const { scene, lights } = createScene();
+    const rig = new LightingRig(scene as never, budgetFor('standard'));
+    const ship = { x: 10, y: 20, visible: true };
+    rig.follow(ship, 0x5ff2ff, 70, 0.8, 5);
+    rig.pulse(0, 0, 0xffb066, 140, 2, 400);
+    rig.setBudget({ lights: 1, normalMapLighting: true, bloom: 'off' });
+    // Shedding lights drops pulses before the engine follower.
+    expect(lights).toHaveLength(1);
+    rig.setBudget({ lights: 0, normalMapLighting: true, bloom: 'off' });
+    expect(lights).toHaveLength(0);
+    rig.setBudget(budgetFor('standard'));
+    rig.update(16);
+    expect(lights).toHaveLength(1);
+    expect(lights[0]).toMatchObject({ x: 10, y: 25, intensity: 0.8 });
+  });
+
   test('destroy removes every light and the bloom filter', () => {
     bloomDestroy.mockClear();
     const { scene, lights, handlers } = createScene();
