@@ -71,6 +71,15 @@ describe('MobileControls relative drag', () => {
     expect(velocity?.vy).toBe(0);
   });
 
+  test('finger movement before the first ship update still counts toward the drag', () => {
+    const { controls, emit } = createControls();
+    emit('pointerdown', { id: 1, x: 100, y: 700 });
+    emit('pointermove', { id: 1, x: 160, y: 700 });
+    const velocity = controls.getDragDesiredVelocity(195, 760, 0, 480);
+    expect(velocity?.vx).toBe(480);
+    expect(velocity?.vy).toBe(0);
+  });
+
   test('a mouse or trackpad press never starts a touch drag', () => {
     const { controls, emit } = createControls();
     emit('pointerdown', { id: 5, x: 200, y: 700, wasTouch: false });
