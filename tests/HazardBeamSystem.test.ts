@@ -58,7 +58,7 @@ describe('HazardBeamSystem', () => {
   test('create builds a pooled hazard beam group', () => {
     const { groupConfigs } = createHarness();
 
-    expect(groupConfigs).toEqual([{ maxSize: 64, classType: HazardBeam, runChildUpdate: true }]);
+    expect(groupConfigs).toEqual([{ maxSize: -1, classType: HazardBeam, runChildUpdate: true }]);
   });
 
   test('spawnSolarFlare launches a full-height bullet-clearing wall with one gap, sweeping from the left', () => {
@@ -69,13 +69,13 @@ describe('HazardBeamSystem', () => {
     expect(harness.launches.length).toBe(2);
     const [upper, lower] = harness.launches;
     for (const segment of [upper, lower]) {
-      expect(segment.x).toBe(-16.5);
+      expect(segment.x).toBe(16.5);
       expect(segment.width).toBe(33);
       expect(segment.tint).toBe(0xffb066);
       expect(segment.telegraphMs).toBe(1300);
       expect(segment.velocityX).toBe(205);
       expect(segment.clearsBullets).toBe(true);
-      expect(segment.activeMs as number).toBeCloseTo((893 / 205) * 1000 + 200, 5);
+      expect(segment.activeMs as number).toBeCloseTo((860 / 205) * 1000 + 200, 5);
     }
     // Reaches past both screen edges; the only way through is the 120 px gap.
     expect(upper.y - upper.height / 2).toBe(-30);

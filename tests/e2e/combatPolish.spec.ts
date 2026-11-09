@@ -280,7 +280,9 @@ test('delivered eight-direction input escapes overlapping beam danger before act
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(120000);
+  // The lattice telegraph now scales with screen width (~2.9s at 1280 px); software-rendered
+  // browsers under parallel load can take minutes of wall time for that much gameplay time.
+  test.setTimeout(240000);
   await openMenu(page);
   await startNewRun(page);
   await recordCombat(page);
@@ -324,6 +326,7 @@ test('delivered eight-direction input escapes overlapping beam danger before act
   } finally {
     await page.keyboard.up('ArrowRight');
     await page.keyboard.up('ArrowDown');
+    await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.combatPolish.endBeamFixture());
   }
   assertNoBrowserErrors();
 });

@@ -25,7 +25,9 @@ export class HazardBeamSystem {
   create(scene: Phaser.Scene): void {
     this.scene = scene;
     this.group = scene.physics.add.group({
-      maxSize: 64,
+      // Uncapped: a wide-screen lattice curtain alone can need 60+ beams, and two can overlap.
+      // Every beam despawns when its active window ends, so the pool stays bounded by the schedule.
+      maxSize: -1,
       classType: HazardBeam,
       runChildUpdate: true,
     });
@@ -44,8 +46,9 @@ export class HazardBeamSystem {
     const fromLeft = Phaser.Math.Between(0, 1) === 0;
     const thickness = 26 + intensity * 14;
     const speed = 150 + intensity * 110;
-    const startX = fromLeft ? viewport.left - thickness / 2 : viewport.right + thickness / 2;
-    const travel = viewport.width + thickness + 60;
+    // Starts just inside the edge so the telegraphed wall and its gap are on screen before it fires.
+    const startX = fromLeft ? viewport.left + thickness / 2 : viewport.right - thickness / 2;
+    const travel = viewport.width + 60;
     const activeMs = (travel / speed) * 1000 + 200;
     const gapHeight = Phaser.Math.Clamp(viewport.height * 0.2, SOLAR_FLARE_MIN_GAP, SOLAR_FLARE_MAX_GAP);
     // The gap sits below the lattice crossbeam band, where the ship flies, never at the bottom edge.

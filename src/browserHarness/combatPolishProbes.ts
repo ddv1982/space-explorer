@@ -275,13 +275,14 @@ function stageBeamEscapeRoute(game: Phaser.Game) {
   // Start in the curtain gap's column but above the flare gap, in the flare's path. Each key is
   // released well short of the gap: the inertial ship's slide (v²/800 px) carries it the rest of the
   // way, landing near the centre of both gaps.
-  const startX = gapCenterX - 20;
+  const startX = gapCenterX - 30;
   const startY = gaps.flare.top - body.halfHeight - 8;
   combat.player.spawn(startX, startY, { hp: combat.player.maxHp });
   combat.player.shields = 0;
   return {
     start: { x: combat.player.x, y: combat.player.y },
-    goal: { x: startX + 4, y: startY + 40 },
+    // Early releases leave margin for key-up latency on slow, software-rendered test browsers.
+    goal: { x: startX + 2, y: startY + 24 },
     hp: combat.player.hp,
   };
 }
@@ -293,24 +294,32 @@ export function createCombatPolishProbes(game: Phaser.Game) {
     restoreBeamFixture = null;
     restore?.();
   };
+  const suspendSpawningForFixture = () => {
+    endBeamFixture();
+    const combat = requireCombat(game);
+    if (!combat.scene.physics.world.isPaused) throw new Error('Pause before staging an isolated beam fixture');
+    const restoreSpawning = suspendEncounterSpawning(combat.waves);
+    restoreBeamFixture = () => {
+      restoreSpawning();
+      combat.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
+      combat.scene.events.off(Phaser.Scenes.Events.DESTROY, endBeamFixture);
+    };
+    combat.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
+    combat.scene.events.once(Phaser.Scenes.Events.DESTROY, endBeamFixture);
+    return combat;
+  };
   return {
     endBeamFixture,
     stageCollision: (source: Exclude<DamageSource, 'unknown'>, mode: 'shield' | 'hull' | 'fatal') =>
       stageCollision(game, source, mode),
     combatPolishState: () => combatPolishState(game),
-    stageBeamEscapeRoute: () => stageBeamEscapeRoute(game),
+    stageBeamEscapeRoute: () => {
+      // Beam-only fixture: the long lattice telegraph would otherwise give a wave time to shoot.
+      suspendSpawningForFixture();
+      return stageBeamEscapeRoute(game);
+    },
     stageBeamPattern: (pattern: 'flare' | 'lattice') => {
-      endBeamFixture();
-      const combat = requireCombat(game);
-      if (!combat.scene.physics.world.isPaused) throw new Error('Pause before staging an isolated beam fixture');
-      const restoreSpawning = suspendEncounterSpawning(combat.waves);
-      restoreBeamFixture = () => {
-        restoreSpawning();
-        combat.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
-        combat.scene.events.off(Phaser.Scenes.Events.DESTROY, endBeamFixture);
-      };
-      combat.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
-      combat.scene.events.once(Phaser.Scenes.Events.DESTROY, endBeamFixture);
+      const combat = suspendSpawningForFixture();
       clearField(combat);
       const viewport = getViewportBounds(combat.scene);
       if (pattern === 'flare') combat.beams.spawnSolarFlare(0.8);
