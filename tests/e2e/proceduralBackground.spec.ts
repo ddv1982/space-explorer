@@ -54,7 +54,7 @@ for (const { level, world } of LIVING_CAMPAIGN) {
       const rasterRequests: string[] = [];
       page.on('request', (request) => {
         const url = request.url();
-        if (/\/assets\/.*\.(png|jpe?g|webp|avif)/.test(url) && !/\/assets\/(cinematic|planets)\//.test(url))
+        if (/\/assets\/.*\.(png|jpe?g|webp|avif)/.test(url) && !/\/assets\/(cinematic|planets|v2)\//.test(url))
           rasterRequests.push(url);
       });
       await page.goto(`/?browserHarness=1&startLevel=${level}`);
@@ -162,7 +162,7 @@ test(
       const blocked = new Promise<void>((resolve) => {
         unblock = resolve;
       });
-      await page.route('**/assets/cinematic/player.webp', async (route) => {
+      await page.route('**/assets/v2/player.webp', async (route) => {
         await blocked;
         await route.continue();
       });
@@ -183,7 +183,7 @@ test(
       const light = await sampleGameplayLaneLuminance(page);
       expect(light.edges).toBeGreaterThan(light.center + 0.5);
       expect((await background(page)).background?.elapsed).toBe(0);
-      await page.unroute('**/assets/cinematic/player.webp');
+      await page.unroute('**/assets/v2/player.webp');
     }
     assertNoBrowserErrors();
   }

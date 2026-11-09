@@ -146,8 +146,9 @@ export class BrowserHarnessVisualPilot {
       displayScale: image.scaleX,
       logicalWidth: frame.width,
       logicalHeight: frame.height,
-      sourceCanvasWidth: source.width ?? 0,
-      sourceCanvasHeight: source.height ?? 0,
+      // The displayed frame's physical cut: the whole image for single-frame textures, one cell of a sheet.
+      sourceCanvasWidth: image.frame.cutWidth,
+      sourceCanvasHeight: image.frame.cutHeight,
       sourceIsCanvas: source instanceof HTMLCanvasElement,
     };
   }
