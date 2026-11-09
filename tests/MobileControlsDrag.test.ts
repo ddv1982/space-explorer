@@ -67,7 +67,8 @@ describe('MobileControls relative drag', () => {
     expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toEqual({ vx: 0, vy: 0 });
     emit('pointermove', { id: 1, x: 260, y: 700 });
     const velocity = controls.getDragDesiredVelocity(195, 760, 0, 480);
-    expect(velocity?.vx).toBe(480);
+    // A 60 px gap: speed is what the brakes can shed over it, so the ship does not overshoot.
+    expect(velocity?.vx).toBeCloseTo(Math.sqrt(2 * 600 * 60), 6);
     expect(velocity?.vy).toBe(0);
   });
 
@@ -76,7 +77,8 @@ describe('MobileControls relative drag', () => {
     emit('pointerdown', { id: 1, x: 100, y: 700 });
     emit('pointermove', { id: 1, x: 160, y: 700 });
     const velocity = controls.getDragDesiredVelocity(195, 760, 0, 480);
-    expect(velocity?.vx).toBe(480);
+    // A 60 px gap: speed is what the brakes can shed over it, so the ship does not overshoot.
+    expect(velocity?.vx).toBeCloseTo(Math.sqrt(2 * 600 * 60), 6);
     expect(velocity?.vy).toBe(0);
   });
 

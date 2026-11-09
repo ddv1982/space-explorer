@@ -22,10 +22,10 @@ Play Level 1 (Aurora Threshold) on the preview deployment:
 
 | Item | Result |
 | --- | --- |
-| Flight feel (desktop) | _pending_ |
+| Flight feel (desktop) | Too precise in 1.21.0; restored v1.19 handling in 1.22.0 |
 | Touch drag (portrait / landscape) | _pending_ |
 | Ship look and lighting | _pending_ |
 | Phone model, tier, smoothness | _pending_ |
-| Tuned `FLIGHT_CONFIG` values | _pending_ (start: response 70 ms, glide 110 ms, bank 90 ms) |
+| Tuned `FLIGHT_CONFIG` values | 1.22.0: thrust 800 px/s², drag 400 px/s², max 800 px/s, bank response 120 ms |
 
 If Standard is not smooth on the phone, Auto's touch default drops to Low (baked look) and real-device optimisation moves to Phase 6.

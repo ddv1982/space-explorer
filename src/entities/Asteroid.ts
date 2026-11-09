@@ -39,6 +39,8 @@ export class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
     despawnEntity(this);
     this.setDepth(2);
+    // Round hitbox inside the rock outline, so the square frame's empty corners never hit.
+    (this.body as Phaser.Physics.Arcade.Body | null)?.setCircle(20, 2, 2);
   }
 
   spawn(x: number, y: number, speed: number = 80, config: AsteroidSpawnConfig = {}): void {

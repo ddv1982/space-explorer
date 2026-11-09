@@ -64,6 +64,19 @@ export async function openMenu(page: Page): Promise<void> {
   await waitForScene(page, 'Menu');
 }
 
+/** Opens the command deck's settings sheet (difficulty, quality, audio) from its footer button. */
+export async function openMenuSettings(page: Page): Promise<void> {
+  const menu = await snapshot(page);
+  const button = menu.texts.find((item) => item.text === 'SETTINGS');
+  expect(button).toBeDefined();
+  await page.mouse.click(button?.x ?? 0, button?.y ?? 0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.snapshot().texts.some((t) => t.text === 'DONE'))
+    )
+    .toBe(true);
+}
+
 export async function startNewRun(page: Page): Promise<void> {
   const menu = await snapshot(page);
   const newRun = menu.texts.find((item) => item.text === 'NEW RUN');

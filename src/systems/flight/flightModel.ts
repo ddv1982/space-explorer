@@ -7,8 +7,12 @@ export interface FlightState {
 
 export interface FlightParams {
   maxSpeed: number;
-  responseMs: number;
-  glideMs: number;
+  /** px/s² the thrusters change velocity by while the pilot steers (including reversals). */
+  acceleration: number;
+  /** px/s² the ship sheds once the pilot lets go, so it coasts to rest. */
+  drag: number;
+  /** Lateral speed that shows the full bank frame. */
+  bankFullSpeed: number;
   bankResponseMs: number;
 }
 
@@ -16,12 +20,11 @@ function approach(current: number, target: number, dtMs: number, tauMs: number):
   return current + (target - current) * (1 - Math.exp(-dtMs / tauMs));
 }
 
-function axisTimeConstant(current: number, desired: number, params: FlightParams): number {
-  const speedingUp = Math.abs(desired) >= Math.abs(current) && Math.sign(desired) * Math.sign(current) >= 0;
-  return speedingUp ? params.responseMs : params.glideMs;
-}
-
-/** Advances momentum flight by one frame. Pure and frame-rate independent. */
+/**
+ * Advances inertial flight by one frame: velocity moves toward the desired velocity at a fixed
+ * thrust (or drag, once released), like the Arcade acceleration/drag handling of v1.19.
+ * Pure and frame-rate independent.
+ */
 export function stepFlight(
   state: FlightState,
   desiredVx: number,
@@ -33,8 +36,17 @@ export function stepFlight(
     return { ...state };
   }
 
-  let vx = approach(state.vx, desiredVx, dtMs, axisTimeConstant(state.vx, desiredVx, params));
-  let vy = approach(state.vy, desiredVy, dtMs, axisTimeConstant(state.vy, desiredVy, params));
+  const steering = desiredVx !== 0 || desiredVy !== 0;
+  const maxChange = ((steering ? params.acceleration : params.drag) * dtMs) / 1000;
+  const errorX = desiredVx - state.vx;
+  const errorY = desiredVy - state.vy;
+  const error = Math.hypot(errorX, errorY);
+  let vx = desiredVx;
+  let vy = desiredVy;
+  if (error > maxChange) {
+    vx = state.vx + (errorX / error) * maxChange;
+    vy = state.vy + (errorY / error) * maxChange;
+  }
   const speed = Math.hypot(vx, vy);
   if (speed > params.maxSpeed) {
     const scale = params.maxSpeed / speed;
@@ -42,7 +54,7 @@ export function stepFlight(
     vy *= scale;
   }
 
-  const targetBank = Math.max(-1, Math.min(1, vx / params.maxSpeed));
+  const targetBank = Math.max(-1, Math.min(1, vx / params.bankFullSpeed));
   const bank = Math.max(-1, Math.min(1, approach(state.bank, targetBank, dtMs, params.bankResponseMs)));
   return { vx, vy, bank };
 }

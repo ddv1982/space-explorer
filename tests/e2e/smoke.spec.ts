@@ -5,7 +5,7 @@ function expectMenuTitleLockup(menu: Awaited<ReturnType<typeof snapshot>>): void
     .filter((item) => item.text === 'SPACE EXPLORER')
     .sort((left, right) => right.width - left.width)[0];
   const eyebrow = menu.texts.find((item) => item.text === 'COMMAND DECK');
-  const subtitle = menu.texts.find((item) => item.text === 'Select a session to begin your mission.');
+  const subtitle = menu.texts.find((item) => item.text === 'Choose a run and launch.');
 
   expect(title).toBeDefined();
   expect(subtitle).toBeDefined();

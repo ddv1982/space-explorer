@@ -4,6 +4,12 @@ import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../.
 import { getViewportBounds } from '../../utils/layout';
 
 const ASTEROID_SPAWN_Y = -50;
+/** Ambient rocks reach right up to the screen edges, so hugging a wall is not a safe spot. */
+const EDGE_PADDING = 20;
+/** Corridor rocks are 75–101 px wide; 64 px spacing leaves no ship-sized hole in a wall. */
+const CORRIDOR_ROCK_SPACING = 64;
+/** Height fraction at which a ring-crossfire pair crosses: the ship's flying row. */
+const CROSSFIRE_MEET_HEIGHT = 0.75;
 
 export class WaveAsteroidSpawner {
   private corridorGapCenter = 0;
@@ -30,23 +36,26 @@ export class WaveAsteroidSpawner {
       return lastAsteroidSpawn;
     }
 
-    this.spawnSingleAsteroid(this.getRandomX(50), Phaser.Math.Between(60, 120));
+    this.spawnSingleAsteroid(this.getRandomX(EDGE_PADDING), Phaser.Math.Between(60, 120));
     return time;
   }
 
-  spawnAsteroidBurst(count: number, minSpeed: number, maxSpeed: number, edgePadding: number = 50): void {
+  spawnAsteroidBurst(count: number, minSpeed: number, maxSpeed: number, edgePadding: number = EDGE_PADDING): void {
     for (let i = 0; i < count; i++) {
       this.spawnSingleAsteroid(this.getRandomX(edgePadding), Phaser.Math.Between(minSpeed, maxSpeed));
     }
   }
 
+  /** A mirrored pair that angles inward and crosses in the ship's flying row. */
   spawnMirroredAsteroids(leftSpeed: number, rightSpeed: number): void {
     const { min, max } = this.getHorizontalRange(70);
     const leftX = Phaser.Math.Between(min, Math.min(max, min + 80));
     const rightX = this.clampX(this.getViewportWidth() - leftX, 70);
+    const centerX = this.getViewportCenterX();
+    const fallDistance = getViewportBounds(this.scene).height * CROSSFIRE_MEET_HEIGHT - ASTEROID_SPAWN_Y;
 
-    this.spawnSingleAsteroid(leftX, leftSpeed);
-    this.spawnSingleAsteroid(rightX, rightSpeed);
+    this.spawnSingleAsteroid(leftX, leftSpeed, { velocityX: ((centerX - leftX) * leftSpeed) / fallDistance });
+    this.spawnSingleAsteroid(rightX, rightSpeed, { velocityX: ((centerX - rightX) * rightSpeed) / fallDistance });
   }
 
   spawnEdgeAsteroids(hazard: ScriptedHazardConfig): void {
@@ -79,15 +88,22 @@ export class WaveAsteroidSpawner {
       angularVelocityRange: { min: -0.9, max: 0.9 },
     };
 
-    for (let lane = 0; lane < laneCount; lane++) {
-      const laneOffset = lane * 34;
+    // Each wall runs from the corridor edge all the way to the screen edge.
+    const viewportLeft = getViewportBounds(this.scene).left;
+    const viewportRight = viewportLeft + viewportWidth;
+    const leftCount = Math.max(laneCount, Math.ceil((leftEdge - viewportLeft) / CORRIDOR_ROCK_SPACING));
+    const rightCount = Math.max(laneCount, Math.ceil((viewportRight - rightEdge) / CORRIDOR_ROCK_SPACING));
 
-      this.spawnSingleAsteroid(leftEdge - Phaser.Math.Between(18, 42) - laneOffset, Phaser.Math.Between(110, 155), {
+    for (let lane = 0; lane < leftCount; lane++) {
+      const laneOffset = 30 + lane * CORRIDOR_ROCK_SPACING;
+      this.spawnSingleAsteroid(leftEdge - laneOffset - Phaser.Math.Between(0, 8), Phaser.Math.Between(110, 155), {
         ...baseConfig,
         velocityX: Phaser.Math.Between(-12, 6),
       });
-
-      this.spawnSingleAsteroid(rightEdge + Phaser.Math.Between(18, 42) + laneOffset, Phaser.Math.Between(115, 160), {
+    }
+    for (let lane = 0; lane < rightCount; lane++) {
+      const laneOffset = 30 + lane * CORRIDOR_ROCK_SPACING;
+      this.spawnSingleAsteroid(rightEdge + laneOffset + Phaser.Math.Between(0, 8), Phaser.Math.Between(115, 160), {
         ...baseConfig,
         velocityX: Phaser.Math.Between(-6, 12),
       });

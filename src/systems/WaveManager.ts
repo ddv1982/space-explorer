@@ -82,7 +82,9 @@ export class WaveManager {
     this.enemyPool = enemyPool;
 
     this.asteroidGroup = scene.physics.add.group({
-      maxSize: 40,
+      // Uncapped: full-width corridor walls on a 1920 px screen need ~28 rocks per row with about
+      // three rows in flight. Rocks despawn below the screen, so the schedule bounds the pool.
+      maxSize: -1,
       classType: Asteroid,
       runChildUpdate: true,
     });
