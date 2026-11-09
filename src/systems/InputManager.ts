@@ -61,10 +61,10 @@ export class InputManager {
   getTouchDesiredVelocity(
     shipX: number,
     shipY: number,
-    shipGeneration: number,
+    anchorGeneration: number,
     maxSpeed: number
   ): { vx: number; vy: number } | null {
-    return this.mobileControls?.getDragDesiredVelocity(shipX, shipY, shipGeneration, maxSpeed) ?? null;
+    return this.mobileControls?.getDragDesiredVelocity(shipX, shipY, anchorGeneration, maxSpeed) ?? null;
   }
 
   consumePauseToggleRequest(): boolean {

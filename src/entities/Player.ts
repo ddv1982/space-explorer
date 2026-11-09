@@ -33,8 +33,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly exhaustInterval: number = 50;
   private visualFlashToken = 0;
   private bank = 0;
-  /** Incremented on every spawn so a held touch drag re-anchors to the new ship. */
-  private spawnGeneration = 0;
+  /**
+   * Changes whenever the ship moved without the drag (a respawn or keyboard steering), so a held
+   * touch drag re-anchors to the ship's current position instead of pulling it back.
+   */
+  private dragAnchorGeneration = 0;
   private bankFrame = -1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -212,13 +215,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private updateFlight(inputManager: InputManager, horizontal: -1 | 0 | 1, vertical: -1 | 0 | 1, delta: number): void {
-    const desired: DesiredVelocity =
-      horizontal !== 0 || vertical !== 0
-        ? keyboardDesiredVelocity(horizontal, vertical, FLIGHT_CONFIG.maxSpeed)
-        : (inputManager.getTouchDesiredVelocity(this.x, this.y, this.spawnGeneration, FLIGHT_CONFIG.maxSpeed) ?? {
-            vx: 0,
-            vy: 0,
-          });
+    const keyboardSteering = horizontal !== 0 || vertical !== 0;
+    if (keyboardSteering) this.dragAnchorGeneration += 1;
+    const desired: DesiredVelocity = keyboardSteering
+      ? keyboardDesiredVelocity(horizontal, vertical, FLIGHT_CONFIG.maxSpeed)
+      : (inputManager.getTouchDesiredVelocity(this.x, this.y, this.dragAnchorGeneration, FLIGHT_CONFIG.maxSpeed) ?? {
+          vx: 0,
+          vy: 0,
+        });
     // The body is the velocity source of truth so respawns, bounds and push-backs are respected.
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     const next = stepFlight(
@@ -285,7 +289,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.isMovingUp = false;
     this.deathStarted = false;
     this.bank = 0;
-    this.spawnGeneration += 1;
+    this.dragAnchorGeneration += 1;
     this.applyBankFrame();
     this.setAcceleration(0, 0);
     this.setVisible(true);

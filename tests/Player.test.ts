@@ -57,7 +57,7 @@ describe('Player', () => {
       player.scene = { events: { emit: mock() } } as never;
       record.body = { velocity };
       record.bank = 0;
-      record.spawnGeneration = 0;
+      record.dragAnchorGeneration = 0;
       touchVelocity = null;
       touchCalls.length = 0;
       record.exhaustTimer = 10000;
@@ -150,6 +150,16 @@ describe('Player', () => {
       for (const direction of [input.isLeft, input.isRight, input.isUp, input.isDown]) {
         expect(direction).toHaveBeenCalledTimes(1);
       }
+    });
+
+    test('keyboard steering re-anchors a held touch drag so releasing the key never pulls the ship back', () => {
+      const { player } = createMomentumPlayer();
+      touchVelocity = { vx: 0, vy: 0 };
+      player.update(idle as never, 1000 / 60);
+      const anchoredGeneration = touchCalls.at(-1)!;
+      for (let i = 0; i < 10; i++) player.update(right as never, 1000 / 60);
+      player.update(idle as never, 1000 / 60);
+      expect(touchCalls.at(-1)).not.toBe(anchoredGeneration);
     });
 
     test('keyboard input takes priority over touch drag steering', () => {

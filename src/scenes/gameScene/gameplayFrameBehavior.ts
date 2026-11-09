@@ -85,6 +85,14 @@ export interface GameSceneGameplayFrameBehavior extends GameSceneFrameDelegate {
   getLastFireTime(): number;
 }
 
+/**
+ * Respawn and transition locks keep particles moving on the scene clock, so lights keep fading with
+ * them; only a true pause freezes lighting alongside the gameplay clocks.
+ */
+function updateLockedFrameLighting(delegate: GameSceneGameplayFrameDelegate, delta: number): void {
+  if (!delegate.pauseStateController?.isGameplayPaused()) delegate.effectsManager.updateLighting(delta);
+}
+
 export function createGameSceneGameplayFrameBehavior(
   delegate: GameSceneGameplayFrameDelegate
 ): GameSceneGameplayFrameBehavior {
@@ -111,6 +119,7 @@ export function createGameSceneGameplayFrameBehavior(
 
   const updatePausedFrame = (delta: number): void => {
     delegate.flow.sampleRespawnTransitionFrame(delta);
+    updateLockedFrameLighting(delegate, delta);
     delegate.updateHud();
   };
 

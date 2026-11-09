@@ -32,11 +32,15 @@ function createHarness(level = 1): {
   atmosphereCalls: Array<{ sectionId: string | null; progress: number }>;
   setProgress(progress: number): void;
   setBossSpawned(spawned: boolean): void;
+  lightingDeltas: number[];
+  setPaused(paused: boolean): void;
 } {
   const levelConfig = getLevelConfig(level);
   const atmosphereCalls: Array<{ sectionId: string | null; progress: number }> = [];
   let progress = 0;
   let bossSpawned = false;
+  let paused = false;
+  const lightingDeltas: number[] = [];
 
   const vector = { x: 0, y: 0 } as GameplayDelegate['shotDirection'];
   const delegate: GameplayDelegate = {
@@ -44,7 +48,7 @@ function createHarness(level = 1): {
       consumePauseToggleRequest: () => false,
       isFiring: () => false,
     },
-    pauseStateController: null,
+    pauseStateController: { togglePauseRequest: () => {}, isGameplayPaused: () => paused },
     flow: {
       isGameplayLocked: () => false,
       sampleRespawnTransitionFrame: () => {},
@@ -86,7 +90,7 @@ function createHarness(level = 1): {
     events: { emit: () => {} },
     hud: { updateBossHp: () => {}, updateBossGuard: () => {} },
     bulletPool: { fire: () => {} },
-    effectsManager: { createMuzzleFlash: () => {}, updateLighting: () => {} },
+    effectsManager: { createMuzzleFlash: () => {}, updateLighting: (delta) => lightingDeltas.push(delta) },
     getBoss: () => null,
     updateHud: () => {},
     shotDirection: vector,
@@ -102,6 +106,10 @@ function createHarness(level = 1): {
     },
     setBossSpawned: (nextBossSpawned) => {
       bossSpawned = nextBossSpawned;
+    },
+    lightingDeltas,
+    setPaused: (nextPaused) => {
+      paused = nextPaused;
     },
   };
 }
@@ -169,5 +177,16 @@ describe('gameplay frame presentation deduplication', () => {
     expect(harness.atmosphereCalls).toHaveLength(240);
     expect(musicIntensities.length).toBeGreaterThan(1);
     expect(musicIntensities.length).toBeLessThan(12);
+  });
+});
+
+describe('lighting on locked frames', () => {
+  test('respawn and transition locks keep light pulses fading, while a true pause freezes them', () => {
+    const harness = createHarness();
+    harness.behavior.updatePausedFrame(16);
+    expect(harness.lightingDeltas).toEqual([16]);
+    harness.setPaused(true);
+    harness.behavior.updatePausedFrame(16);
+    expect(harness.lightingDeltas).toEqual([16]);
   });
 });

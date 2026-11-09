@@ -32,7 +32,7 @@ export class MobileControls {
   private dragState: DragState | null = null;
   private dragFingerX: number = 0;
   private dragFingerY: number = 0;
-  private dragShipGeneration: number | null = null;
+  private dragAnchorGeneration: number | null = null;
 
   private readonly handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
     if (!this.isEnabled() || this.dragPointerId !== null || this.isOverPauseButton(pointer)) {
@@ -44,7 +44,7 @@ export class MobileControls {
     this.dragFingerY = pointer.y;
     // Anchored against the ship on the first velocity query, when the ship position is known.
     this.dragState = null;
-    this.dragShipGeneration = null;
+    this.dragAnchorGeneration = null;
   };
 
   private readonly handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
@@ -180,21 +180,22 @@ export class MobileControls {
 
   /**
    * Desired ship velocity from the active drag, or null when no finger is steering.
-   * `shipGeneration` changes on every respawn so a held finger re-anchors to the new ship.
+   * `anchorGeneration` changes whenever the ship moved without the drag (respawn, keyboard steering),
+   * so a held finger re-anchors to the ship's current position.
    */
   getDragDesiredVelocity(
     shipX: number,
     shipY: number,
-    shipGeneration: number,
+    anchorGeneration: number,
     maxSpeed: number
   ): { vx: number; vy: number } | null {
     if (!this.scene || !this.isEnabled() || this.dragPointerId === null) {
       return null;
     }
 
-    if (this.dragState === null || this.dragShipGeneration !== shipGeneration) {
+    if (this.dragState === null || this.dragAnchorGeneration !== anchorGeneration) {
       this.dragState = beginDrag(this.dragFingerX, this.dragFingerY, shipX, shipY);
-      this.dragShipGeneration = shipGeneration;
+      this.dragAnchorGeneration = anchorGeneration;
     }
 
     const viewport = getViewportBounds(this.scene);
@@ -237,7 +238,7 @@ export class MobileControls {
   private releaseDrag(): void {
     this.dragPointerId = null;
     this.dragState = null;
-    this.dragShipGeneration = null;
+    this.dragAnchorGeneration = null;
   }
 
   private releasePauseButton(): void {
