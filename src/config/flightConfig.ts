@@ -1,13 +1,13 @@
 import type { FlightParams } from '../systems/flight/flightModel';
 
 /**
- * Momentum flight feel. `responseMs` and `glideMs` are exponential time constants:
- * the ship reaches ~90% of a new speed after ~2.3× `responseMs` and coasts to ~5%
- * after ~3× `glideMs` once input is released. Tuned with the user during the v2 playtest.
+ * Inertial flight feel, matched to the v1.19 handling the user preferred: 800 px/s² thrust and
+ * 400 px/s² drag, so the ship takes about a second to reach full speed and slides after release.
  */
 export const FLIGHT_CONFIG: FlightParams = {
-  maxSpeed: 480,
-  responseMs: 70,
-  glideMs: 110,
-  bankResponseMs: 90,
+  maxSpeed: 800,
+  acceleration: 800,
+  drag: 400,
+  bankFullSpeed: 480,
+  bankResponseMs: 120,
 };

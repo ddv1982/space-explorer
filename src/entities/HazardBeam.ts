@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
 import { ensureBeamTexture } from '../utils/SpriteFactory';
+import { BEAM_HIT_FRACTION, BEAM_TEXTURE_WIDTH } from './hazardBeamGeometry';
 
-const BEAM_TEXTURE_WIDTH = 32;
 const BEAM_TEXTURE_HEIGHT = 128;
 
 export type HazardBeamLaunchConfig = {
@@ -53,7 +53,9 @@ export class HazardBeam extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     if (body) {
-      body.setSize(BEAM_TEXTURE_WIDTH, BEAM_TEXTURE_HEIGHT);
+      // Vertical beams hurt only across their visible core; crossbeams span their full length.
+      const vertical = config.height >= config.width;
+      body.setSize(vertical ? BEAM_TEXTURE_WIDTH * BEAM_HIT_FRACTION : BEAM_TEXTURE_WIDTH, BEAM_TEXTURE_HEIGHT);
       body.enable = false;
     }
 

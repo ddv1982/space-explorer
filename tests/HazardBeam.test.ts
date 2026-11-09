@@ -76,9 +76,18 @@ describe('HazardBeam', () => {
     expect(beam.isDamageActive()).toBe(false);
     expect(beam.getClearsBullets()).toBe(true);
     expect(beam.getDamage()).toBe(1);
-    expect(body.setSize).toHaveBeenCalledWith(32, 128);
+    // A vertical beam hurts across its bright 14 px core, not its faint glow.
+    expect(body.setSize).toHaveBeenCalledWith(14, 128);
     expect(body.enable).toBe(false);
     expect(beam.scene.time.delayedCall).not.toHaveBeenCalled();
+  });
+
+  test('a horizontal crossbeam keeps its full-length hitbox', () => {
+    const { beam, body } = createBeamStub();
+
+    beam.launch({ ...BASE_CONFIG, width: 840, height: 27 });
+
+    expect(body.setSize).toHaveBeenCalledWith(32, 128);
   });
 
   test('activates after the telegraph window elapses in gameplay frames', () => {

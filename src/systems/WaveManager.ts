@@ -82,7 +82,8 @@ export class WaveManager {
     this.enemyPool = enemyPool;
 
     this.asteroidGroup = scene.physics.add.group({
-      maxSize: 40,
+      // Full-width corridor walls on wide screens need room for about three rows in flight.
+      maxSize: 64,
       classType: Asteroid,
       runChildUpdate: true,
     });

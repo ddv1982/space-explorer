@@ -31,14 +31,19 @@ export function dragTarget(
   };
 }
 
-/** Velocity that would close the gap to the drag target within `followMs`, capped at `maxSpeed`. */
+/**
+ * Velocity that carries the ship to the drag target without overshooting: it never asks for more
+ * speed than `brakeAcceleration` can shed over the remaining gap, eases in over the last `settleMs`,
+ * and is capped at `maxSpeed`. Fed through the inertial flight model, the ship trails the finger.
+ */
 export function dragDesiredVelocity(
   shipX: number,
   shipY: number,
   targetX: number,
   targetY: number,
   maxSpeed: number,
-  followMs = 60
+  brakeAcceleration = 600,
+  settleMs = 90
 ): { vx: number; vy: number } {
   const dx = targetX - shipX;
   const dy = targetY - shipY;
@@ -46,6 +51,6 @@ export function dragDesiredVelocity(
   if (distance < 1) {
     return { vx: 0, vy: 0 };
   }
-  const speed = Math.min(maxSpeed, distance / (followMs / 1000));
+  const speed = Math.min(maxSpeed, Math.sqrt(2 * brakeAcceleration * distance), distance / (settleMs / 1000));
   return { vx: (dx / distance) * speed, vy: (dy / distance) * speed };
 }
