@@ -65,8 +65,8 @@ const FUNCTION_POLICIES: Record<string, FunctionPolicy> = {
     evidence: 'responsive layout matrix and browser visual evidence',
   },
   'src/scenes/menuScene/layout.ts#createMenuLayoutPlan': {
-    lines: 130,
-    complexity: 28,
+    lines: 110,
+    complexity: 24,
     category: 'pure-layout',
     reason: 'pure responsive policy covered by the viewport scenario matrix',
     evidence: 'responsive layout matrix and browser visual evidence',

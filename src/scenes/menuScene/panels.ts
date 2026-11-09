@@ -73,7 +73,6 @@ export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, ac
     cornerCut: 28,
     glow: true,
   });
-  drawNeonDivider(grid, plan.centerX, plan.outerFrameY + 34, Math.min(560, plan.outerFrameWidth - 120), NEON.blue);
   drawNeonDivider(
     grid,
     plan.centerX,
@@ -152,7 +151,7 @@ export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void
   wings.setDepth(12);
 
   scene.add
-    .text(plan.centerX, plan.subtitleY, 'Select a session to begin your mission.', {
+    .text(plan.centerX, plan.subtitleY, 'Choose a run and launch.', {
       fontSize: `${plan.subtitleFontSize}px`,
       color: NEON_TEXT.secondary,
       fontFamily: NEON_FONT.mono,

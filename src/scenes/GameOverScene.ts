@@ -67,7 +67,7 @@ export class GameOverScene extends Phaser.Scene {
       glow: true,
     });
     drawNeonDivider(frame, layout.centerX, frameY + 18, frameWidth - 140, NEON.red);
-    drawNeonDivider(frame, layout.centerX, frameY + frameHeight - 14, frameWidth - 140, NEON.red);
+    // No bottom divider: its medallion sat on top of the keyboard hint line.
 
     return { plan, frameX, frameY, centerX: layout.centerX };
   }

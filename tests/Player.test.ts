@@ -168,8 +168,9 @@ describe('Player', () => {
       player.update(right as never, 1000 / 60);
       const keyboardVx = velocity.x;
       expect(keyboardVx).toBeGreaterThan(0);
-      for (let i = 0; i < 30; i++) player.update(idle as never, 1000 / 60);
-      expect(velocity.x).toBeLessThan(-400);
+      // Inertial thrust: about 0.6 s to swing round to the drag's -480 px/s.
+      for (let i = 0; i < 45; i++) player.update(idle as never, 1000 / 60);
+      expect(velocity.x).toBeLessThan(-470);
     });
   });
 });

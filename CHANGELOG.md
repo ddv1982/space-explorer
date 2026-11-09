@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] - 2026-11-09
+
+### Changed
+
+- Flight handling is back to the floatier v1.19 feel: 800 px/s² thrust and 400 px/s² drag, so the ship takes about a second to reach full speed and slides after you let go. Diagonals stay normalized and touch drag trails the finger without overshooting.
+- The main menu centres on the lit player ship over a launch pad, with large run tiles and a SETTINGS button. Difficulty, quality and audio moved to a settings sheet.
+
+### Fixed
+
+- Solar flares span the full screen height with one telegraphed gap, so you can no longer fly underneath them.
+- Laser lattices fill the screen from edge to edge apart from one gap, with a telegraph long enough to reach it from anywhere. Beams only hurt where they visibly glow.
+- Asteroid hazards reach the screen edges, rock-corridor walls run all the way to the edge, ring crossfire rocks actually cross, wormholes open nearer the edges, and asteroids use round hitboxes.
+- The victory panel fits phone screens, and game-over and victory text no longer overlaps the divider ornaments.
+
 ## [1.21.0] - 2026-11-09
 
 ### Added

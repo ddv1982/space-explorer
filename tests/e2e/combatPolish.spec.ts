@@ -230,7 +230,8 @@ for (const pattern of ['flare', 'lattice'] as const) {
   }) => {
     // CI observed 3442ms of gameplay in 120s wall. The 6.53s desktop flare needs
     // about 228s at that rate; 300s retains full expiry with margin for rendering.
-    const watchdogMs = pattern === 'flare' ? 300000 : 120000;
+    // The lattice telegraph grows with screen width (~2.7s on desktop) before its 2.2s active window.
+    const watchdogMs = pattern === 'flare' ? 300000 : 240000;
     test.setTimeout(watchdogMs + 60000);
     // The beam cycle needs seconds of gameplay time; Low keeps software-rendered CI frames affordable.
     await pinQualityTier(page, 'low');
@@ -244,7 +245,9 @@ for (const pattern of ['flare', 'lattice'] as const) {
       );
       await recordCombat(page, false);
       const beforePause = await state(page);
-      expect(beforePause.beams.length).toBe(pattern === 'flare' ? 1 : 3);
+      // A flare is two segments around its gap; a lattice is a curtain of beams plus a crossbeam.
+      if (pattern === 'flare') expect(beforePause.beams.length).toBe(2);
+      else expect(beforePause.beams.length).toBeGreaterThan(3);
       expect(beforePause.beams.every((beam) => !beam.damaging)).toBe(true);
       await page.waitForTimeout(900);
       const paused = await state(page);
@@ -265,7 +268,7 @@ for (const pattern of ['flare', 'lattice'] as const) {
       expect(receipt.active.player?.hp).toBe(staged.hp);
       expect(receipt.completed?.player?.hp).toBe(staged.hp);
       expect(receipt.completed?.beams).toEqual([]);
-      expect(receipt.elapsedGameplayMs).toBeGreaterThan(pattern === 'flare' ? 700 : 800);
+      expect(receipt.elapsedGameplayMs).toBeGreaterThan(pattern === 'flare' ? 1300 : 800);
     } finally {
       await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.combatPolish.endBeamFixture());
     }
@@ -277,7 +280,9 @@ test('delivered eight-direction input escapes overlapping beam danger before act
   page,
   assertNoBrowserErrors,
 }) => {
-  test.setTimeout(120000);
+  // The lattice telegraph now scales with screen width (~2.9s at 1280 px); software-rendered
+  // browsers under parallel load can take minutes of wall time for that much gameplay time.
+  test.setTimeout(240000);
   await openMenu(page);
   await startNewRun(page);
   await recordCombat(page);
@@ -311,7 +316,7 @@ test('delivered eight-direction input escapes overlapping beam danger before act
     await page.keyboard.up('ArrowDown');
     await page.waitForFunction(() => {
       const beams = window.__SPACE_EXPLORER_BROWSER_HARNESS__!.combatPolish.combatPolishState().beams;
-      return beams.length === 4 && beams.every((beam) => beam.damaging);
+      return beams.length > 4 && beams.every((beam) => beam.damaging);
     });
     const escaped = await state(page);
     expect(escaped.player?.hp).toBe(staged.hp);
@@ -321,6 +326,7 @@ test('delivered eight-direction input escapes overlapping beam danger before act
   } finally {
     await page.keyboard.up('ArrowRight');
     await page.keyboard.up('ArrowDown');
+    await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.combatPolish.endBeamFixture());
   }
   assertNoBrowserErrors();
 });

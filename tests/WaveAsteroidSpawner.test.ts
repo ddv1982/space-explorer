@@ -13,7 +13,7 @@ mock.module('phaser', () => {
 
 mock.module('../src/utils/layout', () => {
   return {
-    getViewportBounds: () => ({ width: 800, centerX: 400 }),
+    getViewportBounds: () => ({ left: 0, width: 800, centerX: 400, height: 600 }),
     getViewportLayout: () => ({ left: 0, width: 800, centerX: 400 }),
     getGameplayBounds: () => ({
       width: 1280,
@@ -83,7 +83,7 @@ describe('WaveAsteroidSpawner', () => {
     expect(spawnedTimestamp).toBe(1000);
     expect(spawnCalls).toHaveLength(1);
     expect(spawnCalls[0]).toEqual({
-      x: 50,
+      x: 20,
       y: -50,
       speed: 60,
       config: {},
@@ -100,7 +100,22 @@ describe('WaveAsteroidSpawner', () => {
       damage: 3,
     });
 
-    expect(spawnCalls).toHaveLength(4);
+    // Both walls run from the 190 px corridor out to the screen edges with no ship-sized hole.
+    const left = spawnCalls.filter((call) => call.x < 400).map((call) => call.x);
+    const right = spawnCalls.filter((call) => call.x > 400).map((call) => call.x);
+    expect(left.length).toBeGreaterThanOrEqual(4);
+    expect(right.length).toBeGreaterThanOrEqual(4);
+    expect(Math.min(...left)).toBeLessThan(40);
+    expect(Math.max(...right)).toBeGreaterThan(760);
+    // The corridor itself (which drifts a little each trigger) stays open.
+    expect(Math.min(...right) - Math.max(...left)).toBeGreaterThanOrEqual(190 + 60);
+    for (const wall of [left, right]) {
+      const sorted = [...wall].sort((a, b) => a - b);
+      for (let index = 1; index < sorted.length; index++) {
+        // Smallest corridor rock (scale 1.7) has a 68 px round hitbox; holes stay under the ship's 24 px.
+        expect(sorted[index]! - sorted[index - 1]! - 68).toBeLessThan(24);
+      }
+    }
     for (const call of spawnCalls) {
       expect(call.y).toBe(-50);
       expect(call.config.destroyOnPlayerImpact).toBe(false);
@@ -124,11 +139,25 @@ describe('WaveAsteroidSpawner', () => {
       coverIndestructible: false,
     });
 
-    expect(spawnCalls).toHaveLength(2);
+    expect(spawnCalls.length).toBeGreaterThanOrEqual(2);
     for (const call of spawnCalls) {
       expect(call.config.blocksEnemyProjectiles).toBe(true);
       expect(call.config.hp).toBe(5);
       expect(call.config.indestructible).toBe(false);
+    }
+  });
+
+  test('ring crossfire rocks angle inward and cross in the ship row', () => {
+    const { helper, spawnCalls } = createHarness();
+
+    helper.spawnMirroredAsteroids(100, 140);
+
+    expect(spawnCalls).toHaveLength(2);
+    for (const call of spawnCalls) {
+      const velocityX = call.config.velocityX as number;
+      // Reaches the centre line after falling to 75% of the 600 px screen.
+      const secondsToRow = (600 * 0.75 + 50) / call.speed;
+      expect(call.x + velocityX * secondsToRow).toBeCloseTo(400, 6);
     }
   });
 });

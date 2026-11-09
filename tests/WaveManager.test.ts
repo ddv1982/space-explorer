@@ -308,8 +308,8 @@ describe('WaveManager', () => {
     harness.manager.update(600, 600, 0.2);
 
     expect(harness.emittedEvents).toEqual([
-      `${GAME_SCENE_EVENTS.wormholeTelegraph}:160`,
-      `${GAME_SCENE_EVENTS.wormholeTelegraph}:160`,
+      `${GAME_SCENE_EVENTS.wormholeTelegraph}:80`,
+      `${GAME_SCENE_EVENTS.wormholeTelegraph}:80`,
     ]);
     expect(harness.spawnedEnemies).toEqual([]);
 
@@ -319,12 +319,12 @@ describe('WaveManager', () => {
     harness.manager.update(600, 1, 0.2);
 
     expect(harness.spawnedEnemies).toEqual([
-      { type: 'dodger', x: 130, y: 150 },
-      { type: 'dodger', x: 160, y: 150 },
-      { type: 'dodger', x: 190, y: 150 },
-      { type: 'dodger', x: 130, y: 150 },
-      { type: 'dodger', x: 160, y: 150 },
-      { type: 'dodger', x: 190, y: 150 },
+      { type: 'dodger', x: 50, y: 150 },
+      { type: 'dodger', x: 80, y: 150 },
+      { type: 'dodger', x: 110, y: 150 },
+      { type: 'dodger', x: 50, y: 150 },
+      { type: 'dodger', x: 80, y: 150 },
+      { type: 'dodger', x: 110, y: 150 },
     ]);
   });
 

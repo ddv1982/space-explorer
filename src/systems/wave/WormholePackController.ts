@@ -23,8 +23,8 @@ export class WormholePackController {
     const portalCount = 1 + Math.round(hazard.intensity ?? 0.5);
     for (let index = 0; index < portalCount; index++) {
       const x = Phaser.Math.Between(
-        Math.round(viewport.left + viewport.width * 0.2),
-        Math.round(viewport.right - viewport.width * 0.2)
+        Math.round(viewport.left + viewport.width * 0.1),
+        Math.round(viewport.right - viewport.width * 0.1)
       );
       const y = Phaser.Math.Between(150, 280);
       emitTelegraph(x, y);

@@ -18,7 +18,7 @@ export function triggerWaveHazard(hazard: ScriptedHazardConfig, actions: WaveHaz
       actions.spawnAsteroidBurst(2 + Math.round(intensity * 2), 65, 130);
       return;
     case 'minefield':
-      actions.spawnAsteroidBurst(2, 40, 70, 80);
+      actions.spawnAsteroidBurst(2, 40, 70, 30);
       return;
     case 'ring-crossfire':
       actions.spawnMirroredAsteroids(90, 150);

@@ -225,6 +225,36 @@ function combatPolishState(game: Phaser.Game) {
   };
 }
 
+function activeBeams(combat: ReturnType<typeof requireCombat>): HazardBeam[] {
+  return combat.beams
+    .getGroup()
+    .getChildren()
+    .filter((value): value is HazardBeam => value instanceof HazardBeam && value.active);
+}
+
+/** The flare's vertical gap and the lattice curtain's widest horizontal gap, from live beams. */
+function beamGaps(beams: HazardBeam[]): {
+  flare: { top: number; bottom: number } | null;
+  lattice: { left: number; right: number } | null;
+} {
+  const flare = beams.filter((beam) => beam.getClearsBullets()).sort((a, b) => a.y - b.y);
+  const curtain = beams
+    .filter((beam) => !beam.getClearsBullets() && beam.displayHeight > beam.displayWidth)
+    .sort((a, b) => a.x - b.x);
+  let lattice: { left: number; right: number } | null = null;
+  for (let index = 1; index < curtain.length; index++) {
+    const left = curtain[index - 1]!.x + curtain[index - 1]!.displayWidth / 2;
+    const right = curtain[index]!.x - curtain[index]!.displayWidth / 2;
+    if (!lattice || right - left > lattice.right - lattice.left) lattice = { left, right };
+  }
+  const [upper, lower] = flare;
+  return {
+    flare:
+      upper && lower ? { top: upper.y + upper.displayHeight / 2, bottom: lower.y - lower.displayHeight / 2 } : null,
+    lattice,
+  };
+}
+
 function stageBeamEscapeRoute(game: Phaser.Game) {
   const combat = requireCombat(game);
   if (!combat.scene.physics.world.isPaused) throw new Error('Pause before staging the escape route');
@@ -232,24 +262,27 @@ function stageBeamEscapeRoute(game: Phaser.Game) {
   combat.beams.spawnSolarFlare(0.8);
   combat.beams.spawnLaserLattice(0.8);
   const viewport = getViewportBounds(combat.scene);
-  const beams = combat.beams
-    .getGroup()
-    .getChildren()
-    .filter((value): value is HazardBeam => value instanceof HazardBeam && value.active);
-  const flare = beams.find((beam) => beam.getClearsBullets());
-  const wall = beams.find((beam) => beam.displayHeight > viewport.height);
+  const beams = activeBeams(combat);
+  // Pin the random crossbeam to the top of its band so it never overlaps the staged start.
+  const crossbeam = beams.find((beam) => beam.displayWidth > viewport.width);
+  crossbeam?.setY(viewport.top + viewport.height * 0.2);
+  const gaps = beamGaps(beams);
   const body = combat.player.body;
-  if (!flare || !wall || !(body instanceof Phaser.Physics.Arcade.Body)) {
-    throw new Error('Escape route requires a flare, a lattice wall, and the player body');
+  if (!gaps.flare || !gaps.lattice || !(body instanceof Phaser.Physics.Arcade.Body)) {
+    throw new Error('Escape route requires a gated flare, a lattice curtain, and the player body');
   }
-  combat.player.spawn(wall.x, viewport.top + viewport.height * 0.68, { hp: combat.player.maxHp });
+  const gapCenterX = (gaps.lattice.left + gaps.lattice.right) / 2;
+  // Start in the curtain gap's column but above the flare gap, in the flare's path. Each key is
+  // released well short of the gap: the inertial ship's slide (v²/800 px) carries it the rest of the
+  // way, landing near the centre of both gaps.
+  const startX = gapCenterX - 30;
+  const startY = gaps.flare.top - body.halfHeight - 8;
+  combat.player.spawn(startX, startY, { hp: combat.player.maxHp });
   combat.player.shields = 0;
   return {
     start: { x: combat.player.x, y: combat.player.y },
-    goal: {
-      x: wall.x + wall.displayWidth / 2 + body.halfWidth + 20,
-      y: flare.y + flare.displayHeight / 2 + body.halfHeight + 4,
-    },
+    // Early releases leave margin for key-up latency on slow, software-rendered test browsers.
+    goal: { x: startX + 2, y: startY + 24 },
     hp: combat.player.hp,
   };
 }
@@ -261,38 +294,41 @@ export function createCombatPolishProbes(game: Phaser.Game) {
     restoreBeamFixture = null;
     restore?.();
   };
+  const suspendSpawningForFixture = () => {
+    endBeamFixture();
+    const combat = requireCombat(game);
+    if (!combat.scene.physics.world.isPaused) throw new Error('Pause before staging an isolated beam fixture');
+    const restoreSpawning = suspendEncounterSpawning(combat.waves);
+    restoreBeamFixture = () => {
+      restoreSpawning();
+      combat.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
+      combat.scene.events.off(Phaser.Scenes.Events.DESTROY, endBeamFixture);
+    };
+    combat.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
+    combat.scene.events.once(Phaser.Scenes.Events.DESTROY, endBeamFixture);
+    return combat;
+  };
   return {
     endBeamFixture,
     stageCollision: (source: Exclude<DamageSource, 'unknown'>, mode: 'shield' | 'hull' | 'fatal') =>
       stageCollision(game, source, mode),
     combatPolishState: () => combatPolishState(game),
-    stageBeamEscapeRoute: () => stageBeamEscapeRoute(game),
+    stageBeamEscapeRoute: () => {
+      // Beam-only fixture: the long lattice telegraph would otherwise give a wave time to shoot.
+      suspendSpawningForFixture();
+      return stageBeamEscapeRoute(game);
+    },
     stageBeamPattern: (pattern: 'flare' | 'lattice') => {
-      endBeamFixture();
-      const combat = requireCombat(game);
-      if (!combat.scene.physics.world.isPaused) throw new Error('Pause before staging an isolated beam fixture');
-      const restoreSpawning = suspendEncounterSpawning(combat.waves);
-      restoreBeamFixture = () => {
-        restoreSpawning();
-        combat.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
-        combat.scene.events.off(Phaser.Scenes.Events.DESTROY, endBeamFixture);
-      };
-      combat.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, endBeamFixture);
-      combat.scene.events.once(Phaser.Scenes.Events.DESTROY, endBeamFixture);
+      const combat = suspendSpawningForFixture();
       clearField(combat);
       const viewport = getViewportBounds(combat.scene);
       if (pattern === 'flare') combat.beams.spawnSolarFlare(0.8);
       else combat.beams.spawnLaserLattice(0.8);
-      const vertical = combat.beams
-        .getGroup()
-        .getChildren()
-        .filter(
-          (child): child is HazardBeam =>
-            child instanceof HazardBeam && child.active && child.displayHeight > child.displayWidth
-        );
-      const [left, right] = vertical;
-      const gapX = pattern === 'lattice' && left && right ? (left.x + right.x) / 2 : viewport.centerX;
-      combat.player.spawn(gapX, viewport.bottom - 40, { hp: combat.player.maxHp });
+      const gaps = beamGaps(activeBeams(combat));
+      // Flare: hold the flare's gap row. Lattice: sit in the curtain's gap below the crossbeam.
+      const x = pattern === 'lattice' && gaps.lattice ? (gaps.lattice.left + gaps.lattice.right) / 2 : viewport.centerX;
+      const y = pattern === 'flare' && gaps.flare ? (gaps.flare.top + gaps.flare.bottom) / 2 : viewport.bottom - 40;
+      combat.player.spawn(x, y, { hp: combat.player.maxHp });
       combat.player.shields = 0;
       return {
         pattern,

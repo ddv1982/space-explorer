@@ -23,7 +23,9 @@ describe('relativeDrag', () => {
     const far = dragDesiredVelocity(0, 0, 1000, 0, 480);
     expect(far).toEqual({ vx: 480, vy: 0 });
     expect(dragDesiredVelocity(10, 10, 10.5, 10.5, 480)).toEqual({ vx: 0, vy: 0 });
-    const near = dragDesiredVelocity(0, 0, 0, 12, 480, 60);
-    expect(near.vy).toBeCloseTo(200, 6);
+    // Close in, speed is limited by what the brakes can shed over the gap...
+    expect(dragDesiredVelocity(0, 0, 0, 12, 480, 600, 60).vy).toBeCloseTo(120, 6);
+    // ...and by the settle time over the last few pixels.
+    expect(dragDesiredVelocity(0, 0, 0, 3, 480, 600, 60).vy).toBeCloseTo(50, 6);
   });
 });
