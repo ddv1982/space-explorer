@@ -65,6 +65,7 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
     ...createProceduralBackgroundProbes(game),
     showLaneReadingPilot: (glowEnabled = true, hazardType = 'ring-crossfire') =>
       visualPilot.show(glowEnabled, hazardType),
+    finishLevelIntro: () => visualPilot.finishLevelIntro(),
     measureLaneReadingPilotRenderCost: () => visualPilot.measureRenderCost(),
     ...navigation,
   };

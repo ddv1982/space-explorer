@@ -30,7 +30,10 @@ async function pixelDifference(page: Page, first: Buffer, second: Buffer): Promi
           const height = Math.floor(canvas.height * 0.7);
           const left = context.getImageData(Math.floor(canvas.width * 0.01), top, marginWidth, height).data;
           const right = context.getImageData(Math.floor(canvas.width * 0.72), top, marginWidth, height).data;
-          return new Uint8ClampedArray([...left, ...right]);
+          const pixels = new Uint8ClampedArray(left.length + right.length);
+          pixels.set(left);
+          pixels.set(right, left.length);
+          return pixels;
         })
       );
       let difference = 0;
@@ -49,6 +52,8 @@ for (const { level, world } of LIVING_CAMPAIGN) {
     `procedural ${world} evolves and resizes without a raster backdrop`,
     { tag: [1, 4].includes(level) ? [] : ['@desktop-only'] },
     async ({ page, assertNoBrowserErrors }) => {
+      // Four screenshots and two pixel comparisons can exceed a minute under SwiftShader.
+      test.setTimeout(process.env.CI ? 120_000 : 60_000);
       const mobile = test.info().project.name.includes('mobile');
       await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 });
       const rasterRequests: string[] = [];

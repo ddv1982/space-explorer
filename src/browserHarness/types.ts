@@ -93,6 +93,7 @@ export interface BrowserHarnessApi
     hazardType?: 'ring-crossfire' | 'debris-surge'
   ) => BrowserHarnessVisualPilotEvidence;
   measureLaneReadingPilotRenderCost: () => Promise<BrowserHarnessVisualPilotMetrics>;
+  finishLevelIntro: () => void;
   showPlanetIntermission: (level: number) => Promise<{ level: number; planetName: string }>;
   route: (key: string) => Promise<void>;
 }
