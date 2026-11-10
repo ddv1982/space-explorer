@@ -1,19 +1,13 @@
 import Phaser from 'phaser';
-import { createCombatPolishProbes } from './browserHarness/combatPolishProbes';
 import { createGameFeelProbes } from './browserHarness/gameFeelProbes';
 import { createShipyardProbes } from './browserHarness/shipyardProbes';
-import { createEffectsProbes } from './browserHarness/effectsProbes';
 import { createProceduralBackgroundProbes } from './browserHarness/proceduralBackgroundProbes';
 
 import { createBrowserHarnessGameplayProbes } from './browserHarness/gameplayProbes';
 import { createBrowserHarnessNavigation } from './browserHarness/navigation';
-import {
-  BrowserHarnessPerformanceProbes,
-  type BrowserHarnessAudioContextManager,
-} from './browserHarness/performanceProbes';
+
 import { createBrowserHarnessSnapshot } from './browserHarness/snapshot';
 import type { BrowserHarnessApi } from './browserHarness/types';
-import { BrowserHarnessVisualPilot } from './browserHarness/visualPilot';
 import { audioManager } from './systems/AudioManager';
 
 export type { BrowserHarnessSnapshot } from './browserHarness/snapshot';
@@ -28,29 +22,16 @@ declare global {
 }
 
 function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
-  const harnessAudioContextManager = (audioManager as unknown as { contextManager: BrowserHarnessAudioContextManager })
+  const harnessAudioContextManager = (audioManager as unknown as { contextManager: { getCtx(): AudioContext | null } })
     .contextManager;
-  let originalAudioResume: BrowserHarnessAudioContextManager['resume'] | null = null;
-  const visualPilot = new BrowserHarnessVisualPilot(game);
   const navigation = createBrowserHarnessNavigation(game);
   const gameplayProbes = createBrowserHarnessGameplayProbes(game);
-  const performanceProbes = new BrowserHarnessPerformanceProbes(game, audioManager, harnessAudioContextManager);
 
   const api: BrowserHarnessApi = {
-    combatPolish: createCombatPolishProbes(game),
     gameFeel: createGameFeelProbes(game),
     destroyGame: () => game.destroy(true),
     snapshot: () => createBrowserHarnessSnapshot(game),
     waitForRender: () => new Promise<void>((resolve) => game.events.once(Phaser.Core.Events.POST_RENDER, resolve)),
-    setAudioResumeRequestsEnabled: (enabled: boolean) => {
-      if (!enabled && !originalAudioResume) {
-        originalAudioResume = harnessAudioContextManager.resume;
-        harnessAudioContextManager.resume = (): void => undefined;
-      } else if (enabled && originalAudioResume) {
-        harnessAudioContextManager.resume = originalAudioResume;
-        originalAudioResume = null;
-      }
-    },
     suspendAudioContextForPolicyTest: async () => {
       const context = harnessAudioContextManager.getCtx();
       if (!context || context.state === 'closed') throw new Error('Browser harness audio context is unavailable');
@@ -59,15 +40,9 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
       }
       if (context.state === 'running') await context.suspend();
     },
-    probeFramePacing: (sampleCount, options) => performanceProbes.probeFramePacing(sampleCount, options),
     ...gameplayProbes,
     ...createShipyardProbes(game),
-    ...createEffectsProbes(game),
     ...createProceduralBackgroundProbes(game),
-    showLaneReadingPilot: (glowEnabled = true, hazardType = 'ring-crossfire') =>
-      visualPilot.show(glowEnabled, hazardType),
-    finishLevelIntro: () => visualPilot.finishLevelIntro(),
-    measureLaneReadingPilotRenderCost: () => visualPilot.measureRenderCost(),
     ...navigation,
   };
   return Object.freeze(api);

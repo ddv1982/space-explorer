@@ -1,6 +1,6 @@
 # Documentation Map
 
-Start here when changing the game. Current contracts come first; release history and completed plans are reference material, not active instructions.
+Start here when changing the game. Release history lives in [`CHANGELOG.md`](../CHANGELOG.md); older plans and research notes are in git history.
 
 ## Current architecture
 
@@ -11,8 +11,7 @@ Start here when changing the game. Current contracts come first; release history
 
 ## Development and QA
 
-- [`qa/quality-gates.md`](./qa/quality-gates.md) — required local and CI checks.
-- [`qa/scene-flow-smoke-checklist.md`](./qa/scene-flow-smoke-checklist.md) — manual scene-flow evidence.
+- [`../README.md`](../README.md#development) lists the local commands and what CI runs.
 
 ## Common change paths
 
@@ -35,21 +34,9 @@ main
         → authored level configuration
 ```
 
-## Current remediation
+## Decisions
 
-- [Play feel and replayability](./plans/game-feel-replayability-2026-09-06.md). Active phased program beginning with local recording and a fresh-player baseline.
-
-- [Shipyard roster](./adr/0005-shipyard-roster.md). Every hull as a code-built, normal-mapped 3D sprite sheet: manifest, loading, logical dimensions and the render pipeline. Supersedes the [cinematic hull pilot](./adr/0003-cinematic-frontier-pilot.md).
-- [Procedural background research](./procedural-background-research-2026-09-05.md). Follow-up direction from pilot feedback: evolving Phaser atmosphere and generated landmarks alongside cinematic hulls.
-- [Living procedural backgrounds](./adr/0004-living-procedural-backgrounds.md). Implemented worlds, shader ownership, quality limits, and verification requirements.
-
-- [`plans/review-findings-remediation-2026-08-19.md`](./plans/review-findings-remediation-2026-08-19.md) — stacked remediation for the 2026-08 review findings. Phases 0-8 are on this branch. Phase 9 stays parked.
-
-## Historical material
-
-- [`plans/`](./plans/) contains dated implementation plans. Read their status header before treating one as current.
-- [`releases/`](./releases/) is the release archive.
-- Files named `*-research-notes.md` and phase-specific design documents preserve investigation context.
+- [`adr/`](./adr/) records the architecture decisions that still shape the code.
 
 ## Vocabulary
 

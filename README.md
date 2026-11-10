@@ -110,7 +110,7 @@ Some upgrades unlock later in the campaign and use progression caps so the run s
 - **Vite 8.1.5** — dev server and production build
 - **Bun 1.3.5** — package manager and script runner
 
-TypeScript 7 is the authoritative compiler for application and test type-checking. Until compiler-API consumers support TypeScript 7, the canonical `typescript` package temporarily remains on TypeScript 6 for ESLint; `@typescript/native` provides the TypeScript 7 compiler, and `bun run typecheck:ts6` provides the parity check. The scripts use explicit package paths so Bun cannot resolve the wrong compiler when both packages expose a `tsc` binary.
+TypeScript 7 (`@typescript/native`) type-checks the app and tests. The `typescript` package stays on TypeScript 6 only because ESLint still needs it. The scripts use explicit package paths so Bun cannot resolve the wrong compiler when both packages expose a `tsc` binary.
 
 Phaser is consumed through its package ESM export and the game requires WebGL. Browsers without WebGL receive an explicit unsupported-device message instead of a partial Canvas fallback.
 
@@ -184,19 +184,18 @@ src/
 ```bash
 bun run dev      # start local dev server
 bun run typecheck # type-check source, scripts, config, and tests
-bun run typecheck:ts6 # compare against the temporary TypeScript 6 compatibility compiler
 bun run test     # run unit/regression tests with per-file isolation
-bun run test:e2e # run desktop and touch-portrait browser regressions
-bun run test:performance # check normal cost and injected regression sensitivity
+bun run test:e2e # run the desktop and touch-portrait browser smoke suite
 bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
 bun run knip     # unused-code analysis
 bun run levels:validate # config validation for level authoring
 bun run bundle:report   # report dist asset sizes after a build
-bun run bundle:check    # enforce bundle guardrail thresholds after a build
-bun run architecture:check # reject dependency cycles and report concentration growth
+bun run bundle:check    # enforce bundle size limits and keep dev diagnostics out of releases
 ```
+
+CI runs typecheck, lint, format, unit tests, level validation, knip, a dependency audit, the build with its bundle check, and the browser smoke suite on desktop and phone viewports.
 
 Visual quality offers Low, Standard, High, and Auto. Auto starts with the High
 presentation and adapts nonessential effects only after sustained frame-delivery
@@ -215,21 +214,18 @@ The level shortcut runs once per page load. Returning to the main menu stays in 
 
 All ten campaign levels use evolving procedural atmosphere and generated landmarks, with a distinct composition for each world. Their expensive shader work runs in a bounded texture; Low and reduced-motion settings retain a stable composition. Cinematic hulls remain separate from the background renderer. See [the background contract](docs/adr/0004-living-procedural-backgrounds.md).
 
-For development comparisons, append `&atmosphere=live` to compare live noise calculation against cached-field sampling. Reload between comparisons. `bun run backgrounds:compare` captures serial rendering evidence against the dev server on port 4173.
+For development comparisons, append `&atmosphere=live` to compare live noise calculation against cached-field sampling. Reload between comparisons.
 
 ## Docs
 
 - [`docs/README.md`](docs/README.md) — current documentation map and common change paths
 - [`docs/architecture-guidelines.md`](docs/architecture-guidelines.md) — scene/system boundaries and coding rules
-- [`docs/qa/quality-gates.md`](docs/qa/quality-gates.md) — local and CI validation gates
 - [`docs/procedural-music-system.md`](docs/procedural-music-system.md) — procedural music architecture, authoring contract, and deterministic QA workflow
-- [`docs/campaign-expansion-plan.md`](docs/campaign-expansion-plan.md) — historical expansion plan and design-reference notes
 
 ## Release notes
 
 - [Changelog](CHANGELOG.md)
-- [Latest release notes](docs/releases/1.23.0.md)
-- [Release archive](docs/releases/README.md)
+- [GitHub releases](https://github.com/ddv1982/space-explorer/releases)
 
 ## Acknowledgements
 

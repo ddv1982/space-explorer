@@ -9,24 +9,18 @@
   "scripts": {
     "dev": "vite",
     "art:shipyard": "bun scripts/shipyard/renderShips.ts",
-    "backgrounds:compare": "bun scripts/compareProceduralBackgrounds.ts",
     "test": "bun scripts/run-tests.ts",
     "typecheck": "node ./node_modules/@typescript/native/bin/tsc -p tsconfig.json && node ./node_modules/@typescript/native/bin/tsc -p tsconfig.test.json",
-    "typecheck:ts6": "node ./node_modules/typescript/bin/tsc --stableTypeOrdering -p tsconfig.json && node ./node_modules/typescript/bin/tsc --stableTypeOrdering -p tsconfig.test.json",
     "build": "node ./node_modules/@typescript/native/bin/tsc -p tsconfig.json && vite build",
     "bundle:report": "bun scripts/bundle-report.ts",
     "bundle:check": "bun scripts/bundle-report.ts --check",
-    "architecture:check": "bun scripts/checkArchitecture.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "knip": "knip",
     "levels:validate": "bun scripts/validateLevels.ts",
-    "backgrounds:record": "bun scripts/recordLivingBackgrounds.ts",
-    "test:e2e:game-feel": "GAME_FEEL_EVIDENCE_PORT=4180 playwright test --project=chromium-desktop-game-feel --project=chromium-mobile-game-feel --project=chromium-portrait-game-feel --workers=1",
-    "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile",
-    "test:performance": "playwright test --project=chromium-performance --workers=1"
+    "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile"
   },
   "knip": {
     "entry": [
