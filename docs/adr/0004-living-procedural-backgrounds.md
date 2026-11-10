@@ -42,4 +42,4 @@ The cached/live comparison measured nearly identical costs in the available Swif
 
 Developer comparisons require a reload: `?atmosphere=live` selects the live noise calculation. (The earlier `?background=legacy` comparison and its texture generator were deleted outright in the v2 overhaul.) These are not player-facing quality settings and are removed as executable URL checks from production builds.
 
-Generated captures and measurements go to the ignored `output/campaign-backgrounds` folder. `bun run backgrounds:compare` reproduces the sampling comparison with the dev server on port 4173. `bun run backgrounds:record` records all ten worlds in desktop and portrait gameplay.
+Generated captures and measurements go to the ignored `output/campaign-backgrounds` folder. The `backgrounds:compare` and `backgrounds:record` capture scripts were retired in v1.25.0.
