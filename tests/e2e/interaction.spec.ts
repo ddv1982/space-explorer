@@ -1,17 +1,16 @@
 import { expect, openMenu, openMenuSettings, snapshot, startNewRun, test, waitForScene } from './fixtures';
 
-test('visual quality is selectable, responsive, and persists without a URL setting', async ({
-  page,
-  assertNoBrowserErrors,
-}) => {
-  test.setTimeout(120_000);
-  const viewports = [
-    { width: 1280, height: 720 },
-    { width: 390, height: 844 },
-    { width: 844, height: 390 },
-  ];
-
-  for (const viewport of viewports) {
+// Check settings persistence from a fresh default state in each responsive profile.
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 390, height: 844 },
+  { width: 844, height: 390 },
+]) {
+  test(`visual quality is selectable and persists at ${viewport.width}x${viewport.height}`, async ({
+    page,
+    assertNoBrowserErrors,
+  }) => {
+    test.setTimeout(120_000);
     await page.setViewportSize(viewport);
     await openMenu(page);
     await openMenuSettings(page);
@@ -49,10 +48,9 @@ test('visual quality is selectable, responsive, and persists without a URL setti
     await page.evaluate(() => window.localStorage.removeItem('space-explorer.gameplayDifficulty.v1'));
     await page.reload();
     await waitForScene(page, 'Menu');
-  }
-
-  assertNoBrowserErrors();
-});
+    assertNoBrowserErrors();
+  });
+}
 
 test('resizes, pauses, resumes, restores visibility, and lazy-routes scenes', async ({
   page,

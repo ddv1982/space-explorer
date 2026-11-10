@@ -80,6 +80,7 @@ export interface BrowserHarnessApi
   gameFeel: ReturnType<typeof createGameFeelProbes>;
   destroyGame: () => void;
   snapshot: () => BrowserHarnessSnapshot;
+  waitForRender: () => Promise<void>;
   probeArcadeOverlap: () => Promise<boolean>;
   probeAcceptedPlayerDamage: (amount?: number) => { beforeHp: number; afterHp: number; damage: number };
   setAudioResumeRequestsEnabled: (enabled: boolean) => void;

@@ -67,14 +67,19 @@ export async function openMenu(page: Page): Promise<void> {
 /** Opens the command deck's settings sheet (difficulty, quality, audio) from its footer button. */
 export async function openMenuSettings(page: Page): Promise<void> {
   const menu = await snapshot(page);
-  const button = menu.texts.find((item) => item.text === 'SETTINGS');
+  const button = menu.texts.find((item) => item.text === 'SETTINGS' && item.shown);
   expect(button).toBeDefined();
   await page.mouse.click(button?.x ?? 0, button?.y ?? 0);
   await expect
     .poll(() =>
-      page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.snapshot().texts.some((t) => t.text === 'DONE'))
+      page.evaluate(() =>
+        window.__SPACE_EXPLORER_BROWSER_HARNESS__?.snapshot().texts.some((t) => t.text === 'DONE' && t.shown)
+      )
     )
     .toBe(true);
+  // Phaser sorts pointer targets against the camera's last render list. Visible model state alone
+  // is too early: a fast second click can still select the home view beneath the new modal.
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.waitForRender());
 }
 
 export async function startNewRun(page: Page): Promise<void> {
