@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
-import { ensurePowerUpTextures } from '../utils/SpriteFactory';
+import { ensurePowerUpTextures, POWER_UP_BODY_SIZE } from '../utils/SpriteFactory';
+import { prefersReducedMotion } from '../scenes/shared/neonUiTheme';
 
 export type PowerUpType = 'health' | 'shield' | 'rapidfire';
 
@@ -31,6 +32,7 @@ export function resolvePowerUpOverlap(...values: unknown[]): PowerUp | null {
 export class PowerUp extends Phaser.Physics.Arcade.Sprite {
   powerUpType: PowerUpType = 'health';
   private bobTime: number = 0;
+  private pulses = true;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePowerUpTextures(scene);
@@ -39,8 +41,11 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
+    // The texture carries a halo wider than the pickup; the hitbox stays the original orb.
+    (this.body as Phaser.Physics.Arcade.Body | null)?.setSize(POWER_UP_BODY_SIZE, POWER_UP_BODY_SIZE);
     despawnEntity(this);
     this.setDepth(4);
+    this.pulses = !prefersReducedMotion();
   }
 
   spawn(x: number, y: number, type: PowerUpType): void {
@@ -49,6 +54,7 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     spawnEntity(this, x, y);
     this.setVelocityY(60);
     this.bobTime = 0;
+    this.setAlpha(1);
   }
 
   preUpdate(time: number, delta: number): void {
@@ -62,6 +68,7 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     // Gentle bobbing motion
     this.bobTime += delta;
     this.x += Math.sin(this.bobTime * 0.005) * 0.3 * (delta / (1000 / 60));
+    if (this.pulses) this.setAlpha(0.86 + Math.sin(this.bobTime * 0.008) * 0.14);
 
     // Go off screen
     if (this.y > this.scene.scale.gameSize.height + 30) {

@@ -23,7 +23,13 @@ type StubGraphics = {
   fillRoundedRect: (_x: number, _y: number, _width: number, _height: number, _radius: number) => void;
   lineStyle: (_width: number, _color: number, _alpha: number) => void;
   strokeRoundedRect: (_x: number, _y: number, _width: number, _height: number, _radius: number) => void;
-  lineBetween: (_x1: number, _y1: number, _x2: number, _y2: number) => void;
+  fillRect: (_x: number, _y: number, _width: number, _height: number) => void;
+  beginPath: () => void;
+  moveTo: (_x: number, _y: number) => void;
+  lineTo: (_x: number, _y: number) => void;
+  closePath: () => void;
+  fillPath: () => void;
+  strokePath: () => void;
   setDepth: (_depth: number) => void;
   setVisible: (visible: boolean) => void;
   destroy: () => void;
@@ -39,7 +45,9 @@ type StubButton = {
   destroy: () => void;
 };
 
-mock.module('phaser', () => ({ default: {} }));
+mock.module('phaser', () => ({
+  default: { Math: { Clamp: (value: number, min: number, max: number) => Math.min(max, Math.max(min, value)) } },
+}));
 mock.module('../src/systems/AudioManager', () => ({
   audioManager: {
     getMusicRuntimeTuning: () => ({ creativity: 0.5, energy: 0.5, ambience: 0.5 }),
@@ -135,9 +143,13 @@ function createGraphics(): StubGraphics {
     strokeRoundedRect() {
       // no-op for this test
     },
-    lineBetween() {
-      // no-op for this test
-    },
+    fillRect() {},
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    closePath() {},
+    fillPath() {},
+    strokePath() {},
     setDepth() {
       // no-op for this test
     },
@@ -161,64 +173,91 @@ function createScene(): {
   };
 }
 
-describe('pauseOverlay controls ultra-compact row behavior', () => {
-  test('hides subtitle and saved-at metadata in ultra-compact rows', () => {
-    const rows = createPauseSaveSlotRows(createScene() as never, {
-      onSaveSlot: () => undefined,
-      onLoadSlot: () => undefined,
-      onDeleteSlot: () => undefined,
-    });
+const handlers = { onSaveSlot: () => undefined, onLoadSlot: () => undefined, onDeleteSlot: () => undefined };
 
-    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 300, height: 38 }]);
+function occupiedState(overrides: { title?: string; subtitle?: string; savedAtLabel?: string } = {}) {
+  return {
+    visible: true,
+    canResume: true,
+    canSave: true,
+    storageAvailable: true,
+    statusMessage: '',
+    saveSlots: [
+      {
+        id: 'slot-1' as const,
+        index: 1,
+        occupied: true,
+        title: 'SLOT 1 — AURORA THRESHOLD',
+        subtitle: 'LVL 1 • SCORE 0 • 3 LIVES',
+        savedAtLabel: '2026-04-27 12:34',
+        ...overrides,
+      },
+    ],
+  };
+}
+
+describe('pauseOverlay slot cards', () => {
+  test('a very short card keeps only its title line', () => {
+    const rows = createPauseSaveSlotRows(createScene() as never, handlers);
+
+    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 420, height: 38 }]);
+    setPauseSaveSlotRowsState(rows, occupiedState());
     setPauseSaveSlotRowsVisible(rows, true);
 
-    expect(rows.rows[0]?.subtitle.visible).toBe(false);
-    expect(rows.rows[0]?.savedAt.visible).toBe(false);
     expect(rows.rows[0]?.title.visible).toBe(true);
+    expect(rows.rows[0]?.subtitle.visible).toBe(false);
   });
 
-  test('keeps subtitle and saved-at metadata visible in compact non-ultra rows', () => {
-    const rows = createPauseSaveSlotRows(createScene() as never, {
-      onSaveSlot: () => undefined,
-      onLoadSlot: () => undefined,
-      onDeleteSlot: () => undefined,
-    });
+  test('a compact card shows the run summary under its title', () => {
+    const rows = createPauseSaveSlotRows(createScene() as never, handlers);
 
-    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 300, height: 44 }]);
+    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 420, height: 44 }]);
+    setPauseSaveSlotRowsState(rows, occupiedState());
     setPauseSaveSlotRowsVisible(rows, true);
 
+    expect(rows.rows[0]?.title.visible).toBe(true);
     expect(rows.rows[0]?.subtitle.visible).toBe(true);
-    expect(rows.rows[0]?.savedAt.visible).toBe(true);
   });
 
-  test('truncates long slot title/subtitle/saved-at text to stay within compact row text bands', () => {
-    const rows = createPauseSaveSlotRows(createScene() as never, {
-      onSaveSlot: () => undefined,
-      onLoadSlot: () => undefined,
-      onDeleteSlot: () => undefined,
-    });
+  test('the timestamp appears only on occupied cards with room for it', () => {
+    const rows = createPauseSaveSlotRows(createScene() as never, handlers);
 
-    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 300, height: 44 }]);
-    setPauseSaveSlotRowsState(rows, {
-      visible: true,
-      canResume: true,
-      canSave: true,
-      storageAvailable: true,
-      statusMessage: '',
-      saveSlots: [
-        {
-          id: 'slot-1',
-          index: 1,
-          occupied: true,
-          title: 'SLOT 1 - THE EXTREMELY LONG CAMPAIGN LABEL THAT SHOULD BE CLIPPED',
-          subtitle: 'VERY LONG SUBTITLE THAT SHOULD NOT FLOW INTO BUTTONS',
-          savedAtLabel: '2026-04-27 12:34:56 UTC EXTENDED FORMAT',
-        },
-      ],
-    });
+    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 620, height: 60 }]);
+    setPauseSaveSlotRowsVisible(rows, true);
+    expect(rows.rows[0]?.savedAt.visible).toBe(false);
+
+    setPauseSaveSlotRowsState(rows, occupiedState());
+    expect(rows.rows[0]?.savedAt.visible).toBe(true);
+    expect(rows.rows[0]?.savedAt.text).toBe('2026-04-27 12:34');
+
+    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 300, height: 60 }]);
+    expect(rows.rows[0]?.savedAt.visible).toBe(false);
+  });
+
+  test('hidden cards stay hidden when their state changes', () => {
+    const rows = createPauseSaveSlotRows(createScene() as never, handlers);
+
+    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 620, height: 60 }]);
+    setPauseSaveSlotRowsVisible(rows, false);
+    setPauseSaveSlotRowsState(rows, occupiedState());
+
+    expect(rows.rows[0]?.title.visible).toBe(false);
+    expect(rows.rows[0]?.savedAt.visible).toBe(false);
+  });
+
+  test('truncates long card text so it never runs under the buttons', () => {
+    const rows = createPauseSaveSlotRows(createScene() as never, handlers);
+
+    setPauseSaveSlotRowsPosition(rows, [{ x: 0, y: 0, width: 420, height: 44 }]);
+    setPauseSaveSlotRowsState(
+      rows,
+      occupiedState({
+        title: 'SLOT 1 - THE EXTREMELY LONG CAMPAIGN LABEL THAT SHOULD BE CLIPPED',
+        subtitle: 'VERY LONG SUBTITLE THAT SHOULD NOT FLOW INTO BUTTONS',
+      })
+    );
 
     expect(rows.rows[0]?.title.text.endsWith('…')).toBe(true);
     expect(rows.rows[0]?.subtitle.text.endsWith('…')).toBe(true);
-    expect(rows.rows[0]?.savedAt.text.endsWith('…')).toBe(true);
   });
 });

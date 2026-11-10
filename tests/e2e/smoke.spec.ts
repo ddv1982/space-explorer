@@ -1,24 +1,20 @@
 import { expect, openMenu, snapshot, test, waitForScene } from './fixtures';
 
 function expectMenuTitleLockup(menu: Awaited<ReturnType<typeof snapshot>>): void {
-  const title = menu.texts
-    .filter((item) => item.text === 'SPACE EXPLORER')
-    .sort((left, right) => right.width - left.width)[0];
-  const eyebrow = menu.texts.find((item) => item.text === 'COMMAND DECK');
-  const subtitle = menu.texts.find((item) => item.text === 'Choose a run and launch.');
+  const title = menu.texts.find((item) => item.text === 'SPACE EXPLORER');
+  const kicker = menu.texts.find((item) => item.text === 'COMMAND DECK');
+  const tagline = menu.texts.find((item) => item.text === 'TEN HOSTILE SECTORS. ONE SHIP.');
 
   expect(title).toBeDefined();
-  expect(subtitle).toBeDefined();
+  expect(tagline).toBeDefined();
   expect((title?.x ?? 0) - (title?.width ?? 0) / 2).toBeGreaterThanOrEqual(0);
   expect((title?.x ?? 0) + (title?.width ?? 0) / 2).toBeLessThanOrEqual(menu.gameSize.width);
-  if (eyebrow) {
-    const eyebrowBottom = eyebrow.y + eyebrow.height / 2;
-    const titleTop = (title?.y ?? 0) - (title?.height ?? 0) / 2;
-    expect(titleTop - eyebrowBottom).toBeGreaterThanOrEqual(4);
-  }
-  const titleBottom = (title?.y ?? 0) + (title?.height ?? 0) / 2;
-  const subtitleTop = (subtitle?.y ?? 0) - (subtitle?.height ?? 0) / 2;
-  expect(subtitleTop - titleBottom).toBeGreaterThanOrEqual(4);
+  // The title's bounds include the padding its glow is drawn into, so the lockup is checked by
+  // order and by the kicker and tagline staying clear of each other, not by touching edges.
+  const titleY = title?.y ?? 0;
+  if (kicker) expect(kicker.y + kicker.height / 2).toBeLessThan(titleY);
+  expect((tagline?.y ?? 0) - (tagline?.height ?? 0) / 2).toBeGreaterThan(titleY);
+  expect((tagline?.y ?? 0) + (tagline?.height ?? 0) / 2).toBeLessThanOrEqual(menu.gameSize.height);
 }
 
 test('boots once, enters gameplay, and exercises real rendering and Arcade bodies', async ({

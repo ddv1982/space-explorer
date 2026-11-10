@@ -1,273 +1,197 @@
-import Phaser from 'phaser';
-import { UI_FONT_MONO } from '../../utils/uiFonts';
-import { drawNeonFrame } from '../../scenes/shared/neonUiTheme';
-import { type HudLayoutMetrics, HP_BAR_TRACK_OFFSET, SURGE_BAR_HEIGHT } from './statusBarLayout';
+import type Phaser from 'phaser';
+import { NEON, NEON_FONT, NEON_TEXT, neonLabelStyle, neonReadoutStyle } from '../../scenes/shared/neonUiTheme';
+import { getVisualQualityProfile } from '../../config/visualQuality';
+import { renderProgressTrack, renderSurgeTrack } from './meterRenderers';
+import { RESERVE_ICON_HEIGHT, type HudLayoutMetrics } from './statusBarLayout';
 
 interface CreateHudWidgetsParams {
   scene: Phaser.Scene;
-  labelStyle: Phaser.Types.GameObjects.Text.TextStyle;
-  valueStyle: Phaser.Types.GameObjects.Text.TextStyle;
+  labelColor: string;
   sectorColor: string;
 }
 
 export interface HudWidgets {
-  topBarPanel: Phaser.GameObjects.Graphics;
-  hpBarBg: Phaser.GameObjects.Graphics;
-  hpBarFill: Phaser.GameObjects.Graphics;
-  hpLabel: Phaser.GameObjects.Text;
+  plates: Phaser.GameObjects.Graphics;
+  hullLabel: Phaser.GameObjects.Text;
   hpText: Phaser.GameObjects.Text;
-  livesLabel: Phaser.GameObjects.Text;
-  livesText: Phaser.GameObjects.Text;
+  hullCells: Phaser.GameObjects.Graphics;
+  shieldPips: Phaser.GameObjects.Graphics;
+  surgeTrack: Phaser.GameObjects.Graphics;
+  surgeFill: Phaser.GameObjects.Graphics;
+  reserveLabel: Phaser.GameObjects.Text;
+  reserveIcons: Phaser.GameObjects.Graphics;
+  scoreLabel: Phaser.GameObjects.Text;
   scoreText: Phaser.GameObjects.Text;
   sectorText: Phaser.GameObjects.Text;
   levelText: Phaser.GameObjects.Text;
-  progressBg: Phaser.GameObjects.Graphics;
+  progressTrack: Phaser.GameObjects.Graphics;
   progressFill: Phaser.GameObjects.Graphics;
-  progressLabel: Phaser.GameObjects.Text;
   bossBarBg: Phaser.GameObjects.Graphics;
   bossBarFill: Phaser.GameObjects.Graphics;
   bossNameText: Phaser.GameObjects.Text;
+  announcementRule: Phaser.GameObjects.Graphics;
   announcementText: Phaser.GameObjects.Text;
+  chainBadge: Phaser.GameObjects.Graphics;
   chainText: Phaser.GameObjects.Text;
-  surgeBg: Phaser.GameObjects.Graphics;
-  surgeFill: Phaser.GameObjects.Graphics;
 }
 
-export function createHudWidgets({ scene, labelStyle, valueStyle, sectorColor }: CreateHudWidgetsParams): HudWidgets {
-  const topBarPanel = scene.add.graphics().setDepth(99);
-  const hpBarBg = scene.add.graphics().setDepth(100);
-  const hpBarFill = scene.add.graphics().setDepth(101);
-  const hpLabel = scene.add.text(0, 0, 'HULL', labelStyle).setDepth(100);
-  const hpText = scene.add.text(0, 0, '', valueStyle).setDepth(100);
-  const livesLabel = scene.add.text(0, 0, 'RES', labelStyle).setDepth(100);
-  const livesText = scene.add
-    .text(0, 0, '', {
-      fontSize: '14px',
-      color: '#ffffff',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-      stroke: '#040b12',
-      strokeThickness: 2,
-    })
-    .setDepth(100);
+/** Room the announcement title keeps around its letters so the glow is never clipped. */
+export const ANNOUNCEMENT_GLOW_PADDING = 18;
 
-  const scoreText = scene.add
-    .text(0, 0, '0', {
-      fontSize: '18px',
-      color: '#ffffff',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-      stroke: '#040b12',
-      strokeThickness: 2,
-    })
-    .setOrigin(1, 0)
-    .setDepth(100);
+/** Dark outline that keeps HUD text legible over bright scenery and explosions. */
+const OUTLINE = { stroke: '#030a14', strokeThickness: 3 } as const;
+
+export function createHudWidgets({ scene, labelColor, sectorColor }: CreateHudWidgetsParams): HudWidgets {
+  const label = (text: string, style: Phaser.Types.GameObjects.Text.TextStyle): Phaser.GameObjects.Text =>
+    scene.add.text(0, 0, text, { ...style, ...OUTLINE }).setDepth(100);
+  const graphics = (depth: number): Phaser.GameObjects.Graphics => scene.add.graphics().setDepth(depth);
+
+  const plates = graphics(99);
+  const hullLabel = label('HULL', neonLabelStyle(12, labelColor));
+  const hpText = label('', neonReadoutStyle(12, NEON_TEXT.primary));
+  const hullCells = graphics(100);
+  const shieldPips = graphics(100);
+  const surgeTrack = graphics(100);
+  const surgeFill = graphics(101);
+  const reserveLabel = label('RES', neonLabelStyle(11, labelColor));
+  const reserveIcons = graphics(100);
+
+  const scoreLabel = label('SCORE', neonLabelStyle(11, NEON_TEXT.gold)).setOrigin(1, 0);
+  const scoreText = label('0', neonReadoutStyle(24)).setOrigin(1, 0);
   scoreText.setLetterSpacing(1.5);
+  const sectorText = label('', neonLabelStyle(11, sectorColor));
+  const levelText = label('', neonLabelStyle(13, NEON_TEXT.primary, 0.6)).setOrigin(1, 0);
 
-  const sectorText = scene.add
-    .text(0, 0, '', {
-      fontSize: '10px',
-      color: sectorColor,
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-      stroke: '#040b12',
-      strokeThickness: 2,
-    })
-    .setOrigin(1, 0)
-    .setDepth(100);
-  sectorText.setLetterSpacing(1.5);
+  const progressTrack = graphics(100);
+  const progressFill = graphics(101);
 
-  const levelText = scene.add
-    .text(0, 0, '', {
-      fontSize: '13px',
-      color: '#eefaff',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-      stroke: '#040b12',
-      strokeThickness: 2,
-    })
-    .setOrigin(1, 0)
-    .setDepth(100);
-  levelText.setLetterSpacing(0.5);
-
-  const progressBg = scene.add.graphics().setDepth(100);
-  const progressFill = scene.add.graphics().setDepth(101);
-  const progressLabel = scene.add
-    .text(0, 0, 'FLIGHT VECTOR', {
-      fontSize: '9px',
-      color: sectorColor,
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-      stroke: '#040b12',
-      strokeThickness: 2,
-    })
-    .setOrigin(0.5, 0)
-    .setDepth(100);
-  progressLabel.setLetterSpacing(1.4);
-  const announcementText = scene.add
-    .text(0, 0, '', {
-      fontSize: '28px',
-      color: '#ffffff',
-      fontFamily: UI_FONT_MONO,
-      fontStyle: 'bold',
-      stroke: '#040b12',
-      strokeThickness: 4,
-    })
-    .setOrigin(0.5)
-    .setDepth(200)
-    .setAlpha(0);
-  const bossBarBg = scene.add.graphics().setDepth(100).setVisible(false);
-  const bossBarFill = scene.add.graphics().setDepth(101).setVisible(false);
+  const bossBarBg = graphics(100).setVisible(false);
+  const bossBarFill = graphics(101).setVisible(false);
   const bossNameText = scene.add
     .text(0, 0, 'BOSS', {
-      fontSize: '14px',
-      color: '#ff8c8c',
-      fontFamily: UI_FONT_MONO,
+      fontSize: '13px',
+      color: '#ffb1ac',
+      fontFamily: NEON_FONT.display,
       fontStyle: 'bold',
-      stroke: '#140406',
+      letterSpacing: 3,
+      stroke: '#14040a',
       strokeThickness: 3,
     })
     .setOrigin(0.5)
     .setDepth(100)
     .setVisible(false);
 
+  const announcementRule = graphics(200).setAlpha(0);
+  const announcementText = scene.add
+    .text(0, 0, '', {
+      fontSize: '30px',
+      color: NEON_TEXT.title,
+      fontFamily: NEON_FONT.display,
+      fontStyle: 'bold',
+      letterSpacing: 2,
+      padding: { x: ANNOUNCEMENT_GLOW_PADDING, y: ANNOUNCEMENT_GLOW_PADDING },
+      stroke: '#030a14',
+      strokeThickness: 4,
+    })
+    .setOrigin(0.5)
+    .setDepth(200)
+    .setAlpha(0);
+
+  const chainBadge = graphics(100);
   const chainText = scene.add
     .text(0, 0, '', {
       fontSize: '12px',
-      color: '#ffd76a',
-      fontFamily: UI_FONT_MONO,
+      color: NEON_TEXT.gold,
+      fontFamily: NEON_FONT.display,
       fontStyle: 'bold',
-      stroke: '#040b12',
-      strokeThickness: 2,
+      letterSpacing: 1,
     })
-    .setOrigin(1, 0)
-    .setDepth(100)
+    .setDepth(101)
     .setVisible(false);
-  chainText.setLetterSpacing(1.5);
-
-  const surgeBg = scene.add.graphics().setDepth(100);
-  const surgeFill = scene.add.graphics().setDepth(101);
 
   return {
-    topBarPanel,
-    hpBarBg,
-    hpBarFill,
-    hpLabel,
+    plates,
+    hullLabel,
     hpText,
-    livesLabel,
-    livesText,
+    hullCells,
+    shieldPips,
+    surgeTrack,
+    surgeFill,
+    reserveLabel,
+    reserveIcons,
+    scoreLabel,
     scoreText,
     sectorText,
     levelText,
-    progressBg,
+    progressTrack,
     progressFill,
-    progressLabel,
-    announcementText,
     bossBarBg,
     bossBarFill,
     bossNameText,
+    announcementRule,
+    announcementText,
+    chainBadge,
     chainText,
-    surgeBg,
-    surgeFill,
   };
 }
 
-interface HudLayoutStyle {
-  hpBarHeight: number;
-  progressHeight: number;
-  panelStrokeColor: number;
-  hpBorderColor: number;
-  progressBorderColor: number;
+/** Soft dark wash behind a corner cluster: enough to seat the instruments, not enough to hide ships under it. */
+function drawPlate(
+  graphics: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  accent: number,
+  accentOnRight: boolean
+): void {
+  graphics.fillStyle(NEON.panel, 0.36);
+  graphics.fillRect(x, y, width, height);
+  graphics.fillStyle(accent, 0.85);
+  graphics.fillRect(accentOnRight ? x + width - 2 : x, y, 2, height);
 }
 
-export function relayoutHudWidgets(
-  widgets: HudWidgets,
-  layout: HudLayoutMetrics,
-  { hpBarHeight, progressHeight, panelStrokeColor, hpBorderColor, progressBorderColor }: HudLayoutStyle
-): void {
-  const {
-    topBarPanel,
-    hpBarBg,
-    hpLabel,
-    hpText,
-    livesLabel,
-    livesText,
-    scoreText,
-    sectorText,
-    levelText,
-    progressBg,
-    progressLabel,
-    bossNameText,
-    chainText,
-    surgeBg,
-  } = widgets;
+/** Positions every static HUD element and repaints the parts that only change with the viewport. */
+export function relayoutHudWidgets(widgets: HudWidgets, layout: HudLayoutMetrics, accentColor: number): void {
+  const clusterTop = layout.hullLabelY - 5;
+  const hullClusterHeight = layout.reserveY + RESERVE_ICON_HEIGHT + 6 - clusterTop;
+  const scoreClusterWidth = layout.compact ? 126 : 148;
+  const scoreClusterBottom = layout.compact ? layout.levelY + 19 : layout.scoreY + 31;
 
-  topBarPanel.clear();
-  drawNeonFrame(topBarPanel, layout.left + 10, layout.top + 6, layout.topBarWidth, layout.topBarHeight, {
-    accentColor: panelStrokeColor,
-    fillAlpha: 0.58,
-    strokeAlpha: 0.42,
-    cornerCut: 10,
-    glow: true,
-  });
-  topBarPanel.fillStyle(panelStrokeColor, 0.08);
-  topBarPanel.fillRect(layout.left + 18, layout.top + 10, layout.topBarWidth - 16, 1);
-
-  hpLabel.setPosition(layout.hpBarX, layout.hpBarY - 2);
-
-  hpBarBg.clear();
-  hpBarBg.fillStyle(0x091521, 0.92);
-  hpBarBg.fillRoundedRect(
-    layout.hpBarX + HP_BAR_TRACK_OFFSET,
-    layout.hpBarY,
-    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
-    hpBarHeight,
-    3
-  );
-  hpBarBg.lineStyle(1, hpBorderColor, 0.35);
-  hpBarBg.strokeRoundedRect(
-    layout.hpBarX + HP_BAR_TRACK_OFFSET,
-    layout.hpBarY,
-    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
-    hpBarHeight,
-    3
-  );
-
-  hpText.setPosition(layout.hpBarX + layout.hpBarWidth + 6, layout.hpBarY);
-  livesLabel.setPosition(layout.hpBarX + layout.hpBarWidth + 6, layout.hpBarY + 24);
-  livesText.setPosition(layout.hpBarX + layout.hpBarWidth + 48, layout.hpBarY + 22);
-
-  scoreText.setPosition(layout.topBarRight, layout.hpBarY - 3);
-  sectorText.setPosition(layout.topBarRight, layout.hpBarY + 18);
-  levelText.setPosition(layout.topBarRight, layout.hpBarY + 30);
-  chainText.setPosition(layout.topBarRight, layout.hpBarY + 43);
-
-  surgeBg.clear();
-  surgeBg.fillStyle(0x08141f, 0.82);
-  surgeBg.fillRect(
-    layout.hpBarX + HP_BAR_TRACK_OFFSET,
-    layout.hpBarY + hpBarHeight + 5,
-    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
-    SURGE_BAR_HEIGHT
-  );
-  surgeBg.lineStyle(1, progressBorderColor, 0.3);
-  surgeBg.strokeRect(
-    layout.hpBarX + HP_BAR_TRACK_OFFSET,
-    layout.hpBarY + hpBarHeight + 5,
-    layout.hpBarWidth - HP_BAR_TRACK_OFFSET,
-    SURGE_BAR_HEIGHT
-  );
-
-  progressBg.clear();
-  progressBg.fillStyle(0x08141f, 0.82);
-  progressBg.fillRect(layout.progressX, layout.progressY, layout.progressWidth, progressHeight);
-  progressBg.lineStyle(1, progressBorderColor, 0.36);
-  progressBg.strokeRect(layout.progressX, layout.progressY, layout.progressWidth, progressHeight);
-  for (let index = 1; index < 10; index += 1) {
-    progressBg.fillStyle(progressBorderColor, 0.2);
-    progressBg.fillRect(layout.progressX + layout.progressWidth * (index / 10), layout.progressY, 1, progressHeight);
+  widgets.plates.clear();
+  if (getVisualQualityProfile().menuAtmosphere >= 2) {
+    drawPlate(
+      widgets.plates,
+      layout.hullX - 9,
+      clusterTop,
+      layout.hullWidth + 18,
+      hullClusterHeight,
+      accentColor,
+      false
+    );
+    drawPlate(
+      widgets.plates,
+      layout.scoreRight + 9 - scoreClusterWidth,
+      clusterTop,
+      scoreClusterWidth,
+      scoreClusterBottom - clusterTop,
+      accentColor,
+      true
+    );
   }
-  progressLabel.setPosition(layout.centerX, layout.progressLabelY);
 
-  bossNameText.setPosition(layout.centerX, layout.bossNameY);
+  widgets.hullLabel.setPosition(layout.hullX, layout.hullLabelY);
+  widgets.hpText.setPosition(layout.hullX + 42, layout.hullLabelY);
+  widgets.reserveLabel.setPosition(layout.hullX, layout.reserveY - 3);
+  renderSurgeTrack(widgets.surgeTrack, layout);
+
+  widgets.scoreLabel.setPosition(layout.scoreRight, layout.scoreLabelY).setVisible(!layout.compact);
+  widgets.scoreText.setFontSize(layout.compact ? 22 : 24).setPosition(layout.scoreRight, layout.scoreY);
+  widgets.sectorText.setOrigin(layout.sectorOriginX, 0).setPosition(layout.sectorX, layout.sectorY);
+  widgets.levelText.setPosition(layout.levelX, layout.levelY);
+  widgets.chainText.setOrigin(layout.chainOriginX, 0).setPosition(layout.chainX, layout.chainY);
+
+  renderProgressTrack(widgets.progressTrack, accentColor, layout);
+  widgets.bossNameText.setPosition(layout.centerX, layout.bossNameY);
+  widgets.announcementText.setFontSize(layout.compact ? 22 : 30);
 }

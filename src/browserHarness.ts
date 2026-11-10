@@ -1,4 +1,4 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import { createCombatPolishProbes } from './browserHarness/combatPolishProbes';
 import { createGameFeelProbes } from './browserHarness/gameFeelProbes';
 import { createShipyardProbes } from './browserHarness/shipyardProbes';
@@ -41,6 +41,7 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
     gameFeel: createGameFeelProbes(game),
     destroyGame: () => game.destroy(true),
     snapshot: () => createBrowserHarnessSnapshot(game),
+    waitForRender: () => new Promise<void>((resolve) => game.events.once(Phaser.Core.Events.POST_RENDER, resolve)),
     setAudioResumeRequestsEnabled: (enabled: boolean) => {
       if (!enabled && !originalAudioResume) {
         originalAudioResume = harnessAudioContextManager.resume;
@@ -65,6 +66,7 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
     ...createProceduralBackgroundProbes(game),
     showLaneReadingPilot: (glowEnabled = true, hazardType = 'ring-crossfire') =>
       visualPilot.show(glowEnabled, hazardType),
+    finishLevelIntro: () => visualPilot.finishLevelIntro(),
     measureLaneReadingPilotRenderCost: () => visualPilot.measureRenderCost(),
     ...navigation,
   };

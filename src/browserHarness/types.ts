@@ -80,6 +80,7 @@ export interface BrowserHarnessApi
   gameFeel: ReturnType<typeof createGameFeelProbes>;
   destroyGame: () => void;
   snapshot: () => BrowserHarnessSnapshot;
+  waitForRender: () => Promise<void>;
   probeArcadeOverlap: () => Promise<boolean>;
   probeAcceptedPlayerDamage: (amount?: number) => { beforeHp: number; afterHp: number; damage: number };
   setAudioResumeRequestsEnabled: (enabled: boolean) => void;
@@ -93,6 +94,7 @@ export interface BrowserHarnessApi
     hazardType?: 'ring-crossfire' | 'debris-surge'
   ) => BrowserHarnessVisualPilotEvidence;
   measureLaneReadingPilotRenderCost: () => Promise<BrowserHarnessVisualPilotMetrics>;
+  finishLevelIntro: () => void;
   showPlanetIntermission: (level: number) => Promise<{ level: number; planetName: string }>;
   route: (key: string) => Promise<void>;
 }

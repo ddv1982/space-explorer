@@ -79,11 +79,23 @@ Low uses a static 320px atmosphere target, Standard uses 480px, and High/Auto us
 
 ## UI
 
-- Existing neon UI theme (`neonUiTheme.ts`) is the standard: angled frames, dividers, layered glow titles. V2 command-deck chrome (menu, pause, game over, victory, intermission frame) shares that language and scales glow with `uiGlowStrength` / `menuAtmosphere`.
-- Typography: bundled display font (Orbitron) with system fallback stack; mono for numeric readouts.
-- Gameplay hierarchy: `HULL` and `RES` anchor the left status cluster, score/sector anchor the right, and the center `FLIGHT VECTOR` is a ten-segment continuous progress readout. The compact layout moves progress to the lower edge of the panel to avoid overlap at phone widths.
-- Main menu: the lit hero ship (an orbiting key light rolls highlights across its normal map) idles over a launch pad with scan rings, a planet horizon rises behind the run tiles and shooting stars cross the sky.
-- Game Over / Victory / Planet Intermission adopt the same frame + glow language; intermission planet bodies are the authored raster portraits (exception below), framed by the existing neon halo, orbit, route, and satellite chrome.
+The interface is one family, defined in `scenes/shared/neonUiTheme.ts` and `actionButtonControl.ts`:
+
+- **Shape.** Every panel, card and button is a rectangle with its top-left and bottom-right corners cut (`drawAngledRectPath`). `drawNeonFrame` paints the glass panel: a dark translucent body with a top sheen, a hairline outline, a bright accent rail along the top edge and a bracket on the cut bottom-right corner.
+- **One primary action per surface.** `primary` buttons are solid cyan with dark ink text; `secondary` and `danger` are ghost glass. A screen has exactly one solid button (NEW RUN, RESUME, RETRY, CONTINUE); a selected segment in a selector is also solid.
+- **Type.** Orbitron (`NEON_FONT.display`) for titles and card names; Rajdhani (`NEON_FONT.label`, via `neonLabelStyle`) for labels, buttons and body copy, uppercase and tracked, never below 12px on phones; Share Tech Mono (`NEON_FONT.mono`, via `neonReadoutStyle`) only for tabular numbers that change. All three are bundled woff2 files.
+- **Titles.** `addNeonTitle` is a single text object: letters cool from white toward the accent at the baseline over a canvas shadow glow. The glow pads the text bounds, so layout tests measure order and centres, not edge gaps.
+- **Colour roles.** Cyan is the player and the primary action, gold is score, credits and rewards, teal is success, red is danger. Glow strength scales with `uiGlowStrength` / `menuAtmosphere`.
+- **Words.** Screens state facts, not instructions: no sentence explains a button that is already labelled.
+
+Screens:
+
+- **Main menu**: kicker, glowing title and tagline over the lit hero ship (an orbiting key light rolls highlights across its normal map) on a launch pad with scan rings; NEW RUN is the primary button, save slots are a row of glass cards, SETTINGS is a ghost button, and a planet horizon rises behind them while shooting stars cross the sky. Short landscape phones use two columns.
+- **HUD**: two floating corner clusters and a flight-vector rail, no bar. Left: hull as one slanted cell per hull point (cyan → amber → red), surge bar, shield pips, reserve-ship icons. Right: score readout under a gold label, chain badge. The rail sits top-centre with the sector and level name on wide viewports and runs edge to edge above the clusters on phones. Meters redraw only when their value changes (`hud/meterRenderers.ts`).
+- **Announcements**: title cards in the display face with a glow in the event colour and a fading rule.
+- **Pause**: compact panel, CHECKPOINTS / SETTINGS tab strip, slot cards with ghost SAVE / LOAD and danger DEL, RESUME primary.
+- **Game Over / Victory**: full-screen compositions (red vignette and embers; gold rays and halo) with stat cells and a score count-up, from `shared/runSummaryPresentation.ts`. Reduced motion shows final values immediately.
+- **Planet intermission**: the authored raster portrait (exception below) over an atmosphere glow, with upgrade cards carrying an icon, effect line, level pips and a cost chip.
 
 ## Planet arrival portraits (approved raster exception)
 

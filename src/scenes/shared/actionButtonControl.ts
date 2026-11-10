@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
-import { drawAngledRectPath, drawCornerTicks, NEON, NEON_FONT } from './neonUiTheme';
+import { drawAngledRectPath, NEON, NEON_FONT, NEON_TEXT } from './neonUiTheme';
 
 type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'disabled';
 
@@ -30,42 +30,51 @@ interface CreateActionButtonConfig {
   fontSize?: string;
 }
 
-const BUTTON_PALETTE: Record<
-  Exclude<ActionButtonVariant, 'disabled'>,
-  {
-    background: number;
-    hoverBackground: number;
-    border: number;
-    hoverBorder: number;
-    glow: number;
-    text: string;
-  }
-> = {
+interface ButtonPalette {
+  fill: number;
+  fillAlpha: number;
+  hoverFill: number;
+  hoverFillAlpha: number;
+  border: number;
+  hoverBorder: number;
+  text: string;
+}
+
+/**
+ * Primary is the one solid, lit control on a surface; secondary and danger are ghost glass so they
+ * never compete with it.
+ */
+const BUTTON_PALETTE: Record<Exclude<ActionButtonVariant, 'disabled'>, ButtonPalette> = {
   primary: {
-    background: 0x061f42,
-    hoverBackground: 0x0b3f7d,
-    border: NEON.cyan,
-    hoverBorder: NEON.cyanBright,
-    glow: NEON.cyan,
-    text: '#f2fbff',
+    fill: NEON.cyan,
+    fillAlpha: 0.94,
+    hoverFill: NEON.cyanBright,
+    hoverFillAlpha: 1,
+    border: NEON.cyanBright,
+    hoverBorder: 0xffffff,
+    text: NEON_TEXT.ink,
   },
   secondary: {
-    background: 0x0a1730,
-    hoverBackground: 0x17275e,
-    border: NEON.purple,
+    fill: NEON.glass,
+    fillAlpha: 0.62,
+    hoverFill: 0x14365f,
+    hoverFillAlpha: 0.9,
+    border: 0x6fb4e0,
     hoverBorder: NEON.cyanBright,
-    glow: NEON.purple,
-    text: '#e2f3ff',
+    text: '#d9eeff',
   },
   danger: {
-    background: 0x32111a,
-    hoverBackground: 0x5a1f2a,
+    fill: 0x2c0f19,
+    fillAlpha: 0.7,
+    hoverFill: 0x5a1f2a,
+    hoverFillAlpha: 0.92,
     border: NEON.red,
     hoverBorder: 0xffc0bd,
-    glow: NEON.red,
-    text: '#fff4ef',
+    text: '#ffe1dc',
   },
 };
+
+const DISABLED_TEXT = '#7f8c9b';
 
 function drawButtonBackground(
   graphic: Phaser.GameObjects.Graphics,
@@ -77,44 +86,53 @@ function drawButtonBackground(
 ): void {
   graphic.clear();
 
-  const cornerCut = Math.min(8, Math.max(3, Math.min(width, height) * 0.08));
+  const cornerCut = Math.min(10, Math.max(4, Math.min(width, height) * 0.24));
 
   if (!enabled || variant === 'disabled') {
     drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
-    graphic.fillStyle(0x0a101a, 0.55);
+    graphic.fillStyle(0x0a101a, 0.5);
     graphic.fillPath();
     drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
-    graphic.lineStyle(1, 0x344556, 0.35);
+    graphic.lineStyle(1, 0x3a4c5e, 0.4);
     graphic.strokePath();
     return;
   }
 
   const palette = BUTTON_PALETTE[variant];
-  const background = hovered ? palette.hoverBackground : palette.background;
-  const border = hovered ? palette.hoverBorder : palette.border;
+  const solid = variant === 'primary';
 
-  if (hovered) {
-    drawAngledRectPath(graphic, -2, -2, width + 4, height + 4, cornerCut + 1);
-    graphic.lineStyle(2, palette.glow, scaleUiGlowAlpha(0.22));
+  if (hovered || solid) {
+    drawAngledRectPath(graphic, -2.5, -2.5, width + 5, height + 5, cornerCut + 1.25);
+    graphic.lineStyle(3, palette.border, scaleUiGlowAlpha(hovered ? 0.26 : 0.12));
     graphic.strokePath();
   }
 
   drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
-  graphic.fillStyle(background, hovered ? 0.9 : 0.74);
+  graphic.fillStyle(hovered ? palette.hoverFill : palette.fill, hovered ? palette.hoverFillAlpha : palette.fillAlpha);
   graphic.fillPath();
 
-  const inset = Math.min(3, Math.max(1.5, Math.min(width, height) * 0.06));
-  drawAngledRectPath(graphic, inset, inset, width - inset * 2, height - inset * 2, Math.max(0, cornerCut - inset));
-  graphic.lineStyle(1, border, hovered ? 0.28 : 0.14);
-  graphic.strokePath();
+  // The top of the key catches the light: two stacked bands soften the edge of the sheen.
+  for (const share of [0.5, 0.26]) {
+    graphic.fillStyle(0xffffff, solid ? 0.1 : 0.025);
+    graphic.beginPath();
+    graphic.moveTo(cornerCut, 0);
+    graphic.lineTo(width, 0);
+    graphic.lineTo(width, height * share);
+    graphic.lineTo(0, height * share);
+    graphic.lineTo(0, cornerCut);
+    graphic.closePath();
+    graphic.fillPath();
+  }
 
   drawAngledRectPath(graphic, 0, 0, width, height, cornerCut);
-  graphic.lineStyle(1, border, hovered ? 0.98 : 0.78);
+  graphic.lineStyle(1, hovered ? palette.hoverBorder : palette.border, hovered ? 1 : solid ? 0.9 : 0.55);
   graphic.strokePath();
+}
 
-  if (hovered) {
-    drawCornerTicks(graphic, 0, 0, width, height, palette.hoverBorder, scaleUiGlowAlpha(0.7));
-  }
+function inkButtonLabel(label: Phaser.GameObjects.Text, variant: ActionButtonVariant): void {
+  label.setColor(variant === 'disabled' ? DISABLED_TEXT : BUTTON_PALETTE[variant].text);
+  // Ink on a lit key gets a hairline of its own colour so gameplay bloom cannot wash small labels out.
+  label.setStroke(NEON_TEXT.ink, variant === 'primary' ? 0.8 : 0);
 }
 
 export function createActionButtonControl(scene: Phaser.Scene, config: CreateActionButtonConfig): ActionButtonControl {
@@ -129,9 +147,10 @@ export function createActionButtonControl(scene: Phaser.Scene, config: CreateAct
   const label = scene.add
     .text(0, 0, config.label, {
       fontSize: config.fontSize ?? '16px',
-      color: '#f7feff',
-      fontFamily: NEON_FONT.mono,
+      color: NEON_TEXT.primary,
+      fontFamily: NEON_FONT.label,
       fontStyle: 'bold',
+      letterSpacing: 1.5,
       align: 'center',
     })
     .setOrigin(0.5);
@@ -190,8 +209,7 @@ export function createActionButtonControl(scene: Phaser.Scene, config: CreateAct
   const redraw = (): void => {
     const enabledVariant = control.enabled ? variant : 'disabled';
     drawButtonBackground(background, width, height, enabledVariant, control.enabled, control.hovered);
-    const palette = enabledVariant === 'disabled' ? null : BUTTON_PALETTE[enabledVariant];
-    label.setColor(control.enabled && palette ? palette.text : '#9ba6b3');
+    inkButtonLabel(label, enabledVariant);
   };
 
   const refreshInteractiveState = (): void => {

@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { test as loaderTest } from '@playwright/test';
-import { expect, snapshot, test, waitForScene } from './fixtures';
+import { expect, pinQualityTier, snapshot, test, waitForScene } from './fixtures';
 
 const dimensions = {
   'player-ship': [36, 44, 24, 32],
@@ -14,6 +14,9 @@ test('shipyard ships retain their logical geometry during real combat', async ({
   test.setTimeout(process.env.CI ? 180_000 : 60_000);
   const mobile = test.info().project.name.includes('mobile');
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 });
+  // Geometry and combat progression need delivered gameplay frames, not normal-map lighting.
+  // v2Lighting.spec.ts separately verifies standard-tier rendering with real pixel assertions.
+  await pinQualityTier(page, 'low');
   await page.goto('/?browserHarness=1&startLevel=1&upgrades=0');
   await waitForScene(page, 'Game');
   await page.evaluate(() => {
@@ -70,6 +73,8 @@ test('shipyard frames survive pooling, boss phases, respawn, resize, and level h
   assertNoBrowserErrors,
 }) => {
   test.setTimeout(process.env.CI ? 180_000 : 90_000);
+  // Exercise the real respawn timer without paying for lighting unrelated to sprite lifecycle.
+  await pinQualityTier(page, 'low');
   await page.goto('/?browserHarness=1&startLevel=1&upgrades=0');
   await waitForScene(page, 'Game');
   const reuse = await page.evaluate(() => {

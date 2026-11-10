@@ -8,7 +8,7 @@ import {
   setMusicSliderClusterVisible,
   type MusicSliderCluster,
 } from './musicSliderCluster';
-import { createTierSelectorControl, type TierSelectorControl } from './tierSelectorControl';
+import { createTierSelectorControl, type TierSelectorControl, type TierSelectorLayout } from './tierSelectorControl';
 
 export interface SettingsPanelLayout {
   x: number;
@@ -31,6 +31,10 @@ export interface SettingsPanel {
   destroy: () => void;
 }
 
+function tierRowLayout(layout: SettingsPanelLayout, y: number): TierSelectorLayout {
+  return { x: layout.x, y, width: layout.width, height: layout.tierHeight, compact: layout.compact };
+}
+
 export function createSettingsPanel(
   scene: Phaser.Scene,
   config: {
@@ -50,26 +54,15 @@ export function createSettingsPanel(
     label: 'DIFFICULTY',
     tiers: ['low', 'normal', 'high'],
     value: config.difficulty,
-    layout: {
-      x: config.layout.x,
-      y: config.layout.difficultyY,
-      width: config.layout.width,
-      height: config.layout.tierHeight,
-      compact: config.layout.compact,
-    },
+    layout: tierRowLayout(config.layout, config.layout.difficultyY),
     onSelect: config.onSelectDifficulty,
   });
   const quality: TierSelectorControl<VisualQualityTier> = createTierSelectorControl(scene, {
     label: 'QUALITY',
     tiers: ['low', 'standard', 'high', 'auto'],
+    shortLabels: { standard: 'STD' },
     value: config.quality,
-    layout: {
-      x: config.layout.x,
-      y: config.layout.qualityY,
-      width: config.layout.width,
-      height: config.layout.tierHeight,
-      compact: config.layout.compact,
-    },
+    layout: tierRowLayout(config.layout, config.layout.qualityY),
     onSelect: config.onSelectQuality,
   });
   const createSliders = (): MusicSliderCluster =>
@@ -91,20 +84,8 @@ export function createSettingsPanel(
       sliders?.[key].setValue(value);
     },
     setLayout(layout) {
-      difficulty.setLayout({
-        x: layout.x,
-        y: layout.difficultyY,
-        width: layout.width,
-        height: layout.tierHeight,
-        compact: layout.compact,
-      });
-      quality.setLayout({
-        x: layout.x,
-        y: layout.qualityY,
-        width: layout.width,
-        height: layout.tierHeight,
-        compact: layout.compact,
-      });
+      difficulty.setLayout(tierRowLayout(layout, layout.difficultyY));
+      quality.setLayout(tierRowLayout(layout, layout.qualityY));
       const nextSliderWidth = layout.sliderWidth ?? layout.width;
       if (nextSliderWidth !== sliderWidth) {
         destroyMusicSliderCluster(sliders);

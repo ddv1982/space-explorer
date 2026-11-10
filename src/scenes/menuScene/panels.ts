@@ -1,20 +1,29 @@
 import Phaser from 'phaser';
 import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
-import { createActionButtonControl, type ActionButtonControl } from '../shared/actionButtonControl';
-import { getVisualQualityProfile } from '../../config/visualQuality';
+import { PARTICLE, generateEffectsParticleTextures } from '../../systems/effects/particleTextureFactory';
+import { isTouchMobileDevice } from '../../utils/device';
+import { withCanvasTexture } from '../../utils/generatedTexture';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
+import { createActionButtonControl } from '../shared/actionButtonControl';
 import {
   addNeonTitle,
-  drawNeonDivider,
-  drawNeonFrame,
   fitNeonTitleFontSize,
   NEON,
-  NEON_FONT,
   NEON_TEXT,
+  neonLabelStyle,
+  prefersReducedMotion,
 } from '../shared/neonUiTheme';
 import { setSingleLineTextWithEllipsis } from '../shared/textFit';
 import { MIN_TOUCH_TARGET_PX } from '../shared/touchTarget';
 import type { MenuLayoutPlan } from './layout';
+
+const MENU_TAGLINE = 'TEN HOSTILE SECTORS. ONE SHIP.';
+
+const SCRIM_KEY = 'menu-scrim';
+const SCRIM_HEIGHT = 256;
+const CARD_PADDING_X = 16;
+const DELETE_BUTTON_WIDTH = 44;
+const DELETE_BUTTON_HEIGHT = 26;
 
 interface MenuSaveSlotHandlers {
   onNewRun: () => void;
@@ -28,299 +37,247 @@ export interface MenuSaveSlotPanel {
   destroy: () => void;
 }
 
-export function createMenuBackdrop(scene: Phaser.Scene, plan: MenuLayoutPlan, accentColor: number): void {
-  const width = Number(scene.scale.width);
-  const height = Number(scene.scale.height);
-  const atmosphere = getVisualQualityProfile().menuAtmosphere;
-  const grid = scene.add.graphics();
-
-  // A light wash keeps panel text legible while the vista (stars, planet horizon) shows through.
-  grid.fillStyle(0x01040a, 0.22);
-  grid.fillRect(0, 0, width, height);
-  grid.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.045));
-  const scanStep = atmosphere >= 3 ? 22 : atmosphere >= 2 ? 28 : 36;
-  for (let y = 0; y < height; y += scanStep) {
-    grid.lineBetween(0, y, width, y);
-  }
-  for (let x = 0; x < width; x += scanStep * 2) {
-    grid.lineBetween(x, 0, x, height);
-  }
-
-  if (!plan.veryShortCompact) {
-    const dartX = plan.outerFrameX + 56;
-    const dartY = plan.outerFrameY + 58;
-    grid.lineStyle(1.5, NEON.cyan, scaleUiGlowAlpha(0.35));
-    grid.beginPath();
-    grid.moveTo(dartX, dartY - 16);
-    grid.lineTo(dartX + 12, dartY + 10);
-    grid.lineTo(dartX, dartY + 6);
-    grid.lineTo(dartX - 12, dartY + 10);
-    grid.closePath();
-    grid.strokePath();
-    grid.fillStyle(NEON.cyan, scaleUiGlowAlpha(0.08));
-    grid.fillPath();
-  }
-
-  drawNeonFrame(grid, plan.outerFrameX, plan.outerFrameY, plan.outerFrameWidth, plan.outerFrameHeight, {
-    accentColor,
-    fillAlpha: 0.16,
-    strokeAlpha: 0.86,
-    cornerCut: 28,
-    glow: true,
+/**
+ * Shade behind the title and the footer so copy stays legible over the vista without boxing it in:
+ * dark at the top and bottom edges, clear through the middle where the hero and horizon live.
+ */
+export function createMenuBackdrop(scene: Phaser.Scene): void {
+  withCanvasTexture(scene, SCRIM_KEY, 4, SCRIM_HEIGHT, (context, width, height) => {
+    const shade = context.createLinearGradient(0, 0, 0, height);
+    shade.addColorStop(0, 'rgba(1,4,10,0.78)');
+    shade.addColorStop(0.3, 'rgba(1,4,10,0.12)');
+    shade.addColorStop(0.62, 'rgba(1,4,10,0.1)');
+    shade.addColorStop(1, 'rgba(1,4,10,0.7)');
+    context.fillStyle = shade;
+    context.fillRect(0, 0, width, height);
   });
-  drawNeonDivider(
-    grid,
-    plan.centerX,
-    plan.outerFrameY + plan.outerFrameHeight - 34,
-    Math.min(560, plan.outerFrameWidth - 120),
-    NEON.cyan
-  );
-  grid.setDepth(4);
+  scene.add
+    .image(0, 0, SCRIM_KEY)
+    .setOrigin(0)
+    .setDisplaySize(Number(scene.scale.width), Number(scene.scale.height))
+    .setDepth(4);
 }
 
+/** Kicker, title and tagline. */
 export function createMenuTitle(scene: Phaser.Scene, plan: MenuLayoutPlan): void {
-  if (plan.eyebrowVisible) {
-    scene.add
-      .text(plan.centerX, plan.eyebrowY, 'COMMAND DECK', {
-        fontSize: plan.compact ? '10px' : '12px',
-        color: NEON_TEXT.cyan,
-        fontFamily: NEON_FONT.mono,
-        fontStyle: 'bold',
-      })
+  if (plan.kickerVisible) {
+    const kicker = scene.add
+      .text(plan.centerX, plan.kickerY, 'COMMAND DECK', neonLabelStyle(plan.kickerFontSize, NEON_TEXT.cyan, 5))
       .setOrigin(0.5)
       .setDepth(12);
+    const rules = scene.add.graphics().setDepth(12);
+    const reach = kicker.width / 2 + 14;
+    rules.lineStyle(1, NEON.cyan, 0.45);
+    rules.lineBetween(plan.centerX - reach - 44, plan.kickerY, plan.centerX - reach, plan.kickerY);
+    rules.lineBetween(plan.centerX + reach, plan.kickerY, plan.centerX + reach + 44, plan.kickerY);
   }
 
-  const titleSize = fitNeonTitleFontSize(
-    scene,
-    'SPACE EXPLORER',
-    plan.titleFontSize,
-    Math.max(180, plan.outerFrameWidth - 96)
-  );
-  const titleText = addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
-
-  const wings = scene.add.graphics();
-  const halfTitleWidth = titleText.width / 2;
-  const wingGap = plan.veryShortCompact ? 12 : 20;
-  const availableWingWidth = Math.max(0, (plan.outerFrameWidth - titleText.width - 96) / 2);
-  const wingSpan = Math.min(plan.veryShortCompact ? 20 : plan.compact ? 40 : 60, availableWingWidth);
-  wings.lineStyle(1, NEON.cyan, 0.55);
-  wings.lineBetween(
-    plan.centerX - halfTitleWidth - wingGap - wingSpan,
-    plan.titleY,
-    plan.centerX - halfTitleWidth - wingGap,
-    plan.titleY
-  );
-  wings.lineBetween(
-    plan.centerX + halfTitleWidth + wingGap,
-    plan.titleY,
-    plan.centerX + halfTitleWidth + wingGap + wingSpan,
-    plan.titleY
-  );
-  wings.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.4));
-  wings.lineBetween(
-    plan.centerX - halfTitleWidth - wingGap - wingSpan + 4,
-    plan.titleY - 5,
-    plan.centerX - halfTitleWidth - wingGap - 4,
-    plan.titleY - 5
-  );
-  wings.lineBetween(
-    plan.centerX + halfTitleWidth + wingGap + 4,
-    plan.titleY - 5,
-    plan.centerX + halfTitleWidth + wingGap + wingSpan - 4,
-    plan.titleY - 5
-  );
-  wings.lineStyle(1, NEON.cyanBright, scaleUiGlowAlpha(0.35));
-  wings.lineBetween(
-    plan.centerX - halfTitleWidth - wingGap - wingSpan + 8,
-    plan.titleY + 5,
-    plan.centerX - halfTitleWidth - wingGap,
-    plan.titleY + 5
-  );
-  wings.lineBetween(
-    plan.centerX + halfTitleWidth + wingGap,
-    plan.titleY + 5,
-    plan.centerX + halfTitleWidth + wingGap + wingSpan - 8,
-    plan.titleY + 5
-  );
-  wings.setDepth(12);
+  const titleSize = fitNeonTitleFontSize(scene, 'SPACE EXPLORER', plan.titleFontSize, plan.titleMaxWidth);
+  addNeonTitle(scene, plan.centerX, plan.titleY, 'SPACE EXPLORER', titleSize, 11);
 
   scene.add
-    .text(plan.centerX, plan.subtitleY, 'Choose a run and launch.', {
-      fontSize: `${plan.subtitleFontSize}px`,
-      color: NEON_TEXT.secondary,
-      fontFamily: NEON_FONT.mono,
-      wordWrap: { width: Math.max(220, plan.outerFrameWidth - 96) },
-      align: 'center',
-    })
+    .text(
+      plan.centerX,
+      plan.taglineY,
+      MENU_TAGLINE,
+      neonLabelStyle(plan.taglineFontSize, NEON_TEXT.secondary, plan.taglineFontSize * 0.22)
+    )
     .setOrigin(0.5)
     .setDepth(12);
 }
 
+/** The one lit control on the screen: a solid launch button with a breathing halo behind it. */
+function createLaunchButton(scene: Phaser.Scene, plan: MenuLayoutPlan, onNewRun: () => void) {
+  const rect = plan.launchButton;
+  generateEffectsParticleTextures(scene);
+  const halo = scene.add
+    .image(rect.x + rect.width / 2, rect.y + rect.height / 2, PARTICLE.glow)
+    .setBlendMode(Phaser.BlendModes.ADD)
+    .setTint(NEON.cyan)
+    .setDisplaySize(rect.width * 1.5, rect.height * 3)
+    .setAlpha(scaleUiGlowAlpha(0.3))
+    .setDepth(10);
+  if (!prefersReducedMotion()) {
+    scene.tweens.add({
+      targets: halo,
+      alpha: scaleUiGlowAlpha(0.12),
+      duration: 1500,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  const button = createActionButtonControl(scene, {
+    label: 'NEW RUN',
+    width: rect.width,
+    height: rect.height,
+    variant: 'primary',
+    fontSize: `${Math.round(rect.height * 0.36)}px`,
+    onClick: onNewRun,
+  });
+  button.setPosition(rect.x, rect.y);
+  button.setDepth(11);
+
+  // Play chevron ahead of the label; the label shifts so the pair stays centred.
+  const chevron = scene.add.graphics().setDepth(12);
+  const size = rect.height * 0.17;
+  const lockupShift = size + 6;
+  button.label.setX(button.label.x + lockupShift);
+  const tipX = button.label.x - button.label.width / 2 - 12;
+  const centerY = rect.y + rect.height / 2;
+  chevron.fillStyle(NEON.ink, 1);
+  chevron.beginPath();
+  chevron.moveTo(tipX - size * 1.5, centerY - size);
+  chevron.lineTo(tipX, centerY);
+  chevron.lineTo(tipX - size * 1.5, centerY + size);
+  chevron.closePath();
+  chevron.fillPath();
+
+  return {
+    destroy() {
+      scene.tweens.killTweensOf(halo);
+      halo.destroy();
+      button.destroy();
+      chevron.destroy();
+    },
+  };
+}
+
+/**
+ * A save slot as a glass card: campaign position and run stats when filled (tap to resume, DEL to
+ * clear), dim and inert when empty.
+ */
+function createSlotCard(
+  scene: Phaser.Scene,
+  rect: MenuLayoutPlan['slotCards'][number],
+  slotNumber: number,
+  handlers: MenuSaveSlotHandlers
+) {
+  const slotId = `slot-${slotNumber}` as SaveSlotId;
+  // Roomy cards add a third line: when the checkpoint was saved.
+  const roomy = rect.height >= 64;
+  const titleSize = roomy ? 14 : 13;
+  const detailSize = roomy ? 13 : 12;
+  const savedAtSize = 11;
+  const lineGap = roomy ? 4 : 2;
+  const textX = rect.x + CARD_PADDING_X;
+  const blockHeight = titleSize + lineGap + detailSize + (roomy ? lineGap + savedAtSize : 0);
+  const blockTop = rect.y + (rect.height - blockHeight) / 2;
+  const detailY = blockTop + titleSize + lineGap + detailSize / 2;
+
+  const button = createActionButtonControl(scene, {
+    label: '',
+    width: rect.width,
+    height: rect.height,
+    variant: 'secondary',
+    onClick: () => handlers.onLoadSlot(slotId),
+  });
+  button.setPosition(rect.x, rect.y);
+  button.setDepth(11);
+
+  const title = scene.add
+    .text(textX, blockTop + titleSize / 2, '', neonLabelStyle(titleSize, NEON_TEXT.primary, 0.75))
+    .setOrigin(0, 0.5)
+    .setDepth(12);
+  const detail = scene.add
+    .text(textX, detailY, '', neonLabelStyle(detailSize, NEON_TEXT.muted, 1))
+    .setOrigin(0, 0.5)
+    .setDepth(12);
+  const savedAt = roomy
+    ? scene.add
+        .text(
+          textX,
+          detailY + detailSize / 2 + lineGap + savedAtSize / 2,
+          '',
+          neonLabelStyle(savedAtSize, NEON_TEXT.muted, 0.5)
+        )
+        .setOrigin(0, 0.5)
+        .setDepth(12)
+    : null;
+
+  const deleteButton = createActionButtonControl(scene, {
+    label: 'DEL',
+    width: DELETE_BUTTON_WIDTH,
+    height: DELETE_BUTTON_HEIGHT,
+    hitWidth: MIN_TOUCH_TARGET_PX,
+    hitHeight: MIN_TOUCH_TARGET_PX,
+    variant: 'danger',
+    fontSize: '12px',
+    onClick: () => handlers.onDeleteSlot(slotId),
+  });
+  deleteButton.setPosition(
+    rect.x + rect.width - CARD_PADDING_X - DELETE_BUTTON_WIDTH,
+    rect.y + (rect.height - DELETE_BUTTON_HEIGHT) / 2
+  );
+  deleteButton.setDepth(13);
+
+  const fullTextWidth = rect.width - CARD_PADDING_X * 2;
+  const occupiedTextWidth = fullTextWidth - DELETE_BUTTON_WIDTH - 10;
+
+  return {
+    slotId,
+    refresh(model: SaveSlotViewModel | undefined, storageAvailable: boolean): void {
+      const occupied = Boolean(model?.occupied);
+      const textWidth = occupied ? occupiedTextWidth : fullTextWidth;
+      setSingleLineTextWithEllipsis(title, model?.title ?? '', textWidth, `SLOT ${slotNumber}`);
+      setSingleLineTextWithEllipsis(detail, model?.subtitle ?? '', textWidth, 'EMPTY');
+      title.setColor(occupied ? NEON_TEXT.primary : NEON_TEXT.muted);
+      detail.setColor(occupied ? NEON_TEXT.gold : NEON_TEXT.muted);
+      title.setAlpha(occupied ? 1 : 0.8);
+      detail.setAlpha(occupied ? 1 : 0.6);
+      // An empty roomy card has no third line, so its two lines re-centre.
+      const shift = savedAt && !occupied ? (lineGap + savedAtSize) / 2 : 0;
+      title.setY(blockTop + titleSize / 2 + shift);
+      detail.setY(detailY + shift);
+      savedAt?.setText(occupied ? (model?.savedAtLabel ?? '') : '');
+      button.setEnabled(occupied && storageAvailable);
+      deleteButton.setVisible(occupied);
+    },
+    destroy(): void {
+      button.destroy();
+      title.destroy();
+      detail.destroy();
+      savedAt?.destroy();
+      deleteButton.destroy();
+    },
+  };
+}
+
+/** Run selection: the launch button, the three save-slot cards and the status line under them. */
 export function createSaveSlotEntryPanel(
   scene: Phaser.Scene,
   plan: MenuLayoutPlan,
-  _accentColor: number,
   handlers: MenuSaveSlotHandlers,
   storageAvailable: boolean
 ): MenuSaveSlotPanel {
-  const tileTextMaxWidth = Math.max(12, plan.tileWidth - 20);
-  const compact = plan.tileHeight < 150;
-  const veryCompact = plan.tileHeight <= 76;
-
-  const tiles = [0, 1, 2, 3].map((i) => {
-    const isNewRun = i === 0;
-    const slotId = isNewRun ? null : (`slot-${i}` as SaveSlotId);
-    const tilePosition = plan.tilePositions[i] ?? { x: plan.centerX - plan.tileWidth / 2, y: plan.tileRowY };
-    const tx = tilePosition.x;
-    const ty = tilePosition.y;
-
-    // Button with no built-in label so we can layout icon + text ourselves
-    const button = createActionButtonControl(scene, {
-      label: '',
-      width: plan.tileWidth,
-      height: plan.tileHeight,
-      variant: isNewRun ? 'primary' : 'secondary',
-      fontSize: '15px',
-      onClick: () => {
-        if (isNewRun) handlers.onNewRun();
-        else if (slotId) handlers.onLoadSlot(slotId);
-      },
-    });
-    button.setPosition(tx, ty);
-    button.setDepth(11);
-
-    // Vertical layout inside tile: icon → label → subtext
-    const iconY = ty + (veryCompact ? 17 : compact ? 32 : 48);
-    const labelY = ty + (veryCompact ? 40 : compact ? 62 : 90);
-    const subtextY = ty + (veryCompact ? 57 : compact ? 80 : 118);
-
-    const iconG = scene.add.graphics();
-    const cx = tx + plan.tileWidth / 2;
-    drawNeonFrame(iconG, tx + 4, ty + 4, plan.tileWidth - 8, plan.tileHeight - 8, {
-      accentColor: isNewRun ? NEON.cyan : NEON.purple,
-      fillAlpha: 0,
-      strokeAlpha: 0.28,
-      cornerCut: 8,
-      glow: false,
-    });
-    if (isNewRun) {
-      const cy = iconY;
-      const sz = compact ? 14 : 20;
-      iconG.lineStyle(2, NEON.cyan, 0.95);
-      iconG.beginPath();
-      iconG.moveTo(cx - sz, cy + sz * 0.75);
-      iconG.lineTo(cx + sz * 1.1, cy);
-      iconG.lineTo(cx - sz, cy - sz * 0.75);
-      iconG.closePath();
-      iconG.strokePath();
-      iconG.fillStyle(NEON.cyan, 0.22);
-      iconG.fillPath();
-    } else {
-      const cy = iconY;
-      const w = compact ? 28 : 36;
-      const h = compact ? 26 : 32;
-      iconG.lineStyle(1.5, NEON.purple, 0.9);
-      iconG.strokeRect(cx - w / 2, cy - h / 2, w, h);
-      iconG.fillStyle(NEON.purple, 0.2);
-      iconG.fillRect(cx - w * 0.35, cy - h / 2, w * 0.7, h * 0.35);
-      iconG.strokeRect(cx - w * 0.35, cy - h / 2, w * 0.7, h * 0.35);
-      iconG.lineStyle(1, NEON.purple, 0.5);
-      iconG.strokeRect(cx - w * 0.4, cy + 2, w * 0.8, h * 0.3);
-    }
-    iconG.setDepth(12);
-
-    const labelText = scene.add
-      .text(tx + plan.tileWidth / 2, labelY, isNewRun ? 'NEW RUN' : `SLOT ${i}`, {
-        fontSize: compact ? '13px' : '15px',
-        color: isNewRun ? '#f2fbff' : '#e2f3ff',
-        fontFamily: NEON_FONT.mono,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-
-    const subtext = scene.add
-      .text(tx + plan.tileWidth / 2, subtextY, isNewRun ? 'START FRESH' : 'EMPTY', {
-        fontSize: compact ? '10px' : '11px',
-        color: NEON_TEXT.muted,
-        fontFamily: NEON_FONT.mono,
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-
-    let deleteBtn: ActionButtonControl | null = null;
-    if (!isNewRun) {
-      deleteBtn = createActionButtonControl(scene, {
-        label: 'DEL',
-        width: 44,
-        height: 20,
-        hitWidth: MIN_TOUCH_TARGET_PX,
-        hitHeight: MIN_TOUCH_TARGET_PX,
-        variant: 'danger',
-        fontSize: '10px',
-        onClick: () => {
-          if (slotId) handlers.onDeleteSlot(slotId);
-        },
-      });
-      deleteBtn.setPosition(tx + plan.tileWidth - 48, ty + 4);
-      deleteBtn.setVisible(false);
-      deleteBtn.setDepth(13);
-    }
-
-    const applyTileText = (title: string, subtitle: string): void => {
-      setSingleLineTextWithEllipsis(labelText, title, tileTextMaxWidth, isNewRun ? 'NEW RUN' : `SLOT ${i}`);
-      setSingleLineTextWithEllipsis(subtext, subtitle, tileTextMaxWidth, isNewRun ? 'START FRESH' : 'EMPTY');
-    };
-
-    applyTileText(isNewRun ? 'NEW RUN' : `SLOT ${i}`, isNewRun ? 'START FRESH' : 'EMPTY');
-
-    return { button, labelText, subtext, slotId, iconG, deleteBtn, applyTileText };
-  });
+  const launch = createLaunchButton(scene, plan, handlers.onNewRun);
+  const cards = plan.slotCards.map((rect, index) => createSlotCard(scene, rect, index + 1, handlers));
+  const idleHint = isTouchMobileDevice()
+    ? 'DRAG TO FLY  ·  GUNS FIRE AUTOMATICALLY'
+    : 'WASD / ARROWS TO FLY  ·  SPACE TO FIRE  ·  ESC TO PAUSE';
 
   const statusText = scene.add
-    .text(plan.centerX, plan.statusY, '', {
-      fontSize: '12px',
-      color: storageAvailable ? NEON_TEXT.muted : NEON_TEXT.danger,
-      fontFamily: NEON_FONT.mono,
-    })
+    .text(plan.centerX, plan.statusY, idleHint, neonLabelStyle(12, NEON_TEXT.muted, 1.5))
     .setOrigin(0.5)
     .setDepth(11);
 
-  const refresh = (slots: SaveSlotViewModel[]): void => {
-    tiles.forEach((t, i) => {
-      if (i === 0) return;
-      const model = slots.find((s) => s.id === t.slotId);
-      if (model?.occupied) {
-        t.applyTileText(model.title, model.savedAtLabel);
-        t.subtext.setColor(NEON_TEXT.cyan);
-        t.button.setEnabled(storageAvailable);
-        t.deleteBtn?.setVisible(true);
-      } else {
-        t.applyTileText(`SLOT ${i}`, 'EMPTY');
-        t.subtext.setColor(NEON_TEXT.muted);
-        t.button.setEnabled(false);
-        t.deleteBtn?.setVisible(false);
-      }
-    });
-  };
-
-  const setStatus = (message: string, isError = false): void => {
-    statusText.setColor(isError ? NEON_TEXT.danger : NEON_TEXT.muted);
-    statusText.setText(message);
-  };
-
   return {
-    refresh,
-    setStatus,
-    destroy: () => {
-      tiles.forEach((t) => {
-        t.button.destroy();
-        t.labelText.destroy();
-        t.subtext.destroy();
-        t.iconG.destroy();
-        t.deleteBtn?.destroy();
-      });
+    refresh(slots) {
+      for (const card of cards) {
+        card.refresh(
+          slots.find((slot) => slot.id === card.slotId),
+          storageAvailable
+        );
+      }
+    },
+    setStatus(message, isError = false) {
+      statusText.setColor(isError ? NEON_TEXT.danger : message ? NEON_TEXT.secondary : NEON_TEXT.muted);
+      statusText.setText(message || idleHint);
+    },
+    destroy() {
+      launch.destroy();
+      for (const card of cards) card.destroy();
       statusText.destroy();
     },
   };

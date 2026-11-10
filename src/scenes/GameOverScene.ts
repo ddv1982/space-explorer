@@ -4,13 +4,22 @@ import { audioManager } from '../systems/AudioManager';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
-import { UI_FONT_MONO } from '../utils/uiFonts';
+import { isTouchMobileDevice } from '../utils/device';
 import { createActionButtonControl } from './shared/actionButtonControl';
 import { startFreshRun } from './shared/startRun';
 import { createGameOverLayout } from './gameOverScene/layout';
 import { getDeathCauseText } from './gameOverScene/deathCause';
 import { mountAccessibleActionLayer, type AccessibleActionLayerHandle } from './shared/accessibleActionLayer';
-import { addNeonTitle, drawNeonDivider, drawNeonFrame, NEON, NEON_TEXT } from './shared/neonUiTheme';
+import { addNeonTitle, fitNeonTitleFontSize, NEON, NEON_TEXT, neonLabelStyle } from './shared/neonUiTheme';
+import {
+  addDriftingMotes,
+  addEdgeVignette,
+  addStatCell,
+  countUp,
+  formatScore,
+  offsetRect,
+  revealInSequence,
+} from './shared/runSummaryPresentation';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 
 export class GameOverScene extends Phaser.Scene {
@@ -34,102 +43,75 @@ export class GameOverScene extends Phaser.Scene {
     this.parallax = new ParallaxBackground();
     this.parallax.create(this, getLevelConfig(runSummary.levelReached));
 
-    const frame = this.createFrame(layout);
-    const nextGoal = this.createSummary(frame, runSummary);
-    this.createActions(frame, runSummary, nextGoal);
+    this.createAtmosphere(layout);
+    const block = this.createBlock(layout);
+    const nextGoal = this.createSummary(block, runSummary);
+    this.createActions(block, runSummary, nextGoal);
   }
 
-  private createFrame(layout: ReturnType<typeof getViewportLayout>) {
-    const telemetry = this.add.graphics().setDepth(0);
-    telemetry.fillStyle(0x120109, 0.48);
-    telemetry.fillRect(layout.left, layout.top, layout.width, layout.height);
-    telemetry.lineStyle(1, NEON.red, 0.06);
-    for (let y = layout.top + 28; y < layout.bottom; y += 54) {
-      telemetry.lineBetween(layout.left, y, layout.right, y);
-    }
-    telemetry.lineStyle(2, NEON.red, 0.13);
-    telemetry.strokeCircle(layout.centerX, layout.centerY, Math.min(layout.width, layout.height) * 0.31);
-    telemetry.lineStyle(1, NEON.red, 0.09);
-    telemetry.strokeCircle(layout.centerX, layout.centerY, Math.min(layout.width, layout.height) * 0.38);
+  /** Red wash, edge vignette and rising embers behind the summary. */
+  private createAtmosphere(layout: ReturnType<typeof getViewportLayout>): void {
+    const bounds = { x: layout.left, y: layout.top, width: layout.width, height: layout.height };
+    this.add.rectangle(layout.centerX, layout.centerY, layout.width, layout.height, 0x0c0208, 0.56).setDepth(0);
+    addEdgeVignette(this, bounds, 0x7a0f1c, 0.62);
+    addDriftingMotes(this, bounds, [0xff5a55, 0xff8a4a, 0xffc36e], 1);
+  }
 
+  private createBlock(layout: ReturnType<typeof getViewportLayout>) {
     const plan = createGameOverLayout(layout);
-    const frameWidth = plan.width;
-    const frameHeight = plan.height;
-    const frameX = layout.centerX - frameWidth / 2;
-    const frameY = layout.centerY - frameHeight / 2;
-
-    const frame = this.add.graphics();
-    drawNeonFrame(frame, frameX, frameY, frameWidth, frameHeight, {
-      accentColor: NEON.red,
-      fillAlpha: 0.55,
-      strokeAlpha: 0.7,
-      cornerCut: 22,
-      glow: true,
-    });
-    drawNeonDivider(frame, layout.centerX, frameY + 18, frameWidth - 140, NEON.red);
-    // No bottom divider: its medallion sat on top of the keyboard hint line.
-
-    return { plan, frameX, frameY, centerX: layout.centerX };
+    return {
+      plan,
+      left: layout.centerX - plan.width / 2,
+      top: layout.centerY - plan.height / 2,
+      centerX: layout.centerX,
+    };
   }
 
   private createSummary(
-    { plan, frameY, centerX }: ReturnType<GameOverScene['createFrame']>,
+    { plan, left, top, centerX }: ReturnType<GameOverScene['createBlock']>,
     runSummary: ReturnType<typeof getRunSummary>
   ): string {
-    addNeonTitle(this, centerX, frameY + plan.titleY, 'GAME OVER', plan.titleSize, 11, {
-      glowDark: '#8c1f28',
-      glowMid: '#d93843',
-      glowBright: '#ff756f',
+    const level = getLevelConfig(runSummary.levelReached);
+    const lines: Phaser.GameObjects.Text[] = [];
+    const addLine = (y: number, text: string, size: number, color: string): void => {
+      const line = this.add
+        .text(centerX, top + y, text, neonLabelStyle(size, color))
+        .setOrigin(0.5)
+        .setDepth(12);
+      line.setScale(Math.min(1, plan.width / Math.max(1, line.width)));
+      lines.push(line);
+    };
+
+    if (plan.eyebrowY !== null) addLine(plan.eyebrowY, 'RUN TERMINATED', 13, NEON_TEXT.danger);
+
+    const titleSize = fitNeonTitleFontSize(this, 'GAME OVER', plan.titleSize, plan.width - 16);
+    addNeonTitle(this, centerX, top + plan.titleY, 'GAME OVER', titleSize, 11, { glow: '#ff5a55', base: '#ffb3ad' });
+
+    addLine(plan.causeY, getDeathCauseText(runSummary.deathCause), 16, NEON_TEXT.danger);
+
+    const score = addStatCell(this, offsetRect(plan.score, left, top), formatScore(runSummary.finalScore), {
+      label: 'SCORE',
+      accent: NEON.gold,
     });
-
-    const score = this.add
-      .text(centerX, frameY + plan.scoreY, `SCORE: ${runSummary.finalScore}`, {
-        fontSize: '30px',
-        color: NEON_TEXT.primary,
-        fontFamily: UI_FONT_MONO,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-    score.setScale(Math.min(1, (plan.width - 32) / score.width));
-
-    this.add
-      .text(centerX, frameY + plan.progressY, `REACHED LEVEL ${runSummary.levelReached}`, {
-        fontSize: '17px',
-        color: NEON_TEXT.danger,
-        fontFamily: UI_FONT_MONO,
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-
-    this.add
-      .text(centerX, frameY + plan.causeY, getDeathCauseText(runSummary.deathCause), {
-        fontSize: '13px',
-        color: NEON_TEXT.danger,
-        fontFamily: UI_FONT_MONO,
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
+    countUp(this, score, runSummary.finalScore, 350);
+    addStatCell(this, offsetRect(plan.sector, left, top), runSummary.levelReached.toString().padStart(2, '0'), {
+      label: 'SECTOR REACHED',
+      accent: NEON.red,
+      note: level.name.toUpperCase(),
+    });
 
     const nextGoal =
       runSummary.finalScore > 0
         ? `NEXT RUN: BEAT ${runSummary.finalScore}`
         : `NEXT RUN: CLEAR LEVEL ${runSummary.levelReached}`;
-    const goal = this.add
-      .text(centerX, frameY + plan.goalY, nextGoal, {
-        fontSize: '15px',
-        color: NEON_TEXT.primary,
-        fontFamily: UI_FONT_MONO,
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
-    goal.setScale(Math.min(1, (plan.width - 32) / goal.width));
+    addLine(plan.goalY, nextGoal, 15, NEON_TEXT.secondary);
 
+    revealInSequence(this, lines);
     return nextGoal;
   }
 
   private createActions(
-    { plan, frameX, frameY, centerX }: ReturnType<GameOverScene['createFrame']>,
+    { plan, left, top, centerX }: ReturnType<GameOverScene['createBlock']>,
     runSummary: ReturnType<typeof getRunSummary>,
     nextGoal: string
   ): void {
@@ -159,18 +141,16 @@ export class GameOverScene extends Phaser.Scene {
       variant: 'secondary',
       onClick: () => activate('menu'),
     });
-    retry.setPosition(frameX + plan.retry.x, frameY + plan.retry.y);
-    menu.setPosition(frameX + plan.menu.x, frameY + plan.menu.y);
+    retry.setPosition(left + plan.retry.x, top + plan.retry.y);
+    menu.setPosition(left + plan.menu.x, top + plan.menu.y);
     retry.setDepth(12);
     menu.setDepth(12);
-    this.add
-      .text(centerX, frameY + plan.hintY, 'ENTER / R: RETRY   ESC / M: MENU', {
-        fontSize: '10px',
-        color: '#ffd0d0',
-        fontFamily: UI_FONT_MONO,
-      })
-      .setOrigin(0.5)
-      .setDepth(12);
+    if (!isTouchMobileDevice()) {
+      this.add
+        .text(centerX, top + plan.hintY, 'ENTER / R  RETRY     ESC / M  MENU', neonLabelStyle(12, NEON_TEXT.muted))
+        .setOrigin(0.5)
+        .setDepth(12);
+    }
 
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;

@@ -24,17 +24,18 @@ import { sharpenSceneText } from '@/utils/uiTextRendering';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { findButtonIndexAtPoint } from './planetIntermission/navigation';
 import { queuePlanetPortrait } from './planetIntermission/planetPortraits';
-import {
-  createIntermissionHeader,
-  createIntermissionPrompt,
-  getIntermissionLayout,
-  type IntermissionLayoutMetrics,
-} from './planetIntermission/presentation';
+import { getIntermissionLayout, type IntermissionLayoutMetrics } from './planetIntermission/layout';
+import { createIntermissionHeader, createIntermissionPrompt } from './planetIntermission/presentation';
 import { getPlanetIntermissionProfile } from './planetIntermission/planetProfiles';
 import { createIntermissionBackdrop, createPlanetArrivalVisual } from './planetIntermission/planetVisuals';
-import { createUpgradeButton, updateUpgradeButton } from './planetIntermission/upgradeButtons';
+import {
+  createUpgradeButton,
+  playUpgradePurchaseFlash,
+  updateUpgradeButton,
+} from './planetIntermission/upgradeButtons';
 import type { UpgradeButton } from './planetIntermission/shared';
 import { mountAccessibleActionLayer, type AccessibleActionLayerHandle } from './shared/accessibleActionLayer';
+import { prefersReducedMotion } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { PlanetIntermissionInteractionController } from './planetIntermission/interactionController';
 import { startRegisteredScene } from './sceneRegistry';
@@ -152,12 +153,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private createContinuePrompt(intermissionLayout: IntermissionLayoutMetrics): void {
-    createIntermissionPrompt(
-      this,
-      intermissionLayout,
-      this.getContinueLabel(),
-      getLevelConfig(this.state.level).planetPalette[1]
-    );
+    createIntermissionPrompt(this, intermissionLayout, this.getContinueLabel(), () => this.continueToNextLevel());
   }
 
   private getContinueLabel(): string {
@@ -256,16 +252,19 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     const evaluations = evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades);
     const gridLayout = intermissionLayout.gridLayout;
     const startX = intermissionLayout.gridLeft;
+    const gridWidth = gridLayout.buttonWidth * gridLayout.columns + gridLayout.spacingX * (gridLayout.columns - 1);
 
     for (let i = 0; i < evaluations.length; i++) {
-      const evaluation = evaluations[i];
-
       const col = i % gridLayout.columns;
       const row = Math.floor(i / gridLayout.columns);
       const bx = startX + col * (gridLayout.buttonWidth + gridLayout.spacingX);
       const by = intermissionLayout.gridTop + row * (gridLayout.buttonHeight + gridLayout.spacingY);
+      // A card left alone on the last row spans the grid instead of leaving a hole beside it.
+      const aloneOnRow = col === 0 && i === evaluations.length - 1;
 
-      this.buttons.push(createUpgradeButton(this, bx, by, evaluation, gridLayout));
+      this.buttons.push(
+        createUpgradeButton(this, bx, by, aloneOnRow ? gridWidth : gridLayout.buttonWidth, evaluations[i], gridLayout)
+      );
     }
   }
 
@@ -301,11 +300,27 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     audioManager.playPowerUp();
 
     this.scoreText.setText(`CREDITS ${this.state.score}`);
+    this.playPurchaseFeedback(button);
     this.accessibleStatusMessage = `${evaluation.upgrade.name} upgraded to level ${this.state.upgrades[upgradeKey]}. ${this.state.score} credits remaining.`;
     this.refreshButtons();
     this.handlePostPurchaseFocus(button, upgradeKey);
 
     return true;
+  }
+
+  private playPurchaseFeedback(button: UpgradeButton): void {
+    playUpgradePurchaseFlash(this, button);
+    if (prefersReducedMotion()) {
+      return;
+    }
+
+    this.tweens.killTweensOf(this.scoreText);
+    this.tweens.add({
+      targets: this.scoreText,
+      scale: { from: 1.14, to: 1 },
+      duration: 280,
+      ease: 'Quad.Out',
+    });
   }
 
   private handlePostPurchaseFocus(button: UpgradeButton, upgradeKey: UpgradeKey): void {

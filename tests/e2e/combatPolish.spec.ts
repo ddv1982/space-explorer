@@ -38,7 +38,7 @@ async function setPaused(page: Page, paused: boolean, touch: boolean): Promise<v
       if (!viewport) throw new Error('Missing touch viewport');
       await page.touchscreen.tap(viewport.width - 44, 106);
     } else {
-      const resume = (await snapshot(page)).texts.find((item) => item.text.endsWith('\nRESUME'));
+      const resume = (await snapshot(page)).texts.find((item) => item.text === 'RESUME');
       if (!resume) throw new Error('Missing visible Resume action');
       await page.touchscreen.tap(resume.x, resume.y);
     }

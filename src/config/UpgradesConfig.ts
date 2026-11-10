@@ -26,7 +26,7 @@ export interface UpgradeDef {
   tierNames?: readonly string[];
 }
 
-export type UpgradeBlockReason = 'maxed' | 'locked' | 'progression' | 'credits' | null;
+type UpgradeBlockReason = 'maxed' | 'locked' | 'progression' | 'credits' | null;
 
 export interface UpgradeEvaluation {
   upgrade: UpgradeDef;

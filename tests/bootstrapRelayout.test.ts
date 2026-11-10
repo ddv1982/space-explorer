@@ -8,234 +8,103 @@ mock.module('phaser', () => ({
     },
   },
 }));
-mock.module('../src/utils/layout', () => ({
-  getViewportBounds: () => ({
+
+const viewport = { width: 800, height: 600 };
+mock.module('../src/utils/layout', () => {
+  const bounds = () => ({
     left: 0,
     top: 0,
-    width: 800,
-    height: 600,
-    right: 800,
-    bottom: 600,
-    centerX: 400,
-    centerY: 300,
-  }),
-  getViewportLayout: () => ({
-    left: 0,
-    top: 0,
-    width: 800,
-    height: 600,
-    right: 800,
-    bottom: 600,
-    centerX: 400,
-    centerY: 300,
-  }),
-  getGameplayBounds: () => ({
-    left: 0,
-    top: 0,
-    width: 1280,
-    height: 720,
-    right: 1280,
-    bottom: 720,
-    centerX: 640,
-    centerY: 360,
-  }),
-  centerHorizontally: (layout: { left: number; width: number }, width: number) =>
-    layout.left + (layout.width - width) / 2,
-}));
+    width: viewport.width,
+    height: viewport.height,
+    right: viewport.width,
+    bottom: viewport.height,
+    centerX: viewport.width / 2,
+    centerY: viewport.height / 2,
+  });
+  return {
+    getViewportBounds: bounds,
+    getViewportLayout: bounds,
+    getGameplayBounds: bounds,
+    centerHorizontally: (layout: { left: number; width: number }, width: number) =>
+      layout.left + (layout.width - width) / 2,
+  };
+});
+
+function layoutFor(width: number, height: number) {
+  viewport.width = width;
+  viewport.height = height;
+  return getLayoutMetrics({} as Phaser.Scene);
+}
+
+import { callsTo, createRecordingStub, type RecordedCall } from './helpers/recordingStub';
 
 const { createHudWidgets, relayoutHudWidgets } = await import('../src/systems/hud/bootstrapRelayout');
 const { getLayoutMetrics } = await import('../src/systems/hud/statusBarLayout');
 
-type Call = { method: string; args: unknown[] };
-
-function createGraphicsStub(): { graphics: Phaser.GameObjects.Graphics; calls: Call[] } {
-  const calls: Call[] = [];
-  const graphics = {
-    depth: null as number | null,
-    visible: true,
-    clear: () => {
-      calls.push({ method: 'clear', args: [] });
-      return graphics;
-    },
-    fillStyle: (...args: unknown[]) => {
-      calls.push({ method: 'fillStyle', args });
-      return graphics;
-    },
-    fillRect: (...args: unknown[]) => {
-      calls.push({ method: 'fillRect', args });
-      return graphics;
-    },
-    fillRoundedRect: (...args: unknown[]) => {
-      calls.push({ method: 'fillRoundedRect', args });
-      return graphics;
-    },
-    lineStyle: (...args: unknown[]) => {
-      calls.push({ method: 'lineStyle', args });
-      return graphics;
-    },
-    strokeRect: (...args: unknown[]) => {
-      calls.push({ method: 'strokeRect', args });
-      return graphics;
-    },
-    strokeRoundedRect: (...args: unknown[]) => {
-      calls.push({ method: 'strokeRoundedRect', args });
-      return graphics;
-    },
-    beginPath: () => graphics,
-    moveTo: () => graphics,
-    lineTo: () => graphics,
-    closePath: () => graphics,
-    fillPath: () => graphics,
-    strokePath: () => graphics,
-    lineBetween: () => graphics,
-    setDepth(value: number) {
-      graphics.depth = value;
-      return graphics;
-    },
-    setVisible(value: boolean) {
-      graphics.visible = value;
-      return graphics;
-    },
+function createWidgets() {
+  const calls = new Map<unknown, RecordedCall[]>();
+  const texts: string[] = [];
+  const record = <T>(): T => {
+    const { stub, calls: stubCalls } = createRecordingStub<T>();
+    calls.set(stub, stubCalls);
+    return stub;
   };
-  return { graphics: graphics as never, calls };
-}
-
-function createTextStub(initialText = '') {
-  const state = {
-    text: initialText,
-    x: 0,
-    y: 0,
-    alpha: 1,
-    depth: null as number | null,
-    origin: null as [number, number] | null,
-    visible: true,
-    letterSpacing: 0,
-  };
-  const text = {
-    get alpha() {
-      return state.alpha;
-    },
-    setDepth(value: number) {
-      state.depth = value;
-      return text;
-    },
-    setOrigin(x: number, y: number) {
-      state.origin = [x, y];
-      return text;
-    },
-    setAlpha(value: number) {
-      state.alpha = value;
-      return text;
-    },
-    setVisible(value: boolean) {
-      state.visible = value;
-      return text;
-    },
-    setPosition(x: number, y: number) {
-      state.x = x;
-      state.y = y;
-      return text;
-    },
-    setLetterSpacing(value: number) {
-      state.letterSpacing = value;
-      return text;
-    },
-  };
-  return { text: text as never, state };
-}
-
-describe('bootstrapRelayout', () => {
-  test('createHudWidgets creates core HUD objects with expected depth/visibility baselines', () => {
-    const graphics: ReturnType<typeof createGraphicsStub>[] = [];
-    const texts: ReturnType<typeof createTextStub>[] = [];
-    const scene = {
-      add: {
-        graphics: () => {
-          const g = createGraphicsStub();
-          graphics.push(g);
-          return g.graphics;
-        },
-        text: (_x: number, _y: number, value: string) => {
-          const t = createTextStub(value);
-          texts.push(t);
-          return t.text;
-        },
+  const scene = {
+    add: {
+      graphics: () => record<Phaser.GameObjects.Graphics>(),
+      text: (_x: number, _y: number, value: string) => {
+        texts.push(value);
+        return record<Phaser.GameObjects.Text>();
       },
-    };
+    },
+  };
+  const widgets = createHudWidgets({ scene: scene as never, labelColor: '#d8f4ff', sectorColor: '#55aaff' });
+  const callsFor = (widget: unknown, method: string) => callsTo(calls.get(widget) ?? [], method);
+  return { widgets, texts, callsFor };
+}
 
-    const widgets = createHudWidgets({
-      scene: scene as never,
-      labelStyle: {} as never,
-      valueStyle: {} as never,
-      sectorColor: '#55aaff',
-    });
+describe('HUD widgets', () => {
+  test('creates the static labels and hides boss, chain and announcement until they are needed', () => {
+    const { widgets, texts, callsFor } = createWidgets();
 
-    expect(widgets.topBarPanel).toBeDefined();
-    expect(graphics).toHaveLength(9);
-    expect(texts).toHaveLength(11);
-    expect(graphics[0]?.graphics.depth).toBe(99);
-    expect(graphics[5]?.graphics.visible).toBe(false);
-    expect(graphics[6]?.graphics.visible).toBe(false);
-    expect(texts[9]?.state.visible).toBe(false);
-    expect(texts[10]?.state.visible).toBe(false);
+    expect(texts).toEqual(['HULL', '', 'RES', 'SCORE', '0', '', '', 'BOSS', '', '']);
+    expect(callsFor(widgets.plates, 'setDepth')).toEqual([[99]]);
+    expect(callsFor(widgets.bossBarBg, 'setVisible')).toEqual([[false]]);
+    expect(callsFor(widgets.bossBarFill, 'setVisible')).toEqual([[false]]);
+    expect(callsFor(widgets.bossNameText, 'setVisible')).toEqual([[false]]);
+    expect(callsFor(widgets.chainText, 'setVisible')).toEqual([[false]]);
+    expect(callsFor(widgets.announcementText, 'setAlpha')).toEqual([[0]]);
+    expect(callsFor(widgets.announcementRule, 'setAlpha')).toEqual([[0]]);
+    expect(callsFor(widgets.announcementText, 'setDepth')).toEqual([[200]]);
   });
 
-  test('relayoutHudWidgets repositions meter labels and redraws the hull track', () => {
-    const topBarPanel = createGraphicsStub();
-    const hpBarBg = createGraphicsStub();
-    const progressBg = createGraphicsStub();
-    const progressLabel = createTextStub('FLIGHT VECTOR');
-    const hpLabel = createTextStub('HP');
-    const hpText = createTextStub('');
-    const livesLabel = createTextStub('LIVES');
-    const livesText = createTextStub('');
-    const scoreText = createTextStub('0');
-    const sectorText = createTextStub('');
-    const levelText = createTextStub('');
-    const announcementText = createTextStub('ALERT');
-    announcementText.state.alpha = 0.5;
-    const bossNameText = createTextStub('BOSS');
-    const chainText = createTextStub('');
-    const surgeBg = createGraphicsStub();
-    relayoutHudWidgets(
-      {
-        hpBarFill: createGraphicsStub().graphics,
-        progressFill: createGraphicsStub().graphics,
-        bossBarBg: createGraphicsStub().graphics,
-        bossBarFill: createGraphicsStub().graphics,
-        surgeFill: createGraphicsStub().graphics,
-        topBarPanel: topBarPanel.graphics,
-        hpBarBg: hpBarBg.graphics,
-        hpLabel: hpLabel.text,
-        hpText: hpText.text,
-        livesLabel: livesLabel.text,
-        livesText: livesText.text,
-        scoreText: scoreText.text,
-        sectorText: sectorText.text,
-        levelText: levelText.text,
-        progressBg: progressBg.graphics,
-        progressLabel: progressLabel.text,
-        announcementText: announcementText.text,
-        bossNameText: bossNameText.text,
-        chainText: chainText.text,
-        surgeBg: surgeBg.graphics,
-      },
-      getLayoutMetrics({} as Phaser.Scene, 200, 300, 400),
-      {
-        hpBarHeight: 16,
-        progressHeight: 6,
-        panelStrokeColor: 0x123456,
-        hpBorderColor: 0xabcdef,
-        progressBorderColor: 0x55aaff,
-      }
-    );
+  test('wide relayout captions the rail with sector and level and right-aligns the chain badge', () => {
+    const { widgets, callsFor } = createWidgets();
+    relayoutHudWidgets(widgets, layoutFor(1280, 720), 0x54dcff);
 
-    expect(hpLabel.state.x).toBe(16);
-    expect(hpLabel.state.y).toBe(14);
-    expect(hpBarBg.calls.find((call) => call.method === 'fillRoundedRect')?.args).toEqual([46, 16, 146, 16, 3]);
-    expect(scoreText.state.x).toBe(784);
-    expect(scoreText.state.y).toBe(13);
-    expect(bossNameText.state.x).toBe(400);
-    expect(bossNameText.state.y).toBe(560);
+    expect(callsFor(widgets.hullLabel, 'setPosition')).toEqual([[16, 12]]);
+    expect(callsFor(widgets.scoreText, 'setPosition')).toEqual([[1264, 23]]);
+    expect(callsFor(widgets.scoreLabel, 'setVisible')).toEqual([[true]]);
+    expect(callsFor(widgets.sectorText, 'setPosition')).toEqual([[460, 10]]);
+    expect(callsFor(widgets.sectorText, 'setOrigin').at(-1)).toEqual([0, 0]);
+    expect(callsFor(widgets.levelText, 'setPosition')).toEqual([[820, 9]]);
+    expect(callsFor(widgets.chainText, 'setOrigin').at(-1)).toEqual([1, 0]);
+    expect(callsFor(widgets.bossNameText, 'setPosition')).toEqual([[640, 677]]);
+    expect(callsFor(widgets.announcementText, 'setFontSize')).toEqual([[30]]);
+    // Rail track: body plus eleven ticks.
+    expect(callsFor(widgets.progressTrack, 'fillRect')).toHaveLength(12);
+  });
+
+  test('compact relayout drops the score label and tucks sector and level under the score', () => {
+    const { widgets, callsFor } = createWidgets();
+    relayoutHudWidgets(widgets, layoutFor(390, 844), 0x54dcff);
+
+    expect(callsFor(widgets.scoreLabel, 'setVisible')).toEqual([[false]]);
+    expect(callsFor(widgets.scoreText, 'setFontSize')).toEqual([[22]]);
+    expect(callsFor(widgets.sectorText, 'setPosition')).toEqual([[374, 45]]);
+    expect(callsFor(widgets.sectorText, 'setOrigin').at(-1)).toEqual([1, 0]);
+    expect(callsFor(widgets.levelText, 'setPosition')).toEqual([[374, 58]]);
+    expect(callsFor(widgets.chainText, 'setOrigin').at(-1)).toEqual([0, 0]);
+    expect(callsFor(widgets.announcementText, 'setFontSize')).toEqual([[22]]);
   });
 });

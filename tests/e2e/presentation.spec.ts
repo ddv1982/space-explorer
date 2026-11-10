@@ -1,4 +1,4 @@
-import { expect, openMenu, snapshot, startNewRun, test, waitForScene } from './fixtures';
+import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test, waitForScene } from './fixtures';
 import {
   assertLevelOneEvidenceEntities,
   sampleEvidenceThreatContrast,
@@ -107,10 +107,24 @@ test('gameplay corridor preserves a dark field with brighter desktop edges', asy
 }) => {
   const mobile = test.info().project.name.includes('mobile');
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 984, height: 768 });
+  // Bound rendering cost on CI; the corridor mask is the same on every tier.
+  await pinQualityTier(page, 'low');
   await openMenu(page);
   await startNewRun(page);
   const shot = await snapshot(page);
   expect(shot.objects.some((object) => object.textureKey === 'player-ship' && object.active)).toBe(true);
+  // The corridor contract is about scenery. Advance the actual intro fades rather than depending
+  // on five seconds of game time elapsing on CI's software renderer.
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.finishLevelIntro());
+  await expect
+    .poll(
+      async () =>
+        (await snapshot(page)).texts.some(
+          (item) => item.shown && (item.text === 'SECTOR 1' || /to Move|to fly/.test(item.text))
+        ),
+      { message: 'level-intro tweens complete their fades and cleanup' }
+    )
+    .toBe(false);
   const luminance = await sampleGameplayLaneLuminance(page);
   expect(luminance.center).toBeGreaterThan(5);
   expect(luminance.edges).toBeGreaterThan(5);

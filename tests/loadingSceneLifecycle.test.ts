@@ -101,9 +101,12 @@ function createPreloadHarness(): PreloadHarness {
     },
   });
 
+  const rail = { clear: () => rail, fillStyle: () => rail, fillRect: () => rail };
+
   Object.assign(scene, {
     lifecycleGeneration: 0,
     add: {
+      graphics: () => rail,
       text: (_x: number, _y: number, value: string) => {
         displayedText.push(value);
         return text;

@@ -28,6 +28,25 @@ export class BrowserHarnessVisualPilot {
 
   constructor(private readonly game: Phaser.Game) {}
 
+  /** Finish the real intro fades without waiting for software-rendered gameplay frames. */
+  finishLevelIntro(): void {
+    const scene = this.game.scene.getScene('Game');
+    if (!scene?.sys.isActive()) throw new Error('Expected active gameplay for the level intro');
+    const tweens = scene.tweens
+      .getTweens()
+      .filter((tween) =>
+        tween.targets.some(
+          (target: unknown) =>
+            target instanceof Phaser.GameObjects.Text &&
+            (target.text === 'SECTOR 1' || /to Move|to fly/.test(target.text))
+        )
+      );
+    // Small steps traverse both the delay and fade states, including their cleanup callbacks.
+    for (let elapsed = 0; elapsed < 6000; elapsed += 16) {
+      for (const tween of tweens) tween.forward(16);
+    }
+  }
+
   show(
     glowEnabled = true,
     hazardType: 'ring-crossfire' | 'debris-surge' = 'ring-crossfire'

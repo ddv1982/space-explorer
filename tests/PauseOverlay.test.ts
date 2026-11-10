@@ -51,6 +51,8 @@ type StubText = {
   setVisible: (visible: boolean) => StubText;
   setText: (value: string) => StubText;
   setColor: (_value: string) => StubText;
+  setFill: (_value: unknown) => StubText;
+  context: { createLinearGradient: () => { addColorStop: () => void } };
   destroy: () => void;
 };
 
@@ -76,6 +78,7 @@ mock.module('phaser', () => ({
         RESIZE: 'resize',
       },
     },
+    Math: { Clamp: (value: number, min: number, max: number) => Math.min(max, Math.max(min, value)) },
   },
 }));
 
@@ -292,6 +295,10 @@ function createText(initialText: string): StubText {
     setColor() {
       return this;
     },
+    setFill() {
+      return this;
+    },
+    context: { createLinearGradient: () => ({ addColorStop() {} }) },
     destroy() {},
   };
 }
@@ -352,16 +359,18 @@ describe('PauseOverlay relayout regression', () => {
       settingsPanel: { visible: boolean };
       saveSlotRows: { rows: Array<{ title: StubText }> };
       blocker: StubZone;
-      hintText: StubText;
+      titleText: StubText;
+      statusText: StubText;
     };
     expect(internals.settingsPanel.visible).toBe(true);
     expect(internals.saveSlotRows.rows[0]?.title.visible).toBe(false);
     expect(internals.blocker.visible).toBe(true);
-    expect(internals.hintText.text).toBe('Tune difficulty, quality, and music for this run.');
+    expect(internals.titleText.visible).toBe(true);
+    expect(internals.statusText.text).toBe('Quality applies after restart.');
 
     (overlay as unknown as { selectSubview: (view: 'settings' | 'checkpoints') => void }).selectSubview('checkpoints');
     expect(internals.settingsPanel.visible).toBe(false);
-    expect(internals.hintText.text).toBe('Choose a slot to save, restore, or clear your run.');
+    expect(internals.saveSlotRows.rows[0]?.title.visible).toBe(true);
   });
 
   test('mirrors the painted unavailable-storage fallback into semantic status', () => {

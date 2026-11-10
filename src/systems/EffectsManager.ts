@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
 import { getVisualQualityProfile } from '../config/visualQuality';
-import { UI_FONT_MONO } from '../utils/uiFonts';
 import { applyCameraColorGrade, applyCameraColorPulse, clearCameraFilters } from '../utils/renderingCompat';
 import { PARTICLE, generateEffectsParticleTextures } from './effects/particleTextureFactory';
 import { EngineFlame, type EngineFlameTarget } from './effects/engineFlame';
@@ -35,13 +34,6 @@ import { resolveLightingBudget } from './lighting/lightingBudget';
 import { isTouchMobileDevice } from '../utils/device';
 
 export class EffectsManager {
-  private static readonly SCORE_POPUP_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
-    fontSize: '16px',
-    color: '#ffc36e',
-    fontFamily: UI_FONT_MONO,
-    fontStyle: 'bold',
-  };
-
   private scene!: Phaser.Scene;
   private colorMatrix: Phaser.Filters.ColorMatrix | null = null;
   private emitters: Partial<Record<EmitterName, Phaser.GameObjects.Particles.ParticleEmitter>> = {};
@@ -398,7 +390,7 @@ export class EffectsManager {
   }
 
   createScorePopup(x: number, y: number, score: number): void {
-    createOverlayScorePopup(this.scene, x, y, score, EffectsManager.SCORE_POPUP_STYLE);
+    createOverlayScorePopup(this.scene, x, y, score);
   }
 
   createBulletTrail(x: number, y: number): void {

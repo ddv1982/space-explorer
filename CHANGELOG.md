@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.24.0] - 2026-11-09
+
+### Changed
+
+- A new look for every screen: dark glass panels with a cut corner and a lit top edge, one solid cyan button for the main action on each screen, and a new label typeface (Rajdhani) in place of the monospaced text. Titles glow.
+- Main menu: the frame around the screen is gone. The title sits over a larger hero ship, NEW RUN is the one big button, and save slots are a row of cards that show the saved sector, score and date.
+- In-game HUD: the bar across the top is replaced by two corner clusters. Hull is one cell per hull point and shifts from cyan to amber to red, reserve ships are icons, the score is a large readout, and sector progress is a thin rail with a marker. On phones nothing overlaps any more.
+- Announcements (sector start, boss warning, elite wave) are title cards in the display typeface.
+- Pause: a compact panel with CHECKPOINTS and SETTINGS tabs, save slots as cards, and RESUME as the only solid button. The instruction sentences are gone.
+- Game Over and Victory fill the screen: a red or gold glowing title, your score counting up, the sector you reached or ten lit sector pips, and drifting embers or light rays.
+- Refit bay: upgrade cards have readable text, level pips, a cost chip that shows when you cannot afford it, and a padlock with the unlock requirement. CONTINUE is the main button.
+- Settings: GAMEPLAY, VISUALS and AUDIO sections, segmented selectors and slimmer sliders.
+- Pickups are glowing orbs with a halo, score popups are gold and pop before they rise, and the phone pause button and the controls hint match the new panels.
+- A loading splash with the title and a progress rail shows while the game starts.
+
+### Fixed
+
+- The browser tab icon pointed at a file that no longer exists.
+
 ## [1.23.0] - 2026-11-09
 
 ### Added

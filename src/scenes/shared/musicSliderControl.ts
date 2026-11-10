@@ -1,12 +1,6 @@
 import Phaser from 'phaser';
-import { drawAngledRectPath, drawNeonFrame, NEON, NEON_FONT } from './neonUiTheme';
-
-export type MusicSliderIconDrawer = (
-  graphics: Phaser.GameObjects.Graphics,
-  centerX: number,
-  centerY: number,
-  size: number
-) => void;
+import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
+import { NEON, NEON_TEXT, neonLabelStyle, neonReadoutStyle } from './neonUiTheme';
 
 export interface MusicSliderControl {
   setPosition: (x: number, y: number) => void;
@@ -21,74 +15,41 @@ interface CreateMusicSliderControlConfig {
   value: number;
   width?: number;
   onChange: (value: number) => void;
-  icon?: MusicSliderIconDrawer;
 }
 
+/** Vertical space one slider row claims; the whole row height is the touch target. */
 export const ROW_HEIGHT = 52;
-const ROW_PADDING_X = 16;
-const ICON_BOX_SIZE = 46;
-const ICON_TO_LABEL_GAP = 16;
-const LABEL_WIDTH = 170;
-const LABEL_TO_TRACK_GAP = 18;
-const TRACK_HEIGHT = 12;
-const KNOB_RADIUS = 12;
-const VALUE_BOX_WIDTH = 74;
-const VALUE_BOX_HEIGHT = 34;
-const VALUE_BOX_GAP = 18;
+/** Narrower than this, the label and readout move above the track so the track keeps its length. */
+const STACKED_BELOW_WIDTH = 260;
+const TRACK_HEIGHT = 6;
+const THUMB_RADIUS = 8;
+const READOUT_WIDTH = 46;
+const TRACK_COLOR = 0x0b2038;
+const TRACK_EDGE_COLOR = 0x2f6ea0;
+const THUMB_COLOR = 0xeafaff;
 
-const COLOR_PILL_STROKE = NEON.cyan;
-const COLOR_PILL_STROKE_SOFT = NEON.blue;
-const COLOR_ICON_BG = NEON.navySoft;
-const COLOR_TRACK_BG = 0x07162a;
-const COLOR_TRACK_STROKE = NEON.blue;
-const COLOR_FILL_DEEP = NEON.blueDeep;
-const COLOR_FILL_BRIGHT = NEON.cyan;
-const COLOR_KNOB_INNER = 0xe8f9ff;
-const COLOR_KNOB_RING = NEON.cyan;
-
+/**
+ * A labelled 0–100% slider: label, track with a lit fill and a round thumb, and a percent readout.
+ * Dragging anywhere on the row's track sets the value.
+ */
 export function createMusicSliderControl(
   scene: Phaser.Scene,
   config: CreateMusicSliderControlConfig
 ): MusicSliderControl {
   const totalWidth = config.width ?? 260;
-  const formatValue = (nextValue: number) => `${Math.round(nextValue * 100)}%`;
-
-  // Layering: pill background → icon box → track bg → track fill → knob → value box → texts → hit zone
-  const pillFrame = scene.add.graphics();
-  const iconBox = scene.add.graphics();
-  const iconOverlay = scene.add.graphics();
-  const trackBackground = scene.add.graphics();
-  const trackFill = scene.add.graphics();
-  const knob = scene.add.graphics();
-  const valueBox = scene.add.graphics();
-
-  const labelText = scene.add.text(0, 0, config.label, {
-    fontSize: '15px',
-    color: '#e6faff',
-    fontFamily: NEON_FONT.mono,
-    fontStyle: 'bold',
-  });
-  const valueText = scene.add
-    .text(0, 0, '', {
-      fontSize: '13px',
-      color: '#bfefff',
-      fontFamily: NEON_FONT.mono,
-      fontStyle: 'bold',
-    })
-    .setOrigin(0.5);
-
-  // Track geometry calculated relative to pill interior
-  const compact = totalWidth < 520;
-  const ultraCompact = totalWidth < 260;
-  const iconSize = compact ? 0 : ICON_BOX_SIZE;
-  const labelWidth = ultraCompact ? 0 : compact ? Math.max(96, Math.min(132, totalWidth * 0.32)) : LABEL_WIDTH;
-  const valueBoxWidth = ultraCompact ? 0 : compact ? 58 : VALUE_BOX_WIDTH;
-  const trackLeft = ultraCompact
-    ? 12
-    : ROW_PADDING_X + iconSize + (compact ? 0 : ICON_TO_LABEL_GAP) + labelWidth + LABEL_TO_TRACK_GAP;
-  const trackRight = ultraCompact ? totalWidth - 12 : totalWidth - ROW_PADDING_X - valueBoxWidth - VALUE_BOX_GAP;
+  const stacked = totalWidth < STACKED_BELOW_WIDTH;
+  const labelWidth = stacked ? 0 : Math.max(96, Math.min(128, totalWidth * 0.34));
+  const trackLeft = stacked ? THUMB_RADIUS : labelWidth + 10;
+  const trackRight = stacked ? totalWidth - THUMB_RADIUS : totalWidth - READOUT_WIDTH - 12;
   const trackWidth = Math.max(30, trackRight - trackLeft);
+  const trackCenterY = stacked ? 36 : ROW_HEIGHT / 2;
+  const captionY = stacked ? 14 : ROW_HEIGHT / 2;
 
+  const track = scene.add.graphics();
+  const labelText = scene.add
+    .text(0, 0, config.label, neonLabelStyle(stacked ? 12 : 14, NEON_TEXT.secondary))
+    .setOrigin(0, 0.5);
+  const valueText = scene.add.text(0, 0, '', neonReadoutStyle(stacked ? 12 : 14, NEON_TEXT.cyan)).setOrigin(1, 0.5);
   const hitArea = scene.add.zone(0, 0, trackWidth, ROW_HEIGHT).setOrigin(0).setInteractive({ useHandCursor: true });
 
   let originX = 0;
@@ -97,113 +58,36 @@ export function createMusicSliderControl(
   let draggingPointerId: number | null = null;
 
   const redraw = (): void => {
-    const rowCenterY = originY + ROW_HEIGHT / 2;
-    const trackY = rowCenterY - TRACK_HEIGHT / 2;
+    const x = originX + trackLeft;
+    const y = originY + trackCenterY - TRACK_HEIGHT / 2;
     const fillWidth = trackWidth * value;
-    const knobX = originX + trackLeft + fillWidth;
+    const thumbX = x + fillWidth;
+    const thumbY = originY + trackCenterY;
 
-    // ----- Outer framed row -----
-    pillFrame.clear();
-    drawNeonFrame(pillFrame, originX, originY, totalWidth, ROW_HEIGHT, {
-      accentColor: COLOR_PILL_STROKE,
-      fillAlpha: 0.78,
-      strokeAlpha: 0.85,
-      cornerCut: 10,
-      glow: true,
-    });
-
-    // ----- Icon box (rounded square inside pill left) -----
-    iconBox.clear();
-    iconOverlay.clear();
-    const iconX = originX + ROW_PADDING_X;
-    const iconY = rowCenterY - ICON_BOX_SIZE / 2;
-    if (!compact) {
-      drawAngledRectPath(iconBox, iconX, iconY, ICON_BOX_SIZE, ICON_BOX_SIZE, 8);
-      iconBox.fillStyle(COLOR_ICON_BG, 0.85);
-      iconBox.fillPath();
-      drawAngledRectPath(iconBox, iconX, iconY, ICON_BOX_SIZE, ICON_BOX_SIZE, 8);
-      iconBox.lineStyle(1, COLOR_PILL_STROKE, 0.75);
-      iconBox.strokePath();
-      if (config.icon) {
-        config.icon(iconOverlay, iconX + ICON_BOX_SIZE / 2, iconY + ICON_BOX_SIZE / 2, ICON_BOX_SIZE - 14);
-      } else {
-        iconOverlay.lineStyle(1.5, COLOR_PILL_STROKE, 0.8);
-        iconOverlay.lineBetween(iconX + 14, rowCenterY, iconX + ICON_BOX_SIZE - 14, rowCenterY);
-        iconOverlay.lineBetween(
-          iconX + ICON_BOX_SIZE / 2,
-          iconY + 14,
-          iconX + ICON_BOX_SIZE / 2,
-          iconY + ICON_BOX_SIZE - 14
-        );
-      }
+    track.clear();
+    track.fillStyle(TRACK_COLOR, 1);
+    track.fillRoundedRect(x, y, trackWidth, TRACK_HEIGHT, TRACK_HEIGHT / 2);
+    track.lineStyle(1, TRACK_EDGE_COLOR, 0.55);
+    track.strokeRoundedRect(x, y, trackWidth, TRACK_HEIGHT, TRACK_HEIGHT / 2);
+    if (fillWidth > TRACK_HEIGHT) {
+      track.fillStyle(NEON.cyan, 1);
+      track.fillRoundedRect(x, y, fillWidth, TRACK_HEIGHT, TRACK_HEIGHT / 2);
+      track.fillStyle(0xffffff, 0.35);
+      track.fillRect(x + TRACK_HEIGHT / 2, y + 1, fillWidth - TRACK_HEIGHT, 1.5);
     }
+    track.fillStyle(NEON.cyan, scaleUiGlowAlpha(0.22));
+    track.fillCircle(thumbX, thumbY, THUMB_RADIUS + 5);
+    track.fillStyle(THUMB_COLOR, 1);
+    track.fillCircle(thumbX, thumbY, THUMB_RADIUS);
+    track.lineStyle(2, NEON.cyan, 1);
+    track.strokeCircle(thumbX, thumbY, THUMB_RADIUS);
 
-    // ----- Label -----
-    labelText.setPosition(
-      originX + (ultraCompact ? 12 : ROW_PADDING_X + iconSize + (compact ? 0 : ICON_TO_LABEL_GAP)),
-      ultraCompact ? originY + 5 : rowCenterY - 9
-    );
-    labelText.setFontSize(ultraCompact ? '10px' : '15px');
+    labelText.setPosition(originX, originY + captionY);
+    valueText.setPosition(originX + totalWidth, originY + captionY);
+    valueText.setText(`${Math.round(value * 100)}%`);
 
-    // ----- Track backing -----
-    trackBackground.clear();
-    const tx = originX + trackLeft;
-    trackBackground.fillStyle(COLOR_TRACK_BG, 1);
-    trackBackground.fillRoundedRect(tx, trackY, trackWidth, TRACK_HEIGHT, TRACK_HEIGHT / 2);
-    trackBackground.lineStyle(1, COLOR_TRACK_STROKE, 0.75);
-    trackBackground.strokeRoundedRect(tx, trackY, trackWidth, TRACK_HEIGHT, TRACK_HEIGHT / 2);
-
-    // ----- Track fill (clean blue gradient look) -----
-    trackFill.clear();
-    if (fillWidth > 1) {
-      trackFill.fillStyle(COLOR_FILL_DEEP, 1);
-      trackFill.fillRoundedRect(tx, trackY, Math.max(2, fillWidth), TRACK_HEIGHT, TRACK_HEIGHT / 2);
-      trackFill.fillStyle(COLOR_FILL_BRIGHT, 0.7);
-      trackFill.fillRoundedRect(tx, trackY + 1, Math.max(2, fillWidth), TRACK_HEIGHT * 0.4, TRACK_HEIGHT / 2);
-      trackFill.fillStyle(0xffffff, 0.18);
-      trackFill.fillRoundedRect(tx, trackY + 1, Math.max(2, fillWidth), 1.5, 0.5);
-    }
-
-    // ----- Knob -----
-    knob.clear();
-    const knobY = trackY + TRACK_HEIGHT / 2;
-    knob.fillStyle(COLOR_KNOB_RING, 0.25);
-    knob.fillCircle(knobX, knobY, KNOB_RADIUS + 4);
-    knob.fillStyle(0x061222, 1);
-    knob.fillCircle(knobX, knobY, KNOB_RADIUS + 1);
-    knob.lineStyle(1.5, COLOR_KNOB_RING, 1);
-    knob.strokeCircle(knobX, knobY, KNOB_RADIUS + 1);
-    knob.fillStyle(COLOR_KNOB_INNER, 1);
-    knob.fillCircle(knobX, knobY, KNOB_RADIUS - 1);
-    knob.lineStyle(1, COLOR_PILL_STROKE_SOFT, 0.75);
-    knob.strokeCircle(knobX, knobY, KNOB_RADIUS - 1);
-    knob.lineStyle(1.5, COLOR_FILL_DEEP, 0.9);
-    knob.lineBetween(knobX - 2.5, knobY - 3.5, knobX - 2.5, knobY + 3.5);
-    knob.lineBetween(knobX, knobY - 3.5, knobX, knobY + 3.5);
-    knob.lineBetween(knobX + 2.5, knobY - 3.5, knobX + 2.5, knobY + 3.5);
-
-    // ----- Value capsule -----
-    valueBox.clear();
-    const vbx = ultraCompact ? originX + totalWidth - 12 : originX + totalWidth - ROW_PADDING_X - valueBoxWidth;
-    const vby = ultraCompact ? originY + 10 : rowCenterY - VALUE_BOX_HEIGHT / 2;
-    if (!ultraCompact) {
-      valueBox.fillStyle(COLOR_ICON_BG, 0.82);
-      valueBox.fillRoundedRect(vbx, vby, valueBoxWidth, VALUE_BOX_HEIGHT, 6);
-      valueBox.lineStyle(1, COLOR_PILL_STROKE, 0.85);
-      valueBox.strokeRoundedRect(vbx, vby, valueBoxWidth, VALUE_BOX_HEIGHT, 6);
-    }
-
-    valueText.setOrigin(ultraCompact ? 1 : 0.5, 0.5);
-    valueText.setPosition(
-      ultraCompact ? vbx : vbx + valueBoxWidth / 2,
-      ultraCompact ? vby : vby + VALUE_BOX_HEIGHT / 2
-    );
-    valueText.setFontSize(ultraCompact ? '10px' : '13px');
-    valueText.setText(formatValue(value));
-
-    // Hit zone spans the track
-    hitArea.setPosition(tx - 6, originY);
-    hitArea.setSize(trackWidth + 12, ROW_HEIGHT);
+    hitArea.setPosition(x - THUMB_RADIUS, originY);
+    hitArea.setSize(trackWidth + THUMB_RADIUS * 2, ROW_HEIGHT);
   };
 
   const setValue = (nextValue: number, emit = true): void => {
@@ -220,8 +104,7 @@ export function createMusicSliderControl(
   };
 
   const setFromPointer = (pointerX: number): void => {
-    const ratio = (pointerX - (originX + trackLeft)) / trackWidth;
-    setValue(ratio);
+    setValue((pointerX - (originX + trackLeft)) / trackWidth);
   };
 
   hitArea.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -230,26 +113,18 @@ export function createMusicSliderControl(
   });
 
   const handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
-    if (draggingPointerId !== pointer.id) {
-      return;
-    }
-
-    setFromPointer(pointer.x);
+    if (draggingPointerId === pointer.id) setFromPointer(pointer.x);
   };
 
   const handlePointerUp = (pointer: Phaser.Input.Pointer): void => {
-    if (draggingPointerId !== pointer.id) {
-      return;
-    }
-
-    draggingPointerId = null;
+    if (draggingPointerId === pointer.id) draggingPointerId = null;
   };
 
   scene.input.on('pointermove', handlePointerMove);
   scene.input.on('pointerup', handlePointerUp);
   scene.input.on('pointerupoutside', handlePointerUp);
 
-  setValue(value, false);
+  redraw();
 
   return {
     setPosition(nextX, nextY) {
@@ -258,26 +133,14 @@ export function createMusicSliderControl(
       redraw();
     },
     setDepth(depth) {
-      pillFrame.setDepth(depth);
-      iconBox.setDepth(depth + 1);
-      iconOverlay.setDepth(depth + 2);
-      labelText.setDepth(depth + 2);
-      trackBackground.setDepth(depth + 1);
-      trackFill.setDepth(depth + 2);
-      knob.setDepth(depth + 3);
-      valueBox.setDepth(depth + 1);
-      valueText.setDepth(depth + 2);
-      hitArea.setDepth(depth + 4);
+      track.setDepth(depth);
+      labelText.setDepth(depth + 1);
+      valueText.setDepth(depth + 1);
+      hitArea.setDepth(depth + 2);
     },
     setVisible(visible) {
-      pillFrame.setVisible(visible);
-      iconBox.setVisible(visible);
-      iconOverlay.setVisible(visible);
+      track.setVisible(visible);
       labelText.setVisible(visible);
-      trackBackground.setVisible(visible);
-      trackFill.setVisible(visible);
-      knob.setVisible(visible);
-      valueBox.setVisible(visible);
       valueText.setVisible(visible);
       hitArea.setVisible(visible);
       hitArea.disableInteractive();
@@ -292,14 +155,8 @@ export function createMusicSliderControl(
       scene.input.off('pointermove', handlePointerMove);
       scene.input.off('pointerup', handlePointerUp);
       scene.input.off('pointerupoutside', handlePointerUp);
-      pillFrame.destroy();
-      iconBox.destroy();
-      iconOverlay.destroy();
+      track.destroy();
       labelText.destroy();
-      trackBackground.destroy();
-      trackFill.destroy();
-      knob.destroy();
-      valueBox.destroy();
       valueText.destroy();
       hitArea.destroy();
     },

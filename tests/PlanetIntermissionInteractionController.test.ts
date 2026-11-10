@@ -69,9 +69,13 @@ function createGraphicsStub(): Phaser.GameObjects.Graphics {
   return {
     clear: (): undefined => undefined,
     lineStyle: (): undefined => undefined,
-    strokeRoundedRect: (): undefined => undefined,
     fillStyle: (): undefined => undefined,
-    fillRoundedRect: (): undefined => undefined,
+    beginPath: (): undefined => undefined,
+    moveTo: (): undefined => undefined,
+    lineTo: (): undefined => undefined,
+    closePath: (): undefined => undefined,
+    strokePath: (): undefined => undefined,
+    fillPath: (): undefined => undefined,
   } as unknown as Phaser.GameObjects.Graphics;
 }
 
@@ -169,7 +173,7 @@ function createControllerHarness(
           y: 100,
           width: 80,
           height: 40,
-          borderRadius: 8,
+          cornerCut: 8,
           layout: {
             top: 100,
             columns: 3,
@@ -181,10 +185,10 @@ function createControllerHarness(
             titleOffsetY: 0,
             descriptionOffsetY: 0,
             costInsetX: 0,
-            borderRadius: 8,
-            titleFontSize: '12px',
-            descriptionFontSize: '10px',
-            costFontSize: '12px',
+            cornerCut: 8,
+            titleFontSize: 12,
+            descriptionFontSize: 10,
+            costFontSize: 12,
           },
         } as unknown as UpgradeButton,
       };

@@ -114,6 +114,10 @@ class TextStub {
     return this;
   }
 
+  setStroke(): this {
+    return this;
+  }
+
   destroy(): void {}
 }
 
