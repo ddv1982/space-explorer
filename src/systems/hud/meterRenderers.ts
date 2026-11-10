@@ -52,7 +52,7 @@ function fillLitSegment(graphics: Graphics, x: number, y: number, width: number,
   graphics.fillPath();
 }
 
-export function hullColor(ratio: number): number {
+function hullColor(ratio: number): number {
   return ratio > 0.5 ? NEON.cyan : ratio > 0.25 ? NEON.amber : HULL_CRITICAL;
 }
 
@@ -113,7 +113,7 @@ export function renderSurgeBar(graphics: Graphics, ratio: number | null, layout:
 }
 
 /** Where the hull label and its numeric readout end on the label row; shield pips stay right of it. */
-export const HULL_READOUT_WIDTH = 86;
+const HULL_READOUT_WIDTH = 86;
 const SHIELD_PIP_STEP = 13;
 
 /**

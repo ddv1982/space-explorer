@@ -8,7 +8,7 @@ Preload queues missing hulls and validates their dimensions before entering the 
 
 Editable PNGs and their image-model prompts live in `assets/source/cinematic`. Runtime WebP files live in `public/assets/cinematic`. Run `bun run art:export` with cwebp installed to regenerate them. The exporter enforces the 384 KiB download ceiling and the configured source dimensions. Backgrounds use no authored raster assets.
 
-The development-only `?art=neon` comparison selects the previous generated hulls and background. `bun run art:evidence` captures matched static comparisons. `bun run backgrounds:record` records current campaign gameplay in both orientations. Generated evidence stays in ignored `output/` directories.
+The development-only `?art=neon` comparison selects the previous generated hulls and background. `bun run art:evidence` captures matched static comparisons. Generated evidence stays in ignored `output/` directories.
 
 The initial pilot also loaded an authored Aurora plate and generated motes. Those assets and their residency policy were retired after the user preferred procedural backgrounds. Its local research boards and recordings are historical evidence, not release inputs.
 

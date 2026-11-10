@@ -13,7 +13,7 @@ The authored image-model hulls, the generated neon vector hulls (`shipTextures`,
 - Sheets are authored at `SPRITE_DENSITY` (4×) and trimmed to logical size on load, so display sizes and Arcade bodies are exactly those the encounters were tuned with.
 - `queueShipyardAssets` / `finishShipyardLoading` load and validate every sheet in Preload and again at Game entry. A missing or malformed sheet shows the artwork retry screen; there is no silent fallback art.
 - `LightingRig` turns on per-pixel lighting for any sprite whose texture carries a normal map, so explosions, engine lights and pulses shade every hull.
-- `bun run art:shipyard` renders all sheets (`--only a,b` for a subset) and enforces a 1.2 MiB download budget; each run writes `assets/source/shipyard/_preview*.png` for review. `bun run art:shipyard --probe` re-checks the normal-map convention pinned by `tests/shipyardNormalConvention.test.ts`.
+- `bun run art:shipyard` renders all sheets (`--only a,b` for a subset) and enforces a 1.2 MiB download budget; each run writes `assets/source/shipyard/_preview*.png` for review. `bun run art:shipyard --probe` re-checks the normal-map convention.
 - Models are deterministic (seeded noise, no `Math.random`) so re-rendering is reproducible.
 
 ## Consequences

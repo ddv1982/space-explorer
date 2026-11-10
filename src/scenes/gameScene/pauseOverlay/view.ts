@@ -8,7 +8,7 @@ export const PAUSE_OVERLAY_BUTTON_HEIGHT = 48;
 const PAUSE_OVERLAY_BUTTON_GAP = 16;
 export const PAUSE_OVERLAY_SLOT_BUTTON_WIDTH = 68;
 export const PAUSE_OVERLAY_SLOT_BUTTON_HEIGHT = 30;
-export const PAUSE_OVERLAY_SLOT_BUTTON_GAP = 8;
+const PAUSE_OVERLAY_SLOT_BUTTON_GAP = 8;
 /** Buttons keep this distance from the right edge of their slot card. */
 const SLOT_BUTTON_INSET = 10;
 const SLOT_TEXT_INSET = 14;

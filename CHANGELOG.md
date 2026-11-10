@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.24.1] - 2026-11-11
+
+### Changed
+
+- Nothing changes in the game itself. This release slims down how it is built and tested so changes ship faster: CI now runs a browser smoke suite on desktop and phone instead of six shards plus a separate performance job, and the architecture size checker, the TypeScript 6 parity check, screenshot and brightness tests, and tests that only pinned layout numbers are gone.
+- Finished plans, QA notes, research notes and per-release notes were removed from `docs/`; this changelog and git history keep the record.
+
 ## [1.24.0] - 2026-11-09
 
 ### Changed
