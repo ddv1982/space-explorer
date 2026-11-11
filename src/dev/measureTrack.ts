@@ -1,5 +1,5 @@
 import type { ProceduralMusicTrackConfig } from '../config/LevelsConfig';
-import { createMusicBus } from '../systems/audio/procedural/bus';
+import { applyMusicSpace, createMusicBus } from '../systems/audio/procedural/bus';
 import { createNoiseBuffer } from '../systems/audio/procedural/noiseBuffer';
 import { getMusicStepSeconds, scheduleTrackStep } from '../systems/audio/procedural/scheduleStep';
 
@@ -11,8 +11,8 @@ export interface TrackMeasurement {
   highShare: number;
 }
 
-/** The live chain's levels: output boost at the 0.9 intensity floor, then the music bus level. */
-const LIVE_OUTPUT_GAIN = 0.9 * 2.9 * 0.26;
+/** The live chain's levels: output boost (which follows intensity above 0.9), then the music bus level. */
+const LIVE_OUTPUT_BOOST = 2.9 * 0.26;
 const SAMPLE_RATE = 44100;
 
 /** Renders a track faster than real time through the real music bus and measures what comes out. */
@@ -23,7 +23,8 @@ export async function measureTrack(
 ): Promise<TrackMeasurement> {
   const ctx = new OfflineAudioContext(2, SAMPLE_RATE * seconds, SAMPLE_RATE);
   const bus = createMusicBus(ctx, ctx.destination);
-  bus.output.gain.value = LIVE_OUTPUT_GAIN;
+  bus.output.gain.value = Math.max(0.9, intensity) * LIVE_OUTPUT_BOOST;
+  applyMusicSpace(ctx, bus, track.space, getMusicStepSeconds(track), 0);
   const noise = new Map<string, AudioBuffer>();
   const output = {
     ctx,
