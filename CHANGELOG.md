@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.0] - 2026-11-11
+
+### Added
+
+- Rival duels. A rival flies your own ship at half strength: half the thrust and top speed, half the fire rate, half-speed bolts. It lines up on you to shoot, then breaks away to dodge. The sector holds until it falls, its hull shows on the boss bar, and it always drops a power-up. Sector 2 now ends in a duel instead of fading out; sectors 4 and 9 have one mid-level, and sectors 7 and 10 send two at once.
+- Couriers: unarmed gold runners that weave down the screen and always drop a power-up when caught. Sector 8 turns them into convoys to raid.
+- Two new formations. Walls fill the screen except for one open lane to fly through, and echelons sweep in as a diagonal staircase. Every sector gained at least one new set piece built from these.
+- A jump sound for the warp.
+
+### Changed
+
+- The warp to the next sector is new: a gate closes onto a point ahead of the ship, the ship stretches away into it, a tunnel of light races past and the arrival blooms to white. The white-out now holds until the next screen is ready.
+- Explosions no longer sound like drum hits. They used the same low sine thump and noise tick as the music's kick and snare; they are now gritty, un-pitched noise that swells in and rings out longer.
+- Upgrades open gradually across all ten sectors. Before, every tier was available after sector 4, so the ship stopped growing while the hardest five sectors were still ahead.
+- Shields recharge with every new ship, like the hull, and cost 1,000 / 2,000 / 4,000 credits (was 1,200 / 3,000 / 7,500). A shield tier used to be one absorbed hit per sector for more than a hull tier that gave two hits per life.
+- The menu ship no longer sits on a ringed launch pad.
+
+### Fixed
+
+- Music could stay silent in a run until a menu or settings button was pressed. Any key press or touch now wakes the audio, including after the browser put it to sleep mid-run.
+
 ## [1.27.0] - 2026-11-11
 
 ### Added

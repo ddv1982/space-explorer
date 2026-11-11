@@ -28,8 +28,8 @@ describe('resolveDevLevelJump', () => {
       turrets: 2,
     });
     expect(resolveDevLevelJump('?startLevel=2')?.upgrades).toEqual({
-      hp: 3,
-      damage: 2,
+      hp: 2,
+      damage: 1,
       fireRate: 1,
       shield: 0,
       turrets: 0,

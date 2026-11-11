@@ -9,6 +9,7 @@ const BONUS_WAVE_START_Y = -40;
 const BONUS_WAVE_SPACING = 48;
 const WORMHOLE_LEAD_MS = 600;
 const MIN_SPAWN_X = 16;
+const MAX_WALL_MEMBERS_PER_LANE = 3;
 /** Formations spawn above the viewport; telegraph rings are clamped into view so players can read them. */
 const MIN_WORMHOLE_TELEGRAPH_Y = 72;
 
@@ -85,6 +86,27 @@ export function resolveFormationPositions(
           x: clampSpawnX(anchorX + Math.cos(angle) * radius, viewportWidth),
           y: centerY + Math.sin(angle) * radius,
         });
+      }
+      return positions;
+    }
+    case 'wall': {
+      // `anchorX` is the centre of the gap lane. Every other lane is filled, with more members per
+      // lane on wide screens so the open lane stays the only clear way through.
+      const laneWidth = getLaneCenterX(1, viewportWidth) - getLaneCenterX(0, viewportWidth);
+      const perLane = Math.max(1, Math.min(MAX_WALL_MEMBERS_PER_LANE, Math.floor(laneWidth / spacing)));
+      for (let lane = 0; lane < CHOREO_LANE_COUNT; lane++) {
+        const laneX = getLaneCenterX(lane, viewportWidth);
+        if (Math.abs(laneX - anchorX) < 1) continue;
+        for (let slot = 0; slot < perLane && positions.length < total; slot++) {
+          positions.push({ x: laneX + ((slot + 0.5) / perLane - 0.5) * laneWidth, y: startY });
+        }
+      }
+      return positions;
+    }
+    case 'echelon': {
+      const direction = anchorX < viewportWidth / 2 ? 1 : -1;
+      for (let i = 0; i < total; i++) {
+        positions.push({ x: clampSpawnX(anchorX + direction * i * spacing, viewportWidth), y: startY - i * spacing });
       }
       return positions;
     }

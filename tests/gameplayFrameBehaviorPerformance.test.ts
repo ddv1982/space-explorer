@@ -75,6 +75,7 @@ function createHarness(level = 1): {
     waveManager: {
       update: () => waveCalls.push('waves'),
       updateBossAdds: () => waveCalls.push('boss-adds'),
+      getDuelHull: () => null,
     },
     levelManager: {
       get progress() {
@@ -90,7 +91,12 @@ function createHarness(level = 1): {
       getChainState: () => ({ chain: 0, multiplier: 1 }),
     },
     events: { emit: () => {} },
-    hud: { updateBossHp: () => {}, updateBossGuard: () => {} },
+    hud: {
+      showBossBar: () => undefined,
+      hideBossBar: () => undefined,
+      updateBossHp: () => {},
+      updateBossGuard: () => {},
+    },
     bulletPool: { fire: () => {} },
     effectsManager: { createMuzzleFlash: () => {}, updateLighting: (delta) => lightingDeltas.push(delta) },
     getBoss: () => null,

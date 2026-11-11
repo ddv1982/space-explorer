@@ -18,6 +18,10 @@ export interface UpgradeDef {
   name: string;
   description: string;
   maxLevel: number;
+  /**
+   * Highest tier purchasable after clearing sector N (index N - 1). Tiers open gradually across all
+   * ten sectors, so the ship keeps growing while the sectors keep getting harder.
+   */
   progressionCaps: number[];
   baseCost: number;
   costMultiplier: number;
@@ -48,7 +52,7 @@ const UPGRADES: UpgradeDef[] = [
     name: 'HULL ARMOR',
     description: '+2 Max HP',
     maxLevel: 5,
-    progressionCaps: [2, 3, 4, 5, 5],
+    progressionCaps: [1, 2, 2, 3, 3, 4, 4, 5, 5, 5],
     baseCost: 500,
     costMultiplier: 1.8,
   },
@@ -57,7 +61,7 @@ const UPGRADES: UpgradeDef[] = [
     name: 'WEAPONS',
     description: '+1 Damage',
     maxLevel: 4,
-    progressionCaps: [1, 2, 3, 4, 4],
+    progressionCaps: [1, 1, 2, 2, 3, 3, 4, 4, 4, 4],
     baseCost: 800,
     costMultiplier: 2.0,
   },
@@ -66,7 +70,7 @@ const UPGRADES: UpgradeDef[] = [
     name: 'FIRE RATE',
     description: 'Faster shooting',
     maxLevel: 4,
-    progressionCaps: [0, 1, 2, 4, 4],
+    progressionCaps: [0, 1, 1, 2, 2, 3, 3, 4, 4, 4],
     baseCost: 600,
     costMultiplier: 1.6,
     unlock: {
@@ -79,11 +83,12 @@ const UPGRADES: UpgradeDef[] = [
   {
     key: 'shield',
     name: 'SHIELD',
-    description: '+1 Hit absorbed',
+    description: '+1 Shield each life',
     maxLevel: 3,
-    progressionCaps: [0, 0, 1, 3, 3],
-    baseCost: 1200,
-    costMultiplier: 2.5,
+    progressionCaps: [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
+    // A shield tier is one absorbed hit per life, where a hull tier is two: priced a little above hull.
+    baseCost: 1000,
+    costMultiplier: 2,
     unlock: {
       minPlayerLevel: 3,
       minUpgradeLevels: {
@@ -96,7 +101,7 @@ const UPGRADES: UpgradeDef[] = [
     name: 'AEGIS PICKET',
     description: 'Edge turret mounts',
     maxLevel: 2,
-    progressionCaps: [0, 0, 0, 1, 2],
+    progressionCaps: [0, 0, 0, 1, 1, 2, 2, 2, 2, 2],
     baseCost: 1500,
     costMultiplier: 2.0,
     unlock: {

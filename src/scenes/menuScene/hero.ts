@@ -2,16 +2,13 @@ import Phaser from 'phaser';
 import { bankToFrame, PLAYER_SPRITE } from '../../config/shipyardSprites';
 import { getVisualQualityProfile } from '../../config/visualQuality';
 import { PARTICLE, generateEffectsParticleTextures } from '../../systems/effects/particleTextureFactory';
-import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
-import { NEON, prefersReducedMotion } from '../shared/neonUiTheme';
+import { prefersReducedMotion } from '../shared/neonUiTheme';
 
 /** One slow bank sway from left to right and back. */
 const SWAY_PERIOD_MS = 7200;
 const BOB_PERIOD_MS = 2600;
 /** One revolution of the key light around the hull. */
 const ORBIT_PERIOD_MS = 9000;
-/** A scan ring leaves the launch pad this often. */
-const SCAN_PERIOD_MS = 2400;
 
 export interface MenuHero {
   update: (delta: number) => void;
@@ -42,7 +39,7 @@ function lightHero(scene: Phaser.Scene, ship: Phaser.GameObjects.Image, shipHeig
 
 /** Native size of the player ship frame (`player-ship`, 36×44 logical px). */
 const SHIP_FRAME_HEIGHT = 44;
-/** The hero needs half its height above its centre and 0.8 below it (engine plume and launch pad). */
+/** The hero needs half its height above its centre and 0.8 below it (engine plume). */
 const HERO_FOOTPRINT = 1.3;
 /** Below this, the hero ship would be too small to read and the band is left empty. */
 const MIN_HERO_SHIP_HEIGHT = 64;
@@ -71,30 +68,6 @@ export function placeMenuHero(
 
 function glowImage(scene: Phaser.Scene, x: number, y: number, texture: string, tint: number) {
   return scene.add.image(x, y, texture).setBlendMode(Phaser.BlendModes.ADD).setTint(tint).setDepth(10);
-}
-
-/** The launch pad under the hero: rings, a soft glow and a scan ring that ripples outward. */
-function createLaunchPad(scene: Phaser.Scene, hero: HeroPlan) {
-  const y = hero.y + hero.shipHeight * 0.62;
-  const width = hero.shipHeight * 1.5;
-  const rings = scene.add.graphics().setDepth(10);
-  rings.fillStyle(NEON.cyan, scaleUiGlowAlpha(0.07));
-  rings.fillEllipse(hero.x, y, width, width * 0.2);
-  rings.lineStyle(1.5, NEON.cyan, scaleUiGlowAlpha(0.5));
-  rings.strokeEllipse(hero.x, y, width, width * 0.2);
-  rings.lineStyle(1, NEON.blue, scaleUiGlowAlpha(0.35));
-  rings.strokeEllipse(hero.x, y, width * 1.35, width * 0.27);
-  const glow = glowImage(scene, hero.x, y, PARTICLE.glow, NEON.cyan)
-    .setAlpha(0.35)
-    .setDisplaySize(width * 1.1, width * 0.3);
-  const scan = glowImage(scene, hero.x, y, PARTICLE.ring, NEON.cyan).setAlpha(0);
-  return {
-    objects: [rings, glow, scan],
-    pose(elapsed: number) {
-      const life = (elapsed % SCAN_PERIOD_MS) / SCAN_PERIOD_MS;
-      scan.setDisplaySize(width * (0.4 + life * 1.2), width * (0.08 + life * 0.24)).setAlpha(0.55 * (1 - life));
-    },
-  };
 }
 
 /** Twin white-hot flame cores in a blue plume, plus a trickle of exhaust, held to the ship's tail. */
@@ -138,15 +111,14 @@ function createHeroEngines(scene: Phaser.Scene, hero: HeroPlan) {
 }
 
 /**
- * The player's lit, code-built ship idling over a launch pad: it bobs and sways through its rendered
- * bank frames, a key light orbits it, its twin engines burn with a flickering plume and exhaust, and
- * scan rings ripple out from the pad. Static under reduced motion.
+ * The player's lit, code-built ship idling in open space: it bobs and sways through its rendered bank
+ * frames, a key light orbits it, and its twin engines burn with a flickering plume and exhaust.
+ * Static under reduced motion.
  */
 export function createMenuHero(scene: Phaser.Scene, hero: HeroPlan | null): MenuHero | null {
   if (!hero || !scene.textures.exists(PLAYER_SPRITE.key)) return null;
   generateEffectsParticleTextures(scene);
 
-  const pad = createLaunchPad(scene, hero);
   const engines = createHeroEngines(scene, hero);
   const ship = scene.add
     .image(hero.x, hero.y, PLAYER_SPRITE.key, String(bankToFrame(0, PLAYER_SPRITE.frames)))
@@ -164,7 +136,6 @@ export function createMenuHero(scene: Phaser.Scene, hero: HeroPlan | null): Menu
     if (ship.frame.name !== frame) ship.setFrame(frame);
     const flicker = 0.85 + 0.15 * Math.sin(elapsed / 37) * Math.sin(elapsed / 23);
     const tail = engines.pose(ship, flicker);
-    pad.pose(elapsed);
     if (lights) {
       const orbit = (elapsed / ORBIT_PERIOD_MS) * Math.PI * 2;
       lights.key.setPosition(ship.x + Math.cos(orbit) * hero.shipHeight * 1.1, ship.y - hero.shipHeight * 0.4);
@@ -181,7 +152,7 @@ export function createMenuHero(scene: Phaser.Scene, hero: HeroPlan | null): Menu
       pose();
     },
     destroy() {
-      for (const object of [ship, ...pad.objects, ...engines.objects]) object.destroy();
+      for (const object of [ship, ...engines.objects]) object.destroy();
       if (lights) {
         scene.lights.removeLight(lights.key);
         scene.lights.removeLight(lights.engine);

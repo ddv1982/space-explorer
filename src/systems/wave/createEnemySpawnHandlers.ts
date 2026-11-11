@@ -37,6 +37,8 @@ export function createEnemySpawnHandlers(
     sower: (anchorX) => repeated('sower', 1, anchorX, 100),
     lancer: (anchorX) => repeated('lancer', 1, anchorX, 80),
     splitter: (anchorX) => repeated('splitter', Phaser.Math.Between(1, 2), anchorX, 80, -90),
+    rival: (anchorX) => repeated('rival', 1, anchorX, 120),
+    courier: (anchorX) => repeated('courier', 1, anchorX, 60),
     swarmling: (anchorX) => {
       const baseX = context.getSpawnX(anchorX, 60);
       return context.spawnRepeated(

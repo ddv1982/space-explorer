@@ -26,6 +26,9 @@ _Avoid_: surprise, cheap shot
 
 ## Decisions
 
+**Rival duels hold the sector (2026-11)**:
+A rival is the player's hull flown at half strength, authored only as a choreographed wave. While one is alive the wave clock, hazards and route progress stop, so a duel is a clean one-on-one that must be won. Upgrade tiers open across all ten sectors instead of all being available after sector 4, and purchased shields recharge on every respawn. Difficulty tiers still only scale hull damage.
+
 **v2 overhaul supersedes the frozen-grammar rules (2026-11)**:
 The user authorized a complete redesign of graphics, ships, levels, controls, and sound. The "presentation remake does not change encounter grammar" and "textures stay procedural" decisions below no longer bind v2 work, and v1 code is replaced outright rather than kept behind toggles. Pause freezing gameplay clocks, both touch orientations, and difficulty-as-forgiveness still hold. Phase 0 replaced acceleration/drag movement with exponential momentum flight (`FLIGHT_CONFIG`: 480 px/s cap, 70 ms response, 110 ms glide time constants; tuned with the user in the playtest), replaced the joystick with relative touch drag plus autofire, and introduced code-built 3D ships rendered to normal-mapped sheets lit by a per-tier lighting rig. v2 work lands on the `v2` branch until the v2.0.0 release.
 

@@ -174,6 +174,11 @@ if (game && typeof window !== 'undefined') {
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
   audioManager.setPaused('visibility', document.hidden);
+  // Browsers keep audio asleep until the player does something, and can put it back to sleep later.
+  // Any key or touch wakes it, so the music never waits for a menu button.
+  const wakeAudio = (): void => audioManager.resumeFromUserGesture();
+  const wakeAudioEvents = ['pointerdown', 'pointerup', 'keydown', 'touchend'] as const;
+  for (const type of wakeAudioEvents) window.addEventListener(type, wakeAudio, { capture: true, passive: true });
 
   game.events.once(Phaser.Core.Events.DESTROY, () => {
     destroyed = true;
@@ -184,6 +189,7 @@ if (game && typeof window !== 'undefined') {
     visualViewport?.removeEventListener('resize', handleVisualViewportChange);
     visualViewport?.removeEventListener('scroll', handleVisualViewportChange);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
+    for (const type of wakeAudioEvents) window.removeEventListener(type, wakeAudio, { capture: true });
     rootResizeObserver?.disconnect();
     if (pendingScaleRefresh !== null) window.cancelAnimationFrame(pendingScaleRefresh);
     for (const timeout of recoveryTimeouts) window.clearTimeout(timeout);

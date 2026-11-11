@@ -180,6 +180,16 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
           telegraph: 'warning',
           notes: 'Gunships press in behind each flare sweep.',
         },
+        {
+          id: 'l10-courier-flare-run',
+          atMs: 11000,
+          formation: 'column',
+          type: 'courier',
+          count: 1,
+          lane: 5,
+          telegraph: 'warning',
+          notes: 'One last courier runs under the flares.',
+        },
       ],
       recoveryDrops: [
         {
@@ -236,6 +246,15 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
           lane: 3,
           telegraph: 'warning',
           notes: 'Lancers reprise their duels between lattice beats.',
+        },
+        {
+          id: 'l10-rival-mirror-pair',
+          atMs: 12300,
+          formation: 'pincer',
+          type: 'rival',
+          count: 2,
+          telegraph: 'warning',
+          notes: 'The mirror pair: two rivals enter from both edges for the final duel before the convergence.',
         },
       ],
       musicIntensity: 0.82,

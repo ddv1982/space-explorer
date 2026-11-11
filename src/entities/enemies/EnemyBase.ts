@@ -106,8 +106,19 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
 
   die(): void {
     this.defeatCount += 1;
-    this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y, this.aceMarked);
+    this.scene.events.emit(
+      GAME_SCENE_EVENTS.enemyDeath,
+      this.scoreValue,
+      this.x,
+      this.y,
+      this.aceMarked || this.alwaysDropsPowerUp()
+    );
     this.despawn();
+  }
+
+  /** Prize ships override this to always leave a power-up, the way a Marked Ace does. */
+  protected alwaysDropsPowerUp(): boolean {
+    return false;
   }
 
   /**

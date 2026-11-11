@@ -66,6 +66,18 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       endProgress: 0.14,
       phase: 'intro',
       summary: 'A quiet drift into the wreckage ramparts; the gauntlet reads its lanes before the flares wake.',
+      waves: [
+        {
+          id: 'l6-scout-echelon',
+          atMs: 5000,
+          formation: 'echelon',
+          type: 'scout',
+          count: 5,
+          lane: 6,
+          telegraph: 'warning',
+          notes: 'A scout staircase sweeps in from the right before the beams begin.',
+        },
+      ],
       musicIntensity: 0.46,
       visualModifiers: {
         atmosphereAlpha: 0.97,
@@ -150,6 +162,16 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
           lane: 3,
           telegraph: 'warning',
           notes: 'A warning-telegraphed gunship pair audits whether the player is reading lanes or camping cover.',
+        },
+        {
+          id: 'l6-courier-lattice-dash',
+          atMs: 15000,
+          formation: 'column',
+          type: 'courier',
+          count: 1,
+          lane: 1,
+          telegraph: 'warning',
+          notes: 'A courier dashes across the lattice: the prize sits behind the beams.',
         },
       ],
       recoveryDrops: [

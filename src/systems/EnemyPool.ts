@@ -10,6 +10,8 @@ import { Sower } from '../entities/enemies/Sower';
 import { Lancer } from '../entities/enemies/Lancer';
 import { Splitter } from '../entities/enemies/Splitter';
 import { Swarmling } from '../entities/enemies/Swarmling';
+import { Rival } from '../entities/enemies/Rival';
+import { Courier } from '../entities/enemies/Courier';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { Boss } from '../entities/enemies/Boss';
 import { EnemyBullet } from '../entities/EnemyBullet';
@@ -44,6 +46,8 @@ const ENEMY_DESCRIPTORS = {
   lancer: { maxSize: 8, classType: Lancer, playerCollisionBehavior: 'impact' },
   splitter: { maxSize: 16, classType: Splitter, playerCollisionBehavior: 'impact' },
   swarmling: { maxSize: 32, classType: Swarmling, playerCollisionBehavior: 'kamikaze' },
+  rival: { maxSize: 3, classType: Rival, playerCollisionBehavior: 'impact' },
+  courier: { maxSize: 6, classType: Courier, playerCollisionBehavior: 'impact' },
 } satisfies Record<EnemyType, EnemyDescriptor>;
 const ENEMY_TYPES = Object.keys(ENEMY_DESCRIPTORS) as EnemyType[];
 const GROUP_DESCRIPTORS: Record<PoolGroupKey, GroupDescriptor> = {
@@ -64,6 +68,7 @@ export class EnemyPool {
   private scene!: Phaser.Scene;
   private groups: Partial<Record<PoolGroupKey, Phaser.Physics.Arcade.Group>> = {};
   private targetProvider: (() => { x: number; y: number } | null) | null = null;
+  private playerDamage = 1;
 
   private acquireFromGroup<T>(group: Phaser.Physics.Arcade.Group, x: number, y: number): T | null {
     const existing = group.getFirstDead(false) as T | null;
@@ -180,6 +185,23 @@ export class EnemyPool {
     return lancer;
   }
 
+  spawnRival(x: number, y: number): Rival | null {
+    const rivals = this.ensureGroup('rival');
+    const rival = this.acquireFromGroup<Rival>(rivals, x, y);
+    if (rival) {
+      rival.setEnemyBulletGroup(this.ensureGroup('enemyBullet'));
+      if (this.targetProvider) rival.setTargetProvider(this.targetProvider);
+      rival.setPlayerDamage(this.playerDamage);
+      rival.spawn(x, y);
+    }
+    return rival;
+  }
+
+  /** Rivals still in the fight; a duel holds the sector while any remain. */
+  getActiveRivals(): Rival[] {
+    return this.getGroupChildrenSafely(this.groups.rival).filter((rival) => rival.active) as Rival[];
+  }
+
   spawnSplitter(x: number, y: number): Splitter | null {
     const splitter = this.spawnFromGroup<Splitter>('splitter', x, y);
     if (splitter) {
@@ -199,6 +221,10 @@ export class EnemyPool {
     this.targetProvider = provider;
   }
 
+  setPlayerDamage(damage: number): void {
+    this.playerDamage = damage;
+  }
+
   spawnEnemy(type: EnemyType, x: number, y: number): EnemyBase | null {
     switch (type) {
       case 'bomber':
@@ -209,6 +235,8 @@ export class EnemyPool {
         return this.spawnLancer(x, y);
       case 'splitter':
         return this.spawnSplitter(x, y);
+      case 'rival':
+        return this.spawnRival(x, y);
       default: {
         const descriptor = ENEMY_DESCRIPTORS[type];
         return 'armed' in descriptor

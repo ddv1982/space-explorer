@@ -100,6 +100,7 @@ function createFiringHarness(chainMultiplier: number) {
     waveManager: {
       update: () => {},
       updateBossAdds: () => {},
+      getDuelHull: () => null,
     },
     levelManager: {
       progress: 0,
@@ -113,7 +114,12 @@ function createFiringHarness(chainMultiplier: number) {
       getChainState: () => ({ chain: 40, multiplier: chainMultiplier }),
     },
     events: { emit: () => {} },
-    hud: { updateBossHp: () => {}, updateBossGuard: () => {} },
+    hud: {
+      showBossBar: () => undefined,
+      hideBossBar: () => undefined,
+      updateBossHp: () => {},
+      updateBossGuard: () => {},
+    },
     bulletPool: {
       fire: () => {
         firedAt.push(currentTime);

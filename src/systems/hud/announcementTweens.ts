@@ -81,8 +81,8 @@ export class HudAnnouncementTweens {
     this.show({ text: `ALLY WING ONLINE (${helperCount})`, color: ALLY, duration: 1600, offset: -6, exit: -28 });
   }
 
-  showEliteWaveAnnouncement(): void {
-    this.show({ text: 'ELITE WAVE', color: ELITE, duration: 1500, offset: -6, exit: -30 });
+  showEliteWaveAnnouncement(title = 'ELITE WAVE'): void {
+    this.show({ text: title, color: ELITE, duration: 1500, offset: -6, exit: -30 });
   }
 
   showPicketOnlineAnnouncement(): void {

@@ -189,6 +189,7 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
   const enemyPool = createEnemyPool();
   enemyPool.create(scene);
   enemyPool.setTargetProvider(() => (player.isAlive ? { x: player.x, y: player.y } : null));
+  enemyPool.setPlayerDamage(player.damage);
 
   const lastLifeHelperWing = createHelperWing({
     scene,

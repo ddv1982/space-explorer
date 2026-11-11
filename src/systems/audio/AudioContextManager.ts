@@ -158,7 +158,9 @@ export class AudioContextManager {
 
   resumeFromUserGesture(): void {
     const context = this.ctx;
-    if (!context || context.state !== 'suspended' || this.desiredSuspended || this.gestureResume) {
+    // Anything but running or closed needs waking: Safari also reports 'interrupted'.
+    const asleep = context && context.state !== 'running' && context.state !== 'closed';
+    if (!context || !asleep || this.desiredSuspended || this.gestureResume) {
       return;
     }
 
