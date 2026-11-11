@@ -1,7 +1,6 @@
 type MusicWaveform = OscillatorType;
 type MusicStep = number | null;
 import type { MusicArrangementPhase } from './arrangementTypes';
-export type { MusicArrangementPhase } from './arrangementTypes';
 
 type MusicEnvelopeCurve = 'linear' | 'soft' | 'hard';
 
@@ -96,7 +95,7 @@ interface MusicHarmonicProgressionConfig {
   steps: MusicHarmonicChordStepConfig[];
 }
 
-export interface MusicArrangementLayerGainMultipliersConfig {
+interface MusicArrangementLayerGainMultipliersConfig {
   bass?: number;
   pulse?: number;
   lead?: number;
@@ -118,8 +117,6 @@ export interface MusicArrangementConfig {
 
 export interface MusicCompositionalDescriptorsConfig {
   mode: string;
-  chordProgressionTags: string[];
-  rhythmicFeel: string;
   energyProfile: MusicEnergyProfileConfig;
   harmony: MusicHarmonicProgressionConfig;
   arrangement?: MusicArrangementConfig;
@@ -140,7 +137,34 @@ export interface ProceduralMusicLayerConfig {
   octaveShift?: number;
   detune?: number;
   filterHz?: number;
+  /** Music intensity (0-1) at which this layer is fully in; it fades in just below. Default 0. */
+  enterAt?: number;
   expression?: ProceduralMusicLayerExpressionConfig;
+}
+
+/** A sustained open chord (root, fifth, octave) on the current harmony, re-struck every bar. */
+export interface MusicPadConfig {
+  waveform: MusicWaveform;
+  gain: number;
+  filterHz: number;
+  octaveShift?: number;
+}
+
+export type MusicDrumKit = 'soft' | 'tight' | 'heavy';
+
+/** Synthesized drums. Patterns hold a velocity (0-1) per step of the bar. */
+export interface MusicDrumsConfig {
+  kit: MusicDrumKit;
+  gain: number;
+  kick: readonly number[];
+  snare: readonly number[];
+  hat: readonly number[];
+}
+
+/** Send levels (0-1) into the shared reverb and the tempo-synced echo. */
+export interface MusicSpaceConfig {
+  reverb: number;
+  delay: number;
 }
 
 export interface ProceduralNoiseLayerConfig {
@@ -149,6 +173,7 @@ export interface ProceduralNoiseLayerConfig {
   filterHz: number;
   durationSteps: number;
   rhythm?: MusicLayerRhythmConfig;
+  enterAt?: number;
   expression?: ProceduralNoiseLayerExpressionConfig;
 }
 
@@ -163,16 +188,12 @@ export interface ProceduralMusicTrackConfig {
   pulse?: ProceduralMusicLayerConfig;
   lead?: ProceduralMusicLayerConfig;
   noise?: ProceduralNoiseLayerConfig;
+  pad?: MusicPadConfig;
+  drums?: MusicDrumsConfig;
+  space?: MusicSpaceConfig;
 }
 
 export interface LevelMusicConfig {
-  cueName: string;
-  mood: string;
-  tempoFeel: string;
-  musicalStyle: string;
-  intensity: string;
-  shiftMoments: string[];
-  bossCueName: string;
   stage: ProceduralMusicTrackConfig;
   boss: ProceduralMusicTrackConfig;
 }

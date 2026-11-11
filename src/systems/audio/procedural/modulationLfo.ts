@@ -1,7 +1,7 @@
 import type { MusicModulationConfig } from '@/config/LevelsConfig';
 
 export function applyModulation(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   modulation: MusicModulationConfig | undefined,
   target: AudioParam,
   baseValue: number,

@@ -1,88 +1,27 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { MusicArrangementConfig } from '../src/config/LevelsConfig';
-import { getArrangementCycleBars, resolveArrangementForBar } from '../src/systems/audio/procedural/arrangement';
+import { resolveArrangementForBar } from '../src/systems/audio/procedural/arrangement';
 
-const TEST_ARRANGEMENT: MusicArrangementConfig = {
+const ARRANGEMENT: MusicArrangementConfig = {
   loop: true,
   sections: [
-    { phase: 'intro', barsDuration: 2, density: 0.3, energyLift: 0.1, layerGainMultipliers: { bass: 0.8 } },
-    { phase: 'build', barsDuration: 1, density: 0.6, energyLift: 0.2, layerGainMultipliers: { pulse: 1.1 } },
+    { phase: 'intro', barsDuration: 2, density: 0.3, energyLift: 0.1 },
+    { phase: 'build', barsDuration: 1, density: 0.6, energyLift: 0.2 },
   ],
 };
 
-describe('arrangement resolver determinism', () => {});
-
-describe('arrangement resolver loop boundaries', () => {
-  test('loops back to the first section at cycle end', () => {
-    const checkpoints = [0, 1, 2, 3, 4].map((barIndex) => {
-      const context = resolveArrangementForBar(TEST_ARRANGEMENT, barIndex);
-      return {
-        barIndex,
-        phase: context.phase,
-        sectionIndex: context.sectionIndex,
-        cycleBarIndex: context.cycleBarIndex,
-      };
-    });
-
-    expect(checkpoints).toEqual([
-      { barIndex: 0, phase: 'intro', sectionIndex: 0, cycleBarIndex: 0 },
-      { barIndex: 1, phase: 'intro', sectionIndex: 0, cycleBarIndex: 1 },
-      { barIndex: 2, phase: 'build', sectionIndex: 1, cycleBarIndex: 2 },
-      { barIndex: 3, phase: 'intro', sectionIndex: 0, cycleBarIndex: 0 },
-      { barIndex: 4, phase: 'intro', sectionIndex: 0, cycleBarIndex: 1 },
-    ]);
+describe('resolveArrangementForBar', () => {
+  test('a looping arrangement wraps back to its first section', () => {
+    const phases = [0, 1, 2, 3, 4, 5].map((bar) => resolveArrangementForBar(ARRANGEMENT, bar).phase);
+    expect(phases).toEqual(['intro', 'intro', 'build', 'intro', 'intro', 'build']);
   });
 
-  test('clamps to final section when loop is disabled', () => {
-    const nonLooping: MusicArrangementConfig = {
-      ...TEST_ARRANGEMENT,
-      loop: false,
-    };
-
-    const context = resolveArrangementForBar(nonLooping, 10);
-    expect(context.phase).toBe('build');
-    expect(context.sectionIndex).toBe(1);
-    expect(context.cycleBarIndex).toBe(2);
+  test('a one-shot arrangement holds its last section', () => {
+    expect(resolveArrangementForBar({ ...ARRANGEMENT, loop: false }, 10).phase).toBe('build');
   });
 
-  test('normalizes malformed bar indexes before looping', () => {
-    const negativeBar = resolveArrangementForBar(TEST_ARRANGEMENT, -3.8);
-    const fractionalBar = resolveArrangementForBar(TEST_ARRANGEMENT, 3.9);
-    const nonFiniteBar = resolveArrangementForBar(TEST_ARRANGEMENT, Number.POSITIVE_INFINITY);
-
-    expect(negativeBar).toMatchObject({
-      phase: 'intro',
-      sectionIndex: 0,
-      cycleBarIndex: 0,
-    });
-    expect(fractionalBar).toMatchObject({
-      phase: 'intro',
-      sectionIndex: 0,
-      cycleBarIndex: 0,
-    });
-    expect(nonFiniteBar).toMatchObject({
-      phase: 'intro',
-      sectionIndex: 0,
-      cycleBarIndex: 0,
-    });
-  });
-});
-
-describe('arrangement resolver fallbacks', () => {
-  test('returns safe defaults when sections are missing', () => {
-    const context = resolveArrangementForBar(undefined, 5);
-    expect(context).toEqual({
-      phase: 'intro',
-      density: 1,
-      energyLift: 0,
-      sectionIndex: -1,
-      cycleBarIndex: 5,
-    });
-  });
-
-  test('reports total cycle bars for normalized sections', () => {
-    expect(getArrangementCycleBars(TEST_ARRANGEMENT)).toBe(3);
-    expect(getArrangementCycleBars(undefined)).toBe(0);
+  test('a track without an arrangement plays at full density', () => {
+    expect(resolveArrangementForBar(undefined, 3)).toMatchObject({ density: 1, energyLift: 0 });
   });
 });

@@ -276,13 +276,7 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Rampart Siege',
-    bossCueName: 'Rampart Siege: Bastion Bulwark',
-    mood: 'industrial siege pressure with strobe accents',
-    tempoFeel: 'hammering siege cadence',
-    style: 'industrial pulse with metallic stabs and siren bends',
-    intensity: 'high',
-    shifts: ['Scrap surge tightens rhythm spacing and raises harmonic friction.'],
+    palette: 'machine',
     tempo: 110,
     rootHz: 82.41,
     patternRoot: 0,
@@ -298,8 +292,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'dorian',
-        chordProgressionTags: ['machine-pedal', 'metallic-stab-loop'],
-        rhythmicFeel: 'mechanical march syncopation',
         energyProfile: { baseline: 0.52, peak: 0.93, curve: 'build' },
         harmony: {
           steps: [
@@ -312,8 +304,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'phrygian',
-        chordProgressionTags: ['boss-ostinato', 'chromatic-command-rise'],
-        rhythmicFeel: 'industrial assault pulse',
         energyProfile: { baseline: 0.74, peak: 0.98, curve: 'surge' },
         harmony: {
           steps: [

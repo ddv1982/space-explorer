@@ -287,13 +287,7 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Hive Surge',
-    bossCueName: 'Hive Surge: Hive Maelstrom',
-    mood: 'swarming claustrophobia with acidic drive',
-    tempoFeel: 'relentless swarm rush',
-    style: 'acid synth swarm over pounding hive drums',
-    intensity: 'extreme',
-    shifts: ['Hive swarm fronts add relentless chromatic motion and faster accent cycling.'],
+    palette: 'surge',
     tempo: 122,
     rootHz: 69.3,
     patternRoot: 0,
@@ -309,8 +303,6 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'phrygian',
-        chordProgressionTags: ['low-pedal-grind', 'chromatic-crawl'],
-        rhythmicFeel: 'compressed pursuit swing',
         energyProfile: { baseline: 0.58, peak: 0.97, curve: 'build' },
         harmony: {
           steps: [
@@ -323,8 +315,6 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'locrian',
-        chordProgressionTags: ['predator-rise', 'dissonant-rift-hit'],
-        rhythmicFeel: 'relentless lockjaw chase',
         energyProfile: { baseline: 0.78, peak: 1, curve: 'surge' },
         harmony: {
           steps: [

@@ -213,13 +213,7 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Ember Front',
-    bossCueName: 'Ember Front: Pyre Herald',
-    mood: 'smoldering urgency with sparks of defiance',
-    tempoFeel: 'driving ember march',
-    style: 'smoldering electro pulse over metallic bass pressure',
-    intensity: 'medium-high',
-    shifts: ['Overload rail accelerates percussion density and low-end motion before boss drop.'],
+    palette: 'ember',
     tempo: 108,
     rootHz: 98,
     patternRoot: 0,
@@ -234,8 +228,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'dorian',
-        chordProgressionTags: ['electro-minor-loop', 'suspended-charge'],
-        rhythmicFeel: 'march pulse with burst accents',
         energyProfile: { baseline: 0.44, peak: 0.82, curve: 'build' },
         harmony: {
           steps: [
@@ -248,8 +240,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'aeolian',
-        chordProgressionTags: ['minor-dominant-drive', 'descending-threat'],
-        rhythmicFeel: 'stomped pursuit cadence',
         energyProfile: { baseline: 0.66, peak: 0.92, curve: 'surge' },
         harmony: {
           steps: [

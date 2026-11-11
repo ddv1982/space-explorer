@@ -1,354 +1,161 @@
-import type {
-  ProceduralMusicLayerConfig,
-  ProceduralMusicTrackConfig,
-  ProceduralNoiseLayerConfig,
-} from '../../config/LevelsConfig';
+import type { ProceduralMusicTrackConfig } from '../../config/LevelsConfig';
 import { AudioContextManager } from './AudioContextManager';
-import { disconnectMusicBus, recreateMusicBus, type MusicFXChain } from './procedural/bus';
-import { MUSIC_CREATIVITY_DRIVE, MUSIC_TEMPO_SCALE, MusicRuntimeControl } from './procedural/runtimeControl';
-import { resolveLayerRhythmScheduling } from './procedural/rhythm';
-import { buildSchedulingStepPlan, type SchedulingStepPlan } from './procedural/stepSchedulingPlan';
-import { scheduleLayer, scheduleNoise } from './procedural/synthesis';
+import { applyMusicSpace, createMusicBus, disconnectMusicBus, type MusicBus } from './procedural/bus';
+import {
+  getMusicStepSeconds,
+  MAXIMUM_MUSIC_INTENSITY,
+  MINIMUM_MUSIC_INTENSITY,
+  scheduleTrackStep,
+} from './procedural/scheduleStep';
 
-export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
-  tempo: 112,
-  rootHz: 110,
-  stepsPerBeat: 4,
-  masterGain: 0.95,
-  intent: {
-    deterministicSeed: 'default-runtime-track',
-    timeSignature: { beatsPerBar: 4, beatUnit: 4 },
-    descriptors: {
-      mode: 'aeolian',
-      chordProgressionTags: ['fallback-loop', 'neutral-pedal'],
-      rhythmicFeel: 'steady arcade pulse',
-      energyProfile: { baseline: 0.45, peak: 0.72, curve: 'steady' },
-      harmony: {
-        steps: [
-          { degree: 1, barsDuration: 1, quality: 'minor' },
-          { degree: 6, barsDuration: 1, quality: 'major' },
-          { degree: 3, barsDuration: 1, quality: 'major' },
-          { degree: 7, barsDuration: 1, quality: 'major' },
-        ],
-      },
-    },
-  },
-  bass: {
-    waveform: 'triangle',
-    pattern: [0, null, null, null, 7, null, null, null, 12, null, null, null, 7, null, null, null],
-    gain: 0.18,
-    durationSteps: 3,
-    rhythm: { division: 4, phase: 0, gate: 0.9, accentAmount: 0.1, accentPattern: [0, 8] },
-  },
-  pulse: {
-    waveform: 'square',
-    pattern: [12, null, 12, null, 7, null, 12, null, 14, null, 12, null, 7, null, 5, null],
-    gain: 0.05,
-    durationSteps: 1,
-    rhythm: { division: 8, phase: 0, gate: 0.66, accentAmount: 0.12, accentPattern: [0, 4, 8, 12] },
-    octaveShift: 1,
-    filterHz: 1900,
-  },
-  lead: {
-    waveform: 'sine',
-    pattern: [null, 12, null, 14, null, 12, null, 7, null, 12, null, 14, null, 19, null, 14],
-    gain: 0.04,
-    durationSteps: 2,
-    rhythm: { division: 16, phase: 2, gate: 0.74, accentAmount: 0.09, accentPattern: [2, 10] },
-    octaveShift: 1,
-  },
-  noise: {
-    pattern: [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-    gain: 0.012,
-    filterHz: 1700,
-    durationSteps: 1,
-    rhythm: { division: 8, phase: 2, gate: 0.42, accentAmount: 0.08, accentPattern: [2, 6, 10, 14] },
-  },
-};
-
-const MINIMUM_MUSIC_INTENSITY = 0.2;
-const MAXIMUM_MUSIC_INTENSITY = 1.2;
+/** Loudness barely follows intensity: layers entering and leaving carry the dynamics instead. */
 const MINIMUM_OUTPUT_INTENSITY = 0.9;
 const MUSIC_OUTPUT_GAIN_BOOST = 2.9;
+const SCHEDULE_INTERVAL_MS = 45;
+const SCHEDULE_AHEAD_SECONDS = 0.22;
+/**
+ * A track change fades the old track out on its own bus, tails included, while the new track comes
+ * in from its first bar on a fresh one.
+ */
+const CROSSFADE_OUT_SECONDS = 0.45;
+const CROSSFADE_IN_SECONDS = 0.35;
+const CROSSFADE_OVERLAP_SECONDS = 0.25;
 
 export class ProceduralMusicManager {
-  private readonly musicScheduleLookaheadMs = 45;
-  private readonly musicScheduleAheadSeconds = 0.22;
-
-  private readonly contextManager: AudioContextManager;
-  private musicGain: GainNode | null = null;
-  private musicFX: MusicFXChain | null = null;
-  private musicPlaying = false;
-  private musicTimer: number | null = null;
+  private bus: MusicBus | null = null;
+  private timer: number | null = null;
   private activeTrack: ProceduralMusicTrackConfig | null = null;
-  private musicStepIndex = 0;
-  private musicNextStepTime = 0;
-  private readonly runtimeControl: MusicRuntimeControl;
+  private retiringBuses = new Map<MusicBus, number>();
+  private stepIndex = 0;
+  private nextStepTime = 0;
+  private intensity = 1;
+  private volume = 1;
 
-  constructor(contextManager: AudioContextManager) {
-    this.contextManager = contextManager;
-    this.runtimeControl = new MusicRuntimeControl({
-      minimumMusicIntensity: MINIMUM_MUSIC_INTENSITY,
-      maximumMusicIntensity: MAXIMUM_MUSIC_INTENSITY,
-      musicOutputGainBoost: MUSIC_OUTPUT_GAIN_BOOST,
-      minimumOutputIntensity: MINIMUM_OUTPUT_INTENSITY,
-      getCtx: () => this.contextManager.getCtx(),
-      getMusicGain: () => this.musicGain,
-      getMusicFX: () => this.musicFX,
-    });
-  }
+  constructor(private readonly contextManager: AudioContextManager) {}
 
   ensureGains(): void {
-    if (!this.contextManager.getCtx() || this.musicGain) {
-      return;
-    }
+    const ctx = this.contextManager.getCtx();
+    const destination = this.contextManager.getMusicBus();
+    if (!ctx || !destination || this.bus) return;
 
-    this.recreateMusicBus();
+    this.bus = createMusicBus(ctx, destination);
+    this.applyOutputGain(0);
+  }
+
+  /** Fades the current bus out with everything still sounding on it, then disconnects it. */
+  private retireBus(ctx: AudioContext): void {
+    const bus = this.bus;
+    if (!bus) return;
+    this.bus = null;
+
+    const now = ctx.currentTime;
+    bus.fade.gain.cancelScheduledValues(now);
+    bus.fade.gain.setValueAtTime(bus.fade.gain.value, now);
+    bus.fade.gain.linearRampToValueAtTime(0.001, now + CROSSFADE_OUT_SECONDS);
+    const timer = window.setTimeout(
+      () => {
+        this.retiringBuses.delete(bus);
+        disconnectMusicBus(bus);
+      },
+      (CROSSFADE_OUT_SECONDS + 0.1) * 1000
+    );
+    this.retiringBuses.set(bus, timer);
   }
 
   resetNodes(): void {
-    if (this.musicTimer !== null) {
-      clearTimeout(this.musicTimer);
-    }
-
-    this.disconnectMusicBus();
-    this.resetPlaybackState();
+    this.stopMusic();
   }
 
-  playMusic(track: ProceduralMusicTrackConfig = DEFAULT_TRACK): void {
-    if (!this.ensureContext()) {
-      return;
-    }
-
-    this.stopMusic();
-    this.ensureGains();
-    if (!this.musicGain) {
-      return;
-    }
-
+  /**
+   * Starts a track, fading in over `fadeInSeconds`. If music is already playing it crossfades to
+   * the new track; asking for the track that is already playing changes nothing.
+   */
+  playMusic(track: ProceduralMusicTrackConfig, fadeInSeconds = 0.08): void {
     const ctx = this.contextManager.getCtx();
-    if (!ctx) {
+    if (!ctx || !this.contextManager.ensureContext()) {
+      this.resetNodes();
       return;
     }
+    if (this.activeTrack === track) return;
+
+    const crossfading = this.activeTrack !== null;
+    if (crossfading) this.retireBus(ctx);
+    this.ensureGains();
+    if (!this.bus) return;
 
     this.activeTrack = track;
-    this.musicPlaying = true;
-    this.musicStepIndex = 0;
-    this.musicNextStepTime = ctx.currentTime + 0.02;
-    this.runtimeControl.resetPlaybackState();
+    this.stepIndex = 0;
+    this.nextStepTime = ctx.currentTime + (crossfading ? CROSSFADE_OVERLAP_SECONDS : 0.02);
+    applyMusicSpace(ctx, this.bus, track.space, getMusicStepSeconds(track), ctx.currentTime);
+    const fade = this.bus.fade.gain;
+    fade.setValueAtTime(0.001, ctx.currentTime);
+    fade.setValueAtTime(0.001, this.nextStepTime);
+    fade.linearRampToValueAtTime(1, this.nextStepTime + (crossfading ? CROSSFADE_IN_SECONDS : fadeInSeconds));
 
-    this.musicGain.gain.cancelScheduledValues(ctx.currentTime);
-    this.musicGain.gain.setValueAtTime(0.001, ctx.currentTime);
-    this.musicGain.gain.linearRampToValueAtTime(this.runtimeControl.resolveOutputGain(), ctx.currentTime + 0.08);
-
-    this.scheduleMusic();
+    if (this.timer !== null) clearTimeout(this.timer);
+    this.schedule();
   }
 
   stopMusic(): void {
-    if (this.musicTimer !== null) {
-      clearTimeout(this.musicTimer);
+    if (this.timer !== null) {
+      clearTimeout(this.timer);
     }
-
-    this.disconnectMusicBus();
-    this.resetPlaybackState();
+    disconnectMusicBus(this.bus);
+    for (const [bus, timer] of this.retiringBuses) {
+      clearTimeout(timer);
+      disconnectMusicBus(bus);
+    }
+    this.retiringBuses.clear();
+    this.bus = null;
+    this.timer = null;
+    this.activeTrack = null;
+    this.intensity = 1;
   }
 
   setMusicIntensity(intensity: number): void {
-    this.runtimeControl.setMusicIntensity(intensity);
+    const clamped = Math.min(MAXIMUM_MUSIC_INTENSITY, Math.max(MINIMUM_MUSIC_INTENSITY, intensity));
+    if (Math.abs(clamped - this.intensity) < 0.01) return;
+    this.intensity = clamped;
+    this.applyOutputGain();
   }
 
-  getMusicVolume(): number {
-    return this.runtimeControl.getMusicVolume();
+  setMusicVolume(volume: number): void {
+    this.volume = Math.min(1, Math.max(0, volume));
+    this.applyOutputGain();
   }
 
-  setMusicVolume(volume: number): number {
-    return this.runtimeControl.setMusicVolume(volume);
-  }
-
-  private recreateMusicBus(): void {
+  private applyOutputGain(rampSeconds = 0.08): void {
     const ctx = this.contextManager.getCtx();
-    const masterGain = this.contextManager.getMusicBus();
-    if (!ctx || !masterGain) {
+    if (!ctx || !this.bus) return;
+
+    const target = Math.max(MINIMUM_OUTPUT_INTENSITY, this.intensity) * this.volume * MUSIC_OUTPUT_GAIN_BOOST;
+    const gain = this.bus.output.gain;
+    gain.cancelScheduledValues(ctx.currentTime);
+    gain.setValueAtTime(rampSeconds > 0 ? gain.value : target, ctx.currentTime);
+    if (rampSeconds > 0) {
+      gain.linearRampToValueAtTime(target, ctx.currentTime + rampSeconds);
+    }
+  }
+
+  private schedule(): void {
+    const ctx = this.contextManager.getCtx();
+    if (!ctx || !this.contextManager.ensureContext() || !this.bus || !this.activeTrack) {
       return;
     }
 
-    const bus = recreateMusicBus(ctx, masterGain, this.musicGain, this.musicFX);
-    this.musicGain = bus.musicGain;
-    this.musicFX = bus.musicFX;
-    this.runtimeControl.applyMusicGainFromState(0);
-  }
-
-  private disconnectMusicBus(): void {
-    disconnectMusicBus(this.musicGain, this.musicFX);
-    this.musicGain = null;
-    this.musicFX = null;
-  }
-
-  private resetPlaybackState(): void {
-    this.musicPlaying = false;
-    this.musicTimer = null;
-    this.activeTrack = null;
-    this.musicStepIndex = 0;
-    this.musicNextStepTime = 0;
-    this.runtimeControl.resetPlaybackState();
-  }
-
-  private ensureContext(): boolean {
-    const isReady = this.contextManager.ensureContext();
-    if (!isReady) {
-      this.resetNodes();
-    }
-    return isReady;
-  }
-
-  private scheduleMusic(): void {
-    const ctx = this.contextManager.getCtx();
-    if (!ctx || !this.ensureContext() || !this.musicPlaying || !this.activeTrack) {
-      return;
-    }
-
-    while (this.musicNextStepTime < ctx.currentTime + this.musicScheduleAheadSeconds) {
-      this.scheduleTrackStep(this.activeTrack, this.musicStepIndex, this.musicNextStepTime);
-      this.musicStepIndex += 1;
-      this.musicNextStepTime += 60 / (this.activeTrack.tempo * MUSIC_TEMPO_SCALE) / this.activeTrack.stepsPerBeat;
-    }
-
-    this.musicTimer = window.setTimeout(() => {
-      this.scheduleMusic();
-    }, this.musicScheduleLookaheadMs);
-  }
-
-  private scheduleTrackStep(track: ProceduralMusicTrackConfig, stepIndex: number, time: number): void {
-    const ctx = this.contextManager.getCtx();
-    if (!ctx || !this.musicGain) {
-      return;
-    }
-
-    const stepPlan = buildSchedulingStepPlan({
-      track,
-      stepIndex,
-      tempoScale: MUSIC_TEMPO_SCALE,
-      creativityDrive: MUSIC_CREATIVITY_DRIVE,
-      musicIntensity: this.runtimeControl.getMusicIntensity(),
-      minimumMusicIntensity: MINIMUM_MUSIC_INTENSITY,
-      maximumMusicIntensity: MAXIMUM_MUSIC_INTENSITY,
-    });
-
-    const toneLayerPasses: Array<{ layer?: ProceduralMusicLayerConfig; gainMultiplier: number }> = [
-      { layer: track.bass, gainMultiplier: stepPlan.gainMultipliers.bass },
-      { layer: track.pulse, gainMultiplier: stepPlan.gainMultipliers.pulse },
-      { layer: track.lead, gainMultiplier: stepPlan.gainMultipliers.lead },
-    ];
-
-    for (const toneLayerPass of toneLayerPasses) {
-      this.scheduleToneLayerIfTriggered({
-        ctx,
-        track,
-        layer: toneLayerPass.layer,
-        meterStepContext: stepPlan.meterStepContext,
-        density: stepPlan.density,
-        gainMultiplier: toneLayerPass.gainMultiplier,
-        harmonicRootHz: stepPlan.harmonicRootHz,
-        time,
-        stepDuration: stepPlan.stepDuration,
-        intensityBlend: stepPlan.intensityBlend,
-        creativityDrive: stepPlan.creativityDrive,
-      });
-    }
-
-    this.scheduleNoiseLayerIfTriggered({
+    const output = {
       ctx,
-      track,
-      noiseLayer: track.noise,
-      meterStepContext: stepPlan.meterStepContext,
-      density: stepPlan.density,
-      gainMultiplier: stepPlan.gainMultipliers.noise,
-      time,
-      stepDuration: stepPlan.stepDuration,
-      intensityBlend: stepPlan.intensityBlend,
-      creativityDrive: stepPlan.creativityDrive,
-    });
-  }
-
-  private scheduleToneLayerIfTriggered(params: {
-    ctx: AudioContext;
-    track: ProceduralMusicTrackConfig;
-    layer?: ProceduralMusicLayerConfig;
-    meterStepContext: SchedulingStepPlan['meterStepContext'];
-    density: number;
-    gainMultiplier: number;
-    harmonicRootHz: number;
-    time: number;
-    stepDuration: number;
-    intensityBlend: number;
-    creativityDrive: number;
-  }): void {
-    if (!params.layer || !this.musicGain) {
-      return;
+      dry: this.bus.dry,
+      space: this.bus.space,
+      getNoiseBuffer: (color?: Parameters<AudioContextManager['getNoiseBuffer']>[0]) =>
+        this.contextManager.getNoiseBuffer(color),
+    };
+    while (this.nextStepTime < ctx.currentTime + SCHEDULE_AHEAD_SECONDS) {
+      scheduleTrackStep(output, this.activeTrack, this.stepIndex, this.nextStepTime, this.intensity);
+      this.stepIndex += 1;
+      this.nextStepTime += getMusicStepSeconds(this.activeTrack);
     }
 
-    const layerRhythm = resolveLayerRhythmScheduling(params.layer.rhythm, params.meterStepContext, {
-      density: params.density,
-      gainMultiplier: Math.max(0, params.gainMultiplier),
-    });
-
-    if (!layerRhythm.shouldTrigger) {
-      return;
-    }
-
-    scheduleLayer({
-      ctx: params.ctx,
-      musicGain: this.musicGain,
-      track: params.track,
-      layer: params.layer,
-      stepIndex: layerRhythm.patternStepIndex,
-      harmonicRootHz: params.harmonicRootHz,
-      time: params.time,
-      stepDuration: params.stepDuration,
-      intensityBlend: params.intensityBlend,
-      creativityDrive: params.creativityDrive,
-      gainScale: layerRhythm.gainScale,
-    });
-  }
-
-  private scheduleNoiseLayerIfTriggered(params: {
-    ctx: AudioContext;
-    track: ProceduralMusicTrackConfig;
-    noiseLayer?: ProceduralNoiseLayerConfig;
-    meterStepContext: SchedulingStepPlan['meterStepContext'];
-    density: number;
-    gainMultiplier: number;
-    time: number;
-    stepDuration: number;
-    intensityBlend: number;
-    creativityDrive: number;
-  }): void {
-    if (!params.noiseLayer || !this.musicGain) {
-      return;
-    }
-
-    const noiseRhythm = resolveLayerRhythmScheduling(params.noiseLayer.rhythm, params.meterStepContext, {
-      density: params.density,
-      gainMultiplier: Math.max(0, params.gainMultiplier),
-    });
-
-    if (!noiseRhythm.shouldTrigger) {
-      return;
-    }
-
-    scheduleNoise({
-      ctx: params.ctx,
-      musicGain: this.musicGain,
-      track: params.track,
-      noiseLayer: params.noiseLayer,
-      stepIndex: noiseRhythm.patternStepIndex,
-      time: params.time,
-      stepDuration: params.stepDuration,
-      intensityBlend: params.intensityBlend,
-      creativityDrive: params.creativityDrive,
-      gainScale: noiseRhythm.gainScale,
-      getNoiseBuffer: (color) => this.contextManager.getNoiseBuffer(color),
-      getExplosionBuffer: () => this.contextManager.getExplosionBuffer(),
-    });
+    this.timer = window.setTimeout(() => this.schedule(), SCHEDULE_INTERVAL_MS);
   }
 }

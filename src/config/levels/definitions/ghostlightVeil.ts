@@ -224,13 +224,7 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Vesper Hymn',
-    bossCueName: 'Vesper Hymn: Choir Regent',
-    mood: 'solemn cathedral dread with luminous voices',
-    tempoFeel: 'processional hymn with accelerating cadence',
-    style: 'choral pads over relentless low-end procession',
-    intensity: 'high',
-    shifts: ['False safety section compresses phrase spacing and raises tremolo emphasis.'],
+    palette: 'choir',
     tempo: 104,
     rootHz: 77.78,
     patternRoot: 0,
@@ -246,8 +240,6 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'phrygian',
-        chordProgressionTags: ['suspended-dread', 'echo-minor-cells'],
-        rhythmicFeel: 'floating pulse with snap accents',
         energyProfile: { baseline: 0.45, peak: 0.92, curve: 'build-release' },
         harmony: {
           steps: [
@@ -260,8 +252,6 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'locrian',
-        chordProgressionTags: ['chromatic-hunter-line', 'diminished-pressure'],
-        rhythmicFeel: 'predator chase subdivisions',
         energyProfile: { baseline: 0.7, peak: 0.97, curve: 'surge' },
         harmony: {
           steps: [

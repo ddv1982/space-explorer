@@ -396,13 +396,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Eventide Engine',
-    bossCueName: 'Eventide Engine: Omega Null',
-    mood: 'apocalyptic finale resolve with cosmic dread',
-    tempoFeel: 'surging finale overdrive',
-    style: 'cosmic electro-finale over singularity sub pressure',
-    intensity: 'maximum',
-    shifts: ['Engine reprise phase removes breathing gaps and drives continuous accent pressure.'],
+    palette: 'finale',
     tempo: 126,
     rootHz: 65.41,
     patternRoot: 0,
@@ -419,8 +413,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'aeolian',
-        chordProgressionTags: ['void-drone-pedal', 'catastrophic-tilt'],
-        rhythmicFeel: 'gravitational draw with fracture accents',
         energyProfile: { baseline: 0.62, peak: 0.99, curve: 'build' },
         harmony: {
           steps: [
@@ -433,8 +425,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'ultralocrian',
-        chordProgressionTags: ['final-sovereign-ostinato', 'chromatic-collapse'],
-        rhythmicFeel: 'continuous catastrophe drive',
         energyProfile: { baseline: 0.84, peak: 1, curve: 'surge' },
         harmony: {
           steps: [

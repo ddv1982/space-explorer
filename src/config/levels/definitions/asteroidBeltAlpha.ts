@@ -154,13 +154,7 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Aurora Overture',
-    bossCueName: 'Aurora Overture: Skyfire',
-    mood: 'bright overture confidence with glassy aurora shimmer',
-    tempoFeel: 'lifting overture pulse',
-    style: 'glassy synth overture with elastic bass and aurora shimmer',
-    intensity: 'low-medium',
-    shifts: ['Debris surge adds urgency through denser accents and wider stereo motion.'],
+    palette: 'glass',
     tempo: 96,
     rootHz: 146.83,
     patternRoot: 0,
@@ -174,8 +168,6 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'ionian',
-        chordProgressionTags: ['bright-pedal', 'launch-ostinato'],
-        rhythmicFeel: 'syncopated glide',
         energyProfile: { baseline: 0.34, peak: 0.72, curve: 'build-release' },
         harmony: {
           steps: [
@@ -188,8 +180,6 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'mixolydian',
-        chordProgressionTags: ['dominant-drive', 'open-fifth-push'],
-        rhythmicFeel: 'driving pursuit pulse',
         energyProfile: { baseline: 0.62, peak: 0.9, curve: 'surge' },
         harmony: {
           steps: [

@@ -51,7 +51,8 @@ export class VictoryScene extends Phaser.Scene {
 
   create(): void {
     audioManager.init();
-    audioManager.stopMusic();
+    audioManager.startMusic(getLevelConfig(1).music.stage, 1.5);
+    audioManager.setMusicIntensity(0.7);
     registerRestartOnResize(this);
 
     this.cameras.main.setBackgroundColor('#02081c');

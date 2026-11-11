@@ -2,7 +2,7 @@ import type { ProceduralMusicLayerExpressionConfig } from '@/config/LevelsConfig
 import { clamp } from './expression';
 
 export function createPanner(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   basePan: number,
   stereo: ProceduralMusicLayerExpressionConfig['stereo'],
   time: number,
