@@ -50,15 +50,16 @@ export class InputManager {
   }
 
   isFiring(): boolean {
-    // Touch flight autofires by default; keyboard and mouse play can opt in from settings.
+    // Touch flight autofires by default; with it off, the gun fires while the steering finger is down.
+    // The finger is tracked by id: Phaser's activePointer follows whichever finger moved last.
     const autoFire = getAutoFireSettings();
-    const touchActive = this.mobileControls?.isTouchSteeringActive() === true;
-    if (touchActive ? autoFire.touch : autoFire.keyboard) {
-      return true;
+    const mobileControls = this.mobileControls;
+    if (mobileControls?.isTouchSteeringActive() === true) {
+      return autoFire.touch || mobileControls.isSteeringFingerDown();
     }
 
-    // With autofire off, a steering finger counts as a held pointer, so touch fires while touching.
-    return this.space.isDown || this.scene.input.activePointer.isDown;
+    // Keyboard and mouse play can opt in to autofire from settings.
+    return autoFire.keyboard || this.space.isDown || this.scene.input.activePointer.isDown;
   }
 
   /** Touch drag steering velocity for the ship at (x, y), or null when no finger is steering. */

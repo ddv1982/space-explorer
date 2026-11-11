@@ -65,12 +65,17 @@ mock.module('../src/config/autoFireSettings', () => ({
 
 const { InputManager } = await import('../src/systems/InputManager');
 
-function createManager(scene: ReturnType<typeof createScene>, touchSteeringActive: boolean) {
+function createManager(
+  scene: ReturnType<typeof createScene>,
+  touchSteeringActive: boolean,
+  steeringFingerDown: () => boolean = () => false
+) {
   const inputManager = new InputManager();
   inputManager.create(
     scene as never,
     {
       isTouchSteeringActive: () => touchSteeringActive,
+      isSteeringFingerDown: steeringFingerDown,
       isControlPointer: () => false,
       getDragDesiredVelocity: () => null,
     } as never
@@ -109,12 +114,23 @@ function createScene(pointers: Array<{ id: number; isDown: boolean; downX: numbe
 }
 
 describe('InputManager autofire settings', () => {
-  test('touch autofire off fires only while a finger is down', () => {
+  test('touch autofire off fires only while the steering finger is down', () => {
     autoFire = { touch: false, keyboard: false };
     const scene = createScene([]);
-    const inputManager = createManager(scene, true);
+    let fingerDown = false;
+    const inputManager = createManager(scene, true, () => fingerDown);
     expect(inputManager.isFiring()).toBe(false);
-    scene.input.activePointer.isDown = true;
+    fingerDown = true;
+    expect(inputManager.isFiring()).toBe(true);
+    autoFire = { touch: true, keyboard: false };
+  });
+
+  test('a second finger tapping and lifting does not stop touch firing', () => {
+    autoFire = { touch: false, keyboard: false };
+    const scene = createScene([]);
+    const inputManager = createManager(scene, true, () => true);
+    // Phaser leaves activePointer on the lifted second finger.
+    scene.input.activePointer.isDown = false;
     expect(inputManager.isFiring()).toBe(true);
     autoFire = { touch: true, keyboard: false };
   });
