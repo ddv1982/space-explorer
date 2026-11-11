@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MINE_DRIFT_SPEED } from '../utils/constants';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
+import { MINE_DEPTH } from '../utils/drawOrder';
 
 export class Mine extends Phaser.Physics.Arcade.Sprite {
   hp: number = 1;
@@ -12,7 +13,7 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
 
     despawnEntity(this);
-    this.setDepth(3);
+    this.setDepth(MINE_DEPTH);
   }
 
   launch(x: number, y: number): void {

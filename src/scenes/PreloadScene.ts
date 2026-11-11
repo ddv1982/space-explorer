@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { finishShipyardLoading, queueShipyardAssets } from '../utils/shipyardAssets';
 import { getViewportLayout } from '../utils/layout';
+import { warmGameplayShaders } from '../utils/shaderWarmup';
 import { queueAllPlanetPortraits } from './planetIntermission/planetPortraits';
 import { addNeonTitle, fitNeonTitleFontSize, NEON, NEON_TEXT, neonLabelStyle } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
@@ -33,6 +34,7 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     registerRestartOnResize(this);
     queueShipyardAssets(this);
+    warmGameplayShaders(this);
 
     const layout = getViewportLayout(this);
     const railWidth = Math.min(280, layout.width - 96);

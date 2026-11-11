@@ -123,4 +123,32 @@ describe('visual quality profiles', () => {
       });
     }
   });
+
+  test("remembers the browser's stored tier between reads and refreshes it when the tier is set", () => {
+    const storage = new MemoryStorage();
+    let reads = 0;
+    const getItem = storage.getItem.bind(storage);
+    storage.getItem = (key: string) => {
+      reads += 1;
+      return getItem(key);
+    };
+    const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage: storage } });
+
+    try {
+      setVisualQualityTier('low');
+      expect(getVisualQualityTier()).toBe('low');
+      expect(getVisualQualityProfile().tier).toBe('low');
+      // Effects read the tier many times per frame; only the first read may touch storage.
+      expect(reads).toBe(1);
+
+      setVisualQualityTier('auto');
+      expect(getVisualQualityTier()).toBe('auto');
+      expect(reads).toBe(2);
+    } finally {
+      setVisualQualityTier('auto');
+      if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow);
+      else Reflect.deleteProperty(globalThis, 'window');
+    }
+  });
 });

@@ -87,14 +87,16 @@ export function updateHazardOverlay(input: HazardOverlayRuntimeUpdateInput): num
   const nextOverlayAlpha = Phaser.Math.Linear(overlayAlpha, targetOverlayAlpha, dampingAlpha);
 
   if (nextOverlayAlpha <= 0.005 || !scene) {
-    // Clear once when the last visible frame expires, then leave the already-empty
-    // Graphics object untouched while the overlay remains dormant.
-    if (overlayAlpha > 0.005) {
+    // Clear once when the last visible frame expires, then hide the dormant overlay: its glow filter
+    // would otherwise run its full-screen passes over an empty picture every frame.
+    if (overlay.visible) {
       overlay.clear();
+      overlay.setVisible(false);
     }
     return nextOverlayAlpha;
   }
 
+  overlay.setVisible(true);
   overlay.clear();
   const accentColor = levelConfig?.accentColor ?? 0xffffff;
   const intensities = getHazardIntensities(activeHazards);
