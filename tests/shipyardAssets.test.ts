@@ -2,7 +2,11 @@ import { describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
-mock.module('../src/scenes/shared/accessibleActionLayer', () => ({ mountAccessibleActionLayer: () => () => {} }));
+mock.module('../src/ui/dom', () => ({
+  h: () => chainable(),
+  mountUiLayer: () => chainable(),
+  setStatus: () => undefined,
+}));
 
 const { finishShipyardLoading } = await import('../src/utils/shipyardAssets');
 const { SHIPYARD_SPRITES, SPRITE_DENSITY, sheetLayout } = await import('../src/config/shipyardSprites');
@@ -62,7 +66,6 @@ function createScene(options: { shrinkPlayerFrames?: boolean; oversizedScoutShee
       remove: (key: string) => removed.push(key),
     },
     scale: { width: 390, height: 844 },
-    add: { rectangle: () => chainable(), text: () => chainable() },
     input: { keyboard: { once: () => {}, off: () => {} } },
     events: { once: () => {}, off: () => {} },
     scene: { restart: () => {} },

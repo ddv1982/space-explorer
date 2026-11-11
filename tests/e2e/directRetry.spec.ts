@@ -1,6 +1,16 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, openMenu, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
+import {
+  expect,
+  openMenu,
+  openMenuSettings,
+  pressControl,
+  snapshot,
+  startNewRun,
+  test,
+  waitForScene,
+  type Page,
+} from './fixtures';
 
 async function gameOver(page: Page): Promise<void> {
   await page.evaluate(async () => {
@@ -10,9 +20,13 @@ async function gameOver(page: Page): Promise<void> {
 }
 
 async function activate(page: Page, label: string): Promise<void> {
-  const action = page.getByRole('button', { name: label });
-  await action.focus();
-  await action.press('Enter');
+  await pressControl(page.getByRole('button', { name: label, exact: true }));
+}
+
+const gameOverRegion = (page: Page) => page.getByRole('region', { name: 'Game over' });
+
+function tierButton(page: Page, group: 'Difficulty' | 'Quality', tier: string) {
+  return page.getByRole('group', { name: group }).getByRole('button', { name: tier, exact: true });
 }
 
 test('retry resets a loaded run while preserving checkpoints and settings', async ({ page, assertNoBrowserErrors }) => {
@@ -39,20 +53,23 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
   });
   await page.reload();
   await waitForScene(page, 'Menu');
-  await Promise.all([page.waitForEvent('load'), activate(page, 'Set visual quality low')]);
+  await openMenuSettings(page);
+  await Promise.all([page.waitForEvent('load'), pressControl(tierButton(page, 'Quality', 'LOW'))]);
   await waitForScene(page, 'Menu');
-  await activate(page, 'Set difficulty low');
-  await activate(page, 'Increase creativity');
+  await openMenuSettings(page);
+  await pressControl(tierButton(page, 'Difficulty', 'LOW'));
+  await pressControl(page.getByRole('slider', { name: 'CREATIVITY' }), 'ArrowRight');
+  await activate(page, 'DONE');
   const storedBefore = await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)));
-  await activate(page, 'Load SLOT 1');
+  await pressControl(page.getByRole('button', { name: 'Load SLOT 1' }));
   await waitForScene(page, 'Game');
   await page.keyboard.down('Space');
   await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeAcceptedPlayerDamage(999));
   await waitForScene(page, 'GameOver');
   await page.keyboard.down('Space');
   await page.keyboard.up('Space');
-  await expect(page.locator('nav[aria-label="Game over"]')).toContainText('NEXT RUN: BEAT 9500');
-  await activate(page, 'Retry from level 1');
+  await expect(gameOverRegion(page)).toContainText('NEXT RUN: BEAT 9500');
+  await activate(page, 'RETRY');
   await waitForScene(page, 'Game');
   const state = await page.evaluate(() => {
     const recorder = window.__SPACE_EXPLORER_BROWSER_HARNESS__?.gameFeel;
@@ -78,12 +95,13 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
   });
   expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)))).toEqual(storedBefore);
   await gameOver(page);
-  await expect(page.locator('nav[aria-label="Game over"]')).toContainText('Final score 0. Reached level 1.');
-  await activate(page, 'Continue to command deck');
+  await expect(gameOverRegion(page).getByRole('status')).toContainText('Final score 0. Reached level 1.');
+  await activate(page, 'MENU');
   await waitForScene(page, 'Menu');
   await expect(page.getByRole('button', { name: 'Load SLOT 1' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Set difficulty low' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('button', { name: 'Set visual quality low' })).toHaveAttribute('aria-pressed', 'true');
+  await openMenuSettings(page);
+  await expect(tierButton(page, 'Difficulty', 'LOW')).toHaveAttribute('aria-pressed', 'true');
+  await expect(tierButton(page, 'Quality', 'LOW')).toHaveAttribute('aria-pressed', 'true');
   assertNoBrowserErrors();
 });
 
@@ -113,26 +131,10 @@ test('held fire, arbitrary taps and repeated keys do not retry; fresh shortcuts 
   ]) {
     await page.setViewportSize(viewport);
     await expect.poll(async () => (await snapshot(page)).gameSize).toEqual(viewport);
-    await expect
-      .poll(
-        async () => {
-          const resized = await snapshot(page);
-          return ['RETRY', 'MENU'].every((label) => {
-            const text = resized.texts.find((entry) => entry.text === label);
-            return text && text.x - text.width / 2 >= 0 && text.y + text.height / 2 <= viewport.height;
-          });
-        },
-        { timeout: 30000 }
-      )
-      .toBe(true);
-    await expect(page.locator('nav[aria-label="Game over"]')).toHaveCount(1);
-    const frame = await snapshot(page);
     for (const label of ['RETRY', 'MENU']) {
-      const text = frame.texts.find((entry) => entry.text === label);
-      if (!text) throw new Error(`Missing ${label}`);
-      expect(text.x - text.width / 2).toBeGreaterThanOrEqual(0);
-      expect(text.y + text.height / 2).toBeLessThanOrEqual(viewport.height);
+      await expect(page.getByRole('button', { name: label, exact: true })).toBeInViewport({ ratio: 1 });
     }
+    await expect(gameOverRegion(page)).toHaveCount(1);
     await page.screenshot({ path: test.info().outputPath(`retry-${viewport.width}x${viewport.height}.png`) });
   }
   await page.keyboard.press('r');
@@ -156,16 +158,17 @@ test('visible retry and menu hit areas activate independently', async ({ page, i
   await openMenu(page);
   for (const label of ['MENU', 'RETRY']) {
     await gameOver(page);
-    const button = (await snapshot(page)).texts.find((item) => item.text === label);
-    if (!button) throw new Error(`Missing ${label}`);
-    if (isMobile) await page.touchscreen.tap(button.x, button.y);
-    else await page.mouse.click(button.x, button.y);
+    const box = await page.getByRole('button', { name: label, exact: true }).boundingBox();
+    if (!box) throw new Error(`Missing ${label}`);
+    const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+    if (isMobile) await page.touchscreen.tap(x, y);
+    else await page.mouse.click(x, y);
     await waitForScene(page, label === 'MENU' ? 'Menu' : 'Game');
   }
   assertNoBrowserErrors();
 });
 
-test('ten direct retries retain one terminal action layer and one gameplay segment per activation', async ({
+test('ten direct retries retain one terminal action panel and one gameplay segment per activation', async ({
   page,
   assertNoBrowserErrors,
 }) => {
@@ -206,10 +209,10 @@ test('ten direct retries retain one terminal action layer and one gameplay segme
   let keyListenerCount: unknown;
   for (let index = 0; index < 10; index += 1) {
     await gameOver(page);
-    await expect(page.locator('nav[aria-label="Game over"] button')).toHaveCount(2);
+    await expect(gameOverRegion(page).getByRole('button')).toHaveCount(2);
     await page.keyboard.press('r');
     await waitForScene(page, 'Game');
-    await expect(page.locator('nav[aria-label="Game over"]')).toHaveCount(0);
+    await expect(gameOverRegion(page)).toHaveCount(0);
     const activeKeyListeners: unknown = await page.evaluate(() => Reflect.get(window, '__retryKeyListenerCount'));
     if (index === 0) keyListenerCount = activeKeyListeners;
     else expect(activeKeyListeners).toBe(keyListenerCount);

@@ -1,4 +1,18 @@
-import { expect, openMenu, openMenuSettings, snapshot, startNewRun, test, waitForScene } from './fixtures';
+import {
+  expect,
+  openMenu,
+  openMenuSettings,
+  pressControl,
+  snapshot,
+  startNewRun,
+  test,
+  waitForScene,
+  type Page,
+} from './fixtures';
+
+function tierButton(page: Page, group: 'Difficulty' | 'Quality', tier: string) {
+  return page.getByRole('group', { name: group }).getByRole('button', { name: tier, exact: true });
+}
 
 // Check settings persistence from a fresh default state in each responsive profile.
 for (const viewport of [
@@ -14,33 +28,21 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await openMenu(page);
     await openMenuSettings(page);
-    const menu = await snapshot(page);
-    const qualityLabel = menu.texts.find((item) => item.text === 'QUALITY: STANDARD');
-    const difficultyLabel = menu.texts.find((item) => item.text === 'DIFFICULTY: NORMAL');
-    const highButtons = menu.texts.filter((item) => item.text === 'HIGH');
-    const highButton = highButtons.find((item) => Math.abs(item.y - (qualityLabel?.y ?? -100)) < 12);
-    const difficultyHighButton = highButtons.find((item) => Math.abs(item.y - (difficultyLabel?.y ?? -100)) < 12);
-    expect(qualityLabel).toBeDefined();
-    expect(difficultyLabel).toBeDefined();
-    expect(highButton).toBeDefined();
-    expect(difficultyHighButton).toBeDefined();
-    expect(highButton?.x).toBeGreaterThan(0);
-    expect(highButton?.x).toBeLessThan(viewport.width);
-    expect(highButton?.y).toBeGreaterThan(0);
-    expect(highButton?.y).toBeLessThan(viewport.height);
+    await expect(page.getByText('QUALITY: STANDARD')).toBeVisible();
+    await expect(page.getByText('DIFFICULTY: NORMAL')).toBeVisible();
+    await expect(tierButton(page, 'Quality', 'HIGH')).toBeInViewport();
+    await expect(tierButton(page, 'Difficulty', 'HIGH')).toBeInViewport();
 
-    await page.mouse.click(difficultyHighButton?.x ?? 0, difficultyHighButton?.y ?? 0);
-    await expect
-      .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'DIFFICULTY: HIGH'))
-      .toBe(true);
+    await tierButton(page, 'Difficulty', 'HIGH').click();
+    await expect(page.getByText('DIFFICULTY: HIGH')).toBeVisible();
+    await expect(tierButton(page, 'Difficulty', 'HIGH')).toHaveAttribute('aria-pressed', 'true');
     expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.gameplayDifficulty.v1'))).toBe('high');
 
-    await Promise.all([page.waitForEvent('load'), page.mouse.click(highButton?.x ?? 0, highButton?.y ?? 0)]);
+    await Promise.all([page.waitForEvent('load'), tierButton(page, 'Quality', 'HIGH').click()]);
     await waitForScene(page, 'Menu');
     await openMenuSettings(page);
-    await expect
-      .poll(async () => (await snapshot(page)).texts.some((item) => item.text === 'QUALITY: HIGH'))
-      .toBe(true);
+    await expect(page.getByText('QUALITY: HIGH')).toBeVisible();
+    await expect(tierButton(page, 'Quality', 'HIGH')).toHaveAttribute('aria-pressed', 'true');
     expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.visualQuality.v1'))).toBe('high');
     expect(new URL(page.url()).searchParams.has('visualQuality')).toBe(false);
 
@@ -76,9 +78,7 @@ test('resizes, pauses, resumes, restores visibility, and lazy-routes scenes', as
       if (!mobile) await page.keyboard.up('Escape');
     }
     if (mobile) {
-      const resume = (await snapshot(page)).texts.find((item) => item.text === 'RESUME');
-      expect(resume).toBeDefined();
-      await page.touchscreen.tap(resume?.x ?? 0, resume?.y ?? 0);
+      await page.getByRole('button', { name: 'RESUME', exact: true }).tap();
     } else {
       await page.keyboard.down('Escape');
     }
@@ -118,36 +118,22 @@ test('pause settings persist quality without reloading or leaving the active run
     await page.keyboard.up('Escape');
   }
 
-  const paused = await snapshot(page);
-  const settingsTab = paused.texts.find((item) => item.text === 'SETTINGS');
-  expect(settingsTab).toBeDefined();
-  await page.mouse.click(settingsTab?.x ?? 0, settingsTab?.y ?? 0);
+  await page.getByRole('tab', { name: 'SETTINGS' }).click();
+  await expect(page.getByRole('tab', { name: 'SETTINGS' })).toHaveAttribute('aria-selected', 'true');
 
   await page.setViewportSize({ width: 844, height: 390 });
   await expect.poll(async () => (await snapshot(page)).gameSize).toEqual({ width: 844, height: 390 });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(async () => (await snapshot(page)).gameSize).toEqual({ width: 390, height: 844 });
-
-  const settings = await snapshot(page);
-  const difficulty = settings.texts.find((item) => item.text.startsWith('DIFFICULTY:'));
-  const quality = settings.texts.find((item) => item.text.startsWith('QUALITY:'));
-  const difficultyLow = settings.texts
-    .filter((item) => item.text === 'LOW')
-    .find((item) => Math.abs(item.y - (difficulty?.y ?? -100)) < 12);
-  const qualityLow = settings.texts
-    .filter((item) => item.text === 'LOW')
-    .find((item) => Math.abs(item.y - (quality?.y ?? -100)) < 12);
-  expect(difficulty).toBeDefined();
-  expect(quality).toBeDefined();
-  expect(difficultyLow).toBeDefined();
-  expect(qualityLow).toBeDefined();
+  await expect(page.getByText(/^DIFFICULTY: /)).toBeInViewport();
+  await expect(page.getByText(/^QUALITY: /)).toBeInViewport();
 
   const urlBefore = page.url();
-  await page.mouse.click(difficultyLow?.x ?? 0, difficultyLow?.y ?? 0);
+  await tierButton(page, 'Difficulty', 'LOW').click();
   await expect
     .poll(async () => page.evaluate(() => localStorage.getItem('space-explorer.gameplayDifficulty.v1')))
     .toBe('low');
-  await page.mouse.click(qualityLow?.x ?? 0, qualityLow?.y ?? 0);
+  await tierButton(page, 'Quality', 'LOW').click();
   await expect
     .poll(async () => page.evaluate(() => localStorage.getItem('space-explorer.visualQuality.v1')))
     .toBe('low');
@@ -155,11 +141,9 @@ test('pause settings persist quality without reloading or leaving the active run
   expect(after.physicsPaused).toBe(true);
   expect(after.activeScenes).toContain('Game');
   expect(page.url()).toBe(urlBefore);
-  expect(after.texts.some((item) => item.text.includes('Restart required'))).toBe(true);
+  await expect(page.getByText(/Restart required/)).toBeVisible();
 
-  const resume = after.texts.find((item) => item.text === 'RESUME');
-  expect(resume).toBeDefined();
-  await page.mouse.click(resume?.x ?? 0, resume?.y ?? 0);
+  await page.getByRole('button', { name: 'RESUME', exact: true }).click();
   await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(false);
   const damage = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeAcceptedPlayerDamage(1));
   expect(damage).toEqual({ beforeHp: 5, afterHp: 4.25, damage: 0.75 });
@@ -171,6 +155,7 @@ test('first trusted menu action recovers policy-suspended audio without overridi
   assertNoBrowserErrors,
 }) => {
   await openMenu(page);
+  await openMenuSettings(page);
   await page.evaluate(async () => {
     const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
     if (!harness) throw new Error('Browser harness is not installed');
@@ -179,11 +164,10 @@ test('first trusted menu action recovers policy-suspended audio without overridi
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
   expect((await snapshot(page)).audioPauseReasons).toEqual([]);
 
-  const musicAdjustment = page.getByRole('button', { name: 'Increase creativity' });
-  await musicAdjustment.focus();
-  await musicAdjustment.press('Enter');
+  await pressControl(page.getByRole('slider', { name: 'CREATIVITY' }), 'ArrowRight');
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('running');
   expect((await snapshot(page)).audioPauseReasons).toEqual([]);
+  await pressControl(page.getByRole('button', { name: 'DONE', exact: true }));
 
   await startNewRun(page);
   const mobile = test.info().project.name === 'chromium-mobile';
@@ -201,9 +185,7 @@ test('first trusted menu action recovers policy-suspended audio without overridi
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
   expect((await snapshot(page)).audioPauseReasons).toEqual(['gameplay']);
 
-  const save = page.getByRole('button', { name: 'Save to SLOT 1' });
-  await save.focus();
-  await save.press('Enter');
+  await pressControl(page.getByRole('button', { name: 'Save to SLOT 1' }));
   expect((await snapshot(page)).physicsPaused).toBe(true);
   expect((await snapshot(page)).audioPauseReasons).toEqual(['gameplay']);
   expect((await snapshot(page)).audioContextState).toBe('suspended');
@@ -219,13 +201,11 @@ test('returning to the menu does not replay a preview URL level jump', async ({ 
   } finally {
     await page.keyboard.up('Escape');
   }
-  const mainMenu = page.getByRole('button', { name: 'Main menu', exact: true });
-  await mainMenu.focus();
-  await mainMenu.press('Enter');
+  await pressControl(page.getByRole('button', { name: 'MAIN MENU', exact: true }));
   await waitForScene(page, 'Menu');
   await page.setViewportSize({ width: 1024, height: 768 });
   await expect.poll(async () => (await snapshot(page)).gameSize.width).toBe(1024);
-  await expect(page.getByRole('button', { name: 'New run', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'NEW RUN', exact: true })).toBeEnabled();
   await startNewRun(page);
   expect((await snapshot(page)).texts.some((item) => item.text === 'Aurora Threshold')).toBe(true);
   await page.reload();

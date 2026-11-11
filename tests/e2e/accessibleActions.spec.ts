@@ -1,61 +1,45 @@
-import { expect, openMenu, openMenuSettings, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
+import { expect, openMenu, pressControl, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
 
-async function namedActions(page: import('@playwright/test').Page, label: string): Promise<string[]> {
-  return page
-    .locator(`nav[aria-label="${label}"] button`)
-    .evaluateAll((buttons) => buttons.map((button) => button.textContent?.trim() ?? ''));
+async function activateNamedAction(page: Page, name: string): Promise<void> {
+  await pressControl(page.getByRole('button', { name, exact: true }));
 }
 
-async function activateNamedAction(page: import('@playwright/test').Page, name: string): Promise<void> {
-  const button = page.getByRole('button', { name });
-  await button.focus();
-  await expect(button).toBeFocused();
-  await button.press('Enter');
-}
-
-test('exposes named menu, pause, and intermission actions without a second painted UI', async ({
+test('menu and pause are native, named HTML controls with no second painted UI', async ({
   page,
   assertNoBrowserErrors,
 }) => {
+  test.setTimeout(120_000);
   await openMenu(page);
 
-  await expect(page.locator('nav[aria-label="Command deck"]')).toHaveCount(1);
-  await expect
-    .poll(() => namedActions(page, 'Command deck'))
-    .toEqual(
-      expect.arrayContaining([
-        'New run',
-        'Load SLOT 1',
-        'Delete SLOT 1',
-        'Set difficulty low',
-        'Set visual quality high',
-        'Increase music volume',
-      ])
-    );
   await expect(page.locator('#game-root canvas')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.getByRole('heading', { name: 'SPACE EXPLORER' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'NEW RUN', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Load SLOT 1' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Delete SLOT 1' })).toBeDisabled();
-  await activateNamedAction(page, 'Set difficulty low');
-  await expect(page.getByRole('button', { name: 'Set difficulty low' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#accessible-action-layer-status')).toContainText('Difficulty set to LOW');
+  await expect(page.getByRole('button', { name: 'Delete SLOT 1' })).toHaveCount(0);
 
-  await openMenuSettings(page);
-  const menu = await snapshot(page);
-  const creativityLabel = menu.texts.find((item) => item.text === 'CREATIVITY');
-  const creativityValue = menu.texts
-    .filter((item) => item.text.endsWith('%'))
-    .find((item) => Math.abs(item.y - (creativityLabel?.y ?? -100)) < 20);
-  expect(creativityLabel).toBeDefined();
-  expect(creativityValue).toBeDefined();
-  const semanticCreativity = page.getByRole('button', { name: 'Increase creativity' });
-  const descriptionId = await semanticCreativity.getAttribute('aria-describedby');
-  expect(descriptionId).toBeTruthy();
-  const semanticDescription = page.locator(`[id="${descriptionId}"]`);
-  const descriptionBefore = await semanticDescription.textContent();
-  await page.mouse.click((creativityValue?.x ?? 0) - 70, creativityLabel?.y ?? 0);
-  await expect(semanticDescription).not.toHaveText(descriptionBefore ?? '');
+  await pressControl(page.getByRole('button', { name: 'SETTINGS', exact: true }));
+  const sheet = page.getByRole('dialog', { name: 'SETTINGS' });
+  await expect(sheet).toBeVisible();
+  const difficultyLow = page.getByRole('group', { name: 'Difficulty' }).getByRole('button', { name: 'LOW' });
+  await pressControl(difficultyLow);
+  await expect(difficultyLow).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Difficulty set to LOW.')).toHaveAttribute('aria-live', 'polite');
 
-  await activateNamedAction(page, 'New run');
+  // Sliders answer both the keyboard and a pointer on their track.
+  const creativity = page.getByRole('slider', { name: 'CREATIVITY' });
+  const before = Number(await creativity.inputValue());
+  await pressControl(creativity, 'ArrowRight');
+  await expect(creativity).toHaveValue(String(before + 1));
+  await expect(creativity).toHaveAttribute('aria-valuetext', `${before + 1}%`);
+  const track = await creativity.boundingBox();
+  await page.mouse.click((track?.x ?? 0) + 2, (track?.y ?? 0) + (track?.height ?? 0) / 2);
+  await expect(creativity).toHaveValue('0');
+
+  // Escape reaches the game through a focused control and closes the sheet.
+  await page.keyboard.press('Escape');
+  await expect(sheet).toBeHidden();
+
+  await pressControl(page.getByRole('button', { name: 'NEW RUN', exact: true }));
   await waitForScene(page, 'Game');
 
   // Phaser JustDown only sees Escape if it is still held on a game frame.
@@ -69,24 +53,32 @@ test('exposes named menu, pause, and intermission actions without a second paint
     await page.keyboard.down('Escape');
   }
   try {
-    await expect
-      .poll(() => namedActions(page, 'Paused'))
-      .toEqual(expect.arrayContaining(['Resume', 'Main menu', 'Checkpoints', 'Settings', 'Save to SLOT 1']));
+    await expect(page.getByRole('dialog', { name: 'Paused' })).toBeVisible();
   } finally {
     if (!mobile) await page.keyboard.up('Escape');
   }
-  await expect(page.getByRole('button', { name: 'Checkpoints' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#accessible-action-layer-status')).not.toHaveText('');
-  await activateNamedAction(page, 'Settings');
-  await expect(page.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-pressed', 'true');
-  await expect
-    .poll(() => namedActions(page, 'Paused'))
-    .toEqual(expect.arrayContaining(['Set difficulty normal', 'Set visual quality standard', 'Increase creativity']));
-  await activateNamedAction(page, 'Increase creativity');
-  await expect(page.locator('#accessible-action-layer-status')).toContainText('creativity');
-  await activateNamedAction(page, 'Resume');
+  const checkpoints = page.getByRole('tab', { name: 'CHECKPOINTS' });
+  const settings = page.getByRole('tab', { name: 'SETTINGS' });
+  await expect(checkpoints).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('button', { name: 'Save to SLOT 1' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Load SLOT 1' })).toBeDisabled();
 
-  await expect.poll(async () => (await page.locator('nav[aria-label="Paused"]').count()) === 0).toBe(true);
+  await pressControl(settings);
+  await expect(settings).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('button', { name: 'Save to SLOT 1' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Difficulty' }).getByRole('button', { name: 'LOW' })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  );
+  await expect(page.getByText('Quality applies after restart.')).toBeVisible();
+  const pauseCreativity = page.getByRole('slider', { name: 'CREATIVITY' });
+  await pressControl(pauseCreativity, 'ArrowRight');
+  await expect(pauseCreativity).toHaveValue('1');
+  expect((await snapshot(page)).physicsPaused).toBe(true);
+
+  await pressControl(page.getByRole('button', { name: 'RESUME', exact: true }));
+  await expect(page.getByRole('dialog', { name: 'Paused' })).toBeHidden();
+  await expect.poll(async () => (await snapshot(page)).physicsPaused).toBe(false);
 
   assertNoBrowserErrors();
 });
@@ -103,10 +95,13 @@ test('announces intermission and terminal summaries with semantic continuation',
     await harness.showPlanetIntermission(1);
   });
   await waitForScene(page, 'PlanetIntermission');
-  await expect(page.locator('nav[aria-label="Planet intermission"]')).toContainText('Level 1 complete');
-  await expect
-    .poll(() => namedActions(page, 'Planet intermission'))
-    .toEqual(expect.arrayContaining(['Continue to Tideglass Shallows', 'Buy HULL ARMOR']));
+  const intermission = page.getByRole('region', { name: 'Planet intermission' });
+  await expect(intermission.getByRole('status')).toContainText('Level 1 complete');
+  await expect(intermission.getByRole('button', { name: 'Continue to Tideglass Shallows', exact: true })).toBeEnabled();
+  await expect(intermission.getByRole('button', { name: 'Buy HULL ARMOR', exact: true })).toBeEnabled();
+  await expect(intermission.getByRole('button', { name: 'Buy FIRE RATE', exact: true })).toBeDisabled();
+  // Only the controls take the pointer: a tap on the header text falls through to the canvas.
+  await expect(intermission.getByRole('heading')).toHaveCSS('pointer-events', 'none');
 
   await page.evaluate(async () => {
     const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
@@ -114,7 +109,7 @@ test('announces intermission and terminal summaries with semantic continuation',
     await harness.route('Victory');
   });
   await waitForScene(page, 'Victory');
-  await expect(page.locator('nav[aria-label="Mission complete"]')).toContainText('Final score');
+  await expect(page.getByRole('region', { name: 'Mission complete' }).getByRole('status')).toContainText('Final score');
   await activateNamedAction(page, 'Continue to command deck');
   await waitForScene(page, 'Menu');
 
@@ -124,8 +119,8 @@ test('announces intermission and terminal summaries with semantic continuation',
     await harness.route('GameOver');
   });
   await waitForScene(page, 'GameOver');
-  await expect(page.locator('nav[aria-label="Game over"]')).toContainText('Reached level');
-  await activateNamedAction(page, 'Continue to command deck');
+  await expect(page.getByRole('region', { name: 'Game over' }).getByRole('status')).toContainText('Reached level');
+  await activateNamedAction(page, 'MENU');
   await waitForScene(page, 'Menu');
 
   assertNoBrowserErrors();
@@ -194,6 +189,6 @@ test('native intermission buttons purchase only their named upgrade and continue
     score: 6700,
     upgrades: { hp: 1, damage: 1, fireRate: 0 },
   });
-  await expect(page.locator('nav[aria-label="Planet intermission"]')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Planet intermission' })).toHaveCount(0);
   assertNoBrowserErrors();
 });

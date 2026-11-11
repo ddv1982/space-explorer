@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { setLogicalFrameSize } from './generatedTexture';
-import { mountAccessibleActionLayer } from '../scenes/shared/accessibleActionLayer';
+import { h, mountUiLayer, setStatus } from '../ui/dom';
 import {
   SHIPYARD_SPRITES,
   SPRITE_DENSITY,
@@ -60,46 +60,37 @@ function registerShipyardFrames(scene: Phaser.Scene): boolean {
 export function finishShipyardLoading(scene: Phaser.Scene): boolean {
   if (registerShipyardFrames(scene)) return true;
 
-  const width = Number(scene.scale.width);
-  const height = Number(scene.scale.height);
-  scene.add.rectangle(width / 2, height / 2, width, height, 0x020816).setDepth(1000);
-  scene.add
-    .text(width / 2, height / 2 - 42, 'Artwork could not be loaded.', {
-      fontFamily: 'Share Tech Mono, monospace',
-      fontSize: '18px',
-      color: '#f4fdff',
-      align: 'center',
-      wordWrap: { width: Math.max(200, width - 40) },
-    })
-    .setOrigin(0.5)
-    .setDepth(1001);
-  const retry = scene.add
-    .text(width / 2, height / 2 + 20, 'RETRY  /  ENTER', {
-      fontFamily: 'Share Tech Mono, monospace',
-      fontSize: '20px',
-      color: '#bff6ff',
-      backgroundColor: '#173140',
-      padding: { x: 24, y: 18 },
-    })
-    .setOrigin(0.5)
-    .setDepth(1001)
-    .setInteractive({ useHandCursor: true });
   let restarting = false;
   const restart = (): void => {
     if (restarting) return;
     restarting = true;
     scene.scene.restart();
   };
-  retry.once('pointerdown', restart);
+  const message = h('p', { className: 'ui-status artwork__message' });
+  const retry = h(
+    'button',
+    { type: 'button', className: 'ui-btn ui-btn--primary', 'aria-label': 'Retry artwork' },
+    'RETRY  /  ENTER'
+  );
+  retry.addEventListener('click', restart);
+  const layer = mountUiLayer();
+  layer.append(
+    h(
+      'div',
+      { className: 'ui-modal' },
+      h(
+        'section',
+        { className: 'ui-panel artwork', 'aria-label': 'Artwork loading' },
+        h('div', { className: 'ui-frame', 'aria-hidden': 'true' }),
+        message,
+        retry
+      )
+    )
+  );
+  setStatus(message, 'Artwork could not be loaded.', 'error');
   scene.input.keyboard?.once('keydown-ENTER', restart);
-  const teardownActions = mountAccessibleActionLayer({
-    label: 'Artwork loading',
-    summary: 'Artwork could not be loaded. Retry to continue.',
-    status: { message: 'Artwork could not be loaded.', politeness: 'assertive' },
-    actions: [{ name: 'retry-artwork', label: 'Retry artwork', activate: restart }],
-  });
   const cleanup = (): void => {
-    teardownActions();
+    layer.remove();
     scene.input.keyboard?.off('keydown-ENTER', restart);
     scene.events.off(Phaser.Scenes.Events.SHUTDOWN, cleanup);
     scene.events.off(Phaser.Scenes.Events.DESTROY, cleanup);

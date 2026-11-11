@@ -22,6 +22,8 @@ mock.module('../src/scenes/sceneRegistry', () => ({
 const { setPlayerState } = await import('../src/systems/PlayerState');
 const { audioManager } = await import('../src/systems/AudioManager');
 const { MenuScene } = await import('../src/scenes/MenuScene');
+const { placeMenuHero } = await import('../src/scenes/menuScene/hero');
+const { applyMusicSetting } = await import('../src/ui/settingsForm');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
 describe('MenuScene', () => {
@@ -202,35 +204,34 @@ describe('MenuScene', () => {
     expect(refreshSaveSlots).toHaveBeenCalledWith('Slot 2 cleared.');
   });
 
-  test('resumes audio in the trusted semantic music action before changing its value', () => {
+  test('places the hero in the band the HTML menu leaves for it', () => {
+    expect(placeMenuHero({ left: 0, top: 100, width: 400, height: 80 }, 230)).toBeNull();
+    const hero = placeMenuHero({ left: 16, top: 157, width: 1248, height: 299 }, 230);
+    expect(hero?.x).toBe(640);
+    expect(hero?.shipHeight).toBeCloseTo(211.5, 1);
+    expect(placeMenuHero({ left: 0, top: 0, width: 400, height: 900 }, 150)?.shipHeight).toBe(150);
+  });
+
+  test('resumes audio in the trusted music input before changing its value', () => {
     const events: string[] = [];
-    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
-    (scene as unknown as Record<string, unknown>).settingsPanel = {
-      setMusicValue: () => events.push('panel'),
-    };
-    (scene as unknown as Record<string, unknown>).syncAccessibleActions = () => events.push('sync');
     const originalResume = audioManager.resumeFromUserGesture;
     const originalGetTuning = audioManager.getMusicRuntimeTuning;
     const originalSetTuning = audioManager.setMusicRuntimeTuning;
     audioManager.resumeFromUserGesture = () => events.push('resume');
-    audioManager.getMusicRuntimeTuning = () => ({ creativity: 0.5, energy: 0.5, ambience: 0.5 });
-    audioManager.setMusicRuntimeTuning = () => {
-      events.push('set');
+    audioManager.getMusicRuntimeTuning = () => ({ creativity: 0.55, energy: 0.5, ambience: 0.5 });
+    audioManager.setMusicRuntimeTuning = (tuning) => {
+      events.push(`set:${JSON.stringify(tuning)}`);
       return { creativity: 0.55, energy: 0.5, ambience: 0.5 };
     };
 
     try {
-      (
-        scene as unknown as {
-          adjustAccessibleMusicValue: (key: 'creativity', delta: number) => void;
-        }
-      ).adjustAccessibleMusicValue('creativity', 0.05);
+      expect(applyMusicSetting('creativity', 0.55)).toMatchObject({ creativity: 0.55, energy: 0.5 });
     } finally {
       audioManager.resumeFromUserGesture = originalResume;
       audioManager.getMusicRuntimeTuning = originalGetTuning;
       audioManager.setMusicRuntimeTuning = originalSetTuning;
     }
 
-    expect(events).toEqual(['resume', 'set', 'panel', 'sync']);
+    expect(events).toEqual(['resume', 'set:{"creativity":0.55}']);
   });
 });

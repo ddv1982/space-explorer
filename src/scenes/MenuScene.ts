@@ -27,40 +27,21 @@ import { createArmingAction, type ArmingAction } from '../systems/armingAction';
 import { audioManager } from '../systems/AudioManager';
 import { startFreshRun, startPreparedRun } from './shared/startRun';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
-import {
-  mountAccessibleActionLayer,
-  type AccessibleAction,
-  type AccessibleActionLayerHandle,
-} from './shared/accessibleActionLayer';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
-import { createSettingsPanel, type SettingsPanel } from './shared/settingsPanel';
-import { createMenuLayoutPlan } from './menuScene/layout';
 import { resolveDevLevelJump } from './menuScene/devLevelJump';
-import {
-  createMenuBackdrop,
-  createMenuTitle,
-  createSaveSlotEntryPanel,
-  type MenuSaveSlotPanel,
-} from './menuScene/panels';
-import { createMenuHero, type MenuHero } from './menuScene/hero';
+import { createMenuHero, placeMenuHero, type MenuHero } from './menuScene/hero';
 import { createMenuVista, type MenuVista } from './menuScene/vista';
-import { createMenuSettingsSheet, type MenuSettingsSheet } from './menuScene/settingsSheet';
-import { createActionButtonControl, type ActionButtonControl } from './shared/actionButtonControl';
+import { createMenuView, type MenuView } from './menuScene/menuView';
+import { measureInGame } from '../ui/dom';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
-  private saveSlotPanel: MenuSaveSlotPanel | null = null;
-  private settingsPanel: SettingsPanel | null = null;
-  private settingsSheet: MenuSettingsSheet | null = null;
-  private settingsButton: ActionButtonControl | null = null;
+  private view: MenuView | null = null;
   private hero: MenuHero | null = null;
   private vista: MenuVista | null = null;
   private gameTransitionQueued = false;
   private devLevelJumpConsumed = false;
   private deleteArm?: ArmingAction<SaveSlotId>;
-  private teardownAccessibleActions?: AccessibleActionLayerHandle;
-  private accessibleStatusMessage = '';
-  private accessibleStatusOk = true;
 
   constructor() {
     super({ key: 'Menu' });
@@ -68,11 +49,41 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     const menuConfig = getLevelConfig(1);
-    const layoutPlan = this.initializeMenuScene(menuConfig);
-    this.createMenuPanels(layoutPlan);
+    rebindSceneLifecycleHandlers(this, { onShutdown: this.handleSceneShutdown, context: this });
+    this.gameTransitionQueued = false;
+    this.cameras.main.setBackgroundColor(menuConfig.bgColor);
+    audioManager.init();
+    audioManager.startMusic(menuConfig.music.stage);
+    audioManager.setMusicIntensity(0.9);
+    this.parallax = new ParallaxBackground();
+    this.parallax.create(this, menuConfig);
+    // The canvas art (parallax, vista, hero) is sized to the viewport, so a resize rebuilds the scene;
+    // blocked while a Game transition load is in flight so a late ensure COMPLETE is not orphaned.
+    registerRestartOnResize(this, () => !this.gameTransitionQueued);
+
+    this.vista = createMenuVista(this);
+    this.view = createMenuView({
+      onNewRun: () => this.startNewRun(),
+      onLoadSlot: (slotId) => this.loadFromSlot(slotId),
+      onDeleteSlot: (slotId) => this.deleteSlot(slotId),
+      onToggleSettings: () => this.playMenuClick(),
+      settings: {
+        difficulty: this.getCurrentGameplayDifficultyTier(),
+        quality: this.getCurrentVisualQualityTier(),
+        onSelectDifficulty: (tier) => this.selectGameplayDifficultyTier(tier),
+        onSelectQuality: (tier) => this.selectVisualQualityTier(tier),
+      },
+    });
+    this.hero = createMenuHero(this, this.measureHeroBand(this.view.heroSlot));
+    this.input.keyboard?.on('keydown-ESC', this.closeSettingsSheet, this);
     this.refreshSaveSlots('');
-    this.syncAccessibleActions();
     this.maybeStartDevLevelJump();
+  }
+
+  /** The hero ship flies in the band the HTML layout leaves empty between the title and NEW RUN. */
+  private measureHeroBand(slot: HTMLElement) {
+    const maxShipHeight = Number(getComputedStyle(slot).getPropertyValue('--hero-max')) || 230;
+    return placeMenuHero(measureInGame(this, slot), maxShipHeight);
   }
 
   private maybeStartDevLevelJump(): void {
@@ -102,75 +113,8 @@ export class MenuScene extends Phaser.Scene {
     this.startGameScene();
   }
 
-  private initializeMenuScene(menuConfig: ReturnType<typeof getLevelConfig>) {
-    rebindSceneLifecycleHandlers(this, {
-      onShutdown: this.handleSceneShutdown,
-      context: this,
-    });
-
-    this.gameTransitionQueued = false;
-    this.cameras.main.setBackgroundColor(menuConfig.bgColor);
-    this.initializeMenuAudio(menuConfig.music.stage);
-    this.initializeParallax(menuConfig);
-    // Block resize restarts while a Game transition load is in flight so we do not
-    // reset gameTransitionQueued and orphan a late ensure COMPLETE callback.
-    registerRestartOnResize(this, () => !this.gameTransitionQueued);
-
-    return createMenuLayoutPlan(this);
-  }
-
-  private initializeMenuAudio(stageMusicKey: ReturnType<typeof getLevelConfig>['music']['stage']): void {
-    audioManager.init();
-    audioManager.startMusic(stageMusicKey);
-    audioManager.setMusicIntensity(0.9);
-  }
-
-  private initializeParallax(menuConfig: ReturnType<typeof getLevelConfig>): void {
-    this.parallax = new ParallaxBackground();
-    this.parallax.create(this, menuConfig);
-  }
-
-  private createMenuPanels(layoutPlan: ReturnType<typeof createMenuLayoutPlan>): void {
-    this.vista = createMenuVista(this);
-    createMenuBackdrop(this);
-    createMenuTitle(this, layoutPlan);
-    this.hero = createMenuHero(this, layoutPlan);
-    this.saveSlotPanel = createSaveSlotEntryPanel(
-      this,
-      layoutPlan,
-      this.createSaveSlotPanelHandlers(),
-      isSaveStorageAvailable()
-    );
-    this.createSettings(layoutPlan);
-  }
-
-  /** Difficulty, quality and audio live on a settings sheet opened from the footer button. */
-  private createSettings(layoutPlan: ReturnType<typeof createMenuLayoutPlan>): void {
-    this.settingsPanel = createSettingsPanel(this, {
-      layout: layoutPlan.settingsLayout,
-      difficulty: this.getCurrentGameplayDifficultyTier(),
-      quality: this.getCurrentVisualQualityTier(),
-      onSelectDifficulty: (tier) => this.selectGameplayDifficultyTier(tier),
-      onSelectQuality: (tier) => this.selectVisualQualityTier(tier),
-      onMusicValueChanged: () => this.syncAccessibleActions(),
-    });
-    this.settingsSheet = createMenuSettingsSheet(this, layoutPlan, this.settingsPanel, () => this.playMenuClick());
-    const button = layoutPlan.settingsButton;
-    this.settingsButton = createActionButtonControl(this, {
-      label: 'SETTINGS',
-      width: button.width,
-      height: button.height,
-      variant: 'secondary',
-      fontSize: '15px',
-      onClick: () => this.settingsSheet?.open(),
-    });
-    this.settingsButton.setPosition(button.x, button.y);
-    this.settingsButton.setDepth(11);
-    this.input.keyboard?.on('keydown-ESC', this.closeSettingsSheet, this);
-  }
-
   private closeSettingsSheet(): void {
-    this.settingsSheet?.close();
+    this.view?.closeSettings();
   }
 
   private selectGameplayDifficultyTier(tier: GameplayDifficultyTier): boolean {
@@ -217,18 +161,6 @@ export class MenuScene extends Phaser.Scene {
 
   private reloadForVisualQualityChange(): void {
     window.location.reload();
-  }
-
-  private createSaveSlotPanelHandlers(): {
-    onNewRun: () => void;
-    onLoadSlot: (slotId: SaveSlotId) => void;
-    onDeleteSlot: (slotId: SaveSlotId) => void;
-  } {
-    return {
-      onNewRun: () => this.startNewRun(),
-      onLoadSlot: (slotId) => this.loadFromSlot(slotId),
-      onDeleteSlot: (slotId) => this.deleteSlot(slotId),
-    };
   }
 
   update(_time: number, delta: number): void {
@@ -314,11 +246,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private refreshSaveSlots(message: string, isError = false): void {
-    this.saveSlotPanel?.refresh(this.listAvailableSaveSlots());
-    this.saveSlotPanel?.setStatus(message, isError);
-    this.accessibleStatusMessage = message;
-    this.accessibleStatusOk = !isError;
-    if (this.teardownAccessibleActions) this.syncAccessibleActions();
+    this.view?.refreshSlots(this.listAvailableSaveSlots(), this.isSaveStorageAvailable());
+    this.view?.setStatus(message, isError);
   }
 
   private showSaveSlotError(message: string): void {
@@ -358,109 +287,14 @@ export class MenuScene extends Phaser.Scene {
     startPreparedRun(this);
   }
 
-  private syncAccessibleActions(): void {
-    const slots = this.listAvailableSaveSlots();
-    const options = {
-      label: 'Command deck',
-      summary: 'Start a new run, manage save slots, or change game and music settings.',
-      status: {
-        message: this.accessibleStatusMessage,
-        politeness: this.accessibleStatusOk ? ('polite' as const) : ('assertive' as const),
-      },
-      actions: [
-        { name: 'new-run', label: 'New run', activate: () => this.startNewRun() },
-        ...slots.map((slot) => ({
-          name: `load-${slot.id}`,
-          label: `Load ${slot.title}`,
-          description: slot.occupied ? `${slot.subtitle}, ${slot.savedAtLabel}` : 'Empty slot',
-          disabled: !slot.occupied,
-          activate: () => this.loadFromSlot(slot.id),
-        })),
-        ...slots.map((slot) => ({
-          name: `delete-${slot.id}`,
-          label: `Delete ${slot.title}`,
-          disabled: !slot.occupied,
-          activate: () => this.deleteSlot(slot.id),
-        })),
-        ...(['low', 'normal', 'high'] as const).map((tier) => ({
-          name: `difficulty-${tier}`,
-          label: `Set difficulty ${tier}`,
-          selected: this.getCurrentGameplayDifficultyTier() === tier,
-          activate: () => {
-            if (this.selectGameplayDifficultyTier(tier)) this.settingsPanel?.setDifficulty(tier);
-          },
-        })),
-        ...(['low', 'standard', 'high', 'auto'] as const).map((tier) => ({
-          name: `quality-${tier}`,
-          label: `Set visual quality ${tier}`,
-          selected: this.getCurrentVisualQualityTier() === tier,
-          activate: () => this.selectVisualQualityTier(tier),
-        })),
-        ...this.createAccessibleMusicActions(),
-      ],
-    };
-    if (this.teardownAccessibleActions) {
-      this.teardownAccessibleActions.update(options);
-    } else {
-      this.teardownAccessibleActions = mountAccessibleActionLayer(options);
-    }
-  }
-
-  private createAccessibleMusicActions(): AccessibleAction[] {
-    const tuning = audioManager.getMusicRuntimeTuning();
-    const values = { ...tuning, volume: audioManager.getMusicVolume() };
-    return (Object.keys(values) as Array<keyof typeof values>).flatMap((key) => {
-      const label = key === 'volume' ? 'music volume' : key;
-      const description = `${Math.round(values[key] * 100)} percent`;
-      return [
-        {
-          name: `decrease-${key}`,
-          label: `Decrease ${label}`,
-          description,
-          disabled: values[key] <= 0,
-          activate: () => this.adjustAccessibleMusicValue(key, -0.05),
-        },
-        {
-          name: `increase-${key}`,
-          label: `Increase ${label}`,
-          description,
-          disabled: values[key] >= 1,
-          activate: () => this.adjustAccessibleMusicValue(key, 0.05),
-        },
-      ];
-    });
-  }
-
-  private adjustAccessibleMusicValue(key: 'creativity' | 'energy' | 'ambience' | 'volume', delta: number): void {
-    audioManager.resumeFromUserGesture();
-    const current = key === 'volume' ? audioManager.getMusicVolume() : audioManager.getMusicRuntimeTuning()[key];
-    const requested = Math.max(0, Math.min(1, current + delta));
-    const value =
-      key === 'volume'
-        ? audioManager.setMusicVolume(requested)
-        : audioManager.setMusicRuntimeTuning({ [key]: requested })[key];
-    this.settingsPanel?.setMusicValue(key, value);
-    this.accessibleStatusMessage = `${key === 'volume' ? 'Music volume' : key} ${Math.round(value * 100)} percent.`;
-    this.accessibleStatusOk = true;
-    this.syncAccessibleActions();
-  }
-
   private handleSceneShutdown(): void {
-    this.teardownAccessibleActions?.();
-    this.teardownAccessibleActions = undefined;
-    this.parallax?.destroy();
-    this.saveSlotPanel?.destroy();
-    this.saveSlotPanel = null;
     this.input.keyboard?.off('keydown-ESC', this.closeSettingsSheet, this);
-    this.settingsSheet?.destroy();
-    this.settingsSheet = null;
-    this.settingsButton?.destroy();
-    this.settingsButton = null;
+    this.view?.destroy();
+    this.view = null;
+    this.parallax?.destroy();
     this.hero?.destroy();
     this.hero = null;
     this.vista?.destroy();
     this.vista = null;
-    this.settingsPanel?.destroy();
-    this.settingsPanel = null;
   }
 }

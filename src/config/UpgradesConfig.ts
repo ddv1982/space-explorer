@@ -169,7 +169,7 @@ function getUpgradeUnlockReason(
   return null;
 }
 
-export function evaluateUpgrade(
+function evaluateUpgrade(
   upgrade: UpgradeDef,
   playerLevel: number,
   score: number,
