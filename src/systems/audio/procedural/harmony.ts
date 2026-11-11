@@ -30,6 +30,8 @@ interface HarmonicContext {
    * tone). Every pitched voice asks here, so bass, arpeggio, lead and pad always share one scale.
    */
   chordToneHz: (semitones: number) => number;
+  /** Frequency of the tone `steps` scale steps above the chord root: 2 is its third, 4 its fifth. */
+  scaleStepHz: (steps: number) => number;
 }
 
 /** Moves a pitch, in semitones above the key's root, onto the nearest tone of the mode. */
@@ -103,5 +105,10 @@ export function resolveHarmonicContext(track: ProceduralMusicTrackConfig, barInd
     harmonicRootHz: track.rootHz * Math.pow(2, rootSemitoneOffset / 12),
     chord,
     chordToneHz: (semitones) => track.rootHz * Math.pow(2, snapToMode(mode, rootSemitoneOffset + semitones) / 12),
+    scaleStepHz: (steps) => {
+      const index = chord.degree - 1 + steps;
+      const semitones = mode[index % 7] + Math.floor(index / 7) * 12 + (chord.octaveShift ?? 0) * 12;
+      return track.rootHz * Math.pow(2, semitones / 12);
+    },
   };
 }

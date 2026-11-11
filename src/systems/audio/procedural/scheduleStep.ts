@@ -112,7 +112,7 @@ export function scheduleTrackStep(
       ctx,
       output: out.space,
       pad: track.pad,
-      chordToneHz: plan.chordToneHz,
+      scaleStepHz: plan.scaleStepHz,
       time,
       seconds: stepDuration * meter.stepsPerBar,
       gain: track.pad.gain * track.masterGain,

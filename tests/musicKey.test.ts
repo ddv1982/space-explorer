@@ -97,6 +97,15 @@ describe('music key', () => {
     expect(tone(2, 4)).toBe(9 + 3);
   });
 
+  test('a pad chord is the root, fifth and tenth of its own scale, even where the third is not 3 or 4 semitones', () => {
+    const track = LEVELS[LEVELS.length - 1].music.boss;
+    expect(track.intent.descriptors.mode).toBe('ultralocrian');
+    const harmony = resolveHarmonicContext(track, 0);
+    const voicing = [0, 4, 9].map((steps) => Math.round(12 * Math.log2(harmony.scaleStepHz(steps) / track.rootHz)));
+
+    expect(voicing).toEqual([0, 6, 15]);
+  });
+
   test('the lead sings above the arpeggio in every key', () => {
     for (const level of LEVELS) {
       for (const track of [level.music.stage, level.music.boss]) {
