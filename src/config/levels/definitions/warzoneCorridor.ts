@@ -179,13 +179,7 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Gear March',
-    bossCueName: 'Gear March: Marshal Vectra',
-    mood: 'precision discipline with mechanical swing',
-    tempoFeel: 'metronomic march with tick accents',
-    style: 'clockwork electro-march over brass-toned bass',
-    intensity: 'high',
-    shifts: ['Convoy lock thickens accents and drives an unbroken pursuit pulse.'],
+    palette: 'machine',
     tempo: 112,
     rootHz: 92.5,
     patternRoot: 0,
@@ -201,8 +195,6 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'phrygian',
-        chordProgressionTags: ['minor-pedal', 'quartal-command-voicing'],
-        rhythmicFeel: 'forward military stomp',
         energyProfile: { baseline: 0.5, peak: 0.9, curve: 'build' },
         harmony: {
           steps: [
@@ -215,8 +207,6 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'locrian',
-        chordProgressionTags: ['chromatic-march', 'cluster-pressure'],
-        rhythmicFeel: 'unbroken chase ostinato',
         energyProfile: { baseline: 0.7, peak: 0.96, curve: 'surge' },
         harmony: {
           steps: [

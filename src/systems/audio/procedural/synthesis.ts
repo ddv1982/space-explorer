@@ -10,8 +10,8 @@ import { deriveNoisePlan } from './noisePlan';
 import { deriveToneVoicePlan } from './toneVoicePlan';
 
 interface ToneLayerArgs {
-  ctx: AudioContext;
-  musicGain: GainNode;
+  ctx: BaseAudioContext;
+  musicGain: AudioNode;
   track: ProceduralMusicTrackConfig;
   layer: ProceduralMusicLayerConfig;
   stepIndex: number;
@@ -24,8 +24,8 @@ interface ToneLayerArgs {
 }
 
 interface NoiseLayerArgs {
-  ctx: AudioContext;
-  musicGain: GainNode;
+  ctx: BaseAudioContext;
+  musicGain: AudioNode;
   track: ProceduralMusicTrackConfig;
   noiseLayer: ProceduralNoiseLayerConfig;
   stepIndex: number;
@@ -35,86 +35,6 @@ interface NoiseLayerArgs {
   creativityDrive: number;
   gainScale?: number;
   getNoiseBuffer: (color?: MusicNoiseCharacterConfig['color']) => AudioBuffer | null;
-  getExplosionBuffer: () => AudioBuffer | null;
-}
-
-interface LegacyFadedSourceArgs {
-  ctx: AudioContext;
-  musicGain: GainNode;
-  source: AudioScheduledSourceNode;
-  inputNode: AudioNode;
-  time: number;
-  attackEndTime: number;
-  releaseEndTime: number;
-  peakGain: number;
-  stopTime: number;
-}
-
-function scheduleLegacyFadedSource({
-  ctx,
-  musicGain,
-  source,
-  inputNode,
-  time,
-  attackEndTime,
-  releaseEndTime,
-  peakGain,
-  stopTime,
-}: LegacyFadedSourceArgs): void {
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.001, time);
-  gain.gain.linearRampToValueAtTime(peakGain, attackEndTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, releaseEndTime);
-
-  inputNode.connect(gain);
-  gain.connect(musicGain);
-
-  source.start(time);
-  source.stop(stopTime);
-}
-
-function scheduleLegacyTone(
-  ctx: AudioContext,
-  musicGain: GainNode,
-  layer: ProceduralMusicLayerConfig,
-  frequency: number,
-  time: number,
-  duration: number,
-  trackMasterGain: number,
-  gainScale = 1
-): void {
-  const osc = ctx.createOscillator();
-  const attackTime = Math.min(0.02, duration * 0.35);
-  const releaseTime = Math.max(duration * 0.85, attackTime + 0.01);
-  const peakGain = layer.gain * trackMasterGain * gainScale;
-
-  osc.type = layer.waveform;
-  osc.frequency.setValueAtTime(frequency, time);
-
-  if (layer.detune) {
-    osc.detune.setValueAtTime(layer.detune, time);
-  }
-
-  let inputNode: AudioNode = osc;
-  if (layer.filterHz) {
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(layer.filterHz, time);
-    osc.connect(filter);
-    inputNode = filter;
-  }
-
-  scheduleLegacyFadedSource({
-    ctx,
-    musicGain,
-    source: osc,
-    inputNode,
-    time,
-    attackEndTime: time + attackTime,
-    releaseEndTime: time + releaseTime,
-    peakGain,
-    stopTime: time + duration + 0.02,
-  });
 }
 
 function scheduleTone({
@@ -130,11 +50,6 @@ function scheduleTone({
   creativityDrive,
   gainScale = 1,
 }: ToneLayerArgs & { frequency: number; duration: number }): void {
-  if (!track.expression && !layer.expression) {
-    scheduleLegacyTone(ctx, musicGain, layer, frequency, time, duration, track.masterGain, gainScale);
-    return;
-  }
-
   const tonePlan = deriveToneVoicePlan({
     track,
     layer,
@@ -253,46 +168,6 @@ function scheduleTone({
   }
 }
 
-function scheduleLegacyNoise(
-  ctx: AudioContext,
-  musicGain: GainNode,
-  getExplosionBuffer: () => AudioBuffer | null,
-  track: ProceduralMusicTrackConfig,
-  noiseLayer: ProceduralNoiseLayerConfig,
-  time: number,
-  stepDuration: number,
-  gainScale = 1
-): void {
-  const buffer = getExplosionBuffer();
-  if (!buffer) {
-    return;
-  }
-
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.setValueAtTime(noiseLayer.filterHz, time);
-
-  const duration = Math.max(stepDuration * noiseLayer.durationSteps * 0.75, 0.04);
-  const peakGain = noiseLayer.gain * track.masterGain * gainScale;
-
-  source.connect(filter);
-
-  scheduleLegacyFadedSource({
-    ctx,
-    musicGain,
-    source,
-    inputNode: filter,
-    time,
-    attackEndTime: time + 0.01,
-    releaseEndTime: time + duration,
-    peakGain,
-    stopTime: time + duration + 0.02,
-  });
-}
-
 export function scheduleLayer(args: ToneLayerArgs): void {
   const note = args.layer.pattern[args.stepIndex % args.layer.pattern.length];
   if (note === null) {
@@ -320,15 +195,9 @@ export function scheduleNoise({
   creativityDrive,
   gainScale = 1,
   getNoiseBuffer,
-  getExplosionBuffer,
 }: NoiseLayerArgs): void {
   const shouldPlay = noiseLayer.pattern[stepIndex % noiseLayer.pattern.length] === 1;
   if (!shouldPlay) {
-    return;
-  }
-
-  if (!track.expression && !noiseLayer.expression) {
-    scheduleLegacyNoise(ctx, musicGain, getExplosionBuffer, track, noiseLayer, time, stepDuration, gainScale);
     return;
   }
 

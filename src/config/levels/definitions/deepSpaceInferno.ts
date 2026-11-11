@@ -207,13 +207,7 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Reef Break',
-    bossCueName: 'Reef Break: Reef Stalker',
-    mood: 'restless chase with splintering accents',
-    tempoFeel: 'surging hunt pulse',
-    style: 'driving coral synth over splintered bass breaks',
-    intensity: 'high',
-    shifts: ['Reef run pushes bass aggression and brighter harmonic bite.'],
+    palette: 'chase',
     tempo: 116,
     rootHz: 87.31,
     patternRoot: 0,
@@ -229,8 +223,6 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'aeolian',
-        chordProgressionTags: ['power-chord-engine', 'molten-pedal'],
-        rhythmicFeel: 'heavy stride with ignition bursts',
         energyProfile: { baseline: 0.48, peak: 0.9, curve: 'build-release' },
         harmony: {
           steps: [
@@ -243,8 +235,6 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'phrygian-dominant',
-        chordProgressionTags: ['chromatic-burn', 'fifth-stack-surge'],
-        rhythmicFeel: 'serrated barrage drive',
         energyProfile: { baseline: 0.72, peak: 0.98, curve: 'surge' },
         harmony: {
           steps: [

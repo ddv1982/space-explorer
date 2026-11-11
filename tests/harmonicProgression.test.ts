@@ -22,8 +22,6 @@ function createTrack(args: {
       timeSignature: { beatsPerBar: args.beatsPerBar, beatUnit: args.beatUnit },
       descriptors: {
         mode: args.mode,
-        chordProgressionTags: ['test-harmony-loop'],
-        rhythmicFeel: 'test-harmony-rhythm',
         energyProfile: { baseline: 0.2, peak: 0.8, curve: 'build' },
         harmony: {
           steps: args.steps ?? [

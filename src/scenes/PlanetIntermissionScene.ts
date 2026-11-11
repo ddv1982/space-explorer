@@ -60,7 +60,9 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     rebindSceneLifecycleHandlers(this, { onShutdown: this.handleSceneShutdown, context: this });
     registerRestartOnResize(this, () => !this.transitioning);
     audioManager.init();
-    audioManager.stopMusic();
+    // The opening theme, thinned out by a low intensity, plays under the refit bay.
+    audioManager.startMusic(getLevelConfig(1).music.stage, 1.5);
+    audioManager.setMusicIntensity(0.35);
     audioManager.playSfx('levelComplete');
     this.state = getPlayerState(this.registry);
     this.isFinalMissionComplete = isLastLevel(this.state.level);

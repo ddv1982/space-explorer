@@ -1,7 +1,7 @@
 import { loadAudioVolumes, saveAudioVolumes, type AudioVolumes } from '../config/audioSettings';
 import type { ProceduralMusicTrackConfig } from '../config/LevelsConfig';
 import { AudioContextManager } from './audio/AudioContextManager';
-import { ProceduralMusicManager, DEFAULT_TRACK } from './audio/ProceduralMusicManager';
+import { ProceduralMusicManager } from './audio/ProceduralMusicManager';
 import { SfxPlayer } from './audio/SfxPlayer';
 import type { SfxId } from './audio/sfx/recipes';
 
@@ -65,9 +65,10 @@ export class AudioManager {
     if (this.pauseReasons.size === 0) this.contextManager.resumeFromUserGesture();
   }
 
-  startMusic(track: ProceduralMusicTrackConfig = DEFAULT_TRACK): void {
+  /** Starts a track, or crossfades to it when music is already playing. */
+  startMusic(track: ProceduralMusicTrackConfig, fadeInSeconds?: number): void {
     if (!this.ensureContext()) return;
-    this.musicManager.playMusic(track);
+    this.musicManager.playMusic(track, fadeInSeconds);
   }
 
   stopMusic(): void {

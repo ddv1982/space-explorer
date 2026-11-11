@@ -193,13 +193,7 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Tideglass Drift',
-    bossCueName: 'Tideglass Drift: Riptide',
-    mood: 'buoyant arps over a tidal pulse',
-    tempoFeel: 'floating tidal groove',
-    style: 'buoyant glass arps with rolling sub pulse',
-    intensity: 'medium',
-    shifts: ['Ambush sections thicken pulse density and low-end drive while preserving melodic air.'],
+    palette: 'tide',
     tempo: 100,
     rootHz: 138.59,
     patternRoot: 2,
@@ -228,8 +222,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 7, beatUnit: 8 },
       stage: {
         mode: 'lydian',
-        chordProgressionTags: ['floating-sus', 'open-cluster-drift'],
-        rhythmicFeel: 'asymmetric 7/8 shimmer groove',
         energyProfile: { baseline: 0.42, peak: 0.86, curve: 'build-release' },
         harmony: {
           steps: [
@@ -275,8 +267,6 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'phrygian',
-        chordProgressionTags: ['chromatic-pivot', 'tritone-pressure'],
-        rhythmicFeel: 'urgent 7/8 subdivision chase',
         energyProfile: { baseline: 0.68, peak: 0.94, curve: 'surge' },
         harmony: {
           steps: [

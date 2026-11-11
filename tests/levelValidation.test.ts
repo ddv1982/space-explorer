@@ -159,6 +159,19 @@ function musicProblems(name: string, track: MusicTrack): string[] {
   for (const [layer, voice] of Object.entries(layers)) {
     problems.push(...rhythmProblems(`${name}.${layer}`, voice?.rhythm));
   }
+  for (const [layer, voice] of Object.entries(layers)) {
+    if (!positive(voice?.gain) || !within(voice?.enterAt ?? 0, 0, 1)) problems.push(`${name}.${layer}: gain/enterAt`);
+  }
+  if (track.pad && (!positive(track.pad.gain) || !positive(track.pad.filterHz))) problems.push(`${name}: pad`);
+  if (track.drums) {
+    const velocities = [...track.drums.kick, ...track.drums.snare, ...track.drums.hat];
+    if (!positive(track.drums.gain) || velocities.some((velocity) => !within(velocity, 0, 1))) {
+      problems.push(`${name}: drums`);
+    }
+  }
+  if (track.space && (!within(track.space.reverb, 0, 1) || !within(track.space.delay, 0, 1))) {
+    problems.push(`${name}: space`);
+  }
   return problems;
 }
 

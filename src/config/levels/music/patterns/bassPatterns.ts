@@ -3,7 +3,7 @@
  */
 
 // =============================================================================
-// BASS PATTERNS (20 total)
+// BASS PATTERNS
 // =============================================================================
 
 /**
@@ -12,132 +12,7 @@
  */
 export const bassPatterns = {
   // ============================================================================
-  // FOUNDATION PATTERNS (3 patterns)
-  // Basic bass movement for general harmonic support
-  // ============================================================================
-
-  /**
-   * Root-fifth movement: alternating root and perfect fifth
-   * Classic bass foundation pattern for stability
-   */
-  rootFifth: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    null,
-    root + 7,
-    null,
-    null,
-    null,
-    root,
-    null,
-    null,
-    null,
-    root - 5,
-    null,
-    null,
-    null,
-  ],
-
-  /**
-   * Gentle bass pulse: sparse triadic movement
-   * Soft rhythmic foundation for calm exploration
-   */
-  gentlePulse: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    null,
-    null,
-    null,
-    root + 3,
-    null,
-    null,
-    null,
-    root,
-    null,
-    null,
-    null,
-    null,
-    null,
-  ],
-
-  /**
-   * Ambient drone: sustained tone with minimal variation
-   * Long sustained notes for atmospheric backgrounds
-   */
-  drone: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    root,
-    null,
-    null,
-    null,
-    null,
-    null,
-  ],
-
-  // ============================================================================
-  // WALKING BASS VARIATIONS (2 patterns)
-  // Stepwise melodic motion for momentum and forward drive
-  // ============================================================================
-
-  /**
-   * Walking bass: continuous stepwise motion through chord tones
-   * Jazz-influenced melodic bass line with passing tones
-   */
-  walking: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    root + 2,
-    null,
-    root + 4,
-    null,
-    root + 5,
-    null,
-    root + 7,
-    null,
-    root + 5,
-    null,
-    root + 4,
-    null,
-    root + 2,
-    null,
-  ],
-
-  /**
-   * Sparse walk: simplified walking bass with rests
-   * Creates space while maintaining stepwise momentum
-   */
-  sparseWalk: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    root + 2,
-    null,
-    null,
-    root + 4,
-    null,
-    null,
-    root + 5,
-    null,
-    null,
-    root,
-    null,
-    null,
-    null,
-  ],
-
-  // ============================================================================
-  // OSTINATO (REPEATING FIGURES) (2 patterns)
+  // OSTINATO (REPEATING FIGURES)
   // Rhythmic patterns that repeat consistently for hypnotic effect
   // ============================================================================
 
@@ -188,58 +63,7 @@ export const bassPatterns = {
   ],
 
   // ============================================================================
-  // PEDAL TONE / DRONE VARIATIONS (2 patterns)
-  // Sustained harmonic anchors for stability and tension
-  // ============================================================================
-
-  /**
-   * Pedal fifths: alternating root and fifth for harmonic anchor
-   * Creates a solid foundation that supports harmonic changes above
-   */
-  pedalFifths: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    null,
-    root + 7,
-    null,
-    null,
-    null,
-    root + 7,
-    null,
-    null,
-    null,
-    root,
-    null,
-    null,
-    null,
-  ],
-
-  /**
-   * Low drone: sustained low register with sparse accents
-   * Deep sub-bass foundation for ominous atmospheres
-   */
-  lowDrone: (root: number = 0): (number | null)[] => [
-    root - 12,
-    null,
-    null,
-    null,
-    null,
-    null,
-    root - 12,
-    null,
-    null,
-    null,
-    null,
-    null,
-    root - 12,
-    null,
-    null,
-    null,
-  ],
-
-  // ============================================================================
-  // SYNCOPATED RHYTHMIC BASS (2 patterns)
+  // SYNCOPATED RHYTHMIC BASS
   // Off-beat patterns for rhythmic interest and groove
   // ============================================================================
 
@@ -290,7 +114,7 @@ export const bassPatterns = {
   ],
 
   // ============================================================================
-  // DRIVING BASS PATTERNS FOR INTENSITY (4 patterns)
+  // DRIVING BASS PATTERNS FOR INTENSITY
   // High-energy bass for action sequences and combat
   // ============================================================================
 
@@ -387,7 +211,7 @@ export const bassPatterns = {
   ],
 
   // ============================================================================
-  // CLIMACTIC FINALE BASS PATTERNS (5 patterns)
+  // CLIMACTIC FINALE BASS PATTERNS
   // Dark ominous bass for final boss encounters and ending sequences
   // ============================================================================
 
@@ -410,29 +234,6 @@ export const bassPatterns = {
     null,
     root + 7,
     root,
-    null,
-    null,
-  ],
-
-  /**
-   * Terminus drone: deep cosmic drone for void approach
-   * Deep space ambience for Terminus Black sequences
-   */
-  terminusDrone: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    root + 7,
-    null,
-    null,
     null,
     null,
   ],

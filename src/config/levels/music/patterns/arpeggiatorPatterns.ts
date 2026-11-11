@@ -3,7 +3,7 @@
  */
 
 // =============================================================================
-// ARPEGGIATOR PATTERNS (35 total)
+// ARPEGGIATOR PATTERNS
 // =============================================================================
 
 /**
@@ -11,103 +11,6 @@
  * All patterns are 16-step sequences (one bar at sixteenth-note resolution).
  */
 export const arpeggiatorPatterns = {
-  // ============================================================================
-  // BASIC ARPEGGIOS (7 patterns)
-  // Fundamental triadic and scale-based patterns for general use
-  // ============================================================================
-
-  /**
-   * Upward major triad arpeggio: root → 3rd → 5th → octave
-   * Classic ascending pattern suitable for uplifting moments
-   */
-  upTriad: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    root + 4,
-    null,
-    root + 7,
-    null,
-    root + 12,
-    null,
-    null,
-    null,
-    root + 7,
-    null,
-    root + 4,
-    null,
-    null,
-    null,
-  ],
-
-  /**
-   * Downward major triad arpeggio: octave → 5th → 3rd → root
-   * Descending resolution pattern, good for cadences
-   */
-  downTriad: (root: number = 0): (number | null)[] => [
-    root + 12,
-    null,
-    root + 7,
-    null,
-    root + 4,
-    null,
-    root,
-    null,
-    null,
-    null,
-    root + 4,
-    null,
-    root + 7,
-    null,
-    null,
-    null,
-  ],
-
-  /**
-   * Up-and-down triad pattern: root → 3rd → 5th → octave → 5th → 3rd
-   * Balanced arch-shaped contour, very musical and pleasing
-   */
-  upDownTriad: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    root + 4,
-    null,
-    root + 7,
-    null,
-    root + 12,
-    null,
-    root + 7,
-    null,
-    root + 4,
-    null,
-    null,
-    null,
-    null,
-    null,
-  ],
-
-  /**
-   * Gentle cascade pattern with minor third coloring
-   * Soft, flowing movement suitable for ambient exploration
-   */
-  cascade: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    root + 3,
-    null,
-    root + 7,
-    null,
-    null,
-    root + 12,
-    null,
-    null,
-    root + 7,
-    null,
-    root + 3,
-    null,
-    null,
-  ],
-
   /**
    * Flowing river pattern using major scale degrees
    * Stepwise motion creates a smooth, meandering quality
@@ -131,54 +34,8 @@ export const arpeggiatorPatterns = {
     null,
   ],
 
-  /**
-   * Sparse ambient pattern with wide temporal spacing
-   * Minimal note density for atmospheric, contemplative moments
-   */
-  ambientSparse: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    null,
-    root + 7,
-    null,
-    null,
-    null,
-    root + 4,
-    null,
-    null,
-    null,
-    root + 12,
-    null,
-    null,
-    null,
-  ],
-
-  /**
-   * Pentatonic scale pattern (root, 2nd, 4th, 5th, 6th)
-   * Very consonant and pleasing, works across many harmonic contexts
-   */
-  pentatonic: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    root + 2,
-    null,
-    root + 4,
-    null,
-    root + 7,
-    null,
-    root + 9,
-    null,
-    root + 7,
-    null,
-    root + 4,
-    null,
-    root + 2,
-    null,
-  ],
-
   // ============================================================================
-  // QUARTAL HARMONY (2 patterns)
+  // QUARTAL HARMONY
   // Fourth-based voicings for modern, open, ambiguous harmonic quality
   // ============================================================================
 
@@ -205,31 +62,8 @@ export const arpeggiatorPatterns = {
     null,
   ],
 
-  /**
-   * Quartal drift: floating fourth intervals with spacious rests
-   * Ethereal, floating quality suitable for space exploration
-   */
-  quartalDrift: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    null,
-    root + 5,
-    null,
-    null,
-    root + 10,
-    null,
-    root + 5,
-    null,
-    null,
-    root,
-    null,
-    root + 5,
-    null,
-    null,
-  ],
-
   // ============================================================================
-  // SUSPENDED CHORDS (2 patterns)
+  // SUSPENDED CHORDS
   // Tension-building patterns that delay resolution
   // ============================================================================
 
@@ -279,34 +113,6 @@ export const arpeggiatorPatterns = {
     null,
   ],
 
-  // ============================================================================
-  // MODAL FLAVORS (3 patterns)
-  // Characteristic intervals from church modes and world scales
-  // ============================================================================
-
-  /**
-   * Dorian mode pattern: minor with characteristic raised 6th
-   * Melancholic but with subtle brightness (jazz minor feel)
-   */
-  dorianFlair: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    root + 3,
-    null,
-    root + 7,
-    null,
-    root + 9,
-    null,
-    root + 7,
-    null,
-    root + 9,
-    null,
-    root + 3,
-    null,
-    root,
-    null,
-  ],
-
   /**
    * Phrygian mode pattern: minor with characteristic flat 2nd
    * Dark, exotic, Spanish/flamenco-influenced quality
@@ -330,31 +136,8 @@ export const arpeggiatorPatterns = {
     null,
   ],
 
-  /**
-   * Lydian mode pattern: major with characteristic raised 4th
-   * Dreamy, floating, celestial quality (favored in film scoring)
-   */
-  lydianDream: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    root + 4,
-    null,
-    root + 6,
-    null,
-    root + 11,
-    null,
-    root + 6,
-    null,
-    root + 4,
-    null,
-    root + 6,
-    null,
-    null,
-    null,
-  ],
-
   // ============================================================================
-  // WIDE INTERVAL LEAPS (2 patterns)
+  // WIDE INTERVAL LEAPS
   // Dramatic octave-spanning patterns for crystalline clarity and space
   // ============================================================================
 
@@ -405,7 +188,7 @@ export const arpeggiatorPatterns = {
   ],
 
   // ============================================================================
-  // CALL AND RESPONSE (2 patterns)
+  // CALL AND RESPONSE
   // Phrase-based patterns creating musical dialogue
   // ============================================================================
 
@@ -432,31 +215,8 @@ export const arpeggiatorPatterns = {
     null,
   ],
 
-  /**
-   * Echo phrase: imitation with octave register shift
-   * Creates the illusion of a responding voice in a different register
-   */
-  echoPhrase: (root: number = 0): (number | null)[] => [
-    root,
-    null,
-    root + 4,
-    root + 7,
-    null,
-    null,
-    null,
-    null,
-    root + 12,
-    null,
-    root + 16,
-    root + 19,
-    null,
-    null,
-    null,
-    null,
-  ],
-
   // ============================================================================
-  // DELAY/REVERB STYLE (2 patterns)
+  // DELAY/REVERB STYLE
   // Patterns that simulate spatial audio effects
   // ============================================================================
 
@@ -507,7 +267,7 @@ export const arpeggiatorPatterns = {
   ],
 
   // ============================================================================
-  // DRIVING / ENERGETIC INTENSITY (7 patterns)
+  // DRIVING / ENERGETIC INTENSITY
   // High-energy patterns for action sequences and chase scenes
   // ============================================================================
 
@@ -673,7 +433,7 @@ export const arpeggiatorPatterns = {
   ],
 
   // ============================================================================
-  // CLIMACTIC FINALE PATTERNS: DARK & OMINOUS (8 patterns)
+  // CLIMACTIC FINALE PATTERNS: DARK & OMINOUS
   // Maximum tension patterns for final boss encounters and game endings
   // ============================================================================
 

@@ -26,8 +26,6 @@ function createTrack(args: {
       },
       descriptors: {
         mode: 'dorian',
-        chordProgressionTags: ['test-loop'],
-        rhythmicFeel: 'test feel',
         energyProfile: {
           baseline: 0.2,
           peak: 0.9,

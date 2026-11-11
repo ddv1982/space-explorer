@@ -1,6 +1,7 @@
 import { LEVELS } from '../config/levels/registry';
 import { audioManager } from '../systems/AudioManager';
 import { SFX, type SfxId } from '../systems/audio/sfx/recipes';
+import { measureTrack } from './measureTrack';
 
 /** Development page for auditioning every sound effect and music track by ear. */
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = ''): HTMLElementTagNameMap[K] {
@@ -60,9 +61,33 @@ if (app) {
     button(`${level.name}: boss`, () => audioManager.startMusic(level.music.boss)),
   ]);
 
+  const report = element('pre');
+  const measure = button('Measure every track', () => {
+    void (async () => {
+      const rows = ['track                              intensity   peak    rms    low   high'];
+      for (const level of LEVELS) {
+        for (const [kind, track] of [
+          ['stage', level.music.stage],
+          ['boss', level.music.boss],
+        ] as const) {
+          for (const level01 of kind === 'stage' ? [0.35, 0.6, 0.85] : [1.1]) {
+            const m = await measureTrack(track, 24, level01);
+            rows.push(
+              `${`${level.name}: ${kind}`.padEnd(36)} ${level01.toFixed(2)}     ${m.peak.toFixed(3)}  ${m.rms.toFixed(3)}  ${m.lowShare.toFixed(2)}  ${m.highShare.toFixed(2)}`
+            );
+            report.textContent = rows.join('\n');
+          }
+        }
+      }
+      report.dataset.done = 'true';
+    })();
+  });
+
   app.append(
     controls,
     ...section('EFFECTS', effects),
-    ...section('MUSIC', [button('Stop music', () => audioManager.stopMusic()), ...music])
+    ...section('MUSIC', [button('Stop music', () => audioManager.stopMusic()), ...music]),
+    ...section('LEVELS', [measure]),
+    report
   );
 }

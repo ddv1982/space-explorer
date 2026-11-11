@@ -281,13 +281,7 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
     },
   ],
   music: createSignatureMusic({
-    cueName: 'Umbral Convoy',
-    bossCueName: 'Umbral Convoy: The Ark',
-    mood: 'claustrophobic pursuit with corona-bright stabs',
-    tempoFeel: 'driving convoy cadence',
-    style: 'dark chromatic chase with golden lead stabs',
-    intensity: 'very high',
-    shifts: ['Umbral convoy narrows push denser accents and broader stereo spread for corridor drama.'],
+    palette: 'chase',
     tempo: 118,
     rootHz: 73.42,
     patternRoot: 0,
@@ -303,8 +297,6 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
       timeSignature: { beatsPerBar: 4, beatUnit: 4 },
       stage: {
         mode: 'mixolydian',
-        chordProgressionTags: ['quartal-fanfare', 'ceremonial-dominant-loop'],
-        rhythmicFeel: 'measured barrage pulse',
         energyProfile: { baseline: 0.56, peak: 0.95, curve: 'build' },
         harmony: {
           steps: [
@@ -317,8 +309,6 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
       },
       boss: {
         mode: 'phrygian-dominant',
-        chordProgressionTags: ['sovereign-ostinato', 'tritone-declaration'],
-        rhythmicFeel: 'artillery surge cadence',
         energyProfile: { baseline: 0.74, peak: 0.99, curve: 'surge' },
         harmony: {
           steps: [
