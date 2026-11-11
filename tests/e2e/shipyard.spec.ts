@@ -192,6 +192,8 @@ loaderTest('missing shipyard artwork blocks gameplay and retries successfully', 
   await page.goto('/?browserHarness=1&startLevel=1');
   await expect(page.getByRole('region', { name: 'Artwork loading' })).toBeVisible();
   await expect(page.getByText('Artwork could not be loaded.')).toHaveAttribute('aria-live', 'assertive');
+  // The harness installs through a dynamic import that can land after the artwork error appears.
+  await expect.poll(() => page.evaluate(() => Boolean(window.__SPACE_EXPLORER_BROWSER_HARNESS__))).toBe(true);
   expect((await snapshot(page)).activeScenes).not.toContain('Game');
   await page.unroute('**/assets/shipyard/player.webp');
   await expect(page.getByRole('button', { name: 'Retry artwork', exact: true })).toBeEnabled();
@@ -211,6 +213,8 @@ loaderTest('invalid hull dimensions require a successful retry', async ({ page }
   await page.goto('/?browserHarness=1&startLevel=1');
   await expect(page.getByRole('region', { name: 'Artwork loading' })).toBeVisible();
   await expect(page.getByText('Artwork could not be loaded.')).toHaveAttribute('aria-live', 'assertive');
+  // The harness installs through a dynamic import that can land after the artwork error appears.
+  await expect.poll(() => page.evaluate(() => Boolean(window.__SPACE_EXPLORER_BROWSER_HARNESS__))).toBe(true);
   expect((await snapshot(page)).activeScenes).not.toContain('Game');
   await page.unroute('**/assets/shipyard/scout.webp');
   await page.keyboard.press('Enter');
