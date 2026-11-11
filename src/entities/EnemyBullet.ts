@@ -6,6 +6,7 @@ import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/e
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { ensureEnemyBulletTexture } from '../utils/SpriteFactory';
 import { getRuntimeTrailInterval } from '../systems/RuntimePerformanceBudget';
+import { ENEMY_BULLET_DEPTH } from '../utils/drawOrder';
 
 export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
   private static readonly trailIntervalMs = 150;
@@ -19,7 +20,7 @@ export class EnemyBullet extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
 
     despawnEntity(this);
-    this.setDepth(3);
+    this.setDepth(ENEMY_BULLET_DEPTH);
     // The texture carries a glow halo; the hitbox stays the original 8x8 orb.
     (this.body as Phaser.Physics.Arcade.Body | null)?.setSize(8, 8);
   }

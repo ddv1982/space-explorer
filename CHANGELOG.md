@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.1] - 2026-11-11
+
+### Fixed
+
+- The game no longer stutters when a wave arrives. Each ship's warning chevron was drawn as vector strokes that cost four draw calls apiece; twelve at once halved the frame rate for as long as they showed. They are now sprites of one shared texture and draw together.
+- The game no longer freezes for a moment at the first kill and at random points later. The engine compiles a new shader the first time a new number of textures share a draw, and floating scores kept producing new numbers mid-fight. All of those shaders now compile behind the loading screen.
+- Busy fights draw in about a third of the draw calls (about 100 down to about 34 in a crowded sector 9 frame). Ships of the same type are drawn together instead of in spawn order, and enemy shots, bombs and mines draw in their own layers just above the ships.
+- The hazard overlay no longer runs its glow passes while no hazard is on screen.
+- The graphics quality setting is read from storage once instead of many times per frame.
+
 ## [1.29.0] - 2026-11-11
 
 ### Changed

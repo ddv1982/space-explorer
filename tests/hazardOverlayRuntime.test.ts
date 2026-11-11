@@ -5,8 +5,20 @@ mockPhaserModule();
 
 const { updateHazardOverlay } = await import('../src/systems/parallax/hazardOverlayRuntime');
 
+function createOverlay(visible: boolean) {
+  const overlay = {
+    visible,
+    clear: mock(),
+    setVisible: mock((next: boolean) => {
+      overlay.visible = next;
+      return overlay;
+    }),
+  };
+  return overlay;
+}
+
 function advance(frameCount: number, delta: number): number {
-  const overlay = { clear: mock() };
+  const overlay = createOverlay(false);
   let alpha = 0;
 
   for (let i = 0; i < frameCount; i++) {
@@ -37,21 +49,25 @@ describe('hazard overlay runtime damping', () => {
     expect(advance(1, 0)).toBe(0);
   });
 
-  test('clears the final visible geometry once when fading below the threshold', () => {
-    const overlay = { clear: mock() };
+  test('clears and hides the overlay once when it fades below the threshold', () => {
+    const overlay = createOverlay(true);
+    const fade = (overlayAlpha: number): number =>
+      updateHazardOverlay({
+        overlay: overlay as never,
+        scene: null,
+        width: 800,
+        height: 600,
+        time: 1000,
+        delta: 60_000,
+        overlayAlpha,
+        targetOverlayAlpha: 0,
+        activeHazards: [],
+      });
 
-    updateHazardOverlay({
-      overlay: overlay as never,
-      scene: null,
-      width: 800,
-      height: 600,
-      time: 1000,
-      delta: 60_000,
-      overlayAlpha: 0.006,
-      targetOverlayAlpha: 0,
-      activeHazards: [],
-    });
+    // A hidden overlay skips its glow filter passes, so a dormant one must not stay visible.
+    fade(fade(0.006));
 
     expect(overlay.clear).toHaveBeenCalledTimes(1);
+    expect(overlay.visible).toBe(false);
   });
 });

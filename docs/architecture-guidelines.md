@@ -94,3 +94,12 @@ This document describes the scene boundaries, system contracts, and coding rules
 - High remains a fixed presentation tier. Auto begins with the High profile and sheds optional work in a documented order.
 - Browser performance evidence should record canvas backing/CSS dimensions, device-pixel ratio, the active adaptive pressure level, effect-event counts, particles, bodies, tweens, and update/render-submission cost.
 - The browser harness is development-only instrumentation. Keep its dynamic import behind `import.meta.env.DEV` so diagnostic APIs and probes are excluded from production bundles.
+
+## Draw-call budget
+
+Measured in Chrome on Apple Silicon (v1.29.1), every extra batch inside the scene pass costs GPU time, and a frame that misses its slot holds the display at 30 fps for about half a second. A busy frame went from about 100 draw calls to about 34 by following these rules:
+
+- A lit sprite cannot share a batch with a different texture. Give gameplay sprites a depth from `utils/drawOrder.ts`, so sprites with the same texture are adjacent in the draw order.
+- A `Graphics` object flushes the batch on every switch between a stroke and a fill. Short-lived or repeated shapes (warnings, markers) are sprites of one shared canvas texture, not `Graphics`.
+- A filtered object renders its filter passes even when it draws nothing. Hide it while it is dormant.
+- Phaser compiles one sprite shader per number of textures in a batch, on first use. `warmGameplayShaders` compiles them all behind the loading screen; a new shader family that first appears in gameplay belongs there too.

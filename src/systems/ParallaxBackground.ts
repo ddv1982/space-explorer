@@ -48,7 +48,7 @@ export class ParallaxBackground {
 
   private createHazardOverlay(scene: Phaser.Scene, accentColor: number): void {
     this.hazardOverlay = scene.add.graphics();
-    this.hazardOverlay.setDepth(-5);
+    this.hazardOverlay.setDepth(-5).setVisible(false);
     applyHazardTelegraphGlow(this.hazardOverlay, accentColor);
   }
 

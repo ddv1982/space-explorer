@@ -61,14 +61,29 @@ function getVisualQualityStorage(): VisualQualityStorage | null {
   }
 }
 
-export function getVisualQualityTier(
-  storage: VisualQualityStorage | null = getVisualQualityStorage()
-): VisualQualityTier {
+function readTier(storage: VisualQualityStorage | null): VisualQualityTier {
   try {
     return parseStoredTier(storage?.getItem(VISUAL_QUALITY_STORAGE_KEY));
   } catch {
     return 'auto';
   }
+}
+
+/** The browser's stored tier, remembered between reads; `setVisualQualityTier` refreshes it. */
+let rememberedTier: VisualQualityTier | null = null;
+
+/**
+ * Effects ask for the tier many times per frame and `localStorage` is a synchronous call into the
+ * browser, so the browser's own storage is read once and remembered. An explicit `storage` is always
+ * read directly.
+ */
+export function getVisualQualityTier(storage?: VisualQualityStorage | null): VisualQualityTier {
+  if (storage !== undefined) return readTier(storage);
+  if (rememberedTier) return rememberedTier;
+  const browserStorage = getVisualQualityStorage();
+  const tier = readTier(browserStorage);
+  if (browserStorage) rememberedTier = tier;
+  return tier;
 }
 
 export function setVisualQualityTier(
@@ -81,14 +96,13 @@ export function setVisualQualityTier(
 
   try {
     storage.setItem(VISUAL_QUALITY_STORAGE_KEY, tier);
+    rememberedTier = null;
     return true;
   } catch {
     return false;
   }
 }
 
-export function getVisualQualityProfile(
-  storage: VisualQualityStorage | null = getVisualQualityStorage()
-): VisualQualityProfile {
+export function getVisualQualityProfile(storage?: VisualQualityStorage | null): VisualQualityProfile {
   return PROFILES[getVisualQualityTier(storage)];
 }

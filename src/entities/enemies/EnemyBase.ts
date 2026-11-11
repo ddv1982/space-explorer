@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ACE_HP_MULTIPLIER, ACE_SCORE_MULTIPLIER, ACE_TINT } from '../../config/aceConfig';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../../utils/entityUtils';
+import { ENEMY_DEPTH, textureGroupedDepth } from '../../utils/drawOrder';
 
 export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
   hp: number = 1;
@@ -23,7 +24,7 @@ export abstract class EnemyBase extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
 
     despawnEntity(this);
-    this.setDepth(3);
+    this.setDepth(textureGroupedDepth(ENEMY_DEPTH, textureKey));
   }
 
   takeDamage(amount: number): void {
