@@ -214,7 +214,6 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
     palette: 'machine',
     tempo: 112,
     rootHz: 92.5,
-    patternRoot: 0,
     bassPattern: bassPatterns.powerChordBass,
     pulsePattern: arpeggiatorPatterns.powerChordArp,
     leadPattern: arpeggiatorPatterns.callResponse,

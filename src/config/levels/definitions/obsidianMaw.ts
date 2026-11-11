@@ -330,7 +330,6 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
     palette: 'surge',
     tempo: 122,
     rootHz: 69.3,
-    patternRoot: 0,
     bassPattern: bassPatterns.mawChase,
     pulsePattern: arpeggiatorPatterns.claustrophobicTight,
     leadPattern: arpeggiatorPatterns.ominousDrift,

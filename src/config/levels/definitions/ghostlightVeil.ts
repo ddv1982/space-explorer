@@ -238,7 +238,6 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
     palette: 'choir',
     tempo: 104,
     rootHz: 77.78,
-    patternRoot: 0,
     bassPattern: bassPatterns.syncopatedOstinato,
     pulsePattern: arpeggiatorPatterns.reverbBloom,
     leadPattern: arpeggiatorPatterns.phrygianMystery,

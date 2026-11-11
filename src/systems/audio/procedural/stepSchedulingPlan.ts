@@ -6,7 +6,8 @@ import { getMeterStepContext, resolveIntentEnergy } from './musicIntent';
 
 export interface SchedulingStepPlan {
   readonly meterStepContext: ReturnType<typeof getMeterStepContext>;
-  readonly harmonicRootHz: number;
+  readonly chordToneHz: (semitones: number) => number;
+  readonly scaleStepHz: (steps: number) => number;
   readonly stepDuration: number;
   readonly density: number;
   readonly intensityBlend: number;
@@ -64,7 +65,8 @@ export function buildSchedulingStepPlan(params: SchedulingStepPlanParams): Sched
 
   return Object.freeze({
     meterStepContext,
-    harmonicRootHz: harmonicContext.harmonicRootHz,
+    chordToneHz: harmonicContext.chordToneHz,
+    scaleStepHz: harmonicContext.scaleStepHz,
     stepDuration,
     density: clamp01(arrangement.density),
     intensityBlend: getIntensityBlend(shapedIntensity, params.minimumMusicIntensity, params.maximumMusicIntensity),

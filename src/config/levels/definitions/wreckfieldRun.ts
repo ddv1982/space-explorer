@@ -301,7 +301,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     palette: 'machine',
     tempo: 110,
     rootHz: 82.41,
-    patternRoot: 0,
     bassPattern: bassPatterns.rhythmicOstinato,
     pulsePattern: arpeggiatorPatterns.powerChordArp,
     leadPattern: arpeggiatorPatterns.delayTrail,

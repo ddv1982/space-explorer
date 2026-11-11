@@ -231,7 +231,9 @@ export const NEBULA_PASS_LEVEL: LevelConfig = {
     palette: 'tide',
     tempo: 100,
     rootHz: 138.59,
-    patternRoot: 2,
+    // The highest key of the campaign: its bass carries more energy, so the track is turned down to match.
+    masterGain: 0.66,
+    bossGain: 1.04,
     bassPattern: bassPatterns.syncopatedOstinato,
     pulsePattern: arpeggiatorPatterns.delayTrail,
     leadPattern: arpeggiatorPatterns.callResponse,

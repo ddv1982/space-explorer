@@ -17,7 +17,6 @@ interface MusicSeed {
   palette: MusicPaletteName;
   tempo: number;
   rootHz: number;
-  patternRoot: number;
   bassPattern: PatternFactory;
   pulsePattern: PatternFactory;
   leadPattern: PatternFactory;
@@ -136,6 +135,9 @@ interface TrackParts {
   patterns: { bass: PatternFactory; pulse: PatternFactory; lead: PatternFactory };
 }
 
+/** Lowest pitch the lead's root may have: the melody sings above the arpeggio in every key. */
+const LEAD_REGISTER_HZ = 330;
+
 function buildTrack(parts: TrackParts): ProceduralMusicTrackConfig {
   const { seed, voices, rhythmDefaults, rhythm, patterns } = parts;
   return {
@@ -151,17 +153,18 @@ function buildTrack(parts: TrackParts): ProceduralMusicTrackConfig {
     expression: voices.expression,
     bass: {
       ...voices.bass,
-      pattern: patterns.bass(seed.patternRoot),
+      pattern: patterns.bass(0),
       rhythm: { ...rhythmDefaults.bass, ...rhythm?.bass },
     },
     pulse: {
       ...voices.pulse,
-      pattern: patterns.pulse(seed.patternRoot),
+      pattern: patterns.pulse(0),
       rhythm: { ...rhythmDefaults.pulse, ...rhythm?.pulse },
     },
     lead: {
       ...voices.lead,
-      pattern: patterns.lead(seed.patternRoot + 12),
+      octaveShift: Math.ceil(Math.log2(LEAD_REGISTER_HZ / seed.rootHz)),
+      pattern: patterns.lead(0),
       rhythm: { ...rhythmDefaults.lead, ...rhythm?.lead },
     },
     noise: {
