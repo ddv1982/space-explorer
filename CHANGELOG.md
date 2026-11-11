@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.27.0] - 2026-11-11
+
+### Added
+
+- A fuller soundtrack, still generated in the browser. Every track now has synthesized drums, a sustained pad under the harmony, a real reverb and a tempo-synced echo.
+- Each sector has its own instrument set (eight in all, from glassy bells to a marching machine kit), so levels no longer share one timbre. Notes, keys, tempos and meters are unchanged.
+- The music now builds with the action: pulse, hats, lead and snare join as a section intensifies, and thin out again when it calms.
+- Calm music plays in the refit bay and on the Victory screen.
+
+### Changed
+
+- Track changes crossfade. The boss theme now fades in from its first bar instead of cutting in, and starting a level from the menu or the refit bay no longer cuts the music dead.
+- Internal clean-up: unused note patterns, expression presets and descriptive text were removed from the music definitions, along with tests that only pinned that data.
+
 ## [1.26.0] - 2026-11-11
 
 ### Added
