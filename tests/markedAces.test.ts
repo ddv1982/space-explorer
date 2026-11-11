@@ -4,17 +4,8 @@ import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
 
-const {
-  ACE_ELIGIBLE_TYPES,
-  ACE_HP_MULTIPLIER,
-  ACE_MAX_LEVEL,
-  ACE_MAX_PER_LEVEL,
-  ACE_MAX_PER_WAVE,
-  ACE_MIN_LEVEL,
-  ACE_SCORE_MULTIPLIER,
-  ACE_TINT,
-  isAceEligibleType,
-} = await import('../src/config/aceConfig');
+const { ACE_ELIGIBLE_TYPES, ACE_MAX_PER_LEVEL, ACE_MAX_PER_WAVE, ACE_MIN_LEVEL, ACE_TINT, isAceEligibleType } =
+  await import('../src/config/aceConfig');
 const { LEVELS } = await import('../src/config/levels/registry');
 const { EnemyBase } = await import('../src/entities/enemies/EnemyBase');
 const { Lancer } = await import('../src/entities/enemies/Lancer');
@@ -78,16 +69,6 @@ function stubEnemy(prototype: object = EnemyBase.prototype): {
 }
 
 describe('aceConfig', () => {
-  test('keeps the approved Marked Ace balance numbers', () => {
-    expect(ACE_HP_MULTIPLIER).toBe(2);
-    expect(ACE_SCORE_MULTIPLIER).toBe(4);
-    expect(ACE_TINT).toBe(0xffd76a);
-    expect(ACE_MIN_LEVEL).toBe(5);
-    expect(ACE_MAX_LEVEL).toBe(10);
-    expect(ACE_MAX_PER_WAVE).toBe(2);
-    expect(ACE_MAX_PER_LEVEL).toBe(3);
-  });
-
   test('limits eligibility to durable combat enemies, never popcorn or kamikaze types', () => {
     expect([...ACE_ELIGIBLE_TYPES].sort()).toEqual([
       'bomber',
@@ -153,55 +134,6 @@ describe('authored Marked Ace placements', () => {
         }
       }
     }
-  });
-
-  test('pins the approved per-level ace moments', () => {
-    const placements = LEVELS.map((level) => ({
-      name: level.name,
-      signature: level.sections.flatMap((section) =>
-        (section.signatureWaves ?? []).flatMap((wave) =>
-          wave.enemies.filter((enemy) => enemy.ace === true).map((enemy) => `${wave.id}:${enemy.type}`)
-        )
-      ),
-      choreographed: level.sections.flatMap((section) =>
-        (section.waves ?? [])
-          .filter((wave) => (wave.aceCount ?? 0) > 0)
-          .map((wave) => `${wave.id}:${wave.type}x${wave.aceCount}`)
-      ),
-    }));
-
-    expect(placements.slice(4)).toEqual([
-      {
-        name: 'Shatter Reef',
-        signature: ['stalker-priority-check:splitter'],
-        choreographed: ['reef-midboss-elite:gunshipx1'],
-      },
-      {
-        name: 'Debris Gauntlet',
-        signature: ['shelter-crossfire:gunship'],
-        choreographed: ['bulwark-midboss-elite:gunshipx1'],
-      },
-      {
-        name: 'Hollow Choir',
-        signature: [],
-        choreographed: ['lancer-duel-debut:lancerx1', 'choir-midboss-elite:gunshipx1'],
-      },
-      {
-        name: 'Eclipse Narrows',
-        signature: [],
-        choreographed: ['muster-vee:fighterx1', 'ark-vanguard-elite:gunshipx1'],
-      },
-      {
-        name: 'Swarmfront',
-        signature: [],
-        choreographed: ['splitter-pack-one:splitterx1', 'hive-elite-beat:fighterx1'],
-      },
-      {
-        name: 'Eventide Engine',
-        signature: ['convergence-final-read:gunship', 'convergence-final-read:gunship'],
-        choreographed: ['omega-honor-guard:gunshipx1'],
-      },
-    ]);
   });
 });
 

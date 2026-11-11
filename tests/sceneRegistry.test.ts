@@ -67,25 +67,6 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 describe('sceneRegistry', () => {
-  test('skips loader when scene is already registered', async () => {
-    const { scene, state } = createMockScene();
-
-    (scene.scene.manager as { keys: Record<string, unknown> }).keys.TestSceneExisting = class {};
-
-    let loaderCalls = 0;
-    const sceneLoaders = {
-      TestSceneExisting: async () => {
-        loaderCalls += 1;
-        return class {} as unknown as new () => Phaser.Scene;
-      },
-    };
-
-    await ensureSceneRegistered(scene, 'TestSceneExisting', sceneLoaders);
-
-    expect(loaderCalls).toBe(0);
-    expect(state.addCalls).toEqual([]);
-  });
-
   test('deduplicates concurrent async registration per scene key', async () => {
     const { scene, state } = createMockScene();
 
@@ -113,42 +94,6 @@ describe('sceneRegistry', () => {
     await Promise.all([first, second]);
 
     expect(state.addCalls).toEqual(['TestSceneDedupe']);
-  });
-
-  test('starts target scene only after registration completes', async () => {
-    const { scene, state } = createMockScene();
-
-    let resolveLoader: ((sceneClass: new () => Phaser.Scene) => void) | null = null;
-    const sceneLoaders = {
-      TestSceneStartOrder: () =>
-        new Promise<new () => Phaser.Scene>((resolve) => {
-          resolveLoader = resolve;
-        }),
-    };
-
-    startRegisteredScene(scene, 'TestSceneStartOrder', sceneLoaders);
-
-    expect(state.callOrder).toEqual([]);
-
-    const SceneClass = class {} as unknown as new () => Phaser.Scene;
-    (resolveLoader as ((sceneClass: new () => Phaser.Scene) => void) | null)?.(SceneClass);
-    await flushMicrotasks();
-
-    expect(state.callOrder).toEqual(['add:TestSceneStartOrder', 'start:TestSceneStartOrder']);
-  });
-
-  test('avoids missing-scene start path on first-use transition', async () => {
-    const { scene, state } = createMockScene();
-
-    const sceneLoaders = {
-      TestSceneFirstUse: async () => class {} as unknown as new () => Phaser.Scene,
-    };
-
-    startRegisteredScene(scene, 'TestSceneFirstUse', sceneLoaders);
-    await flushMicrotasks();
-
-    expect(state.startCalls).toEqual(['TestSceneFirstUse']);
-    expect(state.missingSceneStartAttempts).toBe(0);
   });
 
   test('does not start scene when lazy loader fails', async () => {

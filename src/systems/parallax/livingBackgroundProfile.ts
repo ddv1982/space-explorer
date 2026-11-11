@@ -108,7 +108,7 @@ export function selectLivingWorld(levelName?: string): LivingWorld | null {
 }
 
 export function getAtmosphereSize(width: number, height: number, tier: VisualQualityTier): [number, number] {
-  const longEdge = tier === 'low' ? 320 : tier === 'standard' ? 480 : 640;
+  const longEdge = tier === 'low' ? 320 : 640;
   const scale = Math.min(1, longEdge / Math.max(width, height));
   return [Math.max(2, Math.round(width * scale)), Math.max(2, Math.round(height * scale))];
 }

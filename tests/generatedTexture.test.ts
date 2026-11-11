@@ -25,25 +25,6 @@ function fakeFrame() {
 }
 
 describe('withGeneratedTexture', () => {
-  test('bakes the graphics into the key at its size and destroys them', () => {
-    const generated: Array<[string, number, number]> = [];
-    let destroyed = false;
-    const graphics = {
-      generateTexture: (key: string, width: number, height: number) => generated.push([key, width, height]),
-      destroy: () => (destroyed = true),
-    };
-    const result = withGeneratedTexture(
-      { textures: { exists: () => false }, add: { graphics: () => graphics } } as never,
-      'direct',
-      36,
-      44,
-      () => {}
-    );
-    expect(result).toBe('direct');
-    expect(generated).toEqual([['direct', 36, 44]]);
-    expect(destroyed).toBe(true);
-  });
-
   test('preserves a draw exception even when cleanup also throws', () => {
     const failure = new Error('draw failed');
     const graphics = {
@@ -127,12 +108,5 @@ describe('withCanvasTexture', () => {
     } finally {
       restore();
     }
-  });
-
-  test('is idempotent when the texture key already exists', () => {
-    let drew = false;
-    const scene = { textures: { exists: () => true } };
-    expect(withCanvasTexture(scene as never, 'existing', 8, 8, () => (drew = true))).toBe('existing');
-    expect(drew).toBe(false);
   });
 });

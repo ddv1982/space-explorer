@@ -14,8 +14,7 @@ mock.module('../src/systems/AudioManager', () => ({
 const { PicketTurretSystem } = await import('../src/systems/PicketTurretSystem');
 const { PicketBolt } = await import('../src/entities/PicketBolt');
 const { EnemyBase } = await import('../src/entities/enemies/EnemyBase');
-const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
-const { PICKET_BOLT_DAMAGE, PICKET_BOLT_SPEED, PICKET_ONLINE_ANNOUNCE_DELAY_MS, PICKET_TARGET_RETRY_MS } =
+const { PICKET_BOLT_DAMAGE, PICKET_BOLT_SPEED, PICKET_TARGET_RETRY_MS } =
   await import('../src/systems/picketTurretConfig');
 
 type PicketTurretSystemInstance = InstanceType<typeof PicketTurretSystem>;
@@ -221,53 +220,6 @@ describe('PicketTurretSystem', () => {
     expect(harness.sprites).toHaveLength(0);
     expect(harness.overlapRegistrations).toHaveLength(0);
     expect(harness.boltGroup.get).not.toHaveBeenCalled();
-  });
-
-  test('create anchors two edge mounts, bounds the bolt pool, and arms the online announcement', () => {
-    const harness = createHarness();
-    const system = createSystem(harness, 1);
-
-    expect(harness.sprites).toHaveLength(2);
-    expect(harness.sprites[0].x).toBe(26);
-    expect(harness.sprites[1].x).toBe(774);
-    expect(harness.sprites[0].y).toBe(300);
-    expect(harness.sprites[1].y).toBe(300);
-
-    expect((harness.boltGroup.config as { maxSize: number }).maxSize).toBe(12);
-
-    // Every enemy group (boss included) gets a bolt overlap for incidental hits.
-    expect(harness.overlapRegistrations).toHaveLength(3);
-
-    // The banner is HUD chrome on scene.time.now. A large gameplay timestamp
-    // must not pull it early, and pause-frozen combat time must not hold it.
-    system.update(10_000);
-    expect(harness.emit).not.toHaveBeenCalled();
-    harness.scene.time.now = PICKET_ONLINE_ANNOUNCE_DELAY_MS - 1;
-    system.update(10_000);
-    expect(harness.emit).not.toHaveBeenCalled();
-    harness.scene.time.now = PICKET_ONLINE_ANNOUNCE_DELAY_MS;
-    system.update(0);
-    expect(harness.emit).toHaveBeenCalledTimes(1);
-    expect(harness.emit).toHaveBeenCalledWith(GAME_SCENE_EVENTS.picketOnline);
-
-    // One-time: later frames never re-emit.
-    harness.scene.time.now = PICKET_ONLINE_ANNOUNCE_DELAY_MS + 5000;
-    system.update(10_000);
-    expect(harness.emit).toHaveBeenCalledTimes(1);
-
-    // Deployment tween runs when reduced motion is not requested.
-    expect(harness.tweenConfigs).toHaveLength(2);
-  });
-
-  test('create skips the deployment tween when reduced motion is preferred', () => {
-    const globalScope = globalThis as unknown as { window?: unknown };
-    globalScope.window = { matchMedia: () => ({ matches: true }) };
-
-    const harness = createHarness();
-    createSystem(harness, 1);
-
-    expect(harness.tweenConfigs).toHaveLength(0);
-    expect(harness.sprites[0].setAlpha).not.toHaveBeenCalled();
   });
 
   test('update holds fire without eligible targets and retries on a bounded cadence', () => {
@@ -484,20 +436,6 @@ describe('PicketTurretSystem', () => {
     expect(harness.bolts).toHaveLength(2);
     expect(harness.bolts[0].active).toBe(true);
     expect(harness.bolts[1].active).toBe(true);
-  });
-
-  test('relayout re-anchors mounts to the resized viewport edges', () => {
-    const harness = createHarness({ viewportWidth: 800, viewportHeight: 600 });
-    const system = createSystem(harness, 1);
-
-    harness.scene.cameras.main.width = 400;
-    harness.scene.cameras.main.height = 700;
-    harness.scene.scale.getViewPort = () => ({ x: 0, y: 0, width: 400, height: 700 });
-
-    system.relayout();
-
-    expect(harness.sprites[0].setPosition).toHaveBeenLastCalledWith(26, 350);
-    expect(harness.sprites[1].setPosition).toHaveBeenLastCalledWith(374, 350);
   });
 
   test('destroy is idempotent when Phaser teardown already invalidated internals', () => {

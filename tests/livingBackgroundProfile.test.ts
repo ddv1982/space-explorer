@@ -30,8 +30,6 @@ describe('living background policy', () => {
     ]) {
       for (const [tier, cap] of [
         ['low', 320],
-        ['standard', 480],
-        ['high', 640],
         ['auto', 640],
       ] as const) {
         const [targetWidth, targetHeight] = getAtmosphereSize(width, height, tier);

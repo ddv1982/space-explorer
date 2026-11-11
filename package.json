@@ -19,7 +19,6 @@
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "knip": "knip",
-    "levels:validate": "bun scripts/validateLevels.ts",
     "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile"
   },
   "knip": {

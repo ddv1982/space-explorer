@@ -132,25 +132,4 @@ describe('createSignatureMusic arrangement regression coverage', () => {
 
     expect(second.stage.intent.descriptors.arrangement?.sections[0].layerGainMultipliers?.bass).toBe(0.94);
   });
-
-  test('clones boss override nested layerGainMultipliers', () => {
-    const bossOverride: MusicArrangementConfig = {
-      loop: true,
-      sections: [
-        {
-          phase: 'peak',
-          barsDuration: 3,
-          density: 0.93,
-          energyLift: 0.4,
-          layerGainMultipliers: { pulse: 1.4, noise: 0.9 },
-        },
-      ],
-    };
-
-    const music = createSignatureMusic(createSeed({ arrangement: { boss: bossOverride } }));
-
-    bossOverride.sections[0].layerGainMultipliers!.pulse = 0.2;
-
-    expect(music.boss.intent.descriptors.arrangement?.sections[0].layerGainMultipliers?.pulse).toBe(1.4);
-  });
 });

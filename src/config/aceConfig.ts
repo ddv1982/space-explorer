@@ -13,7 +13,6 @@ export const ACE_SCORE_MULTIPLIER = 4;
 export const ACE_TINT = 0xffd76a;
 
 export const ACE_MIN_LEVEL = 5;
-export const ACE_MAX_LEVEL = 10;
 export const ACE_MAX_PER_WAVE = 2;
 export const ACE_MAX_PER_LEVEL = 3;
 

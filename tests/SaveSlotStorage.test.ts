@@ -56,6 +56,46 @@ function uninstallWindow(): void {
   delete globalScope.window;
 }
 
+type PlayerStateInput = Parameters<typeof createSaveSlotRecord>[1];
+type RunSummaryInput = Parameters<typeof createSaveSlotRecord>[2];
+
+const SAVED_AT = new Date('2026-04-27T10:30:00.000Z');
+
+function playerState(overrides: Partial<PlayerStateInput> = {}): PlayerStateInput {
+  return {
+    level: 1,
+    score: 100,
+    currentHp: 5,
+    currentShields: 0,
+    remainingLives: 3,
+    upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
+    helperWing: { grantedSlots: 0, slots: [] },
+    ...overrides,
+  };
+}
+
+function record(
+  state: Partial<PlayerStateInput> = {},
+  summary: Partial<RunSummaryInput> = {},
+  slotId: Parameters<typeof createSaveSlotRecord>[0] = 'slot-1'
+): SaveSlotRecordV1 {
+  const full = playerState(state);
+  return createSaveSlotRecord(
+    slotId,
+    full,
+    { finalScore: full.score, levelReached: full.level, deathCause: null, ...summary },
+    SAVED_AT
+  );
+}
+
+/** Installs fresh storage holding the raw (possibly corrupt) slot payloads, bypassing write normalization. */
+function storeRaw(slots: Record<string, unknown>): MemoryStorage {
+  const storage = new MemoryStorage();
+  storage.setItem(SAVE_SLOT_STORAGE_KEY, JSON.stringify({ version: 1, slots }));
+  installWindow(storage);
+  return storage;
+}
+
 describe('SaveSlotStorage', () => {
   beforeEach(() => {
     uninstallWindow();
@@ -73,34 +113,18 @@ describe('SaveSlotStorage', () => {
   });
 
   test('writes, reads, lists, and deletes save slots using localStorage', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
+    installWindow(new MemoryStorage());
+    const saved = record({
+      level: 3,
+      score: 12400,
+      currentHp: 6.25,
+      currentShields: 1,
+      remainingLives: 2,
+      upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
+      helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 5 }] },
+    });
 
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 3,
-        score: 12400,
-        currentHp: 6.25,
-        currentShields: 1,
-        remainingLives: 2,
-        upgrades: {
-          hp: 1,
-          damage: 2,
-          fireRate: 1,
-          shield: 2,
-          turrets: 1,
-        },
-        helperWing: {
-          grantedSlots: 1,
-          slots: [{ remainingLives: 2, hp: 5 }],
-        },
-      },
-      { finalScore: 12400, levelReached: 3, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    expect(writeSaveSlot(record)?.id).toBe('slot-1');
+    expect(writeSaveSlot(saved)?.id).toBe('slot-1');
     expect(readSaveSlot('slot-1')?.playerState.currentShields).toBe(1);
 
     const slots = listSaveSlots();
@@ -115,10 +139,8 @@ describe('SaveSlotStorage', () => {
   });
 
   test('round-trips a valid v1 save record unchanged', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-    const record = createSaveSlotRecord(
-      'slot-1',
+    installWindow(new MemoryStorage());
+    const saved = record(
       {
         level: 3,
         score: 12400,
@@ -128,12 +150,11 @@ describe('SaveSlotStorage', () => {
         upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
         helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 5 }] },
       },
-      { finalScore: 12400, levelReached: 3, deathCause: 'beam' },
-      new Date('2026-04-27T10:30:00.000Z')
+      { deathCause: 'beam' }
     );
 
-    expect(writeSaveSlot(record)).toEqual(record);
-    expect(readSaveSlot('slot-1')).toEqual(record);
+    expect(writeSaveSlot(saved)).toEqual(saved);
+    expect(readSaveSlot('slot-1')).toEqual(saved);
     expect(readSaveSlot('slot-1')?.playerState.currentHp).toBe(6.25);
   });
 
@@ -147,97 +168,34 @@ describe('SaveSlotStorage', () => {
   });
 
   test('keeps valid slots visible when another stored slot is invalid', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
+    storeRaw({
+      'slot-1': { version: 1, id: 'slot-1', playerState: { level: 3 } },
+      'slot-2': record({ level: 2, score: 500 }, {}, 'slot-2'),
+    });
 
-    const validRecord = createSaveSlotRecord(
-      'slot-2',
-      {
-        level: 2,
-        score: 500,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
-      },
-      { finalScore: 500, levelReached: 2, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: {
-          'slot-1': { version: 1, id: 'slot-1', playerState: { level: 3 } },
-          'slot-2': validRecord,
-        },
-      })
-    );
-
-    const slots = listSaveSlots();
-    expect(slots.map((slot) => slot.occupied)).toEqual([false, true, false]);
+    expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, true, false]);
     expect(readSaveSlot('slot-2')?.playerState.score).toBe(500);
   });
 
   test('normalizes invalid level values instead of throwing during writes', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
+    installWindow(new MemoryStorage());
 
-    const invalidLevelRecord = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: Number.NaN,
-        score: 100,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
-      },
-      { finalScore: 100, levelReached: 1, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    expect(writeSaveSlot(invalidLevelRecord)?.playerState.level).toBe(1);
+    expect(writeSaveSlot(record({ level: Number.NaN }, { levelReached: 1 }))?.playerState.level).toBe(1);
     expect(listSaveSlots()[0].subtitle).toContain('LVL 1');
   });
 
   test('clamps corrupt saved levels to the configured campaign range before loading', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
     const totalLevels = getTotalLevels();
-
-    const corruptRecord = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: totalLevels + 99,
-        score: 100,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
+    const corrupt = record();
+    const level = totalLevels + 99;
+    storeRaw({
+      'slot-1': {
+        ...corrupt,
+        playerState: { ...corrupt.playerState, level },
+        runSummary: { ...corrupt.runSummary, levelReached: level },
+        label: { ...corrupt.label, level, levelName: '' },
       },
-      { finalScore: 100, levelReached: totalLevels + 99, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: {
-          'slot-1': {
-            ...corruptRecord,
-            playerState: { ...corruptRecord.playerState, level: totalLevels + 99 },
-            runSummary: { ...corruptRecord.runSummary, levelReached: totalLevels + 99 },
-            label: { ...corruptRecord.label, level: totalLevels + 99, levelName: '' },
-          },
-        },
-      })
-    );
+    });
 
     const loadedRecord = readSaveSlot('slot-1');
     expect(loadedRecord?.playerState.level).toBe(totalLevels);
@@ -249,36 +207,13 @@ describe('SaveSlotStorage', () => {
   });
 
   test('replaces stale saved label metadata with canonical player state values', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 2,
-        score: 100,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
+    const saved = record({ level: 2 });
+    storeRaw({
+      'slot-1': {
+        ...saved,
+        label: { ...saved.label, level: 3, levelName: 'Wrong Sector', score: 999_999, remainingLives: 99 },
       },
-      { finalScore: 100, levelReached: 2, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: {
-          'slot-1': {
-            ...record,
-            label: { ...record.label, level: 3, levelName: 'Wrong Sector', score: 999_999, remainingLives: 99 },
-          },
-        },
-      })
-    );
+    });
 
     expect(readSaveSlot('slot-1')?.label.level).toBe(2);
     expect(readSaveSlot('slot-1')?.label.levelName).toBe(getLevelConfig(2).name);
@@ -290,104 +225,33 @@ describe('SaveSlotStorage', () => {
   });
 
   test('renders legacy save labels that are missing level names', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 2,
-        score: 100,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
-      },
-      { finalScore: 100, levelReached: 2, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: {
-          'slot-1': {
-            ...record,
-            label: { level: 2, score: 100, remainingLives: 3 },
-          },
-        },
-      })
-    );
+    storeRaw({ 'slot-1': { ...record({ level: 2 }), label: { level: 2, score: 100, remainingLives: 3 } } });
 
     expect(listSaveSlots()[0].title).toContain(getLevelConfig(2).name.toUpperCase());
   });
 
   test('normalizes corrupt saved levels below the first mission to level one', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
+    installWindow(new MemoryStorage());
 
-    const corruptRecord = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: -5,
-        score: 100,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
-      },
-      { finalScore: 100, levelReached: -5, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    expect(writeSaveSlot(corruptRecord)?.playerState.level).toBe(1);
+    expect(writeSaveSlot(record({ level: -5 }))?.playerState.level).toBe(1);
     expect(readSaveSlot('slot-1')?.runSummary.levelReached).toBe(1);
     expect(listSaveSlots()[0].subtitle).toContain('LVL 1');
   });
 
   test('caps corrupt helper-wing granted slots during slot normalization', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-
-    const corruptRecord = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 1,
-        score: 100,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: {
-          grantedSlots: 1_000_000,
-          slots: Array.from({ length: 10 }, () => ({ remainingLives: 1, hp: 1 })),
-        },
-      },
-      { finalScore: 100, levelReached: 1, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: {
-          'slot-1': {
-            ...corruptRecord,
-            playerState: {
-              ...corruptRecord.playerState,
-              helperWing: {
-                grantedSlots: 1_000_000,
-                slots: Array.from({ length: 10 }, () => ({ remainingLives: 1, hp: 1 })),
-              },
-            },
+    const saved = record();
+    storeRaw({
+      'slot-1': {
+        ...saved,
+        playerState: {
+          ...saved.playerState,
+          helperWing: {
+            grantedSlots: 1_000_000,
+            slots: Array.from({ length: 10 }, () => ({ remainingLives: 1, hp: 1 })),
           },
         },
-      })
-    );
+      },
+    });
 
     const helperWing = readSaveSlot('slot-1')?.playerState.helperWing;
     expect(helperWing?.grantedSlots).toBe(4);
@@ -395,37 +259,23 @@ describe('SaveSlotStorage', () => {
   });
 
   test('normalizes legacy records without shields or a terminal cause', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-
-    const legacyRecord = {
-      version: 1,
-      id: 'slot-1',
-      savedAt: '2026-04-27T10:30:00.000Z',
-      playerState: {
-        level: 4,
-        score: 900,
-        currentHp: 5,
-        remainingLives: 2,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 3 },
-        helperWing: { grantedSlots: 0, slots: [] as unknown[] },
-      },
-      runSummary: { finalScore: 900, levelReached: 4 },
-      label: { level: 4, levelName: 'Legacy', score: 900, remainingLives: 2 },
-    } satisfies Omit<SaveSlotRecordV1, 'playerState' | 'runSummary'> & {
-      playerState: Record<string, unknown>;
-      runSummary: { finalScore: number; levelReached: number };
-    };
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
+    storeRaw({
+      'slot-1': {
         version: 1,
-        slots: {
-          'slot-1': legacyRecord,
+        id: 'slot-1',
+        savedAt: '2026-04-27T10:30:00.000Z',
+        playerState: {
+          level: 4,
+          score: 900,
+          currentHp: 5,
+          remainingLives: 2,
+          upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 3 },
+          helperWing: { grantedSlots: 0, slots: [] },
         },
-      })
-    );
+        runSummary: { finalScore: 900, levelReached: 4 },
+        label: { level: 4, levelName: 'Legacy', score: 900, remainingLives: 2 },
+      },
+    });
 
     expect(readSaveSlot('slot-1')?.playerState.currentShields).toBe(3);
     expect(readSaveSlot('slot-1')?.playerState.upgrades.turrets).toBe(0);
@@ -433,92 +283,35 @@ describe('SaveSlotStorage', () => {
   });
 
   test('normalizes corrupt saved turret tiers during slot reads', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 5,
-        score: 3200,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1 },
-        helperWing: { grantedSlots: 0, slots: [] },
+    const saved = record({ level: 5 });
+    storeRaw({
+      'slot-1': {
+        ...saved,
+        playerState: { ...saved.playerState, upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1.9 } },
       },
-      { finalScore: 3200, levelReached: 5, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: {
-          'slot-1': {
-            ...record,
-            runSummary: { finalScore: Number.MAX_VALUE, levelReached: 5, deathCause: null },
-            playerState: {
-              ...record.playerState,
-              upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1.9 },
-            },
-          },
-        },
-      })
-    );
+    });
 
     expect(readSaveSlot('slot-1')?.playerState.upgrades.turrets).toBe(1);
   });
 
   test('bounds extreme saved upgrades, resources, score, and helper slots', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 5,
-        score: 100,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
-      },
-      { finalScore: 100, levelReached: 5, deathCause: null },
-      new Date('2026-04-27T10:30:00.000Z')
-    );
-
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: {
-          'slot-1': {
-            ...record,
-            runSummary: { finalScore: Number.MAX_VALUE, levelReached: 5, deathCause: null },
-            playerState: {
-              ...record.playerState,
-              score: Number.MAX_VALUE,
-              currentHp: Number.MAX_VALUE,
-              currentShields: Number.MAX_VALUE,
-              remainingLives: Number.MAX_VALUE,
-              upgrades: {
-                hp: Number.MAX_VALUE,
-                damage: Number.MAX_VALUE,
-                fireRate: Number.MAX_VALUE,
-                shield: Number.MAX_VALUE,
-                turrets: Number.MAX_VALUE,
-              },
-              helperWing: {
-                grantedSlots: 1,
-                slots: [{ remainingLives: Number.MAX_VALUE, hp: Number.MAX_VALUE }],
-              },
-            },
-          },
+    const saved = record({ level: 5 });
+    const max = Number.MAX_VALUE;
+    storeRaw({
+      'slot-1': {
+        ...saved,
+        runSummary: { finalScore: max, levelReached: 5, deathCause: null },
+        playerState: {
+          ...saved.playerState,
+          score: max,
+          currentHp: max,
+          currentShields: max,
+          remainingLives: max,
+          upgrades: { hp: max, damage: max, fireRate: max, shield: max, turrets: max },
+          helperWing: { grantedSlots: 1, slots: [{ remainingLives: max, hp: max }] },
         },
-      })
-    );
+      },
+    });
 
     expect(readSaveSlot('slot-1')?.playerState).toEqual({
       level: 5,
@@ -533,42 +326,22 @@ describe('SaveSlotStorage', () => {
   });
 
   test('normalizes non-finite helper resources without NaN or Infinity', () => {
-    const storage = new MemoryStorage();
-    installWindow(storage);
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 2,
-        score: 10,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-        helperWing: { grantedSlots: 0, slots: [] },
-      },
-      { finalScore: 10, levelReached: 2, deathCause: null }
-    );
-
-    const corruptRecord = {
-      ...record,
-      playerState: {
-        ...record.playerState,
-        helperWing: {
-          grantedSlots: 2,
-          slots: [
-            { remainingLives: Number.POSITIVE_INFINITY, hp: Number.NaN },
-            { remainingLives: Number.NaN, hp: Number.NEGATIVE_INFINITY },
-          ],
+    const saved = record({ level: 2 });
+    storeRaw({
+      'slot-1': {
+        ...saved,
+        playerState: {
+          ...saved.playerState,
+          helperWing: {
+            grantedSlots: 2,
+            slots: [
+              { remainingLives: Number.POSITIVE_INFINITY, hp: Number.NaN },
+              { remainingLives: Number.NaN, hp: Number.NEGATIVE_INFINITY },
+            ],
+          },
         },
       },
-    };
-    storage.setItem(
-      SAVE_SLOT_STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        slots: { 'slot-1': corruptRecord },
-      })
-    );
+    });
 
     expect(readSaveSlot('slot-1')?.playerState.helperWing).toEqual({
       grantedSlots: 2,
@@ -582,30 +355,7 @@ describe('SaveSlotStorage', () => {
   test('returns graceful failures when writes are not allowed', () => {
     installWindow(new ThrowingStorage());
 
-    const record = createSaveSlotRecord(
-      'slot-1',
-      {
-        level: 1,
-        score: 0,
-        currentHp: 5,
-        currentShields: 0,
-        remainingLives: 3,
-        upgrades: {
-          hp: 0,
-          damage: 0,
-          fireRate: 0,
-          shield: 0,
-          turrets: 0,
-        },
-        helperWing: {
-          grantedSlots: 0,
-          slots: [],
-        },
-      },
-      { finalScore: 0, levelReached: 1, deathCause: null }
-    );
-
-    expect(writeSaveSlot(record)).toBeNull();
+    expect(writeSaveSlot(record({ score: 0 }))).toBeNull();
     expect(deleteSaveSlot('slot-1')).toBe(true);
   });
 });

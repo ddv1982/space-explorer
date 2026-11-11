@@ -28,7 +28,7 @@ export type { Page } from '@playwright/test';
  * Pins the visual quality tier before the game boots. Tests that need long stretches of gameplay time
  * use Low: CI renders WebGL in software, where v2 lighting and bloom cut the frame rate to ~1 fps.
  */
-export async function pinQualityTier(page: Page, tier: 'low' | 'standard' | 'high' | 'auto'): Promise<void> {
+export async function pinQualityTier(page: Page, tier: 'low' | 'auto'): Promise<void> {
   await page.addInitScript((value) => window.localStorage.setItem('space-explorer.visualQuality.v1', value), tier);
 }
 

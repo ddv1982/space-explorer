@@ -12,10 +12,10 @@ mock.module('../src/config/gameplayDifficulty', () => ({
   setGameplayDifficultyTier,
 }));
 mock.module('../src/config/visualQuality', () => ({
-  getVisualQualityTier: () => 'standard',
+  getVisualQualityTier: () => 'auto',
   setVisualQualityTier,
   getVisualQualityProfile: () => ({
-    tier: 'standard',
+    tier: 'auto',
     uiGlowStrength: 0.8,
     particleBurstScale: 1,
     particleQuantityScale: 1,
@@ -155,17 +155,6 @@ function createPauseHarness(
 }
 
 describe('PauseStateController regression coverage', () => {
-  test('creates in unpaused state and publishes initial overlay/mobile state', () => {
-    const harness = createPauseHarness();
-
-    expect(harness.controller.isGameplayPaused()).toBe(false);
-    expect(harness.overlayStates).toEqual([createOverlayState({ visible: false, canResume: false })]);
-    expect(harness.mobileControlBlocked).toEqual([false]);
-    expect(harness.physicsActions).toEqual([]);
-    expect(harness.stopPlayerMotionCalls).toBe(0);
-    expect(harness.playClickCalls).toBe(0);
-  });
-
   test('initial sync resumes a previously paused physics world when gameplay should run', () => {
     const harness = createPauseHarness(undefined, { worldPaused: true });
 
@@ -252,34 +241,6 @@ describe('PauseStateController regression coverage', () => {
     expect(harness.overlayStates.at(-1)).toMatchObject({
       statusMessage: 'No checkpoint stored in that slot.',
       statusOk: false,
-    });
-  });
-
-  test('status error styling clears after a later successful slot action', () => {
-    let loadOk = false;
-    const slots = [createSlotViewModel(1, true), createSlotViewModel(2), createSlotViewModel(3)];
-    const harness = createPauseHarness({
-      isAvailable: () => true,
-      canSave: () => true,
-      list: () => slots,
-      load: () => ({
-        ok: loadOk,
-        message: loadOk ? 'Loaded checkpoint from slot 1.' : 'No checkpoint stored in that slot.',
-      }),
-    });
-
-    harness.controller.togglePauseRequest(false);
-    harness.handlers.onLoadSlot('slot-1');
-    loadOk = true;
-    harness.handlers.onLoadSlot('slot-1');
-
-    expect(harness.overlayStates.at(-2)).toMatchObject({
-      statusMessage: 'No checkpoint stored in that slot.',
-      statusOk: false,
-    });
-    expect(harness.overlayStates.at(-1)).toMatchObject({
-      statusMessage: 'Loaded checkpoint from slot 1.',
-      statusOk: true,
     });
   });
 

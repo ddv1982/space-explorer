@@ -28,9 +28,10 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await openMenu(page);
     await openMenuSettings(page);
-    await expect(page.getByText('QUALITY: STANDARD')).toBeVisible();
+    await expect(page.getByText('QUALITY: AUTO')).toBeVisible();
     await expect(page.getByText('DIFFICULTY: NORMAL')).toBeVisible();
-    await expect(tierButton(page, 'Quality', 'HIGH')).toBeInViewport();
+    await expect(tierButton(page, 'Quality', 'LOW')).toBeInViewport();
+    await expect(page.getByRole('group', { name: 'Quality' }).getByRole('button')).toHaveText(['AUTO', 'LOW']);
     await expect(tierButton(page, 'Difficulty', 'HIGH')).toBeInViewport();
 
     await tierButton(page, 'Difficulty', 'HIGH').click();
@@ -38,12 +39,12 @@ for (const viewport of [
     await expect(tierButton(page, 'Difficulty', 'HIGH')).toHaveAttribute('aria-pressed', 'true');
     expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.gameplayDifficulty.v1'))).toBe('high');
 
-    await Promise.all([page.waitForEvent('load'), tierButton(page, 'Quality', 'HIGH').click()]);
+    await Promise.all([page.waitForEvent('load'), tierButton(page, 'Quality', 'LOW').click()]);
     await waitForScene(page, 'Menu');
     await openMenuSettings(page);
-    await expect(page.getByText('QUALITY: HIGH')).toBeVisible();
-    await expect(tierButton(page, 'Quality', 'HIGH')).toHaveAttribute('aria-pressed', 'true');
-    expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.visualQuality.v1'))).toBe('high');
+    await expect(page.getByText('QUALITY: LOW')).toBeVisible();
+    await expect(tierButton(page, 'Quality', 'LOW')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => window.localStorage.getItem('space-explorer.visualQuality.v1'))).toBe('low');
     expect(new URL(page.url()).searchParams.has('visualQuality')).toBe(false);
 
     await page.evaluate(() => window.localStorage.removeItem('space-explorer.visualQuality.v1'));

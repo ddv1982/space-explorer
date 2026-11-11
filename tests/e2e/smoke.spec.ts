@@ -62,7 +62,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   expect(initial.canvas.backingHeight).toBeGreaterThan(0);
   expect(initial.canvas.backingScale).toBeGreaterThanOrEqual(0.95);
   expect(initial.canvas.backingScale).toBeLessThanOrEqual(1.05);
-  expect(initial.runtimePerformance).toMatchObject({ enabled: false, pressureLevel: 0 });
+  expect(initial.runtimePerformance).toMatchObject({ enabled: true, pressureLevel: 0 });
   expect(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeArcadeOverlap())).toBe(true);
 
   // Live movement and firing depend on real-time frame delivery. The isolated

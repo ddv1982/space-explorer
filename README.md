@@ -190,17 +190,18 @@ bun run build    # type-check and production build
 bun run preview  # preview production build
 bun run lint     # eslint
 bun run knip     # unused-code analysis
-bun run levels:validate # config validation for level authoring
 bun run bundle:report   # report dist asset sizes after a build
 bun run bundle:check    # enforce bundle size limits and keep dev diagnostics out of releases
 ```
 
-CI runs typecheck, lint, format, unit tests, level validation, knip, a dependency audit, the build with its bundle check, and the browser smoke suite on desktop and phone viewports.
+CI runs typecheck, lint, format, unit tests (including level-authoring validation), knip, a dependency audit, the build with its bundle check, and the browser smoke suite on desktop and phone viewports.
 
-Visual quality offers Low, Standard, High, and Auto. Auto starts with the High
-presentation and adapts nonessential effects only after sustained frame-delivery
-pressure. It restores quality gradually after stable delivery returns; gameplay
-timing, physics, damage, and encounter pacing are never changed.
+Visual quality offers Auto and Low. Auto is the full presentation (normal-mapped
+lighting and bloom; phones start on a lighter lighting budget) and adapts
+nonessential effects only after sustained frame-delivery pressure, restoring them
+gradually once stable delivery returns. Low is the baked look with no dynamic
+lights or bloom. Saved Standard or High choices from earlier versions load as Auto.
+Gameplay timing, physics, damage, and encounter pacing are never changed.
 
 Production bundle checks separately guard the Phaser engine chunk and application
 JavaScript. Development-only browser diagnostics are tree-shaken from releases.

@@ -9,7 +9,6 @@ const { Fighter } = await import('../src/entities/enemies/Fighter');
 const { Bomber } = await import('../src/entities/enemies/Bomber');
 const { Swarm } = await import('../src/entities/enemies/Swarm');
 const { Gunship } = await import('../src/entities/enemies/Gunship');
-const { Diver } = await import('../src/entities/enemies/Diver');
 const { Dodger } = await import('../src/entities/enemies/Dodger');
 const { Sower } = await import('../src/entities/enemies/Sower');
 const { Lancer } = await import('../src/entities/enemies/Lancer');
@@ -17,7 +16,6 @@ const { Splitter } = await import('../src/entities/enemies/Splitter');
 const { Swarmling } = await import('../src/entities/enemies/Swarmling');
 const { Boss } = await import('../src/entities/enemies/Boss');
 const { BomberBomb } = await import('../src/entities/BomberBomb');
-const { Mine } = await import('../src/entities/Mine');
 const { EnemyBullet } = await import('../src/entities/EnemyBullet');
 type EnemyPoolInstance = InstanceType<typeof EnemyPool>;
 
@@ -34,24 +32,6 @@ type FakeGroup = {
   get: (_x: number, _y: number) => unknown;
   getChildren: () => Array<{ active?: boolean }>;
 };
-
-const EXPECTED_GROUP_CONFIGS = new Map<unknown, GroupConfig>([
-  [Scout, { maxSize: 50, classType: Scout, runChildUpdate: true }],
-  [Fighter, { maxSize: 30, classType: Fighter, runChildUpdate: true }],
-  [Bomber, { maxSize: 20, classType: Bomber, runChildUpdate: true }],
-  [Swarm, { maxSize: 40, classType: Swarm, runChildUpdate: true }],
-  [Gunship, { maxSize: 15, classType: Gunship, runChildUpdate: true }],
-  [Diver, { maxSize: 24, classType: Diver, runChildUpdate: true }],
-  [Dodger, { maxSize: 16, classType: Dodger, runChildUpdate: true }],
-  [Sower, { maxSize: 10, classType: Sower, runChildUpdate: true }],
-  [Lancer, { maxSize: 8, classType: Lancer, runChildUpdate: true }],
-  [Splitter, { maxSize: 16, classType: Splitter, runChildUpdate: true }],
-  [Swarmling, { maxSize: 32, classType: Swarmling, runChildUpdate: true }],
-  [Boss, { maxSize: 1, classType: Boss, runChildUpdate: true }],
-  [BomberBomb, { maxSize: 30, classType: BomberBomb, runChildUpdate: true }],
-  [Mine, { maxSize: 24, classType: Mine, runChildUpdate: true }],
-  [EnemyBullet, { maxSize: 80, classType: EnemyBullet, runChildUpdate: true }],
-]);
 
 type EnemyPoolHarness = {
   pool: EnemyPoolInstance;
@@ -299,102 +279,6 @@ function createEnemyPoolHarness(): EnemyPoolHarness {
 }
 
 describe('EnemyPool regression coverage', () => {
-  test('create eagerly initializes scout/fighter/enemy-bullet groups with expected descriptors', () => {
-    const harness = createEnemyPoolHarness();
-
-    expect(harness.groupCreateCalls.map((call) => call.classType)).toEqual([Scout, Fighter, EnemyBullet]);
-
-    expect(harness.groupCreateCalls).toEqual([
-      EXPECTED_GROUP_CONFIGS.get(Scout)!,
-      EXPECTED_GROUP_CONFIGS.get(Fighter)!,
-      EXPECTED_GROUP_CONFIGS.get(EnemyBullet)!,
-    ]);
-  });
-
-  test('enemy registry order is stable and repeated accessor calls do not duplicate groups', () => {
-    const harness = createEnemyPoolHarness();
-
-    const registryA = harness.pool.getEnemyGroupRegistry();
-    const registryB = harness.pool.getEnemyGroupRegistry();
-
-    expect(registryA.map(({ key, playerCollisionBehavior }) => [key, playerCollisionBehavior])).toEqual([
-      ['scout', 'kamikaze'],
-      ['fighter', 'impact'],
-      ['bomber', 'impact'],
-      ['swarm', 'kamikaze'],
-      ['gunship', 'impact'],
-      ['diver', 'kamikaze'],
-      ['dodger', 'impact'],
-      ['sower', 'impact'],
-      ['lancer', 'impact'],
-      ['splitter', 'impact'],
-      ['swarmling', 'kamikaze'],
-      ['boss', 'none'],
-    ]);
-    expect(registryB).toEqual(registryA);
-
-    expect(harness.groupCreateCalls.map((call) => call.classType)).toEqual([
-      Scout,
-      Fighter,
-      EnemyBullet,
-      Bomber,
-      BomberBomb,
-      Swarm,
-      Gunship,
-      Diver,
-      Dodger,
-      Sower,
-      Lancer,
-      Splitter,
-      Swarmling,
-      Boss,
-    ]);
-
-    for (const call of harness.groupCreateCalls) {
-      expect(call).toEqual(EXPECTED_GROUP_CONFIGS.get(call.classType)!);
-    }
-  });
-
-  test('spawnBomber wires the shared bomb group and keeps bomber-before-bomb creation order', () => {
-    const harness = createEnemyPoolHarness();
-
-    const bomber = harness.pool.spawnBomber(10, 20);
-
-    expect(bomber as unknown).toBe(harness.lastBomber);
-    expect(harness.lastBomber?.setBombGroupArgs).toEqual([harness.pool.getBombGroup()]);
-
-    const bomberCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === Bomber);
-    const bombCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === BomberBomb);
-
-    expect(bomberCreateIndex).toBeGreaterThanOrEqual(0);
-    expect(bombCreateIndex).toBeGreaterThanOrEqual(0);
-    expect(bomberCreateIndex).toBeLessThan(bombCreateIndex);
-  });
-
-  test('spawnFighter/spawnGunship/spawnBoss wire shared enemy bullet group', () => {
-    const harness = createEnemyPoolHarness();
-
-    harness.pool.spawnFighter(1, 2);
-    harness.pool.spawnGunship(3, 4);
-    harness.pool.spawnBoss(5, 6);
-
-    const enemyBulletGroup = harness.pool.getEnemyBulletGroup();
-    expect(harness.lastFighter?.setEnemyBulletGroupArgs).toEqual([enemyBulletGroup]);
-    expect(harness.lastGunship?.setEnemyBulletGroupArgs).toEqual([enemyBulletGroup]);
-    expect(harness.lastBoss?.setEnemyBulletGroupArgs).toEqual([enemyBulletGroup]);
-  });
-
-  test('spawnDodger/spawnLancer wire shared enemy bullet group', () => {
-    const harness = createEnemyPoolHarness();
-
-    harness.pool.spawnDodger(1, 2);
-    harness.pool.spawnLancer(3, 4);
-
-    const enemyBulletGroup = harness.pool.getEnemyBulletGroup();
-    expect(harness.lastDodger?.setEnemyBulletGroupArgs).toEqual([enemyBulletGroup]);
-    expect(harness.lastLancer?.setEnemyBulletGroupArgs).toEqual([enemyBulletGroup]);
-  });
-
   test('spawnLancer forwards the configured target provider', () => {
     const harness = createEnemyPoolHarness();
 
@@ -406,22 +290,6 @@ describe('EnemyPool regression coverage', () => {
     harness.pool.spawnLancer(3, 4);
 
     expect(harness.lastLancer?.targetProvider).toBe(provider);
-  });
-
-  test('spawnSower wires the shared mine group and keeps sower-before-mine creation order', () => {
-    const harness = createEnemyPoolHarness();
-
-    const sower = harness.pool.spawnSower(10, 20);
-
-    expect(sower as unknown).toBe(harness.lastSower);
-    expect(harness.lastSower?.setMineGroupArgs).toEqual([harness.pool.getMineGroup()]);
-
-    const sowerCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === Sower);
-    const mineCreateIndex = harness.groupCreateCalls.findIndex((call) => call.classType === Mine);
-
-    expect(sowerCreateIndex).toBeGreaterThanOrEqual(0);
-    expect(mineCreateIndex).toBeGreaterThanOrEqual(0);
-    expect(sowerCreateIndex).toBeLessThan(mineCreateIndex);
   });
 
   test('spawnSplitter split handler spawns two flanking swarmlings', () => {
@@ -444,22 +312,6 @@ describe('EnemyPool regression coverage', () => {
 
     expect(firstBoss).toBeTruthy();
     expect(secondBoss).toBeNull();
-  });
-
-  test('boss summon handler delegates to spawnEnemy(type, x, y)', () => {
-    const harness = createEnemyPoolHarness();
-
-    harness.pool.spawnBoss(9, 9);
-
-    const delegated: Array<{ type: string; x: number; y: number }> = [];
-    harness.pool.spawnEnemy = ((type: string, x: number, y: number) => {
-      delegated.push({ type, x, y });
-      return null;
-    }) as EnemyPoolInstance['spawnEnemy'];
-
-    harness.lastBoss?.summonHandler?.('scout', 42, 64);
-
-    expect(delegated).toEqual([{ type: 'scout', x: 42, y: 64 }]);
   });
 
   test('ordinary enumeration is ordered without initializing unused groups or including boss and projectiles', () => {

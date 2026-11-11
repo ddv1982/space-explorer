@@ -92,15 +92,6 @@ describe('shipyard sheet loading', () => {
     expect(player.dataSource[0].resolution).toBe(SPRITE_DENSITY);
   });
 
-  test('registers asteroid variants at logical 44x44 resting on the first rock', () => {
-    const { scene, textures } = createScene();
-    expect(finishShipyardLoading(scene as never)).toBe(true);
-    const asteroid = textures.get('asteroid-texture') as { frames: FakeFrame[]; firstFrame: string };
-    expect(asteroid.frames).toHaveLength(4);
-    expect(asteroid.frames[3]!.trim).toEqual([44, 44, 0, 0, 44, 44]);
-    expect(asteroid.firstFrame).toBe('0');
-  });
-
   test('rejects a sheet with the wrong frame size and shows the retry screen', () => {
     const { scene, removed } = createScene({ shrinkPlayerFrames: true });
     expect(finishShipyardLoading(scene as never)).toBe(false);

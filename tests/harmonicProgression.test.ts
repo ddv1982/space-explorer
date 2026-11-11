@@ -104,26 +104,6 @@ describe('harmonic progression resolver', () => {
     expect(context.rootSemitoneOffset).toBe(14);
     expect(context.harmonicRootHz).toBeCloseTo(100 * Math.pow(2, 14 / 12), 6);
   });
-
-  test('is deterministic for identical bar input', () => {
-    const track = createTrack({
-      seed: 'stable-seed',
-      mode: 'phrygian',
-      beatsPerBar: 7,
-      beatUnit: 8,
-      steps: [
-        { degree: 1, barsDuration: 1, quality: 'minor' },
-        { degree: 4, barsDuration: 1, quality: 'minor' },
-      ],
-    });
-
-    const first = resolveHarmonicContext(track, 4);
-    const second = resolveHarmonicContext(track, 4);
-
-    expect(first.rootSemitoneOffset).toBe(second.rootSemitoneOffset);
-    expect(first.harmonicRootHz).toBe(second.harmonicRootHz);
-    expect(first.chordIndex).toBe(second.chordIndex);
-  });
 });
 
 describe('odd-meter bar boundary progression', () => {

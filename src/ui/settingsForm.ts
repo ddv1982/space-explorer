@@ -45,23 +45,16 @@ interface TierSelector<T extends string> {
 function createTierSelector<T extends string>(config: {
   label: string;
   tiers: readonly T[];
-  shortLabels?: Partial<Record<T, string>>;
   value: T;
   onSelect: (tier: T) => boolean;
 }): TierSelector<T> {
   let value = config.value;
   const caption = h('span', { 'aria-hidden': 'true' });
   const buttons = config.tiers.map((tier) => {
-    const long = tier.toUpperCase();
-    const short = config.shortLabels?.[tier];
-    const button = h(
-      'button',
-      { type: 'button', className: 'ui-btn', 'aria-label': short ? long : undefined },
-      short ? h('span', { className: 'ui-long' }, long) : long,
-      short && h('span', { className: 'ui-short' }, short)
-    );
+    const label = tier.toUpperCase();
+    const button = h('button', { type: 'button', className: 'ui-btn' }, label);
     // Segments share the row in proportion to their label length.
-    button.style.flexGrow = String(long.length + 3);
+    button.style.flexGrow = String(label.length + 3);
     button.addEventListener('click', () => {
       if (tier === value || !config.onSelect(tier)) return;
       selector.setValue(tier);
@@ -104,8 +97,7 @@ export function createSettingsForm(config: {
   });
   const quality = createTierSelector({
     label: 'Quality',
-    tiers: ['low', 'standard', 'high', 'auto'],
-    shortLabels: { standard: 'STD' },
+    tiers: ['auto', 'low'],
     value: config.quality,
     onSelect: config.onSelectQuality,
   });

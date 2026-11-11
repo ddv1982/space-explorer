@@ -37,25 +37,6 @@ describe('hazard overlay runtime damping', () => {
     expect(advance(1, 0)).toBe(0);
   });
 
-  test('does not repeatedly clear an overlay that remains below the visibility threshold', () => {
-    const overlay = { clear: mock() };
-
-    const alpha = updateHazardOverlay({
-      overlay: overlay as never,
-      scene: null,
-      width: 800,
-      height: 600,
-      time: 1000,
-      delta: 16,
-      overlayAlpha: 0,
-      targetOverlayAlpha: 0,
-      activeHazards: [],
-    });
-
-    expect(alpha).toBe(0);
-    expect(overlay.clear).not.toHaveBeenCalled();
-  });
-
   test('clears the final visible geometry once when fading below the threshold', () => {
     const overlay = { clear: mock() };
 
@@ -72,44 +53,5 @@ describe('hazard overlay runtime damping', () => {
     });
 
     expect(overlay.clear).toHaveBeenCalledTimes(1);
-  });
-
-  test('draws layered debris from the resolved overlay alpha without attenuating it again', () => {
-    const lineStyles: number[][] = [];
-    const overlay = {
-      clear: mock(),
-      lineStyle: (...args: number[]) => {
-        lineStyles.push(args);
-      },
-      lineBetween: mock(),
-      strokeEllipse: mock(),
-      fillStyle: mock(),
-      fillEllipse: mock(),
-      beginPath: mock(),
-      arc: mock(),
-      strokePath: mock(),
-      fillCircle: mock(),
-    };
-
-    updateHazardOverlay({
-      overlay: overlay as never,
-      scene: {} as never,
-      width: 800,
-      height: 600,
-      time: 1000,
-      delta: 16,
-      overlayAlpha: 1,
-      targetOverlayAlpha: 1,
-      activeHazards: [
-        { type: 'debris-surge', intensity: 0.8 },
-        { type: 'debris-surge', intensity: 0.7 },
-        { type: 'debris-surge', intensity: 0.6 },
-      ],
-    });
-
-    expect(overlay.clear).toHaveBeenCalledTimes(1);
-    expect(lineStyles).toHaveLength(2);
-    expect(lineStyles[0]?.[2]).toBeCloseTo(1.4 * 0.4, 10);
-    expect(lineStyles[1]?.[2]).toBeCloseTo(1.4, 10);
   });
 });

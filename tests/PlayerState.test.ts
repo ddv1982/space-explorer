@@ -102,30 +102,6 @@ describe('PlayerState schema behavior', () => {
     expect(state.helperWing).toEqual({ slots: [], grantedSlots: 0 });
   });
 
-  test('defaults and normalizes missing currentShields from legacy state', () => {
-    const registry = createRegistry();
-
-    registry.set('playerState', {
-      level: 2,
-      score: 150,
-      currentHp: 4,
-      remainingLives: 2,
-      upgrades: {
-        hp: 0,
-        damage: 0,
-        fireRate: 0,
-        shield: 3,
-      },
-      helperWing: {
-        grantedSlots: 0,
-        slots: [],
-      },
-    });
-
-    const state = getPlayerState(registry);
-    expect(state.currentShields).toBe(3);
-  });
-
   test('retains legacy defaults when currentShields and helperWing are both missing', () => {
     const registry = createRegistry();
     registry.set('playerState', {

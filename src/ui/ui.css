@@ -345,7 +345,6 @@
 }
 
 .ui-tier__options {
-  container: tiers / inline-size;
   display: flex;
   gap: 4px;
 }
@@ -357,20 +356,6 @@
   flex-basis: 0;
   margin: calc(var(--pad-y) * -1) 0;
   padding: 0;
-}
-
-.ui-short {
-  display: none;
-}
-
-@container tiers (max-width: 300px) {
-  .ui-long {
-    display: none;
-  }
-
-  .ui-short {
-    display: inline;
-  }
 }
 
 .ui-sliders {

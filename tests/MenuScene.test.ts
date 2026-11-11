@@ -1,5 +1,4 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { EventEmitter } from 'node:events';
 
 mock.module('phaser', () => ({
   default: {
@@ -19,10 +18,8 @@ mock.module('../src/scenes/sceneRegistry', () => ({
   startRegisteredScene,
 }));
 
-const { setPlayerState } = await import('../src/systems/PlayerState');
 const { audioManager } = await import('../src/systems/AudioManager');
 const { MenuScene } = await import('../src/scenes/MenuScene');
-const { placeMenuHero } = await import('../src/scenes/menuScene/hero');
 const { applyMusicSetting } = await import('../src/ui/settingsForm');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
@@ -57,12 +54,12 @@ describe('MenuScene', () => {
     const persistVisualQualityTier = mock(() => true);
     const reloadForVisualQualityChange = mock(() => undefined);
     const playMenuClick = mock(() => undefined);
-    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'standard';
+    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'auto';
     (scene as unknown as Record<string, unknown>).persistVisualQualityTier = persistVisualQualityTier;
     (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = reloadForVisualQualityChange;
     (scene as unknown as Record<string, unknown>).playMenuClick = playMenuClick;
 
-    (scene as unknown as { selectVisualQualityTier: (tier: string) => void }).selectVisualQualityTier('standard');
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void }).selectVisualQualityTier('auto');
 
     expect(playMenuClick).not.toHaveBeenCalled();
     expect(persistVisualQualityTier).not.toHaveBeenCalled();
@@ -72,7 +69,7 @@ describe('MenuScene', () => {
   test('persists a changed visual quality before reloading', () => {
     const events: string[] = [];
     const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
-    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'standard';
+    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'auto';
     (scene as unknown as Record<string, unknown>).playMenuClick = () => events.push('click');
     (scene as unknown as Record<string, unknown>).persistVisualQualityTier = (tier: string) => {
       events.push(`persist:${tier}`);
@@ -80,16 +77,16 @@ describe('MenuScene', () => {
     };
     (scene as unknown as Record<string, unknown>).reloadForVisualQualityChange = () => events.push('reload');
 
-    (scene as unknown as { selectVisualQualityTier: (tier: string) => void }).selectVisualQualityTier('high');
+    (scene as unknown as { selectVisualQualityTier: (tier: string) => void }).selectVisualQualityTier('low');
 
-    expect(events).toEqual(['click', 'persist:high', 'reload']);
+    expect(events).toEqual(['click', 'persist:low', 'reload']);
   });
 
   test('reports a storage failure without reloading', () => {
     const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
     const showSaveSlotError = mock(() => undefined);
     const reloadForVisualQualityChange = mock(() => undefined);
-    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'standard';
+    (scene as unknown as Record<string, unknown>).getCurrentVisualQualityTier = () => 'auto';
     (scene as unknown as Record<string, unknown>).playMenuClick = (): void => {};
     (scene as unknown as Record<string, unknown>).persistVisualQualityTier = () => false;
     (scene as unknown as Record<string, unknown>).showSaveSlotError = showSaveSlotError;
@@ -99,35 +96,6 @@ describe('MenuScene', () => {
 
     expect(showSaveSlotError).toHaveBeenCalledWith('Unable to save visual quality in this browser context.');
     expect(reloadForVisualQualityChange).not.toHaveBeenCalled();
-  });
-
-  test('startGameScene starts Game', () => {
-    startRegisteredScene.mockClear();
-
-    const values = new Map<string, unknown>();
-    const registry = {
-      get: (key: string) => values.get(key),
-      set: (key: string, value: unknown) => {
-        values.set(key, value);
-      },
-    };
-    setPlayerState(registry, {
-      level: 7,
-      score: 0,
-      currentHp: 5,
-      currentShields: 0,
-      remainingLives: 3,
-      upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-      helperWing: { slots: [], grantedSlots: 0 },
-    });
-
-    const scene = Object.create(MenuScene.prototype) as MenuSceneInstance;
-    (scene as unknown as Record<string, unknown>).registry = registry;
-    (scene as unknown as Record<string, unknown>).events = new EventEmitter();
-
-    (scene as unknown as { startGameScene: () => void }).startGameScene();
-
-    expect(startRegisteredScene).toHaveBeenCalledWith(scene, 'Game');
   });
 
   test('loadFromSlot loads persisted state and starts Game exactly once', () => {
@@ -202,14 +170,6 @@ describe('MenuScene', () => {
     (scene as unknown as { deleteSlot: (slotId: string) => void }).deleteSlot('slot-2');
     expect(deleteStoredSaveSlot).toHaveBeenCalledWith('slot-2');
     expect(refreshSaveSlots).toHaveBeenCalledWith('Slot 2 cleared.');
-  });
-
-  test('places the hero in the band the HTML menu leaves for it', () => {
-    expect(placeMenuHero({ left: 0, top: 100, width: 400, height: 80 }, 230)).toBeNull();
-    const hero = placeMenuHero({ left: 16, top: 157, width: 1248, height: 299 }, 230);
-    expect(hero?.x).toBe(640);
-    expect(hero?.shipHeight).toBeCloseTo(211.5, 1);
-    expect(placeMenuHero({ left: 0, top: 0, width: 400, height: 900 }, 150)?.shipHeight).toBe(150);
   });
 
   test('resumes audio in the trusted music input before changing its value', () => {

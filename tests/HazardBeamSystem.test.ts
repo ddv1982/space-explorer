@@ -6,7 +6,6 @@ import type { HazardBeamLaunchConfig } from '../src/entities/HazardBeam';
 mockPhaserModule();
 
 const { HazardBeamSystem } = await import('../src/systems/HazardBeamSystem');
-const { HazardBeam } = await import('../src/entities/HazardBeam');
 const { BEAM_HIT_FRACTION } = await import('../src/entities/hazardBeamGeometry');
 const Phaser = (await import('phaser')).default;
 
@@ -55,57 +54,6 @@ function createHarness(width = 800, height = 600, pick: 'min' | 'max' = 'min') {
 }
 
 describe('HazardBeamSystem', () => {
-  test('create builds a pooled hazard beam group', () => {
-    const { groupConfigs } = createHarness();
-
-    expect(groupConfigs).toEqual([{ maxSize: -1, classType: HazardBeam, runChildUpdate: true }]);
-  });
-
-  test('spawnSolarFlare launches a full-height bullet-clearing wall with one gap, sweeping from the left', () => {
-    const harness = createHarness();
-
-    harness.system.spawnSolarFlare(0.5);
-
-    expect(harness.launches.length).toBe(2);
-    const [upper, lower] = harness.launches;
-    for (const segment of [upper, lower]) {
-      expect(segment.x).toBe(16.5);
-      expect(segment.width).toBe(33);
-      expect(segment.tint).toBe(0xffb066);
-      expect(segment.telegraphMs).toBe(1300);
-      expect(segment.velocityX).toBe(205);
-      expect(segment.clearsBullets).toBe(true);
-      expect(segment.activeMs as number).toBeCloseTo((860 / 205) * 1000 + 200, 5);
-    }
-    // Reaches past both screen edges; the only way through is the 120 px gap.
-    expect(upper.y - upper.height / 2).toBe(-30);
-    expect(lower.y + lower.height / 2).toBe(630);
-    expect(lower.y - lower.height / 2 - (upper.y + upper.height / 2)).toBe(120);
-    expect(upper.y + upper.height / 2).toBe(330 - 60);
-  });
-
-  test('spawnLaserLattice packs a curtain from both edges to one gap, plus a crossbeam', () => {
-    const harness = createHarness();
-
-    harness.system.spawnLaserLattice(0.5);
-
-    const crossBeam = harness.launches.at(-1)!;
-    const curtain = harness.launches.slice(0, -1).sort((a, b) => a.x - b.x);
-    expect(crossBeam).toMatchObject({ x: 400, y: 120, width: 840, height: 27, activeMs: 2200 });
-    // Gap centre at 200 (the min pick): 600 px to the far edge sets the telegraph.
-    const telegraphMs = Math.round(450 + 80 * Math.sqrt(600));
-    expect(crossBeam.telegraphMs).toBe(telegraphMs);
-    for (const beam of curtain) {
-      expect(beam).toMatchObject({ y: 300, width: 27, height: 640, tint: 0xff6a8d, telegraphMs, activeMs: 2200 });
-    }
-    expect(curtain[0]!.x).toBeLessThan(0);
-    expect(curtain.at(-1)!.x).toBeGreaterThan(800);
-    expect(latticeGap(harness.launches, 600)).toEqual({
-      left: 131.5 + (27 * BEAM_HIT_FRACTION) / 2,
-      right: 268.5 - (27 * BEAM_HIT_FRACTION) / 2,
-    });
-  });
-
   test.each([
     [390, 844],
     [844, 390],

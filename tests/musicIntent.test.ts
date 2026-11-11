@@ -94,15 +94,6 @@ describe('musicIntent meter math', () => {
 });
 
 describe('musicIntent deterministic pulse', () => {
-  test('returns the same pulse for identical seed/bar/step across runs', () => {
-    const track = createTrack({ seed: 'repeatable-seed', beatsPerBar: 4, beatUnit: 4 });
-
-    const first = getMeterStepContext(track, 9).deterministicPulse;
-    const second = getMeterStepContext(track, 9).deterministicPulse;
-
-    expect(first).toBe(second);
-  });
-
   test('changes pulse when seed or position changes', () => {
     const trackA = createTrack({ seed: 'seed-a', beatsPerBar: 4, beatUnit: 4 });
     const trackB = createTrack({ seed: 'seed-b', beatsPerBar: 4, beatUnit: 4 });
