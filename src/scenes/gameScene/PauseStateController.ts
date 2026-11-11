@@ -20,7 +20,6 @@ export interface PauseSaveSlotAdapter {
 
 interface PauseOverlayPort {
   setState(nextState: Partial<PauseOverlayState>): void;
-  relayout(): void;
   destroy(): void;
 }
 
@@ -120,10 +119,6 @@ export class PauseStateController {
     this.statusMessage = '';
     this.statusOk = true;
     this.deleteArm.cancel();
-  }
-
-  relayout(): void {
-    this.pauseOverlay?.relayout();
   }
 
   isGameplayPaused(): boolean {

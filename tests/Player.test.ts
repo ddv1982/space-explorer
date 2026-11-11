@@ -4,7 +4,6 @@ import { mockPhaserModule } from './helpers/phaserMock';
 mockPhaserModule();
 
 const { Player } = await import('../src/entities/Player');
-const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
 type PlayerInstance = InstanceType<typeof Player>;
 
 describe('Player', () => {
@@ -121,18 +120,6 @@ describe('Player', () => {
       expect(setVelocity).toHaveBeenCalledWith(0, 0);
       // A held finger must re-anchor to the respawned ship rather than steer it back.
       expect(touchCalls.at(-1)).toBe(generationBeforeSpawn! + 1);
-    });
-
-    test('emits full-intensity exhaust behind the ship while moving', () => {
-      const { player } = createMomentumPlayer();
-      const emit = mock();
-      player.scene = { events: { emit } } as never;
-      player.x = 100;
-      player.y = 200;
-      (player as unknown as Record<string, unknown>).exhaustTimer = 0;
-      player.update({ ...right, isUp: () => true } as never, 1000 / 60);
-      expect(player.isMovingUp).toBe(true);
-      expect(emit).toHaveBeenCalledWith(GAME_SCENE_EVENTS.playerExhaust, 100, 220, 1);
     });
 
     test('opposing inputs cancel and each direction is read once per update', () => {

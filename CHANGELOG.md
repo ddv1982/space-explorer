@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.25.0] - 2026-11-11
+
+### Changed
+
+- The menus, pause screen, settings, refit bay, Game Over, Victory and artwork-retry screens are now built in HTML and CSS on top of the game, with the same look. Text is sharper, especially on phones and high-resolution screens, and screen readers use the real buttons instead of a hidden copy.
+- Visual quality now offers AUTO and LOW. AUTO gives the full look and eases off effects only when the device struggles. If you had picked STANDARD or HIGH you are moved to AUTO, and new players start on AUTO.
+- The game's TypeScript shrank by about 10,500 lines (from about 59,100 to 48,600): the level checks became a single unit test, and tests that only pinned internal wiring or copied tuning numbers were removed.
+
 ## [1.24.1] - 2026-11-11
 
 ### Changed

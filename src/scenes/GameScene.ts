@@ -270,7 +270,6 @@ export class GameScene extends Phaser.Scene {
       mobileControls: this.mobileControls,
       hud: this.hud,
       warpTransition: this.warpTransition,
-      pauseStateController: this.pauseStateController,
       picketTurrets: this.picketTurrets,
       clampPlayerToViewport: () => this.clampPlayerToViewport(),
     };

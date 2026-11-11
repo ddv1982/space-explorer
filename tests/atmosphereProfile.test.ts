@@ -38,33 +38,6 @@ describe('resolveSectionAtmosphereTargets', () => {
     } satisfies SectionAtmosphereTargets);
   });
 
-  test('section + progress yields stable golden targets for climax visual modifiers', () => {
-    const hazards: ScriptedHazardConfig[] = [
-      { type: 'energy-storm', intensity: 1 },
-      { type: 'debris-surge', intensity: 0.8 },
-    ];
-    const section = createSection({
-      phase: 'climax',
-      musicIntensity: 0.8,
-      vatTarget: { valence: 0, arousal: 0.7, tension: 0.6 },
-      hazardEvents: hazards,
-      visualModifiers: {
-        atmosphereAlpha: 1.1,
-        driftScale: 0.9,
-        landmarkAlpha: 0.95,
-        hazardResponseScale: 1.2,
-      },
-    });
-
-    const targets = resolveSectionAtmosphereTargets(section, 0.5);
-
-    expect(targets.atmosphereAlpha).toBeCloseTo(1.18, 6);
-    expect(targets.atmosphereDrift).toBeCloseTo(1.0278, 6);
-    expect(targets.landmarkAlpha).toBeCloseTo(0.98515, 6);
-    expect(targets.hazardOverlayAlpha).toBeCloseTo(0.1944, 6);
-    expect(targets.activeHazards).toBe(hazards);
-  });
-
   test('clamps section progress and returns the same hazards array reference', () => {
     const hazards: ScriptedHazardConfig[] = [{ type: 'debris-surge', intensity: 0.5 }];
     const section = createSection({

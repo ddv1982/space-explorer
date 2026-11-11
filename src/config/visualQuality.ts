@@ -1,4 +1,8 @@
-export type VisualQualityTier = 'low' | 'standard' | 'high' | 'auto';
+/**
+ * Player-facing visual quality. Auto is the full look and adapts at runtime (RuntimePerformanceBudget
+ * and the lighting budget shed cost under pressure); Low is the baked look with no dynamic lighting.
+ */
+export type VisualQualityTier = 'auto' | 'low';
 
 export interface VisualQualityProfile {
   tier: VisualQualityTier;
@@ -18,36 +22,6 @@ export const VISUAL_QUALITY_STORAGE_KEY = 'space-explorer.visualQuality.v1';
 type VisualQualityStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
 const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
-  low: {
-    tier: 'low',
-    uiGlowStrength: 0.4,
-    particleBurstScale: 0.75,
-    particleQuantityScale: 0.6,
-    menuAtmosphere: 1,
-    dynamicLights: 0,
-    normalMapLighting: false,
-    bloom: 'off',
-  },
-  standard: {
-    tier: 'standard',
-    uiGlowStrength: 0.8,
-    particleBurstScale: 0.9,
-    particleQuantityScale: 0.8,
-    menuAtmosphere: 2,
-    dynamicLights: 4,
-    normalMapLighting: true,
-    bloom: 'soft',
-  },
-  high: {
-    tier: 'high',
-    uiGlowStrength: 1,
-    particleBurstScale: 1.15,
-    particleQuantityScale: 1,
-    menuAtmosphere: 3,
-    dynamicLights: 8,
-    normalMapLighting: true,
-    bloom: 'full',
-  },
   auto: {
     tier: 'auto',
     uiGlowStrength: 1,
@@ -58,10 +32,21 @@ const PROFILES: Record<VisualQualityTier, VisualQualityProfile> = {
     normalMapLighting: true,
     bloom: 'full',
   },
+  low: {
+    tier: 'low',
+    uiGlowStrength: 0.4,
+    particleBurstScale: 0.75,
+    particleQuantityScale: 0.6,
+    menuAtmosphere: 1,
+    dynamicLights: 0,
+    normalMapLighting: false,
+    bloom: 'off',
+  },
 };
 
-function isVisualQualityTier(value: unknown): value is VisualQualityTier {
-  return value === 'low' || value === 'standard' || value === 'high' || value === 'auto';
+/** Low stays Low; everything else, including the retired Standard and High tiers, reads as Auto. */
+function parseStoredTier(value: string | null | undefined): VisualQualityTier {
+  return value === 'low' ? 'low' : 'auto';
 }
 
 function getVisualQualityStorage(): VisualQualityStorage | null {
@@ -80,10 +65,9 @@ export function getVisualQualityTier(
   storage: VisualQualityStorage | null = getVisualQualityStorage()
 ): VisualQualityTier {
   try {
-    const stored = storage?.getItem(VISUAL_QUALITY_STORAGE_KEY);
-    return isVisualQualityTier(stored) ? stored : 'standard';
+    return parseStoredTier(storage?.getItem(VISUAL_QUALITY_STORAGE_KEY));
   } catch {
-    return 'standard';
+    return 'auto';
   }
 }
 

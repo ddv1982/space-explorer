@@ -1,4 +1,4 @@
-import { expect, test as base, type Page } from '@playwright/test';
+import { expect, test as base, type Locator, type Page } from '@playwright/test';
 import type { BrowserHarnessSnapshot } from '../../src/browserHarness';
 
 interface BrowserErrorFixture {
@@ -28,7 +28,7 @@ export type { Page } from '@playwright/test';
  * Pins the visual quality tier before the game boots. Tests that need long stretches of gameplay time
  * use Low: CI renders WebGL in software, where v2 lighting and bloom cut the frame rate to ~1 fps.
  */
-export async function pinQualityTier(page: Page, tier: 'low' | 'standard' | 'high' | 'auto'): Promise<void> {
+export async function pinQualityTier(page: Page, tier: 'low' | 'auto'): Promise<void> {
   await page.addInitScript((value) => window.localStorage.setItem('space-explorer.visualQuality.v1', value), tier);
 }
 
@@ -66,26 +66,18 @@ export async function openMenu(page: Page): Promise<void> {
 
 /** Opens the command deck's settings sheet (difficulty, quality, audio) from its footer button. */
 export async function openMenuSettings(page: Page): Promise<void> {
-  const menu = await snapshot(page);
-  const button = menu.texts.find((item) => item.text === 'SETTINGS' && item.shown);
-  expect(button).toBeDefined();
-  await page.mouse.click(button?.x ?? 0, button?.y ?? 0);
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        window.__SPACE_EXPLORER_BROWSER_HARNESS__?.snapshot().texts.some((t) => t.text === 'DONE' && t.shown)
-      )
-    )
-    .toBe(true);
-  // Phaser sorts pointer targets against the camera's last render list. Visible model state alone
-  // is too early: a fast second click can still select the home view beneath the new modal.
-  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.waitForRender());
+  await page.getByRole('button', { name: 'SETTINGS', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'SETTINGS' })).toBeVisible();
 }
 
 export async function startNewRun(page: Page): Promise<void> {
-  const menu = await snapshot(page);
-  const newRun = menu.texts.find((item) => item.text === 'NEW RUN');
-  expect(newRun).toBeDefined();
-  await page.mouse.click(newRun?.x ?? 0, newRun?.y ?? 0);
+  await page.getByRole('button', { name: 'NEW RUN', exact: true }).click();
   await waitForScene(page, 'Game');
+}
+
+/** Focuses a native control and activates it from the keyboard, as a keyboard or switch user would. */
+export async function pressControl(control: Locator, key = 'Enter'): Promise<void> {
+  await control.focus();
+  await expect(control).toBeFocused();
+  await control.press(key);
 }

@@ -206,30 +206,6 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
     expect(harness.damageAmounts).toEqual([]);
   });
 
-  test('mines are blocked by projectile-blocking cover asteroids', () => {
-    const harness = createCollisionHarness(['damaged']);
-    const mineVsAsteroid = harness.getOverlap(harness.groups.mine, harness.groups.asteroid);
-
-    const mine = createInstance(Mine, {
-      active: true,
-      kill: () => harness.callLog.push('mine.kill'),
-    });
-    const asteroid = createInstance(Asteroid, {
-      active: true,
-      x: 120,
-      y: 140,
-      blocksEnemyProjectiles: () => true,
-      takeDamage: (amount: number) => harness.callLog.push(`asteroid.takeDamage:${amount}`),
-    });
-
-    mineVsAsteroid(mine, asteroid);
-
-    expect(harness.callLog).toContain('mine.kill');
-    expect(harness.callLog).toContain('asteroid.takeDamage:1');
-    expect(harness.callLog).toContain('spark:120,140');
-    expect(harness.damageAmounts).toEqual([]);
-  });
-
   test('active hazard beams damage the player and emit player hit events', () => {
     const harness = createCollisionHarness(['damaged']);
     const beamVsPlayer = harness.getOverlap(harness.groups.beam, harness.player);
@@ -305,28 +281,32 @@ describe('CollisionManager player damage dedupe regression coverage', () => {
     expect(harness.callLog).not.toContain('enemyBullet.kill');
   });
 
-  test('enemy bullets are blocked by projectile-blocking cover asteroids', () => {
-    const harness = createCollisionHarness(['damaged']);
-    const enemyBulletVsAsteroid = harness.getOverlap(harness.groups.enemyBullet, harness.groups.asteroid);
+  test('enemy bullets and mines are blocked by projectile-blocking cover asteroids', () => {
+    for (const [ProjectileClass, groupKey] of [
+      [EnemyBullet, 'enemyBullet'],
+      [Mine, 'mine'],
+    ] as const) {
+      const harness = createCollisionHarness(['damaged']);
+      const projectileVsAsteroid = harness.getOverlap(harness.groups[groupKey], harness.groups.asteroid);
+      const projectile = createInstance<object>(ProjectileClass, {
+        active: true,
+        kill: () => harness.callLog.push('projectile.kill'),
+      });
+      const asteroid = createInstance(Asteroid, {
+        active: true,
+        x: 120,
+        y: 140,
+        blocksEnemyProjectiles: () => true,
+        takeDamage: (amount: number) => harness.callLog.push(`asteroid.takeDamage:${amount}`),
+      });
 
-    const bullet = createInstance(EnemyBullet, {
-      active: true,
-      kill: () => harness.callLog.push('enemyBullet.kill'),
-    });
-    const asteroid = createInstance(Asteroid, {
-      active: true,
-      x: 120,
-      y: 140,
-      blocksEnemyProjectiles: () => true,
-      takeDamage: (amount: number) => harness.callLog.push(`asteroid.takeDamage:${amount}`),
-    });
+      projectileVsAsteroid(projectile, asteroid);
 
-    enemyBulletVsAsteroid(bullet, asteroid);
-
-    expect(harness.callLog).toContain('enemyBullet.kill');
-    expect(harness.callLog).toContain('asteroid.takeDamage:1');
-    expect(harness.callLog).toContain('spark:120,140');
-    expect(harness.damageAmounts).toEqual([]);
+      expect(harness.callLog).toContain('projectile.kill');
+      expect(harness.callLog).toContain('asteroid.takeDamage:1');
+      expect(harness.callLog).toContain('spark:120,140');
+      expect(harness.damageAmounts).toEqual([]);
+    }
   });
 
   test('collision target resolution accepts reversed Arcade callback order', () => {

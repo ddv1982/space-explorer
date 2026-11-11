@@ -71,16 +71,20 @@ const storage = (tier: string) => ({ getItem: () => tier, setItem: () => {} });
 const desktop = { touchDevice: false, pressureLevel: 0, reducedMotion: false };
 const budgetFor = (tier: string, environment = desktop) =>
   resolveLightingBudget(getVisualQualityProfile(storage(tier)), environment);
+/** Auto on a phone: the four-light internal budget. */
+const touchBudget = () => budgetFor('auto', { ...desktop, touchDevice: true });
 
 describe('lighting budget', () => {
   test('tier values', () => {
     expect(budgetFor('low')).toEqual({ lights: 0, normalMapLighting: false, bloom: 'off' });
-    expect(budgetFor('standard')).toEqual({ lights: 4, normalMapLighting: true, bloom: 'soft' });
-    expect(budgetFor('high')).toEqual({ lights: 8, normalMapLighting: true, bloom: 'full' });
+    expect(budgetFor('auto')).toEqual({ lights: 8, normalMapLighting: true, bloom: 'full' });
+    // Retired tiers read as Auto.
+    expect(budgetFor('standard')).toEqual(budgetFor('auto'));
+    expect(budgetFor('high')).toEqual(budgetFor('auto'));
   });
 
-  test('auto starts phones on the standard budget and sheds bloom, then lights, under pressure', () => {
-    expect(budgetFor('auto', { ...desktop, touchDevice: true })).toEqual({
+  test('auto starts phones on the touch budget and sheds bloom, then lights, under pressure', () => {
+    expect(touchBudget()).toEqual({
       lights: 4,
       normalMapLighting: true,
       bloom: 'soft',
@@ -91,7 +95,7 @@ describe('lighting budget', () => {
   });
 
   test('reduced motion keeps lights but drops bloom', () => {
-    expect(budgetFor('high', { ...desktop, reducedMotion: true })).toEqual({
+    expect(budgetFor('auto', { ...desktop, reducedMotion: true })).toEqual({
       lights: 8,
       normalMapLighting: true,
       bloom: 'off',
@@ -116,7 +120,7 @@ describe('LightingRig', () => {
     const existing = litSprite(true);
     const flat = litSprite(false);
     const { scene, handlers } = createScene([existing, flat]);
-    new LightingRig(scene as never, budgetFor('standard'));
+    new LightingRig(scene as never, touchBudget());
     const later = litSprite(true);
     handlers.get('addedtoscene')!(later);
     expect(existing.setLighting).toHaveBeenCalledWith(true);
@@ -126,7 +130,7 @@ describe('LightingRig', () => {
 
   test('a pulse reuses the oldest pulse when the pool is full, never the engine follower', () => {
     const { scene, lights } = createScene();
-    const rig = new LightingRig(scene as never, budgetFor('standard'));
+    const rig = new LightingRig(scene as never, touchBudget());
     const ship = { x: 50, y: 60, visible: true };
     rig.follow(ship, 0x5ff2ff, 70, 0.8);
     for (let index = 0; index < 4; index += 1) rig.pulse(index * 100, 0, 0xffb066, 140, 2, 400);
@@ -138,7 +142,7 @@ describe('LightingRig', () => {
 
   test('pulses fade by gameplay delta and freeze at delta 0', () => {
     const { scene, lights } = createScene();
-    const rig = new LightingRig(scene as never, budgetFor('standard'));
+    const rig = new LightingRig(scene as never, touchBudget());
     rig.pulse(0, 0, 0xffb066, 140, 2, 400);
     rig.update(200);
     const halfway = lights[0]!.intensity;
@@ -151,7 +155,7 @@ describe('LightingRig', () => {
 
   test('the engine light follows its ship and goes dark while the ship is hidden', () => {
     const { scene, lights } = createScene();
-    const rig = new LightingRig(scene as never, budgetFor('standard'));
+    const rig = new LightingRig(scene as never, touchBudget());
     const ship = { x: 10, y: 20, visible: true };
     const release = rig.follow(ship, 0x5ff2ff, 70, 0.8);
     ship.x = 30;
@@ -168,7 +172,7 @@ describe('LightingRig', () => {
 
   test('the engine light returns after Auto pressure drops the light budget to zero and recovers', () => {
     const { scene, lights } = createScene();
-    const rig = new LightingRig(scene as never, budgetFor('standard'));
+    const rig = new LightingRig(scene as never, touchBudget());
     const ship = { x: 10, y: 20, visible: true };
     rig.follow(ship, 0x5ff2ff, 70, 0.8, 5);
     rig.pulse(0, 0, 0xffb066, 140, 2, 400);
@@ -177,7 +181,7 @@ describe('LightingRig', () => {
     expect(lights).toHaveLength(1);
     rig.setBudget({ lights: 0, normalMapLighting: true, bloom: 'off' });
     expect(lights).toHaveLength(0);
-    rig.setBudget(budgetFor('standard'));
+    rig.setBudget(touchBudget());
     rig.update(16);
     expect(lights).toHaveLength(1);
     expect(lights[0]).toMatchObject({ x: 10, y: 25, intensity: 0.8 });
@@ -186,7 +190,7 @@ describe('LightingRig', () => {
   test('destroy removes every light and the bloom filter', () => {
     bloomDestroy.mockClear();
     const { scene, lights, handlers } = createScene();
-    const rig = new LightingRig(scene as never, budgetFor('high'));
+    const rig = new LightingRig(scene as never, budgetFor('auto'));
     rig.pulse(0, 0, 0xffffff, 100, 1, 100);
     rig.follow({ x: 0, y: 0 }, 0xffffff, 100, 1);
     rig.destroy();

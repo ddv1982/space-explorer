@@ -1,20 +1,25 @@
-import { expect, openMenu, snapshot, test, waitForScene } from './fixtures';
+import { expect, openMenu, snapshot, test, waitForScene, type Page } from './fixtures';
 
-function expectMenuTitleLockup(menu: Awaited<ReturnType<typeof snapshot>>): void {
-  const title = menu.texts.find((item) => item.text === 'SPACE EXPLORER');
-  const kicker = menu.texts.find((item) => item.text === 'COMMAND DECK');
-  const tagline = menu.texts.find((item) => item.text === 'TEN HOSTILE SECTORS. ONE SHIP.');
+async function expectMenuTitleLockup(page: Page): Promise<void> {
+  const viewport = page.viewportSize() ?? { width: 0, height: 0 };
+  const title = await page.getByRole('heading', { name: 'SPACE EXPLORER' }).boundingBox();
+  const kicker = page.getByText('COMMAND DECK', { exact: true });
+  const tagline = await page.getByText('TEN HOSTILE SECTORS. ONE SHIP.').boundingBox();
 
-  expect(title).toBeDefined();
-  expect(tagline).toBeDefined();
-  expect((title?.x ?? 0) - (title?.width ?? 0) / 2).toBeGreaterThanOrEqual(0);
-  expect((title?.x ?? 0) + (title?.width ?? 0) / 2).toBeLessThanOrEqual(menu.gameSize.width);
-  // The title's bounds include the padding its glow is drawn into, so the lockup is checked by
-  // order and by the kicker and tagline staying clear of each other, not by touching edges.
-  const titleY = title?.y ?? 0;
-  if (kicker) expect(kicker.y + kicker.height / 2).toBeLessThan(titleY);
-  expect((tagline?.y ?? 0) - (tagline?.height ?? 0) / 2).toBeGreaterThan(titleY);
-  expect((tagline?.y ?? 0) + (tagline?.height ?? 0) / 2).toBeLessThanOrEqual(menu.gameSize.height);
+  expect(title).not.toBeNull();
+  expect(tagline).not.toBeNull();
+  if (!title || !tagline) return;
+  expect(title.x).toBeGreaterThanOrEqual(0);
+  expect(title.x + title.width).toBeLessThanOrEqual(viewport.width);
+  // The title's line box is taller than its glyphs, so the lockup is checked by order and by the
+  // kicker and tagline staying clear of the title's centre, not by touching edges.
+  const titleY = title.y + title.height / 2;
+  if (await kicker.isVisible()) {
+    const box = await kicker.boundingBox();
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThan(titleY);
+  }
+  expect(tagline.y).toBeGreaterThan(titleY);
+  expect(tagline.y + tagline.height).toBeLessThanOrEqual(viewport.height);
 }
 
 test('boots once, enters gameplay, and exercises real rendering and Arcade bodies', async ({
@@ -33,10 +38,9 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   await waitForScene(page, 'Menu');
   await expect(page.locator('#game-root > canvas')).toHaveCount(1);
 
-  const menu = await snapshot(page);
-  const newRun = menu.texts.find((item) => item.text === 'NEW RUN');
-  expect(newRun).toBeDefined();
-  expectMenuTitleLockup(menu);
+  const newRun = page.getByRole('button', { name: 'NEW RUN', exact: true });
+  await expect(newRun).toBeInViewport();
+  await expectMenuTitleLockup(page);
   const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
   const menuShotName = `menu-command-deck-${test.info().project.name}.png`;
   const menuShotPath = evidenceDirectory
@@ -44,7 +48,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
     : test.info().outputPath(menuShotName);
   await page.screenshot({ path: menuShotPath });
   await test.info().attach(menuShotName, { path: menuShotPath, contentType: 'image/png' });
-  await page.mouse.click(newRun?.x ?? 0, newRun?.y ?? 0);
+  await newRun.click();
   await waitForScene(page, 'Game');
 
   const initial = await snapshot(page);
@@ -58,7 +62,7 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
   expect(initial.canvas.backingHeight).toBeGreaterThan(0);
   expect(initial.canvas.backingScale).toBeGreaterThanOrEqual(0.95);
   expect(initial.canvas.backingScale).toBeLessThanOrEqual(1.05);
-  expect(initial.runtimePerformance).toMatchObject({ enabled: false, pressureLevel: 0 });
+  expect(initial.runtimePerformance).toMatchObject({ enabled: true, pressureLevel: 0 });
   expect(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeArcadeOverlap())).toBe(true);
 
   // Live movement and firing depend on real-time frame delivery. The isolated
@@ -121,17 +125,14 @@ test('command deck menu stays readable across responsive profiles', async ({ pag
     } else {
       await expect
         .poll(async () => {
-          const title = (await snapshot(page)).texts.find((item) => item.text === 'SPACE EXPLORER');
-          return Math.round(title?.x ?? 0);
+          const title = await page.getByRole('heading', { name: 'SPACE EXPLORER' }).boundingBox();
+          return Math.round((title?.x ?? 0) + (title?.width ?? 0) / 2);
         })
         .toBe(Math.round(viewport.width / 2));
     }
-    const menu = await snapshot(page);
-    const newRun = menu.texts.find((item) => item.text === 'NEW RUN');
-    expect(newRun).toBeDefined();
-    expect(newRun?.x ?? 0).toBeGreaterThan(0);
-    expect(newRun?.y ?? 0).toBeGreaterThan(0);
-    expectMenuTitleLockup(menu);
+    await expect(page.getByRole('button', { name: 'NEW RUN', exact: true })).toBeInViewport({ ratio: 1 });
+    await expect(page.getByRole('button', { name: 'SETTINGS', exact: true })).toBeInViewport({ ratio: 1 });
+    await expectMenuTitleLockup(page);
     const shotName = `menu-command-deck-${viewport.width}x${viewport.height}.png`;
     const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
     const shotPath = evidenceDirectory ? `${evidenceDirectory}/${shotName}` : test.info().outputPath(shotName);

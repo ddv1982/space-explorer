@@ -46,71 +46,31 @@ class ThrowingStorage extends MemoryStorage {
 }
 
 describe('visual quality profiles', () => {
-  test('uses the stable standard profile by default', () => {
-    expect(getVisualQualityTier(null)).toBe('standard');
-    expect(getVisualQualityProfile(null)).toEqual({
-      tier: 'standard',
-      uiGlowStrength: 0.8,
-      particleBurstScale: 0.9,
-      particleQuantityScale: 0.8,
-      menuAtmosphere: 2,
-      dynamicLights: 4,
+  test('defaults to Auto, the full look', () => {
+    expect(getVisualQualityTier(null)).toBe('auto');
+    expect(getVisualQualityProfile(null)).toMatchObject({
+      tier: 'auto',
+      dynamicLights: 8,
       normalMapLighting: true,
-      bloom: 'soft',
+      bloom: 'full',
     });
   });
 
-  test('keeps entity edge density invariant while tiering remake FX budgets', () => {
+  test('Low is the baked look with no dynamic lighting', () => {
     const storage = new MemoryStorage();
-    const expected = {
-      low: {
-        uiGlowStrength: 0.4,
-        particleBurstScale: 0.75,
-        particleQuantityScale: 0.6,
-        menuAtmosphere: 1,
-        dynamicLights: 0,
-        normalMapLighting: false,
-        bloom: 'off',
-      },
-      standard: {
-        uiGlowStrength: 0.8,
-        particleBurstScale: 0.9,
-        particleQuantityScale: 0.8,
-        menuAtmosphere: 2,
-        dynamicLights: 4,
-        normalMapLighting: true,
-        bloom: 'soft',
-      },
-      high: {
-        uiGlowStrength: 1,
-        particleBurstScale: 1.15,
-        particleQuantityScale: 1,
-        menuAtmosphere: 3,
-        dynamicLights: 8,
-        normalMapLighting: true,
-        bloom: 'full',
-      },
-      auto: {
-        uiGlowStrength: 1,
-        particleBurstScale: 1.15,
-        particleQuantityScale: 1,
-        menuAtmosphere: 3,
-        dynamicLights: 8,
-        normalMapLighting: true,
-        bloom: 'full',
-      },
-    } as const;
-
-    for (const tier of ['low', 'standard', 'high', 'auto'] as const) {
-      expect(setVisualQualityTier(tier, storage)).toBe(true);
-      expect(getVisualQualityProfile(storage)).toEqual({ tier, ...expected[tier] });
-    }
+    expect(setVisualQualityTier('low', storage)).toBe(true);
+    expect(getVisualQualityProfile(storage)).toMatchObject({
+      tier: 'low',
+      dynamicLights: 0,
+      normalMapLighting: false,
+      bloom: 'off',
+    });
   });
 
-  test('persists and restores every supported tier', () => {
+  test('persists and restores both tiers', () => {
     const storage = new MemoryStorage();
 
-    for (const tier of ['low', 'standard', 'high', 'auto'] as const) {
+    for (const tier of ['low', 'auto'] as const) {
       expect(setVisualQualityTier(tier, storage)).toBe(true);
       expect(storage.getItem(VISUAL_QUALITY_STORAGE_KEY)).toBe(tier);
       expect(getVisualQualityTier(storage)).toBe(tier);
@@ -118,27 +78,29 @@ describe('visual quality profiles', () => {
     }
   });
 
+  test('migrates the retired Standard and High tiers to Auto so players keep the full look', () => {
+    const storage = new MemoryStorage();
+
+    for (const value of ['standard', 'high']) {
+      storage.setItem(VISUAL_QUALITY_STORAGE_KEY, value);
+      expect(getVisualQualityTier(storage)).toBe('auto');
+    }
+  });
+
   test('ignores malformed and unsupported stored values', () => {
     const storage = new MemoryStorage();
 
-    for (const value of ['', 'ultra', '{"tier":"high"}', '?visualQuality=low']) {
+    for (const value of ['', 'ultra', '{"tier":"low"}', '?visualQuality=low']) {
       storage.setItem(VISUAL_QUALITY_STORAGE_KEY, value);
-      expect(getVisualQualityTier(storage)).toBe('standard');
+      expect(getVisualQualityTier(storage)).toBe('auto');
     }
   });
 
   test('falls back safely when storage reads or writes fail', () => {
     const storage = new ThrowingStorage();
 
-    expect(getVisualQualityTier(storage)).toBe('standard');
-    expect(getVisualQualityProfile(storage)).toMatchObject({
-      tier: 'standard',
-      uiGlowStrength: 0.8,
-      particleBurstScale: 0.9,
-      particleQuantityScale: 0.8,
-      menuAtmosphere: 2,
-    });
-    expect(setVisualQualityTier('high', storage)).toBe(false);
+    expect(getVisualQualityTier(storage)).toBe('auto');
+    expect(setVisualQualityTier('low', storage)).toBe(false);
   });
 
   test('does not read visual quality from the page URL', () => {
@@ -148,13 +110,12 @@ describe('visual quality profiles', () => {
       configurable: true,
       value: {
         localStorage: storage,
-        location: { search: '?visualQuality=high' },
+        location: { search: '?visualQuality=low' },
       },
     });
 
     try {
-      expect(getVisualQualityTier()).toBe('standard');
-      expect(getVisualQualityProfile().tier).toBe('standard');
+      expect(getVisualQualityTier()).toBe('auto');
     } finally {
       Object.defineProperty(globalThis, 'window', {
         configurable: true,

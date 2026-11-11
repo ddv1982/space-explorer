@@ -164,7 +164,7 @@ export class LivingBackground {
       this.activity = nextActivity;
       this.invalidate();
     }
-    const cadence = this.pressure >= 2 ? 125 : this.tier === 'high' || this.tier === 'auto' ? 16 : 32;
+    const cadence = this.pressure >= 2 ? 125 : 16;
     if (!frozen && this.elapsed - this.lastRenderTime >= cadence) {
       this.lastRenderTime = this.elapsed;
       this.invalidate();

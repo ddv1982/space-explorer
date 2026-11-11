@@ -93,16 +93,6 @@ const { createGameSceneCombatFeedbackHandlers } = await import('../src/scenes/ga
 const { runBestEffort } = await import('../src/utils/runBestEffort');
 
 describe('runBestEffort', () => {
-  test('runs the provided effect', () => {
-    let called = false;
-
-    runBestEffort(() => {
-      called = true;
-    });
-
-    expect(called).toBe(true);
-  });
-
   test('swallows effect errors', () => {
     let called = false;
 
@@ -131,6 +121,9 @@ function createCombatFeedbackHarness(
     suspendForTransition?: () => void;
     suspendPicketsForTransition?: () => void;
     queueLevelComplete?: () => void;
+    registerKill?: (score: number) => number;
+    enemies?: unknown[];
+    spawnedBoss?: unknown;
   } = {}
 ) {
   const onPlayerHit = mock();
@@ -150,16 +143,19 @@ function createCombatFeedbackHarness(
   );
   const queueLevelComplete = mock(() => options.queueLevelComplete?.());
   const createExplosion = mock();
-  const createWormholeTelegraph = mock();
-  const showEliteWaveAnnouncement = mock();
+  const createScorePopup = mock();
+  const registerKill = mock(options.registerKill ?? ((score: number) => score));
   const hideBossBar = mock();
   const markBossDefeated = mock();
   const setBoss = mock();
   const persistHelperWingState = mock(() => options.persistHelperWingState?.());
   const suspendForTransition = mock(() => options.suspendForTransition?.());
   const suspendPicketsForTransition = mock(() => options.suspendPicketsForTransition?.());
-  const showPicketOnlineAnnouncement = mock();
   const syncLastLifeHelperWingState = mock();
+  const markBossSpawned = mock();
+  const clearPlayerHazards = mock();
+  const showBossWarning = mock();
+  const showBossBar = mock();
 
   const handlers = createGameSceneCombatFeedbackHandlers({
     scene: {
@@ -174,15 +170,14 @@ function createCombatFeedbackHarness(
     player: player as never,
     scoreManager: {
       addScore: mock(),
-      registerKill: mock((score: number) => score),
+      registerKill,
       onPlayerHit,
       onPlayerDeath: mock(),
     } as never,
     effectsManager: {
-      createScorePopup: mock(),
+      createScorePopup,
       createExplosion,
       createSurgePulse: mock(),
-      createWormholeTelegraph,
       pulseCameraColor: mock(),
     } as never,
     flow: {
@@ -193,25 +188,24 @@ function createCombatFeedbackHarness(
     getFlowContext: () => flowContext as never,
     levelManager: {
       markBossDefeated,
-      getLevelConfig: () => ({ music: { boss: 'boss-track' } }),
+      markBossSpawned,
+      getLevelConfig: () => ({ boss: { name: 'Dreadnova' }, music: { boss: 'boss-track' } }),
     } as never,
-    collisionManager: { clearPlayerHazards: mock() } as never,
+    collisionManager: { clearPlayerHazards } as never,
     waveManager: { applyDeathRelief: mock() } as never,
     grazeSurge: null,
-    enemyPool: { getAllEnemies: (): never[] => [], spawnBoss: mock() } as never,
+    enemyPool: { getAllEnemies: () => options.enemies ?? [], spawnBoss: mock(() => options.spawnedBoss) } as never,
     hud: {
-      showBossWarning: mock(),
-      showBossBar: mock(),
+      showBossWarning,
+      showBossBar,
       hideBossBar,
       showBossPhaseAnnouncement: mock(),
       showHelperWingAnnouncement: mock(),
       showHelperWingDepletedAnnouncement: mock(),
-      showEliteWaveAnnouncement,
-      showPicketOnlineAnnouncement,
     } as never,
     getBoss: () => (options.boss ?? null) as never,
     setBoss,
-    scaledBossConfig: null,
+    scaledBossConfig: { name: 'Scaled Boss' } as never,
     lastLifeHelperWing: { suspendForTransition } as never,
     picketTurrets: { suspendForTransition: suspendPicketsForTransition } as never,
     powerUpGroup: { id: 'powerups' } as never,
@@ -235,16 +229,19 @@ function createCombatFeedbackHarness(
     handlePlayerDeath,
     queueLevelComplete,
     createExplosion,
-    createWormholeTelegraph,
-    showEliteWaveAnnouncement,
+    createScorePopup,
+    registerKill,
     hideBossBar,
     markBossDefeated,
     setBoss,
     persistHelperWingState,
     suspendForTransition,
     suspendPicketsForTransition,
-    showPicketOnlineAnnouncement,
     syncLastLifeHelperWingState,
+    markBossSpawned,
+    clearPlayerHazards,
+    showBossWarning,
+    showBossBar,
   };
 }
 
@@ -261,99 +258,27 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
   test('handleEnemyDeath adds score, shows popup, plays explosion, and tries dropping a power-up', () => {
     playExplosion.mockClear();
     trySpawnRandomPowerUp.mockClear();
-    const addScore = mock((score: number) => score);
-    const createScorePopup = mock();
+    spawnGuaranteedPowerUp.mockClear();
+    const harness = createCombatFeedbackHarness();
 
-    const handlers = createGameSceneCombatFeedbackHandlers({
-      scene: { cameras: { main: {} }, time: { now: 1000 } } as never,
-      player: { x: 0, y: 0 } as never,
-      scoreManager: { registerKill: addScore } as never,
-      effectsManager: { createScorePopup } as never,
-      flow: {
-        handlePlayerDeath: mock(),
-        isPlayerDeathTransitionActive: mock(() => false),
-        queueLevelComplete: mock(),
-      } as never,
-      getFlowContext: () => ({}) as never,
-      levelManager: { getLevelConfig: () => ({ music: { boss: 'boss-track' } }) } as never,
-      collisionManager: { clearPlayerHazards: mock() } as never,
-      waveManager: { applyDeathRelief: mock() } as never,
-      grazeSurge: null,
-      enemyPool: { getAllEnemies: (): never[] => [] } as never,
-      hud: { showBossWarning: mock(), hideBossBar: mock() } as never,
-      getBoss: () => null,
-      setBoss: mock(),
-      scaledBossConfig: null,
-      lastLifeHelperWing: null,
-      picketTurrets: null,
-      powerUpGroup: { id: 'powerups' } as never,
-      persistHelperWingState: mock(),
-      syncLastLifeHelperWingState: mock(),
-      getGameplayNow: () => 1000,
-      constants: {
-        bossExplosionVisualIntensity: 3,
-        bossExplosionAudioIntensity: 2,
-        playerDeathExplosionVisualIntensity: 2.2,
-        playerDeathExplosionAudioIntensity: 1.4,
-        playerDeathParticleBudgetScale: 0.6,
-      },
-    });
+    harness.handlers.handleEnemyDeath(500, 12, 34);
 
-    handlers.handleEnemyDeath(500, 12, 34);
-
-    expect(addScore).toHaveBeenCalledWith(500, 1000);
-    expect(createScorePopup).toHaveBeenCalledWith(12, 34, 500);
+    expect(harness.registerKill).toHaveBeenCalledWith(500, 1000);
+    expect(harness.createScorePopup).toHaveBeenCalledWith(12, 34, 500);
     expect(playExplosion).toHaveBeenCalledWith(0.5);
     expect(trySpawnRandomPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
     expect(spawnGuaranteedPowerUp).not.toHaveBeenCalled();
   });
 
   test('handleEnemyDeath grants a marked ace exactly one guaranteed drop and skips the random roll', () => {
-    playExplosion.mockClear();
     trySpawnRandomPowerUp.mockClear();
     spawnGuaranteedPowerUp.mockClear();
-    const registerKill = mock((score: number) => score * 4);
-    const createScorePopup = mock();
+    const harness = createCombatFeedbackHarness({ registerKill: (score) => score * 4 });
 
-    const handlers = createGameSceneCombatFeedbackHandlers({
-      scene: { cameras: { main: {} }, time: { now: 1000 } } as never,
-      player: { x: 0, y: 0 } as never,
-      scoreManager: { registerKill } as never,
-      effectsManager: { createScorePopup } as never,
-      flow: {
-        handlePlayerDeath: mock(),
-        isPlayerDeathTransitionActive: mock(() => false),
-        queueLevelComplete: mock(),
-      } as never,
-      getFlowContext: () => ({}) as never,
-      levelManager: { getLevelConfig: () => ({ music: { boss: 'boss-track' } }) } as never,
-      collisionManager: { clearPlayerHazards: mock() } as never,
-      waveManager: { applyDeathRelief: mock() } as never,
-      grazeSurge: null,
-      enemyPool: { getAllEnemies: (): never[] => [] } as never,
-      hud: { showBossWarning: mock(), hideBossBar: mock() } as never,
-      getBoss: () => null,
-      setBoss: mock(),
-      scaledBossConfig: null,
-      lastLifeHelperWing: null,
-      picketTurrets: null,
-      powerUpGroup: { id: 'powerups' } as never,
-      persistHelperWingState: mock(),
-      syncLastLifeHelperWingState: mock(),
-      getGameplayNow: () => 1000,
-      constants: {
-        bossExplosionVisualIntensity: 3,
-        bossExplosionAudioIntensity: 2,
-        playerDeathExplosionVisualIntensity: 2.2,
-        playerDeathExplosionAudioIntensity: 1.4,
-        playerDeathParticleBudgetScale: 0.6,
-      },
-    });
+    harness.handlers.handleEnemyDeath(1000, 12, 34, true);
 
-    handlers.handleEnemyDeath(1000, 12, 34, true);
-
-    expect(registerKill).toHaveBeenCalledWith(1000, 1000);
-    expect(createScorePopup).toHaveBeenCalledWith(12, 34, 4000);
+    expect(harness.registerKill).toHaveBeenCalledWith(1000, 1000);
+    expect(harness.createScorePopup).toHaveBeenCalledWith(12, 34, 4000);
     expect(spawnGuaranteedPowerUp).toHaveBeenCalledTimes(1);
     expect(spawnGuaranteedPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
     expect(trySpawnRandomPowerUp).not.toHaveBeenCalled();
@@ -448,11 +373,6 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
 
   test('handleBossSpawn clears hazards, hides active enemies, starts boss music, and shows the boss bar', () => {
     startMusic.mockClear();
-
-    const clearPlayerHazards = mock();
-    const markBossSpawned = mock();
-    const showBossWarning = mock();
-    const showBossBar = mock();
     const boss = { setPlayer: mock() };
     const activeEnemy = {
       active: true,
@@ -462,96 +382,22 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
         this.body.enable = false;
       },
     };
-    const inactiveEnemy = {
-      active: false,
-      body: { enable: false },
-      despawn: mock(),
-    };
-    const setBoss = mock();
-    const player = { id: 'player' };
+    const inactiveEnemy = { active: false, body: { enable: false }, despawn: mock() };
+    const harness = createCombatFeedbackHarness({ enemies: [activeEnemy, inactiveEnemy], spawnedBoss: boss });
 
-    const handlers = createGameSceneCombatFeedbackHandlers({
-      scene: { cameras: { main: {} } } as never,
-      player: player as never,
-      scoreManager: { addScore: mock() } as never,
-      effectsManager: { createScorePopup: mock() } as never,
-      flow: {
-        handlePlayerDeath: mock(),
-        isPlayerDeathTransitionActive: mock(() => false),
-        queueLevelComplete: mock(),
-      } as never,
-      getFlowContext: () => ({}) as never,
-      levelManager: {
-        markBossSpawned,
-        getLevelConfig: () => ({
-          boss: { name: 'Dreadnova' },
-          music: { boss: 'boss-track' },
-        }),
-      } as never,
-      collisionManager: { clearPlayerHazards } as never,
-      waveManager: { applyDeathRelief: mock() } as never,
-      grazeSurge: null,
-      enemyPool: {
-        getAllEnemies: () => [activeEnemy, inactiveEnemy],
-        spawnBoss: mock(() => boss),
-      } as never,
-      hud: { showBossWarning, showBossBar, hideBossBar: mock() } as never,
-      getBoss: () => null,
-      setBoss,
-      scaledBossConfig: { name: 'Scaled Boss' } as never,
-      lastLifeHelperWing: null,
-      picketTurrets: null,
-      powerUpGroup: { id: 'powerups' } as never,
-      persistHelperWingState: mock(),
-      syncLastLifeHelperWingState: mock(),
-      getGameplayNow: () => 1000,
-      constants: {
-        bossExplosionVisualIntensity: 3,
-        bossExplosionAudioIntensity: 2,
-        playerDeathExplosionVisualIntensity: 2.2,
-        playerDeathExplosionAudioIntensity: 1.4,
-        playerDeathParticleBudgetScale: 0.6,
-      },
-    });
+    harness.handlers.handleBossSpawn();
 
-    handlers.handleBossSpawn();
-
-    expect(markBossSpawned).toHaveBeenCalledTimes(1);
-    expect(clearPlayerHazards).toHaveBeenCalledTimes(1);
+    expect(harness.markBossSpawned).toHaveBeenCalledTimes(1);
+    expect(harness.clearPlayerHazards).toHaveBeenCalledTimes(1);
     expect(activeEnemy.active).toBe(false);
     expect(activeEnemy.body.enable).toBe(false);
     expect(inactiveEnemy.despawn).not.toHaveBeenCalled();
     expect(inactiveEnemy.active).toBe(false);
     expect(inactiveEnemy.body.enable).toBe(false);
-    expect(showBossWarning).toHaveBeenCalledTimes(1);
+    expect(harness.showBossWarning).toHaveBeenCalledTimes(1);
     expect(startMusic).toHaveBeenCalledWith('boss-track');
-    expect(boss.setPlayer).toHaveBeenCalledWith(player);
-    expect(setBoss).toHaveBeenCalledWith(boss);
-    expect(showBossBar).toHaveBeenCalledWith('Dreadnova');
-  });
-
-  test('handleWormholeTelegraph renders the wormhole telegraph VFX at the portal position', () => {
-    const harness = createCombatFeedbackHarness({});
-
-    harness.handlers.handleWormholeTelegraph(180, 240);
-
-    expect(harness.createWormholeTelegraph).toHaveBeenCalledTimes(1);
-    expect(harness.createWormholeTelegraph).toHaveBeenCalledWith(180, 240);
-  });
-
-  test('handleEliteWave shows the elite wave announcement with a camera beat', () => {
-    const harness = createCombatFeedbackHarness({});
-
-    harness.handlers.handleEliteWave();
-
-    expect(harness.showEliteWaveAnnouncement).toHaveBeenCalledTimes(1);
-  });
-
-  test('handlePicketOnline shows the picket announcement', () => {
-    const harness = createCombatFeedbackHarness({});
-
-    harness.handlers.handlePicketOnline();
-
-    expect(harness.showPicketOnlineAnnouncement).toHaveBeenCalledTimes(1);
+    expect(boss.setPlayer).toHaveBeenCalledWith(harness.player);
+    expect(harness.setBoss).toHaveBeenCalledWith(boss);
+    expect(harness.showBossBar).toHaveBeenCalledWith('Dreadnova');
   });
 });

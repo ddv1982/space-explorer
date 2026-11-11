@@ -1,0 +1,2168 @@
+/*
+ * HTML UI over the game canvas. One family with the canvas chrome (neonUiTheme.ts): glass panels and
+ * keys with cut top-left / bottom-right corners, a lit accent rail, one solid cyan primary per surface.
+ * Profiles are container queries on the layer, which always covers the canvas exactly.
+ */
+:root {
+  --c-cyan-rgb: 91 216 255;
+  --c-cyan: #5bd8ff;
+  --c-cyan-bright: #bff6ff;
+  --c-ink: #021020;
+  --t-title: #f4fdff;
+  --t-primary: #f6feff;
+  --t-secondary: #b9d7f2;
+  --t-muted: #6f92b8;
+  --t-danger: #ff9b8f;
+  --t-gold: #ffd27a;
+  --f-display: 'Orbitron', 'Arial Black', Impact, sans-serif;
+  --f-label: 'Rajdhani', 'Helvetica Neue', Arial, sans-serif;
+  --f-mono: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+#game-root {
+  position: relative;
+}
+
+.ui-layer {
+  --ui-glow: 1;
+  --ui-halo: 1;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  container: layer / size;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--t-secondary);
+  font: 700 16px / 1 var(--f-label);
+  letter-spacing: 1.2px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ui-layer[hidden],
+.ui-layer [hidden] {
+  display: none !important;
+}
+
+:where(.ui-layer) :where(h1, h2, p) {
+  margin: 0;
+}
+
+/* ---------- type ---------- */
+
+/** White-hot letters cooling toward the glow colour at the baseline, over a soft glow. */
+.ui-title {
+  font: 700 var(--title-size, 52px) / 1 var(--f-display);
+  letter-spacing: 0;
+  white-space: nowrap;
+  color: transparent;
+  background: linear-gradient(180deg, #fff 0%, var(--t-title) 55%, var(--title-base, #a5e9ff) 115%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* drop-shadow blurs by a standard deviation: half of canvas shadowBlur, so 0.21em matches the old 0.42em. */
+  filter: drop-shadow(0 0 calc(0.21em * var(--ui-glow)) var(--title-glow, var(--c-cyan)));
+}
+
+.ui-heading {
+  font: 700 var(--heading-size, 26px) / 1 var(--f-display);
+  letter-spacing: 0;
+  color: var(--t-title);
+}
+
+.ui-status {
+  min-height: 1em;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-align: center;
+  color: var(--t-muted);
+}
+
+.ui-status[data-tone='info'] {
+  color: var(--status-info, var(--t-secondary));
+}
+
+.ui-status[data-tone='error'] {
+  color: var(--t-danger);
+}
+
+.ui-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ui-ellipsis {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- shapes: keys, cards and panels share one cut-corner outline ---------- */
+
+.ui-btn,
+.ui-card,
+.ui-frame {
+  --cut: 10px;
+  --pad-y: 0px;
+  --edge: rgb(111 180 224 / 0.55);
+  --fill: rgb(10 28 54 / 0.62);
+  --sheen: 0.025;
+}
+
+.ui-btn::before,
+.ui-btn::after,
+.ui-card::before,
+.ui-card::after,
+.ui-frame::before,
+.ui-frame::after {
+  --outer: var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut);
+  content: '';
+  position: absolute;
+  inset: var(--pad-y) 0;
+  clip-path: polygon(var(--outer));
+}
+
+/* The outline is a 1px ring, so translucent bodies never pick up the edge colour. */
+.ui-btn::before,
+.ui-card::before,
+.ui-frame::before {
+  z-index: -1;
+  background: var(--edge);
+  clip-path: polygon(
+    evenodd,
+    var(--outer),
+    var(--cut) 0,
+    calc(var(--cut) + 0.4px) 1px,
+    1px calc(var(--cut) + 0.4px),
+    1px calc(100% - 1px),
+    calc(100% - var(--cut) - 0.4px) calc(100% - 1px),
+    calc(100% - 1px) calc(100% - var(--cut) - 0.4px),
+    calc(100% - 1px) 1px,
+    calc(var(--cut) + 0.4px) 1px
+  );
+}
+
+.ui-btn::after,
+.ui-card::after {
+  z-index: -2;
+  background:
+    linear-gradient(rgb(255 255 255 / var(--sheen)) 0 26%, transparent 26%),
+    linear-gradient(rgb(255 255 255 / var(--sheen)) 0 50%, transparent 50%),
+    var(--fill);
+}
+
+/* ---------- buttons ---------- */
+
+.ui-btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: #d9eeff;
+  font: 700 var(--fs, 16px) / 1 var(--f-label);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  filter: var(--glow, none);
+}
+
+.ui-btn--primary,
+.ui-btn[aria-pressed='true'] {
+  --edge: rgb(191 246 255 / 0.9);
+  --fill: rgb(91 216 255 / 0.94);
+  --sheen: 0.1;
+  --glow: drop-shadow(0 0 3px rgb(191 246 255 / calc(0.45 * var(--ui-glow))));
+  color: var(--c-ink);
+}
+
+.ui-btn--danger {
+  --edge: rgb(255 117 111 / 0.55);
+  --fill: rgb(44 15 25 / 0.7);
+  color: #ffe1dc;
+}
+
+.ui-btn:disabled {
+  --edge: rgb(58 76 94 / 0.4);
+  --fill: rgb(10 16 26 / 0.5);
+  --sheen: 0;
+  --glow: none;
+  color: #7f8c9b;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .ui-btn:enabled:hover {
+    --edge: var(--c-cyan-bright);
+    --fill: rgb(20 54 95 / 0.9);
+    --glow: drop-shadow(0 0 3px rgb(111 180 224 / calc(0.6 * var(--ui-glow))));
+  }
+
+  .ui-btn--primary:enabled:hover,
+  .ui-btn[aria-pressed='true']:enabled:hover {
+    --edge: #fff;
+    --fill: var(--c-cyan-bright);
+    --glow: drop-shadow(0 0 4px rgb(191 246 255 / calc(0.7 * var(--ui-glow))));
+  }
+
+  .ui-btn--danger:enabled:hover {
+    --edge: #ffc0bd;
+    --fill: rgb(90 31 42 / 0.92);
+    --glow: drop-shadow(0 0 3px rgb(255 117 111 / calc(0.5 * var(--ui-glow))));
+  }
+}
+
+.ui-btn:focus-visible,
+.ui-tab:focus-visible,
+.summary__prompt:focus-visible,
+.ui-slider input:focus-visible {
+  outline: 2px solid var(--c-cyan-bright);
+  outline-offset: 2px;
+}
+
+/** Slot actions: a small key with a full 44px touch target. */
+.ui-btn--slim {
+  --cut: 7px;
+  --fs: 13px;
+  --pad-y: 7px;
+  padding: 0 8px;
+}
+
+/* ---------- panels ---------- */
+
+.ui-panel {
+  position: relative;
+  isolation: isolate;
+  pointer-events: auto;
+}
+
+.ui-frame {
+  --cut: 18px;
+  --reach: calc(var(--cut) * 1.6);
+  --accent: rgb(var(--accent-rgb, var(--c-cyan-rgb)));
+  /* The heavy rail tab: the accent lifted toward white (#94e6ff on cyan). */
+  --tab: color-mix(in srgb, var(--accent), #fff 35%);
+  --edge: rgb(var(--accent-rgb, var(--c-cyan-rgb)) / 0.38);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  filter: drop-shadow(0 0 2px rgb(var(--accent-rgb, var(--c-cyan-rgb)) / calc(0.35 * var(--ui-glow))))
+    drop-shadow(0 0 8px rgb(var(--accent-rgb, var(--c-cyan-rgb)) / calc(0.12 * var(--ui-glow) * var(--ui-halo))));
+}
+
+/* Body with a top sheen, a lit rail along the top with a heavy tab, and a bracket on the cut corner. */
+.ui-frame::after {
+  z-index: -2;
+  background:
+    linear-gradient(var(--tab), var(--tab)) var(--cut) 0 / min(64px, 18%) 3px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 100% 1.5px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) right 0 bottom var(--cut) / 1.5px var(--reach) no-repeat,
+    linear-gradient(var(--accent), var(--accent)) right var(--cut) bottom 0 / var(--reach) 1.5px no-repeat,
+    linear-gradient(
+        to top left,
+        transparent calc(50% - 1.5px),
+        var(--accent) calc(50% - 1.5px) calc(50% + 1.5px),
+        transparent calc(50% + 1.5px)
+      )
+      right bottom / var(--cut) var(--cut) no-repeat,
+    linear-gradient(rgb(28 69 98 / 0.36), rgb(28 69 98 / 0) min(55%, 150px)),
+    rgb(3 10 24 / var(--frame-fill, 0.95));
+}
+
+/* ---------- segmented selectors and sliders ---------- */
+
+.ui-settings {
+  --tier-h: 36px;
+  --tier-gap: 10px;
+  --tier-label: 152px;
+  --tier-fs: 13px;
+  --tier-label-fs: 13px;
+  --section-gap: 14px;
+  --slider-gap: 8px;
+  --slider-col-gap: 28px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ui-caption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 22px;
+  padding-bottom: 6px;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--c-cyan);
+}
+
+.ui-caption::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgb(var(--c-cyan-rgb) / 0.2);
+}
+
+/* Gaps sit on whatever follows a tier row, so they hold whether or not the captions are shown. */
+.ui-tier ~ * {
+  margin-top: var(--tier-gap);
+}
+
+.ui-tier ~ .ui-caption--audio,
+.ui-tier ~ .ui-sliders {
+  margin-top: var(--section-gap);
+}
+
+.ui-caption + .ui-tier,
+.ui-caption + .ui-sliders {
+  margin-top: 0;
+}
+
+.ui-tier {
+  display: grid;
+  grid-template-columns: var(--tier-label) minmax(0, 1fr);
+  align-items: center;
+  width: min(100%, 560px);
+  height: var(--tier-h);
+  font-size: var(--tier-label-fs);
+  letter-spacing: 1px;
+}
+
+.ui-tier__options {
+  display: flex;
+  gap: 4px;
+}
+
+.ui-tier__options .ui-btn {
+  --cut: 8px;
+  --pad-y: max(0px, (44px - var(--tier-h)) / 2);
+  --fs: var(--tier-fs);
+  flex-basis: 0;
+  margin: calc(var(--pad-y) * -1) 0;
+  padding: 0;
+}
+
+.ui-sliders {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--slider-gap);
+  column-gap: var(--slider-col-gap);
+}
+
+.ui-slider-cell {
+  container: slider / inline-size;
+}
+
+.ui-slider {
+  display: grid;
+  grid-template-columns: clamp(96px, 34%, 128px) minmax(30px, 1fr) 46px;
+  grid-template-areas: 'label track value';
+  align-items: center;
+  height: 52px;
+  font-size: 14px;
+  pointer-events: auto;
+}
+
+.ui-slider__label {
+  grid-area: label;
+}
+
+.ui-slider__value {
+  grid-area: value;
+  justify-self: end;
+  font: 14px / 1 var(--f-mono);
+  color: var(--c-cyan);
+}
+
+.ui-slider input {
+  --v: 0.5;
+  --fill-to: calc(8px + var(--v) * (100% - 16px));
+  grid-area: track;
+  width: auto;
+  height: 100%;
+  margin: 0 12px 0 10px;
+  background: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  touch-action: none;
+}
+
+@container slider (max-width: 259px) {
+  .ui-slider {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 28px 24px;
+    grid-template-areas: 'label value' 'track track';
+    font-size: 12px;
+  }
+
+  .ui-slider__value {
+    font-size: 12px;
+  }
+
+  .ui-slider input {
+    margin: 0;
+  }
+}
+
+.ui-slider input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.35), rgb(255 255 255 / 0.35)) 3px 1px / max(0px, var(--fill-to) - 6px) 1.5px
+      no-repeat,
+    linear-gradient(var(--c-cyan), var(--c-cyan)) 0 0 / var(--fill-to) 100% no-repeat,
+    #0b2038;
+  box-shadow: inset 0 0 0 1px rgb(47 110 160 / 0.55);
+}
+
+.ui-slider input::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background:
+    linear-gradient(var(--c-cyan), var(--c-cyan)) 0 0 / var(--fill-to) 100% no-repeat,
+    #0b2038;
+  box-shadow: inset 0 0 0 1px rgb(47 110 160 / 0.55);
+}
+
+.ui-slider input::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border: 2px solid var(--c-cyan);
+  border-radius: 50%;
+  background: #eafaff;
+  box-shadow: 0 0 0 5px rgb(var(--c-cyan-rgb) / calc(0.22 * var(--ui-glow)));
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.ui-slider input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--c-cyan);
+  border-radius: 50%;
+  background: #eafaff;
+  box-shadow: 0 0 0 5px rgb(var(--c-cyan-rgb) / calc(0.22 * var(--ui-glow)));
+}
+
+/* ---------- tabs ---------- */
+
+.ui-tabs {
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid rgb(var(--c-cyan-rgb) / 0.2);
+}
+
+.ui-tab {
+  font: inherit;
+  letter-spacing: 1.26px;
+  width: min(180px, 50%);
+  height: var(--tab-h, 40px);
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--t-muted);
+  font-size: 14px;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-tab[aria-selected='true'] {
+  border-bottom-color: var(--c-cyan-bright);
+  background: rgb(var(--c-cyan-rgb) / calc(0.1 * var(--ui-glow)));
+  color: var(--t-primary);
+}
+
+@media (hover: hover) {
+  .ui-tab[aria-selected='false']:hover {
+    background: rgb(var(--c-cyan-rgb) / 0.05);
+    color: var(--t-secondary);
+  }
+}
+
+/* =================== main menu =================== */
+
+.menu,
+.pause {
+  position: absolute;
+  inset: 0;
+}
+
+.menu {
+  --title-size: 78px;
+  --kicker: 13px;
+  --tagline: 16px;
+  --launch-w: 320px;
+  --launch-h: 64px;
+  --slot-h: 76px;
+  --slot-gap: 14px;
+  --gap: 18px;
+  --top: 30px;
+  --bottom: 22px;
+  --kicker-gap: 10px;
+  --tagline-gap: 10px;
+  --hero-max: 230;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--top) 16px var(--bottom);
+  /* Shade behind the title and the footer; clear through the middle where the hero flies. */
+  background: linear-gradient(
+    rgb(1 4 10 / 0.78),
+    rgb(1 4 10 / 0.12) 30%,
+    rgb(1 4 10 / 0.04) 40%,
+    rgb(1 4 10 / 0.04) 55%,
+    rgb(1 4 10 / 0.1) 62%,
+    rgb(1 4 10 / 0.7)
+  );
+}
+
+.menu__lockup {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.menu__kicker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: var(--kicker-gap);
+  font-size: var(--kicker);
+  letter-spacing: 5px;
+  color: var(--c-cyan);
+}
+
+.menu__kicker::before,
+.menu__kicker::after {
+  content: '';
+  width: 44px;
+  height: 1px;
+  background: rgb(var(--c-cyan-rgb) / 0.45);
+}
+
+/* Orbitron sits high in its em box: a taller line drops the glyphs onto the optical centre. */
+.menu__title {
+  font-size: min(var(--title-size), (100cqw - 40px) / 10.7);
+  line-height: 1.27;
+  margin: -0.115em 0 -0.155em;
+}
+
+.menu__tagline {
+  margin-top: var(--tagline-gap);
+  font-size: var(--tagline);
+  letter-spacing: calc(var(--tagline) * 0.22);
+}
+
+.menu__deck {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.menu__hero {
+  flex: 1 1 0;
+  align-self: stretch;
+  min-height: 0;
+}
+
+.menu__run {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap);
+  width: 100%;
+  min-height: 0;
+}
+
+.menu__launch {
+  position: relative;
+  flex: none;
+  width: min(100%, var(--launch-w));
+  height: var(--launch-h);
+}
+
+/* A breathing halo behind the one lit control. */
+.menu__launch::before {
+  content: '';
+  position: absolute;
+  inset: -100% -25%;
+  background: radial-gradient(closest-side, rgb(var(--c-cyan-rgb) / 0.55), rgb(var(--c-cyan-rgb) / 0.12) 55%, transparent);
+  opacity: calc(0.55 * var(--ui-glow));
+  animation: ui-breathe 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes ui-breathe {
+  to {
+    opacity: calc(0.22 * var(--ui-glow));
+  }
+}
+
+.menu__launch .ui-btn {
+  --cut: 10px;
+  --fs: calc(var(--launch-h) * 0.36);
+  width: 100%;
+  height: 100%;
+  letter-spacing: 1.5px;
+}
+
+.menu__chevron {
+  width: calc(var(--launch-h) * 0.255);
+  height: calc(var(--launch-h) * 0.34);
+  background: var(--c-ink);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.menu__slots {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: var(--slot-gap);
+  width: min(100%, 420px);
+  min-height: 0;
+}
+
+.menu-slot {
+  position: relative;
+  display: flex;
+  flex: 0 1 var(--slot-h);
+  min-height: 44px;
+  container: slot / size;
+}
+
+.menu-slot__load.ui-btn {
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 16px;
+  text-align: left;
+  text-transform: none;
+}
+
+.menu-slot[data-occupied] .menu-slot__load {
+  padding-right: 70px;
+}
+
+.menu-slot__title {
+  font-size: 14px;
+  letter-spacing: 0.75px;
+  color: var(--t-primary);
+}
+
+.menu-slot__detail {
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--t-gold);
+}
+
+.menu-slot__time {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--t-muted);
+}
+
+.menu-slot:not([data-occupied]) .menu-slot__title {
+  color: var(--t-muted);
+  opacity: 0.8;
+}
+
+.menu-slot:not([data-occupied]) .menu-slot__detail {
+  color: var(--t-muted);
+  opacity: 0.6;
+}
+
+.menu-slot__del.ui-btn {
+  --cut: 7px;
+  --fs: 12px;
+  --pad-y: 9px;
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 44px;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+@container slot (max-height: 63px) {
+  .menu-slot__load.ui-btn {
+    gap: 2px;
+  }
+
+  .menu-slot__title {
+    font-size: 13px;
+  }
+
+  .menu-slot__detail {
+    font-size: 12px;
+  }
+
+  .menu-slot__time {
+    display: none;
+  }
+}
+
+.menu__settings.ui-btn {
+  --fs: 15px;
+  flex: none;
+  width: min(100%, 168px);
+  margin-top: var(--gap);
+}
+
+.menu__status {
+  flex: none;
+  margin-top: 8px;
+  height: 14px;
+}
+
+/* Settings sheet: a modal over the home view. */
+.ui-modal {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 4px 8px;
+  background: rgb(1 4 10 / 0.78);
+  pointer-events: auto;
+}
+
+.menu-sheet {
+  --pad: 28px;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 420px);
+  max-height: 100%;
+  padding: var(--pad);
+}
+
+.menu-sheet .ui-heading {
+  flex: none;
+  margin-bottom: 22px;
+}
+
+.menu-sheet .ui-settings {
+  overflow-y: auto;
+}
+
+.menu-sheet__done.ui-btn {
+  --fs: 15px;
+  flex: none;
+  align-self: center;
+  width: min(100%, 220px);
+  margin-top: var(--done-gap, 14px);
+}
+
+/* Tablet and short desktop. */
+@container layer (max-width: 799px) or (max-height: 719px) {
+  .menu {
+    --title-size: 58px;
+    --kicker: 12px;
+    --tagline: 15px;
+    --launch-w: 300px;
+    --launch-h: 58px;
+    --slot-h: 68px;
+    --slot-gap: 10px;
+    --gap: 16px;
+    --top: 22px;
+    --bottom: 18px;
+    --kicker-gap: 8px;
+    --tagline-gap: 8px;
+    --hero-max: 280;
+  }
+
+  .menu-sheet {
+    --heading-size: 22px;
+  }
+
+  .menu-sheet .ui-settings {
+    --tier-h: 34px;
+    --tier-label: 128px;
+    --tier-fs: 11px;
+    --tier-label-fs: 12px;
+    --slider-gap: 6px;
+  }
+}
+
+@container layer (min-width: 576px) or ((max-height: 539px) and (min-width: 460px)) {
+  .menu-sheet {
+    width: min(100%, 720px);
+  }
+
+  .menu-sheet .ui-sliders {
+    grid-template-columns: repeat(2, minmax(0, 330px));
+    justify-content: center;
+  }
+}
+
+@container layer (max-width: 459px) {
+  .menu {
+    --title-size: 42px;
+    --kicker: 11px;
+    --tagline: 14px;
+    --tagline-gap: 16px;
+    --launch-w: 420px;
+    --launch-h: 56px;
+    --slot-h: 56px;
+    --slot-gap: 8px;
+    --hero-max: 240;
+  }
+
+  .menu__title {
+    margin-top: 0;
+  }
+
+  .menu-sheet {
+    --pad: 18px;
+  }
+
+  .menu-sheet .ui-settings {
+    --tier-h: 32px;
+    --slider-gap: 6px;
+    --slider-col-gap: 12px;
+  }
+}
+
+@container layer (max-width: 459px) and (max-height: 619px) {
+  .menu {
+    --title-size: 34px;
+    --kicker: 0px;
+    --tagline: 13px;
+    --launch-h: 50px;
+    --slot-h: 48px;
+    --slot-gap: 6px;
+    --gap: 12px;
+    --top: 14px;
+    --bottom: 12px;
+    --tagline-gap: 6px;
+    --hero-max: 130;
+  }
+}
+
+/* The three save slots sit in one row on wide screens, and on mid-width ones too short to stack them. */
+@container layer (min-width: 900px) or ((min-width: 720px) and (max-height: 799px)) {
+  .menu__run {
+    width: min(100%, 880px);
+  }
+
+  .menu__slots {
+    flex-direction: row;
+    flex: 0 1 var(--slot-h);
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .menu-slot {
+    flex: 1 1 0;
+  }
+}
+
+/* Short landscape phones: hero over SETTINGS on the left, run selection on the right. */
+@container layer (max-height: 539px) and (min-width: 460px) {
+  .menu {
+    --title-size: 30px;
+    --tagline: 12px;
+    --launch-w: 380px;
+    --launch-h: 48px;
+    --slot-h: 60px;
+    --slot-gap: 6px;
+    --gap: 8px;
+    --top: 10px;
+    --bottom: 8px;
+    --tagline-gap: 6px;
+    --hero-max: 150;
+  }
+
+  .menu__deck {
+    display: grid;
+    align-items: stretch;
+    grid-template-columns: repeat(2, min(var(--launch-w), (100cqw - 48px) / 2));
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas: 'hero run' 'settings run';
+    justify-content: center;
+    column-gap: 16px;
+    row-gap: 4px;
+    margin-top: var(--gap);
+  }
+
+  .menu__hero {
+    grid-area: hero;
+  }
+
+  .menu__run {
+    grid-area: run;
+    gap: var(--slot-gap);
+  }
+
+  .menu__launch {
+    width: 100%;
+  }
+
+  .menu__slots {
+    flex: 0 1 auto;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .menu-slot {
+    flex: 0 1 var(--slot-h);
+  }
+
+  .menu__settings.ui-btn {
+    grid-area: settings;
+    justify-self: center;
+    margin-top: 0;
+  }
+
+  .menu__status {
+    margin-top: 4px;
+  }
+
+  .menu-sheet {
+    --pad: 14px;
+    --heading-size: 18px;
+    width: min(100%, 720px);
+  }
+
+  .menu-sheet .ui-heading {
+    margin-bottom: 10px;
+  }
+
+  .menu-sheet .ui-caption {
+    height: 0;
+    padding: 0;
+    visibility: hidden;
+  }
+}
+
+/* Short phones in either orientation: no kicker, and the tightest settings sheet. */
+@container layer ((max-width: 459px) and (max-height: 619px)) or ((max-height: 539px) and (min-width: 460px)) {
+  .menu__kicker {
+    display: none;
+  }
+
+  .menu-sheet {
+    --done-gap: 18px;
+  }
+
+  .menu-sheet .ui-settings {
+    --tier-h: 30px;
+    --tier-gap: 14px;
+    --section-gap: 18px;
+    --slider-gap: 2px;
+  }
+}
+
+/* =================== pause =================== */
+
+.pause {
+  --pad: 28px;
+  --title-size: 52px;
+  --tab-h: 40px;
+  --row-h: 60px;
+  --row-gap: 8px;
+  display: grid;
+  place-items: safe center;
+  padding: 4px 12px;
+  background: rgb(1 4 9 / 0.72);
+  pointer-events: auto;
+}
+
+.pause__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(680px, max(256px, 100%));
+  padding: 18px var(--pad) 14px;
+  outline: none;
+}
+
+.pause__header {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgb(var(--c-cyan-rgb) / 0.2);
+}
+
+.pause__title {
+  display: grid;
+  place-items: center;
+  height: calc(var(--title-size) + 30px);
+}
+
+.pause__header .ui-tabs {
+  border-bottom: 0;
+}
+
+/* Both subviews share one cell so switching tabs never resizes the panel. */
+.pause__body {
+  display: grid;
+  margin-top: 16px;
+  container: slots / inline-size;
+}
+
+.pause__body > * {
+  grid-area: 1 / 1;
+}
+
+.pause__body > [data-inactive] {
+  visibility: hidden;
+}
+
+.pause__slots {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--row-gap);
+}
+
+.pause-slot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: 'title time actions' 'sub sub actions';
+  align-content: center;
+  column-gap: 10px;
+  row-gap: 4px;
+  position: relative;
+  isolation: isolate;
+  height: var(--row-h);
+  padding: 0 10px 0 14px;
+  --edge: rgb(111 180 224 / 0.2);
+  --fill: rgb(10 28 54 / 0.34);
+  --sheen: 0;
+}
+
+.pause-slot[data-occupied] {
+  --edge: rgb(var(--c-cyan-rgb) / 0.6);
+  --fill: rgb(13 42 74 / 0.78);
+}
+
+.pause-slot[data-occupied]::after {
+  background:
+    linear-gradient(var(--c-cyan-bright), var(--c-cyan-bright)) 0 var(--cut) / 2px 100% no-repeat,
+    var(--fill);
+}
+
+.pause-slot__title {
+  grid-area: title;
+  font-size: 15px;
+  color: var(--t-secondary);
+}
+
+.pause-slot[data-occupied] .pause-slot__title {
+  color: var(--t-primary);
+}
+
+.pause-slot__sub {
+  grid-area: sub;
+  font-size: 13px;
+  color: var(--t-muted);
+}
+
+.pause-slot[data-occupied] .pause-slot__sub {
+  color: var(--c-cyan);
+}
+
+.pause-slot__time {
+  grid-area: time;
+  align-self: center;
+  font: 12px / 1 var(--f-mono);
+  color: var(--t-muted);
+}
+
+.pause-slot__actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -7px 0;
+}
+
+.pause-slot__actions .ui-btn {
+  width: 68px;
+}
+
+@container slots (max-width: 531px) {
+  .pause-slot__time {
+    display: none;
+  }
+}
+
+.pause__settings {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.pause__settings .ui-settings {
+  --tier-h: 28px;
+  --tier-gap: 12px;
+  --section-gap: 16px;
+  --slider-col-gap: 16px;
+  align-items: center;
+}
+
+.pause__settings .ui-tier {
+  width: min(100%, 330px);
+}
+
+.pause__settings .ui-sliders {
+  align-self: stretch;
+  grid-template-columns: minmax(0, 330px);
+  justify-content: center;
+}
+
+@container layer (min-width: 390px) {
+  .pause__settings .ui-sliders {
+    grid-template-columns: repeat(2, minmax(0, 330px));
+  }
+}
+
+.pause__status {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  font-size: 14px;
+  letter-spacing: 0.8px;
+  --status-info: var(--c-cyan);
+}
+
+.pause__actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.pause__actions .ui-btn {
+  --fs: 18px;
+  width: 150px;
+  height: 48px;
+}
+
+.pause__hint {
+  height: 26px;
+  padding-top: 8px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-align: center;
+  white-space: pre;
+  color: var(--t-muted);
+}
+
+@container layer (max-width: 719px) {
+  .pause__hint {
+    display: none;
+  }
+
+  .pause__panel {
+    padding-bottom: 22px;
+  }
+}
+
+@container layer (max-width: 443px) {
+  .pause {
+    --pad: 14px;
+    --title-size: 40px;
+  }
+
+  .pause__settings .ui-settings {
+    --tier-label: 128px;
+    --tier-fs: 11px;
+    --tier-label-fs: 12px;
+  }
+}
+
+@container layer (max-width: 355px) {
+  .pause__actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Narrow panels stack each checkpoint card: text over the buttons. */
+@container layer (max-width: 519px) and (min-height: 640px) {
+  .pause {
+    --row-h: 88px;
+  }
+
+  .pause-slot {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: 'title title' 'sub time' 'actions actions';
+    align-content: stretch;
+    padding: 9px 10px 10px 14px;
+  }
+
+  .pause-slot__actions {
+    align-self: end;
+    justify-self: end;
+  }
+
+  @container slots (min-width: 306px) {
+    .pause-slot__time {
+      display: block;
+    }
+  }
+}
+
+/* Short viewports: tighter bands, and the title beside the tabs when both fit on one line. */
+@container layer (max-height: 520px) or ((max-width: 519px) and (max-height: 639px)) {
+  .pause {
+    --pad: 14px;
+    --title-size: 22px;
+    --tab-h: 32px;
+    --row-gap: 4px;
+    --row-h: clamp(32px, (min(174px, 100cqh - 148px) - 8px) / 3, 56px);
+  }
+
+  .pause__panel {
+    padding: 6px var(--pad) 8px;
+  }
+
+  .pause__title {
+    height: 30px;
+  }
+
+  .pause__body {
+    margin-top: 8px;
+  }
+
+  .pause__status {
+    height: 24px;
+  }
+
+  .pause__actions {
+    gap: 6px 16px;
+  }
+
+  .pause__hint {
+    display: none;
+  }
+
+  .pause__settings .ui-settings {
+    --tier-h: 24px;
+    --tier-gap: 8px;
+    --section-gap: 10px;
+    --slider-gap: 4px;
+    --slider-col-gap: 12px;
+    --tier-label: 128px;
+    --tier-fs: 11px;
+    --tier-label-fs: 12px;
+  }
+
+  @container layer (min-width: 452px) {
+    .pause {
+      --title-size: 26px;
+      --tab-h: 38px;
+    }
+
+    .pause__header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pause__title {
+      height: auto;
+    }
+
+    .pause__header .ui-tab {
+      width: 132px;
+    }
+  }
+}
+
+@container layer (max-height: 281px) {
+  .pause-slot__sub {
+    display: none;
+  }
+}
+
+/* =================== artwork retry =================== */
+
+.artwork {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: min(100%, 420px);
+  padding: 28px;
+}
+
+.artwork__message.ui-status {
+  font-size: 18px;
+}
+
+.artwork .ui-btn {
+  width: min(100%, 260px);
+  height: 52px;
+}
+
+/* =================== planet intermission: the refit bay =================== */
+
+/*
+ * Landscape phones by default; desktop and portrait override the variables. The canvas planet fills
+ * .refit__planet, a --d square centred on (--px, --py); the content column sits beside or under it.
+ * --m-* are the gaps above each header line.
+ */
+.refit {
+  --art: max(152px, 34cqw);
+  --d: min(244px, var(--art) * 0.8, 63cqh);
+  --px: calc(var(--art) * 0.52);
+  --py: 43cqh;
+  --eyebrow: 11px;
+  --name: 25px;
+  --body: 12px;
+  --note: 13px;
+  --credits: 12px;
+  --track: 1.2px;
+  --m-top: 11px;
+  --m-name: 5px;
+  --m-dest: 15px;
+  --m-note: 16px;
+  --m-status: 7px;
+  --m-rule: 6px;
+  --m-caption: 9px;
+  --m-cards: 13px;
+  --m-next: 18px;
+  --show-note: none;
+  --cta-w: 420px;
+  --cta-h: 36px;
+  --cta-fs: 14px;
+  --cta-bottom: 4px;
+  --card-h: 48px;
+  --card-gap: 6px 8px;
+  --card-max: 300px;
+  --card-cut: 9px;
+  --icon: 28px;
+  --inset: 44px;
+  --chip-w: 62px;
+  --chip-inset: 9px;
+  --card-title: 11px;
+  --card-detail: 12px;
+  --card-cost: 11px;
+  --card-rows: 9px;
+  --pip: 8px;
+  position: absolute;
+  inset: 0;
+}
+
+.refit__planet {
+  position: absolute;
+  left: calc(var(--px) - var(--d) / 2);
+  top: calc(var(--py) - var(--d) / 2);
+  width: var(--d);
+  height: var(--d);
+}
+
+/* Classification tag over the planet's shoulder and the orbit caption under it. */
+.refit__class,
+.refit__orbit {
+  position: absolute;
+  top: -16%;
+  left: -2%;
+  font-size: var(--eyebrow);
+  letter-spacing: calc(var(--track) + 0.2px);
+  white-space: nowrap;
+  color: color-mix(in srgb, rgb(var(--accent-rgb)), #fff 45%);
+  transform: translateY(-50%);
+}
+
+.refit__class::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: calc(50% - 6px);
+  width: 3px;
+  height: 12px;
+  background: rgb(var(--accent-rgb) / 0.9);
+}
+
+.refit__orbit {
+  top: 120%;
+  left: 50%;
+  color: #86a8be;
+  transform: translate(-50%, -50%);
+}
+
+.refit__content {
+  position: absolute;
+  left: calc(var(--art) + 8px);
+  right: 18px;
+  top: 0;
+  padding-top: var(--m-top);
+}
+
+.refit__sheet,
+.refit__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.refit__sheet > .ui-frame {
+  --cut: 20px;
+  --frame-fill: 0.62;
+  display: var(--frame, none);
+}
+
+.refit__eyebrow,
+.refit__sector,
+.refit__next {
+  font-size: var(--eyebrow);
+  letter-spacing: var(--track);
+  color: var(--accent-text);
+}
+
+.refit__eyebrow {
+  letter-spacing: calc(var(--track) + 0.2px);
+}
+
+.refit__name {
+  --title-size: var(--name);
+  margin: var(--m-name) 0 0 calc(var(--name) * -0.04);
+}
+
+.refit__destination {
+  margin-top: var(--m-dest);
+  font-size: var(--body);
+  line-height: 1.2;
+  letter-spacing: var(--track);
+  color: #a9c5d8;
+}
+
+.refit__note {
+  display: var(--show-note);
+  margin-top: var(--m-note);
+  font-size: var(--note);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: #dbe8f1;
+}
+
+.refit__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: var(--m-status);
+  padding-top: var(--m-rule);
+  border-top: 1px solid rgb(var(--accent-rgb) / 0.3);
+}
+
+.refit__sector {
+  color: #73f5be;
+}
+
+.refit__credits.ui-card {
+  --cut: 6px;
+  --edge: rgb(255 210 122 / 0.55);
+  --fill: rgb(255 210 122 / 0.1);
+  --sheen: 0;
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  padding: 5px 10px;
+  font: 700 var(--credits) / 1 var(--f-display);
+  letter-spacing: 1px;
+  color: var(--t-gold);
+}
+
+.refit__credits[data-pulse] {
+  animation: ui-pulse 280ms ease-out;
+}
+
+.refit__caption.ui-caption {
+  height: auto;
+  margin-top: var(--m-caption);
+  padding: 0;
+  font-size: var(--eyebrow);
+  letter-spacing: var(--track);
+  color: #8fb0c6;
+}
+
+.refit__caption::after {
+  background: rgb(var(--accent-rgb) / 0.18);
+}
+
+.refit__cards {
+  container: cards / inline-size;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, var(--card-max)));
+  justify-content: center;
+  gap: var(--card-gap);
+  margin-top: var(--m-cards);
+}
+
+.refit__next {
+  margin-top: var(--m-next);
+  text-align: center;
+}
+
+.refit__continue.ui-btn {
+  --pad-y: max(0px, (44px - var(--cta-h)) / 2);
+  --fs: var(--cta-fs);
+  position: absolute;
+  left: 50%;
+  bottom: var(--cta-bottom);
+  width: min(var(--cta-w), 100cqw - 24px);
+  height: max(44px, var(--cta-h));
+  transform: translateX(-50%);
+}
+
+.ui-layer[data-leaving] {
+  opacity: 0;
+  transition: opacity 250ms;
+}
+
+/* ---------- upgrade cards: lit while they can be bought, dimmed in their blocking state otherwise ---------- */
+
+.card.ui-btn {
+  --accent-rgb: var(--key-rgb);
+  --cut: var(--card-cut);
+  --edge: rgb(var(--accent-rgb) / 0.8);
+  --fill: rgb(10 28 54 / 0.92);
+  --glow: drop-shadow(0 0 2.5px rgb(var(--accent-rgb) / calc(0.4 * var(--ui-glow))));
+  --status-rgb: 255 210 122;
+  --detail: #b4cbdb;
+  --tint: 0.1;
+  --rail: 0.95;
+  --dim: 1;
+  display: grid;
+  grid-template-columns: var(--icon) minmax(0, 1fr) var(--chip-w);
+  grid-template-areas: 'icon title status' 'icon detail status';
+  align-content: center;
+  align-items: center;
+  column-gap: calc(var(--inset) - 11px - var(--icon));
+  row-gap: var(--card-rows);
+  height: var(--card-h);
+  padding: 0 var(--chip-inset) 0 11px;
+  color: #f4fbff;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.card.ui-btn::after {
+  background:
+    linear-gradient(rgb(var(--accent-rgb) / var(--rail)), rgb(var(--accent-rgb) / var(--rail))) 0 var(--cut) / 3px
+      100% no-repeat,
+    linear-gradient(rgb(var(--accent-rgb) / var(--tint)) 0 46%, transparent 46%),
+    var(--fill);
+}
+
+.card:disabled {
+  --edge: rgb(var(--accent-rgb) / 0.36);
+  --fill: rgb(3 10 24 / 0.86);
+  --status-rgb: 255 130 146;
+  --detail: #93a8ba;
+  --tint: 0.035;
+  --rail: 0.45;
+  --dim: 0.6;
+  color: #c9d6e2;
+  cursor: not-allowed;
+}
+
+.card[data-state='progression'] {
+  --status-rgb: 255 195 110;
+}
+
+.card[data-state='maxed'] {
+  --accent-rgb: 88 213 138;
+  --status-rgb: 101 246 161;
+  --fill: rgb(7 21 15 / 0.9);
+  --detail: #8fc7a6;
+  color: #d9f7e4;
+}
+
+.card[data-state='locked'] {
+  --accent-rgb: 92 111 136;
+  --status-rgb: 125 140 163;
+  --fill: rgb(8 12 20 / 0.8);
+  --detail: #8496ad;
+  color: #93a1b3;
+}
+
+@media (hover: hover) {
+  .card.ui-btn:enabled:hover {
+    --edge: var(--c-cyan-bright);
+    --fill: rgb(30 48 72 / 0.94);
+  }
+}
+
+.card.ui-btn:focus-visible {
+  outline: none;
+  --edge: var(--c-cyan-bright);
+  --glow: drop-shadow(0 0 1.5px var(--c-cyan-bright)) drop-shadow(0 0 5px rgb(var(--c-cyan-rgb) / 0.7));
+}
+
+.card[data-flash] {
+  animation: ui-flash 360ms ease-out;
+}
+
+.card__icon {
+  grid-area: icon;
+  width: var(--icon);
+  height: var(--icon);
+  color: rgb(var(--accent-rgb));
+  opacity: var(--dim);
+}
+
+.card__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.card__icon .card__tile {
+  fill: currentColor;
+  fill-opacity: 0.14;
+  stroke-opacity: 0.75;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.card__icon rect {
+  fill: currentColor;
+  stroke: none;
+}
+
+.card__title {
+  grid-area: title;
+  font: 700 var(--card-title) / 1 var(--f-display);
+}
+
+.card__detail {
+  grid-area: detail;
+  font-size: calc(var(--card-detail) * var(--fit, 1));
+  letter-spacing: 0.09em;
+  color: var(--detail);
+}
+
+.card__status {
+  grid-area: status;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.card__cost.ui-card {
+  --cut: 5px;
+  --edge: rgb(var(--status-rgb) / 0.7);
+  --fill: rgb(var(--status-rgb) / 0.16);
+  --sheen: 0;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: calc(var(--card-cost) + 10px);
+  font: 700 var(--card-cost) / 1 var(--f-mono);
+  color: rgb(var(--status-rgb));
+}
+
+.card:disabled .card__cost {
+  --edge: rgb(var(--status-rgb) / 0.32);
+  --fill: rgb(var(--status-rgb) / 0.07);
+}
+
+.card__pips {
+  display: flex;
+  gap: 3px;
+}
+
+.card__pips i {
+  width: var(--pip);
+  height: 5px;
+  background: rgb(143 166 186 / 0.3);
+}
+
+.card__pips i[data-lit] {
+  background: rgb(var(--accent-rgb));
+}
+
+@keyframes ui-flash {
+  from {
+    filter: brightness(2.2);
+  }
+}
+
+@keyframes ui-pulse {
+  from {
+    transform: scale(1.14);
+  }
+}
+
+/* Desktop: wide planet column, the content in one lit glass panel; gaps shrink with short windows. */
+@container layer (min-width: 900px) and (min-height: 560px) {
+  .refit {
+    --s: min(1px, 100cqh / 720);
+    --art: 44cqw;
+    --d: min(430px, var(--art) * 0.78, 58cqh);
+    --px: calc(var(--art) * 0.55);
+    --eyebrow: 14px;
+    --name: 44px;
+    --body: 15px;
+    --note: 17px;
+    --credits: 17px;
+    --track: 2px;
+    --m-top: calc(12 * var(--s));
+    --m-name: calc(8 * var(--s));
+    --m-dest: calc(28 * var(--s));
+    --m-status: calc(40 * var(--s));
+    --m-rule: calc(3 * var(--s));
+    --m-caption: calc(28 * var(--s));
+    --m-cards: calc(22 * var(--s));
+    --m-next: calc(45 * var(--s));
+    --show-note: block;
+    --frame: block;
+    --cta-w: 460px;
+    --cta-h: 46px;
+    --cta-fs: 17px;
+    --cta-bottom: 11px;
+    --card-h: 72px;
+    --card-gap: calc(12 * var(--s)) 14px;
+    --card-max: 340px;
+    --card-cut: 12px;
+    --icon: 44px;
+    --inset: 66px;
+    --chip-w: 78px;
+    --chip-inset: 14px;
+    --card-title: 15px;
+    --card-detail: 14px;
+    --card-cost: 14px;
+    --card-rows: 11px;
+    --pip: 12px;
+  }
+
+  .refit__content {
+    left: calc(var(--art) - 2px);
+    right: calc(max(36px, 3.5cqw) - 24px);
+    top: 26px;
+    padding: var(--m-top) 24px calc(21 * var(--s));
+  }
+
+  /* Small desktop windows squeeze the two-column cards: trade icon and chip size for text room. */
+  @container cards (max-width: 593px) {
+    .card.ui-btn {
+      --icon: 34px;
+      --inset: 54px;
+      --chip-w: 66px;
+      --chip-inset: 10px;
+      --card-title: 13px;
+      --card-detail: 13px;
+      --card-cost: 13px;
+      --pip: 10px;
+    }
+  }
+}
+
+/* Portrait phones: planet on top, the content centred under it in a glass panel. */
+@container layer (max-width: 699px) and (max-aspect-ratio: 25 / 28) {
+  .refit {
+    --d: min(56cqw, 140px);
+    --py: 100px;
+    --name: 28px;
+    --m-name: 0px;
+    --m-dest: 12px;
+    --m-status: 20px;
+    --m-caption: 7px;
+    --m-cards: 11px;
+    --m-next: 0px;
+    --frame: block;
+    --cols: 1;
+    --cta-w: 100cqw;
+    --cta-bottom: 12px;
+    --card-max: 420px;
+    --card-gap: 6px;
+    --chip-w: 64px;
+    --chip-inset: 10px;
+    --card-cut: 10px;
+    --inset: 46px;
+    --pip: 9px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 8px;
+    text-align: center;
+  }
+
+  .refit__planet {
+    position: relative;
+    left: auto;
+    top: auto;
+    flex: none;
+    margin-top: calc(var(--py) - var(--d) / 2);
+  }
+
+  .refit__class,
+  .refit__orbit {
+    display: none;
+  }
+
+  .refit__content {
+    position: static;
+    width: min(100%, 440px);
+    padding: 0;
+  }
+
+  .refit__eyebrow {
+    position: absolute;
+    top: 11px;
+    left: 0;
+    right: 0;
+  }
+
+  .refit__sheet {
+    position: relative;
+    margin-top: -4px;
+    padding: 10px 6px 8px;
+  }
+
+  .refit__sheet > .ui-frame {
+    --cut: 14px;
+    --frame-fill: 0.78;
+  }
+
+  @container layer (min-height: 760px) {
+    .refit {
+      --d: min(56cqw, 204px);
+      --py: 146px;
+      --m-dest: 20px;
+      --m-note: 7px;
+      --m-status: 20px;
+      --m-caption: 10px;
+      --m-cards: 9px;
+      --show-note: block;
+      --card-h: 60px;
+      --card-gap: 7px;
+      --icon: 38px;
+      --inset: 58px;
+      --card-title: 13px;
+      --card-detail: 13px;
+      --card-cost: 13px;
+      --card-rows: 10px;
+    }
+  }
+}
+
+/* =================== run summary: game over and victory =================== */
+
+.summary {
+  --w: 760px;
+  --gap: 12px;
+  --title-size: 54px;
+  --title-em: 7;
+  --cell-h: 72px;
+  --cell-w: calc((var(--w) - 12px) / 2);
+  --btn-h: 48px;
+  --tone: var(--t-danger);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  text-align: center;
+}
+
+.summary--defeat {
+  --title-glow: #ff5a55;
+  --title-base: #ffb3ad;
+}
+
+.summary--victory {
+  --w: 820px;
+  --title-em: 11;
+  --title-size: 50px;
+  --cell-h: 76px;
+  --cell-w: min(460px, 100%);
+  --pip-h: 10px;
+  --prompt: 18px;
+  --tone: var(--c-cyan);
+  --title-glow: #ffb84a;
+  --title-base: #ffe2a6;
+}
+
+.summary > * {
+  flex: none;
+  max-width: min(100%, var(--w));
+}
+
+.summary__eyebrow,
+.summary__line,
+.summary__hint {
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  line-height: 16px;
+  color: var(--tone);
+}
+
+.summary__eyebrow {
+  margin-bottom: calc(var(--gap) * 0.5);
+}
+
+/* Shrinks to fit narrow screens, but keeps its nominal row so the block below never jumps up. */
+.summary__title {
+  display: grid;
+  place-content: center;
+  height: calc(var(--title-size) * 1.1);
+  margin-bottom: calc(var(--gap) * 0.4);
+  font-size: min(var(--title-size), (min(100cqw - 32px, var(--w)) - 16px) / var(--title-em));
+  line-height: 1.1;
+}
+
+.summary__line {
+  min-height: 18px;
+  margin-bottom: var(--gap);
+  font-size: 16px;
+  line-height: 18px;
+  letter-spacing: 1.4px;
+}
+
+.summary__goal {
+  font-size: 15px;
+  color: var(--t-secondary);
+}
+
+.summary__cells,
+.summary__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  width: var(--w);
+  margin-bottom: var(--gap);
+}
+
+.stat {
+  --pad: min(18px, var(--cell-h) * 0.2);
+  --value: calc(var(--cell-h) * 0.54);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  align-items: end;
+  column-gap: 12px;
+  width: var(--cell-w);
+  height: var(--cell-h);
+  padding: calc(var(--pad) * 0.75) var(--pad) calc(var(--pad) * 0.3);
+  text-align: left;
+}
+
+.stat .ui-frame {
+  --cut: min(14px, var(--cell-h) * 0.2);
+  --frame-fill: 0.7;
+  --edge: rgb(var(--accent-rgb) / 0.34);
+  filter: none;
+}
+
+.stat__label {
+  grid-column: 1 / -1;
+  align-self: start;
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  color: var(--t-secondary);
+}
+
+.stat__value {
+  font-size: var(--value);
+  line-height: 0.82;
+  letter-spacing: 0.04em;
+  color: rgb(var(--accent-rgb));
+}
+
+.stat__note {
+  justify-self: end;
+  margin-bottom: calc(var(--value) * 0.2);
+  font-size: 16px;
+  letter-spacing: 1.4px;
+  color: var(--t-secondary);
+}
+
+.summary--victory .stat {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  text-align: center;
+}
+
+.summary__actions .ui-btn {
+  width: min(250px, var(--cell-w));
+  height: var(--btn-h);
+}
+
+.summary__hint {
+  font-size: 12px;
+  line-height: 14px;
+  white-space: pre;
+  color: var(--t-muted);
+}
+
+.summary__pips {
+  display: flex;
+  gap: 6px;
+  width: var(--cell-w);
+  height: var(--pip-h);
+  margin-bottom: 8px;
+}
+
+.summary__pips i {
+  flex: 1;
+  --from: 0.14;
+  clip-path: polygon(calc(var(--pip-h) * 0.6) 0, 100% 0, calc(100% - var(--pip-h) * 0.6) 100%, 0 100%);
+  animation: ui-fade-in 220ms calc(500ms + var(--i) * 110ms) both;
+}
+
+.summary__pip-label {
+  margin-bottom: calc(var(--gap) * 1.2);
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--t-secondary);
+}
+
+.summary--victory .summary__eyebrow {
+  margin-bottom: max(var(--gap) * 0.5, 12px);
+}
+
+.summary--victory .summary__line:not(.summary__pip-label) {
+  font-size: 18px;
+  line-height: 20px;
+  color: #58f0d8;
+}
+
+/** Text-only, blinking: the whole screen is the control, this names it for keyboards and screen readers. */
+.summary__prompt {
+  padding: 2px 8px;
+  border: 0;
+  background: none;
+  color: #dce8ff;
+  font: 700 var(--prompt) / 1 var(--f-label);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: ui-blink 0.9s ease-in-out infinite alternate;
+}
+
+.summary__eyebrow,
+.summary__line {
+  animation: ui-fade-in 380ms calc(120ms + var(--i, 0) * 90ms) both;
+}
+
+.summary__line {
+  --i: 1;
+}
+
+.summary__goal,
+.summary__pip-label {
+  --i: 2;
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: var(--from, 0);
+  }
+}
+
+@keyframes ui-blink {
+  to {
+    opacity: 0.35;
+  }
+}
+
+@container layer (min-width: 560px) and (min-height: 560px) {
+  .summary {
+    --gap: 22px;
+    --title-size: 88px;
+    --cell-h: 104px;
+    --btn-h: 54px;
+  }
+
+  .summary--victory {
+    --gap: 24px;
+    --title-size: 72px;
+    --cell-h: 116px;
+    --pip-h: 14px;
+    --prompt: 22px;
+  }
+}
+
+/* Portrait phones stack the cells and the buttons. */
+@container layer (max-width: 559px) and (min-height: 481px) {
+  .summary {
+    --w: 420px;
+    --title-size: 50px;
+    --cell-w: min(100%, var(--w));
+  }
+
+  .summary--victory {
+    --gap: 20px;
+    --cell-h: 96px;
+  }
+
+  .summary__cells,
+  .summary__actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .summary__actions .ui-btn {
+    width: 100%;
+  }
+}
+
+@container layer (max-height: 359px) {
+  .summary {
+    --gap: 8px;
+    --title-size: 44px;
+    --cell-h: 62px;
+  }
+
+  .summary--victory {
+    --title-size: 40px;
+  }
+
+  .summary--defeat .summary__eyebrow {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-layer *,
+  .ui-layer *::before {
+    animation: none !important;
+  }
+}

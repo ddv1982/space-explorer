@@ -34,6 +34,7 @@ function createHarness(level = 1): {
   setBossSpawned(spawned: boolean): void;
   lightingDeltas: number[];
   setPaused(paused: boolean): void;
+  waveCalls: string[];
 } {
   const levelConfig = getLevelConfig(level);
   const atmosphereCalls: Array<{ sectionId: string | null; progress: number }> = [];
@@ -41,6 +42,7 @@ function createHarness(level = 1): {
   let bossSpawned = false;
   let paused = false;
   const lightingDeltas: number[] = [];
+  const waveCalls: string[] = [];
 
   const vector = { x: 0, y: 0 } as GameplayDelegate['shotDirection'];
   const delegate: GameplayDelegate = {
@@ -71,8 +73,8 @@ function createHarness(level = 1): {
     getPicketTurrets: () => null,
     grazeSurge: { update: () => {} },
     waveManager: {
-      update: () => {},
-      updateBossAdds: () => {},
+      update: () => waveCalls.push('waves'),
+      updateBossAdds: () => waveCalls.push('boss-adds'),
     },
     levelManager: {
       get progress() {
@@ -111,8 +113,31 @@ function createHarness(level = 1): {
     setPaused: (nextPaused) => {
       paused = nextPaused;
     },
+    waveCalls,
   };
 }
+
+describe('encounter gating', () => {
+  test('waves run until the boss spawns, then only levels with boss add-waves keep trickling adds', () => {
+    const plain = createHarness(3);
+    plain.behavior.updateGameplayFrame(0, 16);
+    plain.setBossSpawned(true);
+    plain.behavior.updateGameplayFrame(16, 16);
+    expect(plain.waveCalls).toEqual(['waves']);
+
+    const withAdds = createHarness(5);
+    withAdds.setBossSpawned(true);
+    withAdds.behavior.updateGameplayFrame(0, 16);
+    expect(withAdds.waveCalls).toEqual(['boss-adds']);
+  });
+
+  test('paused frames never advance encounters', () => {
+    const harness = createHarness();
+    harness.setPaused(true);
+    harness.behavior.updatePausedFrame(16);
+    expect(harness.waveCalls).toEqual([]);
+  });
+});
 
 describe('gameplay frame presentation deduplication', () => {
   test('skips exact duplicate presentation work but preserves continuous progress updates', () => {

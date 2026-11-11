@@ -2,7 +2,11 @@ import { describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
-mock.module('../src/scenes/shared/accessibleActionLayer', () => ({ mountAccessibleActionLayer: () => () => {} }));
+mock.module('../src/ui/dom', () => ({
+  h: () => chainable(),
+  mountUiLayer: () => chainable(),
+  setStatus: () => undefined,
+}));
 
 const { finishShipyardLoading } = await import('../src/utils/shipyardAssets');
 const { SHIPYARD_SPRITES, SPRITE_DENSITY, sheetLayout } = await import('../src/config/shipyardSprites');
@@ -62,7 +66,6 @@ function createScene(options: { shrinkPlayerFrames?: boolean; oversizedScoutShee
       remove: (key: string) => removed.push(key),
     },
     scale: { width: 390, height: 844 },
-    add: { rectangle: () => chainable(), text: () => chainable() },
     input: { keyboard: { once: () => {}, off: () => {} } },
     events: { once: () => {}, off: () => {} },
     scene: { restart: () => {} },
@@ -87,15 +90,6 @@ describe('shipyard sheet loading', () => {
     expect(player.firstFrame).toBe('4');
     expect(player.source[0].resolution).toBe(SPRITE_DENSITY);
     expect(player.dataSource[0].resolution).toBe(SPRITE_DENSITY);
-  });
-
-  test('registers asteroid variants at logical 44x44 resting on the first rock', () => {
-    const { scene, textures } = createScene();
-    expect(finishShipyardLoading(scene as never)).toBe(true);
-    const asteroid = textures.get('asteroid-texture') as { frames: FakeFrame[]; firstFrame: string };
-    expect(asteroid.frames).toHaveLength(4);
-    expect(asteroid.frames[3]!.trim).toEqual([44, 44, 0, 0, 44, 44]);
-    expect(asteroid.firstFrame).toBe('0');
   });
 
   test('rejects a sheet with the wrong frame size and shows the retry screen', () => {

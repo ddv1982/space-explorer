@@ -3,7 +3,6 @@ import type { HUD } from '@/systems/HUD';
 import type { MobileControls } from '@/systems/MobileControls';
 import type { ParallaxBackground } from '@/systems/ParallaxBackground';
 import type { WarpTransition } from '@/systems/WarpTransition';
-import type { PauseStateController } from './PauseStateController';
 import { syncSceneViewport } from './viewport';
 
 export type ViewportScaleResizeContext = {
@@ -12,7 +11,6 @@ export type ViewportScaleResizeContext = {
   mobileControls: MobileControls | null | undefined;
   hud: HUD | null | undefined;
   warpTransition: WarpTransition | null | undefined;
-  pauseStateController: PauseStateController | null | undefined;
   picketTurrets: { relayout(): void } | null | undefined;
   clampPlayerToViewport: () => void;
 };
@@ -33,7 +31,6 @@ export function handleScaleResize(context: ViewportScaleResizeContext): void {
   context.mobileControls?.relayout();
   context.hud?.relayout();
   context.warpTransition?.resize();
-  context.pauseStateController?.relayout();
   context.picketTurrets?.relayout();
   context.clampPlayerToViewport();
 }

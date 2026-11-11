@@ -30,7 +30,7 @@ Typical ranges used by current campaign configs (`src/config/levels/registry.ts`
 
 ## QA Workflow
 
-- Validate level schema/constraints before tuning review: `bun run levels:validate`.
+- Validate level schema/constraints before tuning review: `bun run test tests/levelValidation.test.ts`.
 - Verify deterministic replay fixtures: `bun test tests/musicReplayDeterminism.test.ts`.
 - Run music subsystem tests when touching intent/harmony/rhythm/arrangement behavior:
   - `bun test tests/musicIntent.test.ts`

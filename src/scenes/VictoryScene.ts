@@ -5,31 +5,14 @@ import { audioManager } from '../systems/AudioManager';
 import { generateEffectsParticleTextures, PARTICLE } from '../systems/effects/particleTextureFactory';
 import { getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
-import { mixColor } from '../utils/colorUtils';
 import { withCanvasTexture } from '../utils/generatedTexture';
 import { scaleUiGlowAlpha } from '../utils/renderingCompat';
+import { h, liveRegion, measureInGame, mountUiLayer } from '../ui/dom';
+import { countUp, formatScore, statCell } from '../ui/summary';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
-import { mountAccessibleActionLayer, type AccessibleActionLayerHandle } from './shared/accessibleActionLayer';
-import { CONTINUE_PROMPT, createPromptText } from './shared/createPromptText';
-import {
-  addNeonTitle,
-  fitNeonTitleFontSize,
-  NEON,
-  NEON_TEXT,
-  neonLabelStyle,
-  prefersReducedMotion,
-} from './shared/neonUiTheme';
+import { NEON, prefersReducedMotion } from './shared/neonUiTheme';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
-import {
-  addDriftingMotes,
-  addEdgeVignette,
-  addStatCell,
-  countUp,
-  formatScore,
-  offsetRect,
-  revealInSequence,
-} from './shared/runSummaryPresentation';
-import { createVictoryLayout } from './victoryScene/layout';
+import { addDriftingMotes, addEdgeVignette } from './shared/runSummaryPresentation';
 
 const RAYS_KEY = 'victory-rays';
 const RAYS_SIZE = 512;
@@ -61,7 +44,6 @@ function paintRays(context: CanvasRenderingContext2D, size: number): void {
 
 export class VictoryScene extends Phaser.Scene {
   private parallax!: ParallaxBackground;
-  private teardownAccessibleActions?: AccessibleActionLayerHandle;
 
   constructor() {
     super({ key: 'Victory' });
@@ -72,27 +54,20 @@ export class VictoryScene extends Phaser.Scene {
     audioManager.stopMusic();
     registerRestartOnResize(this);
 
-    const layout = getViewportLayout(this);
-
     this.cameras.main.setBackgroundColor('#02081c');
-
-    // Animated star background via parallax
-    const bgConfig = getLevelConfig(10);
     this.parallax = new ParallaxBackground();
-    this.parallax.create(this, bgConfig);
+    this.parallax.create(this, getLevelConfig(10));
 
-    const { finalScore, totalLevels } = this.createSummary(layout);
-
-    const continueToMenu = () => {
+    let left = false;
+    const continueToMenu = (): void => {
+      if (left) return;
+      left = true;
       audioManager.playClick();
       this.scene.start('Menu');
     };
     bindProceedOnInput(this, continueToMenu);
-    this.teardownAccessibleActions = mountAccessibleActionLayer({
-      label: 'Mission complete',
-      summary: `All ${totalLevels} sectors cleared. Final score ${finalScore}.`,
-      actions: [{ name: 'continue', label: 'Continue to command deck', activate: continueToMenu }],
-    });
+    const layer = this.createSummary(continueToMenu);
+    this.createAtmosphere(layer.querySelector('.summary__title'));
 
     // Play victory fanfare
     audioManager.playPowerUp();
@@ -100,17 +75,22 @@ export class VictoryScene extends Phaser.Scene {
     this.time.delayedCall(800, () => audioManager.playPowerUp());
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.teardownAccessibleActions?.();
-      this.teardownAccessibleActions = undefined;
+      left = true;
+      layer.remove();
       this.parallax.destroy();
     });
   }
 
   /** Dark wash, a slow fan of light behind the title and gold motes rising through it. */
-  private createAtmosphere(layout: ReturnType<typeof getViewportLayout>, haloY: number): void {
+  private createAtmosphere(title: Element | null): void {
+    const layout = getViewportLayout(this);
     const bounds = { x: layout.left, y: layout.top, width: layout.width, height: layout.height };
     this.add.rectangle(layout.centerX, layout.centerY, layout.width, layout.height, 0x02060f, 0.5).setDepth(0);
     addEdgeVignette(this, bounds, 0x01040c, 0.7);
+
+    // The fan radiates from the HTML title, wherever the layout put it.
+    const titleBox = title && measureInGame(this, title);
+    const haloY = titleBox ? titleBox.top + titleBox.height / 2 : layout.centerY;
 
     withCanvasTexture(this, RAYS_KEY, RAYS_SIZE, RAYS_SIZE, paintRays);
     const reach = Math.max(layout.width, layout.height) * 1.25;
@@ -135,79 +115,43 @@ export class VictoryScene extends Phaser.Scene {
     addDriftingMotes(this, bounds, [NEON.gold, NEON.amber, 0xffffff, NEON.teal], 1.4);
   }
 
-  /** Title and run summary. Returns the numbers the accessible summary repeats. */
-  private createSummary(layout: ReturnType<typeof getViewportLayout>): { finalScore: number; totalLevels: number } {
-    const plan = createVictoryLayout(layout);
-    const left = layout.centerX - plan.width / 2;
-    const top = layout.centerY - plan.height / 2;
-    const centerX = layout.centerX;
+  /** Title, final score, one lit pip per sector and the continue prompt, in HTML over the canvas art. */
+  private createSummary(onContinue: () => void): HTMLElement {
     const finalScore = getRunSummary(this.registry).finalScore;
     const totalLevels = getTotalLevels();
+    const score = statCell('FINAL SCORE', formatScore(finalScore), '255 210 122');
+    countUp(score.value, finalScore, 450);
 
-    this.createAtmosphere(layout, top + plan.titleY);
-
-    const lines: Phaser.GameObjects.Text[] = [];
-    const addLine = (y: number, text: string, size: number, color: string): void => {
-      const line = this.add
-        .text(centerX, top + y, text, neonLabelStyle(size, color))
-        .setOrigin(0.5)
-        .setDepth(12);
-      line.setScale(Math.min(1, plan.width / Math.max(1, line.width)));
-      lines.push(line);
-    };
-
-    addLine(plan.eyebrowY, 'COMMAND DECK', 13, NEON_TEXT.cyan);
-    const titleSize = fitNeonTitleFontSize(this, 'MISSION COMPLETE', plan.titleSize, plan.width - 16);
-    addNeonTitle(this, centerX, top + plan.titleY, 'MISSION COMPLETE', titleSize, 11, {
-      glow: '#ffb84a',
-      base: '#ffe2a6',
-    });
-    addLine(plan.subtitleY, 'ALL SECTORS CLEARED', 18, '#58f0d8');
-
-    const score = addStatCell(this, offsetRect(plan.score, left, top), formatScore(finalScore), {
-      label: 'FINAL SCORE',
-      accent: NEON.gold,
-      centered: true,
-    });
-    countUp(this, score, finalScore, 450);
-
-    this.createSectorPips(centerX, top + plan.pips.y, plan.pips.width, plan.pips.height, totalLevels);
-    addLine(plan.pipLabelY, `${totalLevels} / ${totalLevels} SECTORS`, 13, NEON_TEXT.secondary);
-
-    const prompt = createPromptText(this, centerX, top + plan.promptY, CONTINUE_PROMPT, {
-      color: '#dce8ff',
-      fontSize: `${plan.promptSize}px`,
-    });
-    prompt.setDepth(12);
-    prompt.setScale(Math.min(1, plan.width / Math.max(1, prompt.width)));
-
-    revealInSequence(this, lines);
-    return { finalScore, totalLevels };
-  }
-
-  /** One slanted pip per sector, lighting up left to right. */
-  private createSectorPips(centerX: number, y: number, width: number, height: number, count: number): void {
-    const gap = 6;
-    const pipWidth = (width - gap * (count - 1)) / count;
-    const slant = height * 0.6;
-    const animate = !prefersReducedMotion();
-    for (let index = 0; index < count; index++) {
-      const x = centerX - width / 2 + index * (pipWidth + gap);
-      const color = mixColor(NEON.teal, NEON.gold, index / Math.max(1, count - 1));
-      const pip = this.add.graphics().setDepth(12);
-      pip.fillStyle(color, 1);
-      pip.beginPath();
-      pip.moveTo(x + slant, y);
-      pip.lineTo(x + pipWidth, y);
-      pip.lineTo(x + pipWidth - slant, y + height);
-      pip.lineTo(x, y + height);
-      pip.closePath();
-      pip.fillPath();
-      if (animate) {
-        pip.setAlpha(0.14);
-        this.tweens.add({ targets: pip, alpha: 1, duration: 220, delay: 500 + index * 110 });
-      }
+    const pips = h('div', { className: 'summary__pips', 'aria-hidden': 'true' });
+    for (let index = 0; index < totalLevels; index++) {
+      const pip = h('i');
+      pip.style.setProperty('--i', String(index));
+      pip.style.background = `color-mix(in srgb, #ffd27a ${Math.round((index / Math.max(1, totalLevels - 1)) * 100)}%, #58f0d8)`;
+      pips.append(pip);
     }
+    const prompt = h(
+      'button',
+      { type: 'button', className: 'summary__prompt', 'aria-label': 'Continue to command deck' },
+      'CLICK, TAP, OR PRESS ANY KEY'
+    );
+    prompt.addEventListener('click', onContinue);
+
+    const layer = mountUiLayer();
+    layer.append(
+      h(
+        'section',
+        { className: 'summary summary--victory', 'aria-label': 'Mission complete' },
+        h('p', { className: 'summary__eyebrow' }, 'COMMAND DECK'),
+        h('h1', { className: 'ui-title summary__title' }, 'MISSION COMPLETE'),
+        h('p', { className: 'summary__line' }, 'ALL SECTORS CLEARED'),
+        h('div', { className: 'summary__cells' }, score.element),
+        pips,
+        h('p', { className: 'summary__line summary__pip-label' }, `${totalLevels} / ${totalLevels} SECTORS`),
+        prompt,
+        liveRegion(`All ${totalLevels} sectors cleared. Final score ${finalScore}.`)
+      )
+    );
+    return layer;
   }
 
   update(_time: number, delta: number): void {

@@ -4,7 +4,6 @@ import { getVisualQualityProfile } from '../../config/visualQuality';
 import { PARTICLE, generateEffectsParticleTextures } from '../../systems/effects/particleTextureFactory';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
 import { NEON, prefersReducedMotion } from '../shared/neonUiTheme';
-import type { MenuLayoutPlan } from './layout';
 
 /** One slow bank sway from left to right and back. */
 const SWAY_PERIOD_MS = 7200;
@@ -41,7 +40,34 @@ function lightHero(scene: Phaser.Scene, ship: Phaser.GameObjects.Image, shipHeig
   return { key, engine };
 }
 
-type HeroPlan = NonNullable<MenuLayoutPlan['hero']>;
+/** Native size of the player ship frame (`player-ship`, 36×44 logical px). */
+const SHIP_FRAME_HEIGHT = 44;
+/** The hero needs half its height above its centre and 0.8 below it (engine plume and launch pad). */
+const HERO_FOOTPRINT = 1.3;
+/** Below this, the hero ship would be too small to read and the band is left empty. */
+const MIN_HERO_SHIP_HEIGHT = 64;
+
+interface HeroPlan {
+  x: number;
+  y: number;
+  shipHeight: number;
+  scale: number;
+}
+
+/** Centres the hero in the band the HTML menu leaves for it, or returns null when the band is too short. */
+export function placeMenuHero(
+  band: { left: number; top: number; width: number; height: number },
+  maxShipHeight: number
+): HeroPlan | null {
+  const shipHeight = Math.min(maxShipHeight, (band.height - 24) / HERO_FOOTPRINT);
+  if (!(shipHeight >= MIN_HERO_SHIP_HEIGHT)) return null;
+  return {
+    x: band.left + band.width / 2,
+    y: band.top + (band.height - shipHeight * HERO_FOOTPRINT) / 2 + shipHeight * 0.5,
+    shipHeight,
+    scale: shipHeight / SHIP_FRAME_HEIGHT,
+  };
+}
 
 function glowImage(scene: Phaser.Scene, x: number, y: number, texture: string, tint: number) {
   return scene.add.image(x, y, texture).setBlendMode(Phaser.BlendModes.ADD).setTint(tint).setDepth(10);
@@ -116,8 +142,7 @@ function createHeroEngines(scene: Phaser.Scene, hero: HeroPlan) {
  * bank frames, a key light orbits it, its twin engines burn with a flickering plume and exhaust, and
  * scan rings ripple out from the pad. Static under reduced motion.
  */
-export function createMenuHero(scene: Phaser.Scene, plan: MenuLayoutPlan): MenuHero | null {
-  const hero = plan.hero;
+export function createMenuHero(scene: Phaser.Scene, hero: HeroPlan | null): MenuHero | null {
   if (!hero || !scene.textures.exists(PLAYER_SPRITE.key)) return null;
   generateEffectsParticleTextures(scene);
 

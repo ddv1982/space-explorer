@@ -2,13 +2,18 @@ import Phaser from 'phaser';
 
 import type { LevelConfig } from '../../config/LevelsConfig';
 import { getViewportLayout } from '../../utils/layout';
-import { colorToHexString, mixColor } from '../../utils/colorUtils';
 import { withCanvasTexture } from '../../utils/generatedTexture';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
-import { neonLabelStyle, prefersReducedMotion } from '../shared/neonUiTheme';
-import type { IntermissionLayoutMetrics } from './layout';
+import { prefersReducedMotion } from '../shared/neonUiTheme';
 import { getPlanetPortraitKey } from './planetPortraits';
 import type { PlanetIntermissionProfile } from './planetProfiles';
+
+/** Centre and body diameter of the planet, in game coordinates. */
+export interface PlanetPlacement {
+  planetX: number;
+  planetY: number;
+  planetDiameter: number;
+}
 
 const ATMOSPHERE_TEXTURE_KEY = 'intermission-atmosphere';
 /** Share of the atmosphere texture's radius that the planet's limb sits at. */
@@ -49,15 +54,11 @@ function drawBackgroundStars(
   }
 }
 
-export function createIntermissionBackdrop(
-  scene: Phaser.Scene,
-  levelConfig: LevelConfig,
-  level: number,
-  layout: IntermissionLayoutMetrics
-): void {
+export function createIntermissionBackdrop(scene: Phaser.Scene, levelConfig: LevelConfig, level: number): void {
   const viewport = getViewportLayout(scene);
+  const wide = viewport.width >= 900 && viewport.height >= 560;
   const backdrop = scene.add.graphics().setDepth(-9);
-  backdrop.fillStyle(0x01040b, layout.mode === 'portrait' ? 0.52 : 0.4);
+  backdrop.fillStyle(0x01040b, viewport.height > viewport.width ? 0.52 : 0.4);
   backdrop.fillRect(viewport.left, viewport.top, viewport.width, viewport.height);
   drawBackgroundStars(
     backdrop,
@@ -71,50 +72,15 @@ export function createIntermissionBackdrop(
 
   const frame = scene.add.graphics().setDepth(0);
   frame.lineStyle(1, levelConfig.planetPalette[1], 0.07);
-  const verticalSpacing = layout.mode === 'desktop' ? 84 : 58;
+  const verticalSpacing = wide ? 84 : 58;
   for (let y = viewport.top + verticalSpacing; y < viewport.bottom; y += verticalSpacing) {
     frame.lineBetween(viewport.left, y, viewport.right, y);
   }
   frame.lineStyle(1, levelConfig.planetPalette[0], 0.045);
-  const horizontalSpacing = layout.mode === 'desktop' ? 96 : 72;
+  const horizontalSpacing = wide ? 96 : 72;
   for (let x = viewport.left + horizontalSpacing; x < viewport.right; x += horizontalSpacing) {
     frame.lineBetween(x, viewport.top, x, viewport.bottom);
   }
-}
-
-/** Classification tag above the planet and the orbit caption below it. */
-function addOrbitLabels(
-  scene: Phaser.Scene,
-  marks: Phaser.GameObjects.Graphics,
-  level: number,
-  profile: PlanetIntermissionProfile,
-  layout: IntermissionLayoutMetrics,
-  accent: number
-): void {
-  const desktop = layout.mode === 'desktop';
-  const labelX = layout.planetX - layout.planetDiameter * 0.52;
-  const labelY = layout.planetY - layout.planetDiameter * 0.66;
-  marks.fillStyle(accent, 0.9);
-  marks.fillRect(labelX - 10, labelY - 6, 3, 12);
-  scene.add
-    .text(
-      labelX,
-      labelY,
-      profile.classification,
-      neonLabelStyle(desktop ? 13 : 11, colorToHexString(mixColor(accent, 0xffffff, 0.45)), desktop ? 2.2 : 1.4)
-    )
-    .setOrigin(0, 0.5)
-    .setDepth(3);
-
-  scene.add
-    .text(
-      layout.planetX,
-      layout.planetY + layout.planetDiameter * 0.7,
-      `ORBIT ${String(level).padStart(2, '0')}  ·  ${profile.approachCode}`,
-      neonLabelStyle(desktop ? 13 : 11, '#86a8be', desktop ? 2.2 : 1.4)
-    )
-    .setOrigin(0.5)
-    .setDepth(3);
 }
 
 interface ArrivalParts {
@@ -172,7 +138,7 @@ function animateArrival(scene: Phaser.Scene, level: number, { planet, atmosphere
  * portrait (see planetPortraits.ts). The portrait texture is queued by the
  * boot preload and again by the intermission's own preload, so it is normally
  * cached before create runs; if the asset itself failed to load, the neon
- * chrome (halo, orbit, route, satellites, labels) still renders and the
+ * chrome (halo, orbit, route, satellites) still renders and the
  * planet body is skipped rather than showing a missing-texture placeholder.
  *
  * Portraits stay in the global texture cache after boot. Keeping this small,
@@ -183,7 +149,7 @@ export function createPlanetArrivalVisual(
   levelConfig: LevelConfig,
   level: number,
   profile: PlanetIntermissionProfile,
-  layout: IntermissionLayoutMetrics
+  layout: PlanetPlacement
 ): Phaser.GameObjects.Image | null {
   const textureKey = getPlanetPortraitKey(level);
   const hasPortrait = scene.textures.exists(textureKey);
@@ -249,7 +215,6 @@ export function createPlanetArrivalVisual(
         .setDepth(1)
     : null;
 
-  if (layout.showOrbitLabels) addOrbitLabels(scene, route, level, profile, layout, accent);
   if (!prefersReducedMotion()) animateArrival(scene, level, { planet, atmosphere, halo, orbits: [orbit, outerOrbit] });
 
   return planet;
