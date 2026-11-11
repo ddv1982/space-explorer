@@ -17,12 +17,32 @@ function hashId(id: string): number {
   return hash >>> 0;
 }
 
-/** Renders each sound's variants once, on first use, then plays them back as cheap buffer voices. */
+/** Renders each sound's variants once, then plays them back as cheap buffer voices. */
 export class SfxPlayer {
   private readonly states = new Map<SfxId, SfxState>();
   private renderedFor: AudioContext | null = null;
+  private prewarmedFor: AudioContext | null = null;
 
   constructor(private readonly contextManager: AudioContextManager) {}
+
+  /**
+   * Renders every sound ahead of use, one per timer tick, so the first shot or explosion never
+   * pays for rendering inside a gameplay frame. Safe to call on every scene start.
+   */
+  prewarm(): void {
+    const ctx = this.contextManager.getCtx();
+    if (!ctx || this.prewarmedFor === ctx) return;
+    this.prewarmedFor = ctx;
+
+    const pending = Object.keys(SFX) as SfxId[];
+    const renderNext = (): void => {
+      const id = pending.shift();
+      if (!id || this.contextManager.getCtx() !== ctx) return;
+      this.getState(ctx, id, SFX[id]);
+      setTimeout(renderNext, 0);
+    };
+    setTimeout(renderNext, 0);
+  }
 
   /** `pan` runs from -1 (left edge) to 1 (right edge). */
   play(id: SfxId, pan = 0): void {

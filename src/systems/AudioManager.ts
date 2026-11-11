@@ -18,6 +18,7 @@ export class AudioManager {
     this.contextManager.init();
     this.musicManager.ensureGains();
     this.applyVolumes();
+    this.sfxPlayer.prewarm();
   }
 
   private getStoredVolumes(): AudioVolumes {
