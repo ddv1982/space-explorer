@@ -1,6 +1,6 @@
 {
   "name": "space-explorer",
-  "version": "1.25.0",
+  "version": "1.26.0",
   "author": "Douwe de Vries",
   "license": "MIT",
   "private": true,
@@ -24,6 +24,7 @@
   "knip": {
     "entry": [
       "index.html",
+      "src/dev/soundboard.ts",
       "scripts/**/*.ts",
       "tests/e2e/playerControlsPhysics.ts",
       "tests/e2e/playerBulletPoolProbe.ts",

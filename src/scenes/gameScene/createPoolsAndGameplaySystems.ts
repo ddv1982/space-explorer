@@ -1,3 +1,5 @@
+import { audioManager } from '@/systems/AudioManager';
+import { stereoPan } from '@/utils/layout';
 import Phaser from 'phaser';
 
 import type { Player } from '@/entities/Player';
@@ -231,12 +233,16 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
   const grazeSurge = new GrazeSurgeSystem({
     getPlayerPosition: () => (player.isAlive ? { x: player.x, y: player.y } : null),
     getEnemyBullets: () => enemyPool.getEnemyBulletGroup().getChildren() as unknown as GrazeSurgeBullet[],
-    onGraze: (x, y) => effectsManager.createGrazeSpark(x, y),
+    onGraze: (x, y) => {
+      effectsManager.createGrazeSpark(x, y);
+      audioManager.playSfx('graze', stereoPan(scene, x));
+    },
     onSurgePulse: (x, y, clearedBullets) => {
       if (clearedBullets > 0) {
         scoreManager.addScore(clearedBullets * SURGE_SCORE_PER_BULLET);
       }
       effectsManager.createSurgePulse(x, y);
+      audioManager.playSfx('surgePulse');
     },
   });
 

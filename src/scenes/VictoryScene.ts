@@ -62,17 +62,14 @@ export class VictoryScene extends Phaser.Scene {
     const continueToMenu = (): void => {
       if (left) return;
       left = true;
-      audioManager.playClick();
+      audioManager.playUi();
       this.scene.start('Menu');
     };
     bindProceedOnInput(this, continueToMenu);
     const layer = this.createSummary(continueToMenu);
     this.createAtmosphere(layer.querySelector('.summary__title'));
 
-    // Play victory fanfare
-    audioManager.playPowerUp();
-    this.time.delayedCall(400, () => audioManager.playPowerUp());
-    this.time.delayedCall(800, () => audioManager.playPowerUp());
+    audioManager.playSfx('victory');
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       left = true;

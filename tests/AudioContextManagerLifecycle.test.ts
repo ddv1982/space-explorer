@@ -136,6 +136,17 @@ describe('AudioContextManager lifecycle control', () => {
       createGain() {
         return { gain: { value: 0 }, connect: (): void => undefined };
       }
+      createDynamicsCompressor() {
+        const param = { value: 0 };
+        return {
+          threshold: param,
+          knee: param,
+          ratio: param,
+          attack: param,
+          release: param,
+          connect: (): void => undefined,
+        };
+      }
       createBuffer(_channels: number, length: number) {
         return { getChannelData: () => new Float32Array(length) };
       }
@@ -356,7 +367,7 @@ describe('AudioContextManager lifecycle control', () => {
     expect(resumeFromUserGesture).not.toHaveBeenCalled();
 
     manager.setPaused('visibility', false);
-    manager.playClick();
+    manager.playUi();
     expect(resumeFromUserGesture).toHaveBeenCalledTimes(1);
   });
 });

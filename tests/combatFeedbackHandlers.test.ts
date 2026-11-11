@@ -1,14 +1,12 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 const { audioManager } = await import('../src/systems/AudioManager');
-const playExplosion = mock();
+const playSfx = mock();
 const startMusic = mock();
 Object.assign(audioManager, {
-  playExplosion,
+  playSfx,
   startMusic,
   stopMusic: mock(),
-  playPlayerHit: mock(),
-  playPowerUpPickup: mock(),
 });
 const trySpawnRandomPowerUp = mock();
 const spawnGuaranteedPowerUp = mock();
@@ -55,6 +53,7 @@ mock.module('../src/systems/GameplayFlow', () => ({
 }));
 mock.module('../src/utils/layout', () => ({
   getViewportBounds: () => ({ centerX: 400 }),
+  stereoPan: () => 0,
   getViewportLayout: () => ({ left: 0, width: 800, centerX: 400 }),
   getGameplayBounds: () => ({
     left: 0,
@@ -214,9 +213,7 @@ function createCombatFeedbackHarness(
     getGameplayNow: () => 1000,
     constants: {
       bossExplosionVisualIntensity: 3,
-      bossExplosionAudioIntensity: 2,
       playerDeathExplosionVisualIntensity: 2.2,
-      playerDeathExplosionAudioIntensity: 1.4,
       playerDeathParticleBudgetScale: 0.6,
     },
   });
@@ -249,14 +246,14 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
   test('shield and hull cues differ while both preserve the existing score penalty', () => {
     const harness = createCombatFeedbackHarness();
     harness.handlers.handlePlayerHit({ outcome: 'absorbed', source: 'mine', hullDamage: 0 });
-    expect(audioManager.playPlayerHit).toHaveBeenLastCalledWith('absorbed');
+    expect(playSfx).toHaveBeenLastCalledWith('hitShield');
     harness.handlers.handlePlayerHit({ outcome: 'damaged', source: 'beam', hullDamage: 1.25 });
-    expect(audioManager.playPlayerHit).toHaveBeenLastCalledWith('damaged');
+    expect(playSfx).toHaveBeenLastCalledWith('hitHull');
     expect(harness.onPlayerHit).toHaveBeenCalledTimes(2);
   });
 
   test('handleEnemyDeath adds score, shows popup, plays explosion, and tries dropping a power-up', () => {
-    playExplosion.mockClear();
+    playSfx.mockClear();
     trySpawnRandomPowerUp.mockClear();
     spawnGuaranteedPowerUp.mockClear();
     const harness = createCombatFeedbackHarness();
@@ -265,7 +262,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
 
     expect(harness.registerKill).toHaveBeenCalledWith(500, 1000);
     expect(harness.createScorePopup).toHaveBeenCalledWith(12, 34, 500);
-    expect(playExplosion).toHaveBeenCalledWith(0.5);
+    expect(playSfx).toHaveBeenCalledWith('explosionSmall', expect.any(Number));
     expect(trySpawnRandomPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
     expect(spawnGuaranteedPowerUp).not.toHaveBeenCalled();
   });
@@ -285,7 +282,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
   });
 
   test('handlePlayerDeath syncs helper wing after an ordinary gameplay respawn starts', () => {
-    playExplosion.mockClear();
+    playSfx.mockClear();
     const harness = createCombatFeedbackHarness({
       playerDeathOutcome: {
         status: 'respawn-started',
@@ -297,7 +294,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     harness.handlers.handlePlayerDeath({ outcome: 'fatal', source: 'unknown', hullDamage: 1 });
 
     expect(harness.player.playDeathAnimation).toHaveBeenCalledTimes(1);
-    expect(playExplosion).toHaveBeenCalledWith(1.4);
+    expect(playSfx).toHaveBeenCalledWith('explosionLarge', expect.any(Number));
     expect(harness.createExplosion).toHaveBeenCalledWith(24, 48, 2.2, 0.6);
     expect(harness.handlePlayerDeath).toHaveBeenCalledWith(harness.flowContext, 'unknown');
     expect(harness.syncLastLifeHelperWingState).toHaveBeenCalledTimes(1);
@@ -335,7 +332,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     });
 
     gameOverHarness.handlers.handlePlayerDeath({ outcome: 'fatal', source: 'unknown', hullDamage: 1 });
-    playExplosion.mockClear();
+    playSfx.mockClear();
     terminalHarness.handlers.handlePlayerDeath({ outcome: 'fatal', source: 'unknown', hullDamage: 1 });
 
     expect(gameOverHarness.syncLastLifeHelperWingState).not.toHaveBeenCalled();
@@ -343,11 +340,11 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(terminalHarness.handlePlayerDeath).toHaveBeenCalledWith(terminalHarness.flowContext, 'unknown');
     expect(terminalHarness.player.playDeathAnimation).not.toHaveBeenCalled();
     expect(terminalHarness.createExplosion).not.toHaveBeenCalled();
-    expect(playExplosion).not.toHaveBeenCalled();
+    expect(playSfx).not.toHaveBeenCalled();
   });
 
   test('handleBossDeath persists, suspends, then queues level completion', () => {
-    playExplosion.mockClear();
+    playSfx.mockClear();
     const order: string[] = [];
     const harness = createCombatFeedbackHarness({
       boss: { x: 320, y: 96 },
@@ -360,7 +357,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     harness.handlers.handleBossDeath();
 
     expect(harness.createExplosion).toHaveBeenCalledWith(320, 96, 3);
-    expect(playExplosion).toHaveBeenCalledWith(2);
+    expect(playSfx).toHaveBeenCalledWith('explosionBoss', expect.any(Number));
     expect(harness.hideBossBar).toHaveBeenCalledTimes(1);
     expect(harness.setBoss).toHaveBeenCalledWith(null);
     expect(harness.markBossDefeated).toHaveBeenCalledTimes(1);

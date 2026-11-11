@@ -35,6 +35,7 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     audioManager.stopMusic();
+    audioManager.playSfx('gameOver');
     this.transitionQueued = false;
     registerRestartOnResize(this, () => !this.transitionQueued);
 
@@ -61,7 +62,7 @@ export class GameOverScene extends Phaser.Scene {
       if (this.transitionQueued) return;
       this.transitionQueued = true;
       audioManager.resumeFromUserGesture();
-      audioManager.playClick();
+      audioManager.playUi();
       retry.disabled = menu.disabled = true;
       if (action === 'retry') startFreshRun(this);
       else this.scene.start('Menu');

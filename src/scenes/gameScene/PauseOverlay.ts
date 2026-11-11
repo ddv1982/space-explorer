@@ -86,7 +86,7 @@ export class PauseOverlay {
   private resume: HTMLButtonElement | null = null;
   private rows: SlotRow[] = [];
   private tabs = new Map<PauseSubview, { tab: HTMLButtonElement; view: HTMLElement }>();
-  private syncMusic: (() => void) | null = null;
+  private syncVolumes: (() => void) | null = null;
   private activeSubview: PauseSubview = 'checkpoints';
   private readonly state: PauseOverlayState = {
     visible: false,
@@ -114,7 +114,7 @@ export class PauseOverlay {
       onSelectDifficulty: (tier) => handlers.onSelectDifficulty(tier),
       onSelectQuality: (tier) => handlers.onSelectQuality(tier),
     });
-    this.syncMusic = settings.syncMusic;
+    this.syncVolumes = settings.syncVolumes;
     const views: Record<PauseSubview, HTMLElement> = {
       checkpoints: h('div', { className: 'pause__slots' }, ...this.rows.map((row) => row.element)),
       settings: h('div', { className: 'pause__settings' }, settings.element),
@@ -167,14 +167,14 @@ export class PauseOverlay {
       nextState.statusOk ?? (nextState.statusMessage === '' || statusMessageChanged ? true : this.state.statusOk);
     this.applyState();
     if (opening) {
-      this.syncMusic?.();
+      this.syncVolumes?.();
       this.panel?.focus({ preventScroll: true });
     }
   }
 
   destroy(): void {
     this.layer?.remove();
-    this.layer = this.panel = this.status = this.resume = this.syncMusic = null;
+    this.layer = this.panel = this.status = this.resume = this.syncVolumes = null;
     this.rows = [];
     this.tabs.clear();
   }

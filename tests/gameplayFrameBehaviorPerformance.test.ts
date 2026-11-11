@@ -15,7 +15,7 @@ mock.module('phaser', () => ({
 
 mock.module('../src/systems/AudioManager', () => ({
   audioManager: {
-    playLaser: () => {},
+    playSfx: () => {},
     setMusicIntensity: (intensity: number) => {
       musicIntensities.push(intensity);
     },

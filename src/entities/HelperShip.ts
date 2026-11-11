@@ -1,3 +1,5 @@
+import { audioManager } from '../systems/AudioManager';
+import { stereoPan } from '../utils/layout';
 import Phaser from 'phaser';
 import { BULLET_SPEED } from '../utils/constants';
 import { BulletPool } from '../systems/BulletPool';
@@ -284,5 +286,6 @@ export class HelperShip extends Phaser.Physics.Arcade.Sprite {
     }
 
     effectsManager.createMuzzleFlash(muzzleX, muzzleY);
+    audioManager.playSfx('helperShot', stereoPan(this.scene, muzzleX));
   }
 }

@@ -6,7 +6,7 @@ mockPhaserModule();
 
 mock.module('../src/systems/AudioManager', () => ({
   audioManager: {
-    playLaser: () => {},
+    playSfx: () => {},
     setMusicIntensity: () => {},
   },
 }));

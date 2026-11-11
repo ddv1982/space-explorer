@@ -26,14 +26,14 @@ test('menu and pause are native, named HTML controls with no second painted UI',
   await expect(page.getByText('Difficulty set to LOW.')).toHaveAttribute('aria-live', 'polite');
 
   // Sliders answer both the keyboard and a pointer on their track.
-  const creativity = page.getByRole('slider', { name: 'CREATIVITY' });
-  const before = Number(await creativity.inputValue());
-  await pressControl(creativity, 'ArrowRight');
-  await expect(creativity).toHaveValue(String(before + 1));
-  await expect(creativity).toHaveAttribute('aria-valuetext', `${before + 1}%`);
-  const track = await creativity.boundingBox();
+  const volume = page.getByRole('slider', { name: 'MUSIC VOLUME' });
+  const before = Number(await volume.inputValue());
+  await pressControl(volume, 'ArrowLeft');
+  await expect(volume).toHaveValue(String(before - 1));
+  await expect(volume).toHaveAttribute('aria-valuetext', `${before - 1}%`);
+  const track = await volume.boundingBox();
   await page.mouse.click((track?.x ?? 0) + 2, (track?.y ?? 0) + (track?.height ?? 0) / 2);
-  await expect(creativity).toHaveValue('0');
+  await expect(volume).toHaveValue('0');
 
   // Escape reaches the game through a focused control and closes the sheet.
   await page.keyboard.press('Escape');
@@ -71,9 +71,9 @@ test('menu and pause are native, named HTML controls with no second painted UI',
     'true'
   );
   await expect(page.getByText('Quality applies after restart.')).toBeVisible();
-  const pauseCreativity = page.getByRole('slider', { name: 'CREATIVITY' });
-  await pressControl(pauseCreativity, 'ArrowRight');
-  await expect(pauseCreativity).toHaveValue('1');
+  const pauseVolume = page.getByRole('slider', { name: 'MUSIC VOLUME' });
+  await pressControl(pauseVolume, 'ArrowRight');
+  await expect(pauseVolume).toHaveValue('1');
   expect((await snapshot(page)).physicsPaused).toBe(true);
 
   await pressControl(page.getByRole('button', { name: 'RESUME', exact: true }));

@@ -58,7 +58,7 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
   await waitForScene(page, 'Menu');
   await openMenuSettings(page);
   await pressControl(tierButton(page, 'Difficulty', 'LOW'));
-  await pressControl(page.getByRole('slider', { name: 'CREATIVITY' }), 'ArrowRight');
+  await pressControl(page.getByRole('slider', { name: 'SFX VOLUME' }), 'ArrowLeft');
   await activate(page, 'DONE');
   const storedBefore = await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)));
   await pressControl(page.getByRole('button', { name: 'Load SLOT 1' }));

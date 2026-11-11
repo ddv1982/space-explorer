@@ -1,39 +1,31 @@
 import type { GameplayDifficultyTier } from '../config/gameplayDifficulty';
 import type { VisualQualityTier } from '../config/visualQuality';
+import type { AudioVolumes } from '../config/audioSettings';
 import { audioManager } from '../systems/AudioManager';
 import { h } from './dom';
 
-type MusicSettingKey = 'creativity' | 'energy' | 'ambience' | 'volume';
-type MusicSettings = Record<MusicSettingKey, number>;
+type VolumeChannel = keyof AudioVolumes;
 
-const MUSIC_SLIDERS: ReadonlyArray<[MusicSettingKey, string]> = [
-  ['creativity', 'CREATIVITY'],
-  ['energy', 'ENERGY'],
-  ['ambience', 'AMBIENCE'],
-  ['volume', 'MUSIC VOLUME'],
+const VOLUME_SLIDERS: ReadonlyArray<[VolumeChannel, string]> = [
+  ['music', 'MUSIC VOLUME'],
+  ['effects', 'SFX VOLUME'],
 ];
 
-function readMusicSettings(): MusicSettings {
-  return { ...audioManager.getMusicRuntimeTuning(), volume: audioManager.getMusicVolume() };
-}
-
 /**
- * Applies one music control from a trusted input event: audio resumes first (the gesture may be the
- * first on the page), then the runtime clamps and returns every value, which the sliders mirror.
+ * Applies one volume from a trusted input event: audio resumes first (the gesture may be the first
+ * on the page), then the runtime clamps, stores and returns both values, which the sliders mirror.
  */
-export function applyMusicSetting(key: MusicSettingKey, value: number): MusicSettings {
+export function applyVolumeSetting(channel: VolumeChannel, value: number): AudioVolumes {
   audioManager.resumeFromUserGesture();
-  if (key === 'volume') audioManager.setMusicVolume(value);
-  else audioManager.setMusicRuntimeTuning({ [key]: value });
-  return readMusicSettings();
+  return audioManager.setVolume(channel, value);
 }
 
 export interface SettingsForm {
   element: HTMLElement;
   setDifficulty: (tier: GameplayDifficultyTier) => void;
   setQuality: (tier: VisualQualityTier) => void;
-  /** Re-reads the music values, which the other screen may have changed. */
-  syncMusic: () => void;
+  /** Re-reads the volumes, which the other screen may have changed. */
+  syncVolumes: () => void;
 }
 
 interface TierSelector<T extends string> {
@@ -79,8 +71,8 @@ function createTierSelector<T extends string>(config: {
 }
 
 /**
- * The settings shared by the menu sheet and the pause panel: difficulty, visual quality and the four
- * music sliders. `captions` groups them under GAMEPLAY / VISUALS / AUDIO headings.
+ * The settings shared by the menu sheet and the pause panel: difficulty, visual quality and the two
+ * volume sliders. `captions` groups them under GAMEPLAY / VISUALS / AUDIO headings.
  */
 export function createSettingsForm(config: {
   captions: boolean;
@@ -102,8 +94,8 @@ export function createSettingsForm(config: {
     onSelect: config.onSelectQuality,
   });
 
-  const sliders = new Map<MusicSettingKey, { input: HTMLInputElement; readout: HTMLOutputElement }>();
-  const showMusic = (values: MusicSettings): void => {
+  const sliders = new Map<VolumeChannel, { input: HTMLInputElement; readout: HTMLOutputElement }>();
+  const showVolumes = (values: AudioVolumes): void => {
     for (const [key, { input, readout }] of sliders) {
       const percent = Math.round(values[key] * 100);
       input.value = String(percent);
@@ -112,10 +104,12 @@ export function createSettingsForm(config: {
       readout.textContent = `${percent}%`;
     }
   };
-  const sliderCells = MUSIC_SLIDERS.map(([key, label]) => {
+  const sliderCells = VOLUME_SLIDERS.map(([key, label]) => {
     const input = h('input', { type: 'range', min: '0', max: '100', step: '1', 'aria-label': label });
     const readout = h('output', { className: 'ui-slider__value' });
-    input.addEventListener('input', () => showMusic(applyMusicSetting(key, Number(input.value) / 100)));
+    input.addEventListener('input', () => showVolumes(applyVolumeSetting(key, Number(input.value) / 100)));
+    // A short preview on release, so the effects level can be judged without starting a run.
+    if (key === 'effects') input.addEventListener('change', () => audioManager.playUi('uiConfirm'));
     sliders.set(key, { input, readout });
     return h(
       'div',
@@ -123,7 +117,7 @@ export function createSettingsForm(config: {
       h('label', { className: 'ui-slider' }, h('span', { className: 'ui-slider__label' }, label), input, readout)
     );
   });
-  showMusic(readMusicSettings());
+  showVolumes(audioManager.getVolumes());
 
   const caption = (text: string, modifier = ''): HTMLElement | null =>
     config.captions ? h('p', { className: `ui-caption ${modifier}` }, text) : null;
@@ -141,6 +135,6 @@ export function createSettingsForm(config: {
     ),
     setDifficulty: difficulty.setValue,
     setQuality: quality.setValue,
-    syncMusic: () => showMusic(readMusicSettings()),
+    syncVolumes: () => showVolumes(audioManager.getVolumes()),
   };
 }

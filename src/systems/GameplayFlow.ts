@@ -65,7 +65,7 @@ export function applyPowerUpPickup(
   effectsManager: EffectsManager,
   type: PowerUpType
 ): void {
-  audioManager.playPowerUpPickup();
+  audioManager.playSfx('powerUpPickup');
 
   switch (type) {
     case 'health':

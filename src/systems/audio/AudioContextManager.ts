@@ -5,9 +5,17 @@ type WebkitAudioWindow = Window &
     webkitAudioContext?: typeof AudioContext;
   };
 
+const MUSIC_BUS_LEVEL = 0.26;
+const SFX_BUS_LEVEL = 0.5;
+
 export class AudioContextManager {
   private ctx: AudioContext | null = null;
-  private masterGain: GainNode | null = null;
+  private musicBus: GainNode | null = null;
+  private musicDuck: GainNode | null = null;
+  private sfxBus: GainNode | null = null;
+  private sfxVolume = 1;
+  private duckDepth = 0;
+  private duckUntil = 0;
   private explosionBuffer: AudioBuffer | null = null;
   private readonly noiseBuffers = new Map<string, AudioBuffer>();
   private desiredSuspended = false;
@@ -18,8 +26,43 @@ export class AudioContextManager {
     return this.ctx;
   }
 
-  getMasterGain(): GainNode | null {
-    return this.masterGain;
+  /** Music input. It passes through the duck gain, then shares the limiter with effects. */
+  getMusicBus(): GainNode | null {
+    return this.musicBus;
+  }
+
+  getSfxBus(): GainNode | null {
+    return this.sfxBus;
+  }
+
+  setSfxVolume(volume: number): void {
+    this.sfxVolume = volume;
+    if (this.ctx && this.sfxBus) {
+      // A suspended context would only start the glide after resuming, at the old level.
+      if (this.ctx.state === 'running') {
+        this.sfxBus.gain.setTargetAtTime(SFX_BUS_LEVEL * volume, this.ctx.currentTime, 0.02);
+      } else {
+        this.sfxBus.gain.value = SFX_BUS_LEVEL * volume;
+      }
+    }
+  }
+
+  /**
+   * Dips the music by `depth` (0-1) and lets it recover over `seconds`. The dip follows the effects
+   * volume, so muted effects leave the music untouched.
+   */
+  duckMusic(depth: number, seconds: number): void {
+    depth *= this.sfxVolume;
+    if (!this.ctx || !this.musicDuck || depth <= 0) return;
+    const now = this.ctx.currentTime;
+    // A lighter dip must not cut short a deeper one that is still recovering.
+    if (now < this.duckUntil && depth < this.duckDepth) return;
+    this.duckDepth = depth;
+    this.duckUntil = now + seconds;
+    const gain = this.musicDuck.gain;
+    gain.cancelScheduledValues(now);
+    gain.setTargetAtTime(1 - depth, now, 0.015);
+    gain.setTargetAtTime(1, now + 0.09, seconds / 3);
   }
 
   getState(): AudioContextState | null {
@@ -57,10 +100,25 @@ export class AudioContextManager {
   private ensureGains(): void {
     if (!this.ctx) return;
 
-    if (!this.masterGain) {
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.26;
-      this.masterGain.connect(this.ctx.destination);
+    if (!this.musicBus) {
+      // Everything meets in one limiter, so stacked explosions over full music cannot clip.
+      const limiter = this.ctx.createDynamicsCompressor();
+      limiter.threshold.value = -4;
+      limiter.knee.value = 4;
+      limiter.ratio.value = 12;
+      limiter.attack.value = 0.002;
+      limiter.release.value = 0.2;
+      limiter.connect(this.ctx.destination);
+
+      this.musicBus = this.ctx.createGain();
+      this.musicBus.gain.value = MUSIC_BUS_LEVEL;
+      this.musicDuck = this.ctx.createGain();
+      this.musicBus.connect(this.musicDuck);
+      this.musicDuck.connect(limiter);
+
+      this.sfxBus = this.ctx.createGain();
+      this.sfxBus.gain.value = SFX_BUS_LEVEL * this.sfxVolume;
+      this.sfxBus.connect(limiter);
     }
   }
 
@@ -210,7 +268,11 @@ export class AudioContextManager {
 
   resetNodes(): void {
     this.ctx = null;
-    this.masterGain = null;
+    this.musicBus = null;
+    this.musicDuck = null;
+    this.sfxBus = null;
+    this.duckDepth = 0;
+    this.duckUntil = 0;
     this.explosionBuffer = null;
     this.noiseBuffers.clear();
     this.desiredSuspended = false;

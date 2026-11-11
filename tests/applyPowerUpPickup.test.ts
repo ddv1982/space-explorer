@@ -6,7 +6,7 @@ mock.module('phaser', () => ({
 
 mock.module('../src/systems/AudioManager', () => ({
   audioManager: {
-    playPowerUpPickup: mock(),
+    playSfx: mock(),
   },
 }));
 
