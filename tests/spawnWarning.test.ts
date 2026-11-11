@@ -15,7 +15,7 @@ function createScene() {
     scene: {
       // The chevron texture is painted once; later warnings reuse it.
       textures: { exists: mock(() => true) },
-      add: { image: mock(() => image), graphics: mock() },
+      add: { image: mock((_x: number, _y: number, _key: string) => image), graphics: mock() },
       tweens: { add: mock() },
     },
   };
