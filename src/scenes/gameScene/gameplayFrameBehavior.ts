@@ -48,6 +48,7 @@ interface GameSceneGameplayFrameDelegate {
   waveManager: {
     update(time: number, delta: number, progress: number): void;
     updateBossAdds(delta: number): void;
+    getDuelHull(): { hp: number; maxHp: number } | null;
   };
   levelManager: {
     progress: number;
@@ -61,9 +62,11 @@ interface GameSceneGameplayFrameDelegate {
     getChainState(time: number): ChainState;
   };
   events: {
-    emit(event: string): void;
+    emit(event: string, ...args: unknown[]): void;
   };
   hud: {
+    showBossBar(name: string): void;
+    hideBossBar(): void;
     updateBossHp(hp: number, maxHp: number): void;
     updateBossGuard(ratio: number | null, broken: boolean): void;
   };
@@ -106,6 +109,7 @@ export function createGameSceneGameplayFrameBehavior(
   let lastMusicIntensity: number | undefined;
   let lastMusicSection: ActiveSection | undefined;
   let lastBossSpawned: boolean | undefined;
+  let duelHull = 0;
 
   const handlePauseInput = (): void => {
     if (delegate.inputManager.consumePauseToggleRequest()) {
@@ -195,7 +199,33 @@ export function createGameSceneGameplayFrameBehavior(
     }
   };
 
+  /**
+   * A rival duel holds the sector: no new waves or hazards arrive and the route stops advancing
+   * until the rival is beaten. Its hull shows on the boss bar. Returns whether a duel is on.
+   */
+  const updateDuel = (): boolean => {
+    const duel = delegate.levelManager.hasBossSpawned() ? null : delegate.waveManager.getDuelHull();
+    if (!duel) {
+      if (duelHull > 0) {
+        duelHull = 0;
+        delegate.hud.hideBossBar();
+      }
+      return false;
+    }
+
+    if (duelHull === 0) {
+      delegate.events.emit(GAME_SCENE_EVENTS.eliteWave, 'RIVAL DUEL');
+      delegate.hud.showBossBar('RIVAL');
+    }
+    // Two rivals share one bar; it keeps the full duel's hull as its scale when one falls.
+    duelHull = Math.max(duelHull, duel.maxHp);
+    delegate.hud.updateBossHp(duel.hp, duelHull);
+    return true;
+  };
+
   const updateEncounterAndLevelProgress = (time: number, delta: number): void => {
+    if (updateDuel()) return;
+
     if (!delegate.levelManager.hasBossSpawned()) {
       delegate.waveManager.update(time, delta, delegate.levelManager.progress);
     } else if (delegate.levelManager.getLevelConfig().bossAddWaves) {

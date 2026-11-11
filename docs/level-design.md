@@ -1,5 +1,24 @@
 # Level & Arcade Systems Design Bible: "Neon Frontier" Campaign
 
+## Set pieces added in v1.28
+
+Every sector keeps its five-part arc and gains at least one beat built from four new blocks:
+
+- **Rival duel** (`rival`). The player's own hull at half strength (`RIVAL_*` constants halve
+  `FLIGHT_CONFIG` and the base fire rate). Its hull is rated in player hits, 30 at any damage tier, so a
+  duel lasts about nine seconds stock and shortens only with fire rate. While a rival lives the sector
+  holds: the wave clock, hazards and route progress all stop, and its hull shows on the boss bar. Rivals
+  are authored only as choreographed waves. L2 ends in the first duel (it has no boss), L4 and L9 have
+  one mid-level, L7 and L10 send a pair.
+- **Courier** (`courier`). Unarmed gold runner that weaves edge to edge and always drops a power-up.
+  Escaping costs nothing. L8 runs them as convoys.
+- **Wall** formation. Fills every lane except the wave's `lane`; wide screens get up to three members
+  per lane so the open lane stays the only clear way through. `count` caps the total.
+- **Echelon** formation. A diagonal staircase stepping away from the nearer screen edge.
+
+Upgrade tiers open across all ten sectors (`progressionCaps` in `UpgradesConfig.ts`), and purchased
+shields recharge on every respawn.
+
 ## Late-campaign combat texture
 
 Levels 5–10 add payoff without adding player inputs:

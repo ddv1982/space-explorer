@@ -260,6 +260,7 @@ describe('GameSceneFlowController', () => {
     expect(harness.resumeScene).toHaveBeenCalledTimes(1);
     expect(harness.player.spawn).toHaveBeenCalledWith(111, 222, {
       hp: 5,
+      shields: 0,
       invulnerabilityDuration: 2000,
     });
     expect(harness.clock.pendingTimer(LEVEL_COMPLETE_DELAY_MS)).not.toBeNull();
@@ -365,6 +366,7 @@ describe('GameSceneFlowController', () => {
     expect(harness.resumeScene).toHaveBeenCalledTimes(1);
     expect(harness.player.spawn).toHaveBeenCalledWith(111, 222, {
       hp: 5,
+      shields: 0,
       invulnerabilityDuration: 2000,
     });
     expect(harness.setRespawnInProgress).toHaveBeenLastCalledWith(false);

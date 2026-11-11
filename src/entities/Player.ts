@@ -272,9 +272,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.exhaustTimer = this.exhaustInterval;
   }
 
-  spawn(x: number, y: number, options: { hp?: number; invulnerabilityDuration?: number } = {}): void {
+  spawn(x: number, y: number, options: { hp?: number; shields?: number; invulnerabilityDuration?: number } = {}): void {
     this.enableBody(true, x, y, true, true);
     this.resetSpawnState(options.hp);
+    if (options.shields !== undefined) this.shields = options.shields;
     this.stopBodyMotion();
     this.applySpawnInvulnerability(options.invulnerabilityDuration ?? 0);
   }

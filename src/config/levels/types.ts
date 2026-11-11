@@ -11,7 +11,9 @@ export type EnemyType =
   | 'sower'
   | 'lancer'
   | 'splitter'
-  | 'swarmling';
+  | 'swarmling'
+  | 'rival'
+  | 'courier';
 
 export interface EnemySpawnConfig {
   type: EnemyType;
@@ -116,7 +118,12 @@ export interface SignatureWaveConfig {
   notes?: string;
 }
 
-export type WaveFormation = 'column' | 'line' | 'vee' | 'ring' | 'pincer';
+/**
+ * `wall` fills every lane except the wave's `lane`, which is the gap to fly through; wide screens
+ * get up to three members per lane, and `count` caps the total;
+ * `echelon` is a diagonal staircase stepping away from the nearer screen edge.
+ */
+export type WaveFormation = 'column' | 'line' | 'vee' | 'ring' | 'pincer' | 'wall' | 'echelon';
 
 type WaveTelegraph = 'none' | 'warning' | 'wormhole';
 

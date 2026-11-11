@@ -124,6 +124,17 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
           telegraph: 'warning',
           notes: 'A warning-telegraphed gunship pincer squeezes the aisles while the portals cycle.',
         },
+        {
+          id: 'l7-rival-twins',
+          atMs: 16000,
+          formation: 'line',
+          type: 'rival',
+          count: 2,
+          lane: 3,
+          spacing: 220,
+          telegraph: 'wormhole',
+          notes: 'The Choir twins: two rivals warp in side by side and the sector holds until both fall.',
+        },
       ],
       recoveryDrops: [
         {

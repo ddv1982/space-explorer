@@ -166,6 +166,16 @@ export class WaveManager {
     }
   }
 
+  /** Combined hull of the rivals still fighting, or null when no duel is on. */
+  getDuelHull(): { hp: number; maxHp: number } | null {
+    const rivals = this.enemyPool.getActiveRivals();
+    if (rivals.length === 0) return null;
+    return {
+      hp: rivals.reduce((total, rival) => total + Math.max(0, rival.hp), 0),
+      maxHp: rivals.reduce((total, rival) => total + rival.maxHp, 0),
+    };
+  }
+
   setPowerUpGroup(powerUpGroup: Phaser.Physics.Arcade.Group): void {
     this.powerUpGroup = powerUpGroup;
   }

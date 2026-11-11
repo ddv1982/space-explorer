@@ -48,6 +48,41 @@ function thump(at: number, decay: number, gain: number, from: number, to: number
   return { source: 'sine', freq: [from, to], sweepRate: 2.5, attack: 0.002, decay, gain, at, drive: 1.5 };
 }
 
+/**
+ * Explosions are built from noise only. The music's kick is a clean sine pitch drop and its snare a
+ * short noise tick, so a blast made from those same parts reads as an off-beat drum hit. These layers
+ * swell in over a few milliseconds, stay gritty and un-pitched, and ring out longer than any drum.
+ */
+function crack(at: number, decay: number, gain: number, from: number, to: number): SfxLayer {
+  return {
+    source: 'noise',
+    filter: { type: 'bandpass', freq: [from, to], q: 0.8 },
+    attack: 0.005,
+    decay,
+    gain,
+    at,
+    sweepRate: 1.6,
+    drive: 2.5,
+  };
+}
+
+function rumble(at: number, decay: number, gain: number, from: number, to: number): SfxLayer {
+  return {
+    source: 'noise',
+    filter: { type: 'lowpass', freq: [from, to] },
+    attack: 0.014,
+    decay,
+    gain,
+    at,
+    drive: 3,
+  };
+}
+
+/** Debris sizzle: fades in after the blast instead of ticking like a hi-hat. */
+function fizz(at: number, decay: number, gain: number): SfxLayer {
+  return { source: 'noise', filter: { type: 'highpass', freq: [2400, 5200] }, attack: 0.04, decay, gain, at };
+}
+
 const SOFT_LOWPASS = { type: 'lowpass', freq: [2400, 900] } as const;
 
 export const SFX = {
@@ -127,23 +162,19 @@ export const SFX = {
     minIntervalMs: 90,
   },
   explosionSmall: {
-    layers: [
-      burst(0, 0.36, 0.8, 3400, 260),
-      thump(0, 0.24, 0.85, 150, 44),
-      { source: 'noise', filter: { type: 'highpass', freq: [2600, 2600] }, attack: 0.001, decay: 0.07, gain: 0.3 },
-    ],
-    gain: 0.26,
+    layers: [crack(0, 0.3, 0.8, 2600, 520), rumble(0, 0.34, 0.7, 520, 150), fizz(0.02, 0.42, 0.22)],
+    gain: 0.24,
     variants: 5,
-    jitter: 2.5,
+    jitter: 3,
     maxVoices: 5,
     minIntervalMs: 30,
   },
   explosionLarge: {
     layers: [
-      burst(0, 0.9, 0.8, 2600, 110),
-      thump(0, 0.62, 0.9, 115, 30),
-      burst(0.11, 0.5, 0.5, 1800, 160),
-      { source: 'noise', filter: { type: 'highpass', freq: [2200, 2200] }, attack: 0.001, decay: 0.12, gain: 0.3 },
+      crack(0, 0.8, 0.8, 2200, 300),
+      rumble(0, 1, 0.9, 420, 70),
+      crack(0.13, 0.5, 0.45, 1600, 380),
+      fizz(0.05, 0.9, 0.25),
     ],
     gain: 0.6,
     variants: 2,
@@ -153,13 +184,14 @@ export const SFX = {
   },
   explosionBoss: {
     layers: [
-      burst(0, 1.8, 0.75, 2200, 80),
-      thump(0, 1.4, 0.9, 88, 24),
-      burst(0.18, 0.7, 0.55, 2600, 200),
-      thump(0.18, 0.4, 0.5, 130, 50),
-      burst(0.42, 0.8, 0.5, 2000, 150),
-      thump(0.42, 0.5, 0.5, 105, 38),
-      burst(0.74, 1.1, 0.45, 1500, 90),
+      crack(0, 1.6, 0.75, 2000, 220),
+      rumble(0, 1.9, 0.9, 380, 55),
+      crack(0.18, 0.7, 0.55, 2400, 420),
+      rumble(0.18, 0.6, 0.5, 460, 120),
+      crack(0.42, 0.8, 0.5, 1900, 340),
+      rumble(0.42, 0.7, 0.5, 400, 90),
+      crack(0.74, 1.1, 0.45, 1400, 240),
+      fizz(0.1, 1.8, 0.25),
     ],
     gain: 0.75,
     variants: 1,
@@ -400,6 +432,29 @@ export const SFX = {
     variants: 1,
     jitter: 0,
     maxVoices: 1,
+  },
+  warpJump: {
+    layers: [
+      // The drive spools up...
+      { source: 'sine', freq: [90, 760], attack: 0.55, decay: 0.3, gain: 0.5, fm: { ratio: 0.5, index: 2.5 } },
+      { source: 'noise', filter: { type: 'bandpass', freq: [260, 5200], q: 2 }, attack: 0.7, decay: 0.12, gain: 0.4 },
+      // ...and the ship punches through.
+      crack(0.8, 0.7, 0.7, 2600, 320),
+      rumble(0.8, 1.2, 0.9, 400, 60),
+      {
+        source: 'noise',
+        filter: { type: 'highpass', freq: [5200, 1400] },
+        attack: 0.02,
+        decay: 1.1,
+        gain: 0.3,
+        at: 0.8,
+      },
+    ],
+    gain: 0.5,
+    variants: 1,
+    jitter: 0,
+    maxVoices: 1,
+    duck: { depth: 0.5, seconds: 1.8 },
   },
   levelComplete: {
     layers: [

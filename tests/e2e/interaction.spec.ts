@@ -195,6 +195,18 @@ test('first trusted menu action recovers policy-suspended audio without overridi
   assertNoBrowserErrors();
 });
 
+test('a gameplay key wakes sleeping audio mid-run, without a menu button', async ({ page, assertNoBrowserErrors }) => {
+  await openMenu(page);
+  await startNewRun(page);
+  await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('running');
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.suspendAudioContextForPolicyTest());
+  await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
+
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('running');
+  assertNoBrowserErrors();
+});
+
 test('returning to the menu does not replay a preview URL level jump', async ({ page, assertNoBrowserErrors }) => {
   await page.goto('/?browserHarness=1&startLevel=9&upgrades=0');
   await waitForScene(page, 'Game');

@@ -60,7 +60,7 @@ interface GameSceneCombatFeedbackHandlers {
   handleEnemyBulletTrail: (x: number, y: number) => void;
   handleEnemySpawnWarning: (x: number) => void;
   handleWormholeTelegraph: (x: number, y: number) => void;
-  handleEliteWave: () => void;
+  handleEliteWave: (title?: string) => void;
   handleBossDeath: () => void;
   handleBossPhaseChange: (phase: number) => void;
   handleBossGuardBreak: () => void;
@@ -254,8 +254,8 @@ export function createGameSceneCombatFeedbackHandlers(
       runBestEffort(() => audioManager.playSfx('wormhole', stereoPan(deps.scene, x)));
     },
 
-    handleEliteWave: (): void => {
-      deps.hud.showEliteWaveAnnouncement();
+    handleEliteWave: (title): void => {
+      deps.hud.showEliteWaveAnnouncement(title);
       runBestEffort(() => audioManager.playSfx('eliteWave'));
       runBestEffort(() => deps.scene.cameras.main.flash(120, 178, 132, 255, false));
       runBestEffort(() =>

@@ -33,6 +33,8 @@ const ENEMY_STYLES: Record<string, ExplosionStyle> = {
   sower: STYLE([0xb45dff, 0xff6a3d, 0xf0e0ff], 0xc08cff, 1.18, 1.18, true),
   lancer: STYLE([0xd8e9ff, 0x8bb9ff, 0xffffff], 0xc9e3ff, 0.58, 1.45, true),
   fighter: STYLE([0xff8a3a, 0xc8452f, 0xffe2c8], 0xff9a5a),
+  rival: STYLE([0xff5d73, 0xffb0bc, 0xffffff], 0xff8a9a, 1.3, 1.3, true),
+  courier: STYLE([0xffd76a, 0xfff0c4, 0xffffff], 0xffe08a),
 };
 
 /** Generic blasts (asteroids, bombs, the player) burn amber. */

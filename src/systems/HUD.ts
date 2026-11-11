@@ -240,8 +240,8 @@ export class HUD {
     this.announcementTweens.showPicketOnlineAnnouncement();
   }
 
-  showEliteWaveAnnouncement(): void {
-    this.announcementTweens.showEliteWaveAnnouncement();
+  showEliteWaveAnnouncement(title?: string): void {
+    this.announcementTweens.showEliteWaveAnnouncement(title);
   }
 
   showHelperWingDepletedAnnouncement(): void {

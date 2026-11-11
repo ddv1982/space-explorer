@@ -1,7 +1,13 @@
 import Phaser from 'phaser';
 import type { DamageSource } from '@/systems/PlayerDamage';
 import { audioManager } from '@/systems/AudioManager';
-import { saveCurrentHp, saveRemainingLives, saveScoreToState, setRunSummary } from '@/systems/PlayerState';
+import {
+  getPlayerState,
+  saveCurrentHp,
+  saveRemainingLives,
+  saveScoreToState,
+  setRunSummary,
+} from '@/systems/PlayerState';
 import { TERMINAL_TRANSITIONS, type TerminalTransitionState } from '@/systems/GameplayFlow';
 import type { Player } from '@/entities/Player';
 import type { CollisionManager } from '@/systems/CollisionManager';
@@ -202,7 +208,7 @@ export class GameSceneFlowController {
     this.persistLevelCompleteState(context);
     context.warpTransition.play(() => {
       context.startScene('PlanetIntermission');
-    });
+    }, context.player);
   }
 
   private scheduleRespawn(context: GameSceneFlowContext): void {
@@ -343,6 +349,8 @@ export class GameSceneFlowController {
     const respawnPosition = context.getPlayerRespawnPosition();
     context.player.spawn(respawnPosition.x, respawnPosition.y, {
       hp: context.player.maxHp,
+      // Purchased shields recharge with every new ship, like the hull does.
+      shields: getPlayerState(context.registry).upgrades.shield,
       invulnerabilityDuration: PLAYER_RESPAWN_INVULNERABILITY_MS,
     });
   }
