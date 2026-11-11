@@ -271,6 +271,8 @@ export class AudioContextManager {
     this.musicBus = null;
     this.musicDuck = null;
     this.sfxBus = null;
+    this.duckDepth = 0;
+    this.duckUntil = 0;
     this.explosionBuffer = null;
     this.noiseBuffers.clear();
     this.desiredSuspended = false;

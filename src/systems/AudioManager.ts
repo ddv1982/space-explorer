@@ -50,13 +50,15 @@ export class AudioManager {
 
   /** `pan` runs from -1 (left edge) to 1 (right edge). */
   playSfx(id: SfxId, pan = 0): void {
+    // Audio is suspended while paused; a sound started now would only burst out on resume.
+    if (this.pauseReasons.size > 0) return;
     this.sfxPlayer.play(id, pan);
   }
 
   /** Menu and button feedback: the press may be the page's first gesture, so audio resumes first. */
   playUi(id: 'uiClick' | 'uiConfirm' = 'uiClick'): void {
     this.resumeFromUserGesture();
-    this.sfxPlayer.play(id);
+    this.playSfx(id);
   }
 
   resumeFromUserGesture(): void {
