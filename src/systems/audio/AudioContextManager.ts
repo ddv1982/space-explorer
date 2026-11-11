@@ -14,6 +14,8 @@ export class AudioContextManager {
   private musicDuck: GainNode | null = null;
   private sfxBus: GainNode | null = null;
   private sfxVolume = 1;
+  private duckDepth = 0;
+  private duckUntil = 0;
   private explosionBuffer: AudioBuffer | null = null;
   private readonly noiseBuffers = new Map<string, AudioBuffer>();
   private desiredSuspended = false;
@@ -36,7 +38,12 @@ export class AudioContextManager {
   setSfxVolume(volume: number): void {
     this.sfxVolume = volume;
     if (this.ctx && this.sfxBus) {
-      this.sfxBus.gain.setTargetAtTime(SFX_BUS_LEVEL * volume, this.ctx.currentTime, 0.02);
+      // A suspended context would only start the glide after resuming, at the old level.
+      if (this.ctx.state === 'running') {
+        this.sfxBus.gain.setTargetAtTime(SFX_BUS_LEVEL * volume, this.ctx.currentTime, 0.02);
+      } else {
+        this.sfxBus.gain.value = SFX_BUS_LEVEL * volume;
+      }
     }
   }
 
@@ -48,6 +55,10 @@ export class AudioContextManager {
     depth *= this.sfxVolume;
     if (!this.ctx || !this.musicDuck || depth <= 0) return;
     const now = this.ctx.currentTime;
+    // A lighter dip must not cut short a deeper one that is still recovering.
+    if (now < this.duckUntil && depth < this.duckDepth) return;
+    this.duckDepth = depth;
+    this.duckUntil = now + seconds;
     const gain = this.musicDuck.gain;
     gain.cancelScheduledValues(now);
     gain.setTargetAtTime(1 - depth, now, 0.015);
