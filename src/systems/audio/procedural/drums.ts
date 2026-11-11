@@ -39,6 +39,9 @@ const KITS: Record<
 
 function decay(ctx: BaseAudioContext, output: AudioNode, time: number, gain: number, seconds: number): GainNode {
   const node = ctx.createGain();
+  // Closed until the hit: a source and its gain event can land one sample apart, and at the default
+  // gain of 1 that sample of noise is a click far louder than the hit.
+  node.gain.value = 0;
   node.gain.setValueAtTime(Math.max(gain, 0.001), time);
   node.gain.exponentialRampToValueAtTime(0.001, time + seconds);
   node.connect(output);

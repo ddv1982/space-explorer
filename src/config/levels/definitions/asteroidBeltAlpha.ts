@@ -179,7 +179,6 @@ export const ASTEROID_BELT_ALPHA_LEVEL: LevelConfig = {
     palette: 'glass',
     tempo: 96,
     rootHz: 146.83,
-    patternRoot: 0,
     bassPattern: bassPatterns.syncopatedBounce,
     pulsePattern: arpeggiatorPatterns.flowing,
     leadPattern: arpeggiatorPatterns.wideLeap,

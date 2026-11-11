@@ -15,7 +15,7 @@ interface ToneLayerArgs {
   track: ProceduralMusicTrackConfig;
   layer: ProceduralMusicLayerConfig;
   stepIndex: number;
-  harmonicRootHz?: number;
+  chordToneHz: (semitones: number) => number;
   time: number;
   stepDuration: number;
   intensityBlend: number;
@@ -174,10 +174,7 @@ export function scheduleLayer(args: ToneLayerArgs): void {
     return;
   }
 
-  const octaveShift = args.layer.octaveShift ?? 0;
-  const semitoneOffset = note + octaveShift * 12;
-  const baseRootHz = args.harmonicRootHz ?? args.track.rootHz;
-  const frequency = baseRootHz * Math.pow(2, semitoneOffset / 12);
+  const frequency = args.chordToneHz(note) * Math.pow(2, args.layer.octaveShift ?? 0);
   const duration = Math.max(args.stepDuration * args.layer.durationSteps * 0.96, 0.04);
 
   scheduleTone({ ...args, frequency, duration });
@@ -243,6 +240,8 @@ export function scheduleNoise({
   filter.frequency.setValueAtTime(Math.max(noisePlan.bandpassHz, noisePlan.highpassHz + 40), time);
   filter.Q.setValueAtTime(noisePlan.filterQ, time);
 
+  // Closed until the burst starts, for the same reason as the drums.
+  gain.gain.value = 0;
   gain.gain.setValueAtTime(0.001, time);
   gain.gain.linearRampToValueAtTime(noisePlan.peakGain, time + Math.min(0.02, noisePlan.duration * 0.35));
   gain.gain.exponentialRampToValueAtTime(0.001, time + noisePlan.duration);

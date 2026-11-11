@@ -25,6 +25,22 @@ interface HarmonicContext {
   rootSemitoneOffset: number;
   harmonicRootHz: number;
   chord: MusicHarmonicChordStepConfig;
+  /**
+   * Frequency of the scale tone nearest to `semitones` above the chord root (a tie goes to the lower
+   * tone). Every pitched voice asks here, so bass, arpeggio, lead and pad always share one scale.
+   */
+  chordToneHz: (semitones: number) => number;
+}
+
+/** Moves a pitch, in semitones above the key's root, onto the nearest tone of the mode. */
+function snapToMode(mode: readonly number[], semitones: number): number {
+  const octave = Math.floor(semitones / 12);
+  const pitchClass = semitones - octave * 12;
+  let nearest = mode[0];
+  for (const tone of [...mode, 12]) {
+    if (Math.abs(tone - pitchClass) < Math.abs(nearest - pitchClass)) nearest = tone;
+  }
+  return octave * 12 + nearest;
 }
 
 function toPositiveInteger(value: number, fallback = 1): number {
@@ -86,5 +102,6 @@ export function resolveHarmonicContext(track: ProceduralMusicTrackConfig, barInd
     rootSemitoneOffset,
     harmonicRootHz: track.rootHz * Math.pow(2, rootSemitoneOffset / 12),
     chord,
+    chordToneHz: (semitones) => track.rootHz * Math.pow(2, snapToMode(mode, rootSemitoneOffset + semitones) / 12),
   };
 }

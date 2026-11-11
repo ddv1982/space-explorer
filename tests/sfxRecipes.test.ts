@@ -40,6 +40,22 @@ describe('sound effect recipes', () => {
     expect(renderSfx(layers, { sampleRate: SAMPLE_RATE, seed: 1, pitchScale: 1.1 })).not.toEqual(first);
   });
 
+  test('explosions are soft: little of their energy sits above 2 kHz', () => {
+    for (const id of ['explosionSmall', 'explosionLarge', 'explosionBoss'] as const) {
+      const samples = renderSfx(SFX[id].layers, { sampleRate: SAMPLE_RATE, seed: 7 });
+      const coefficient = 1 - Math.exp((-2 * Math.PI * 2000) / SAMPLE_RATE);
+      let lowpassed = 0;
+      let total = 0;
+      let high = 0;
+      for (const sample of samples) {
+        lowpassed += coefficient * (sample - lowpassed);
+        total += sample * sample;
+        high += (sample - lowpassed) * (sample - lowpassed);
+      }
+      expect(high / total).toBeLessThan(0.15);
+    }
+  });
+
   test('frequent sounds are short, throttled and quieter than one-off events', () => {
     for (const id of ['playerShot', 'helperShot', 'picketShot', 'enemyShot', 'graze'] as const) {
       const definition: SfxDefinition = SFX[id];

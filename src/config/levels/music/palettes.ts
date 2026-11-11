@@ -83,7 +83,6 @@ const BASE_STAGE: PaletteVoices = {
     waveform: 'sine',
     gain: 0.042,
     durationSteps: 2,
-    octaveShift: 0,
     filterHz: 1400,
     enterAt: 0.4,
     expression: { ...layerExpressionPresets.slowSwell, ...layerExpressionPresets.gentleVibrato },

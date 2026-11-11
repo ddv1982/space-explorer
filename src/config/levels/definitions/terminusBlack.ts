@@ -418,7 +418,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
     palette: 'finale',
     tempo: 126,
     rootHz: 65.41,
-    patternRoot: 0,
     bassPattern: bassPatterns.voidStalker,
     pulsePattern: arpeggiatorPatterns.cosmicVastness,
     leadPattern: arpeggiatorPatterns.voidBeacon,

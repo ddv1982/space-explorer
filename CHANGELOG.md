@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.0] - 2026-11-11
+
+### Changed
+
+- Explosions are soft, round puffs instead of gritty blasts. They are about 10 dB quieter, lose their crack and sizzle (energy above 2 kHz fell from about a third to under a tenth), and duck the music less. They are still noise only, so they do not read as drum hits.
+- Every voice of a track now plays in one scale. Bass, arpeggio, lead and pad chords used to be written independently, so 17 of the 20 tracks played notes outside their own key, and in sector 2 the melodies sat a whole tone above the chords under them. Notes now snap to the sector's scale as they follow the chord changes.
+- Pad chords carry the scale's own third and fade out sooner, so one chord no longer rings into the next.
+- The lead melody sings in its own register above the arpeggio in every key, instead of sharing an octave with it.
+- Sector 2's stage music is turned down to the level of the other sectors; it was about 4 dB louder.
+
+### Fixed
+
+- Hi-hats, snares and the noise layer could click: now and then one sample of noise slipped through at full volume before the hit's envelope started, about twenty times louder than the hit itself.
+
 ## [1.28.0] - 2026-11-11
 
 ### Added

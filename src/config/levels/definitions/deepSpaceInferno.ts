@@ -243,7 +243,6 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
     palette: 'chase',
     tempo: 116,
     rootHz: 87.31,
-    patternRoot: 0,
     bassPattern: bassPatterns.aggressiveBass,
     pulsePattern: arpeggiatorPatterns.aggressiveAttack,
     leadPattern: arpeggiatorPatterns.urgentDash,

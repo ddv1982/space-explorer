@@ -304,7 +304,6 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
     palette: 'chase',
     tempo: 118,
     rootHz: 73.42,
-    patternRoot: 0,
     bassPattern: bassPatterns.pushRhythm,
     pulsePattern: arpeggiatorPatterns.quartalCascade,
     leadPattern: arpeggiatorPatterns.octaveDance,

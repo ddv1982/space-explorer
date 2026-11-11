@@ -248,7 +248,6 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
     palette: 'ember',
     tempo: 108,
     rootHz: 98,
-    patternRoot: 0,
     bassPattern: bassPatterns.drivingPulseBass,
     pulsePattern: arpeggiatorPatterns.drivingPulse,
     leadPattern: arpeggiatorPatterns.forwardMomentum,

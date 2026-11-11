@@ -8,6 +8,7 @@ Contributor guide for authoring and validating deterministic procedural music in
 - Scheduling flow per step is: `musicIntent` (meter + deterministic pulse) -> `harmony` (bar/chord/root Hz) -> `arrangement` (section density + gain multipliers) -> `rhythm` (per-layer trigger decision) -> `synthesis` (Web Audio node graph + envelopes/modulation).
 - `musicIntent.ts` converts track time signature + `stepsPerBeat` into `stepsPerBar`, computes `barIndex`/`stepInBar`, and emits a deterministic pulse from `deterministicSeed`.
 - `harmony.ts` resolves mode + progression (`degree`, `barsDuration`, `quality`) into `harmonicRootHz`, normalized and loop-safe.
+- One key per track: every pitched voice gets its frequency from `chordToneHz(semitones)`, which adds the pattern's offset to the bar's chord root and snaps the result to the nearest tone of the track's mode (a tie goes down). Patterns are written as shapes above a chord root; they cannot leave the scale, so bass, arpeggio, lead and pad always agree. `tests/musicKey.test.ts` checks this for every level.
 - `rhythm.ts` gates each layer with deterministic hash-based decisions (`division`, `phase`, `gate`, `density`, accents), so repeated runs project the same timeline.
 - `arrangement.ts` resolves phase sections (`intro/build/peak/release`) with loop/non-loop behavior and per-layer gain multipliers.
 - `synthesis.ts` schedules tone/noise voices from layer patterns, harmonic root, expression presets, envelopes, and modulation into the music bus.
