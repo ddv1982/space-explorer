@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { MobileControls } from './MobileControls';
+import { getAutoFireSettings } from '../config/autoFireSettings';
 
 /** Keyboard and pointer intent for gameplay; touch steering comes from `MobileControls` drag. */
 export class InputManager {
@@ -49,11 +50,14 @@ export class InputManager {
   }
 
   isFiring(): boolean {
-    // Touch flight autofires the main gun.
-    if (this.mobileControls?.isTouchSteeringActive() === true) {
+    // Touch flight autofires by default; keyboard and mouse play can opt in from settings.
+    const autoFire = getAutoFireSettings();
+    const touchActive = this.mobileControls?.isTouchSteeringActive() === true;
+    if (touchActive ? autoFire.touch : autoFire.keyboard) {
       return true;
     }
 
+    // With autofire off, a steering finger counts as a held pointer, so touch fires while touching.
     return this.space.isDown || this.scene.input.activePointer.isDown;
   }
 
