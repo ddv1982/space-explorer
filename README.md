@@ -34,7 +34,11 @@ The ship flies with inertia: it builds speed over about a second and slides afte
 
 On touch devices, drag anywhere to fly: the ship follows your finger's movement and the main gun
 fires automatically. Pressing a key on a hardware keyboard hands steering and firing to the
-keyboard, and the next touch hands them back (tap-to-pause stays available). Phones and tablets
+keyboard, and the next touch hands them back (tap-to-pause stays available).
+
+Autofire is set in SETTINGS (menu or pause panel). Touch flight autofires by default; turn it off
+to fire only while your finger is on the screen. Keyboard and mouse play can turn autofire on, so
+the gun fires without holding Space. Phones and tablets
 play in both portrait and landscape; on phones, portrait gives the longest vertical read on
 incoming threats.
 

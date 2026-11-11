@@ -1,7 +1,9 @@
 import type { GameplayDifficultyTier } from '../config/gameplayDifficulty';
 import type { VisualQualityTier } from '../config/visualQuality';
 import type { AudioVolumes } from '../config/audioSettings';
+import { getAutoFireSettings, setAutoFire, type AutoFireInput } from '../config/autoFireSettings';
 import { audioManager } from '../systems/AudioManager';
+import { isTouchMobileDevice } from '../utils/device';
 import { h } from './dom';
 
 type VolumeChannel = keyof AudioVolumes;
@@ -24,8 +26,8 @@ export interface SettingsForm {
   element: HTMLElement;
   setDifficulty: (tier: GameplayDifficultyTier) => void;
   setQuality: (tier: VisualQualityTier) => void;
-  /** Re-reads the volumes, which the other screen may have changed. */
-  syncVolumes: () => void;
+  /** Re-reads the volumes and autofire, which the other screen may have changed. */
+  sync: () => void;
 }
 
 interface TierSelector<T extends string> {
@@ -71,8 +73,8 @@ function createTierSelector<T extends string>(config: {
 }
 
 /**
- * The settings shared by the menu sheet and the pause panel: difficulty, visual quality and the two
- * volume sliders. `captions` groups them under GAMEPLAY / VISUALS / AUDIO headings.
+ * The settings shared by the menu sheet and the pause panel: difficulty, autofire, visual quality and
+ * the two volume sliders. Touch devices get a touch autofire row too, since a keyboard may join later. `captions` groups them under GAMEPLAY / VISUALS / AUDIO headings.
  */
 export function createSettingsForm(config: {
   captions: boolean;
@@ -93,6 +95,30 @@ export function createSettingsForm(config: {
     value: config.quality,
     onSelect: config.onSelectQuality,
   });
+
+  const autoFireRows: ReadonlyArray<[AutoFireInput, string]> = isTouchMobileDevice()
+    ? [
+        ['touch', 'Touch autofire'],
+        ['keyboard', 'Keys autofire'],
+      ]
+    : [['keyboard', 'Autofire']];
+  const autoFire = autoFireRows.map(([input, label]) => {
+    const selector = createTierSelector({
+      label,
+      tiers: ['off', 'on'],
+      value: getAutoFireSettings()[input] ? 'on' : 'off',
+      onSelect: (tier) => {
+        audioManager.playUi();
+        setAutoFire(input, tier === 'on');
+        return true;
+      },
+    });
+    return { input, selector };
+  });
+  const showAutoFire = (): void => {
+    const settings = getAutoFireSettings();
+    for (const { input, selector } of autoFire) selector.setValue(settings[input] ? 'on' : 'off');
+  };
 
   const sliders = new Map<VolumeChannel, { input: HTMLInputElement; readout: HTMLOutputElement }>();
   const showVolumes = (values: AudioVolumes): void => {
@@ -128,6 +154,7 @@ export function createSettingsForm(config: {
       { className: 'ui-settings' },
       caption('GAMEPLAY'),
       difficulty.element,
+      ...autoFire.map(({ selector }) => selector.element),
       caption('VISUALS'),
       quality.element,
       caption('AUDIO', 'ui-caption--audio'),
@@ -135,6 +162,9 @@ export function createSettingsForm(config: {
     ),
     setDifficulty: difficulty.setValue,
     setQuality: quality.setValue,
-    syncVolumes: () => showVolumes(audioManager.getVolumes()),
+    sync: () => {
+      showVolumes(audioManager.getVolumes());
+      showAutoFire();
+    },
   };
 }

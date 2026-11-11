@@ -171,9 +171,14 @@ export class MobileControls {
     return this.enabledForTouchDevice && !this.blocked && this.scene !== null;
   }
 
-  /** True while touch is the active input, which also means the main gun autofires. */
+  /** True while touch is the active input; the gun then autofires unless touch autofire is off. */
   isTouchSteeringActive(): boolean {
     return this.isEnabled() && !this.touchSteeringSuppressed;
+  }
+
+  /** True while the steering finger is on the screen, whatever other fingers tap meanwhile. */
+  isSteeringFingerDown(): boolean {
+    return this.dragPointerId !== null;
   }
 
   isControlPointer(pointer: Phaser.Input.Pointer): boolean {

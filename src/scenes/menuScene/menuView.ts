@@ -1,4 +1,5 @@
 import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
+import { getAutoFireSettings } from '../../config/autoFireSettings';
 import { isTouchMobileDevice } from '../../utils/device';
 import { h, mountUiLayer, releaseFocus, setStatus } from '../../ui/dom';
 import { createSettingsForm, type SettingsForm } from '../../ui/settingsForm';
@@ -62,9 +63,13 @@ function createSlotCard(slotNumber: number, handlers: MenuViewHandlers): SlotCar
  * flies, NEW RUN, the save-slot cards, SETTINGS and a status line, plus the settings sheet.
  */
 export function createMenuView(handlers: MenuViewHandlers): MenuView {
-  const idleHint = isTouchMobileDevice()
-    ? 'DRAG TO FLY  ·  GUNS FIRE AUTOMATICALLY'
-    : 'WASD / ARROWS TO FLY  ·  SPACE TO FIRE  ·  ESC TO PAUSE';
+  // Read when shown, so the fire part follows an autofire change made in the settings sheet.
+  const idleHint = (): string => {
+    const autoFire = getAutoFireSettings();
+    return isTouchMobileDevice()
+      ? `DRAG TO FLY  ·  ${autoFire.touch ? 'GUNS FIRE AUTOMATICALLY' : 'TOUCH TO FIRE'}`
+      : `WASD / ARROWS TO FLY  ·  ${autoFire.keyboard ? 'GUNS FIRE AUTOMATICALLY' : 'SPACE TO FIRE'}  ·  ESC TO PAUSE`;
+  };
 
   const heroSlot = h('div', { className: 'menu__hero' });
   const launch = h(
@@ -124,10 +129,12 @@ export function createMenuView(handlers: MenuViewHandlers): MenuView {
     lockup.inert = open;
     home.inert = open;
     if (open) {
-      settings.syncVolumes();
+      settings.sync();
       sheet.focus({ preventScroll: true });
     } else {
       settingsButton.focus({ preventScroll: true });
+      // An idle footer re-reads the controls line, which may now say the guns fire automatically.
+      if (status.dataset.tone === 'idle') setStatus(status, idleHint(), 'idle');
     }
   };
   settingsButton.addEventListener('click', () => setOpen(true));
@@ -143,7 +150,7 @@ export function createMenuView(handlers: MenuViewHandlers): MenuView {
       cards.forEach((card, index) => card.refresh(slots[index], storageAvailable));
     },
     setStatus(message, isError = false) {
-      setStatus(status, message || idleHint, isError ? 'error' : message ? 'info' : 'idle');
+      setStatus(status, message || idleHint(), isError ? 'error' : message ? 'info' : 'idle');
     },
     closeSettings: () => setOpen(false),
     destroy: () => layer.remove(),

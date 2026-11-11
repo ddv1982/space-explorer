@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.30.0] - 2026-11-11
+
+### Added
+
+- An autofire setting in the menu settings sheet and the pause panel. Keyboard and mouse players can turn it on so the gun fires without holding Space. It is off by default.
+- On touch devices a second row controls touch autofire. It is on by default, as before. Turned off, the gun fires only while a finger is on the screen. Both rows show on touch devices, since a hardware keyboard can join mid-run.
+- The controls hint at the start of a run and the menu footer follow the setting ("Guns fire automatically" when autofire is on).
+
 ## [1.29.1] - 2026-11-11
 
 ### Fixed

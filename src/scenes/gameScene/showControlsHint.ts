@@ -1,12 +1,21 @@
 import Phaser from 'phaser';
 import { centerHorizontally, getViewportLayout } from '@/utils/layout';
 import { drawAngledRectPath, drawNeonFrame, NEON, NEON_TEXT, neonLabelStyle } from '@/scenes/shared/neonUiTheme';
+import { getAutoFireSettings } from '@/config/autoFireSettings';
 import { isHardwareKeyboardDetected, onHardwareKeyboardDetected } from '@/systems/hardwareKeyboardDetection';
 
 const MOBILE_TITLE = 'Drag anywhere to fly';
-const MOBILE_FIRE_HINT = 'Guns fire automatically';
+const AUTO_FIRE_HINT = 'Guns fire automatically';
+const MOBILE_FIRE_HINT = 'Guns fire while you touch';
 const KEYBOARD_TITLE = 'WASD / Arrows to Move';
 const KEYBOARD_FIRE_HINT = 'SPACE / Click to Fire';
+
+/** The fire line follows the autofire setting for the input in use. */
+function fireHintFor(mobile: boolean): string {
+  const autoFire = getAutoFireSettings();
+  if (mobile) return autoFire.touch ? AUTO_FIRE_HINT : MOBILE_FIRE_HINT;
+  return autoFire.keyboard ? AUTO_FIRE_HINT : KEYBOARD_FIRE_HINT;
+}
 
 type ShowControlsHintOptions = {
   mobile?: boolean;
@@ -76,7 +85,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
     .setScrollFactor(0);
 
   const fireHint = scene.add
-    .text(0, 0, mobile ? MOBILE_FIRE_HINT : KEYBOARD_FIRE_HINT, neonLabelStyle(15, NEON_TEXT.cyan, 1))
+    .text(0, 0, fireHintFor(mobile), neonLabelStyle(15, NEON_TEXT.cyan, 1))
     .setOrigin(0, 0.5)
     .setDepth(HINT_DEPTH + 1)
     .setScrollFactor(0);
@@ -101,7 +110,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
 
     mobile = false;
     title.setText(KEYBOARD_TITLE);
-    fireHint.setText(KEYBOARD_FIRE_HINT);
+    fireHint.setText(fireHintFor(false));
     relayout();
   });
 

@@ -58,7 +58,30 @@ mock.module('../src/utils/layout', () => ({
     layout.left + (layout.width - width) / 2,
 }));
 
+let autoFire = { touch: true, keyboard: false };
+mock.module('../src/config/autoFireSettings', () => ({
+  getAutoFireSettings: () => autoFire,
+}));
+
 const { InputManager } = await import('../src/systems/InputManager');
+
+function createManager(
+  scene: ReturnType<typeof createScene>,
+  touchSteeringActive: boolean,
+  steeringFingerDown: () => boolean = () => false
+) {
+  const inputManager = new InputManager();
+  inputManager.create(
+    scene as never,
+    {
+      isTouchSteeringActive: () => touchSteeringActive,
+      isSteeringFingerDown: steeringFingerDown,
+      isControlPointer: () => false,
+      getDragDesiredVelocity: () => null,
+    } as never
+  );
+  return inputManager;
+}
 
 function createKey() {
   return { isDown: false, timeDown: 0 };
@@ -89,6 +112,46 @@ function createScene(pointers: Array<{ id: number; isDown: boolean; downX: numbe
     },
   };
 }
+
+describe('InputManager autofire settings', () => {
+  test('touch autofire off fires only while the steering finger is down', () => {
+    autoFire = { touch: false, keyboard: false };
+    const scene = createScene([]);
+    let fingerDown = false;
+    const inputManager = createManager(scene, true, () => fingerDown);
+    expect(inputManager.isFiring()).toBe(false);
+    fingerDown = true;
+    expect(inputManager.isFiring()).toBe(true);
+    autoFire = { touch: true, keyboard: false };
+  });
+
+  test('a second finger tapping and lifting does not stop touch firing', () => {
+    autoFire = { touch: false, keyboard: false };
+    const scene = createScene([]);
+    const inputManager = createManager(scene, true, () => true);
+    // Phaser leaves activePointer on the lifted second finger.
+    scene.input.activePointer.isDown = false;
+    expect(inputManager.isFiring()).toBe(true);
+    autoFire = { touch: true, keyboard: false };
+  });
+
+  test('keyboard autofire on fires without Space and follows a change made mid-run', () => {
+    const scene = createScene([]);
+    const inputManager = createManager(scene, false);
+    expect(inputManager.isFiring()).toBe(false);
+    autoFire = { touch: true, keyboard: true };
+    expect(inputManager.isFiring()).toBe(true);
+    autoFire = { touch: true, keyboard: false };
+    expect(inputManager.isFiring()).toBe(false);
+  });
+
+  test('keyboard autofire does not leak into touch flight with touch autofire off', () => {
+    autoFire = { touch: false, keyboard: true };
+    const inputManager = createManager(createScene([]), true);
+    expect(inputManager.isFiring()).toBe(false);
+    autoFire = { touch: true, keyboard: false };
+  });
+});
 
 describe('InputManager touch momentum flight', () => {
   test('autofires while touch steering is active, even with no fire touch', () => {
