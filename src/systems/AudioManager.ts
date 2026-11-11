@@ -1,82 +1,70 @@
+import { loadAudioVolumes, saveAudioVolumes, type AudioVolumes } from '../config/audioSettings';
 import type { ProceduralMusicTrackConfig } from '../config/LevelsConfig';
 import { AudioContextManager } from './audio/AudioContextManager';
-import { SFXManager } from './audio/SFXManager';
-import { ProceduralMusicManager, DEFAULT_TRACK, type MusicRuntimeTuning } from './audio/ProceduralMusicManager';
+import { ProceduralMusicManager, DEFAULT_TRACK } from './audio/ProceduralMusicManager';
+import { SfxPlayer } from './audio/SfxPlayer';
+import type { SfxId } from './audio/sfx/recipes';
 
 export type AudioPauseReason = 'gameplay' | 'visibility';
 
 export class AudioManager {
   private contextManager = new AudioContextManager();
-  private sfxManager = new SFXManager(this.contextManager);
+  private sfxPlayer = new SfxPlayer(this.contextManager);
   private musicManager = new ProceduralMusicManager(this.contextManager);
   private pauseReasons = new Set<AudioPauseReason>();
+  private volumes: AudioVolumes | null = null;
 
   init(): void {
     this.contextManager.init();
     this.musicManager.ensureGains();
+    this.applyVolumes();
   }
 
-  private resetNodes(): void {
-    this.musicManager.resetNodes();
-    this.contextManager.resetNodes();
+  private getStoredVolumes(): AudioVolumes {
+    this.volumes ??= loadAudioVolumes();
+    return this.volumes;
+  }
+
+  private applyVolumes(): void {
+    const volumes = this.getStoredVolumes();
+    this.contextManager.setSfxVolume(volumes.effects);
+    this.musicManager.setMusicVolume(volumes.music);
   }
 
   private ensureContext(): boolean {
     const isReady = this.contextManager.ensureContext();
     if (!isReady) {
-      this.resetNodes();
+      this.musicManager.resetNodes();
+      this.contextManager.resetNodes();
+      return false;
     }
-    if (isReady) {
-      if (this.pauseReasons.size > 0) {
-        this.contextManager.suspend();
-      } else {
-        this.contextManager.resume();
-      }
+
+    if (this.pauseReasons.size > 0) {
+      this.contextManager.suspend();
+    } else {
+      this.contextManager.resume();
     }
-    return isReady;
+    return true;
   }
 
-  playLaser(): void {
-    this.sfxManager.playLaser();
+  /** `pan` runs from -1 (left edge) to 1 (right edge). */
+  playSfx(id: SfxId, pan = 0): void {
+    this.sfxPlayer.play(id, pan);
   }
 
-  playPicketShot(): void {
-    this.sfxManager.playPicketShot();
-  }
-
-  playExplosion(intensity = 1): void {
-    this.sfxManager.playExplosion(intensity);
-  }
-
-  playPowerUp(): void {
-    this.sfxManager.playPowerUp();
-  }
-
-  playPowerUpPickup(): void {
-    this.sfxManager.playPowerUpPickup();
-  }
-
-  playClick(): void {
+  /** Menu and button feedback: the press may be the page's first gesture, so audio resumes first. */
+  playUi(id: 'uiClick' | 'uiConfirm' = 'uiClick'): void {
     this.resumeFromUserGesture();
-    this.sfxManager.playClick();
+    this.sfxPlayer.play(id);
   }
 
   resumeFromUserGesture(): void {
     if (this.pauseReasons.size === 0) this.contextManager.resumeFromUserGesture();
   }
 
-  playPlayerHit(outcome: 'absorbed' | 'damaged'): void {
-    this.sfxManager.playPlayerHit(outcome);
-  }
-
-  playMusic(track: ProceduralMusicTrackConfig = DEFAULT_TRACK): void {
-    if (!this.ensureContext()) return;
-    this.musicManager.playMusic(track);
-  }
-
   startMusic(track: ProceduralMusicTrackConfig = DEFAULT_TRACK): void {
     if (!this.ensureContext()) return;
-    this.musicManager.startMusic(track);
+    this.musicManager.playMusic(track);
   }
 
   stopMusic(): void {
@@ -110,27 +98,18 @@ export class AudioManager {
     this.musicManager.setMusicIntensity(intensity);
   }
 
-  getMusicVolume(): number {
-    return this.musicManager.getMusicVolume();
+  getVolumes(): AudioVolumes {
+    return { ...this.getStoredVolumes() };
   }
 
-  setMusicVolume(volume: number): number {
+  /** Applies and remembers one volume (0-1); returns the clamped values now in effect. */
+  setVolume(channel: keyof AudioVolumes, volume: number): AudioVolumes {
+    const volumes = this.getStoredVolumes();
+    volumes[channel] = Math.min(1, Math.max(0, volume));
     this.ensureContext();
-    return this.musicManager.setMusicVolume(volume);
-  }
-
-  getMusicRuntimeTuning(): MusicRuntimeTuning {
-    return this.musicManager.getMusicRuntimeTuning();
-  }
-
-  setMusicRuntimeTuning(nextTuning: Partial<MusicRuntimeTuning>): MusicRuntimeTuning {
-    this.ensureContext();
-    return this.musicManager.setMusicRuntimeTuning(nextTuning);
-  }
-
-  resetMusicRuntimeTuning(): MusicRuntimeTuning {
-    this.ensureContext();
-    return this.musicManager.resetMusicRuntimeTuning();
+    this.applyVolumes();
+    saveAudioVolumes(volumes);
+    return this.getVolumes();
   }
 
   destroy(): void {
@@ -140,5 +119,4 @@ export class AudioManager {
   }
 }
 
-export type { MusicRuntimeTuning };
 export const audioManager = new AudioManager();

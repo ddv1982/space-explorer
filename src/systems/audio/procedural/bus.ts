@@ -4,23 +4,6 @@ export interface MusicFXChain {
   reverbGain: GainNode | null;
 }
 
-export function setMusicBusReverbGain(
-  ctx: AudioContext,
-  musicFX: MusicFXChain | null,
-  value: number,
-  rampSeconds = 0.12
-): void {
-  const reverbGain = musicFX?.reverbGain;
-  if (!reverbGain) {
-    return;
-  }
-
-  const clampedValue = Math.max(0, Math.min(0.45, value));
-  reverbGain.gain.cancelScheduledValues(ctx.currentTime);
-  reverbGain.gain.setValueAtTime(reverbGain.gain.value, ctx.currentTime);
-  reverbGain.gain.linearRampToValueAtTime(clampedValue, ctx.currentTime + Math.max(0.01, rampSeconds));
-}
-
 function disconnectNode(node: AudioNode | null): void {
   if (!node) {
     return;
@@ -38,7 +21,7 @@ function createAmbientReverb(ctx: AudioContext): { delay: DelayNode; gain: GainN
   delay.delayTime.value = 0.25;
 
   const gain = ctx.createGain();
-  gain.gain.value = 0.12;
+  gain.gain.value = 0.22;
 
   const filter = ctx.createBiquadFilter();
   filter.type = 'lowpass';

@@ -5,8 +5,7 @@ import type {
 } from '../../config/LevelsConfig';
 import { AudioContextManager } from './AudioContextManager';
 import { disconnectMusicBus, recreateMusicBus, type MusicFXChain } from './procedural/bus';
-import { type MusicRuntimeTuningValues } from './procedural/musicRuntimeTuningProfile';
-import { MusicRuntimeControl } from './procedural/runtimeControl';
+import { MUSIC_CREATIVITY_DRIVE, MUSIC_TEMPO_SCALE, MusicRuntimeControl } from './procedural/runtimeControl';
 import { resolveLayerRhythmScheduling } from './procedural/rhythm';
 import { buildSchedulingStepPlan, type SchedulingStepPlan } from './procedural/stepSchedulingPlan';
 import { scheduleLayer, scheduleNoise } from './procedural/synthesis';
@@ -66,8 +65,6 @@ export const DEFAULT_TRACK: ProceduralMusicTrackConfig = {
     rhythm: { division: 8, phase: 2, gate: 0.42, accentAmount: 0.08, accentPattern: [2, 6, 10, 14] },
   },
 };
-
-export type MusicRuntimeTuning = MusicRuntimeTuningValues;
 
 const MINIMUM_MUSIC_INTENSITY = 0.2;
 const MAXIMUM_MUSIC_INTENSITY = 1.2;
@@ -147,10 +144,6 @@ export class ProceduralMusicManager {
     this.scheduleMusic();
   }
 
-  startMusic(track: ProceduralMusicTrackConfig = DEFAULT_TRACK): void {
-    this.playMusic(track);
-  }
-
   stopMusic(): void {
     if (this.musicTimer !== null) {
       clearTimeout(this.musicTimer);
@@ -172,21 +165,9 @@ export class ProceduralMusicManager {
     return this.runtimeControl.setMusicVolume(volume);
   }
 
-  getMusicRuntimeTuning(): MusicRuntimeTuning {
-    return this.runtimeControl.getMusicRuntimeTuning();
-  }
-
-  setMusicRuntimeTuning(nextTuning: Partial<MusicRuntimeTuning>): MusicRuntimeTuning {
-    return this.runtimeControl.setMusicRuntimeTuning(nextTuning);
-  }
-
-  resetMusicRuntimeTuning(): MusicRuntimeTuning {
-    return this.runtimeControl.resetMusicRuntimeTuning();
-  }
-
   private recreateMusicBus(): void {
     const ctx = this.contextManager.getCtx();
-    const masterGain = this.contextManager.getMasterGain();
+    const masterGain = this.contextManager.getMusicBus();
     if (!ctx || !masterGain) {
       return;
     }
@@ -194,7 +175,6 @@ export class ProceduralMusicManager {
     const bus = recreateMusicBus(ctx, masterGain, this.musicGain, this.musicFX);
     this.musicGain = bus.musicGain;
     this.musicFX = bus.musicFX;
-    this.runtimeControl.applyAmbienceFromRuntimeTuning();
     this.runtimeControl.applyMusicGainFromState(0);
   }
 
@@ -228,10 +208,9 @@ export class ProceduralMusicManager {
     }
 
     while (this.musicNextStepTime < ctx.currentTime + this.musicScheduleAheadSeconds) {
-      const runtimeTuning = this.runtimeControl.getResolvedRuntimeTuning();
       this.scheduleTrackStep(this.activeTrack, this.musicStepIndex, this.musicNextStepTime);
       this.musicStepIndex += 1;
-      this.musicNextStepTime += this.getStepDuration(this.activeTrack, runtimeTuning.tempoScale);
+      this.musicNextStepTime += 60 / (this.activeTrack.tempo * MUSIC_TEMPO_SCALE) / this.activeTrack.stepsPerBeat;
     }
 
     this.musicTimer = window.setTimeout(() => {
@@ -245,12 +224,11 @@ export class ProceduralMusicManager {
       return;
     }
 
-    const runtimeTuning = this.runtimeControl.getResolvedRuntimeTuning();
     const stepPlan = buildSchedulingStepPlan({
       track,
       stepIndex,
-      tempoScale: runtimeTuning.tempoScale,
-      creativityDrive: runtimeTuning.creativityDrive,
+      tempoScale: MUSIC_TEMPO_SCALE,
+      creativityDrive: MUSIC_CREATIVITY_DRIVE,
       musicIntensity: this.runtimeControl.getMusicIntensity(),
       minimumMusicIntensity: MINIMUM_MUSIC_INTENSITY,
       maximumMusicIntensity: MAXIMUM_MUSIC_INTENSITY,
@@ -372,9 +350,5 @@ export class ProceduralMusicManager {
       getNoiseBuffer: (color) => this.contextManager.getNoiseBuffer(color),
       getExplosionBuffer: () => this.contextManager.getExplosionBuffer(),
     });
-  }
-
-  private getStepDuration(track: ProceduralMusicTrackConfig, tempoScale: number): number {
-    return 60 / (track.tempo * tempoScale) / track.stepsPerBeat;
   }
 }

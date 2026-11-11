@@ -12,15 +12,13 @@ import type { HUD } from '@/systems/HUD';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { ScoreManager } from '@/systems/ScoreManager';
 import type { GameSceneFlowController, GameSceneFlowContext, PlayerDeathFlowOutcome } from './GameSceneFlowController';
-import { getViewportBounds } from '@/utils/layout';
+import { getViewportBounds, stereoPan } from '@/utils/layout';
 import { runBestEffort } from '@/utils/runBestEffort';
 import { spawnGuaranteedPowerUp, trySpawnRandomPowerUp } from '@/systems/GameplayFlow';
 
 interface CombatFeedbackConstants {
   bossExplosionVisualIntensity: number;
-  bossExplosionAudioIntensity: number;
   playerDeathExplosionVisualIntensity: number;
-  playerDeathExplosionAudioIntensity: number;
   playerDeathParticleBudgetScale: number;
 }
 
@@ -88,7 +86,7 @@ export function createGameSceneCombatFeedbackHandlers(
 
   const playPlayerDeathCue = (x: number, y: number): void => {
     deps.player.playDeathAnimation();
-    audioManager.playExplosion(deps.constants.playerDeathExplosionAudioIntensity);
+    audioManager.playSfx('explosionLarge', stereoPan(deps.scene, x));
     deps.effectsManager.createExplosion(
       x,
       y,
@@ -153,7 +151,7 @@ export function createGameSceneCombatFeedbackHandlers(
     runBestEffort(() =>
       deps.effectsManager.pulseCameraColor({ brightness: 1.05, contrast: 0.06, saturation: 0.14 }, 180)
     );
-    runBestEffort(() => audioManager.playPowerUpPickup());
+    runBestEffort(() => audioManager.playSfx('helperWingArrive'));
   };
 
   const handleBossDefeatCleanup = (boss: Boss | null): void => {
@@ -162,7 +160,7 @@ export function createGameSceneCombatFeedbackHandlers(
       runBestEffort(() => deps.effectsManager.createSurgePulse(boss.x, boss.y));
       runBestEffort(() => deps.scene.cameras.main.flash(260, 255, 255, 255, false));
       runBestEffort(() => deps.scene.cameras.main.shake(320, 0.012));
-      audioManager.playExplosion(deps.constants.bossExplosionAudioIntensity);
+      runBestEffort(() => audioManager.playSfx('explosionBoss', stereoPan(deps.scene, boss.x)));
       deps.hud.hideBossBar();
     }
 
@@ -176,7 +174,7 @@ export function createGameSceneCombatFeedbackHandlers(
     handleEnemyDeath: (score, x, y, isAce): void => {
       const awarded = deps.scoreManager.registerKill(score, deps.getGameplayNow());
       deps.effectsManager.createScorePopup(x, y, awarded);
-      audioManager.playExplosion(0.5);
+      runBestEffort(() => audioManager.playSfx('explosionSmall', stereoPan(deps.scene, x)));
       if (isAce) {
         dropGuaranteedPowerUp(x, y);
       } else {
@@ -222,6 +220,7 @@ export function createGameSceneCombatFeedbackHandlers(
       clearFieldForBossIntro();
       deps.grazeSurge?.setBossActive(true);
       deps.hud.showBossWarning();
+      runBestEffort(() => audioManager.playSfx('bossWarning'));
       audioManager.startMusic(deps.levelManager.getLevelConfig().music.boss);
       spawnBoss();
     },
@@ -230,7 +229,7 @@ export function createGameSceneCombatFeedbackHandlers(
 
     handlePlayerHit: (result): void => {
       deps.scoreManager.onPlayerHit();
-      runBestEffort(() => audioManager.playPlayerHit(result.outcome));
+      runBestEffort(() => audioManager.playSfx(result.outcome === 'absorbed' ? 'hitShield' : 'hitHull'));
     },
 
     handlePlayerExhaust: (x, y, intensity): void => {
@@ -247,14 +246,17 @@ export function createGameSceneCombatFeedbackHandlers(
 
     handleEnemySpawnWarning: (x): void => {
       deps.effectsManager.createSpawnWarning(x);
+      runBestEffort(() => audioManager.playSfx('spawnWarning', stereoPan(deps.scene, x)));
     },
 
     handleWormholeTelegraph: (x, y): void => {
       deps.effectsManager.createWormholeTelegraph(x, y);
+      runBestEffort(() => audioManager.playSfx('wormhole', stereoPan(deps.scene, x)));
     },
 
     handleEliteWave: (): void => {
       deps.hud.showEliteWaveAnnouncement();
+      runBestEffort(() => audioManager.playSfx('eliteWave'));
       runBestEffort(() => deps.scene.cameras.main.flash(120, 178, 132, 255, false));
       runBestEffort(() =>
         deps.effectsManager.pulseCameraColor({ brightness: 1.06, contrast: 0.08, saturation: 0.16 }, 200)
@@ -272,13 +274,14 @@ export function createGameSceneCombatFeedbackHandlers(
 
       deps.hud.showBossPhaseAnnouncement(phase);
       playBossPhaseChangeEffects();
+      runBestEffort(() => audioManager.playSfx('bossPhase'));
     },
 
     handleBossGuardBreak: (): void => {
       deps.hud.showBossGuardBreakAnnouncement();
       runBestEffort(() => deps.scene.cameras.main.flash(100, 255, 215, 106, false));
       runBestEffort(() => deps.scene.cameras.main.shake(120, 0.005));
-      runBestEffort(() => audioManager.playPowerUpPickup());
+      runBestEffort(() => audioManager.playSfx('bossGuardBreak'));
     },
 
     handleHelperWingActivated: (helperCount): void => {
@@ -288,11 +291,13 @@ export function createGameSceneCombatFeedbackHandlers(
 
     handleHelperWingDepleted: (): void => {
       deps.hud.showHelperWingDepletedAnnouncement();
+      runBestEffort(() => audioManager.playSfx('helperWingDepleted'));
       runBestEffort(() => deps.scene.cameras.main.shake(120, 0.006));
     },
 
     handlePicketOnline: (): void => {
       deps.hud.showPicketOnlineAnnouncement();
+      runBestEffort(() => audioManager.playSfx('picketOnline'));
     },
 
     spawnBoss,

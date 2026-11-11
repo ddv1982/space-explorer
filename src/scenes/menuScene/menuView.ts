@@ -124,7 +124,7 @@ export function createMenuView(handlers: MenuViewHandlers): MenuView {
     lockup.inert = open;
     home.inert = open;
     if (open) {
-      settings.syncMusic();
+      settings.syncVolumes();
       sheet.focus({ preventScroll: true });
     } else {
       settingsButton.focus({ preventScroll: true });

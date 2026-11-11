@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.26.0] - 2026-11-11
+
+### Added
+
+- A new set of sound effects, still generated in the browser with no audio files. Every sound is now built from several layers (a click, a body and a tail) and comes in a few slightly different takes, so repeated shots and explosions no longer sound identical. Sounds are placed left or right to match where they happen on screen.
+- Events that used to be silent now have sound: enemy and helper-wing fire, boss arrival, boss phase changes, guard break, elite waves, spawn warnings, wormholes, the helper wing arriving and leaving, pickets coming online, grazes and surge pulses, plus short jingles for level complete, victory and game over.
+- An effects volume slider. Both volumes are now remembered between visits.
+
+### Changed
+
+- Settings now has two audio sliders, MUSIC VOLUME and SFX VOLUME. The Creativity, Energy and Ambience sliders are gone; the music plays as it did at their default positions.
+- Music and effects now pass through a limiter, so stacked explosions over full music cannot distort, and the music dips briefly under big moments such as boss explosions.
+
 ## [1.25.0] - 2026-11-11
 
 ### Changed

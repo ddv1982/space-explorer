@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Space Explorer sound board</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #02081c;
+        color: #cfe6ff;
+        font: 15px/1.4 system-ui, sans-serif;
+      }
+      h1,
+      h2 {
+        font-weight: 600;
+        letter-spacing: 0.08em;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 8px;
+      }
+      button {
+        padding: 12px;
+        border: 1px solid #2c5f9e;
+        border-radius: 6px;
+        background: #0a1c3c;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #12305f;
+      }
+      label {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        margin-right: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SOUND BOARD</h1>
+    <p>Development only: this page is not part of the production build.</p>
+    <div id="app"></div>
+    <script type="module" src="/src/dev/soundboard.ts"></script>
+  </body>
+</html>

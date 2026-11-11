@@ -7,7 +7,7 @@ mockPhaserModule();
 const playPicketShot = mock();
 mock.module('../src/systems/AudioManager', () => ({
   audioManager: {
-    playPicketShot,
+    playSfx: playPicketShot,
   },
 }));
 

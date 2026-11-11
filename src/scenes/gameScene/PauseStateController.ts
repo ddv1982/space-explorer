@@ -73,7 +73,7 @@ export class PauseStateController {
     this.setMobileControlsBlocked = config.setMobileControlsBlocked;
     this.onReturnToMenu = config.onReturnToMenu;
     this.saveSlotAdapter = config.saveSlotAdapter ?? createUnavailableSaveSlotAdapter();
-    this.playClick = config.playClick ?? (() => audioManager.playClick());
+    this.playClick = config.playClick ?? (() => audioManager.playUi());
     this.setAudioPaused = config.setAudioPaused ?? ((paused) => audioManager.setPaused('gameplay', paused));
 
     this.manualPauseRequested = false;

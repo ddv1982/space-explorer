@@ -233,7 +233,7 @@ export class MenuScene extends Phaser.Scene {
 
   private playMenuClick(): void {
     audioManager.init();
-    audioManager.playClick();
+    audioManager.playUi();
   }
 
   private queueGameTransition(): boolean {

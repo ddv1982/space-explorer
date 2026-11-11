@@ -51,9 +51,7 @@ import { startRegisteredScene } from './sceneRegistry';
 
 export class GameScene extends Phaser.Scene {
   private static readonly BOSS_EXPLOSION_VISUAL_INTENSITY = 3.0;
-  private static readonly BOSS_EXPLOSION_AUDIO_INTENSITY = 2.0;
   private static readonly PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY = 2.2;
-  private static readonly PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY = 1.4;
   private static readonly PLAYER_DEATH_PARTICLE_BUDGET_SCALE = 0.6;
 
   private parallax!: ParallaxBackground;
@@ -190,9 +188,7 @@ export class GameScene extends Phaser.Scene {
       getGameplayNow: () => this.gameplayClock.now,
       constants: {
         bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
-        bossExplosionAudioIntensity: GameScene.BOSS_EXPLOSION_AUDIO_INTENSITY,
         playerDeathExplosionVisualIntensity: GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY,
-        playerDeathExplosionAudioIntensity: GameScene.PLAYER_DEATH_EXPLOSION_AUDIO_INTENSITY,
         playerDeathParticleBudgetScale: GameScene.PLAYER_DEATH_PARTICLE_BUDGET_SCALE,
       },
     });

@@ -61,6 +61,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     registerRestartOnResize(this, () => !this.transitioning);
     audioManager.init();
     audioManager.stopMusic();
+    audioManager.playSfx('levelComplete');
     this.state = getPlayerState(this.registry);
     this.isFinalMissionComplete = isLastLevel(this.state.level);
     this.transitioning = false;
@@ -139,7 +140,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.state.score -= evaluation.cost;
     this.state.upgrades[upgradeKey] += 1;
     setPlayerState(this.registry, this.state);
-    audioManager.playPowerUp();
+    audioManager.playUi('uiConfirm');
     this.view?.refresh(
       this.state.score,
       this.evaluate(),
@@ -151,7 +152,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private continueToNextLevel(): void {
     if (this.transitioning) return;
     this.transitioning = true;
-    audioManager.playClick();
+    audioManager.playUi();
     this.view?.leave();
 
     if (this.isFinalMissionComplete) {

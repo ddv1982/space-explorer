@@ -274,7 +274,7 @@ export class PicketTurretSystem {
 
     bolt.fire(muzzleX, muzzleY, Math.cos(angle) * PICKET_BOLT_SPEED, Math.sin(angle) * PICKET_BOLT_SPEED);
     this.effectsManager.createMuzzleFlash(muzzleX, muzzleY);
-    audioManager.playPicketShot();
+    audioManager.playSfx('picketShot');
   }
 
   private registerOverlap(group: Phaser.Physics.Arcade.Group): void {

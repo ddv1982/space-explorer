@@ -145,7 +145,7 @@ export function createGameSceneGameplayFrameBehavior(
 
     delegate.bulletPool.fire(shotOrigin.x, shotOrigin.y, shotDirection.x * shotSpeed, shotDirection.y * shotSpeed);
     delegate.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
-    audioManager.playLaser();
+    audioManager.playSfx('playerShot');
   };
 
   const syncSectionPresentation = (): void => {

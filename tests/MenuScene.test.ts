@@ -20,7 +20,7 @@ mock.module('../src/scenes/sceneRegistry', () => ({
 
 const { audioManager } = await import('../src/systems/AudioManager');
 const { MenuScene } = await import('../src/scenes/MenuScene');
-const { applyMusicSetting } = await import('../src/ui/settingsForm');
+const { applyVolumeSetting } = await import('../src/ui/settingsForm');
 type MenuSceneInstance = InstanceType<typeof MenuScene>;
 
 describe('MenuScene', () => {
@@ -172,26 +172,23 @@ describe('MenuScene', () => {
     expect(refreshSaveSlots).toHaveBeenCalledWith('Slot 2 cleared.');
   });
 
-  test('resumes audio in the trusted music input before changing its value', () => {
+  test('resumes audio in the trusted volume input before changing its value', () => {
     const events: string[] = [];
     const originalResume = audioManager.resumeFromUserGesture;
-    const originalGetTuning = audioManager.getMusicRuntimeTuning;
-    const originalSetTuning = audioManager.setMusicRuntimeTuning;
+    const originalSetVolume = audioManager.setVolume;
     audioManager.resumeFromUserGesture = () => events.push('resume');
-    audioManager.getMusicRuntimeTuning = () => ({ creativity: 0.55, energy: 0.5, ambience: 0.5 });
-    audioManager.setMusicRuntimeTuning = (tuning) => {
-      events.push(`set:${JSON.stringify(tuning)}`);
-      return { creativity: 0.55, energy: 0.5, ambience: 0.5 };
+    audioManager.setVolume = (channel, volume) => {
+      events.push(`set:${channel}=${volume}`);
+      return { music: volume, effects: 1 };
     };
 
     try {
-      expect(applyMusicSetting('creativity', 0.55)).toMatchObject({ creativity: 0.55, energy: 0.5 });
+      expect(applyVolumeSetting('music', 0.55)).toEqual({ music: 0.55, effects: 1 });
     } finally {
       audioManager.resumeFromUserGesture = originalResume;
-      audioManager.getMusicRuntimeTuning = originalGetTuning;
-      audioManager.setMusicRuntimeTuning = originalSetTuning;
+      audioManager.setVolume = originalSetVolume;
     }
 
-    expect(events).toEqual(['resume', 'set:{"creativity":0.55}']);
+    expect(events).toEqual(['resume', 'set:music=0.55']);
   });
 });
