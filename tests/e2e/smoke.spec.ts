@@ -1,4 +1,4 @@
-import { expect, openMenu, snapshot, test, waitForScene, type Page } from './fixtures';
+import { expect, openMenu, pinQualityTier, snapshot, test, waitForScene, type Page } from './fixtures';
 
 async function expectMenuTitleLockup(page: Page): Promise<void> {
   const viewport = page.viewportSize() ?? { width: 0, height: 0 };
@@ -109,6 +109,8 @@ test('boots once, enters gameplay, and exercises real rendering and Arcade bodie
 
 test('command deck menu stays readable across responsive profiles', async ({ page, assertNoBrowserErrors }) => {
   test.setTimeout(120_000);
+  // Layout check only: Low keeps CI's software WebGL fast while the menu restarts at each size.
+  await pinQualityTier(page, 'low');
   const viewports = [
     { width: 1366, height: 768 },
     { width: 984, height: 768 },
@@ -133,11 +135,12 @@ test('command deck menu stays readable across responsive profiles', async ({ pag
     await expect(page.getByRole('button', { name: 'NEW RUN', exact: true })).toBeInViewport({ ratio: 1 });
     await expect(page.getByRole('button', { name: 'SETTINGS', exact: true })).toBeInViewport({ ratio: 1 });
     await expectMenuTitleLockup(page);
-    const shotName = `menu-command-deck-${viewport.width}x${viewport.height}.png`;
     const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
-    const shotPath = evidenceDirectory ? `${evidenceDirectory}/${shotName}` : test.info().outputPath(shotName);
-    await page.screenshot({ path: shotPath });
-    await test.info().attach(shotName, { path: shotPath, contentType: 'image/png' });
+    if (evidenceDirectory) {
+      await page.screenshot({
+        path: `${evidenceDirectory}/menu-command-deck-${viewport.width}x${viewport.height}.png`,
+      });
+    }
   }
   assertNoBrowserErrors();
 });
