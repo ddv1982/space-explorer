@@ -19,8 +19,13 @@ export interface MusicBus {
 const REVERB_SECONDS = 2;
 const DEFAULT_SPACE: MusicSpaceConfig = { reverb: 0.3, delay: 0.15 };
 
+const impulseResponses = new WeakMap<BaseAudioContext, AudioBuffer>();
+
 /** A stereo noise tail that darkens as it decays: a believable hall without loading a recording. */
 function createImpulseResponse(ctx: BaseAudioContext): AudioBuffer {
+  const cached = impulseResponses.get(ctx);
+  if (cached) return cached;
+
   const length = Math.floor(ctx.sampleRate * REVERB_SECONDS);
   const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
   for (let channel = 0; channel < 2; channel++) {
@@ -34,6 +39,7 @@ function createImpulseResponse(ctx: BaseAudioContext): AudioBuffer {
       data[i] = smoothed * Math.pow(1 - progress, 2.4);
     }
   }
+  impulseResponses.set(ctx, impulse);
   return impulse;
 }
 
