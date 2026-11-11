@@ -45,15 +45,21 @@ export function getAutoFireSettings(storage?: AutoFireStorage | null): AutoFireS
   return remembered;
 }
 
+/**
+ * Changes one input's autofire. The browser's settings build on the remembered values, so an earlier
+ * change survives even when storage refuses writes; an explicit storage builds on what it holds.
+ */
 export function setAutoFire(
   input: AutoFireInput,
   enabled: boolean,
-  storage: AutoFireStorage | null = getStorage()
+  storage?: AutoFireStorage | null
 ): AutoFireSettings {
+  const browser = storage === undefined;
+  const target = browser ? getStorage() : storage;
   const next = { ...getAutoFireSettings(storage), [input]: enabled };
-  remembered = next;
+  if (browser) remembered = next;
   try {
-    storage?.setItem(AUTO_FIRE_STORAGE_KEY, JSON.stringify(next));
+    target?.setItem(AUTO_FIRE_STORAGE_KEY, JSON.stringify(next));
   } catch {
     // Private browsing or a full quota: the setting still applies for this visit.
   }

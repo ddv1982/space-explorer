@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { getAutoFireSettings, setAutoFire } from '../src/config/autoFireSettings';
 
+const throwingStorage = {
+  getItem: () => null,
+  setItem: () => {
+    throw new Error('quota');
+  },
+};
+
 function createStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
   return {
@@ -34,12 +41,19 @@ describe('autofire settings', () => {
   });
 
   test('a failing storage still applies the choice for this visit', () => {
-    const storage = {
-      getItem: () => null,
-      setItem: () => {
-        throw new Error('quota');
-      },
-    };
-    expect(setAutoFire('keyboard', true, storage)).toEqual({ touch: true, keyboard: true });
+    expect(setAutoFire('keyboard', true, throwingStorage)).toEqual({ touch: true, keyboard: true });
+  });
+
+  test('in the browser, consecutive changes keep each other when storage refuses writes', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage: throwingStorage } });
+    try {
+      setAutoFire('keyboard', true);
+      expect(setAutoFire('touch', false)).toEqual({ touch: false, keyboard: true });
+      expect(getAutoFireSettings()).toEqual({ touch: false, keyboard: true });
+    } finally {
+      if (descriptor) Object.defineProperty(globalThis, 'window', descriptor);
+      else Reflect.deleteProperty(globalThis, 'window');
+    }
   });
 });
