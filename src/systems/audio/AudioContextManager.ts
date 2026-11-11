@@ -40,9 +40,13 @@ export class AudioContextManager {
     }
   }
 
-  /** Dips the music by `depth` (0-1) and lets it recover over `seconds`. */
+  /**
+   * Dips the music by `depth` (0-1) and lets it recover over `seconds`. The dip follows the effects
+   * volume, so muted effects leave the music untouched.
+   */
   duckMusic(depth: number, seconds: number): void {
-    if (!this.ctx || !this.musicDuck) return;
+    depth *= this.sfxVolume;
+    if (!this.ctx || !this.musicDuck || depth <= 0) return;
     const now = this.ctx.currentTime;
     const gain = this.musicDuck.gain;
     gain.cancelScheduledValues(now);

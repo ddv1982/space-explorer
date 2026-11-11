@@ -157,6 +157,8 @@ test('first trusted menu action recovers policy-suspended audio without overridi
 }) => {
   await openMenu(page);
   await openMenuSettings(page);
+  // The SETTINGS press resumes audio asynchronously; suspending before it lands would be undone.
+  await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('running');
   await page.evaluate(async () => {
     const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__;
     if (!harness) throw new Error('Browser harness is not installed');
@@ -165,7 +167,7 @@ test('first trusted menu action recovers policy-suspended audio without overridi
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('suspended');
   expect((await snapshot(page)).audioPauseReasons).toEqual([]);
 
-  await pressControl(page.getByRole('slider', { name: 'CREATIVITY' }), 'ArrowRight');
+  await pressControl(page.getByRole('slider', { name: 'SFX VOLUME' }), 'ArrowLeft');
   await expect.poll(async () => (await snapshot(page)).audioContextState).toBe('running');
   expect((await snapshot(page)).audioPauseReasons).toEqual([]);
   await pressControl(page.getByRole('button', { name: 'DONE', exact: true }));
