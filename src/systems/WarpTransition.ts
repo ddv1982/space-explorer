@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { prefersReducedMotion } from '../scenes/shared/neonUiTheme';
+import { prefersReducedMotion } from '../utils/device';
 import { getViewportBounds } from '../utils/layout';
 import { mixColor } from '../utils/colorUtils';
 import { rebindSceneLifecycleHandlers, unbindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { audioManager } from './AudioManager';
+import { shakeCamera } from './effects/cameraShake';
 import { PARTICLE, generateEffectsParticleTextures } from './effects/particleTextureFactory';
 
 const DURATION_MS = 2100;
@@ -206,7 +207,7 @@ export class WarpTransition {
 
     if (jump > 0 && !this.shaken) {
       this.shaken = true;
-      this.scene?.cameras.main.shake(this.duration * (1 - CHARGE_END), 0.004);
+      if (this.scene) shakeCamera(this.scene, this.duration * (1 - CHARGE_END), 0.004);
     }
 
     flash.clear();

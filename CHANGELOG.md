@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.0] - 2026-11-12
+
+### Added
+
+- Hit-stop: ace kills, hull hits, boss guard breaks, boss phase changes and boss defeats hold the action for 50–110 ms at 15% speed, so big impacts land. Music, input and the HUD keep real time, and a shield block keeps the flow.
+- A Screen shake setting in the menu and pause panel. It starts off when the system asks for reduced motion, and the choice is remembered.
+
+### Changed
+
+- Settings share one stored-preference helper, so autofire and screen shake are read once and cached instead of each keeping their own storage code.
+
 ## [1.31.0] - 2026-11-12
 
 ### Changed

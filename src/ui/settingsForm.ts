@@ -2,6 +2,7 @@ import type { GameplayDifficultyTier } from '../config/gameplayDifficulty';
 import type { VisualQualityTier } from '../config/visualQuality';
 import type { AudioVolumes } from '../config/audioSettings';
 import { getAutoFireSettings, setAutoFire, type AutoFireInput } from '../config/autoFireSettings';
+import { getMotionSettings, setScreenShake } from '../config/motionSettings';
 import { audioManager } from '../systems/AudioManager';
 import { isTouchMobileDevice } from '../utils/device';
 import { h } from './dom';
@@ -26,7 +27,7 @@ export interface SettingsForm {
   element: HTMLElement;
   setDifficulty: (tier: GameplayDifficultyTier) => void;
   setQuality: (tier: VisualQualityTier) => void;
-  /** Re-reads the volumes and autofire, which the other screen may have changed. */
+  /** Re-reads the volumes, autofire and screen shake, which the other screen may have changed. */
   sync: () => void;
 }
 
@@ -73,8 +74,8 @@ function createTierSelector<T extends string>(config: {
 }
 
 /**
- * The settings shared by the menu sheet and the pause panel: difficulty, autofire, visual quality and
- * the two volume sliders. Touch devices get a touch autofire row too, since a keyboard may join later. `captions` groups them under GAMEPLAY / VISUALS / AUDIO headings.
+ * The settings shared by the menu sheet and the pause panel: difficulty, autofire, visual quality,
+ * screen shake and the two volume sliders. Touch devices get a touch autofire row too, since a keyboard may join later. `captions` groups them under GAMEPLAY / VISUALS / AUDIO headings.
  */
 export function createSettingsForm(config: {
   captions: boolean;
@@ -120,6 +121,17 @@ export function createSettingsForm(config: {
     for (const { input, selector } of autoFire) selector.setValue(settings[input] ? 'on' : 'off');
   };
 
+  const screenShake = createTierSelector({
+    label: 'Screen shake',
+    tiers: ['off', 'on'],
+    value: getMotionSettings().screenShake ? 'on' : 'off',
+    onSelect: (tier) => {
+      audioManager.playUi();
+      setScreenShake(tier === 'on');
+      return true;
+    },
+  });
+
   const sliders = new Map<VolumeChannel, { input: HTMLInputElement; readout: HTMLOutputElement }>();
   const showVolumes = (values: AudioVolumes): void => {
     for (const [key, { input, readout }] of sliders) {
@@ -157,6 +169,7 @@ export function createSettingsForm(config: {
       ...autoFire.map(({ selector }) => selector.element),
       caption('VISUALS'),
       quality.element,
+      screenShake.element,
       caption('AUDIO', 'ui-caption--audio'),
       h('div', { className: 'ui-sliders' }, ...sliderCells)
     ),
@@ -165,6 +178,7 @@ export function createSettingsForm(config: {
     sync: () => {
       showVolumes(audioManager.getVolumes());
       showAutoFire();
+      screenShake.setValue(getMotionSettings().screenShake ? 'on' : 'off');
     },
   };
 }

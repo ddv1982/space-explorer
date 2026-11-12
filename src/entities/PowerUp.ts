@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/entityUtils';
 import { ensurePowerUpTextures, POWER_UP_BODY_SIZE } from '../utils/SpriteFactory';
-import { prefersReducedMotion } from '../scenes/shared/neonUiTheme';
+import { prefersReducedMotion } from '../utils/device';
 
 export type PowerUpType = 'health' | 'shield' | 'rapidfire';
 

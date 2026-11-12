@@ -40,6 +40,7 @@ export default defineConfig({
         '**/playerControls.spec.ts',
         '**/directRetry.spec.ts',
         '**/autoFire.spec.ts',
+        '**/impactFeel.spec.ts',
         '**/renderBudget.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
@@ -57,6 +58,7 @@ export default defineConfig({
         '**/playerControls.spec.ts',
         '**/directRetry.spec.ts',
         '**/autoFire.spec.ts',
+        '**/impactFeel.spec.ts',
       ],
       use: {
         viewport: { width: 390, height: 844 },

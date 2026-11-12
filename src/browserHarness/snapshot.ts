@@ -17,6 +17,8 @@ export interface BrowserHarnessSnapshot {
   }>;
   runtimePerformance: RuntimePerformanceSnapshot;
   physicsPaused: boolean | null;
+  /** Arcade world time scale: 1 is normal, higher is slower (a hit-stop raises it briefly). */
+  physicsTimeScale: number | null;
   physicsBodyCount: number;
   cameraFilterCount: number;
   particleEmitterCount: number;
@@ -142,6 +144,7 @@ export function createBrowserHarnessSnapshot(game: Phaser.Game): BrowserHarnessS
     }),
     runtimePerformance: runtimePerformanceBudget.getSnapshot(),
     physicsPaused: physicsWorld ? physicsWorld.isPaused : null,
+    physicsTimeScale: physicsWorld ? physicsWorld.timeScale : null,
     physicsBodyCount: physicsWorld?.bodies.size ?? 0,
     cameraFilterCount,
     particleEmitterCount,

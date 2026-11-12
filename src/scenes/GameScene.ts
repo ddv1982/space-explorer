@@ -46,6 +46,7 @@ import { createGameSceneRuntimeLifecycle } from './gameScene/runtimeLifecycle';
 import { runGameSceneCreateBootstrap, type GameSceneBootstrapRuntime } from './gameScene/runGameSceneCreateBootstrap';
 import type { SceneEventBinding } from './gameScene/sceneEvents';
 import { GameplayClock, runGameSceneUpdateFrame } from './gameScene/updateFrame';
+import { HitStop } from '@/systems/HitStop';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
@@ -81,6 +82,9 @@ export class GameScene extends Phaser.Scene {
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
   private gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null = null;
   private readonly gameplayClock = new GameplayClock();
+  private readonly hitStop = new HitStop((scale) => {
+    if (this.physics?.world) this.physics.world.timeScale = scale;
+  });
   private readonly sceneEventBindings: SceneEventBinding[] = [];
   private readonly runtimeLifecycle = this.createRuntimeLifecycle();
 
@@ -95,6 +99,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     if (!finishShipyardLoading(this)) return;
     this.gameplayClock.reset();
+    this.hitStop.reset();
     const runtime = runGameSceneCreateBootstrap({
       scene: this,
       runtimeLifecycle: this.runtimeLifecycle,
@@ -186,6 +191,7 @@ export class GameScene extends Phaser.Scene {
       persistHelperWingState: () => this.persistHelperWingState(),
       syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
       getGameplayNow: () => this.gameplayClock.now,
+      hitStop: (durationMs) => this.hitStop.trigger(durationMs),
       constants: {
         bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
         playerDeathExplosionVisualIntensity: GameScene.PLAYER_DEATH_EXPLOSION_VISUAL_INTENSITY,
@@ -423,7 +429,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (this.gameplayFrameBehavior) {
-      runGameSceneUpdateFrame(this.gameplayFrameBehavior, time, delta, this.gameplayClock);
+      runGameSceneUpdateFrame(this.gameplayFrameBehavior, time, delta, this.gameplayClock, this.hitStop);
     }
   }
 }

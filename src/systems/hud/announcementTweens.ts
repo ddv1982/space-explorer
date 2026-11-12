@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { prefersReducedMotion } from '../../scenes/shared/neonUiTheme';
+import { prefersReducedMotion } from '../../utils/device';
 import { colorToHexString, mixColor } from '../../utils/colorUtils';
 import { getVisualQualityProfile } from '../../config/visualQuality';
 

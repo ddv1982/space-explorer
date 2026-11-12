@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { PARTICLE, generateEffectsParticleTextures } from '../../systems/effects/particleTextureFactory';
 import { withCanvasTexture } from '../../utils/generatedTexture';
-import { prefersReducedMotion } from '../shared/neonUiTheme';
+import { prefersReducedMotion } from '../../utils/device';
 
 const PLANET_KEY = 'menu-horizon-planet';
 const PLANET_TEXTURE_SIZE = 1024;

@@ -90,6 +90,7 @@ mock.module('phaser', () => ({
 
 const { createGameSceneCombatFeedbackHandlers } = await import('../src/scenes/gameScene/combatFeedbackHandlers');
 const { runBestEffort } = await import('../src/utils/runBestEffort');
+const { HIT_STOP_MS } = await import('../src/systems/HitStop');
 
 describe('runBestEffort', () => {
   test('swallows effect errors', () => {
@@ -155,6 +156,7 @@ function createCombatFeedbackHarness(
   const clearPlayerHazards = mock();
   const showBossWarning = mock();
   const showBossBar = mock();
+  const hitStop = mock();
 
   const handlers = createGameSceneCombatFeedbackHandlers({
     scene: {
@@ -211,6 +213,7 @@ function createCombatFeedbackHarness(
     persistHelperWingState,
     syncLastLifeHelperWingState,
     getGameplayNow: () => 1000,
+    hitStop,
     constants: {
       bossExplosionVisualIntensity: 3,
       playerDeathExplosionVisualIntensity: 2.2,
@@ -219,6 +222,7 @@ function createCombatFeedbackHarness(
   });
 
   return {
+    hitStop,
     handlers,
     onPlayerHit,
     player,
@@ -247,8 +251,11 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     const harness = createCombatFeedbackHarness();
     harness.handlers.handlePlayerHit({ outcome: 'absorbed', source: 'mine', hullDamage: 0 });
     expect(playSfx).toHaveBeenLastCalledWith('hitShield');
+    // A shield block keeps the flow; a hull hit holds for a moment.
+    expect(harness.hitStop).not.toHaveBeenCalled();
     harness.handlers.handlePlayerHit({ outcome: 'damaged', source: 'beam', hullDamage: 1.25 });
     expect(playSfx).toHaveBeenLastCalledWith('hitHull');
+    expect(harness.hitStop).toHaveBeenCalledWith(HIT_STOP_MS.playerHullHit);
     expect(harness.onPlayerHit).toHaveBeenCalledTimes(2);
   });
 
@@ -265,6 +272,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(playSfx).toHaveBeenCalledWith('explosionSmall', expect.any(Number));
     expect(trySpawnRandomPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
     expect(spawnGuaranteedPowerUp).not.toHaveBeenCalled();
+    expect(harness.hitStop).not.toHaveBeenCalled();
   });
 
   test('handleEnemyDeath grants a marked ace exactly one guaranteed drop and skips the random roll', () => {
@@ -279,6 +287,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(spawnGuaranteedPowerUp).toHaveBeenCalledTimes(1);
     expect(spawnGuaranteedPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
     expect(trySpawnRandomPowerUp).not.toHaveBeenCalled();
+    expect(harness.hitStop).toHaveBeenCalledWith(HIT_STOP_MS.aceKill);
   });
 
   test('handlePlayerDeath syncs helper wing after an ordinary gameplay respawn starts', () => {

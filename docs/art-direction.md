@@ -15,6 +15,7 @@ Light itself — bolts, orbs, beams, fire, smoke, sparks, flares, glows — is p
 ## V2 remake contract
 
 - **Readable pressure first.** The center 45–55% of the playfield stays darker and calmer than entities, bullets, hazards, and pickups so Lane-Reading and Ambush Anticipation stay intact. Scenery and HUD chrome never win contrast in that corridor.
+- **Big impacts hold for a beat.** Ace kills, hull hits, boss guard breaks, boss phase changes and boss defeats trigger a 50–110 ms hit-stop (`systems/HitStop.ts`) that runs gameplay at 15% speed: the gameplay clock and the Arcade world slow down, while music, input, the HUD and presentation tweens keep real time. Every camera shake goes through `shakeCamera`, which honours the Screen shake setting.
 - **Gameplay clocks stay frozen on pause.** Telegraph windows, beam phases, and choreographed waves still count accumulated gameplay delta. Presentation motion may tween on the scene clock; it must not schedule combat consequences from scene time.
 - **Both orientations stay first-class.** There is no rotate block. Phone-portrait 390px remains a required layout. Decorative chrome must collapse before it clips a primary action.
 - **Scoped hybrid art.** Shipyard hull sheets join the ten planet-arrival portraits. Gameplay backgrounds are procedural. Required hull sheet failures block entry with retry; they must not masquerade as a successful procedural fallback.

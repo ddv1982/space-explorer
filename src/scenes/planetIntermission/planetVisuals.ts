@@ -4,7 +4,7 @@ import type { LevelConfig } from '../../config/LevelsConfig';
 import { getViewportLayout } from '../../utils/layout';
 import { withCanvasTexture } from '../../utils/generatedTexture';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
-import { prefersReducedMotion } from '../shared/neonUiTheme';
+import { prefersReducedMotion } from '../../utils/device';
 import { getPlanetPortraitKey } from './planetPortraits';
 import type { PlanetIntermissionProfile } from './planetProfiles';
 
