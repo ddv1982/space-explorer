@@ -16,10 +16,10 @@ const { GAME_SCENE_EVENTS } = await import('../src/systems/GameplayFlow');
 import { createInstance, createCollisionHarness } from './helpers/collisionHarness';
 
 describe('CollisionManager boss damage sources', () => {
-  test('routes main-player bullets through the Guard Break-aware boss path with gameplay time', () => {
+  test('main-player bullets damage the boss by the bullet damage and are consumed', () => {
     const harness = createCollisionHarness(['damaged']);
     const bulletVsBoss = harness.getOverlap(harness.groups.bullet, harness.groups.boss);
-    const playerDamage: Array<{ amount: number; time: number }> = [];
+    const damage: number[] = [];
 
     const bullet = createInstance(Bullet, {
       active: true,
@@ -29,14 +29,13 @@ describe('CollisionManager boss damage sources', () => {
       active: true,
       x: 100,
       y: 120,
-      takePlayerDamage: (amount: number, time: number) => playerDamage.push({ amount, time }),
+      takeDamage: (amount: number) => damage.push(amount),
     });
 
     harness.manager.setBulletDamage(3);
-    harness.setTime(640);
     bulletVsBoss(bullet, boss);
 
-    expect(playerDamage).toEqual([{ amount: 3, time: 640 }]);
+    expect(damage).toEqual([3]);
     expect(harness.callLog).toContain('bullet.kill');
   });
 });

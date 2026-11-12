@@ -30,9 +30,9 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Choir Regent',
-    maxHp: 2050,
-    phase1Cooldown: 860,
-    phase2Cooldown: 430,
+    maxHp: 1475,
+    phase1Cooldown: 990,
+    phase2Cooldown: 490,
     phase2MoveSpeed: 205,
     phaseTransitionPauseMs: 260,
     attackStyle: 'pressure',
@@ -42,10 +42,6 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
     phase2SpiralShotCount: 6,
     phase2SpiralTurnRate: 104,
     phase2BulletSpeedScale: 1.08,
-    guardCapacity: 40,
-    guardDecayDelayMs: 1200,
-    guardDecayPerSecond: 14,
-    guardBreakDurationMs: 1800,
   },
   bossAddWaves: true,
   lastLifeHelperWing: {

@@ -91,7 +91,6 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 - **Power-up drops** — temporary pickups such as health, shield, and rapid-fire boosts
 - **AEGIS Picket turrets** — a two-tier screen-edge support upgrade available for Level 5 onward
 - **Marked Aces** — sparse gilded priority targets in Levels 5–10 with stronger rewards
-- **Guard Break** — sustained main-gun pressure staggers later bosses into short damage windows
 - **Max-chain Overdrive** — maintaining the x5 chain briefly accelerates the main gun
 - **Lives + respawn flow** — the run continues after death if lives remain
 - **Upgrade progression** — intermission upgrades unlock over time and obey progression caps

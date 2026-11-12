@@ -95,7 +95,6 @@ function createHarness(level = 1): {
       showBossBar: () => undefined,
       hideBossBar: () => undefined,
       updateBossHp: () => {},
-      updateBossGuard: () => {},
     },
     bulletPool: { fire: () => {} },
     effectsManager: { createMuzzleFlash: () => {}, updateLighting: (delta) => lightingDeltas.push(delta) },

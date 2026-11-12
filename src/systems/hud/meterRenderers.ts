@@ -4,7 +4,6 @@ import { mixColor } from '../../utils/colorUtils';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
 import {
   BOSS_BAR_HEIGHT,
-  BOSS_GUARD_HEIGHT,
   HULL_CELL_HEIGHT,
   RESERVE_ICON_HEIGHT,
   SURGE_BAR_HEIGHT,
@@ -237,8 +236,6 @@ interface BossBarState {
   visible: boolean;
   hp: number | null;
   maxHp: number | null;
-  guardRatio: number | null;
-  guardBroken: boolean;
 }
 
 export function renderBossBar(track: Graphics, fill: Graphics, state: BossBarState, layout: HudLayoutMetrics): void {
@@ -257,17 +254,6 @@ export function renderBossBar(track: Graphics, fill: Graphics, state: BossBarSta
   slantedPath(track, x, y, width, BOSS_BAR_HEIGHT);
   track.lineStyle(1, NEON.red, 0.7);
   track.strokePath();
-
-  if (state.guardRatio !== null) {
-    const guardY = y + BOSS_BAR_HEIGHT + 3;
-    const guardColor = state.guardBroken ? NEON.gold : SURGE_COLOR;
-    slantedPath(track, x, guardY, width, BOSS_GUARD_HEIGHT);
-    track.fillStyle(0x1c1728, 0.88);
-    track.fillPath();
-    slantedPath(fill, x, guardY, width * Math.max(0, Math.min(1, state.guardRatio)), BOSS_GUARD_HEIGHT);
-    fill.fillStyle(guardColor, 0.95);
-    fill.fillPath();
-  }
 
   if (state.hp === null || state.maxHp === null || state.maxHp <= 0) {
     return;

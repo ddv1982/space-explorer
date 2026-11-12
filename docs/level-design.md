@@ -23,9 +23,9 @@ shields recharge on every respawn.
 
 Levels 5–10 add payoff without adding player inputs:
 
-- **AEGIS Picket** becomes purchasable after Level 4. Its fixed flank turrets trim chaff with flat-damage bolts while the main gun remains the dominant damage source. Pickets never target bosses and do not contribute to Guard Break.
+- **AEGIS Picket** becomes purchasable after Level 4. Its fixed flank turrets trim chaff with flat-damage bolts while the main gun remains the dominant damage source. Pickets never target bosses.
 - **Marked Aces** are sparse authored variants of existing enemies. Their gilded treatment signals 2× durability, 4× score, and exactly one guaranteed power-up.
-- **Guard Break** rewards sustained main-gun pressure against bosses from Level 5 onward. Guard begins decaying quickly after 1.2 seconds without a player hit; filling the tougher threshold interrupts attacks for a focused 1.8-second opening and doubles main-player damage during it.
+- **Boss volleys are telegraphed.** For the last 400 ms before every volley the boss's core swells and its hardpoints flash white. Bosses have no stun or bonus-damage window; fights are paced by the wind-up and the volley cooldown.
 - **Max-chain Overdrive** reduces the main-gun cooldown by 15% while the existing chain multiplier remains at x5. It adds no input and ends immediately when the chain falls.
 
 These systems must preserve Lane-Reading, avoid persistent HUD panels, and remain independently removable through upgrade/config gates.

@@ -109,12 +109,6 @@ function bossProblems(level: LevelConfig): string[] {
   const problems: string[] = [];
   if (!level.boss) return ['hasBoss=true requires a boss config'];
   if (!(level.bossTriggerProgress > 0 && level.bossTriggerProgress < 1)) problems.push('bossTriggerProgress');
-  if (level.boss.guardCapacity !== undefined) {
-    const { guardCapacity, guardDecayDelayMs, guardDecayPerSecond, guardBreakDurationMs } = level.boss;
-    if (![guardCapacity, guardDecayDelayMs, guardDecayPerSecond, guardBreakDurationMs].every(positive)) {
-      problems.push('Guard Break bosses need positive capacity, decay delay, decay rate and break duration');
-    }
-  }
   return problems;
 }
 

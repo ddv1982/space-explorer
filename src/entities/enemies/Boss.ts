@@ -10,7 +10,6 @@ import { bossAttackWindup, firstVolleyLastFireTime } from './boss/attackWindup';
 import { getViewportBounds } from '../../utils/layout';
 import { bossTextureKey } from '../../config/shipyardSprites';
 import { BossVisualRig } from './boss/BossVisualRig';
-import { advanceBossGuard, applyBossGuardHit } from './boss/BossGuardController';
 import { BossAttackRuntime } from './boss/BossAttackRuntime';
 import { shakeCamera } from '@/systems/effects/cameraShake';
 
@@ -58,14 +57,6 @@ export class Boss extends EnemyBase {
   private shieldActive = false;
   private phaseStartedAt = 0;
   private bossFlashToken = 0;
-  private guardCapacity = 0;
-  private guardValue = 0;
-  private guardDecayDelayMs = 1500;
-  private guardDecayPerSecond = 0;
-  private guardBreakDurationMs = 2500;
-  private guardLastHitAt = Number.NEGATIVE_INFINITY;
-  private guardBrokenUntil = 0;
-  private guardBroken = false;
   private readonly visualRig: BossVisualRig;
   private attackRuntime!: BossAttackRuntime;
 
@@ -90,50 +81,6 @@ export class Boss extends EnemyBase {
     }
 
     super.takeDamage(amount);
-  }
-
-  takePlayerDamage(amount: number, _time?: number): void {
-    if (amount <= 0 || !this.active) {
-      return;
-    }
-
-    if (this.shieldActive) {
-      this.takeDamage(amount);
-      return;
-    }
-
-    const gameplayTime = this.getGameplayTime();
-    const damage = this.guardBroken ? amount * 2 : amount;
-    super.takeDamage(damage);
-
-    if (!this.active || this.guardCapacity <= 0 || this.guardBroken) {
-      return;
-    }
-
-    const nextGuard = applyBossGuardHit(
-      {
-        capacity: this.guardCapacity,
-        value: this.guardValue,
-        lastHitAt: this.guardLastHitAt,
-        broken: this.guardBroken,
-        brokenUntil: this.guardBrokenUntil,
-      },
-      amount,
-      gameplayTime
-    );
-    this.guardValue = nextGuard.value;
-    this.guardLastHitAt = nextGuard.lastHitAt;
-    if (nextGuard.shouldBreak) {
-      this.startGuardBreak(gameplayTime);
-    }
-  }
-
-  getGuardState(): { enabled: boolean; ratio: number; broken: boolean } {
-    return {
-      enabled: this.guardCapacity > 0,
-      ratio: this.guardCapacity > 0 ? Math.min(1, this.guardValue / this.guardCapacity) : 0,
-      broken: this.guardBroken,
-    };
   }
 
   setEnemyBulletGroup(group: Phaser.Physics.Arcade.Group): void {
@@ -165,7 +112,6 @@ export class Boss extends EnemyBase {
       time,
       phase: this.phase,
       shieldActive: this.shieldActive,
-      guardBroken: this.guardBroken,
       windup: this.attackWindup,
     });
   }
@@ -179,10 +125,6 @@ export class Boss extends EnemyBase {
     this.attackWindup = 0;
     if (!this.arrived) {
       this.handleArrival(time);
-      return;
-    }
-
-    if (this.updateGuardState(time, delta)) {
       return;
     }
 
@@ -205,10 +147,6 @@ export class Boss extends EnemyBase {
     this.moveSpeed = 80;
     this.shieldActive = false;
     this.phaseStartedAt = 0;
-    this.guardValue = 0;
-    this.guardLastHitAt = Number.NEGATIVE_INFINITY;
-    this.guardBrokenUntil = 0;
-    this.guardBroken = false;
     this.setVelocityY(60);
     this.clearTint();
   }
@@ -353,65 +291,9 @@ export class Boss extends EnemyBase {
     this.phase2SpiralShotCount = config.phase2SpiralShotCount;
     this.phase2SpiralTurnRate = config.phase2SpiralTurnRate;
     this.phase2BulletSpeedScale = config.phase2BulletSpeedScale;
-    this.guardCapacity = Math.max(0, config.guardCapacity ?? 0);
-    this.guardDecayDelayMs = Math.max(0, config.guardDecayDelayMs ?? 1500);
-    this.guardDecayPerSecond = Math.max(0, config.guardDecayPerSecond ?? this.guardCapacity / 3);
-    this.guardBreakDurationMs = Math.max(0, config.guardBreakDurationMs ?? 2500);
-  }
-
-  private updateGuardState(time: number, delta: number): boolean {
-    const nextGuard = advanceBossGuard(
-      {
-        capacity: this.guardCapacity,
-        value: this.guardValue,
-        lastHitAt: this.guardLastHitAt,
-        broken: this.guardBroken,
-        brokenUntil: this.guardBrokenUntil,
-      },
-      {
-        time,
-        delta,
-        decayDelayMs: this.guardDecayDelayMs,
-        decayPerSecond: this.guardDecayPerSecond,
-      }
-    );
-    this.guardValue = nextGuard.value;
-    this.guardLastHitAt = nextGuard.lastHitAt;
-    this.guardBroken = nextGuard.broken;
-
-    if (nextGuard.frozen) {
-      this.setVelocity(0, 0);
-      return true;
-    }
-
-    if (nextGuard.recovered) {
-      this.lastFireTime = time;
-      this.phaseStartedAt = time;
-      this.restoreBaseTint();
-    }
-
-    return false;
-  }
-
-  private startGuardBreak(time: number): void {
-    this.guardBroken = true;
-    this.guardBrokenUntil = time + this.guardBreakDurationMs;
-    this.lastFireTime = this.guardBrokenUntil;
-    this.setVelocity(0, 0);
-    this.invalidateHitFlash();
-    this.bossFlashToken += 1;
-    this.setTint(0xffd76a);
-    this.setTintMode(Phaser.TintModes.FILL);
-    this.scene.events.emit(GAME_SCENE_EVENTS.bossGuardBreak);
   }
 
   protected override restoreBaseTint(): void {
-    if (this.guardBroken) {
-      this.setTint(0xffd76a);
-      this.setTintMode(Phaser.TintModes.FILL);
-      return;
-    }
-
     if (this.shieldActive) {
       this.setTint(0x77ccff);
       this.setTintMode(Phaser.TintModes.MULTIPLY);
@@ -456,8 +338,6 @@ export class Boss extends EnemyBase {
     this.scene.events.emit(GAME_SCENE_EVENTS.bossDeath, this.scoreValue, this.x, this.y);
     this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.shieldActive = false;
-    this.guardValue = 0;
-    this.guardBroken = false;
     this.clearTint();
     this.despawn();
   }

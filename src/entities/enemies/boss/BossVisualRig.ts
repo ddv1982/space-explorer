@@ -74,7 +74,6 @@ export class BossVisualRig {
     time: number;
     phase: number;
     shieldActive: boolean;
-    guardBroken: boolean;
     /** 0-1 charge before the next volley: the core swells and the hardpoints flash white. */
     windup?: number;
   }): void {
@@ -97,7 +96,7 @@ export class BossVisualRig {
     this.shield.setScale(0.98 + pulse * 0.045).setAlpha(0.62 + pulse * 0.28);
     const windup = params.windup ?? 0;
     this.core.setPosition(params.x, params.y - 1).setScale(0.82 + pulse * 0.44 * (1 - windup) + windup * 1.35);
-    this.core.setFillStyle(params.guardBroken ? 0xffd76a : params.phase === 2 ? 0xffffff : 0xffd7e0, 0.92);
+    this.core.setFillStyle(params.phase === 2 ? 0xffffff : 0xffd7e0, 0.92);
     this.hardpoints.forEach((hardpoint, index) => {
       hardpoint.setPosition(params.x + (index === 0 ? -31 : 31), params.y + 5);
       hardpoint.setScale(0.82 + (1 - pulse) * 0.32 * (1 - windup) + windup * 0.7);
@@ -114,7 +113,6 @@ export class BossVisualRig {
       time: 0,
       phase: 1,
       shieldActive: false,
-      guardBroken: false,
     });
   }
 }

@@ -68,7 +68,6 @@ interface GameSceneGameplayFrameDelegate {
     showBossBar(name: string): void;
     hideBossBar(): void;
     updateBossHp(hp: number, maxHp: number): void;
-    updateBossGuard(ratio: number | null, broken: boolean): void;
   };
   bulletPool: {
     fire(x: number, y: number, velocityX: number, velocityY: number): void;
@@ -244,8 +243,6 @@ export function createGameSceneGameplayFrameBehavior(
 
     if (boss && boss.active) {
       delegate.hud.updateBossHp(boss.hp, boss.maxHp);
-      const guard = boss.getGuardState();
-      delegate.hud.updateBossGuard(guard.enabled ? guard.ratio : null, guard.broken);
     }
   };
 

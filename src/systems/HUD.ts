@@ -40,8 +40,6 @@ export class HUD {
   private currentSurgeRatio: number | null = null;
   private currentBossHp: number | null = null;
   private currentBossMaxHp: number | null = null;
-  private currentBossGuardRatio: number | null = null;
-  private currentBossGuardBroken = false;
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.scene = scene;
@@ -56,8 +54,6 @@ export class HUD {
     this.currentSurgeRatio = null;
     this.currentBossHp = null;
     this.currentBossMaxHp = null;
-    this.currentBossGuardRatio = null;
-    this.currentBossGuardBroken = false;
     this.bossVisible = false;
 
     const levelAccent = levelConfig?.accentColor ?? DEFAULT_ACCENT;
@@ -128,8 +124,6 @@ export class HUD {
     this.bossVisible = false;
     this.currentBossHp = null;
     this.currentBossMaxHp = null;
-    this.currentBossGuardRatio = null;
-    this.currentBossGuardBroken = false;
     this.widgets.bossBarBg.clear();
     this.widgets.bossBarFill.clear();
     this.widgets.bossBarBg.setVisible(false);
@@ -146,19 +140,6 @@ export class HUD {
 
     this.currentBossHp = hp;
     this.currentBossMaxHp = maxHp;
-    this.renderBossBar();
-  }
-
-  updateBossGuard(ratio: number | null, broken: boolean): void {
-    if (!this.bossVisible) return;
-
-    const nextRatio = ratio === null ? null : Math.max(0, Math.min(1, ratio));
-    if (this.currentBossGuardRatio === nextRatio && this.currentBossGuardBroken === broken) {
-      return;
-    }
-
-    this.currentBossGuardRatio = nextRatio;
-    this.currentBossGuardBroken = broken;
     this.renderBossBar();
   }
 
@@ -228,10 +209,6 @@ export class HUD {
     this.announcementTweens.showBossPhaseAnnouncement(phase);
   }
 
-  showBossGuardBreakAnnouncement(): void {
-    this.announcementTweens.showBossGuardBreakAnnouncement();
-  }
-
   showHelperWingAnnouncement(helperCount: number): void {
     this.announcementTweens.showHelperWingAnnouncement(helperCount);
   }
@@ -269,8 +246,6 @@ export class HUD {
         visible: this.bossVisible,
         hp: this.currentBossHp,
         maxHp: this.currentBossMaxHp,
-        guardRatio: this.currentBossGuardRatio,
-        guardBroken: this.currentBossGuardBroken,
       },
       this.layout()
     );

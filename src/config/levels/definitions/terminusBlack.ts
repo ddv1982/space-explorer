@@ -30,9 +30,9 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Omega Null',
-    maxHp: 2600,
-    phase1Cooldown: 840,
-    phase2Cooldown: 400,
+    maxHp: 1875,
+    phase1Cooldown: 970,
+    phase2Cooldown: 460,
     phase2MoveSpeed: 200,
     phaseTransitionPauseMs: 240,
     attackStyle: 'pressure',
@@ -43,10 +43,6 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
     phase2SpiralShotCount: 8,
     phase2SpiralTurnRate: 120,
     phase2BulletSpeedScale: 1.12,
-    guardCapacity: 60,
-    guardDecayDelayMs: 1200,
-    guardDecayPerSecond: 21,
-    guardBreakDurationMs: 1800,
   },
   bossAddWaves: true,
   lastLifeHelperWing: {

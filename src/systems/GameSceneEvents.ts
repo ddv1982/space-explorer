@@ -13,7 +13,6 @@ export const GAME_SCENE_EVENTS = {
   eliteWave: 'elite-wave',
   bossDeath: 'boss-death',
   bossPhaseChange: 'boss-phase-change',
-  bossGuardBreak: 'boss-guard-break',
   helperWingActivated: 'helper-wing-activated',
   helperWingDepleted: 'helper-wing-depleted',
   playerBulletTrail: 'player-bullet-trail',
@@ -34,7 +33,6 @@ type GameSceneEventPayloads = {
   [GAME_SCENE_EVENTS.eliteWave]: [title?: string];
   [GAME_SCENE_EVENTS.bossDeath]: [score: number, x: number, y: number];
   [GAME_SCENE_EVENTS.bossPhaseChange]: [phase: number];
-  [GAME_SCENE_EVENTS.bossGuardBreak]: [];
   [GAME_SCENE_EVENTS.helperWingActivated]: [helperCount: number];
   [GAME_SCENE_EVENTS.helperWingDepleted]: [];
   [GAME_SCENE_EVENTS.playerBulletTrail]: [x: number, y: number];

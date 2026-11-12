@@ -73,10 +73,6 @@ export class HudAnnouncementTweens {
     this.show({ text: `BOSS PHASE ${phase}`, color: CAUTION, duration: 1400, offset: -8, exit: -34 });
   }
 
-  showBossGuardBreakAnnouncement(): void {
-    this.show({ text: 'GUARD BREAK', color: 0xffd76a, duration: 1300, offset: -8, exit: -30 });
-  }
-
   showHelperWingAnnouncement(helperCount: number): void {
     this.show({ text: `ALLY WING ONLINE (${helperCount})`, color: ALLY, duration: 1600, offset: -6, exit: -28 });
   }

@@ -352,19 +352,6 @@ export const SFX = {
     maxVoices: 1,
     duck: { depth: 0.5, seconds: 0.9 },
   },
-  bossGuardBreak: {
-    layers: [
-      bell(720, 0, 0.5, 0.5, 2.76, 2.4),
-      bell(1090, 0.02, 0.4, 0.35, 3.3, 2),
-      { source: 'noise', filter: { type: 'highpass', freq: [2400, 4200] }, attack: 0.001, decay: 0.26, gain: 0.45 },
-      thump(0, 0.2, 0.5, 140, 55),
-    ],
-    gain: 0.45,
-    variants: 1,
-    jitter: 0,
-    maxVoices: 1,
-    duck: { depth: 0.3, seconds: 0.4 },
-  },
   helperWingArrive: {
     layers: [
       note(392, 0, 0.3, 0.45, 'triangle'),

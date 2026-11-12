@@ -220,7 +220,6 @@ export class GameScene extends Phaser.Scene {
       { event: GAME_SCENE_EVENTS.eliteWave, handler: handlers.handleEliteWave },
       { event: GAME_SCENE_EVENTS.bossDeath, handler: handlers.handleBossDeath },
       { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: handlers.handleBossPhaseChange },
-      { event: GAME_SCENE_EVENTS.bossGuardBreak, handler: handlers.handleBossGuardBreak },
       { event: GAME_SCENE_EVENTS.helperWingActivated, handler: handlers.handleHelperWingActivated },
       { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: handlers.handleHelperWingDepleted },
       { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: handlers.handlePlayerBulletTrail },

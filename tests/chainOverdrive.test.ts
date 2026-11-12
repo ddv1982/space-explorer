@@ -118,7 +118,6 @@ function createFiringHarness(chainMultiplier: number) {
       showBossBar: () => undefined,
       hideBossBar: () => undefined,
       updateBossHp: () => {},
-      updateBossGuard: () => {},
     },
     bulletPool: {
       fire: () => {

@@ -67,7 +67,6 @@ interface GameSceneCombatFeedbackHandlers {
   handleEliteWave: (title?: string) => void;
   handleBossDeath: () => void;
   handleBossPhaseChange: (phase: number) => void;
-  handleBossGuardBreak: () => void;
   handleHelperWingActivated: (helperCount: number) => void;
   handleHelperWingDepleted: () => void;
   handlePicketOnline: () => void;
@@ -283,14 +282,6 @@ export function createGameSceneCombatFeedbackHandlers(
       deps.hitStop(HIT_STOP_MS.bossPhaseChange);
       playBossPhaseChangeEffects();
       runBestEffort(() => audioManager.playSfx('bossPhase'));
-    },
-
-    handleBossGuardBreak: (): void => {
-      deps.hud.showBossGuardBreakAnnouncement();
-      deps.hitStop(HIT_STOP_MS.bossGuardBreak);
-      runBestEffort(() => deps.scene.cameras.main.flash(100, 255, 215, 106, false));
-      runBestEffort(() => shakeCamera(deps.scene, 120, 0.005));
-      runBestEffort(() => audioManager.playSfx('bossGuardBreak'));
     },
 
     handleHelperWingActivated: (helperCount): void => {
