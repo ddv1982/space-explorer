@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import { waveRandom } from '../gameplayRandom';
 import type { EnemySpawnConfig, EnemyType } from '@/config/LevelsConfig';
 
 interface SpawnEntry {
@@ -27,7 +27,7 @@ export class EnemySpawnTable {
 
   pick(): EnemyType | null {
     if (this.totalWeight <= 0) return null;
-    const roll = Phaser.Math.Between(1, this.totalWeight);
+    const roll = waveRandom.between(1, this.totalWeight);
     const match = this.entries.find((entry) => roll <= entry.cumulativeWeight);
     return match?.type ?? this.entries[this.entries.length - 1]?.type ?? null;
   }

@@ -1,3 +1,4 @@
+import { waveRandom } from '../gameplayRandom';
 import Phaser from 'phaser';
 
 import type { LevelSectionConfig } from '@/config/LevelsConfig';
@@ -31,5 +32,5 @@ export function resolveEncounterCount(
   const size = section?.encounterSizeOverride ?? fallback;
   const scale = getEncounterCountPressureScale(pressure);
   const min = Math.max(1, Math.round(size.min * scale));
-  return Phaser.Math.Between(min, Math.max(min, Math.round(size.max * scale)));
+  return waveRandom.between(min, Math.max(min, Math.round(size.max * scale)));
 }

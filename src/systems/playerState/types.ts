@@ -9,6 +9,11 @@ export interface PlayerStateData {
   score: number;
   /** Credits spent on upgrades. Credits are earned one per point, so the balance is `score - creditsSpent`. */
   creditsSpent: number;
+  /**
+   * Seeds this run's waves and sky. RETRY keeps it, so a lost run can be replayed as it was; a new run
+   * gets a new one. 0 (older saves) means the classic, unvaried sectors.
+   */
+  runSeed: number;
   /** The easiest difficulty this run has been played on; the personal best is recorded under it. */
   easiestDifficulty: GameplayDifficultyTier | null;
   currentHp: number;

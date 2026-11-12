@@ -8,7 +8,7 @@ import type { PersistentHelperWingState, PlayerStateData, RunSummaryData } from 
 
 export type * from './playerState/types';
 
-interface PlayerStateRegistry {
+export interface PlayerStateRegistry {
   get(key: string): unknown;
   set(key: string, value: unknown): unknown;
 }
@@ -61,6 +61,7 @@ function getDefaultPlayerState(): PlayerStateData {
     level: 1,
     score: 0,
     creditsSpent: 0,
+    runSeed: 0,
     easiestDifficulty: null,
     currentHp: PLAYER_CONFIG.baseMaxHp,
     remainingLives: DEFAULT_REMAINING_LIVES,
@@ -144,6 +145,7 @@ export function normalizePersistedPlayerState(value: unknown): PlayerStateData {
     score,
     // Saves from before credits were split from score have spent nothing: their balance is their score.
     creditsSpent: normalizeBoundedInteger(value.creditsSpent, 0, score),
+    runSeed: normalizeBoundedInteger(value.runSeed, 0, 0xffffffff),
     easiestDifficulty: isDifficultyTier(value.easiestDifficulty) ? value.easiestDifficulty : null,
     currentHp: normalizeBoundedNumber(value.currentHp, defaultState.currentHp, maxHp),
     currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), MAX_CURRENT_SHIELDS)),
@@ -168,8 +170,9 @@ export function setPlayerState(registry: PlayerStateRegistry, state: PlayerState
   registry.set(PLAYER_STATE_KEY, normalizePersistedPlayerState(state));
 }
 
-export function resetPlayerState(registry: PlayerStateRegistry): void {
-  registry.set(PLAYER_STATE_KEY, getDefaultPlayerState());
+/** Starts a clean run. `runSeed` decides its waves and sky; RETRY passes the lost run's seed back in. */
+export function resetPlayerState(registry: PlayerStateRegistry, runSeed = 0): void {
+  registry.set(PLAYER_STATE_KEY, { ...getDefaultPlayerState(), runSeed });
 }
 
 export function getRunSummary(registry: PlayerStateRegistry): RunSummaryData {

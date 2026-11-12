@@ -81,3 +81,20 @@ export async function pressControl(control: Locator, key = 'Enter'): Promise<voi
   await expect(control).toBeFocused();
   await control.press(key);
 }
+
+/**
+ * Spends every life with fatal hits until the game-over screen shows. Respawns take as long as the
+ * renderer makes them (much longer on CI's software WebGL), so this waits on the result, not a count.
+ */
+export async function loseTheRun(page: Page): Promise<void> {
+  const deadline = Date.now() + (process.env.CI ? 150_000 : 45_000);
+  while (!(await snapshot(page)).activeScenes.includes('GameOver')) {
+    if (Date.now() > deadline) throw new Error('The run did not end: game over never showed');
+    // The probe throws while the ship is respawning or the scene is changing; try again shortly.
+    await page
+      .evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.probeAcceptedPlayerDamage(999))
+      .catch(() => undefined);
+    await page.waitForTimeout(1_000);
+  }
+  await waitForScene(page, 'GameOver');
+}

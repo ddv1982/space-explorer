@@ -10,6 +10,7 @@ import {
 const START_LEVEL_PARAM = 'startLevel';
 const UPGRADES_PARAM = 'upgrades';
 const SYSTEMS_PARAM = 'systems';
+const SEED_PARAM = 'seed';
 const UPGRADE_KEYS: UpgradeKey[] = ['hp', 'damage', 'fireRate', 'shield', 'turrets'];
 const FRESH_SHIP_VALUES = new Set(['0', 'none', 'fresh']);
 const STOCK_UPGRADES: PlayerUpgradeLevels = { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 };
@@ -18,6 +19,8 @@ export interface DevLevelJumpRequest {
   level: number;
   upgrades: PlayerUpgradeLevels;
   systems: ShipSystems;
+  /** `&seed=123` replays one run's waves and sky; null leaves the game to pick a fresh seed. */
+  runSeed: number | null;
 }
 
 function getProgressionMaxUpgrades(level: number): PlayerUpgradeLevels {
@@ -82,5 +85,11 @@ export function resolveDevLevelJump(search: string): DevLevelJumpRequest | null 
   const level = Math.min(getTotalLevels(), Math.max(1, parsed));
   const upgrades = resolveJumpUpgrades(params.get(UPGRADES_PARAM), level);
   const [gun, support, late] = (params.get(SYSTEMS_PARAM) ?? '').split(',').map((part) => part.trim());
-  return { level, upgrades, systems: normalizeShipSystems({ gun, support, late }) };
+  const seed = Number.parseInt(params.get(SEED_PARAM) ?? '', 10);
+  return {
+    level,
+    upgrades,
+    systems: normalizeShipSystems({ gun, support, late }),
+    runSeed: Number.isFinite(seed) && seed > 0 ? seed : null,
+  };
 }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { resolveRunVariation } from './runVariation';
 import { createLivingBackground, type LivingBackground } from './parallax/LivingBackground';
 import type { LevelConfig, LevelSectionConfig, ScriptedHazardConfig } from '../config/LevelsConfig';
 import { applyHazardTelegraphGlow } from '../utils/renderingCompat';
@@ -43,7 +44,7 @@ export class ParallaxBackground {
   }
 
   private createSceneLayers(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
-    this.livingBackground = createLivingBackground(scene, levelConfig?.name);
+    this.livingBackground = createLivingBackground(scene, levelConfig?.name, resolveRunVariation(scene).sky);
   }
 
   private createHazardOverlay(scene: Phaser.Scene, accentColor: number): void {

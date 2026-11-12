@@ -148,6 +148,8 @@ export interface WaveChoreographerDeps {
   emitWormhole: (x: number, y: number) => void;
   emitEliteWave: () => void;
   getViewportWidth: () => number;
+  /** True when this run flips the sector left to right: authored lanes are counted from the other edge. */
+  isMirrored?: () => boolean;
 }
 
 interface WaveRuntime {
@@ -270,13 +272,15 @@ export class WaveChoreographer {
     }
 
     const anchorX = this.getAnchorX(wave.config);
-    const positions = resolveFormationPositions(
-      'line',
-      bonus.count,
-      anchorX,
-      this.deps.getViewportWidth(),
-      BONUS_WAVE_START_Y,
-      BONUS_WAVE_SPACING
+    const positions = this.reflect(
+      resolveFormationPositions(
+        'line',
+        bonus.count,
+        anchorX,
+        this.deps.getViewportWidth(),
+        BONUS_WAVE_START_Y,
+        BONUS_WAVE_SPACING
+      )
     );
 
     let spawnedAny = false;
@@ -287,22 +291,38 @@ export class WaveChoreographer {
     }
 
     if (spawnedAny) {
-      this.deps.emitWarning(anchorX);
+      this.deps.emitWarning(this.reflectX(anchorX));
     }
   }
 
   private getPositions(config: ChoreographedWaveConfig): FormationPosition[] {
-    return resolveFormationPositions(
-      config.formation,
-      config.count,
-      this.getAnchorX(config),
-      this.deps.getViewportWidth(),
-      DEFAULT_WAVE_START_Y,
-      config.spacing ?? DEFAULT_WAVE_SPACING
+    return this.reflect(
+      resolveFormationPositions(
+        config.formation,
+        config.count,
+        this.getAnchorX(config),
+        this.deps.getViewportWidth(),
+        DEFAULT_WAVE_START_Y,
+        config.spacing ?? DEFAULT_WAVE_SPACING
+      )
     );
   }
 
   private getAnchorX(config: ChoreographedWaveConfig): number {
     return getLaneCenterX(config.lane ?? Math.floor(CHOREO_LANE_COUNT / 2), this.deps.getViewportWidth());
+  }
+
+  /**
+   * In a mirrored sector every member is reflected across the screen's centre, in its authored
+   * order, so the formation (walls, pincers, aces) is a true mirror image and exactly as hard.
+   */
+  private reflect(positions: FormationPosition[]): FormationPosition[] {
+    if (!this.deps.isMirrored?.()) return positions;
+    const width = this.deps.getViewportWidth();
+    return positions.map((position) => ({ x: width - position.x, y: position.y }));
+  }
+
+  private reflectX(x: number): number {
+    return this.deps.isMirrored?.() ? this.deps.getViewportWidth() - x : x;
   }
 }

@@ -23,3 +23,8 @@ export function getLaneAnchorX(viewportWidth: number, lane: AuthoredLaneAnchor, 
   if (lane === 'right') return max;
   return (min + max) / 2;
 }
+
+/** The same anchor in a sector that is mirrored left to right. */
+export function mirrorLaneAnchor(lane: AuthoredLaneAnchor): AuthoredLaneAnchor {
+  return lane === 'left' ? 'right' : lane === 'right' ? 'left' : lane;
+}
