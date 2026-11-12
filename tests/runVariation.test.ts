@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { seedWaveRandom, waveRandom } from '../src/systems/gameplayRandom';
+import { asteroidRandom, seedWaveRandom, waveRandom } from '../src/systems/gameplayRandom';
 import { createRunSeed, createRunVariation } from '../src/systems/runVariation';
 
 function waveChoices(runSeed: number, level: number): number[] {
@@ -17,6 +17,17 @@ describe('run variation', () => {
     expect(waveChoices(4242, 5)).not.toEqual(waveChoices(4243, 5));
     expect(waveChoices(4242, 5)).not.toEqual(waveChoices(4242, 6));
     expect(createRunVariation(4242, 5).sky.starOffsets).not.toEqual(createRunVariation(4243, 5).sky.starOffsets);
+  });
+
+  test('asteroid draws do not shift the enemy choices that follow', () => {
+    const undisturbed = waveChoices(4242, 5);
+    seedWaveRandom(4242, 5);
+    const interleaved = Array.from({ length: 12 }, () => {
+      asteroidRandom.between(0, 99);
+      asteroidRandom.between(0, 99);
+      return waveRandom.between(0, 99);
+    });
+    expect(interleaved).toEqual(undisturbed);
   });
 
   test('wave choices stay inside their range', () => {

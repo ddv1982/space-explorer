@@ -4,6 +4,8 @@ import { describe, expect, mock, test } from 'bun:test';
 mock.module('../src/systems/gameplayRandom', () => ({
   seedWaveRandom: () => {},
   waveRandom: { between: (min: number, _max: number) => min },
+  asteroidRandom: { between: (min: number, _max: number) => min },
+  wormholeRandom: { between: (min: number, _max: number) => min },
 }));
 
 mock.module('phaser', () => {
