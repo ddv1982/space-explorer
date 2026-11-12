@@ -7,14 +7,17 @@ import { expect, test, waitForScene } from './fixtures';
  * time on phones, and a shader compiled mid-fight freezes the game for 50-180 ms.
  */
 const MAX_DRAW_CALLS_PER_FRAME = 55;
-const SAMPLE_MS = 25_000;
+/** At least 20 s of play and 300 frames, so a slow software-WebGL runner still covers enough fighting. */
+const SAMPLE_MIN_MS = 20_000;
+const SAMPLE_FRAMES = 300;
+const SAMPLE_TIMEOUT_MS = 100_000;
 
 for (const level of [5, 9]) {
   test(`sector ${level} stays within the draw-call budget and compiles no shaders in play`, async ({
     page,
     assertNoBrowserErrors,
   }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(180_000);
     // Keyboard autofire keeps shots, hits, explosions and score popups on screen without input.
     await page.addInitScript(() =>
       window.localStorage.setItem('space-explorer.autoFire.v1', JSON.stringify({ touch: true, keyboard: true }))
@@ -22,13 +25,17 @@ for (const level of [5, 9]) {
     await page.goto(`/?browserHarness=1&startLevel=${level}`);
     await waitForScene(page, 'Game');
     await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.renderStats.reset());
-    await page.waitForTimeout(SAMPLE_MS);
+    await page.waitForTimeout(SAMPLE_MIN_MS);
+    await expect
+      .poll(() => page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.renderStats.read().frames), {
+        timeout: SAMPLE_TIMEOUT_MS,
+        intervals: [1_000],
+      })
+      .toBeGreaterThanOrEqual(SAMPLE_FRAMES);
     const stats: RenderStats = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.renderStats.read());
-    await test
-      .info()
-      .attach('render-stats.json', { body: JSON.stringify(stats, null, 2), contentType: 'application/json' });
+    // Recorded in the JUnit report, so CI's software-renderer frame rate stays visible over time.
+    test.info().annotations.push({ type: 'render-stats', description: JSON.stringify(stats) });
 
-    expect(stats.frames, 'the game must render while sampling').toBeGreaterThan(30);
     expect(stats.shaderCompiles, 'every gameplay shader must compile behind the loading screen').toBe(0);
     expect(stats.maxDrawCalls, `a frame drew ${stats.maxDrawCalls} times`).toBeLessThanOrEqual(
       MAX_DRAW_CALLS_PER_FRAME
