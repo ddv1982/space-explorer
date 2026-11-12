@@ -15,6 +15,21 @@ const preference = createStoredPreference<PersonalBests>('space-explorer.persona
   return { low: readBest(record.low), normal: readBest(record.normal), high: readBest(record.high) };
 });
 
+/**
+ * The browser's bests, taking the higher of what this tab remembers and what storage now holds:
+ * another tab may have set a best since this one last looked, and a best this tab could not save
+ * (storage full or blocked) must not be forgotten either.
+ */
+function freshestBests(): PersonalBests {
+  const remembered = preference.get();
+  const stored = preference.reload();
+  return {
+    low: Math.max(remembered.low, stored.low),
+    normal: Math.max(remembered.normal, stored.normal),
+    high: Math.max(remembered.high, stored.high),
+  };
+}
+
 export interface RunScoreResult {
   /** The best score on this difficulty, counting this run. */
   best: number;
@@ -31,8 +46,7 @@ export function recordRunScore(
   tier: GameplayDifficultyTier,
   storage?: PreferenceStorage | null
 ): RunScoreResult {
-  // Another tab may have set a best since this one last looked.
-  const bests = storage === undefined ? preference.reload() : preference.get(storage);
+  const bests = storage === undefined ? freshestBests() : preference.get(storage);
   const finalScore = readBest(score);
   const previous = TIERS.includes(tier) ? bests[tier] : 0;
   if (finalScore > previous) preference.set({ ...bests, [tier]: finalScore }, storage);

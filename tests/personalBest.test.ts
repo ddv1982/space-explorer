@@ -55,4 +55,22 @@ describe('personal best', () => {
       else Reflect.deleteProperty(globalThis, 'window');
     }
   });
+
+  test('a best that could not be saved still holds for the rest of the visit', () => {
+    const localStorage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota');
+      },
+    };
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage } });
+    try {
+      recordRunScore(5000, 'high');
+      expect(recordRunScore(300, 'high')).toEqual({ best: 5000, isNewBest: false });
+    } finally {
+      if (descriptor) Object.defineProperty(globalThis, 'window', descriptor);
+      else Reflect.deleteProperty(globalThis, 'window');
+    }
+  });
 });
