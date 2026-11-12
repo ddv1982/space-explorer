@@ -115,6 +115,7 @@ type PlayerDeathOutcome = {
 
 function createCombatFeedbackHarness(
   options: {
+    late?: 'overdrive' | 'bulwark' | 'salvager';
     playerDeathOutcome?: PlayerDeathOutcome;
     boss?: { x: number; y: number } | null;
     persistHelperWingState?: () => void;
@@ -130,8 +131,10 @@ function createCombatFeedbackHarness(
   const player = {
     x: 24,
     y: 48,
+    systems: { gun: null, support: null, late: options.late ?? null },
     playDeathAnimation: mock(),
   };
+  const clearBulletsAround = mock(() => 3);
   const flowContext = { id: 'flow-context' };
   const handlePlayerDeath = mock(
     () =>
@@ -194,7 +197,7 @@ function createCombatFeedbackHarness(
     } as never,
     collisionManager: { clearPlayerHazards } as never,
     waveManager: { applyDeathRelief: mock() } as never,
-    grazeSurge: null,
+    grazeSurge: { clearBulletsAround, setBossActive: mock() } as never,
     enemyPool: { getAllEnemies: () => options.enemies ?? [], spawnBoss: mock(() => options.spawnedBoss) } as never,
     hud: {
       showBossWarning,
@@ -223,6 +226,7 @@ function createCombatFeedbackHarness(
 
   return {
     hitStop,
+    clearBulletsAround,
     handlers,
     onPlayerHit,
     player,
@@ -405,5 +409,24 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(boss.setPlayer).toHaveBeenCalledWith(harness.player);
     expect(harness.setBoss).toHaveBeenCalledWith(boss);
     expect(harness.showBossBar).toHaveBeenCalledWith('Dreadnova');
+  });
+
+  test('Bulwark clears nearby shots when a shield absorbs a hit, and only then', () => {
+    const plain = createCombatFeedbackHarness();
+    plain.handlers.handlePlayerHit({ outcome: 'absorbed', source: 'mine', hullDamage: 0 });
+    expect(plain.clearBulletsAround).not.toHaveBeenCalled();
+
+    const bulwark = createCombatFeedbackHarness({ late: 'bulwark' });
+    bulwark.handlers.handlePlayerHit({ outcome: 'damaged', source: 'beam', hullDamage: 1 });
+    expect(bulwark.clearBulletsAround).not.toHaveBeenCalled();
+    bulwark.handlers.handlePlayerHit({ outcome: 'absorbed', source: 'mine', hullDamage: 0 });
+    expect(bulwark.clearBulletsAround).toHaveBeenCalledTimes(1);
+  });
+
+  test('Salvager makes an ace drop two pickups', () => {
+    spawnGuaranteedPowerUp.mockClear();
+    const harness = createCombatFeedbackHarness({ late: 'salvager' });
+    harness.handlers.handleEnemyDeath(1000, 12, 34, true);
+    expect(spawnGuaranteedPowerUp).toHaveBeenCalledTimes(2);
   });
 });

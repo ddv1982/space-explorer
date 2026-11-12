@@ -42,6 +42,7 @@ export default defineConfig({
         '**/autoFire.spec.ts',
         '**/impactFeel.spec.ts',
         '**/fairScoring.spec.ts',
+        '**/shipSystems.spec.ts',
         '**/renderBudget.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
@@ -61,6 +62,7 @@ export default defineConfig({
         '**/autoFire.spec.ts',
         '**/impactFeel.spec.ts',
         '**/fairScoring.spec.ts',
+        '**/shipSystems.spec.ts',
       ],
       use: {
         viewport: { width: 390, height: 844 },

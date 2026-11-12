@@ -1,3 +1,4 @@
+import { normalizeShipSystems, type ShipSystems } from '../../config/shipSystems';
 import { getTotalLevels } from '../../config/LevelsConfig';
 import {
   getUpgradeByKey,
@@ -8,6 +9,7 @@ import {
 
 const START_LEVEL_PARAM = 'startLevel';
 const UPGRADES_PARAM = 'upgrades';
+const SYSTEMS_PARAM = 'systems';
 const UPGRADE_KEYS: UpgradeKey[] = ['hp', 'damage', 'fireRate', 'shield', 'turrets'];
 const FRESH_SHIP_VALUES = new Set(['0', 'none', 'fresh']);
 const STOCK_UPGRADES: PlayerUpgradeLevels = { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 };
@@ -15,6 +17,7 @@ const STOCK_UPGRADES: PlayerUpgradeLevels = { hp: 0, damage: 0, fireRate: 0, shi
 export interface DevLevelJumpRequest {
   level: number;
   upgrades: PlayerUpgradeLevels;
+  systems: ShipSystems;
 }
 
 function getProgressionMaxUpgrades(level: number): PlayerUpgradeLevels {
@@ -61,7 +64,8 @@ function resolveJumpUpgrades(raw: string | null, level: number): PlayerUpgradeLe
  * progression-legal max loadout for that level. `&upgrades=3,3,3,2` (hp,damage,
  * fireRate,shield) forces an explicit loadout with stock turrets; append an optional
  * fifth value (`&upgrades=3,3,3,2,1`) to include a turret tier. `&upgrades=0` jumps
- * with a stock ship.
+ * with a stock ship. `&systems=lance,magnet,overdrive` (gun,support,doctrine) picks ship systems; leave
+ * a place empty to skip it (`&systems=scatter` or `&systems=,wingman`).
  */
 export function resolveDevLevelJump(search: string): DevLevelJumpRequest | null {
   const params = new URLSearchParams(search);
@@ -77,5 +81,6 @@ export function resolveDevLevelJump(search: string): DevLevelJumpRequest | null 
 
   const level = Math.min(getTotalLevels(), Math.max(1, parsed));
   const upgrades = resolveJumpUpgrades(params.get(UPGRADES_PARAM), level);
-  return { level, upgrades };
+  const [gun, support, late] = (params.get(SYSTEMS_PARAM) ?? '').split(',').map((part) => part.trim());
+  return { level, upgrades, systems: normalizeShipSystems({ gun, support, late }) };
 }

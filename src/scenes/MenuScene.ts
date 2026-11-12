@@ -105,6 +105,7 @@ export class MenuScene extends Phaser.Scene {
       ...baseState,
       level: jump.level,
       upgrades: jump.upgrades,
+      systems: jump.systems,
       currentShields: jump.upgrades.shield,
       remainingLives: 3,
     };

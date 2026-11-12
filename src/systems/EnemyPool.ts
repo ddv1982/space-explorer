@@ -69,6 +69,7 @@ export class EnemyPool {
   private groups: Partial<Record<PoolGroupKey, Phaser.Physics.Arcade.Group>> = {};
   private targetProvider: (() => { x: number; y: number } | null) | null = null;
   private playerDamage = 1;
+  private seekGroups: Phaser.Physics.Arcade.Group[] | null = null;
 
   private acquireFromGroup<T>(group: Phaser.Physics.Arcade.Group, x: number, y: number): T | null {
     const existing = group.getFirstDead(false) as T | null;
@@ -80,6 +81,7 @@ export class EnemyPool {
   }
 
   create(scene: Phaser.Scene): void {
+    this.seekGroups = null;
     this.scene = scene;
     this.groups = {};
     this.initializeCoreGroups();
@@ -325,6 +327,28 @@ export class EnemyPool {
 
   getEnemyBulletGroup(): Phaser.Physics.Arcade.Group {
     return this.ensureGroup('enemyBullet');
+  }
+
+  /**
+   * The nearest live enemy ahead of (above) a point, for seeking shots. Shots do not turn back for
+   * ships they have already passed.
+   */
+  findNearestEnemyAhead(x: number, y: number): { x: number; y: number } | null {
+    this.seekGroups ??= this.getEnemyGroupRegistry().map((registration) => registration.group);
+    let nearest: { x: number; y: number } | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (const group of this.seekGroups) {
+      for (const child of group.getChildren()) {
+        const enemy = child as Phaser.GameObjects.GameObject & { x: number; y: number };
+        if (!enemy.active || enemy.y > y || enemy.y < 0) continue;
+        const distance = (enemy.x - x) ** 2 + (enemy.y - y) ** 2;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = enemy;
+        }
+      }
+    }
+    return nearest;
   }
 
   getEnemyGroupRegistry(): EnemyGroupRegistration[] {

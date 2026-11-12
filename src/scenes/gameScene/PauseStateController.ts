@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
-import { noteRunDifficulty } from '@/systems/PlayerState';
+import { getPlayerState, noteRunDifficulty } from '@/systems/PlayerState';
+import { describeShipSystems } from '@/config/shipSystems';
 import { setGameplayDifficultyTier, type GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { setVisualQualityTier, type VisualQualityTier } from '@/config/visualQuality';
 import { createArmingAction } from '@/systems/armingAction';
@@ -220,6 +221,10 @@ export class PauseStateController {
     this.syncGameplayPauseState();
   }
 
+  private describeSystems(): string {
+    return this.scene ? describeShipSystems(getPlayerState(this.scene.registry).systems) : '';
+  }
+
   private handleDifficultyRequested(tier: GameplayDifficultyTier): boolean {
     this.playClick?.();
     const ok = setGameplayDifficultyTier(tier);
@@ -256,7 +261,8 @@ export class PauseStateController {
       canSave: this.saveSlotAdapter.isAvailable() && this.saveSlotAdapter.canSave(),
       storageAvailable: this.saveSlotAdapter.isAvailable(),
       saveSlots: this.saveSlotAdapter.list(),
-      statusMessage: this.statusMessage,
+      // With nothing to report, the line shows which ship systems this run has picked.
+      statusMessage: this.statusMessage || this.describeSystems(),
       statusOk: this.statusOk,
     };
 

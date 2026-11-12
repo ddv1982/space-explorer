@@ -1,3 +1,5 @@
+import { getPendingShipSystemSlot, normalizeShipSystems } from '../config/shipSystems';
+import { createSystemPickDialog, type SystemPickDialog } from './planetIntermission/systemPickDialog';
 import Phaser from 'phaser';
 
 import { getLevelConfig, getTotalLevels, isLastLevel } from '@/config/LevelsConfig';
@@ -41,6 +43,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private state!: PlayerStateData;
   private warpTransition!: WarpTransition;
   private view?: RefitView;
+  private pickDialog?: SystemPickDialog;
   private isFinalMissionComplete = false;
   private transitioning = false;
   private pointerdownHandler?: () => void;
@@ -102,6 +105,22 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
     this.bindContinueInputs();
+    this.offerShipSystemPick();
+  }
+
+  /** A free ship-system pick is offered before the shop whenever one is due; the run waits for it. */
+  private offerShipSystemPick(): void {
+    const slot = this.isFinalMissionComplete ? null : getPendingShipSystemSlot(this.state.level, this.state.systems);
+    if (!slot) return;
+    this.pickDialog = createSystemPickDialog(slot, (id) => {
+      this.state.systems = normalizeShipSystems({ ...this.state.systems, [slot.slot]: id });
+      setPlayerState(this.registry, this.state);
+      audioManager.playUi('uiConfirm');
+      this.pickDialog?.destroy();
+      this.pickDialog = undefined;
+      // A late start can owe more than one pick: offer the next before the shop opens.
+      this.offerShipSystemPick();
+    });
   }
 
   private evaluate(): UpgradeEvaluation[] {
@@ -122,7 +141,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
     this.pointerdownHandler = () => this.continueToNextLevel();
     this.keydownHandler = (event: KeyboardEvent) => {
-      if (this.transitioning || event.repeat || NON_PROCEED_KEYS.has(event.code)) return;
+      if (this.transitioning || this.pickDialog || event.repeat || NON_PROCEED_KEYS.has(event.code)) return;
       if (event.target instanceof Element && event.target.closest('input, select, textarea')) return;
       if (!this.view?.handleUnfocusedKey(event.code)) this.continueToNextLevel();
     };
@@ -131,6 +150,8 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private handleSceneShutdown(): void {
+    this.pickDialog?.destroy();
+    this.pickDialog = undefined;
     this.view?.destroy();
     this.view = undefined;
     if (this.pointerdownHandler) this.input.off('pointerdown', this.pointerdownHandler);
@@ -157,7 +178,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private continueToNextLevel(): void {
-    if (this.transitioning) return;
+    if (this.transitioning || this.pickDialog) return;
     this.transitioning = true;
     audioManager.playUi();
     this.view?.leave();

@@ -117,8 +117,7 @@ export class CollisionManager {
     const bullet = resolveCollisionTarget(Bullet, ...values);
     const enemy = resolveCollisionTarget(EnemyBase, ...values);
 
-    if (bullet?.active && enemy?.active) {
-      bullet.kill();
+    if (bullet?.active && enemy?.active && bullet.registerHit(enemy)) {
       enemy.takeDamage(this.bulletDamage);
       this.onEnemyHit(enemy);
     }

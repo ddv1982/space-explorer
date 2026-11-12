@@ -90,6 +90,7 @@ function createFiringHarness(chainMultiplier: number) {
     player: {
       isAlive: true,
       fireRate: 100,
+      systems: { gun: null, support: null, late: null },
       getFireDirection: (out) => out,
       getMuzzlePosition: (_distance, out) => out,
       update: () => {},
@@ -119,6 +120,7 @@ function createFiringHarness(chainMultiplier: number) {
       hideBossBar: () => undefined,
       updateBossHp: () => {},
     },
+    findBulletTarget: () => null,
     bulletPool: {
       fire: () => {
         firedAt.push(currentTime);

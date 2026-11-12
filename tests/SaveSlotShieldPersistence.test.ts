@@ -47,6 +47,7 @@ describe('save-slot shield persistence', () => {
           currentShields: 3,
           remainingLives: 3,
           upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 1, turrets: 0 },
+          systems: { gun: null, support: null, late: null },
           helperWing: { grantedSlots: 0, slots: [] },
         },
         { finalScore: 800, levelReached: 2, deathCause: null },

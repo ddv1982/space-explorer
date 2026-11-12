@@ -1,3 +1,4 @@
+import { NO_SHIP_SYSTEMS, type ShipSystems } from '../config/shipSystems';
 import Phaser from 'phaser';
 import { FLIGHT_CONFIG } from '../config/flightConfig';
 import { PLAYER_CONFIG } from '../config/playerConfig';
@@ -22,6 +23,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   maxHp: number = PLAYER_CONFIG.baseMaxHp;
   damage: number = PLAYER_CONFIG.baseDamage;
   fireRate: number = PLAYER_CONFIG.baseFireRate;
+  /** Ship systems picked at the refit bay. */
+  systems: ShipSystems = NO_SHIP_SYSTEMS;
   shields: number = 0;
   isAlive: boolean = true;
   isMovingUp: boolean = false;
@@ -58,6 +61,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.damage = getPlayerDamage(state);
     this.fireRate = getPlayerFireRate(state);
     this.shields = state.currentShields;
+    this.systems = state.systems;
   }
 
   takeDamage(context: PlayerDamageContext): PlayerDamageResult {

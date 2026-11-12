@@ -104,6 +104,7 @@ Bought during the planet intermission screen using score as currency:
 - **Fire Rate** — improves firing speed
 - **Shield** — increases hit absorption
 - **AEGIS Picket** — installs and overclocks automatic flank-defense turrets
+- **Ship systems** — free picks after sectors 2, 5 and 8 that change how the ship plays: a main gun (Lance, Scatter, Seekers), a support system (Magnet, Surge Core, Wingman) and a doctrine (Overdrive, Bulwark, Salvager)
 
 Some upgrades unlock later in the campaign and use progression caps so the run scales in a controlled way.
 
