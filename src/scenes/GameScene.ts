@@ -82,8 +82,10 @@ export class GameScene extends Phaser.Scene {
   private readonly muzzleFlashOrigin = new Phaser.Math.Vector2();
   private gameplayFrameBehavior: GameSceneGameplayFrameBehavior | null = null;
   private readonly gameplayClock = new GameplayClock();
-  private readonly hitStop = new HitStop((scale) => {
-    if (this.physics?.world) this.physics.world.timeScale = scale;
+  private readonly hitStop = new HitStop({
+    isPaused: () => this.physics.world.isPaused,
+    pause: () => this.physics.world.pause(),
+    resume: () => this.physics.world.resume(),
   });
   private readonly sceneEventBindings: SceneEventBinding[] = [];
   private readonly runtimeLifecycle = this.createRuntimeLifecycle();

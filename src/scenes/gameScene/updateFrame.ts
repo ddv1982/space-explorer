@@ -20,16 +20,16 @@ export function runGameSceneUpdateFrame(
 ): void {
   delegate.handlePauseInput();
 
-  if (delegate.isPausedOrLockedFrame()) {
-    // A pause, death or level transition ends any hit-stop, so the transition runs at normal speed.
-    if (hitStop?.isActive()) hitStop.reset();
+  // A hit-stop freezes gameplay like a pause does; presentation keeps running through either.
+  const otherHoldActive = delegate.isPausedOrLockedFrame();
+  const hitStopFreezing = hitStop?.advance(delta, otherHoldActive) ?? false;
+  if (otherHoldActive || hitStopFreezing) {
     delegate.updatePausedFrame(delta);
     return;
   }
 
   if (clock) {
-    // A hit-stop slows gameplay time only (the gameplay clock and, via HitStop, the Arcade world).
-    clock.advance(hitStop ? hitStop.scaleDelta(delta) : delta);
+    clock.advance(delta);
     delegate.updateGameplayFrame(clock.now, clock.delta);
   } else {
     delegate.updateGameplayFrame(time, delta);

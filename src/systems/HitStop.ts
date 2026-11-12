@@ -1,50 +1,66 @@
-/** Gameplay runs at this fraction of real time during a hit-stop. */
-export const HIT_STOP_TIME_SCALE = 0.15;
-
-/** How long each big moment holds, in real milliseconds. */
+/** How long each big moment freezes gameplay, in real milliseconds. */
 export const HIT_STOP_MS = {
-  aceKill: 50,
-  playerHullHit: 60,
-  bossGuardBreak: 70,
-  bossPhaseChange: 80,
-  bossDefeat: 110,
+  aceKill: 40,
+  playerHullHit: 50,
+  bossGuardBreak: 60,
+  bossPhaseChange: 70,
+  bossDefeat: 100,
 } as const;
 
+/** The Arcade world controls a hit-stop needs. */
+export interface HitStopPhysics {
+  isPaused(): boolean;
+  pause(): void;
+  resume(): void;
+}
+
 /**
- * A brief slow-down on big impacts. It scales gameplay time only (the gameplay clock and the Arcade
- * world), so music, input, the HUD and presentation tweens keep real time. Overlapping stops extend to
- * the longest one instead of adding up.
+ * A brief freeze on big impacts. It uses the same machinery as the pause menu: the Arcade world is
+ * paused (so it builds no time backlog to catch up on, and entities skip their behaviour) and the
+ * scene skips gameplay frames, so the gameplay clock, player, enemies and their attack timers all stop
+ * together. Music, input, the HUD and presentation tweens keep running.
+ *
+ * It never takes physics from another owner: a stop is ignored while the world is already paused, and
+ * when it ends during a pause or a gameplay lock it leaves resuming to that owner.
  */
 export class HitStop {
   private remainingMs = 0;
+  private holding = false;
 
-  constructor(
-    /** Arcade's world time scale: 1 is normal, higher is slower. */
-    private readonly setPhysicsTimeScale: (scale: number) => void,
-    private readonly timeScale = HIT_STOP_TIME_SCALE
-  ) {}
+  constructor(private readonly physics: HitStopPhysics) {}
 
   trigger(durationMs: number): void {
     if (!(durationMs > 0)) return;
-    if (this.remainingMs <= 0) this.setPhysicsTimeScale(1 / this.timeScale);
+    if (!this.holding) {
+      if (this.physics.isPaused()) return;
+      this.physics.pause();
+      this.holding = true;
+    }
     this.remainingMs = Math.max(this.remainingMs, durationMs);
   }
 
-  /** Turns this frame's real delta into gameplay delta, and ends the stop once its time has passed. */
-  scaleDelta(realDeltaMs: number): number {
-    if (this.remainingMs <= 0) return realDeltaMs;
-    const slowedMs = Math.min(this.remainingMs, realDeltaMs);
-    this.remainingMs -= realDeltaMs;
-    if (this.remainingMs <= 0) this.reset();
-    return realDeltaMs - slowedMs + slowedMs * this.timeScale;
+  /**
+   * Spends this frame's real time and reports whether gameplay stays frozen. Once the stop has run
+   * out it resumes physics, unless a pause or lock (`otherHoldActive`) owns the frame by then; it then
+   * releases on the first frame after that hold clears, if the world is still paused.
+   */
+  advance(realDeltaMs: number, otherHoldActive: boolean): boolean {
+    if (!this.holding) return false;
+    this.remainingMs = Math.max(0, this.remainingMs - (Number.isFinite(realDeltaMs) ? realDeltaMs : 0));
+    if (this.remainingMs > 0) return true;
+    if (otherHoldActive) return false;
+    if (this.physics.isPaused()) this.physics.resume();
+    this.holding = false;
+    return false;
   }
 
   isActive(): boolean {
-    return this.remainingMs > 0;
+    return this.holding;
   }
 
+  /** Forgets any stop without touching physics, for a fresh scene whose world starts running. */
   reset(): void {
     this.remainingMs = 0;
-    this.setPhysicsTimeScale(1);
+    this.holding = false;
   }
 }

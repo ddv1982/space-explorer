@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { GameplayClock } from '../src/systems/GameplayClock';
 import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from '../src/scenes/gameScene/updateFrame';
 import { ScoreManager } from '../src/systems/ScoreManager';
-import { HIT_STOP_TIME_SCALE, HitStop } from '../src/systems/HitStop';
+import { HitStop } from '../src/systems/HitStop';
 
 describe('GameplayClock', () => {
   test('advances only when asked and ignores negative deltas', () => {
@@ -49,31 +49,31 @@ describe('GameplayClock', () => {
     expect(calls).toEqual(['play:16', 'paused:16', 'play:32']);
   });
 
-  test('a hit-stop slows the gameplay clock, and a locked frame ends it at once', () => {
+  test('a hit-stop freezes the gameplay clock and gameplay frames, then real time resumes', () => {
     const clock = new GameplayClock();
-    const timeScales: number[] = [];
-    const hitStop = new HitStop((scale) => timeScales.push(scale));
-    let locked = false;
+    let paused = false;
+    const hitStop = new HitStop({
+      isPaused: () => paused,
+      pause: () => (paused = true),
+      resume: () => (paused = false),
+    });
+    const calls: string[] = [];
     const delegate: GameSceneFrameDelegate = {
       handlePauseInput: () => {},
-      isPausedOrLockedFrame: () => locked,
-      updatePausedFrame: () => {},
-      updateGameplayFrame: () => {},
+      isPausedOrLockedFrame: () => false,
+      updatePausedFrame: () => calls.push('frozen'),
+      updateGameplayFrame: (time) => calls.push(`gameplay:${time}`),
       updateHud: () => {},
     };
 
-    hitStop.trigger(100);
-    runGameSceneUpdateFrame(delegate, 0, 20, clock, hitStop);
-    expect(clock.now).toBeCloseTo(20 * HIT_STOP_TIME_SCALE);
+    runGameSceneUpdateFrame(delegate, 0, 16, clock, hitStop);
+    hitStop.trigger(40);
+    runGameSceneUpdateFrame(delegate, 16, 16, clock, hitStop);
+    runGameSceneUpdateFrame(delegate, 32, 16, clock, hitStop);
+    runGameSceneUpdateFrame(delegate, 48, 16, clock, hitStop);
+    runGameSceneUpdateFrame(delegate, 64, 16, clock, hitStop);
 
-    // A fatal hit starts the death transition: physics must not stay slowed through it.
-    locked = true;
-    runGameSceneUpdateFrame(delegate, 20, 20, clock, hitStop);
-    expect(hitStop.isActive()).toBe(false);
-    expect(timeScales.at(-1)).toBe(1);
-
-    locked = false;
-    runGameSceneUpdateFrame(delegate, 40, 20, clock, hitStop);
-    expect(clock.now).toBeCloseTo(20 * HIT_STOP_TIME_SCALE + 20);
+    expect(calls).toEqual(['gameplay:16', 'frozen', 'frozen', 'gameplay:32', 'gameplay:48']);
+    expect(paused).toBe(false);
   });
 });

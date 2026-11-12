@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Hit-stop: ace kills, hull hits, boss guard breaks, boss phase changes and boss defeats hold the action for 50–110 ms at 15% speed, so big impacts land. Music, input and the HUD keep real time, and a shield block keeps the flow.
+- Hit-stop: ace kills, hull hits, boss guard breaks, boss phase changes and boss defeats freeze the action for 40–100 ms, so big impacts land. It freezes everything in play together (ships, shots, attack timers, physics) the way the pause menu does, so nothing catches up afterwards; music, input and the HUD keep running, and a shield block keeps the flow.
 - A Screen shake setting in the menu and pause panel. It starts off when the system asks for reduced motion, and the choice is remembered.
 
 ### Changed

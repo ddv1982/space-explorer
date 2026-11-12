@@ -1,47 +1,97 @@
-import { describe, expect, mock, test } from 'bun:test';
-import { HIT_STOP_TIME_SCALE, HitStop } from '../src/systems/HitStop';
+import { describe, expect, test } from 'bun:test';
+import { HitStop } from '../src/systems/HitStop';
+
+function createPhysics(paused = false) {
+  const physics = {
+    paused,
+    pauses: 0,
+    resumes: 0,
+    isPaused: () => physics.paused,
+    pause: () => {
+      physics.paused = true;
+      physics.pauses += 1;
+    },
+    resume: () => {
+      physics.paused = false;
+      physics.resumes += 1;
+    },
+  };
+  return physics;
+}
 
 describe('HitStop', () => {
-  test('passes real time through until triggered', () => {
-    const setPhysicsTimeScale = mock();
-    const hitStop = new HitStop(setPhysicsTimeScale);
-    expect(hitStop.scaleDelta(16)).toBe(16);
-    expect(setPhysicsTimeScale).not.toHaveBeenCalled();
+  test('does nothing until triggered', () => {
+    const physics = createPhysics();
+    const hitStop = new HitStop(physics);
+    expect(hitStop.advance(16, false)).toBe(false);
+    expect(physics.pauses).toBe(0);
   });
 
-  test('slows gameplay and physics for its duration, then restores both', () => {
-    const setPhysicsTimeScale = mock();
-    const hitStop = new HitStop(setPhysicsTimeScale);
+  test('freezes physics and gameplay for its duration, then resumes', () => {
+    const physics = createPhysics();
+    const hitStop = new HitStop(physics);
     hitStop.trigger(40);
-    expect(setPhysicsTimeScale).toHaveBeenLastCalledWith(1 / HIT_STOP_TIME_SCALE);
-    expect(hitStop.scaleDelta(16)).toBeCloseTo(16 * HIT_STOP_TIME_SCALE);
-    expect(hitStop.scaleDelta(16)).toBeCloseTo(16 * HIT_STOP_TIME_SCALE);
-    // The last 8 ms of the stop are slowed; the rest of the frame runs at full speed.
-    expect(hitStop.scaleDelta(16)).toBeCloseTo(8 * HIT_STOP_TIME_SCALE + 8);
+    expect(physics.paused).toBe(true);
+    expect(hitStop.advance(16, false)).toBe(true);
+    expect(hitStop.advance(16, false)).toBe(true);
+    expect(hitStop.advance(16, false)).toBe(false);
+    expect(physics.paused).toBe(false);
     expect(hitStop.isActive()).toBe(false);
-    expect(setPhysicsTimeScale).toHaveBeenLastCalledWith(1);
-    expect(hitStop.scaleDelta(16)).toBe(16);
   });
 
   test('overlapping stops extend to the longest instead of adding up', () => {
-    const hitStop = new HitStop(mock());
+    const physics = createPhysics();
+    const hitStop = new HitStop(physics);
     hitStop.trigger(60);
-    hitStop.scaleDelta(20);
+    hitStop.advance(20, false);
     hitStop.trigger(30);
-    hitStop.scaleDelta(20);
-    expect(hitStop.isActive()).toBe(true);
-    hitStop.scaleDelta(20);
-    expect(hitStop.isActive()).toBe(false);
+    expect(hitStop.advance(20, false)).toBe(true);
+    expect(hitStop.advance(20, false)).toBe(false);
+    expect(physics.pauses).toBe(1);
+    expect(physics.resumes).toBe(1);
   });
 
-  test('ignores empty triggers and resets cleanly', () => {
-    const setPhysicsTimeScale = mock();
-    const hitStop = new HitStop(setPhysicsTimeScale);
+  test('never takes physics that is already paused by the pause menu or a transition', () => {
+    const physics = createPhysics(true);
+    const hitStop = new HitStop(physics);
+    hitStop.trigger(50);
+    expect(hitStop.isActive()).toBe(false);
+    expect(hitStop.advance(16, true)).toBe(false);
+    expect(physics.paused).toBe(true);
+    expect(physics.resumes).toBe(0);
+  });
+
+  test('ending during a pause or lock leaves resuming to that owner', () => {
+    const physics = createPhysics();
+    const hitStop = new HitStop(physics);
+    hitStop.trigger(20);
+    // A fatal hit locks gameplay for the death transition before the stop runs out.
+    expect(hitStop.advance(30, true)).toBe(false);
+    expect(physics.paused).toBe(true);
+    expect(hitStop.isActive()).toBe(true);
+    // The respawn flow resumes physics itself when its lock ends; the stop then just lets go.
+    physics.resume();
+    expect(hitStop.advance(16, false)).toBe(false);
+    expect(hitStop.isActive()).toBe(false);
+    expect(physics.resumes).toBe(1);
+  });
+
+  test('resumes after a lock that left physics paused', () => {
+    const physics = createPhysics();
+    const hitStop = new HitStop(physics);
+    hitStop.trigger(20);
+    hitStop.advance(30, true);
+    expect(hitStop.advance(16, false)).toBe(false);
+    expect(physics.paused).toBe(false);
+  });
+
+  test('ignores empty triggers and forgets state on reset', () => {
+    const physics = createPhysics();
+    const hitStop = new HitStop(physics);
     hitStop.trigger(0);
     expect(hitStop.isActive()).toBe(false);
     hitStop.trigger(100);
     hitStop.reset();
     expect(hitStop.isActive()).toBe(false);
-    expect(setPhysicsTimeScale).toHaveBeenLastCalledWith(1);
   });
 });
