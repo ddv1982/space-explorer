@@ -54,12 +54,14 @@ jobs:
         run: bun run bundle:check
 
   browser:
-    name: Browser gates (${{ matrix.project }})
+    name: Browser gates (${{ matrix.project }} ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         project: [chromium-desktop, chromium-mobile]
+        # Each project takes about 10 minutes on one software-WebGL worker; three shards run in parallel.
+        shard: [1, 2, 3]
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -76,31 +78,49 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Run browser lane
-        run: bunx playwright test --project=${{ matrix.project }}
+        run: bunx playwright test --project=${{ matrix.project }} --shard=${{ matrix.shard }}/3
 
+      # Evidence uploads are best effort: an artifact-service outage must not fail tests that passed.
       - name: Upload browser test results
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: browser-results-${{ strategy.job-index }}
+          name: browser-results-${{ matrix.project }}-${{ matrix.shard }}
           path: test-results/playwright-results.xml
           if-no-files-found: error
           retention-days: 7
 
       - name: Upload browser failure evidence
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: browser-${{ strategy.job-index }}
+          name: browser-${{ matrix.project }}-${{ matrix.shard }}
           path: |
             test-results/
           if-no-files-found: ignore
           retention-days: 7
 
+  # One stable check for branch protection, independent of how the browser lanes are sharded.
+  gates:
+    name: Quality gates passed
+    if: always()
+    needs: [quality, browser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every gate to succeed
+        env:
+          QUALITY: ${{ needs.quality.result }}
+          BROWSER: ${{ needs.browser.result }}
+        run: |
+          echo "quality=$QUALITY browser=$BROWSER"
+          test "$QUALITY" = success && test "$BROWSER" = success
+
   deploy-production:
     name: Deploy production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [quality, browser]
+    needs: [gates]
     runs-on: ubuntu-latest
     environment: production
     concurrency:

@@ -5,6 +5,7 @@ import { createProceduralBackgroundProbes } from './browserHarness/proceduralBac
 
 import { createBrowserHarnessGameplayProbes } from './browserHarness/gameplayProbes';
 import { createBrowserHarnessNavigation } from './browserHarness/navigation';
+import { createRenderStatsProbe } from './browserHarness/renderStatsProbe';
 
 import { createBrowserHarnessSnapshot } from './browserHarness/snapshot';
 import type { BrowserHarnessApi } from './browserHarness/types';
@@ -12,6 +13,7 @@ import { audioManager } from './systems/AudioManager';
 
 export type { BrowserHarnessSnapshot } from './browserHarness/snapshot';
 export type * from './browserHarness/types';
+export type { RenderStats } from './browserHarness/renderStatsProbe';
 
 const HARNESS_GLOBAL = '__SPACE_EXPLORER_BROWSER_HARNESS__';
 
@@ -29,6 +31,7 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
 
   const api: BrowserHarnessApi = {
     gameFeel: createGameFeelProbes(game),
+    renderStats: createRenderStatsProbe(game),
     destroyGame: () => game.destroy(true),
     snapshot: () => createBrowserHarnessSnapshot(game),
     waitForRender: () => new Promise<void>((resolve) => game.events.once(Phaser.Core.Events.POST_RENDER, resolve)),

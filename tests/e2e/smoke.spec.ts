@@ -134,7 +134,8 @@ test('command deck menu stays readable across responsive profiles', async ({ pag
     }
     await expect(page.getByRole('button', { name: 'NEW RUN', exact: true })).toBeInViewport({ ratio: 1 });
     await expect(page.getByRole('button', { name: 'SETTINGS', exact: true })).toBeInViewport({ ratio: 1 });
-    await expectMenuTitleLockup(page);
+    // The menu restarts at each size, so a measurement taken mid-restart retries until it settles.
+    await expect(() => expectMenuTitleLockup(page)).toPass();
     const evidenceDirectory = process.env.VISUAL_SCREENSHOT_DIR;
     if (evidenceDirectory) {
       await page.screenshot({
