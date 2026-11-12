@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import { waveRandom } from '../gameplayRandom';
 import type { ScriptedHazardConfig } from '@/config/LevelsConfig';
 
 interface PendingWormholePack {
@@ -22,11 +22,11 @@ export class WormholePackController {
   ): void {
     const portalCount = 1 + Math.round(hazard.intensity ?? 0.5);
     for (let index = 0; index < portalCount; index++) {
-      const x = Phaser.Math.Between(
+      const x = waveRandom.between(
         Math.round(viewport.left + viewport.width * 0.1),
         Math.round(viewport.right - viewport.width * 0.1)
       );
-      const y = Phaser.Math.Between(150, 280);
+      const y = waveRandom.between(150, 280);
       emitTelegraph(x, y);
       this.pending.push({ hazard, x, y, remainingMs: 600 });
     }

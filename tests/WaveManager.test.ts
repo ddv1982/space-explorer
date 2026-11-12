@@ -2,6 +2,12 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import type { EnemySpawnConfig, LevelConfig, LevelSectionConfig } from '@/config/LevelsConfig';
 
+// Wave choices always take the low end, so spawns are predictable in these tests.
+mock.module('../src/systems/gameplayRandom', () => ({
+  seedWaveRandom: () => {},
+  waveRandom: { between: (min: number, _max: number) => min },
+}));
+
 mock.module('phaser', () => ({
   default: {
     Math: {

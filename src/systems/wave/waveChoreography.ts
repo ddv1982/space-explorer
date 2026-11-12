@@ -148,6 +148,8 @@ export interface WaveChoreographerDeps {
   emitWormhole: (x: number, y: number) => void;
   emitEliteWave: () => void;
   getViewportWidth: () => number;
+  /** True when this run flips the sector left to right: authored lanes are counted from the other edge. */
+  isMirrored?: () => boolean;
 }
 
 interface WaveRuntime {
@@ -303,6 +305,8 @@ export class WaveChoreographer {
   }
 
   private getAnchorX(config: ChoreographedWaveConfig): number {
-    return getLaneCenterX(config.lane ?? Math.floor(CHOREO_LANE_COUNT / 2), this.deps.getViewportWidth());
+    const lane = config.lane ?? Math.floor(CHOREO_LANE_COUNT / 2);
+    const resolved = this.deps.isMirrored?.() ? CHOREO_LANE_COUNT - 1 - lane : lane;
+    return getLaneCenterX(resolved, this.deps.getViewportWidth());
   }
 }

@@ -32,6 +32,7 @@ describe('canonical new run action', () => {
       level: 8,
       score: 16000,
       creditsSpent: 0,
+      runSeed: 0,
       easiestDifficulty: null,
       currentHp: 0,
       remainingLives: 0,
@@ -43,10 +44,13 @@ describe('canonical new run action', () => {
     setRunSummary(registry, { finalScore: 16000, levelReached: 8 });
     registry.set('unrelated', 'preserved');
     startFreshRun(scene);
+    const freshSeed = getPlayerState(registry).runSeed;
+    expect(freshSeed).toBeGreaterThan(0);
     expect(getPlayerState(registry)).toEqual({
       level: 1,
       score: 0,
       creditsSpent: 0,
+      runSeed: freshSeed,
       easiestDifficulty: null,
       currentHp: 5,
       currentShields: 0,
@@ -69,5 +73,13 @@ describe('canonical new run action', () => {
     startPreparedRun(scene);
     expect(getPlayerState(registry)).toEqual(loaded);
     expect(startScene).toHaveBeenCalledTimes(1);
+  });
+
+  test('a retry keeps the lost run seed, and a new run gets a different one', () => {
+    const { registry, scene } = fixture();
+    startFreshRun(scene, 4242);
+    expect(getPlayerState(registry).runSeed).toBe(4242);
+    startFreshRun(scene);
+    expect(getPlayerState(registry).runSeed).not.toBe(4242);
   });
 });

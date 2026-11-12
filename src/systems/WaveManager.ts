@@ -1,3 +1,4 @@
+import { waveRandom } from './gameplayRandom';
 import Phaser from 'phaser';
 
 import {
@@ -41,6 +42,7 @@ import {
   clampEncounterX as clampWaveEncounterX,
   getEncounterHorizontalRange,
   getLaneAnchorX as getWaveLaneAnchorX,
+  mirrorLaneAnchor,
 } from './wave/waveGeometry';
 
 const BOSS_ADD_WAVE_INTERVAL_MS = 12000;
@@ -53,6 +55,7 @@ type EncounterSectionState = {
 };
 
 export class WaveManager {
+  private mirrored = false;
   private scene!: Phaser.Scene;
   private enemyPool!: EnemyPool;
   private asteroidGroup!: Phaser.Physics.Arcade.Group;
@@ -76,6 +79,11 @@ export class WaveManager {
     getSpawnX: (anchorX, padding) => this.getEncounterSpawnX(anchorX, padding),
     clampX: (x, padding) => this.clampEncounterX(x, padding),
   });
+
+  /** Flips the sector's authored lanes left to right for this run (exactly as hard, by symmetry). */
+  setMirrored(mirrored: boolean): void {
+    this.mirrored = mirrored;
+  }
 
   create(scene: Phaser.Scene, enemyPool: EnemyPool): Phaser.Physics.Arcade.Group {
     this.scene = scene;
@@ -103,6 +111,7 @@ export class WaveManager {
       emitWormhole: (x, y) => this.scene.events.emit(GAME_SCENE_EVENTS.wormholeTelegraph, x, y),
       emitEliteWave: () => this.scene.events.emit(GAME_SCENE_EVENTS.eliteWave),
       getViewportWidth: () => getViewportBounds(this.scene).width,
+      isMirrored: () => this.mirrored,
     });
 
     return this.asteroidGroup;
@@ -151,7 +160,7 @@ export class WaveManager {
     this.lastBossAddSpawn = time;
 
     const viewportWidth = getViewportBounds(this.scene).width;
-    const anchorX = getLaneCenterX(Phaser.Math.Between(0, CHOREO_LANE_COUNT - 1), viewportWidth);
+    const anchorX = getLaneCenterX(waveRandom.between(0, CHOREO_LANE_COUNT - 1), viewportWidth);
     const positions = resolveFormationPositions('line', 3, anchorX, viewportWidth, -50, 52);
 
     let spawnedAny = false;
@@ -283,7 +292,7 @@ export class WaveManager {
   }
 
   private getEncounterSpawnX(anchorX: number, padding: number): number {
-    return this.clampEncounterX(anchorX + Phaser.Math.Between(-70, 70), padding);
+    return this.clampEncounterX(anchorX + waveRandom.between(-70, 70), padding);
   }
 
   private getEncounterRateMultiplier(
@@ -392,8 +401,8 @@ export class WaveManager {
 
   private spawnMirroredHazardAsteroids(minSpeed: number, maxSpeed: number): void {
     this.asteroidSpawner.spawnMirroredAsteroids(
-      Phaser.Math.Between(minSpeed, maxSpeed),
-      Phaser.Math.Between(minSpeed, maxSpeed)
+      waveRandom.between(minSpeed, maxSpeed),
+      waveRandom.between(minSpeed, maxSpeed)
     );
   }
 
@@ -440,13 +449,13 @@ export class WaveManager {
     const spawnCount = Phaser.Math.Clamp(Math.round(1 + intensity * 2), 1, 3);
 
     this.spawnEncounterBatch(anchorX, spawnCount, () => {
-      return allowedTypes[Phaser.Math.Between(0, Math.max(allowedTypes.length - 1, 0))] ?? this.pickEnemyType();
+      return allowedTypes[waveRandom.between(0, Math.max(allowedTypes.length - 1, 0))] ?? this.pickEnemyType();
     });
   }
 
   private getEncounterRandomX(padding: number): number {
     const { min, max } = this.getEncounterHorizontalRange(padding);
-    return Phaser.Math.Between(min, max);
+    return waveRandom.between(min, max);
   }
 
   private clampEncounterX(x: number, padding: number): number {
@@ -454,7 +463,8 @@ export class WaveManager {
   }
 
   private getLaneAnchorX(lane: AuthoredLaneAnchor, padding: number): number {
-    return getWaveLaneAnchorX(getViewportBounds(this.scene).width, lane, padding);
+    const resolved = this.mirrored ? mirrorLaneAnchor(lane) : lane;
+    return getWaveLaneAnchorX(getViewportBounds(this.scene).width, resolved, padding);
   }
 
   private getEncounterHorizontalRange(padding: number): { min: number; max: number } {

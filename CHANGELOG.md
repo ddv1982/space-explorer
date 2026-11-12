@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
   - Support: Magnet (pickups drift to you), Surge Core (close calls charge the surge faster and it reaches further) or Wingman (a drone adds a shot to every other volley).
   - Doctrine: Overdrive (every chain step speeds up the gun), Bulwark (a shield hit clears nearby enemy shots) or Salvager (aces drop two pickups).
 - The pause panel names the systems the run has picked.
+- Every run looks different. Each run gets its own star layout, a faint colour cast, and landmarks that tilt, resize and sometimes swap sides. This is looks only: it never changes spawns, timing or hitboxes, so it cannot change a score.
+- Some runs fly a sector mirrored left to right (waves, pickups and backdrop together). It is exactly as hard, but it plays differently.
+- RETRY replays the run you just lost: the same wave choices and the same sky. NEW RUN from the menu starts a fresh one. Saves from earlier versions keep the classic sectors.
 
 ### Changed
 

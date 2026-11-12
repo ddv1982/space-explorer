@@ -11,6 +11,8 @@ import type { EffectsManager } from '@/systems/EffectsManager';
 import { EnemyPool } from '@/systems/EnemyPool';
 import { GrazeSurgeSystem, SURGE_SCORE_PER_BULLET, type GrazeSurgeBullet } from '@/systems/GrazeSurgeSystem';
 import { SURGE_CORE } from '@/config/shipSystems';
+import { seedWaveRandom } from '@/systems/gameplayRandom';
+import { createRunVariation } from '@/systems/runVariation';
 import { ShipSystemsRuntime } from '@/systems/ShipSystemsRuntime';
 import { HazardBeamSystem } from '@/systems/HazardBeamSystem';
 import { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
@@ -215,7 +217,10 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
   const hazardBeamSystem = createHazardBeamSystem();
   hazardBeamSystem.create(scene);
 
+  // Wave choices and the sector's left-right orientation both come from the run's seed.
+  seedWaveRandom(state.runSeed, state.level);
   const waveManager = createWaveManager();
+  waveManager.setMirrored?.(createRunVariation(state.runSeed, state.level).mirrored);
   const asteroidGroup = waveManager.create(scene, enemyPool);
   waveManager.setLevelConfig(state.level);
   waveManager.setHazardBeamSystem(hazardBeamSystem);

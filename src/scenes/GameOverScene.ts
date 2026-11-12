@@ -67,7 +67,8 @@ export class GameOverScene extends Phaser.Scene {
       audioManager.resumeFromUserGesture();
       audioManager.playUi();
       retry.disabled = menu.disabled = true;
-      if (action === 'retry') startFreshRun(this);
+      // RETRY replays the run that was just lost: same waves, same sky.
+      if (action === 'retry') startFreshRun(this, getPlayerState(this.registry).runSeed || undefined);
       else this.scene.start('Menu');
     };
     const retry = h('button', { type: 'button', className: 'ui-btn ui-btn--primary' }, 'RETRY');

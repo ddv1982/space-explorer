@@ -26,6 +26,7 @@ import {
 import { createArmingAction, type ArmingAction } from '../systems/armingAction';
 import { audioManager } from '../systems/AudioManager';
 import { startFreshRun, startPreparedRun } from './shared/startRun';
+import { createRunSeed } from '../systems/runVariation';
 import { rebindSceneLifecycleHandlers } from '../utils/sceneLifecycle';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { resolveDevLevelJump } from './menuScene/devLevelJump';
@@ -106,6 +107,7 @@ export class MenuScene extends Phaser.Scene {
       level: jump.level,
       upgrades: jump.upgrades,
       systems: jump.systems,
+      runSeed: jump.runSeed ?? createRunSeed(),
       currentShields: jump.upgrades.shield,
       remainingLives: 3,
     };

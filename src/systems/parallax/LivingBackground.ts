@@ -11,13 +11,18 @@ import { createLivingBackgroundFragment } from './livingBackgroundShader';
 import { bindOwnedShaderCleanup, hasOwnedShaderProgram } from './livingBackgroundShaderOwner';
 import { createLivingNoise } from './livingBackgroundTextures';
 import { createLivingLandmark } from './livingCampaignLandmarks';
+import type { SkyVariation } from '../runVariation';
 import { LivingStarfield, addSpaceVignette } from './livingStarfield';
 
 let nextOwner = 0;
 
-export function createLivingBackground(scene: Phaser.Scene, levelName: string | undefined): LivingBackground | null {
+export function createLivingBackground(
+  scene: Phaser.Scene,
+  levelName: string | undefined,
+  sky?: SkyVariation
+): LivingBackground | null {
   const world = selectLivingWorld(levelName);
-  return world ? new LivingBackground(scene, world) : null;
+  return world ? new LivingBackground(scene, world, sky) : null;
 }
 
 export class LivingBackground {
@@ -49,7 +54,9 @@ export class LivingBackground {
 
   constructor(
     private readonly scene: Phaser.Scene,
-    private readonly world: LivingWorld
+    private readonly world: LivingWorld,
+    /** This run's look: star offsets, a mirrored backdrop, landmark tilt and a faint tint. */
+    private readonly sky: SkyVariation | undefined = undefined
   ) {
     this.profile = LIVING_WORLD_PROFILES[world];
     this.placements = this.profile.landmark.kind === 'none' ? [] : this.profile.landmark.placements;
@@ -84,8 +91,12 @@ export class LivingBackground {
     bindOwnedShaderCleanup(this.shader);
     this.shader.setRenderToTexture(outputKey).setVisible(false);
     if (hasOwnedShaderProgram(this.shader)) this.renderCount += 1;
-    this.image = scene.add.image(0, 0, outputKey).setDepth(-20);
-    this.stars = new LivingStarfield(scene, this.profile.starAccent, -19);
+    this.image = scene.add
+      .image(0, 0, outputKey)
+      .setDepth(-20)
+      .setFlipX(sky?.mirrored === true)
+      .setTint(sky?.tint ?? 0xffffff);
+    this.stars = new LivingStarfield(scene, this.profile.starAccent, -19, sky?.starOffsets);
     this.vignette = addSpaceVignette(scene, -16);
     this.occluder = this.profile.occluder ? scene.add.circle(0, 0, 1, 0x020309).setDepth(-18) : null;
     if (this.profile.landmark.kind !== 'none') {
@@ -93,7 +104,13 @@ export class LivingBackground {
       this.textureKeys.push(landmarkKey);
       createLivingLandmark(scene, landmarkKey, world, this.profile.landmark.kind);
       for (const placement of this.placements) {
-        this.landmarks.push(scene.add.image(0, 0, landmarkKey).setDepth(-17).setRotation(placement.rotation));
+        this.landmarks.push(
+          scene.add
+            .image(0, 0, landmarkKey)
+            .setDepth(-17)
+            .setFlipX(sky?.mirrored === true)
+            .setRotation(this.landmarkRotation(placement))
+        );
       }
     }
     this.resize(...this.viewport);
@@ -107,6 +124,16 @@ export class LivingBackground {
     this.renderCount += 1;
     this.shader.setVisible(false);
   };
+
+  /** A share of the width, flipped when this run's backdrop is mirrored. */
+  private mirrorX(share: number): number {
+    return this.sky?.mirrored ? 1 - share : share;
+  }
+
+  private landmarkRotation(placement: LandmarkPlacement): number {
+    const side = this.sky?.mirrored ? -1 : 1;
+    return (placement.rotation + (this.sky?.landmarkRotation ?? 0)) * side;
+  }
 
   private readonly invalidate = (): void => {
     if (!this.destroyed) this.shader.setVisible(true);
@@ -133,13 +160,15 @@ export class LivingBackground {
     const body = this.profile.occluder;
     if (body)
       this.occluder
-        ?.setPosition(width * body.x, height * body.y)
+        ?.setPosition(width * this.mirrorX(body.x), height * body.y)
         .setRadius(Math.min(width * body.radiusWidth, height * body.radiusHeight) * body.mask);
     const radius = Math.min(width * 0.43, height * 0.55);
     this.landmarks.forEach((landmark, index) => {
       const placement = this.placements[index];
-      landmark.setDisplaySize(radius * 2 * placement.scale, radius * 2 * placement.scale);
-      landmark.setPosition(width * placement.x + radius * placement.offset, height * placement.y);
+      const size = radius * 2 * placement.scale * (this.sky?.landmarkScale ?? 1);
+      const side = this.sky?.mirrored ? -1 : 1;
+      landmark.setDisplaySize(size, size);
+      landmark.setPosition(width * this.mirrorX(placement.x) + radius * placement.offset * side, height * placement.y);
       landmark.setAlpha(placement.alpha * this.landmarkStrength);
     });
     this.invalidate();

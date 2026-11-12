@@ -125,6 +125,23 @@ describe('WaveChoreographer', () => {
     expect(harness.warnings).toEqual([344, 400, 456]);
   });
 
+  test('a mirrored sector counts authored lanes from the other edge, as a true mirror image', () => {
+    const normal = createDeps();
+    const mirrored = createDeps();
+    const mirroredChoreographer = new WaveChoreographer({ ...mirrored.deps, isMirrored: () => true });
+    mirroredChoreographer.setSection([createWave({ lane: 1 })]);
+
+    const normalChoreographer = new WaveChoreographer(normal.deps);
+    normalChoreographer.setSection([createWave({ lane: 1 })]);
+    normalChoreographer.update(300);
+    mirroredChoreographer.update(300);
+
+    const width = 800;
+    const mirrorOf = normal.spawns.map((spawn) => width - spawn.x).sort((a, b) => a - b);
+    expect(mirrored.spawns.map((spawn) => spawn.x).sort((a, b) => a - b)).toEqual(mirrorOf);
+    expect(mirrored.spawns[0].x).not.toBe(normal.spawns[0].x);
+  });
+
   test('fires each wave only once', () => {
     const harness = createDeps();
     const choreographer = new WaveChoreographer(harness.deps);

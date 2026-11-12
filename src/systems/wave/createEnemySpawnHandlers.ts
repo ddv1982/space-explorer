@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import { waveRandom } from '../gameplayRandom';
 import type { EnemyType } from '@/config/LevelsConfig';
 
 interface EnemySpawnHandlerContext {
@@ -15,37 +15,37 @@ export function createEnemySpawnHandlers(
       type,
       count,
       () => context.getSpawnX(anchorX, padding),
-      () => Phaser.Math.Between(minY, maxY)
+      () => waveRandom.between(minY, maxY)
     );
 
   return {
-    scout: (anchorX) => repeated('scout', Phaser.Math.Between(1, 2), anchorX, 50, -100),
+    scout: (anchorX) => repeated('scout', waveRandom.between(1, 2), anchorX, 50, -100),
     fighter: (anchorX) => repeated('fighter', 1, anchorX, 100),
     bomber: (anchorX) => repeated('bomber', 1, anchorX, 80),
     swarm: (anchorX) => {
       const baseX = context.getSpawnX(anchorX, 100);
       return context.spawnRepeated(
         'swarm',
-        Phaser.Math.Between(3, 5),
-        () => context.clampX(baseX + Phaser.Math.Between(-60, 60), 50),
-        () => Phaser.Math.Between(-120, -30)
+        waveRandom.between(3, 5),
+        () => context.clampX(baseX + waveRandom.between(-60, 60), 50),
+        () => waveRandom.between(-120, -30)
       );
     },
     gunship: (anchorX) => repeated('gunship', 1, anchorX, 120),
-    diver: (anchorX) => repeated('diver', Phaser.Math.Between(1, 2), anchorX, 60, -100, -40),
+    diver: (anchorX) => repeated('diver', waveRandom.between(1, 2), anchorX, 60, -100, -40),
     dodger: (anchorX) => repeated('dodger', 1, anchorX, 90),
     sower: (anchorX) => repeated('sower', 1, anchorX, 100),
     lancer: (anchorX) => repeated('lancer', 1, anchorX, 80),
-    splitter: (anchorX) => repeated('splitter', Phaser.Math.Between(1, 2), anchorX, 80, -90),
+    splitter: (anchorX) => repeated('splitter', waveRandom.between(1, 2), anchorX, 80, -90),
     rival: (anchorX) => repeated('rival', 1, anchorX, 120),
     courier: (anchorX) => repeated('courier', 1, anchorX, 60),
     swarmling: (anchorX) => {
       const baseX = context.getSpawnX(anchorX, 60);
       return context.spawnRepeated(
         'swarmling',
-        Phaser.Math.Between(2, 3),
-        () => context.clampX(baseX + Phaser.Math.Between(-40, 40), 40),
-        () => Phaser.Math.Between(-120, -30)
+        waveRandom.between(2, 3),
+        () => context.clampX(baseX + waveRandom.between(-40, 40), 40),
+        () => waveRandom.between(-120, -30)
       );
     },
   };

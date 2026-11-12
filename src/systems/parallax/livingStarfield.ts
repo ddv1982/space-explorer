@@ -1,3 +1,4 @@
+import { createSeededRandom } from '../../utils/seededRandom';
 import Phaser from 'phaser';
 import { withCanvasTexture } from '../../utils/generatedTexture';
 
@@ -24,18 +25,6 @@ interface StarLayerSpec {
 }
 
 const STELLAR_COLORS = ['#aec4ff', '#cfdcff', '#ffffff', '#fff4e0', '#ffe2b0', '#ffc690'] as const;
-
-function seeded(seed: string): () => number {
-  let state = 2166136261;
-  for (let index = 0; index < seed.length; index += 1) state = Math.imul(state ^ seed.charCodeAt(index), 16777619);
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function glow(context: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string, alpha: number) {
   const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
@@ -112,7 +101,7 @@ const LAYERS: readonly StarLayerSpec[] = [
 ];
 
 function paintLayer(context: CanvasRenderingContext2D, spec: StarLayerSpec): void {
-  const random = seeded(`starfield-${spec.name}`);
+  const random = createSeededRandom(`starfield-${spec.name}`);
   const margin = 12;
   for (let index = 0; index < spec.count; index += 1) {
     const x = margin + random() * (spec.size - margin * 2);
@@ -154,13 +143,21 @@ export function addSpaceVignette(scene: Phaser.Scene, depth: number): Phaser.Gam
 export class LivingStarfield {
   private readonly layers: Array<{ sprite: Phaser.GameObjects.TileSprite; spec: StarLayerSpec }> = [];
 
-  constructor(scene: Phaser.Scene, accent: number, depth: number) {
-    for (const spec of LAYERS) {
+  /** `offsets` starts each layer at a share of its tile, so every run sees a different sky. */
+  constructor(
+    scene: Phaser.Scene,
+    accent: number,
+    depth: number,
+    offsets: ReadonlyArray<readonly [number, number]> = []
+  ) {
+    for (const [index, spec] of LAYERS.entries()) {
       const key = `starfield-${spec.name}`;
       withCanvasTexture(scene, key, spec.size, spec.size, (context) => paintLayer(context, spec));
       const sprite = scene.add.tileSprite(0, 0, 1, 1, key).setDepth(depth).setAlpha(spec.alpha);
       if (spec.additive) sprite.setBlendMode(Phaser.BlendModes.ADD);
       if (spec.accentTint > 0) sprite.setTint(towardAccent(accent, spec.accentTint));
+      const [offsetX, offsetY] = offsets[index] ?? [0, 0];
+      sprite.setTilePosition(offsetX * spec.size, offsetY * spec.size);
       this.layers.push({ sprite, spec });
     }
   }
