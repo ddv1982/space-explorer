@@ -4,6 +4,7 @@ mock.module('phaser', () => ({ default: {} }));
 
 const {
   advanceToNextLevel,
+  getAvailableCredits,
   getPlayerState,
   getPlayerTurretTier,
   getRunSummary,
@@ -40,6 +41,7 @@ describe('PlayerState schema behavior', () => {
       expect(state).toEqual({
         level: 1,
         score: 0,
+        creditsSpent: 0,
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
@@ -55,6 +57,7 @@ describe('PlayerState schema behavior', () => {
     registry.set('playerState', {
       level: Number.POSITIVE_INFINITY,
       score: 'lots',
+      creditsSpent: 0,
       currentHp: Number.NaN,
       currentShields: 99,
       remainingLives: -2,
@@ -74,6 +77,7 @@ describe('PlayerState schema behavior', () => {
     expect(getPlayerState(registry)).toEqual({
       level: 1,
       score: 0,
+      creditsSpent: 0,
       currentHp: 5,
       currentShields: 8,
       remainingLives: 0,
@@ -107,6 +111,7 @@ describe('PlayerState schema behavior', () => {
     registry.set('playerState', {
       level: 2,
       score: 150,
+      creditsSpent: 0,
       currentHp: 4,
       remainingLives: 2,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 2 },
@@ -139,6 +144,7 @@ describe('PlayerState schema behavior', () => {
     registry.set('playerState', {
       level: 4.5,
       score: Number.MAX_VALUE,
+      creditsSpent: 0,
       currentHp: Number.MAX_VALUE,
       currentShields: Number.MAX_VALUE,
       remainingLives: Number.MAX_VALUE,
@@ -158,6 +164,7 @@ describe('PlayerState schema behavior', () => {
     expect(getPlayerState(registry)).toEqual({
       level: 4,
       score: Number.MAX_SAFE_INTEGER,
+      creditsSpent: 0,
       currentHp: 15,
       currentShields: 8,
       remainingLives: 3,
@@ -174,6 +181,7 @@ describe('PlayerState schema behavior', () => {
     registry.set('playerState', {
       level: 2,
       score: 12.9,
+      creditsSpent: 0,
       currentHp: 4.25,
       currentShields: 2.9,
       remainingLives: 2.9,
@@ -183,6 +191,7 @@ describe('PlayerState schema behavior', () => {
 
     expect(getPlayerState(registry)).toMatchObject({
       score: 12,
+      creditsSpent: 0,
       currentHp: 4.25,
       currentShields: 2,
       remainingLives: 2,
@@ -209,6 +218,7 @@ describe('PlayerState schema behavior', () => {
     setPlayerState(registry, {
       level: 1,
       score: 0,
+      creditsSpent: 0,
       currentHp: 5,
       currentShields: 3,
       remainingLives: 3,
@@ -231,6 +241,7 @@ describe('PlayerState schema behavior', () => {
     setPlayerState(registry, {
       level: 1,
       score: 0,
+      creditsSpent: 0,
       currentHp: 5,
       currentShields: 99,
       remainingLives: 3,
@@ -256,6 +267,7 @@ describe('PlayerState schema behavior', () => {
     setPlayerState(registry, {
       level: 2,
       score: 250,
+      creditsSpent: 0,
       currentHp: 1,
       currentShields: 0,
       remainingLives: 2,
@@ -288,6 +300,7 @@ describe('PlayerState schema behavior', () => {
     setPlayerState(registry, {
       level: 5,
       score: 0,
+      creditsSpent: 0,
       currentHp: 5,
       currentShields: 0,
       remainingLives: 3,
@@ -299,6 +312,7 @@ describe('PlayerState schema behavior', () => {
     setPlayerState(registry, {
       level: 5,
       score: 0,
+      creditsSpent: 0,
       currentHp: 5,
       currentShields: 0,
       remainingLives: 3,
@@ -362,5 +376,23 @@ describe('PlayerState schema behavior', () => {
 
     setRunSummary(registry, { finalScore: -10.8 });
     expect(getRunSummary(registry).finalScore).toBe(0);
+  });
+
+  test('spending credits never lowers the score, and old saves start with credits equal to their score', () => {
+    const registry = createRegistry();
+    setPlayerState(registry, { ...getPlayerState(registry), score: 5000, creditsSpent: 1800 });
+    const state = getPlayerState(registry);
+    expect(state.score).toBe(5000);
+    expect(getAvailableCredits(state)).toBe(3200);
+
+    // A save from before credits existed has no creditsSpent field.
+    const legacy = { ...getPlayerState(registry), score: 7000 } as Record<string, unknown>;
+    delete legacy.creditsSpent;
+    setPlayerState(registry, legacy as never);
+    expect(getAvailableCredits(getPlayerState(registry))).toBe(7000);
+
+    // Corrupt data cannot spend more than was earned.
+    setPlayerState(registry, { ...getPlayerState(registry), score: 100, creditsSpent: 999 });
+    expect(getAvailableCredits(getPlayerState(registry))).toBe(0);
   });
 });

@@ -9,6 +9,7 @@ import {
   getRunSummary,
   setPlayerState,
   setRunSummary,
+  getAvailableCredits,
   type PlayerStateData,
 } from '@/systems/PlayerState';
 import { WarpTransition } from '@/systems/WarpTransition';
@@ -70,6 +71,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#000011');
 
     const { level, score } = this.state;
+    const credits = getAvailableCredits(this.state);
     const levelConfig = getLevelConfig(level);
     const profile = getPlanetIntermissionProfile(level);
     const nextLevelName = this.isFinalMissionComplete ? null : getLevelConfig(level + 1).name;
@@ -78,11 +80,11 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       profile,
       level,
       totalLevels: getTotalLevels(),
-      score,
+      credits,
       nextLevelName,
       continueLabel: nextLevelName ? `Continue to ${nextLevelName}` : 'Review campaign record',
       summary: nextLevelName
-        ? `Level ${level} complete. ${score} credits available for upgrades.`
+        ? `Level ${level} complete. ${credits} credits available for upgrades.`
         : `Campaign complete. Final score ${score}.`,
       evaluations: this.evaluate(),
       onBuy: (key) => this.tryBuyUpgrade(key),
@@ -103,7 +105,9 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private evaluate(): UpgradeEvaluation[] {
-    return this.isFinalMissionComplete ? [] : evaluateUpgrades(this.state.level, this.state.score, this.state.upgrades);
+    return this.isFinalMissionComplete
+      ? []
+      : evaluateUpgrades(this.state.level, getAvailableCredits(this.state), this.state.upgrades);
   }
 
   /**
@@ -139,15 +143,16 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     const evaluation = this.evaluate().find((entry) => entry.upgrade.key === upgradeKey);
     if (this.transitioning || !evaluation?.canPurchase) return;
 
-    this.state.score -= evaluation.cost;
+    this.state.creditsSpent += evaluation.cost;
     this.state.upgrades[upgradeKey] += 1;
     setPlayerState(this.registry, this.state);
     audioManager.playUi('uiConfirm');
+    const credits = getAvailableCredits(this.state);
     this.view?.refresh(
-      this.state.score,
+      credits,
       this.evaluate(),
       upgradeKey,
-      `${evaluation.upgrade.name} upgraded to level ${this.state.upgrades[upgradeKey]}. ${this.state.score} credits remaining.`
+      `${evaluation.upgrade.name} upgraded to level ${this.state.upgrades[upgradeKey]}. ${credits} credits remaining.`
     );
   }
 

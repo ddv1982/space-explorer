@@ -65,6 +65,7 @@ function playerState(overrides: Partial<PlayerStateInput> = {}): PlayerStateInpu
   return {
     level: 1,
     score: 100,
+    creditsSpent: 0,
     currentHp: 5,
     currentShields: 0,
     remainingLives: 3,
@@ -117,6 +118,7 @@ describe('SaveSlotStorage', () => {
     const saved = record({
       level: 3,
       score: 12400,
+      creditsSpent: 0,
       currentHp: 6.25,
       currentShields: 1,
       remainingLives: 2,
@@ -144,6 +146,7 @@ describe('SaveSlotStorage', () => {
       {
         level: 3,
         score: 12400,
+        creditsSpent: 0,
         currentHp: 6.25,
         currentShields: 1,
         remainingLives: 2,
@@ -267,6 +270,7 @@ describe('SaveSlotStorage', () => {
         playerState: {
           level: 4,
           score: 900,
+          creditsSpent: 0,
           currentHp: 5,
           remainingLives: 2,
           upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 3 },
@@ -304,6 +308,7 @@ describe('SaveSlotStorage', () => {
         playerState: {
           ...saved.playerState,
           score: max,
+          creditsSpent: 0,
           currentHp: max,
           currentShields: max,
           remainingLives: max,
@@ -316,6 +321,7 @@ describe('SaveSlotStorage', () => {
     expect(readSaveSlot('slot-1')?.playerState).toEqual({
       level: 5,
       score: Number.MAX_SAFE_INTEGER,
+      creditsSpent: 0,
       currentHp: 15,
       currentShields: 8,
       remainingLives: 3,

@@ -8,7 +8,9 @@ import { getViewportLayout } from '../utils/layout';
 import { withCanvasTexture } from '../utils/generatedTexture';
 import { scaleUiGlowAlpha } from '../utils/renderingCompat';
 import { h, liveRegion, measureInGame, mountUiLayer } from '../ui/dom';
-import { countUp, formatScore, statCell } from '../ui/summary';
+import { bestScoreNote, countUp, formatScore, statCell } from '../ui/summary';
+import { getGameplayDifficultyTier } from '../config/gameplayDifficulty';
+import { recordRunScore } from '../config/personalBest';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { NEON } from './shared/neonUiTheme';
 import { prefersReducedMotion } from '../utils/device';
@@ -118,7 +120,8 @@ export class VictoryScene extends Phaser.Scene {
   private createSummary(onContinue: () => void): HTMLElement {
     const finalScore = getRunSummary(this.registry).finalScore;
     const totalLevels = getTotalLevels();
-    const score = statCell('FINAL SCORE', formatScore(finalScore), '255 210 122');
+    const { best, isNewBest } = recordRunScore(finalScore, getGameplayDifficultyTier());
+    const score = statCell('FINAL SCORE', formatScore(finalScore), '255 210 122', bestScoreNote(best, isNewBest));
     countUp(score.value, finalScore, 450);
 
     const pips = h('div', { className: 'summary__pips', 'aria-hidden': 'true' });

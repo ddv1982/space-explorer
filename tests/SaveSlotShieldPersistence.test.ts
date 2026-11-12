@@ -41,6 +41,7 @@ describe('save-slot shield persistence', () => {
         {
           level: 2,
           score: 800,
+          creditsSpent: 0,
           currentHp: 5,
           currentShields: 3,
           remainingLives: 3,

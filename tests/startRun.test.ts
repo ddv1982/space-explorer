@@ -31,6 +31,7 @@ describe('canonical new run action', () => {
     setPlayerState(registry, {
       level: 8,
       score: 16000,
+      creditsSpent: 0,
       currentHp: 0,
       remainingLives: 0,
       currentShields: 2,
@@ -43,6 +44,7 @@ describe('canonical new run action', () => {
     expect(getPlayerState(registry)).toEqual({
       level: 1,
       score: 0,
+      creditsSpent: 0,
       currentHp: 5,
       currentShields: 0,
       remainingLives: 3,

@@ -177,13 +177,13 @@ function getUpgradeUnlockReason(
 function evaluateUpgrade(
   upgrade: UpgradeDef,
   playerLevel: number,
-  score: number,
+  credits: number,
   upgrades: PlayerUpgradeLevels
 ): UpgradeEvaluation {
   const currentLevel = upgrades[upgrade.key];
   const cost = getUpgradeCost(upgrade, currentLevel);
   const maxed = isUpgradeMaxed(upgrade, currentLevel);
-  const canAfford = score >= cost;
+  const canAfford = credits >= cost;
   const unlockReason = getUpgradeUnlockReason(upgrade, playerLevel, upgrades);
   const unlocked = unlockReason === null;
   const progressionLimit = getUpgradeProgressionLimit(upgrade, playerLevel);
@@ -218,8 +218,8 @@ function evaluateUpgrade(
 
 export function evaluateUpgrades(
   playerLevel: number,
-  score: number,
+  credits: number,
   upgrades: PlayerUpgradeLevels
 ): UpgradeEvaluation[] {
-  return UPGRADES.map((upgrade) => evaluateUpgrade(upgrade, playerLevel, score, upgrades));
+  return UPGRADES.map((upgrade) => evaluateUpgrade(upgrade, playerLevel, credits, upgrades));
 }

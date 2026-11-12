@@ -58,6 +58,7 @@ function getDefaultPlayerState(): PlayerStateData {
   return {
     level: 1,
     score: 0,
+    creditsSpent: 0,
     currentHp: PLAYER_CONFIG.baseMaxHp,
     remainingLives: DEFAULT_REMAINING_LIVES,
     currentShields: 0,
@@ -132,9 +133,13 @@ export function normalizePersistedPlayerState(value: unknown): PlayerStateData {
   const maxShields = upgrades.shield;
   const currentShieldsInput = normalizeFiniteNumber(value.currentShields, maxShields);
 
+  const score = normalizePersistedScore(value.score, defaultState.score);
+
   return {
     level: normalizeAuthoredLevelNumber(normalizeFiniteNumber(value.level, defaultState.level), defaultState.level),
-    score: normalizePersistedScore(value.score, defaultState.score),
+    score,
+    // Saves from before credits were split from score have spent nothing: their balance is their score.
+    creditsSpent: normalizeBoundedInteger(value.creditsSpent, 0, score),
     currentHp: normalizeBoundedNumber(value.currentHp, defaultState.currentHp, maxHp),
     currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), MAX_CURRENT_SHIELDS)),
     remainingLives: normalizeBoundedInteger(
@@ -226,6 +231,11 @@ export function advanceToNextLevel(registry: PlayerStateRegistry): void {
   state.currentHp = getPlayerMaxHp(state);
   state.currentShields = getPlayerShieldCount(state);
   setPlayerState(registry, state);
+}
+
+/** Credits left to spend on upgrades. */
+export function getAvailableCredits(state: Pick<PlayerStateData, 'score' | 'creditsSpent'>): number {
+  return Math.max(0, state.score - state.creditsSpent);
 }
 
 export function saveScoreToState(registry: PlayerStateRegistry, score: number): void {
