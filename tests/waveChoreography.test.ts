@@ -125,21 +125,28 @@ describe('WaveChoreographer', () => {
     expect(harness.warnings).toEqual([344, 400, 456]);
   });
 
-  test('a mirrored sector counts authored lanes from the other edge, as a true mirror image', () => {
-    const normal = createDeps();
-    const mirrored = createDeps();
-    const mirroredChoreographer = new WaveChoreographer({ ...mirrored.deps, isMirrored: () => true });
-    mirroredChoreographer.setSection([createWave({ lane: 1 })]);
-
-    const normalChoreographer = new WaveChoreographer(normal.deps);
-    normalChoreographer.setSection([createWave({ lane: 1 })]);
-    normalChoreographer.update(300);
-    mirroredChoreographer.update(300);
-
+  test.each([
+    ['line', 3, 1],
+    ['wall', 9, 2],
+    ['pincer', 5, 3],
+    ['vee', 4, 5],
+    ['echelon', 4, 0],
+  ] as const)('a mirrored %s is the exact mirror image, member by member', (formation, count, lane) => {
     const width = 800;
-    const mirrorOf = normal.spawns.map((spawn) => width - spawn.x).sort((a, b) => a - b);
-    expect(mirrored.spawns.map((spawn) => spawn.x).sort((a, b) => a - b)).toEqual(mirrorOf);
-    expect(mirrored.spawns[0].x).not.toBe(normal.spawns[0].x);
+    const fire = (isMirrored: boolean) => {
+      const harness = createDeps(width);
+      const choreographer = new WaveChoreographer({ ...harness.deps, isMirrored: () => isMirrored });
+      choreographer.setSection([createWave({ formation, count, lane })]);
+      choreographer.update(300);
+      return harness;
+    };
+    const normal = fire(false);
+    const mirrored = fire(true);
+
+    // Same order (so aces and first members stay with their partners), every x reflected.
+    expect(mirrored.spawns.map((spawn) => spawn.x)).toEqual(normal.spawns.map((spawn) => width - spawn.x));
+    expect(mirrored.spawns.map((spawn) => spawn.y)).toEqual(normal.spawns.map((spawn) => spawn.y));
+    expect(mirrored.warnings).toEqual(normal.warnings.map((x) => width - x));
   });
 
   test('fires each wave only once', () => {

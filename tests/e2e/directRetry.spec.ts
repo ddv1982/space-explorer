@@ -89,8 +89,8 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
     level: 1,
     score: 0,
     creditsSpent: 0,
-    // The loaded save predates run seeds, so the retry draws a fresh one.
-    runSeed: expect.any(Number),
+    // The loaded save predates run seeds, so its retry keeps the classic sectors.
+    runSeed: 0,
     easiestDifficulty: 'low',
     currentHp: 5,
     remainingLives: 3,
