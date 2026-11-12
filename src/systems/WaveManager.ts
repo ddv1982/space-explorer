@@ -1,4 +1,4 @@
-import { waveRandom } from './gameplayRandom';
+import { asteroidRandom, waveRandom } from './gameplayRandom';
 import Phaser from 'phaser';
 
 import {
@@ -401,8 +401,8 @@ export class WaveManager {
 
   private spawnMirroredHazardAsteroids(minSpeed: number, maxSpeed: number): void {
     this.asteroidSpawner.spawnMirroredAsteroids(
-      waveRandom.between(minSpeed, maxSpeed),
-      waveRandom.between(minSpeed, maxSpeed)
+      asteroidRandom.between(minSpeed, maxSpeed),
+      asteroidRandom.between(minSpeed, maxSpeed)
     );
   }
 
