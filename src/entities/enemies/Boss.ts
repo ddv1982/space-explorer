@@ -6,7 +6,7 @@ import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, updateBossMovement } from './boss/behavior';
 import { resolveBossPhaseTransition } from './boss/phaseTransition';
-import { bossAttackWindup } from './boss/attackWindup';
+import { bossAttackWindup, firstVolleyLastFireTime } from './boss/attackWindup';
 import { getViewportBounds } from '../../utils/layout';
 import { bossTextureKey } from '../../config/shipyardSprites';
 import { BossVisualRig } from './boss/BossVisualRig';
@@ -219,6 +219,7 @@ export class Boss extends EnemyBase {
 
     this.arrived = true;
     this.phaseStartedAt = time;
+    this.lastFireTime = firstVolleyLastFireTime(time, this.lastFireTime, this.getCurrentAttackCooldown());
     this.setVelocityY(0);
   }
 

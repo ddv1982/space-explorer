@@ -5,7 +5,7 @@ How the game is measured, what the numbers were, and which guardrails keep them 
 ## Guardrails
 
 - `tests/e2e/renderBudget.spec.ts` fails if a busy fight draws more than 55 times in one frame or compiles a shader during play. See "Draw-call budget" in `architecture-guidelines.md` for the rules behind it.
-- `RuntimePerformanceBudget` steps effects down (fewer particles and trails, no glow) when more than 12% of frames in a 120-frame window miss their slot, and steps back up after four clean windows.
+- `RuntimePerformanceBudget` (on the Auto quality tier) steps effects down (fewer particles and trails, no glow) when at least 12% of the frames in a 120-frame window take longer than 22 ms, and steps back up after four windows at 2.5% or less. Gaps over 250 ms (tab switches, debugger pauses) are ignored.
 - The canvas renders at 1× CSS pixels on every screen. A phone with a 3× display fills a 390×844 canvas, not 1170×2532, so fill rate stays low without a separate resolution setting.
 
 ## Measuring
@@ -29,6 +29,6 @@ The dev server compiles modules on first use, so the first 5 seconds of a profil
 | Phone, CPU ×10 | 9 | 63 of 1,906 (3.3%) | 11, all in the first 5 s | 0 |
 | Production build, phone, CPU ×4 | 1 (40 s from NEW RUN) | 2 of 4,001 | 1 | n/a |
 
-On the production build the only slow frame is the one that creates the game scene after NEW RUN (89 ms at CPU ×4, 30 ms unthrottled), while the screen changes scenes. Even at CPU ×10 fewer than 12% of frames miss, so the effects budget stays at full effects.
+On the production build the only slow frame is the one that creates the game scene after NEW RUN (89 ms at CPU ×4, 30 ms unthrottled), while the screen changes scenes. At CPU ×10 the profiler's effects column stayed at 0 in every 5-second window, so no 120-frame window reached the 12% threshold.
 
 Not measured yet: a real phone GPU. Run the game on a mid-range Android phone through Chrome remote debugging (`chrome://inspect`) and compare with the table above before tuning for phones.

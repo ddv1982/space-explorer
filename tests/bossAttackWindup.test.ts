@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { BOSS_ATTACK_WINDUP_MS, bossAttackWindup } from '../src/entities/enemies/boss/attackWindup';
+import {
+  BOSS_ATTACK_WINDUP_MS,
+  bossAttackWindup,
+  firstVolleyLastFireTime,
+} from '../src/entities/enemies/boss/attackWindup';
 
 describe('boss attack wind-up', () => {
   test('stays at rest until the last 400 ms before a volley, then charges to full as it fires', () => {
@@ -23,5 +27,19 @@ describe('boss attack wind-up', () => {
 
   test('a boss that cannot fire shows no charge', () => {
     expect(bossAttackWindup(100, 0, 0)).toBe(0);
+  });
+
+  test('a boss that arrives after its cooldown still charges fully before the first volley', () => {
+    const cooldown = 1800;
+    const arrivedAt = 5000;
+    const lastFireTime = firstVolleyLastFireTime(arrivedAt, 0, cooldown);
+    // Next volley is one wind-up after arrival, and the charge starts from rest.
+    expect(lastFireTime + cooldown).toBe(arrivedAt + BOSS_ATTACK_WINDUP_MS);
+    expect(bossAttackWindup(arrivedAt, lastFireTime, cooldown)).toBe(0);
+    expect(bossAttackWindup(arrivedAt + BOSS_ATTACK_WINDUP_MS, lastFireTime, cooldown)).toBe(1);
+  });
+
+  test('arrival never pulls a later volley earlier', () => {
+    expect(firstVolleyLastFireTime(1000, 900, 1800)).toBe(900);
   });
 });
