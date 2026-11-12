@@ -133,6 +133,8 @@ export interface RefitView {
   refresh: (credits: number, evaluations: UpgradeEvaluation[], purchased: UpgradeKey, message: string) => void;
   /** Arrow keys and Enter / Space while no card holds focus; returns whether the key was used. */
   handleUnfocusedKey: (code: string) => boolean;
+  /** Puts the whole bay out of reach of pointer and keyboard while a dialog is open over it. */
+  setInert: (inert: boolean) => void;
   /** Fades the UI out under the warp. */
   leave: () => void;
   destroy: () => void;
@@ -256,6 +258,10 @@ export function createRefitView(config: RefitViewConfig): RefitView {
       focusCard(first);
       cards[first]?.button.click();
       return true;
+    },
+    setInert(inert) {
+      if (inert) releaseFocus(layer);
+      layer.inert = inert;
     },
     leave() {
       releaseFocus(layer);

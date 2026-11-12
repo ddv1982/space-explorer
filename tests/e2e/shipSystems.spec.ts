@@ -26,6 +26,15 @@ test('a free main-gun pick is offered after sector 2, must be made, and changes 
   }
   await page.screenshot({ path: test.info().outputPath('system-pick.png') });
 
+  // The refit bay behind the dialog cannot be reached: Tab stays on the three options.
+  for (let press = 0; press < 5; press += 1) {
+    await page.keyboard.press('Tab');
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  }
+  expect(await page.locator('.refit').evaluate((element) => (element.closest('.ui-layer') as HTMLElement).inert)).toBe(
+    true
+  );
+
   // The run waits for the pick: a plain key does not carry on to the next sector.
   await page.keyboard.press('KeyX');
   await page.waitForTimeout(600);
@@ -34,6 +43,10 @@ test('a free main-gun pick is offered after sector 2, must be made, and changes 
 
   await dialog.getByRole('button', { name: /^SCATTER/ }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.ui-layer')).toHaveCount(1);
+  expect(await page.locator('.refit').evaluate((element) => (element.closest('.ui-layer') as HTMLElement).inert)).toBe(
+    false
+  );
   await page.getByRole('button', { name: /Continue to/ }).click();
   await waitForScene(page, 'Game');
   if (isMobile) await page.touchscreen.tap(195, 700);

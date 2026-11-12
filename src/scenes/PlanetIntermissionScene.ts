@@ -111,6 +111,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   /** A free ship-system pick is offered before the shop whenever one is due; the run waits for it. */
   private offerShipSystemPick(): void {
     const slot = this.isFinalMissionComplete ? null : getPendingShipSystemSlot(this.state.level, this.state.systems);
+    this.view?.setInert(slot !== null);
     if (!slot) return;
     this.pickDialog = createSystemPickDialog(slot, (id) => {
       this.state.systems = normalizeShipSystems({ ...this.state.systems, [slot.slot]: id });

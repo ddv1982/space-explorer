@@ -36,22 +36,21 @@ export function createSystemPickDialog(slot: ShipSystemSlotDef, onPick: (id: Shi
     h('div', { className: 'pick__options' }, ...options)
   );
   const modal = h('div', { className: 'ui-modal' }, sheet);
-  // Arrow keys move between the three options; Enter and Space pick the focused one natively.
+  // Arrow keys and Tab cycle through the three options and never leave the dialog; Enter and Space
+  // pick the focused one natively.
   modal.addEventListener('keydown', (event) => {
-    const step =
-      event.code === 'ArrowDown' || event.code === 'ArrowRight'
-        ? 1
-        : event.code === 'ArrowUp' || event.code === 'ArrowLeft'
-          ? -1
-          : 0;
-    if (step === 0) return;
+    const forward =
+      event.code === 'ArrowDown' || event.code === 'ArrowRight' || (event.code === 'Tab' && !event.shiftKey);
+    const backward = event.code === 'ArrowUp' || event.code === 'ArrowLeft' || (event.code === 'Tab' && event.shiftKey);
+    if (!forward && !backward) return;
     event.preventDefault();
     const current = options.indexOf(document.activeElement as HTMLButtonElement);
-    options[(current + step + options.length) % options.length].focus({ preventScroll: true });
+    options[(current + (forward ? 1 : -1) + options.length) % options.length].focus({ preventScroll: true });
   });
 
+  // The dialog lives in its own layer above the refit bay; the scene makes the bay inert meanwhile.
   const layer = mountUiLayer();
   layer.append(modal);
   options[0].focus({ preventScroll: true });
-  return { destroy: () => modal.remove() };
+  return { destroy: () => layer.remove() };
 }
