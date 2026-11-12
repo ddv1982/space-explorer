@@ -41,3 +41,42 @@ test('buying an upgrade spends credits, not score, and the end screen keeps a pe
   await page.evaluate(() => window.localStorage.removeItem('space-explorer.personalBest.v1'));
   assertNoBrowserErrors();
 });
+
+test('switching to a harder difficulty mid-run does not claim the harder best', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(120_000);
+  await pinQualityTier(page, 'low');
+  await openMenu(page);
+  await startNewRun(page);
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(1));
+  await waitForScene(page, 'PlanetIntermission');
+  await page.getByRole('button', { name: /Continue to/ }).click();
+  await waitForScene(page, 'Game');
+
+  // Played on NORMAL so far; raise the difficulty from the pause panel just before losing.
+  await page.keyboard.press('Escape');
+  await page.getByRole('tab', { name: 'SETTINGS' }).click();
+  await page.getByRole('group', { name: 'Difficulty' }).getByRole('button', { name: 'HIGH', exact: true }).click();
+  await expect(page.getByText('DIFFICULTY: HIGH')).toBeVisible();
+  await page.getByRole('button', { name: 'RESUME', exact: true }).click();
+
+  for (let life = 0; life < 6 && !(await snapshot(page)).activeScenes.includes('GameOver'); life += 1) {
+    await page
+      .evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.probeAcceptedPlayerDamage(999))
+      .catch(() => undefined);
+    await page.waitForTimeout(2_500);
+  }
+  await waitForScene(page, 'GameOver');
+  const bests = JSON.parse(
+    (await page.evaluate(() => window.localStorage.getItem('space-explorer.personalBest.v1'))) ?? '{}'
+  );
+  expect(bests.high).toBe(0);
+  expect(bests.normal).toBeGreaterThanOrEqual(8000);
+  await page.evaluate(() => {
+    window.localStorage.removeItem('space-explorer.personalBest.v1');
+    window.localStorage.removeItem('space-explorer.gameplayDifficulty.v1');
+  });
+  assertNoBrowserErrors();
+});

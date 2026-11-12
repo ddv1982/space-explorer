@@ -3,7 +3,7 @@ import { getTotalLevels, getLevelConfig } from '../config/LevelsConfig';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import { audioManager } from '../systems/AudioManager';
 import { generateEffectsParticleTextures, PARTICLE } from '../systems/effects/particleTextureFactory';
-import { getRunSummary } from '../systems/PlayerState';
+import { getPlayerState, getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { withCanvasTexture } from '../utils/generatedTexture';
 import { scaleUiGlowAlpha } from '../utils/renderingCompat';
@@ -120,7 +120,10 @@ export class VictoryScene extends Phaser.Scene {
   private createSummary(onContinue: () => void): HTMLElement {
     const finalScore = getRunSummary(this.registry).finalScore;
     const totalLevels = getTotalLevels();
-    const { best, isNewBest } = recordRunScore(finalScore, getGameplayDifficultyTier());
+    const { best, isNewBest } = recordRunScore(
+      finalScore,
+      getPlayerState(this.registry).easiestDifficulty ?? getGameplayDifficultyTier()
+    );
     const score = statCell('FINAL SCORE', formatScore(finalScore), '255 210 122', bestScoreNote(best, isNewBest));
     countUp(score.value, finalScore, 450);
 

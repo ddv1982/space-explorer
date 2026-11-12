@@ -88,6 +88,7 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
     level: 1,
     score: 0,
     creditsSpent: 0,
+    easiestDifficulty: 'low',
     currentHp: 5,
     remainingLives: 3,
     currentShields: 0,

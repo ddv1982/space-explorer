@@ -35,4 +35,24 @@ describe('personal best', () => {
     const storage = createStorage({ 'space-explorer.personalBest.v1': '{"normal":"lots","low":-5}' });
     expect(recordRunScore(10, 'normal', storage)).toEqual({ best: 10, isNewBest: true });
   });
+
+  test('a best set in another tab is not overwritten by this tab', () => {
+    const values = new Map<string, string>();
+    const localStorage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => void values.set(key, value),
+    };
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage } });
+    try {
+      recordRunScore(100, 'normal');
+      // Another tab records better scores after this tab's first read.
+      values.set('space-explorer.personalBest.v1', JSON.stringify({ low: 0, normal: 1000, high: 500 }));
+      expect(recordRunScore(200, 'normal')).toEqual({ best: 1000, isNewBest: false });
+      expect(JSON.parse(values.get('space-explorer.personalBest.v1')!)).toEqual({ low: 0, normal: 1000, high: 500 });
+    } finally {
+      if (descriptor) Object.defineProperty(globalThis, 'window', descriptor);
+      else Reflect.deleteProperty(globalThis, 'window');
+    }
+  });
 });

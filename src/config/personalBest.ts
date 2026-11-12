@@ -31,7 +31,8 @@ export function recordRunScore(
   tier: GameplayDifficultyTier,
   storage?: PreferenceStorage | null
 ): RunScoreResult {
-  const bests = preference.get(storage);
+  // Another tab may have set a best since this one last looked.
+  const bests = storage === undefined ? preference.reload() : preference.get(storage);
   const finalScore = readBest(score);
   const previous = TIERS.includes(tier) ? bests[tier] : 0;
   if (finalScore > previous) preference.set({ ...bests, [tier]: finalScore }, storage);

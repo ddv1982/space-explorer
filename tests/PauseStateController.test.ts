@@ -74,7 +74,12 @@ function createPauseHarness(
   let worldPaused = options.worldPaused ?? false;
   let handlers: PauseOverlayHandlers | null = null;
 
+  const registryValues = new Map<string, unknown>();
   const scene = {
+    registry: {
+      get: (key: string) => registryValues.get(key),
+      set: (key: string, value: unknown) => void registryValues.set(key, value),
+    },
     physics: {
       world: {
         get isPaused() {

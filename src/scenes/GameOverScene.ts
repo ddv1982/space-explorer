@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { getLevelConfig } from '../config/LevelsConfig';
 import { audioManager } from '../systems/AudioManager';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
-import { getRunSummary } from '../systems/PlayerState';
+import { getPlayerState, getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { isTouchMobileDevice } from '../utils/device';
 import { h, liveRegion, mountUiLayer } from '../ui/dom';
@@ -55,7 +55,10 @@ export class GameOverScene extends Phaser.Scene {
     addDriftingMotes(this, bounds, [0xff5a55, 0xff8a4a, 0xffc36e], 1);
 
     const cause = getDeathCauseText(runSummary.deathCause);
-    const { best, isNewBest } = recordRunScore(runSummary.finalScore, getGameplayDifficultyTier());
+    const { best, isNewBest } = recordRunScore(
+      runSummary.finalScore,
+      getPlayerState(this.registry).easiestDifficulty ?? getGameplayDifficultyTier()
+    );
     const nextGoal = best > 0 ? `NEXT RUN: BEAT ${best}` : `NEXT RUN: CLEAR LEVEL ${runSummary.levelReached}`;
 
     const activate = (action: TerminalAction): void => {

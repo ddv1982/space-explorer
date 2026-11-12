@@ -5,6 +5,7 @@ mock.module('phaser', () => ({ default: {} }));
 const {
   advanceToNextLevel,
   getAvailableCredits,
+  noteRunDifficulty,
   getPlayerState,
   getPlayerTurretTier,
   getRunSummary,
@@ -42,6 +43,7 @@ describe('PlayerState schema behavior', () => {
         level: 1,
         score: 0,
         creditsSpent: 0,
+        easiestDifficulty: null,
         currentHp: 5,
         currentShields: 0,
         remainingLives: 3,
@@ -58,6 +60,7 @@ describe('PlayerState schema behavior', () => {
       level: Number.POSITIVE_INFINITY,
       score: 'lots',
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: Number.NaN,
       currentShields: 99,
       remainingLives: -2,
@@ -78,6 +81,7 @@ describe('PlayerState schema behavior', () => {
       level: 1,
       score: 0,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 5,
       currentShields: 8,
       remainingLives: 0,
@@ -112,6 +116,7 @@ describe('PlayerState schema behavior', () => {
       level: 2,
       score: 150,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 4,
       remainingLives: 2,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 2 },
@@ -145,6 +150,7 @@ describe('PlayerState schema behavior', () => {
       level: 4.5,
       score: Number.MAX_VALUE,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: Number.MAX_VALUE,
       currentShields: Number.MAX_VALUE,
       remainingLives: Number.MAX_VALUE,
@@ -165,6 +171,7 @@ describe('PlayerState schema behavior', () => {
       level: 4,
       score: Number.MAX_SAFE_INTEGER,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 15,
       currentShields: 8,
       remainingLives: 3,
@@ -182,6 +189,7 @@ describe('PlayerState schema behavior', () => {
       level: 2,
       score: 12.9,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 4.25,
       currentShields: 2.9,
       remainingLives: 2.9,
@@ -192,6 +200,7 @@ describe('PlayerState schema behavior', () => {
     expect(getPlayerState(registry)).toMatchObject({
       score: 12,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 4.25,
       currentShields: 2,
       remainingLives: 2,
@@ -219,6 +228,7 @@ describe('PlayerState schema behavior', () => {
       level: 1,
       score: 0,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 5,
       currentShields: 3,
       remainingLives: 3,
@@ -242,6 +252,7 @@ describe('PlayerState schema behavior', () => {
       level: 1,
       score: 0,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 5,
       currentShields: 99,
       remainingLives: 3,
@@ -268,6 +279,7 @@ describe('PlayerState schema behavior', () => {
       level: 2,
       score: 250,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 1,
       currentShields: 0,
       remainingLives: 2,
@@ -301,6 +313,7 @@ describe('PlayerState schema behavior', () => {
       level: 5,
       score: 0,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 5,
       currentShields: 0,
       remainingLives: 3,
@@ -313,6 +326,7 @@ describe('PlayerState schema behavior', () => {
       level: 5,
       score: 0,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 5,
       currentShields: 0,
       remainingLives: 3,
@@ -394,5 +408,16 @@ describe('PlayerState schema behavior', () => {
     // Corrupt data cannot spend more than was earned.
     setPlayerState(registry, { ...getPlayerState(registry), score: 100, creditsSpent: 999 });
     expect(getAvailableCredits(getPlayerState(registry))).toBe(0);
+  });
+
+  test('a run stays in the records of the easiest difficulty it was played on', () => {
+    const registry = createRegistry();
+    expect(getPlayerState(registry).easiestDifficulty).toBeNull();
+    noteRunDifficulty(registry, 'normal');
+    noteRunDifficulty(registry, 'high');
+    expect(getPlayerState(registry).easiestDifficulty).toBe('normal');
+    noteRunDifficulty(registry, 'low');
+    noteRunDifficulty(registry, 'high');
+    expect(getPlayerState(registry).easiestDifficulty).toBe('low');
   });
 });

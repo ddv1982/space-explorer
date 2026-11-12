@@ -1,3 +1,4 @@
+import type { GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { normalizeDeathCause } from './PlayerDamage';
 import { getUpgradeByKey, normalizeUpgradeLevel } from '../config/UpgradesConfig';
 import { normalizeAuthoredLevelNumber } from '../config/levels/selectors';
@@ -59,6 +60,7 @@ function getDefaultPlayerState(): PlayerStateData {
     level: 1,
     score: 0,
     creditsSpent: 0,
+    easiestDifficulty: null,
     currentHp: PLAYER_CONFIG.baseMaxHp,
     remainingLives: DEFAULT_REMAINING_LIVES,
     currentShields: 0,
@@ -140,6 +142,7 @@ export function normalizePersistedPlayerState(value: unknown): PlayerStateData {
     score,
     // Saves from before credits were split from score have spent nothing: their balance is their score.
     creditsSpent: normalizeBoundedInteger(value.creditsSpent, 0, score),
+    easiestDifficulty: isDifficultyTier(value.easiestDifficulty) ? value.easiestDifficulty : null,
     currentHp: normalizeBoundedNumber(value.currentHp, defaultState.currentHp, maxHp),
     currentShields: Math.max(0, Math.min(Math.floor(currentShieldsInput), MAX_CURRENT_SHIELDS)),
     remainingLives: normalizeBoundedInteger(
@@ -231,6 +234,26 @@ export function advanceToNextLevel(registry: PlayerStateRegistry): void {
   state.currentHp = getPlayerMaxHp(state);
   state.currentShields = getPlayerShieldCount(state);
   setPlayerState(registry, state);
+}
+
+const DIFFICULTY_ORDER: readonly GameplayDifficultyTier[] = ['low', 'normal', 'high'];
+
+function isDifficultyTier(value: unknown): value is GameplayDifficultyTier {
+  return DIFFICULTY_ORDER.includes(value as GameplayDifficultyTier);
+}
+
+/**
+ * Notes the difficulty the run is being played on. A run that was ever on an easier setting stays in
+ * that setting's records, so switching up just before the end cannot claim a harder best.
+ */
+export function noteRunDifficulty(registry: PlayerStateRegistry, tier: GameplayDifficultyTier): void {
+  const state = getPlayerState(registry);
+  const easiest =
+    state.easiestDifficulty === null ||
+    DIFFICULTY_ORDER.indexOf(tier) < DIFFICULTY_ORDER.indexOf(state.easiestDifficulty)
+      ? tier
+      : state.easiestDifficulty;
+  if (easiest !== state.easiestDifficulty) setPlayerState(registry, { ...state, easiestDifficulty: easiest });
 }
 
 /** Credits left to spend on upgrades. */

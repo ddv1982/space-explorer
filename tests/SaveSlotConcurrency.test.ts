@@ -77,6 +77,7 @@ function createRecord(id: 'slot-1' | 'slot-2' | 'slot-3', score: number): SaveSl
       level: 2,
       score,
       creditsSpent: 0,
+      easiestDifficulty: null,
       currentHp: 5,
       currentShields: 0,
       remainingLives: 3,
