@@ -153,7 +153,8 @@
   z-index: -2;
   background:
     linear-gradient(rgb(255 255 255 / var(--sheen)) 0 26%, transparent 26%),
-    linear-gradient(rgb(255 255 255 / var(--sheen)) 0 50%, transparent 50%), var(--fill);
+    linear-gradient(rgb(255 255 255 / var(--sheen)) 0 50%, transparent 50%),
+    var(--fill);
 }
 
 /* ---------- buttons ---------- */
@@ -611,12 +612,7 @@
   content: '';
   position: absolute;
   inset: -100% -25%;
-  background: radial-gradient(
-    closest-side,
-    rgb(var(--c-cyan-rgb) / 0.55),
-    rgb(var(--c-cyan-rgb) / 0.12) 55%,
-    transparent
-  );
+  background: radial-gradient(closest-side, rgb(var(--c-cyan-rgb) / 0.55), rgb(var(--c-cyan-rgb) / 0.12) 55%, transparent);
   opacity: calc(0.55 * var(--ui-glow));
   animation: ui-breathe 1.5s ease-in-out infinite alternate;
 }
@@ -1577,8 +1573,8 @@
 
 .card.ui-btn::after {
   background:
-    linear-gradient(rgb(var(--accent-rgb) / var(--rail)), rgb(var(--accent-rgb) / var(--rail))) 0 var(--cut) / 3px 100%
-      no-repeat,
+    linear-gradient(rgb(var(--accent-rgb) / var(--rail)), rgb(var(--accent-rgb) / var(--rail))) 0 var(--cut) / 3px
+      100% no-repeat,
     linear-gradient(rgb(var(--accent-rgb) / var(--tint)) 0 46%, transparent 46%),
     var(--fill);
 }
