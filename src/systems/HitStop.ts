@@ -49,6 +49,12 @@ export class HitStop {
    */
   advance(realDeltaMs: number): boolean {
     if (!this.holding) return false;
+    if (!this.physics.isPaused() && !this.physics.isHeldElsewhere()) {
+      // Another owner resumed physics mid-freeze (pausing and unpausing takes longer than any stop):
+      // end the freeze now so gameplay frames restart on the same frame as physics.
+      this.reset();
+      return false;
+    }
     this.remainingMs = Math.max(0, this.remainingMs - (Number.isFinite(realDeltaMs) ? realDeltaMs : 0));
     if (this.remainingMs > 0) return true;
     if (this.physics.isHeldElsewhere()) return false;

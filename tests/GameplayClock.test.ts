@@ -77,4 +77,35 @@ describe('GameplayClock', () => {
     expect(calls).toEqual(['gameplay:16', 'frozen', 'frozen', 'gameplay:32', 'gameplay:48']);
     expect(paused).toBe(false);
   });
+
+  test('unpausing mid-freeze restarts gameplay frames on the same frame as physics', () => {
+    const clock = new GameplayClock();
+    let paused = false;
+    let menuOpen = false;
+    const hitStop = new HitStop({
+      isPaused: () => paused,
+      pause: () => (paused = true),
+      resume: () => (paused = false),
+      isHeldElsewhere: () => menuOpen,
+    });
+    const calls: string[] = [];
+    const delegate: GameSceneFrameDelegate = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => menuOpen,
+      updatePausedFrame: () => calls.push(paused ? 'frozen' : 'frozen-but-physics-running'),
+      updateGameplayFrame: () => calls.push(paused ? 'gameplay-but-physics-paused' : 'gameplay'),
+      updateHud: () => {},
+    };
+
+    hitStop.trigger(100);
+    runGameSceneUpdateFrame(delegate, 0, 16, clock, hitStop);
+    menuOpen = true; // pause menu opens; physics is already paused, so it leaves it alone
+    runGameSceneUpdateFrame(delegate, 16, 16, clock, hitStop);
+    menuOpen = false; // closing the menu resumes physics (PauseStateController.syncGameplayPauseState)
+    paused = false;
+    runGameSceneUpdateFrame(delegate, 32, 16, clock, hitStop);
+
+    expect(calls).toEqual(['frozen', 'frozen', 'gameplay']);
+    expect(hitStop.isActive()).toBe(false);
+  });
 });

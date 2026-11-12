@@ -97,4 +97,18 @@ describe('HitStop', () => {
     hitStop.reset();
     expect(hitStop.isActive()).toBe(false);
   });
+
+  test('pausing and unpausing within a freeze ends it, so physics and gameplay restart together', () => {
+    const physics = createPhysics();
+    const hitStop = new HitStop(physics);
+    hitStop.trigger(100);
+    expect(hitStop.advance(16)).toBe(true);
+    // The pause menu opens and closes mid-freeze; closing it resumes physics.
+    physics.heldElsewhere = true;
+    physics.heldElsewhere = false;
+    physics.resume();
+    expect(hitStop.advance(16)).toBe(false);
+    expect(hitStop.isActive()).toBe(false);
+    expect(physics.resumes).toBe(1);
+  });
 });
