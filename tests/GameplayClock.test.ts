@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { GameplayClock } from '../src/systems/GameplayClock';
 import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from '../src/scenes/gameScene/updateFrame';
 import { ScoreManager } from '../src/systems/ScoreManager';
+import { HIT_STOP_TIME_SCALE, HitStop } from '../src/systems/HitStop';
 
 describe('GameplayClock', () => {
   test('advances only when asked and ignores negative deltas', () => {
@@ -46,5 +47,33 @@ describe('GameplayClock', () => {
     runGameSceneUpdateFrame(delegate, 50_016, 16, clock);
     expect(scoreManager.getChainState(clock.now).chain).toBe(1);
     expect(calls).toEqual(['play:16', 'paused:16', 'play:32']);
+  });
+
+  test('a hit-stop slows the gameplay clock, and a locked frame ends it at once', () => {
+    const clock = new GameplayClock();
+    const timeScales: number[] = [];
+    const hitStop = new HitStop((scale) => timeScales.push(scale));
+    let locked = false;
+    const delegate: GameSceneFrameDelegate = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => locked,
+      updatePausedFrame: () => {},
+      updateGameplayFrame: () => {},
+      updateHud: () => {},
+    };
+
+    hitStop.trigger(100);
+    runGameSceneUpdateFrame(delegate, 0, 20, clock, hitStop);
+    expect(clock.now).toBeCloseTo(20 * HIT_STOP_TIME_SCALE);
+
+    // A fatal hit starts the death transition: physics must not stay slowed through it.
+    locked = true;
+    runGameSceneUpdateFrame(delegate, 20, 20, clock, hitStop);
+    expect(hitStop.isActive()).toBe(false);
+    expect(timeScales.at(-1)).toBe(1);
+
+    locked = false;
+    runGameSceneUpdateFrame(delegate, 40, 20, clock, hitStop);
+    expect(clock.now).toBeCloseTo(20 * HIT_STOP_TIME_SCALE + 20);
   });
 });

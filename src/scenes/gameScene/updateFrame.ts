@@ -21,12 +21,14 @@ export function runGameSceneUpdateFrame(
   delegate.handlePauseInput();
 
   if (delegate.isPausedOrLockedFrame()) {
+    // A pause, death or level transition ends any hit-stop, so the transition runs at normal speed.
+    if (hitStop?.isActive()) hitStop.reset();
     delegate.updatePausedFrame(delta);
     return;
   }
 
   if (clock) {
-    // A hit-stop slows gameplay time only; paused frames above never consume it.
+    // A hit-stop slows gameplay time only (the gameplay clock and, via HitStop, the Arcade world).
     clock.advance(hitStop ? hitStop.scaleDelta(delta) : delta);
     delegate.updateGameplayFrame(clock.now, clock.delta);
   } else {
