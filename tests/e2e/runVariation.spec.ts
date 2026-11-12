@@ -48,25 +48,25 @@ test('RETRY replays the same run seed and NEW RUN starts a different one', async
   assertNoBrowserErrors();
 });
 
-test('the same seed draws the same sky, and another seed a different one', async ({
+test('the same seed gives the same sky, another seed a different one, and no errors either way', async ({
   page,
   isMobile,
   assertNoBrowserErrors,
 }) => {
   test.skip(isMobile, 'the sky does not depend on the input device');
   test.setTimeout(120_000);
-  // Stars as the snapshot reports them are not enough: compare what is actually drawn in a corner
-  // of the sky that ships and the HUD do not reach in the first moments of sector 2.
-  const skyCorner = async (seed: number): Promise<string> => {
+  // The sky as the background applied it (flip and tint read from the drawn image, plus star offsets).
+  const skyOf = async (seed: number) => {
     await page.goto(`/?browserHarness=1&startLevel=2&seed=${seed}`);
     await waitForScene(page, 'Game');
-    await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.waitForRender());
-    const shot = await page.screenshot({ clip: { x: 40, y: 560, width: 320, height: 140 } });
-    return shot.toString('base64');
+    return page.evaluate(
+      () => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.getProceduralBackgroundSnapshot().background?.sky ?? null
+    );
   };
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  const first = await skyCorner(11);
-  expect(await skyCorner(11)).toBe(first);
-  expect(await skyCorner(12)).not.toBe(first);
+  const first = await skyOf(11);
+  expect(first?.starOffsets).toHaveLength(3);
+  expect(await skyOf(11)).toEqual(first);
+  expect(await skyOf(12)).not.toEqual(first);
+  await page.screenshot({ path: test.info().outputPath('sky-seed-12.png') });
   assertNoBrowserErrors();
 });

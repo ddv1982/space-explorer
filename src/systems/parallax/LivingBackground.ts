@@ -225,6 +225,8 @@ export class LivingBackground {
       tier: this.tier,
       liveNoise: this.liveNoise,
       textureKeys: [...this.textureKeys],
+      // What this run's sky actually applied, as drawn: the backdrop's flip and tint.
+      sky: { mirrored: this.image.flipX, tint: this.image.tintTopLeft, starOffsets: this.sky?.starOffsets ?? [] },
     };
   }
 
