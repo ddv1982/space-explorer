@@ -1,4 +1,5 @@
 import type { createGameFeelProbes } from './gameFeelProbes';
+import type { createRenderStatsProbe } from './renderStatsProbe';
 
 import type { BrowserHarnessSnapshot } from './snapshot';
 import type { createShipyardProbes } from './shipyardProbes';
@@ -7,6 +8,7 @@ import type { createProceduralBackgroundProbes } from './proceduralBackgroundPro
 export interface BrowserHarnessApi
   extends ReturnType<typeof createShipyardProbes>, ReturnType<typeof createProceduralBackgroundProbes> {
   gameFeel: ReturnType<typeof createGameFeelProbes>;
+  renderStats: ReturnType<typeof createRenderStatsProbe>;
   destroyGame: () => void;
   snapshot: () => BrowserHarnessSnapshot;
   waitForRender: () => Promise<void>;

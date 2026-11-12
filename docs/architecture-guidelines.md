@@ -103,3 +103,7 @@ Measured in Chrome on Apple Silicon (v1.29.1), every extra batch inside the scen
 - A `Graphics` object flushes the batch on every switch between a stroke and a fill. Short-lived or repeated shapes (warnings, markers) are sprites of one shared canvas texture, not `Graphics`.
 - A filtered object renders its filter passes even when it draws nothing. Hide it while it is dormant.
 - Phaser compiles one sprite shader per number of textures in a batch, on first use. `warmGameplayShaders` compiles them all behind the loading screen; a new shader family that first appears in gameplay belongs there too.
+
+These rules are enforced. `tests/e2e/renderBudget.spec.ts` plays sectors 5 and 9 with autofire on and fails if any frame issues more than 55 draw calls (busy fights measure 35–43) or if any shader compiles during play. The counts come from `renderStats` in the browser harness, which wraps the WebGL context. Raise the budget only with a measurement that shows why.
+
+To measure frame pacing by hand, run `bun scripts/perf/profile.ts --level 9 --seconds 60`. It starts its own dev server, plays the sector with autofire on, and prints frames over 20 ms and 33 ms plus draw calls per 5-second window. Add `--phone` for a 390×844 touch screen at 3× density and `--throttle 4` to slow the CPU four times. It runs headed so frame times come from the real GPU; headless frame times are meaningless.

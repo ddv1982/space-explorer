@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.30.1] - 2026-11-12
+
+### Changed
+
+- A browser test now fails if a busy fight in sector 5 or 9 draws more than 55 times in one frame (fights measure 35–43) or compiles a shader during play. Restoring the old vector warning chevrons from v1.29.0 makes it fail at 93–95 draw calls, and skipping the shader warm-up makes it fail with 18 compiles.
+- `bun run perf:profile` plays a sector hands-free and reports frames over 20 ms and 33 ms and draw calls per 5 seconds, with phone-screen and CPU-throttle options.
+- CI runs the browser tests in six parallel shards instead of two jobs, and a failed upload of test evidence no longer fails a run whose tests passed. One "Quality gates passed" check now sums up every gate, and production deploys wait on it.
+- Browser tests no longer reload the page when a source file changes during a local run.
+
 ## [1.30.0] - 2026-11-11
 
 ### Added

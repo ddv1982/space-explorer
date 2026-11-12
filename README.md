@@ -196,7 +196,12 @@ bun run lint     # eslint
 bun run knip     # unused-code analysis
 bun run bundle:report   # report dist asset sizes after a build
 bun run bundle:check    # enforce bundle size limits and keep dev diagnostics out of releases
+bun run perf:profile -- --level 9   # play a sector hands-free and report frame pacing and draw calls
 ```
+
+CI runs the static gates and six parallel browser shards (desktop and touch, three each). The
+`Quality gates passed` check sums them up; `main` is protected and only accepts pull requests whose
+checks pass. Merges to `main` deploy to production.
 
 CI runs typecheck, lint, format, unit tests (including level-authoring validation), knip, a dependency audit, the build with its bundle check, and the browser smoke suite on desktop and phone viewports.
 

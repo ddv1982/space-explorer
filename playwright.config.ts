@@ -40,6 +40,7 @@ export default defineConfig({
         '**/playerControls.spec.ts',
         '**/directRetry.spec.ts',
         '**/autoFire.spec.ts',
+        '**/renderBudget.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
     },
@@ -66,6 +67,8 @@ export default defineConfig({
   ],
   webServer: {
     command: `bun run dev --host 127.0.0.1 --port ${evidencePort} --strictPort`,
+    // No hot reload: an edit made while the suite runs must not reload a page mid-test.
+    env: { SPACE_EXPLORER_E2E: '1' },
     url: baseURL,
     reuseExistingServer: !process.env.CI,
   },
