@@ -75,6 +75,8 @@ export class BossVisualRig {
     phase: number;
     shieldActive: boolean;
     guardBroken: boolean;
+    /** 0-1 charge before the next volley: the core swells and the hardpoints flash white. */
+    windup?: number;
   }): void {
     const objects = [this.aura, this.corona, this.shield, this.core, ...this.hardpoints].filter(
       (object): object is Phaser.GameObjects.Arc | Phaser.GameObjects.Ellipse => object !== null
@@ -93,12 +95,14 @@ export class BossVisualRig {
     this.corona.setAlpha(0.18 + pulse * 0.16);
     this.shield.setPosition(params.x, params.y).setVisible(params.shieldActive);
     this.shield.setScale(0.98 + pulse * 0.045).setAlpha(0.62 + pulse * 0.28);
-    this.core.setPosition(params.x, params.y - 1).setScale(0.82 + pulse * 0.44);
+    const windup = params.windup ?? 0;
+    this.core.setPosition(params.x, params.y - 1).setScale(0.82 + pulse * 0.44 * (1 - windup) + windup * 1.35);
     this.core.setFillStyle(params.guardBroken ? 0xffd76a : params.phase === 2 ? 0xffffff : 0xffd7e0, 0.92);
     this.hardpoints.forEach((hardpoint, index) => {
       hardpoint.setPosition(params.x + (index === 0 ? -31 : 31), params.y + 5);
-      hardpoint.setScale(0.82 + (1 - pulse) * 0.32);
-      hardpoint.setFillStyle(params.phase === 2 ? 0xff335f : 0xff6688, 0.78);
+      hardpoint.setScale(0.82 + (1 - pulse) * 0.32 * (1 - windup) + windup * 0.7);
+      const charged = windup > 0.5;
+      hardpoint.setFillStyle(charged ? 0xffffff : params.phase === 2 ? 0xff335f : 0xff6688, charged ? 0.95 : 0.78);
     });
   }
 

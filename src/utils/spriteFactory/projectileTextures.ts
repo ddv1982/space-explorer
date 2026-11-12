@@ -87,31 +87,36 @@ export function ensurePicketBoltTexture(scene: Phaser.Scene): string {
 }
 
 /**
- * Hostile plasma orb. A dark rim keeps it readable over bright nebulae; the magenta body and white
- * core glow through bloom.
+ * Hostile plasma orb, readable by shape and brightness as well as colour: a white-hot core and a
+ * bright ring, separated and framed by dark bands, inside a magenta glow. Background stars are plain
+ * points, so the ring sets shots apart even in grayscale or with red-green colour blindness.
  */
 export function ensureEnemyBulletTexture(scene: Phaser.Scene): string {
   return withCanvasTexture(
     scene,
     'enemy-bullet',
-    18,
-    18,
+    22,
+    22,
     (context, width) => {
       const c = width / 2;
-      glowEllipse(context, c, c, c, c, [255, 60, 140], 0.6);
-      context.fillStyle = 'rgba(20,4,16,0.9)';
+      const disc = (radius: number, fill: string | CanvasGradient): void => {
+        context.fillStyle = fill;
+        context.beginPath();
+        context.arc(c, c, radius, 0, Math.PI * 2);
+        context.fill();
+      };
+      glowEllipse(context, c, c, c, c, [255, 60, 140], 0.55);
+      disc(7.4, 'rgba(18,2,14,0.94)');
+      context.strokeStyle = 'rgba(255,175,220,1)';
+      context.lineWidth = 1.7;
       context.beginPath();
-      context.arc(c, c, 4.6, 0, Math.PI * 2);
-      context.fill();
-      const body = context.createRadialGradient(c - 0.8, c - 0.8, 0, c, c, 4);
-      body.addColorStop(0, 'rgba(255,255,255,1)');
-      body.addColorStop(0.35, 'rgba(255,170,215,1)');
-      body.addColorStop(0.75, 'rgba(255,60,140,1)');
-      body.addColorStop(1, 'rgba(190,20,90,1)');
-      context.fillStyle = body;
-      context.beginPath();
-      context.arc(c, c, 3.8, 0, Math.PI * 2);
-      context.fill();
+      context.arc(c, c, 5.6, 0, Math.PI * 2);
+      context.stroke();
+      const core = context.createRadialGradient(c - 0.6, c - 0.6, 0, c, c, 3.1);
+      core.addColorStop(0, 'rgba(255,255,255,1)');
+      core.addColorStop(0.55, 'rgba(255,215,236,1)');
+      core.addColorStop(1, 'rgba(255,90,160,1)');
+      disc(3.1, core);
     },
     DENSITY
   );
