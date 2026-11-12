@@ -10,6 +10,8 @@ import { CollisionManager } from '@/systems/CollisionManager';
 import type { EffectsManager } from '@/systems/EffectsManager';
 import { EnemyPool } from '@/systems/EnemyPool';
 import { GrazeSurgeSystem, SURGE_SCORE_PER_BULLET, type GrazeSurgeBullet } from '@/systems/GrazeSurgeSystem';
+import { SURGE_CORE } from '@/config/shipSystems';
+import { ShipSystemsRuntime } from '@/systems/ShipSystemsRuntime';
 import { HazardBeamSystem } from '@/systems/HazardBeamSystem';
 import { LastLifeHelperWing } from '@/systems/LastLifeHelperWing';
 import type { LevelManager } from '@/systems/LevelManager';
@@ -32,6 +34,7 @@ type PoolsAndGameplaySystems = {
   scoreManager: ScoreManager;
   grazeSurge: GrazeSurgeSystem;
   powerUpGroup: Phaser.Physics.Arcade.Group;
+  shipSystems: ShipSystemsRuntime;
 };
 
 type CreatePoolsAndGameplaySystemsParams = {
@@ -231,21 +234,24 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
   const scoreManager = createScoreManager();
   scoreManager.addScore(state.score);
 
-  const grazeSurge = new GrazeSurgeSystem({
-    getPlayerPosition: () => (player.isAlive ? { x: player.x, y: player.y } : null),
-    getEnemyBullets: () => enemyPool.getEnemyBulletGroup().getChildren() as unknown as GrazeSurgeBullet[],
-    onGraze: (x, y) => {
-      effectsManager.createGrazeSpark(x, y);
-      audioManager.playSfx('graze', stereoPan(scene, x));
+  const grazeSurge = new GrazeSurgeSystem(
+    {
+      getPlayerPosition: () => (player.isAlive ? { x: player.x, y: player.y } : null),
+      getEnemyBullets: () => enemyPool.getEnemyBulletGroup().getChildren() as unknown as GrazeSurgeBullet[],
+      onGraze: (x, y) => {
+        effectsManager.createGrazeSpark(x, y);
+        audioManager.playSfx('graze', stereoPan(scene, x));
+      },
+      onSurgePulse: (x, y, clearedBullets) => {
+        if (clearedBullets > 0) {
+          scoreManager.addScore(clearedBullets * SURGE_SCORE_PER_BULLET);
+        }
+        effectsManager.createSurgePulse(x, y);
+        audioManager.playSfx('surgePulse');
+      },
     },
-    onSurgePulse: (x, y, clearedBullets) => {
-      if (clearedBullets > 0) {
-        scoreManager.addScore(clearedBullets * SURGE_SCORE_PER_BULLET);
-      }
-      effectsManager.createSurgePulse(x, y);
-      audioManager.playSfx('surgePulse');
-    },
-  });
+    state.systems.support === 'surgeCore' ? SURGE_CORE : undefined
+  );
 
   const powerUpGroup = createPowerUpGroup({
     scene,
@@ -265,5 +271,6 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
     scoreManager,
     grazeSurge,
     powerUpGroup,
+    shipSystems: new ShipSystemsRuntime(scene, player, powerUpGroup, state.systems),
   };
 }

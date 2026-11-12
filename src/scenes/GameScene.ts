@@ -49,6 +49,7 @@ import type { SceneEventBinding } from './gameScene/sceneEvents';
 import { GameplayClock, runGameSceneUpdateFrame } from './gameScene/updateFrame';
 import { HitStop } from '@/systems/HitStop';
 import { getGameplayDifficultyTier } from '@/config/gameplayDifficulty';
+import type { ShipSystemsRuntime } from '@/systems/ShipSystemsRuntime';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
@@ -74,6 +75,7 @@ export class GameScene extends Phaser.Scene {
   private mobileControls: MobileControls | null = null;
   private scaledBossConfig: BossConfig | null = null;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
+  private shipSystems: ShipSystemsRuntime | null = null;
   private readonly flow = new GameSceneFlowController();
   private boss: Boss | null = null;
   private lastLifeHelperWing: LastLifeHelperWing | null = null;
@@ -147,6 +149,7 @@ export class GameScene extends Phaser.Scene {
     this.scoreManager = runtime.scoreManager;
     this.grazeSurge = runtime.grazeSurge;
     this.powerUpGroup = runtime.powerUpGroup;
+    this.shipSystems = runtime.shipSystems;
     this.effectsManager.attachEngine(this.player);
     this.hud = runtime.hud;
     this.warpTransition = runtime.warpTransition;
@@ -417,6 +420,7 @@ export class GameScene extends Phaser.Scene {
       player: this.player,
       getLastLifeHelperWing: () => this.lastLifeHelperWing,
       getPicketTurrets: () => this.picketTurrets,
+      getShipSystems: () => this.shipSystems,
       grazeSurge: this.grazeSurge,
       waveManager: this.waveManager,
       levelManager: this.levelManager,
@@ -424,6 +428,7 @@ export class GameScene extends Phaser.Scene {
       events: this.events,
       hud: this.hud,
       bulletPool: this.bulletPool,
+      findBulletTarget: (x, y) => this.enemyPool.findNearestEnemyAhead(x, y),
       effectsManager: this.effectsManager,
       getBoss: () => this.boss,
       updateHud: () => this.updateHud(),

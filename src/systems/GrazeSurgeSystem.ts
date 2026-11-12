@@ -19,7 +19,7 @@ export interface GrazeSurgeCallbacks {
 
 const GRAZE_RADIUS_SQUARED = 26 * 26;
 const SURGE_GAUGE_CAPACITY = 40;
-const SURGE_CLEAR_RADIUS_SQUARED = 220 * 220;
+const SURGE_CLEAR_RADIUS = 220;
 const BOSS_GRAZE_VALUE = 2;
 
 export const SURGE_SCORE_PER_BULLET = 25;
@@ -29,7 +29,14 @@ export class GrazeSurgeSystem {
   private bossActive = false;
   private readonly tracked = new Set<GrazeSurgeBullet>();
 
-  constructor(private readonly callbacks: GrazeSurgeCallbacks) {}
+  constructor(
+    private readonly callbacks: GrazeSurgeCallbacks,
+    /** Surge Core scales how much each graze charges and how far the pulse reaches. */
+    private readonly tuning: { grazeValueScale: number; clearRadiusScale: number } = {
+      grazeValueScale: 1,
+      clearRadiusScale: 1,
+    }
+  ) {}
 
   setBossActive(active: boolean): void {
     this.bossActive = active;
@@ -56,7 +63,10 @@ export class GrazeSurgeSystem {
       }
 
       this.tracked.add(bullet);
-      this.gauge = Math.min(SURGE_GAUGE_CAPACITY, this.gauge + (this.bossActive ? BOSS_GRAZE_VALUE : 1));
+      this.gauge = Math.min(
+        SURGE_GAUGE_CAPACITY,
+        this.gauge + (this.bossActive ? BOSS_GRAZE_VALUE : 1) * this.tuning.grazeValueScale
+      );
       this.callbacks.onGraze(bullet.x, bullet.y);
 
       if (this.gauge >= SURGE_GAUGE_CAPACITY) {
@@ -75,16 +85,16 @@ export class GrazeSurgeSystem {
     this.tracked.clear();
   }
 
-  private fireSurgePulse(player: GrazeSurgePosition): void {
-    this.gauge = 0;
-
+  /** Clears live enemy shots within `radius` of a point and returns how many (Bulwark, and the pulse). */
+  clearBulletsAround(center: GrazeSurgePosition, radius: number): number {
+    const radiusSquared = radius * radius;
     let clearedBullets = 0;
     for (const bullet of this.callbacks.getEnemyBullets()) {
       if (!bullet.active) {
         continue;
       }
 
-      if (distanceSquared(bullet, player) > SURGE_CLEAR_RADIUS_SQUARED) {
+      if (distanceSquared(bullet, center) > radiusSquared) {
         continue;
       }
 
@@ -92,6 +102,12 @@ export class GrazeSurgeSystem {
       clearedBullets += 1;
     }
 
+    return clearedBullets;
+  }
+
+  private fireSurgePulse(player: GrazeSurgePosition): void {
+    this.gauge = 0;
+    const clearedBullets = this.clearBulletsAround(player, SURGE_CLEAR_RADIUS * this.tuning.clearRadiusScale);
     this.callbacks.onSurgePulse(player.x, player.y, clearedBullets);
   }
 }

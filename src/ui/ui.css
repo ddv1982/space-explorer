@@ -2166,3 +2166,45 @@
     animation: none !important;
   }
 }
+
+/* ---------- ship system pick ---------- */
+.pick .ui-caption {
+  flex: none;
+}
+
+.pick .ui-heading {
+  --heading-size: 22px;
+  margin-bottom: 16px;
+}
+
+.pick__options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.pick__option.ui-btn {
+  --cut: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.pick__name {
+  font: 700 17px / 1 var(--f-display);
+  letter-spacing: 1px;
+  color: var(--t-title);
+}
+
+.pick__detail {
+  font-size: 13px;
+  line-height: 1.3;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  color: var(--t-secondary);
+}

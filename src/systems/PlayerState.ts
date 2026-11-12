@@ -1,6 +1,7 @@
 import type { GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { normalizeDeathCause } from './PlayerDamage';
 import { getUpgradeByKey, normalizeUpgradeLevel } from '../config/UpgradesConfig';
+import { NO_SHIP_SYSTEMS, normalizeShipSystems } from '@/config/shipSystems';
 import { normalizeAuthoredLevelNumber } from '../config/levels/selectors';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import type { PersistentHelperWingState, PlayerStateData, RunSummaryData } from './playerState/types';
@@ -71,6 +72,7 @@ function getDefaultPlayerState(): PlayerStateData {
       shield: 0,
       turrets: 0,
     },
+    systems: { ...NO_SHIP_SYSTEMS },
     helperWing: {
       slots: [],
       grantedSlots: 0,
@@ -151,6 +153,7 @@ export function normalizePersistedPlayerState(value: unknown): PlayerStateData {
       PLAYER_CONFIG.startingLives
     ),
     upgrades,
+    systems: normalizeShipSystems(value.systems),
     helperWing: normalizeHelperWingState(value.helperWing, maxHp),
   };
 }

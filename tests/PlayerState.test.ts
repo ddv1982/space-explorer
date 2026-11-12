@@ -48,6 +48,7 @@ describe('PlayerState schema behavior', () => {
         currentShields: 0,
         remainingLives: 3,
         upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
+        systems: { gun: null, support: null, late: null },
         helperWing: { slots: [], grantedSlots: 0 },
       });
       expect(registry.get('playerState')).toEqual(state);
@@ -71,6 +72,7 @@ describe('PlayerState schema behavior', () => {
         shield: 2.9,
         turrets: 1.9,
       },
+      systems: { gun: null, support: null, late: null },
       helperWing: {
         grantedSlots: Number.POSITIVE_INFINITY,
         slots: [null, { remainingLives: -3, hp: 2.6 }, []],
@@ -86,6 +88,7 @@ describe('PlayerState schema behavior', () => {
       currentShields: 8,
       remainingLives: 0,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 2, turrets: 1 },
+      systems: { gun: null, support: null, late: null },
       helperWing: {
         grantedSlots: 3,
         slots: [
@@ -133,6 +136,7 @@ describe('PlayerState schema behavior', () => {
     registry.set('playerState', {
       level: 3,
       upgrades: { shield: 1.8 },
+      systems: { gun: null, support: null, late: null },
       currentShields: 9,
       helperWing: { slots: [{}] },
     });
@@ -161,6 +165,7 @@ describe('PlayerState schema behavior', () => {
         shield: Number.MAX_VALUE,
         turrets: Number.MAX_VALUE,
       },
+      systems: { gun: null, support: null, late: null },
       helperWing: {
         grantedSlots: 1,
         slots: [{ remainingLives: Number.MAX_VALUE, hp: Number.MAX_VALUE }],
@@ -176,6 +181,7 @@ describe('PlayerState schema behavior', () => {
       currentShields: 8,
       remainingLives: 3,
       upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
+      systems: { gun: null, support: null, late: null },
       helperWing: {
         grantedSlots: 1,
         slots: [{ remainingLives: 3, hp: 15 }],
@@ -194,6 +200,7 @@ describe('PlayerState schema behavior', () => {
       currentShields: 2.9,
       remainingLives: 2.9,
       upgrades: { hp: 1.9, damage: 2.9, fireRate: 3.9, shield: 2.9, turrets: 1.9 },
+      systems: { gun: null, support: null, late: null },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2.9, hp: 6.9 }] },
     });
 
@@ -205,6 +212,7 @@ describe('PlayerState schema behavior', () => {
       currentShields: 2,
       remainingLives: 2,
       upgrades: { hp: 1, damage: 2, fireRate: 3, shield: 2, turrets: 1 },
+      systems: { gun: null, support: null, late: null },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 6 }] },
     });
   });
@@ -233,6 +241,7 @@ describe('PlayerState schema behavior', () => {
       currentShields: 3,
       remainingLives: 3,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 1, turrets: 0 },
+      systems: { gun: null, support: null, late: null },
       helperWing: { grantedSlots: 0, slots: [] },
     });
 
@@ -263,6 +272,7 @@ describe('PlayerState schema behavior', () => {
         shield: 2,
         turrets: 0,
       },
+      systems: { gun: null, support: null, late: null },
       helperWing: {
         grantedSlots: 0,
         slots: [],
@@ -290,6 +300,7 @@ describe('PlayerState schema behavior', () => {
         shield: 3,
         turrets: 1,
       },
+      systems: { gun: null, support: null, late: null },
       helperWing: {
         grantedSlots: 0,
         slots: [],
@@ -318,6 +329,7 @@ describe('PlayerState schema behavior', () => {
       currentShields: 0,
       remainingLives: 3,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 1 },
+      systems: { gun: null, support: null, late: null },
       helperWing: { slots: [], grantedSlots: 0 },
     });
     expect(getPlayerTurretTier(getPlayerState(registry))).toBe(1);
@@ -331,6 +343,7 @@ describe('PlayerState schema behavior', () => {
       currentShields: 0,
       remainingLives: 3,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 99 },
+      systems: { gun: null, support: null, late: null },
       helperWing: { slots: [], grantedSlots: 0 },
     });
     expect(getPlayerTurretTier(getPlayerState(registry))).toBe(2);

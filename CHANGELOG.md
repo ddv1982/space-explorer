@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [1.33.0] - 2026-11-12
 
+### Added
+
+- Ship systems: free picks at the refit bay that change how the ship plays, on top of the stat upgrades. You choose one of three after sector 2 (main gun), sector 5 (support) and sector 8 (doctrine). All of them work on their own, so touch and keyboard stay equal, and the first two sectors stay as gentle as before.
+  - Main gun: Lance (shots pierce every ship in a line), Scatter (three-way spread, strong up close) or Seekers (shots curve toward targets).
+  - Support: Magnet (pickups drift to you), Surge Core (close calls charge the surge faster and it reaches further) or Wingman (a drone adds a shot to every other volley).
+  - Doctrine: Overdrive (every chain step speeds up the gun), Bulwark (a shield hit clears nearby enemy shots) or Salvager (aces drop two pickups).
+- The pause panel names the systems the run has picked.
+
 ### Changed
 
 - Score and credits are separate. Score only goes up; upgrades are paid from credits, earned one per point, at the same prices as before. Buying upgrades used to lower your score, so a run that bought nothing ended higher than one that upgraded.

@@ -4,7 +4,9 @@ import { BULLET_SPEED } from '@/utils/constants';
 import { getActiveSection, getSectionProgress } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
 import { audioManager } from '@/systems/AudioManager';
-import { resolvePlayerFireCooldownMs } from '@/systems/chainOverdrive';
+import type { BulletBehaviour, BulletTargetFinder } from '@/entities/Bullet';
+import type { ShipSystems } from '@/config/shipSystems';
+import { fireMainGunVolley, resolveMainGunCooldownMs } from '@/systems/mainGun';
 import { GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
 import type { ChainState } from '@/systems/ScoreManager';
 import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
@@ -32,6 +34,7 @@ interface GameSceneGameplayFrameDelegate {
   player: {
     isAlive: boolean;
     fireRate: number;
+    systems: ShipSystems;
     getFireDirection(out: Phaser.Math.Vector2): Phaser.Math.Vector2;
     getMuzzlePosition(distance: number, out: Phaser.Math.Vector2): Phaser.Math.Vector2;
     update(inputManager: unknown, delta: number): void;
@@ -42,6 +45,7 @@ interface GameSceneGameplayFrameDelegate {
   getPicketTurrets(): {
     update(time: number): void;
   } | null;
+  getShipSystems?(): { update(): void } | null;
   grazeSurge: {
     update(): void;
   };
@@ -70,8 +74,10 @@ interface GameSceneGameplayFrameDelegate {
     updateBossHp(hp: number, maxHp: number): void;
   };
   bulletPool: {
-    fire(x: number, y: number, velocityX: number, velocityY: number): void;
+    fire(x: number, y: number, velocityX: number, velocityY: number, behaviour?: BulletBehaviour): void;
   };
+  /** The nearest live enemy to a point, for seeking shots. */
+  findBulletTarget: BulletTargetFinder;
   effectsManager: {
     createMuzzleFlash(x: number, y: number): void;
     updateLighting(delta: number): void;
@@ -101,6 +107,7 @@ export function createGameSceneGameplayFrameBehavior(
   type ActiveSection = ReturnType<typeof getActiveSection>;
 
   let lastFireTime = 0;
+  let volleyIndex = 0;
   let cachedLevelConfig: Parameters<typeof getActiveSection>[0] | null = null;
   let cachedSection: ActiveSection = null;
   let lastPresentedSection: ActiveSection | undefined;
@@ -131,9 +138,11 @@ export function createGameSceneGameplayFrameBehavior(
       return;
     }
 
-    const fireCooldown = resolvePlayerFireCooldownMs(
+    const systems = delegate.player.systems;
+    const fireCooldown = resolveMainGunCooldownMs(
       delegate.player.fireRate,
-      delegate.scoreManager.getChainState(time).multiplier
+      delegate.scoreManager.getChainState(time).multiplier,
+      systems
     );
     if (time <= lastFireTime + fireCooldown) {
       return;
@@ -146,7 +155,16 @@ export function createGameSceneGameplayFrameBehavior(
     const shotOrigin = delegate.player.getMuzzlePosition(20, delegate.shotOrigin);
     const muzzleFlashOrigin = delegate.player.getMuzzlePosition(24, delegate.muzzleFlashOrigin);
 
-    delegate.bulletPool.fire(shotOrigin.x, shotOrigin.y, shotDirection.x * shotSpeed, shotDirection.y * shotSpeed);
+    volleyIndex += 1;
+    fireMainGunVolley({
+      systems,
+      volleyIndex,
+      origin: shotOrigin,
+      direction: shotDirection,
+      speed: shotSpeed,
+      findTarget: delegate.findBulletTarget,
+      fire: (x, y, velocityX, velocityY, behaviour) => delegate.bulletPool.fire(x, y, velocityX, velocityY, behaviour),
+    });
     delegate.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
     audioManager.playSfx('playerShot');
   };
@@ -252,6 +270,7 @@ export function createGameSceneGameplayFrameBehavior(
     delegate.effectsManager.updateLighting(delta);
     delegate.getLastLifeHelperWing()?.update(time, delta);
     delegate.getPicketTurrets()?.update(time);
+    delegate.getShipSystems?.()?.update();
     delegate.grazeSurge.update();
 
     updatePlayerFiring(time);

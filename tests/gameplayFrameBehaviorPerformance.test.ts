@@ -65,6 +65,7 @@ function createHarness(level = 1): {
     player: {
       isAlive: true,
       fireRate: 100,
+      systems: { gun: null, support: null, late: null },
       getFireDirection: (out) => out,
       getMuzzlePosition: (_distance, out) => out,
       update: () => {},
@@ -96,6 +97,7 @@ function createHarness(level = 1): {
       hideBossBar: () => undefined,
       updateBossHp: () => {},
     },
+    findBulletTarget: () => null,
     bulletPool: { fire: () => {} },
     effectsManager: { createMuzzleFlash: () => {}, updateLighting: (delta) => lightingDeltas.push(delta) },
     getBoss: () => null,

@@ -71,6 +71,7 @@ function playerState(overrides: Partial<PlayerStateInput> = {}): PlayerStateInpu
     currentShields: 0,
     remainingLives: 3,
     upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
+    systems: { gun: null, support: null, late: null },
     helperWing: { grantedSlots: 0, slots: [] },
     ...overrides,
   };
@@ -125,6 +126,7 @@ describe('SaveSlotStorage', () => {
       currentShields: 1,
       remainingLives: 2,
       upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
+      systems: { gun: null, support: null, late: null },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 5 }] },
     });
 
@@ -154,6 +156,7 @@ describe('SaveSlotStorage', () => {
         currentShields: 1,
         remainingLives: 2,
         upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
+        systems: { gun: null, support: null, late: null },
         helperWing: { grantedSlots: 1, slots: [{ remainingLives: 2, hp: 5 }] },
       },
       { deathCause: 'beam' }
@@ -278,6 +281,7 @@ describe('SaveSlotStorage', () => {
           currentHp: 5,
           remainingLives: 2,
           upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 3 },
+          systems: { gun: null, support: null, late: null },
           helperWing: { grantedSlots: 0, slots: [] },
         },
         runSummary: { finalScore: 900, levelReached: 4 },
@@ -318,6 +322,7 @@ describe('SaveSlotStorage', () => {
           currentShields: max,
           remainingLives: max,
           upgrades: { hp: max, damage: max, fireRate: max, shield: max, turrets: max },
+          systems: { gun: null, support: null, late: null },
           helperWing: { grantedSlots: 1, slots: [{ remainingLives: max, hp: max }] },
         },
       },
@@ -332,6 +337,7 @@ describe('SaveSlotStorage', () => {
       currentShields: 8,
       remainingLives: 3,
       upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
+      systems: { gun: null, support: null, late: null },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 3, hp: 15 }] },
     });
     expect(readSaveSlot('slot-1')?.runSummary.finalScore).toBe(Number.MAX_SAFE_INTEGER);

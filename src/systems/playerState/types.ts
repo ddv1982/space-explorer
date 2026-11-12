@@ -1,6 +1,7 @@
 import type { DamageSource } from '../PlayerDamage';
 import type { PlayerUpgradeLevels } from '@/config/UpgradesConfig';
 import type { GameplayDifficultyTier } from '@/config/gameplayDifficulty';
+import type { ShipSystems } from '@/config/shipSystems';
 
 export interface PlayerStateData {
   level: number;
@@ -14,6 +15,8 @@ export interface PlayerStateData {
   currentShields: number;
   remainingLives: number;
   upgrades: PlayerUpgradeLevels;
+  /** Free picks from the refit bay that change how the ship plays. */
+  systems: ShipSystems;
   helperWing: PersistentHelperWingState;
 }
 

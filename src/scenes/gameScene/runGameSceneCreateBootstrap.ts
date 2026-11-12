@@ -61,6 +61,7 @@ export type GameSceneBootstrapRuntime = {
   scoreManager: ReturnType<typeof createPoolsAndGameplaySystems>['scoreManager'];
   grazeSurge: ReturnType<typeof createPoolsAndGameplaySystems>['grazeSurge'];
   powerUpGroup: ReturnType<typeof createPoolsAndGameplaySystems>['powerUpGroup'];
+  shipSystems: ReturnType<typeof createPoolsAndGameplaySystems>['shipSystems'];
   hud: ReturnType<typeof createHudAndTransitions>['hud'];
   warpTransition: ReturnType<typeof createHudAndTransitions>['warpTransition'];
   lastHudShieldCount: ReturnType<typeof createHudAndTransitions>['lastHudShieldCount'];
