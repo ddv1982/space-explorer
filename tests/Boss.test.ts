@@ -17,14 +17,19 @@ describe('Boss', () => {
       y: 80,
       targetY: 80,
       phaseStartedAt: 0,
+      phase: 1,
+      phase1Cooldown: 1800,
+      lastFireTime: 0,
       setVelocityY,
       updateMovement,
     });
 
-    boss.updateBehavior(500, 16);
+    boss.updateBehavior(5000, 16);
 
     expect(readPrivateState<boolean>(boss, 'arrived')).toBe(true);
-    expect(readPrivateState<number>(boss, 'phaseStartedAt')).toBe(500);
+    expect(readPrivateState<number>(boss, 'phaseStartedAt')).toBe(5000);
+    // A late arrival schedules the first volley one full wind-up out, not immediately.
+    expect(readPrivateState<number>(boss, 'lastFireTime')).toBe(5000 + 400 - 1800);
     expect(setVelocityY).toHaveBeenCalledWith(0);
     expect(updateMovement).not.toHaveBeenCalled();
   });

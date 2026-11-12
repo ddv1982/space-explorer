@@ -52,7 +52,7 @@ Per-level identity: each level keeps its `accentColor` from the level definition
 | Bomber | amber `#ffb14b` | heavy ordnance |
 | Gunship | blue `#63a4ff` | ranged |
 | Swarm | yellow `#ffff5d` | weak, numerous |
-| Enemy bullets / bombs | magenta-red `#ff4d8d` / amber | hostile fire |
+| Enemy bullets / bombs | magenta-red `#ff4d8d` / amber; bullets are ringed orbs (white core, bright ring, dark bands) so they read apart from stars in grayscale too | hostile fire |
 | Bosses | per-attack-style accent (existing palette, neon-ized) | set piece |
 | Asteroids | cool grey-violet wireframe | neutral hazard |
 | Power-ups | green health / blue shield / gold rapidfire, white halo | pickup |
@@ -113,5 +113,5 @@ Approved 2026-08 as a scoped exception to the procedural-only rule. The ten plan
 - Main and pause menus use the same settings surface: difficulty (low/normal/high), visual quality (auto/low), and creativity, energy, ambience, and music-volume sliders. Difficulty and music changes apply to the active runtime; difficulty changes forgiveness only and never encounter grammar. Main-menu quality changes persist and reload so generated assets share one profile. Pause-menu quality changes persist without discarding the run and clearly report that a restart is required. Storage failures remain non-fatal and leave the prior tier selected.
 - Pause separates checkpoint actions and settings into explicit subviews. Reopening pause deterministically starts on checkpoints; switching subviews or resizing never changes the physics/audio pause contract. Both subviews retain reachable controls in desktop, phone portrait, and phone landscape compositions.
 - Additive glow is expensive: cap simultaneous ADD-blend layers, keep halos inside texture canvases, prefer texture-baked glow over runtime filters for pooled objects.
-- Camera glow filter stays subtle (existing baseline). Per-object glow filters are reserved for the player and telegraphs; bosses use non-physical pooled shape rigs for cores, hardpoints, aura, shield, and guard-break state.
+- Camera glow filter stays subtle (existing baseline). Per-object glow filters are reserved for the player and telegraphs; bosses use non-physical pooled shape rigs for cores, hardpoints, aura, shield, and guard-break state. The core swells and the hardpoints flash white for the last 400 ms before every volley (`boss/attackWindup.ts`).
 - Generated textures are power-of-two where practical and reused via stable keys.

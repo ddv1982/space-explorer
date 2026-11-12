@@ -76,11 +76,17 @@ async function main(): Promise<void> {
     // A touch device autofires only while touch is the active input; tap once to hand it control.
     if (options.phone) await page.touchscreen.tap(195, 700);
 
-    const windows: RenderStats[] = [];
+    const windows: Array<RenderStats & { quality: number }> = [];
     for (let elapsed = 0; elapsed < options.seconds * 1000; elapsed += WINDOW_MS) {
       await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.renderStats.reset());
       await page.waitForTimeout(WINDOW_MS);
-      windows.push(await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.renderStats.read()));
+      windows.push(
+        await page.evaluate(() => {
+          const harness = window.__SPACE_EXPLORER_BROWSER_HARNESS__!;
+          // 0 is full effects; each step thins particles and trails (RuntimePerformanceBudget).
+          return { ...harness.renderStats.read(), quality: harness.snapshot().runtimePerformance.pressureLevel };
+        })
+      );
     }
 
     const total = windows.reduce(
@@ -103,6 +109,7 @@ async function main(): Promise<void> {
         'max ms': window.maxFrameMs,
         'max draws': window.maxDrawCalls,
         'p95 draws': window.p95DrawCalls,
+        'effects step': window.quality,
       }))
     );
     const share = total.frames > 0 ? ((total.slow / total.frames) * 100).toFixed(2) : '0';

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.31.0] - 2026-11-12
+
+### Changed
+
+- Enemy shots are ringed orbs: a white-hot core and a bright ring inside dark bands. In grayscale the old orbs looked like background stars; the ring sets them apart by shape and brightness as well as colour, which helps players with red-green colour blindness. Hitboxes are unchanged.
+- Bosses charge before every volley: for the last 400 ms the core swells and the hardpoints flash white, so each volley can be seen coming.
+- The profiler (`bun run perf:profile`) also reports the automatic effects step, and `docs/performance.md` records how the game was measured and the results, including a phone profile with the CPU slowed 4× and 10×.
+
 ## [1.30.1] - 2026-11-12
 
 ### Changed

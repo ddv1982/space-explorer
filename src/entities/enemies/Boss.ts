@@ -6,6 +6,7 @@ import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
 import { fireBossPattern } from './boss/attacks';
 import { getBossShieldActive, updateBossMovement } from './boss/behavior';
 import { resolveBossPhaseTransition } from './boss/phaseTransition';
+import { bossAttackWindup, firstVolleyLastFireTime } from './boss/attackWindup';
 import { getViewportBounds } from '../../utils/layout';
 import { bossTextureKey } from '../../config/shipyardSprites';
 import { BossVisualRig } from './boss/BossVisualRig';
@@ -36,6 +37,8 @@ export class Boss extends EnemyBase {
   private moveDir = 1;
   private moveSpeed = 80;
   private lastFireTime = 0;
+  /** 0-1 charge before the next volley, drawn by the visual rig. */
+  private attackWindup = 0;
   private phase1Cooldown = DEFAULT_BOSS_CONFIG.phase1Cooldown;
   private phase2Cooldown = DEFAULT_BOSS_CONFIG.phase2Cooldown;
   private phase2MoveSpeed = DEFAULT_BOSS_CONFIG.phase2MoveSpeed;
@@ -162,6 +165,7 @@ export class Boss extends EnemyBase {
       phase: this.phase,
       shieldActive: this.shieldActive,
       guardBroken: this.guardBroken,
+      windup: this.attackWindup,
     });
   }
 
@@ -171,6 +175,7 @@ export class Boss extends EnemyBase {
   }
 
   updateBehavior(time: number, delta: number): void {
+    this.attackWindup = 0;
     if (!this.arrived) {
       this.handleArrival(time);
       return;
@@ -185,6 +190,9 @@ export class Boss extends EnemyBase {
     this.updateShieldState(time);
 
     this.tryFirePattern(time);
+    if (this.getAttackRuntime().hasBulletGroup()) {
+      this.attackWindup = bossAttackWindup(time, this.lastFireTime, this.getCurrentAttackCooldown());
+    }
   }
 
   private resetCombatState(): void {
@@ -211,6 +219,7 @@ export class Boss extends EnemyBase {
 
     this.arrived = true;
     this.phaseStartedAt = time;
+    this.lastFireTime = firstVolleyLastFireTime(time, this.lastFireTime, this.getCurrentAttackCooldown());
     this.setVelocityY(0);
   }
 
