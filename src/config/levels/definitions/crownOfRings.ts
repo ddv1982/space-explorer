@@ -30,9 +30,9 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Umbral Ark',
-    maxHp: 2200,
-    phase1Cooldown: 920,
-    phase2Cooldown: 480,
+    maxHp: 1575,
+    phase1Cooldown: 1060,
+    phase2Cooldown: 550,
     phase2MoveSpeed: 180,
     phaseTransitionPauseMs: 300,
     attackStyle: 'carrier',
@@ -42,10 +42,6 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
     phase2SpiralShotCount: 5,
     phase2SpiralTurnRate: 96,
     phase2BulletSpeedScale: 1.04,
-    guardCapacity: 45,
-    guardDecayDelayMs: 1200,
-    guardDecayPerSecond: 16,
-    guardBreakDurationMs: 1800,
   },
   bossAddWaves: true,
   lastLifeHelperWing: {

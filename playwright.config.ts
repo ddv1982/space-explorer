@@ -41,6 +41,7 @@ export default defineConfig({
         '**/directRetry.spec.ts',
         '**/autoFire.spec.ts',
         '**/impactFeel.spec.ts',
+        '**/fairScoring.spec.ts',
         '**/renderBudget.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
@@ -59,6 +60,7 @@ export default defineConfig({
         '**/directRetry.spec.ts',
         '**/autoFire.spec.ts',
         '**/impactFeel.spec.ts',
+        '**/fairScoring.spec.ts',
       ],
       use: {
         viewport: { width: 390, height: 844 },

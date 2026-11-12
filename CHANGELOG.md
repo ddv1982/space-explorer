@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.0] - 2026-11-12
+
+### Changed
+
+- Score and credits are separate. Score only goes up; upgrades are paid from credits, earned one per point, at the same prices as before. Buying upgrades used to lower your score, so a run that bought nothing ended higher than one that upgraded.
+- The end screens keep your best score per difficulty and say when a run sets a new best. The best is stored in your browser only and is never sent anywhere. Saves from earlier versions load with credits equal to their score.
+
+### Removed
+
+- Guard Break is gone from the six late bosses: the second bar, the stun and the double-damage window. Their health is 28% lower and their volleys 15% further apart, so fights stay about as long and no harder. The wind-up before each volley now carries the rhythm of boss fights.
+
 ## [1.32.0] - 2026-11-12
 
 ### Added

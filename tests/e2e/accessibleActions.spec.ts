@@ -166,7 +166,8 @@ test('native intermission buttons purchase only their named upgrade and continue
   await flushKeyboardQueue(page);
   expect(await readPersistedRun(page)).toMatchObject({
     level: 1,
-    score: 7200,
+    score: 8000,
+    creditsSpent: 800,
     upgrades: { hp: 0, damage: 1, fireRate: 0 },
   });
   await page.getByRole('button', { name: 'Buy HULL ARMOR', exact: true }).focus();
@@ -177,7 +178,8 @@ test('native intermission buttons purchase only their named upgrade and continue
   await flushKeyboardQueue(page);
   expect(await readPersistedRun(page)).toMatchObject({
     level: 1,
-    score: 6700,
+    score: 8000,
+    creditsSpent: 1300,
     upgrades: { hp: 1, damage: 1, fireRate: 0 },
   });
 
@@ -186,7 +188,8 @@ test('native intermission buttons purchase only their named upgrade and continue
   await flushKeyboardQueue(page);
   expect(await readPersistedRun(page)).toMatchObject({
     level: 2,
-    score: 6700,
+    score: 8000,
+    creditsSpent: 1300,
     upgrades: { hp: 1, damage: 1, fireRate: 0 },
   });
   await expect(page.getByRole('region', { name: 'Planet intermission' })).toHaveCount(0);

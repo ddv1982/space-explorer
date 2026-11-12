@@ -116,7 +116,7 @@ interface RefitViewConfig {
   profile: PlanetIntermissionProfile;
   level: number;
   totalLevels: number;
-  score: number;
+  credits: number;
   /** Null once the final sector is cleared: no refit, straight on to the campaign record. */
   nextLevelName: string | null;
   continueLabel: string;
@@ -130,7 +130,7 @@ export interface RefitView {
   /** The square the canvas planet fills. */
   planetSlot: HTMLElement;
   /** New balance and evaluations after a purchase: refreshes every card and announces the result. */
-  refresh: (score: number, evaluations: UpgradeEvaluation[], purchased: UpgradeKey, message: string) => void;
+  refresh: (credits: number, evaluations: UpgradeEvaluation[], purchased: UpgradeKey, message: string) => void;
   /** Arrow keys and Enter / Space while no card holds focus; returns whether the key was used. */
   handleUnfocusedKey: (code: string) => boolean;
   /** Fades the UI out under the warp. */
@@ -145,7 +145,7 @@ export interface RefitView {
 export function createRefitView(config: RefitViewConfig): RefitView {
   const accent = config.levelConfig.planetPalette[1];
   const sector = `SECTOR ${String(config.level).padStart(2, '0')} / ${String(config.totalLevels).padStart(2, '0')}`;
-  const credits = h('span', { className: 'ui-card refit__credits' }, `CREDITS ${config.score}`);
+  const credits = h('span', { className: 'ui-card refit__credits' }, `CREDITS ${config.credits}`);
   const cards = config.evaluations.map((evaluation) => createUpgradeCard(evaluation, config.onBuy));
   cards.forEach((card, index) => card.refresh(config.evaluations[index]));
   const grid = h('div', { className: 'refit__cards' }, ...cards.map((card) => card.button));
@@ -235,7 +235,7 @@ export function createRefitView(config: RefitViewConfig): RefitView {
 
   return {
     planetSlot,
-    refresh(score, next, purchased, message) {
+    refresh(creditsLeft, next, purchased, message) {
       evaluations = next;
       const index = next.findIndex((evaluation) => evaluation.upgrade.key === purchased);
       const hadFocus = focusedIndex() === index;
@@ -243,7 +243,7 @@ export function createRefitView(config: RefitViewConfig): RefitView {
         card.refresh(next[cardIndex]);
         card.fit();
       });
-      credits.textContent = `CREDITS ${score}`;
+      credits.textContent = `CREDITS ${creditsLeft}`;
       replay(credits, 'data-pulse');
       if (cards[index]) replay(cards[index].button, 'data-flash');
       status.textContent = message;

@@ -8,6 +8,12 @@ export function formatScore(score: number): string {
 }
 
 /** Glass cell in one accent: a small tracked label over a large numeral, with an optional note beside it. */
+/** The line under a final score: a new best, or the best to beat. Empty before any score exists. */
+export function bestScoreNote(best: number, isNewBest: boolean): string | undefined {
+  if (best <= 0) return undefined;
+  return isNewBest ? 'NEW BEST' : `BEST ${formatScore(best)}`;
+}
+
 export function statCell(
   label: string,
   value: string,

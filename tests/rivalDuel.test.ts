@@ -132,7 +132,7 @@ describe('rival duel hold', () => {
     let duel: { hp: number; maxHp: number } | null = { hp: 30, maxHp: 30 };
     const waveUpdate = mock();
     const levelUpdate = mock();
-    const hud = { showBossBar: mock(), hideBossBar: mock(), updateBossHp: mock(), updateBossGuard: mock() };
+    const hud = { showBossBar: mock(), hideBossBar: mock(), updateBossHp: mock() };
     const emit = mock();
     const noop = (): void => {};
     const behavior = createGameSceneGameplayFrameBehavior({

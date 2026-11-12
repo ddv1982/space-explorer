@@ -2,7 +2,6 @@
 export const HIT_STOP_MS = {
   aceKill: 40,
   playerHullHit: 50,
-  bossGuardBreak: 60,
   bossPhaseChange: 70,
   bossDefeat: 100,
 } as const;

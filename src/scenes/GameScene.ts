@@ -20,6 +20,7 @@ import type { ParallaxBackground } from '@/systems/ParallaxBackground';
 import type { PicketTurretSystem } from '@/systems/PicketTurretSystem';
 import {
   getPlayerState,
+  noteRunDifficulty,
   saveHelperWingState,
   setPlayerState,
   setRunSummary,
@@ -47,6 +48,7 @@ import { runGameSceneCreateBootstrap, type GameSceneBootstrapRuntime } from './g
 import type { SceneEventBinding } from './gameScene/sceneEvents';
 import { GameplayClock, runGameSceneUpdateFrame } from './gameScene/updateFrame';
 import { HitStop } from '@/systems/HitStop';
+import { getGameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
@@ -164,6 +166,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private initializePlayerRunState(): ReturnType<typeof getPlayerState> {
+    noteRunDifficulty(this.registry, getGameplayDifficultyTier());
     const state = getPlayerState(this.registry);
     this.flow.reset(state.remainingLives);
     this.flow.setRespawnFrameProbeEnabled(resolveRespawnFrameProbeEnabled());
@@ -220,7 +223,6 @@ export class GameScene extends Phaser.Scene {
       { event: GAME_SCENE_EVENTS.eliteWave, handler: handlers.handleEliteWave },
       { event: GAME_SCENE_EVENTS.bossDeath, handler: handlers.handleBossDeath },
       { event: GAME_SCENE_EVENTS.bossPhaseChange, handler: handlers.handleBossPhaseChange },
-      { event: GAME_SCENE_EVENTS.bossGuardBreak, handler: handlers.handleBossGuardBreak },
       { event: GAME_SCENE_EVENTS.helperWingActivated, handler: handlers.handleHelperWingActivated },
       { event: GAME_SCENE_EVENTS.helperWingDepleted, handler: handlers.handleHelperWingDepleted },
       { event: GAME_SCENE_EVENTS.playerBulletTrail, handler: handlers.handlePlayerBulletTrail },

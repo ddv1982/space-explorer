@@ -87,13 +87,20 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
   expect(state?.startingPersistedPlayerState).toEqual({
     level: 1,
     score: 0,
+    creditsSpent: 0,
+    easiestDifficulty: 'low',
     currentHp: 5,
     remainingLives: 3,
     currentShields: 0,
     upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
     helperWing: { grantedSlots: 0, slots: [] },
   });
-  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)))).toEqual(storedBefore);
+  // Retry changes nothing that was stored, apart from recording the lost run's score as the best.
+  const { 'space-explorer.personalBest.v1': personalBest, ...storedAfter } = await page.evaluate(() =>
+    Object.fromEntries(Object.entries(localStorage))
+  );
+  expect(storedAfter).toEqual(storedBefore);
+  expect(JSON.parse(personalBest)).toEqual({ low: 9500, normal: 0, high: 0 });
   await gameOver(page);
   await expect(gameOverRegion(page).getByRole('status')).toContainText('Final score 0. Reached level 1.');
   await activate(page, 'MENU');

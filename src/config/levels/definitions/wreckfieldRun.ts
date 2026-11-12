@@ -30,9 +30,9 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Bastion Bulwark',
-    maxHp: 2100,
-    phase1Cooldown: 1000,
-    phase2Cooldown: 520,
+    maxHp: 1500,
+    phase1Cooldown: 1150,
+    phase2Cooldown: 600,
     phase2MoveSpeed: 150,
     phaseTransitionPauseMs: 300,
     attackStyle: 'bulwark',
@@ -42,10 +42,6 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
     phase2SpiralShotCount: 4,
     phase2SpiralTurnRate: 86,
     phase2BulletSpeedScale: 1.0,
-    guardCapacity: 35,
-    guardDecayDelayMs: 1200,
-    guardDecayPerSecond: 12,
-    guardBreakDurationMs: 1800,
   },
   lastLifeHelperWing: {
     shipCount: 2,

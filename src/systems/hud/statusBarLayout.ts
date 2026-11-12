@@ -9,7 +9,6 @@ export const HULL_CELL_HEIGHT = 10;
 export const SURGE_BAR_HEIGHT = 3;
 export const RESERVE_ICON_HEIGHT = 9;
 export const BOSS_BAR_HEIGHT = 12;
-export const BOSS_GUARD_HEIGHT = 4;
 
 /**
  * Where every HUD instrument sits. Two floating clusters hold the top corners (hull, surge, shields and

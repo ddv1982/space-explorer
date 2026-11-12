@@ -2,11 +2,13 @@ import Phaser from 'phaser';
 import { getLevelConfig } from '../config/LevelsConfig';
 import { audioManager } from '../systems/AudioManager';
 import { ParallaxBackground } from '../systems/ParallaxBackground';
-import { getRunSummary } from '../systems/PlayerState';
+import { getPlayerState, getRunSummary } from '../systems/PlayerState';
 import { getViewportLayout } from '../utils/layout';
 import { isTouchMobileDevice } from '../utils/device';
 import { h, liveRegion, mountUiLayer } from '../ui/dom';
-import { countUp, formatScore, statCell } from '../ui/summary';
+import { bestScoreNote, countUp, formatScore, statCell } from '../ui/summary';
+import { getGameplayDifficultyTier } from '../config/gameplayDifficulty';
+import { recordRunScore } from '../config/personalBest';
 import { startFreshRun } from './shared/startRun';
 import { getDeathCauseText } from './gameOverScene/deathCause';
 import { addDriftingMotes, addEdgeVignette } from './shared/runSummaryPresentation';
@@ -53,10 +55,11 @@ export class GameOverScene extends Phaser.Scene {
     addDriftingMotes(this, bounds, [0xff5a55, 0xff8a4a, 0xffc36e], 1);
 
     const cause = getDeathCauseText(runSummary.deathCause);
-    const nextGoal =
-      runSummary.finalScore > 0
-        ? `NEXT RUN: BEAT ${runSummary.finalScore}`
-        : `NEXT RUN: CLEAR LEVEL ${runSummary.levelReached}`;
+    const { best, isNewBest } = recordRunScore(
+      runSummary.finalScore,
+      getPlayerState(this.registry).easiestDifficulty ?? getGameplayDifficultyTier()
+    );
+    const nextGoal = best > 0 ? `NEXT RUN: BEAT ${best}` : `NEXT RUN: CLEAR LEVEL ${runSummary.levelReached}`;
 
     const activate = (action: TerminalAction): void => {
       if (this.transitionQueued) return;
@@ -72,7 +75,7 @@ export class GameOverScene extends Phaser.Scene {
     retry.addEventListener('click', () => activate('retry'));
     menu.addEventListener('click', () => activate('menu'));
 
-    const score = statCell('SCORE', formatScore(runSummary.finalScore), '255 210 122');
+    const score = statCell('SCORE', formatScore(runSummary.finalScore), '255 210 122', bestScoreNote(best, isNewBest));
     const sector = statCell(
       'SECTOR REACHED',
       String(runSummary.levelReached).padStart(2, '0'),

@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { noteRunDifficulty } from '@/systems/PlayerState';
 import { setGameplayDifficultyTier, type GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { setVisualQualityTier, type VisualQualityTier } from '@/config/visualQuality';
 import { createArmingAction } from '@/systems/armingAction';
@@ -222,6 +223,7 @@ export class PauseStateController {
   private handleDifficultyRequested(tier: GameplayDifficultyTier): boolean {
     this.playClick?.();
     const ok = setGameplayDifficultyTier(tier);
+    if (ok && this.scene) noteRunDifficulty(this.scene.registry, tier);
     this.statusMessage = ok
       ? `Difficulty set to ${tier.toUpperCase()}.`
       : 'Unable to save difficulty in this browser context.';

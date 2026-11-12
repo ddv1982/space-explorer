@@ -156,7 +156,6 @@ describe('Boss', () => {
       arrived: true,
       scene: { physics: { world } },
       visualRig: { update: mock() },
-      updateGuardState: () => false,
       updateMovement: mock(),
       updatePhaseState,
       updateShieldState,

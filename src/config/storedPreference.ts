@@ -9,6 +9,11 @@ export interface StoredPreference<T> {
    * choice holds for this visit; an explicit storage is only written.
    */
   set(value: T, storage?: PreferenceStorage | null): T;
+  /**
+   * Re-reads the browser's value, for a value another tab may have changed. Without usable storage the
+   * remembered value is kept.
+   */
+  reload(): T;
 }
 
 function browserStorage(): PreferenceStorage | null {
@@ -39,6 +44,11 @@ export function createStoredPreference<T>(key: string, parse: (stored: unknown) 
       if (storage !== undefined) return read(storage);
       remembered ??= { value: read(browserStorage()) };
       return remembered.value;
+    },
+    reload() {
+      const storage = browserStorage();
+      if (storage) remembered = { value: read(storage) };
+      return this.get();
     },
     set(value, storage) {
       const browser = storage === undefined;

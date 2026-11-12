@@ -42,11 +42,6 @@ export interface BossConfig {
   phase2SpiralShotCount: number;
   phase2SpiralTurnRate: number;
   phase2BulletSpeedScale: number;
-  /** Main-player damage required to trigger Guard Break. Omit to disable. */
-  guardCapacity?: number;
-  guardDecayDelayMs?: number;
-  guardDecayPerSecond?: number;
-  guardBreakDurationMs?: number;
 }
 
 export interface LastLifeHelperWingConfig {
