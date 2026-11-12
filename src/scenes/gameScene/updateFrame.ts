@@ -21,9 +21,8 @@ export function runGameSceneUpdateFrame(
   delegate.handlePauseInput();
 
   // A hit-stop freezes gameplay like a pause does; presentation keeps running through either.
-  const otherHoldActive = delegate.isPausedOrLockedFrame();
-  const hitStopFreezing = hitStop?.advance(delta, otherHoldActive) ?? false;
-  if (otherHoldActive || hitStopFreezing) {
+  const hitStopFreezing = hitStop?.advance(delta) ?? false;
+  if (delegate.isPausedOrLockedFrame() || hitStopFreezing) {
     delegate.updatePausedFrame(delta);
     return;
   }

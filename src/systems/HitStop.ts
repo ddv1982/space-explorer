@@ -12,6 +12,8 @@ export interface HitStopPhysics {
   isPaused(): boolean;
   pause(): void;
   resume(): void;
+  /** True while another owner (the pause menu, the respawn pause) holds physics and will resume it. */
+  isHeldElsewhere(): boolean;
 }
 
 /**
@@ -21,7 +23,8 @@ export interface HitStopPhysics {
  * together. Music, input, the HUD and presentation tweens keep running.
  *
  * It never takes physics from another owner: a stop is ignored while the world is already paused, and
- * when it ends during a pause or a gameplay lock it leaves resuming to that owner.
+ * when it ends while the pause menu or the respawn pause holds physics it leaves resuming to that
+ * owner. Locks that keep physics running (level complete, warp) do not delay the resume.
  */
 export class HitStop {
   private remainingMs = 0;
@@ -41,14 +44,14 @@ export class HitStop {
 
   /**
    * Spends this frame's real time and reports whether gameplay stays frozen. Once the stop has run
-   * out it resumes physics, unless a pause or lock (`otherHoldActive`) owns the frame by then; it then
-   * releases on the first frame after that hold clears, if the world is still paused.
+   * out it resumes physics, unless another owner holds physics by then; it then lets go on the first
+   * frame after that owner is done, resuming only if the world is still paused.
    */
-  advance(realDeltaMs: number, otherHoldActive: boolean): boolean {
+  advance(realDeltaMs: number): boolean {
     if (!this.holding) return false;
     this.remainingMs = Math.max(0, this.remainingMs - (Number.isFinite(realDeltaMs) ? realDeltaMs : 0));
     if (this.remainingMs > 0) return true;
-    if (otherHoldActive) return false;
+    if (this.physics.isHeldElsewhere()) return false;
     if (this.physics.isPaused()) this.physics.resume();
     this.holding = false;
     return false;

@@ -4,6 +4,7 @@ import { HitStop } from '../src/systems/HitStop';
 function createPhysics(paused = false) {
   const physics = {
     paused,
+    heldElsewhere: false,
     pauses: 0,
     resumes: 0,
     isPaused: () => physics.paused,
@@ -15,6 +16,7 @@ function createPhysics(paused = false) {
       physics.paused = false;
       physics.resumes += 1;
     },
+    isHeldElsewhere: () => physics.heldElsewhere,
   };
   return physics;
 }
@@ -23,7 +25,7 @@ describe('HitStop', () => {
   test('does nothing until triggered', () => {
     const physics = createPhysics();
     const hitStop = new HitStop(physics);
-    expect(hitStop.advance(16, false)).toBe(false);
+    expect(hitStop.advance(16)).toBe(false);
     expect(physics.pauses).toBe(0);
   });
 
@@ -32,9 +34,9 @@ describe('HitStop', () => {
     const hitStop = new HitStop(physics);
     hitStop.trigger(40);
     expect(physics.paused).toBe(true);
-    expect(hitStop.advance(16, false)).toBe(true);
-    expect(hitStop.advance(16, false)).toBe(true);
-    expect(hitStop.advance(16, false)).toBe(false);
+    expect(hitStop.advance(16)).toBe(true);
+    expect(hitStop.advance(16)).toBe(true);
+    expect(hitStop.advance(16)).toBe(false);
     expect(physics.paused).toBe(false);
     expect(hitStop.isActive()).toBe(false);
   });
@@ -43,10 +45,10 @@ describe('HitStop', () => {
     const physics = createPhysics();
     const hitStop = new HitStop(physics);
     hitStop.trigger(60);
-    hitStop.advance(20, false);
+    hitStop.advance(20);
     hitStop.trigger(30);
-    expect(hitStop.advance(20, false)).toBe(true);
-    expect(hitStop.advance(20, false)).toBe(false);
+    expect(hitStop.advance(20)).toBe(true);
+    expect(hitStop.advance(20)).toBe(false);
     expect(physics.pauses).toBe(1);
     expect(physics.resumes).toBe(1);
   });
@@ -56,33 +58,34 @@ describe('HitStop', () => {
     const hitStop = new HitStop(physics);
     hitStop.trigger(50);
     expect(hitStop.isActive()).toBe(false);
-    expect(hitStop.advance(16, true)).toBe(false);
+    expect(hitStop.advance(16)).toBe(false);
     expect(physics.paused).toBe(true);
     expect(physics.resumes).toBe(0);
   });
 
-  test('ending during a pause or lock leaves resuming to that owner', () => {
+  test('a lock that keeps physics running (level complete) does not delay the resume', () => {
     const physics = createPhysics();
     const hitStop = new HitStop(physics);
-    hitStop.trigger(20);
-    // A fatal hit locks gameplay for the death transition before the stop runs out.
-    expect(hitStop.advance(30, true)).toBe(false);
-    expect(physics.paused).toBe(true);
-    expect(hitStop.isActive()).toBe(true);
-    // The respawn flow resumes physics itself when its lock ends; the stop then just lets go.
-    physics.resume();
-    expect(hitStop.advance(16, false)).toBe(false);
-    expect(hitStop.isActive()).toBe(false);
-    expect(physics.resumes).toBe(1);
+    hitStop.trigger(100); // boss defeat, then the level-complete transition locks gameplay
+    expect(hitStop.advance(60)).toBe(true);
+    expect(hitStop.advance(60)).toBe(false);
+    expect(physics.paused).toBe(false);
   });
 
-  test('resumes after a lock that left physics paused', () => {
+  test('ending while the pause menu or respawn pause holds physics leaves resuming to that owner', () => {
     const physics = createPhysics();
     const hitStop = new HitStop(physics);
     hitStop.trigger(20);
-    hitStop.advance(30, true);
-    expect(hitStop.advance(16, false)).toBe(false);
-    expect(physics.paused).toBe(false);
+    physics.heldElsewhere = true; // the player paused mid-freeze
+    expect(hitStop.advance(30)).toBe(false);
+    expect(physics.paused).toBe(true);
+    expect(physics.resumes).toBe(0);
+    // Unpausing resumes physics through the pause menu; the stop then just lets go.
+    physics.heldElsewhere = false;
+    physics.resume();
+    expect(hitStop.advance(16)).toBe(false);
+    expect(hitStop.isActive()).toBe(false);
+    expect(physics.resumes).toBe(1);
   });
 
   test('ignores empty triggers and forgets state on reset', () => {

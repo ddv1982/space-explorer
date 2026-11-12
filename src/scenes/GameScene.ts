@@ -86,6 +86,8 @@ export class GameScene extends Phaser.Scene {
     isPaused: () => this.physics.world.isPaused,
     pause: () => this.physics.world.pause(),
     resume: () => this.physics.world.resume(),
+    isHeldElsewhere: () =>
+      Boolean(this.pauseStateController?.isGameplayPaused()) || Boolean(this.flow?.isRespawnScenePaused()),
   });
   private readonly sceneEventBindings: SceneEventBinding[] = [];
   private readonly runtimeLifecycle = this.createRuntimeLifecycle();

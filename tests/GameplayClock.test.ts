@@ -56,6 +56,7 @@ describe('GameplayClock', () => {
       isPaused: () => paused,
       pause: () => (paused = true),
       resume: () => (paused = false),
+      isHeldElsewhere: () => false,
     });
     const calls: string[] = [];
     const delegate: GameSceneFrameDelegate = {
