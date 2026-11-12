@@ -1,4 +1,4 @@
-import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
+import { expect, loseTheRun, openMenu, pinQualityTier, startNewRun, test, waitForScene, type Page } from './fixtures';
 
 async function readRunSeed(page: Page): Promise<number> {
   return page.evaluate(() => {
@@ -15,18 +15,9 @@ async function readRunSeed(page: Page): Promise<number> {
   });
 }
 
-async function loseTheRun(page: Page): Promise<void> {
-  for (let life = 0; life < 6 && !(await snapshot(page)).activeScenes.includes('GameOver'); life += 1) {
-    await page
-      .evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.probeAcceptedPlayerDamage(999))
-      .catch(() => undefined);
-    await page.waitForTimeout(2_500);
-  }
-  await waitForScene(page, 'GameOver');
-}
-
 test('RETRY replays the same run seed and NEW RUN starts a different one', async ({ page, assertNoBrowserErrors }) => {
-  test.setTimeout(120_000);
+  // Two full runs are lost here; CI's software renderer needs the room.
+  test.setTimeout(420_000);
   await pinQualityTier(page, 'low');
   await openMenu(page);
   await startNewRun(page);
