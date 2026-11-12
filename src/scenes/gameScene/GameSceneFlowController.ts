@@ -87,6 +87,11 @@ export class GameSceneFlowController {
     return this.gameOver || this.respawnInProgress || this.terminalTransitionState !== TERMINAL_TRANSITIONS.none;
   }
 
+  /** True while the respawn flow holds physics paused; it resumes physics itself when done. */
+  isRespawnScenePaused(): boolean {
+    return this.respawnScenePaused;
+  }
+
   isTerminalTransitionActive(): boolean {
     return this.terminalTransitionState !== TERMINAL_TRANSITIONS.none;
   }

@@ -10,7 +10,8 @@ import { scaleUiGlowAlpha } from '../utils/renderingCompat';
 import { h, liveRegion, measureInGame, mountUiLayer } from '../ui/dom';
 import { countUp, formatScore, statCell } from '../ui/summary';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
-import { NEON, prefersReducedMotion } from './shared/neonUiTheme';
+import { NEON } from './shared/neonUiTheme';
+import { prefersReducedMotion } from '../utils/device';
 import { registerRestartOnResize } from './shared/registerRestartOnResize';
 import { addDriftingMotes, addEdgeVignette } from './shared/runSummaryPresentation';
 

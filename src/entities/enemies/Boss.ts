@@ -12,6 +12,7 @@ import { bossTextureKey } from '../../config/shipyardSprites';
 import { BossVisualRig } from './boss/BossVisualRig';
 import { advanceBossGuard, applyBossGuardHit } from './boss/BossGuardController';
 import { BossAttackRuntime } from './boss/BossAttackRuntime';
+import { shakeCamera } from '@/systems/effects/cameraShake';
 
 const DEFAULT_BOSS_CONFIG: BossConfig = {
   name: 'Dreadnought Core',
@@ -432,7 +433,7 @@ export class Boss extends EnemyBase {
     this.invalidateHitFlash();
     this.setTint(0xff0000);
     this.setTintMode(Phaser.TintModes.MULTIPLY);
-    this.scene.cameras.main.shake(300, 0.02);
+    shakeCamera(this.scene, 300, 0.02);
     this.scene.time.delayedCall(300, this.restoreTintAfterPhaseChangeFlash, [flashToken], this);
   }
 

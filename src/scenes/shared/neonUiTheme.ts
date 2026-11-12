@@ -60,10 +60,6 @@ export function neonReadoutStyle(
   return { fontSize: `${fontSize}px`, color, fontFamily: NEON_FONT.mono };
 }
 
-export function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-}
-
 function getMenuAtmosphere(): number {
   return getVisualQualityProfile().menuAtmosphere;
 }

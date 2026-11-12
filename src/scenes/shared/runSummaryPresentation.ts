@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { getVisualQualityProfile } from '../../config/visualQuality';
 import { generateEffectsParticleTextures, PARTICLE } from '../../systems/effects/particleTextureFactory';
 import { withCanvasTexture } from '../../utils/generatedTexture';
-import { prefersReducedMotion } from './neonUiTheme';
+import { prefersReducedMotion } from '../../utils/device';
 
 /** Canvas atmosphere shared by the run-summary screens (Game Over and Victory). */
 

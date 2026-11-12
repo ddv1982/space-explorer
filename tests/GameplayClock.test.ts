@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { GameplayClock } from '../src/systems/GameplayClock';
 import { runGameSceneUpdateFrame, type GameSceneFrameDelegate } from '../src/scenes/gameScene/updateFrame';
 import { ScoreManager } from '../src/systems/ScoreManager';
+import { HitStop } from '../src/systems/HitStop';
 
 describe('GameplayClock', () => {
   test('advances only when asked and ignores negative deltas', () => {
@@ -46,5 +47,65 @@ describe('GameplayClock', () => {
     runGameSceneUpdateFrame(delegate, 50_016, 16, clock);
     expect(scoreManager.getChainState(clock.now).chain).toBe(1);
     expect(calls).toEqual(['play:16', 'paused:16', 'play:32']);
+  });
+
+  test('a hit-stop freezes the gameplay clock and gameplay frames, then real time resumes', () => {
+    const clock = new GameplayClock();
+    let paused = false;
+    const hitStop = new HitStop({
+      isPaused: () => paused,
+      pause: () => (paused = true),
+      resume: () => (paused = false),
+      isHeldElsewhere: () => false,
+    });
+    const calls: string[] = [];
+    const delegate: GameSceneFrameDelegate = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => false,
+      updatePausedFrame: () => calls.push('frozen'),
+      updateGameplayFrame: (time) => calls.push(`gameplay:${time}`),
+      updateHud: () => {},
+    };
+
+    runGameSceneUpdateFrame(delegate, 0, 16, clock, hitStop);
+    hitStop.trigger(40);
+    runGameSceneUpdateFrame(delegate, 16, 16, clock, hitStop);
+    runGameSceneUpdateFrame(delegate, 32, 16, clock, hitStop);
+    runGameSceneUpdateFrame(delegate, 48, 16, clock, hitStop);
+    runGameSceneUpdateFrame(delegate, 64, 16, clock, hitStop);
+
+    expect(calls).toEqual(['gameplay:16', 'frozen', 'frozen', 'gameplay:32', 'gameplay:48']);
+    expect(paused).toBe(false);
+  });
+
+  test('unpausing mid-freeze restarts gameplay frames on the same frame as physics', () => {
+    const clock = new GameplayClock();
+    let paused = false;
+    let menuOpen = false;
+    const hitStop = new HitStop({
+      isPaused: () => paused,
+      pause: () => (paused = true),
+      resume: () => (paused = false),
+      isHeldElsewhere: () => menuOpen,
+    });
+    const calls: string[] = [];
+    const delegate: GameSceneFrameDelegate = {
+      handlePauseInput: () => {},
+      isPausedOrLockedFrame: () => menuOpen,
+      updatePausedFrame: () => calls.push(paused ? 'frozen' : 'frozen-but-physics-running'),
+      updateGameplayFrame: () => calls.push(paused ? 'gameplay-but-physics-paused' : 'gameplay'),
+      updateHud: () => {},
+    };
+
+    hitStop.trigger(100);
+    runGameSceneUpdateFrame(delegate, 0, 16, clock, hitStop);
+    menuOpen = true; // pause menu opens; physics is already paused, so it leaves it alone
+    runGameSceneUpdateFrame(delegate, 16, 16, clock, hitStop);
+    menuOpen = false; // closing the menu resumes physics (PauseStateController.syncGameplayPauseState)
+    paused = false;
+    runGameSceneUpdateFrame(delegate, 32, 16, clock, hitStop);
+
+    expect(calls).toEqual(['frozen', 'frozen', 'gameplay']);
+    expect(hitStop.isActive()).toBe(false);
   });
 });

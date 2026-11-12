@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { NEON_TEXT, neonLabelStyle, prefersReducedMotion } from '../../scenes/shared/neonUiTheme';
+import { NEON_TEXT, neonLabelStyle } from '../../scenes/shared/neonUiTheme';
+import { prefersReducedMotion } from '../../utils/device';
 import { withCanvasTexture } from '../../utils/generatedTexture';
 import { getViewportBounds } from '../../utils/layout';
 

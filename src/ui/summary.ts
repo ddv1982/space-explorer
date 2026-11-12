@@ -1,4 +1,4 @@
-import { prefersReducedMotion } from '../scenes/shared/neonUiTheme';
+import { prefersReducedMotion } from '../utils/device';
 import { h } from './dom';
 
 /** Shared parts of the run-summary screens (Game Over and Victory). */

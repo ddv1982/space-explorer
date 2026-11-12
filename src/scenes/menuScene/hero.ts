@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { bankToFrame, PLAYER_SPRITE } from '../../config/shipyardSprites';
 import { getVisualQualityProfile } from '../../config/visualQuality';
 import { PARTICLE, generateEffectsParticleTextures } from '../../systems/effects/particleTextureFactory';
-import { prefersReducedMotion } from '../shared/neonUiTheme';
+import { prefersReducedMotion } from '../../utils/device';
 
 /** One slow bank sway from left to right and back. */
 const SWAY_PERIOD_MS = 7200;

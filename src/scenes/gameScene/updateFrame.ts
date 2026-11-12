@@ -1,4 +1,5 @@
 import { GameplayClock } from '@/systems/GameplayClock';
+import type { HitStop } from '@/systems/HitStop';
 
 export { GameplayClock };
 
@@ -14,11 +15,14 @@ export function runGameSceneUpdateFrame(
   delegate: GameSceneFrameDelegate,
   time: number,
   delta: number,
-  clock?: GameplayClock
+  clock?: GameplayClock,
+  hitStop?: HitStop
 ): void {
   delegate.handlePauseInput();
 
-  if (delegate.isPausedOrLockedFrame()) {
+  // A hit-stop freezes gameplay like a pause does; presentation keeps running through either.
+  const hitStopFreezing = hitStop?.advance(delta) ?? false;
+  if (delegate.isPausedOrLockedFrame() || hitStopFreezing) {
     delegate.updatePausedFrame(delta);
     return;
   }
