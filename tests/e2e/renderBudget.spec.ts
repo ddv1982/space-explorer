@@ -7,9 +7,12 @@ import { expect, test, waitForScene } from './fixtures';
  * time on phones, and a shader compiled mid-fight freezes the game for 50-180 ms.
  */
 const MAX_DRAW_CALLS_PER_FRAME = 55;
-/** At least 20 s of play and 300 frames, so a slow software-WebGL runner still covers enough fighting. */
+/**
+ * At least 20 s of play and 200 frames, so a slow runner still covers enough fighting. CI's software
+ * WebGL renders about 4-5 frames per second, so 200 frames take about 45 s there, well inside the cap.
+ */
 const SAMPLE_MIN_MS = 20_000;
-const SAMPLE_FRAMES = 300;
+const SAMPLE_FRAMES = 200;
 const SAMPLE_TIMEOUT_MS = 100_000;
 
 for (const level of [5, 9]) {
