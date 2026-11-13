@@ -42,32 +42,80 @@ async function openPause(page: Page, isMobile: boolean): Promise<void> {
   if (!isMobile) await page.keyboard.up('Escape');
 }
 
+/** The keyboard's first-swap hint beside the HUD charge bar in sector 3. */
+const SWAP_HINT = 'Q  SPECIAL GUN';
+
 async function gunState(page: Page) {
   return (await snapshot(page)).gun;
 }
 
-test('no main-gun pick after sectors 1 and 2: the refit bay goes straight to the upgrades', async ({
+test('clearing sector 2 explains the special guns once, with nothing to pick; sector 3 points at the swap until it is used', async ({
   page,
+  isMobile,
   assertNoBrowserErrors,
 }) => {
   test.setTimeout(120_000);
   await pinQualityTier(page, 'low');
   await openMenu(page);
   await startNewRun(page);
+  const continueButton = page.getByRole('button', { name: /Continue to/ });
+  const card = page.getByRole('dialog', { name: 'SPECIAL GUNS ONLINE' });
 
-  for (const level of [1, 2]) {
-    await page.evaluate((cleared) => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(cleared), level);
-    await waitForScene(page, 'PlanetIntermission');
-    await expect(page.getByRole('button', { name: /Continue to/ })).toBeVisible();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.getByRole('group', { name: 'Ship systems' })).toHaveCount(0);
-  }
+  // Sector 1's refit bay goes straight to the upgrades.
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(1));
+  await waitForScene(page, 'PlanetIntermission');
+  await expect(continueButton).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  // Sector 2's opens on the card: one CONTINUE, no options, the bay out of reach behind it.
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(2));
+  await expect(card).toBeVisible();
+  await expect(card.getByRole('button')).toHaveCount(1);
+  const done = card.getByRole('button', { name: 'CONTINUE' });
+  await expect(done).toBeFocused();
+  await expect(card).toContainText('LANCE');
+  await expect(card).toContainText(isMobile ? 'Tap the swap key' : 'Press Q');
+  await expect(card).not.toContainText(isMobile ? 'Press Q' : 'Tap the swap key');
+  expect(await page.locator('.refit').evaluate((element) => (element.closest('.ui-layer') as HTMLElement).inert)).toBe(
+    true
+  );
+  await expect(page.getByRole('group', { name: 'Ship systems' })).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('special-gun-intro.png') });
+
+  if (isMobile) await done.tap();
+  else await page.keyboard.press('Enter');
+  await expect(card).toHaveCount(0);
+  await expect(continueButton).toBeVisible();
+  await expect(continueButton).toBeInViewport();
+  // Closing the card did not carry on to the next sector.
+  expect((await snapshot(page)).activeScenes).toContain('PlanetIntermission');
   await page.screenshot({ path: test.info().outputPath('refit-after-sector-2.png') });
 
-  // Sector 3 flies Lance with a full charge.
-  await page.getByRole('button', { name: /Continue to/ }).click();
+  // Sector 3 flies Lance with a full charge, and the swap is pointed out until the first one.
+  await continueButton.click();
   await waitForScene(page, 'Game');
   await expect.poll(() => gunState(page)).toEqual({ id: 'lance', charge: 1 });
+  await expect.poll(() => shownTexts(page)).toContain('LANCE');
+  // The keyboard gets a label by the charge bar; touch gets a pulse on the swap key instead.
+  if (isMobile) expect(await shownTexts(page)).not.toContain(SWAP_HINT);
+  else await expect.poll(() => shownTexts(page)).toContain(SWAP_HINT);
+  await page.screenshot({ path: test.info().outputPath('sector-3-swap-hint.png') });
+
+  if (isMobile) await page.touchscreen.tap(TOUCH_KEY_X, TOUCH_SWAP_Y);
+  else await page.keyboard.press('KeyQ');
+  await expect.poll(async () => (await gunState(page))?.id).toBe('scatter');
+  await expect.poll(() => shownTexts(page)).not.toContain(SWAP_HINT);
+  await page.screenshot({ path: test.info().outputPath('sector-3-after-swap.png') });
+
+  // A later run that clears sector 2 again sees the card again; no other refit bay shows it.
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(2));
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'CONTINUE' }).click();
+  await expect(card).toHaveCount(0);
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(3));
+  await waitForScene(page, 'PlanetIntermission');
+  await expect(page.getByRole('button', { name: /Continue to/ })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   assertNoBrowserErrors();
 });
 

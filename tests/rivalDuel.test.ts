@@ -132,7 +132,7 @@ describe('rival duel hold', () => {
     let duel: { hp: number; maxHp: number } | null = { hp: 30, maxHp: 30 };
     const waveUpdate = mock();
     const levelUpdate = mock();
-    const hud = { showBossBar: mock(), hideBossBar: mock(), updateBossHp: mock() };
+    const hud = { showBossBar: mock(), hideBossBar: mock(), updateBossHp: mock(), setSwapHint: mock() };
     const emit = mock();
     const noop = (): void => {};
     const behavior = createGameSceneGameplayFrameBehavior({
@@ -147,7 +147,13 @@ describe('rival duel hold', () => {
       getLastLifeHelperWing: () => null,
       getPicketTurrets: () => null,
       grazeSurge: { update: noop },
-      shipSystems: { update: noop, getSystems: () => ({}), getGun: () => null, updateGunCharge: () => false },
+      shipSystems: {
+        update: noop,
+        getSystems: () => ({}),
+        getGun: () => null,
+        updateGunCharge: () => false,
+        isSwapHintPending: () => false,
+      },
       mobileControls: null,
       waveManager: { update: waveUpdate, updateBossAdds: noop, getDuelHull: () => duel },
       levelManager: {

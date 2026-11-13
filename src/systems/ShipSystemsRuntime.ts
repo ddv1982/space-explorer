@@ -39,6 +39,8 @@ export class ShipSystemsRuntime {
   /** Null flies the standard gun: sectors before `SPECIAL_GUN_CHARGE.fromLevel`. */
   private gun: MainGunId | null;
   private gunCharge = 1;
+  /** The first sector with special guns points at the swap key until the player's first swap there. */
+  private swapHintPending: boolean;
 
   constructor(
     private readonly scene: Pick<Phaser.Scene, 'add'> & { registry: PlayerStateRegistry },
@@ -49,6 +51,7 @@ export class ShipSystemsRuntime {
   ) {
     this.systems = systems;
     this.gun = level >= SPECIAL_GUN_CHARGE.fromLevel ? 'lance' : null;
+    this.swapHintPending = level === SPECIAL_GUN_CHARGE.fromLevel;
     this.syncDrone();
   }
 
@@ -65,11 +68,17 @@ export class ShipSystemsRuntime {
     return this.gunCharge;
   }
 
+  /** True until the first successful swap of the first sector with special guns; false everywhere else. */
+  isSwapHintPending(): boolean {
+    return this.swapHintPending;
+  }
+
   /** Steps Lance -> Scatter -> Seekers -> Lance. Leaving Lance needs `minToLeaveLance` charge. */
   trySwapGun(): GunSwapOutcome {
     if (this.gun === null) return 'unavailable';
     if (this.gun === 'lance' && this.gunCharge < SPECIAL_GUN_CHARGE.minToLeaveLance) return 'low-charge';
     this.gun = getNextMainGun(this.gun);
+    this.swapHintPending = false;
     return 'swapped';
   }
 

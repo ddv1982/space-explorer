@@ -52,6 +52,7 @@ interface GameSceneGameplayFrameDelegate {
     getGunCharge(): number;
     trySwapGun(): GunSwapOutcome;
     updateGunCharge(deltaMs: number): boolean;
+    isSwapHintPending(): boolean;
     update(): void;
   };
   /**
@@ -63,7 +64,9 @@ interface GameSceneGameplayFrameDelegate {
     denied(): void;
   };
   mobileControls: {
-    setGunChargeState(gun: MainGunId | null, charge: number): void;
+    /** True when hints should point at the touch keys rather than the keyboard. */
+    showsTouchHints(): boolean;
+    setGunChargeState(gun: MainGunId | null, charge: number, hint: boolean): void;
   } | null;
   grazeSurge: {
     update(): void;
@@ -91,6 +94,7 @@ interface GameSceneGameplayFrameDelegate {
     showBossBar(name: string): void;
     hideBossBar(): void;
     updateBossHp(hp: number, maxHp: number): void;
+    setSwapHint(visible: boolean): void;
   };
   bulletPool: Pick<MainGunVolley, 'fire'>;
   /** The nearest live enemy to a point, for seeking shots. */
@@ -162,7 +166,11 @@ export function createGameSceneGameplayFrameBehavior(
       else if (outcome === 'low-charge') delegate.gunSwapFeedback.denied();
     }
     if (shipSystems.updateGunCharge(delta)) delegate.gunSwapFeedback.swapped('lance');
-    delegate.mobileControls?.setGunChargeState(shipSystems.getGun(), shipSystems.getGunCharge());
+    // Until the first swap of sector 3 the swap is pointed out: a pulse on the touch key, else a Q label.
+    const hint = shipSystems.isSwapHintPending();
+    const touchHint = hint && (delegate.mobileControls?.showsTouchHints() ?? false);
+    delegate.mobileControls?.setGunChargeState(shipSystems.getGun(), shipSystems.getGunCharge(), touchHint);
+    delegate.hud.setSwapHint(hint && !touchHint);
   };
 
   const updatePlayerFiring = (time: number): void => {

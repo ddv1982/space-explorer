@@ -45,6 +45,7 @@ export class HUD {
   private currentBossMaxHp: number | null = null;
   private currentGun: MainGunId | null = null;
   private currentGunCharge: number | null = null;
+  private swapHint = false;
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.scene = scene;
@@ -61,6 +62,7 @@ export class HUD {
     this.currentBossMaxHp = null;
     this.currentGun = null;
     this.currentGunCharge = null;
+    this.swapHint = false;
     this.bossVisible = false;
 
     const levelAccent = levelConfig?.accentColor ?? DEFAULT_ACCENT;
@@ -230,6 +232,13 @@ export class HUD {
     this.renderGunCharge(layout);
   }
 
+  /** The keyboard hint beside the gun row; it only shows while the row does. */
+  setSwapHint(visible: boolean): void {
+    if (visible === this.swapHint) return;
+    this.swapHint = visible;
+    this.widgets.gunHint.setVisible(visible && this.currentGun !== null);
+  }
+
   showBossWarning(): void {
     this.announcementTweens.showBossWarning();
   }
@@ -262,6 +271,7 @@ export class HUD {
     const { gunName, gunChargeTrack, gunChargeFill } = this.widgets;
     const gun = this.currentGun;
     for (const widget of [gunName, gunChargeTrack, gunChargeFill]) widget.setVisible(gun !== null);
+    this.widgets.gunHint.setVisible(this.swapHint && gun !== null);
     if (gun === null) return;
     const draining = gun !== 'lance';
     gunName.setText(getMainGunProfile(gun).name).setColor(draining ? NEON_TEXT.gold : NEON_TEXT.cyan);

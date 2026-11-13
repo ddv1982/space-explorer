@@ -4,6 +4,8 @@ import { getVisualQualityProfile } from '../../config/visualQuality';
 import { renderGunChargeTrack, renderProgressTrack, renderSurgeTrack } from './meterRenderers';
 import type { HudLayoutMetrics } from './statusBarLayout';
 
+const SWAP_HINT_TEXT = 'Q  SPECIAL GUN';
+
 interface CreateHudWidgetsParams {
   scene: Phaser.Scene;
   labelColor: string;
@@ -24,6 +26,8 @@ export interface HudWidgets {
   gunName: Phaser.GameObjects.Text;
   gunChargeTrack: Phaser.GameObjects.Graphics;
   gunChargeFill: Phaser.GameObjects.Graphics;
+  /** `Q  SPECIAL GUN` beside the charge bar, until the first swap of sector 3 (keyboard only). */
+  gunHint: Phaser.GameObjects.Text;
   scoreLabel: Phaser.GameObjects.Text;
   scoreText: Phaser.GameObjects.Text;
   sectorText: Phaser.GameObjects.Text;
@@ -62,6 +66,7 @@ export function createHudWidgets({ scene, labelColor, sectorColor }: CreateHudWi
   const gunName = label('', neonLabelStyle(11, NEON_TEXT.cyan)).setVisible(false);
   const gunChargeTrack = graphics(100).setVisible(false);
   const gunChargeFill = graphics(101).setVisible(false);
+  const gunHint = label(SWAP_HINT_TEXT, neonLabelStyle(11, NEON_TEXT.gold)).setVisible(false);
 
   const scoreLabel = label('SCORE', neonLabelStyle(11, NEON_TEXT.gold)).setOrigin(1, 0);
   const scoreText = label('0', neonReadoutStyle(24)).setOrigin(1, 0);
@@ -129,6 +134,7 @@ export function createHudWidgets({ scene, labelColor, sectorColor }: CreateHudWi
     gunName,
     gunChargeTrack,
     gunChargeFill,
+    gunHint,
     scoreLabel,
     scoreText,
     sectorText,
@@ -196,6 +202,7 @@ export function relayoutHudWidgets(widgets: HudWidgets, layout: HudLayoutMetrics
   renderSurgeTrack(widgets.surgeTrack, layout);
   widgets.gunName.setPosition(layout.hullX, layout.gunY - 3);
   renderGunChargeTrack(widgets.gunChargeTrack, layout);
+  widgets.gunHint.setPosition(layout.gunHintX, layout.gunY - 3);
 
   widgets.scoreLabel.setPosition(layout.scoreRight, layout.scoreLabelY).setVisible(!layout.compact);
   widgets.scoreText.setFontSize(layout.compact ? 22 : 24).setPosition(layout.scoreRight, layout.scoreY);
