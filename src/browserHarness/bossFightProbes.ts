@@ -3,6 +3,7 @@ import type { Boss } from '@/entities/enemies/Boss';
 import { FLIGHT_CONFIG } from '@/config/flightConfig';
 import { stepFlight } from '@/systems/flight/flightModel';
 import type { Player } from '@/entities/Player';
+import type { MainGunId } from '@/config/shipSystems';
 import type { EnemyPool } from '@/systems/EnemyPool';
 import { GAME_SCENE_EVENTS } from '@/systems/GameSceneEvents';
 import type { DamageSource, PlayerFatalResult, PlayerHitResult } from '@/systems/PlayerDamage';
@@ -23,6 +24,8 @@ export interface BossFightReport {
   peakShots: number;
   bossHp: number;
   bossMaxHp: number;
+  /** Gameplay seconds of the fight flown on a special gun (Scatter or Seekers). */
+  specialGunSeconds: number;
 }
 
 interface BossFightScene extends Phaser.Scene {
@@ -31,6 +34,7 @@ interface BossFightScene extends Phaser.Scene {
   levelManager: { distance: number; getLevelConfig(): { levelDistance: number; bossTriggerProgress: number } };
   gameplayClock: { now: number; delta: number };
   boss: Boss | null;
+  shipSystems: { getGun(): MainGunId | null };
   inputManager: {
     cursors: Record<'left' | 'right' | 'up' | 'down', Phaser.Input.Keyboard.Key>;
   };
@@ -197,9 +201,12 @@ export function createBossFightProbes(game: Phaser.Game) {
         peakShots: 0,
         bossHp: 0,
         bossMaxHp: 0,
+        specialGunSeconds: 0,
       };
       report = fight;
       let spawnedAt = 0;
+      // Hit-stop and pause freeze the gameplay clock, so time is counted from its advances.
+      let lastNow = scene.gameplayClock.now;
       const botMemory: BotMemory = { goalX: null, bossX: null };
       if (options.invulnerable) scene.player.shields = 0;
 
@@ -232,7 +239,13 @@ export function createBossFightProbes(game: Phaser.Game) {
           fight.bossMaxHp = boss.maxHp;
         }
         fight.peakShots = Math.max(fight.peakShots, scene.enemyPool.getEnemyBulletGroup().countActive(true));
-        if (fight.spawned && !fight.killed) fight.seconds = (scene.gameplayClock.now - spawnedAt) / 1000;
+        const now = scene.gameplayClock.now;
+        if (fight.spawned && !fight.killed) {
+          fight.seconds = (now - spawnedAt) / 1000;
+          const gun = scene.shipSystems.getGun();
+          if (gun === 'scatter' || gun === 'seekers') fight.specialGunSeconds += (now - lastNow) / 1000;
+        }
+        lastNow = now;
         if (options.bot) steerBot(scene, botMemory);
       };
       const bindings: Array<[string, (...args: never[]) => void]> = [

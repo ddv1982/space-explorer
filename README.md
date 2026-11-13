@@ -17,9 +17,9 @@ Playable here:
 
 | | |
 |---|---|
-| ![Main menu](docs/screenshots/menu.webp) | ![A sector 3 fight with the Scatter gun](docs/screenshots/sector-3-scatter.webp) |
-| ![Choosing a main gun at the refit bay](docs/screenshots/ship-system-pick.webp) | ![The refit bay between sectors](docs/screenshots/refit-bay.webp) |
-| ![A sector 4 fight with the Lance gun](docs/screenshots/sector-4-lance.webp) | ![The first boss, Pyre Herald](docs/screenshots/first-boss.webp) |
+| ![Main menu](docs/screenshots/menu.webp) | ![A sector 3 fight with Scatter out on the charge](docs/screenshots/sector-3-scatter.webp) |
+| ![The card that introduces the special guns](docs/screenshots/special-guns-card.webp) | ![The refit bay between sectors](docs/screenshots/refit-bay.webp) |
+| ![A sector 4 fight with the Lance, the main gun](docs/screenshots/sector-4-lance.webp) | ![The first boss, Pyre Herald](docs/screenshots/first-boss.webp) |
 
 ## Quick start
 
@@ -119,7 +119,7 @@ Bought during the planet intermission screen using score as currency:
 - **Fire Rate** — improves firing speed
 - **Shield** — increases hit absorption
 - **AEGIS Picket** — installs and overclocks automatic flank-defense turrets
-- **Lance and special guns** — from sector 3 the ship flies Lance, a piercing gun. Q (or the touch swap button) switches to Scatter or Seekers for as long as a charge meter lasts: a full meter gives 10 seconds, then the gun returns to Lance. On Lance the meter refills over time and a little with every kill, and you need a fifth of it to switch again. The meter starts full every sector and after every respawn or checkpoint load. A short card at the refit bay after sector 2 explains all this
+- **Lance and special guns** — from sector 3 the ship flies Lance, a piercing gun. Q (or the touch swap button) switches to Scatter or Seekers for as long as a charge meter lasts: a full meter gives 8 seconds, then the gun returns to Lance. On Lance the meter refills over 40 seconds and a little with every kill, and you need a fifth of it to switch again. The meter starts full every sector and after every respawn or checkpoint load. A short card at the refit bay after sector 2 explains all this
 - **Ship systems** — free picks after sectors 5 and 8 that change how the ship plays: a support system (Magnet, Surge Core, Wingman) and a doctrine (Overdrive, Bulwark, Salvager). Picks can be changed freely at any later refit bay, and mid-run from the pause panel
 - **A different run every time** — each run has its own sky and may fly sectors mirrored; RETRY replays the same run, NEW RUN starts a fresh one
 

@@ -44,7 +44,7 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Umbral Ark',
-    maxHp: 1320,
+    maxHp: 1170,
     parSeconds: 62,
     escalatesPastPar: true,
     phaseChangePauseMs: 300,

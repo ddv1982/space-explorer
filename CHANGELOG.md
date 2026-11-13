@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.35.0] - 2026-11-14
 
 ### Added
 
@@ -11,10 +11,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Lance is now your main gun from sector 3 on, and Scatter and Seekers are special guns you use on a charge. Press Q (or the swap button on touch screens) to go Lance → Scatter → Seekers → Lance. A special gun runs down a charge meter: a full meter lasts 10 seconds, and when it empties you go back to Lance on your own, with the gun's name flashing over your ship. The meter only refills on Lance, over 30 seconds, and every enemy you destroy tops it up a little. You need a fifth of the meter to leave Lance; below that Q just clicks. Switching between the special guns, or back to Lance, always works.
+- Lance is now your main gun from sector 3 on, and Scatter and Seekers are special guns you use on a charge. Press Q (or the swap button on touch screens) to go Lance → Scatter → Seekers → Lance. A special gun runs down a charge meter: a full meter lasts 8 seconds, and when it empties you go back to Lance on your own, with the gun's name flashing over your ship. The meter only refills on Lance, over 40 seconds, and every enemy you destroy tops it up a little (half a percent). You need a fifth of the meter to leave Lance; below that Q just clicks. Switching between the special guns, or back to Lance, always works.
 - The meter starts full at the start of every sector and after you respawn or load a checkpoint. Pausing and hit-stops never run it down.
 - The HUD shows the current gun and its charge under your reserve ships from sector 3: amber while a special gun drains it, cyan while Lance refills it. The touch swap button shows the same charge along its foot. Sectors 1 and 2 are unchanged: standard gun, no meter, and Q does nothing.
-- `bun run balance:bosses` measures every boss with Lance only; its `--guns` option is gone.
+- Seven bosses have less hull now that Lance is the main gun: Marshal Vectra 505 → 440, Reef Stalker 625 → 550, Bastion Bulwark 520 → 460, Choir Regent 1040 → 830, Umbral Ark 1320 → 1170, Hive Maelstrom 1645 → 1580, Omega Null 1300 → 1230. Pyre Herald and every par time are unchanged. Spending the charge whenever the meter is full kills each boss a little under par; never pressing Q stays close to par, so the boss speeds up but never walls you.
+- `bun run balance:bosses` measures three gun policies: Lance only, and Scatter or Seekers spent whenever the meter is full. `--guns lance,scatter,seekers` picks policies and `--runs N` repeats each fight; a summary table shows each sector's mean kill time against par, the run-to-run spread, deaths and the share of the fight flown on a special gun.
 
 ### Removed
 

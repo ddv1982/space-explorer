@@ -46,7 +46,7 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Marshal Vectra',
-    maxHp: 505,
+    maxHp: 440,
     parSeconds: 50,
     escalatesPastPar: true,
     phaseChangePauseMs: 280,
