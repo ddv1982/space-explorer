@@ -10,10 +10,16 @@ All notable changes to this project will be documented in this file.
 - The pause panel has a SYSTEMS tab once you have a pick. It shows each system with what it does, and SWAP moves support or doctrine to its next option; the main gun is swapped in flight only, so pausing never skips its wait. A change applies as soon as you resume. Switching to Wingman launches the drone straight away, and switching away from Magnet lets go of the pickups it was pulling.
 - A swapped system stays for the rest of the run: into the next sector and in any checkpoint you save.
 - The controls card at the start of a sector and the pause panel show the Q key, but only once the run has a main gun. Sectors 1 and 2 are unchanged.
+- The game saves your run when you leave the refit bay for the next sector, so closing the tab no longer loses the ship system you just picked. The save appears in the main menu as AUTOSAVE, next to your three slots, and loads and deletes like them. It never overwrites a slot of yours, and it goes away when the run ends or you start a new one.
+- Save slots in the main menu and the pause panel name the ship systems the saved run has picked.
 
 ### Changed
 
 - The pause panel's `SYSTEMS:` line is replaced by the SYSTEMS tab.
+
+### Fixed
+
+- The keyboard focus ring on the ship-system choices was cut off, leaving only a stray line under the first choice. The focused choice now lights up fully, and on very short screens the list scrolls to keep it in view instead of cutting off the last choice.
 
 ## [1.33.0] - 2026-11-12
 

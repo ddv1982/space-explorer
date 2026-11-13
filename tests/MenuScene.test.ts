@@ -165,11 +165,11 @@ describe('MenuScene', () => {
 
     (scene as unknown as { deleteSlot: (slotId: string) => void }).deleteSlot('slot-2');
     expect(deleteStoredSaveSlot).not.toHaveBeenCalled();
-    expect(refreshSaveSlots).toHaveBeenCalledWith('Tap DEL again to confirm slot 2.');
+    expect(refreshSaveSlots).toHaveBeenCalledWith('Tap DEL again to confirm SLOT 2.');
 
     (scene as unknown as { deleteSlot: (slotId: string) => void }).deleteSlot('slot-2');
     expect(deleteStoredSaveSlot).toHaveBeenCalledWith('slot-2');
-    expect(refreshSaveSlots).toHaveBeenCalledWith('Slot 2 cleared.');
+    expect(refreshSaveSlots).toHaveBeenCalledWith('SLOT 2 cleared.');
   });
 
   test('resumes audio in the trusted volume input before changing its value', () => {

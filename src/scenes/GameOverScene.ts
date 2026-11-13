@@ -9,6 +9,7 @@ import { h, liveRegion, mountUiLayer } from '../ui/dom';
 import { bestScoreNote, countUp, formatScore, statCell } from '../ui/summary';
 import { getGameplayDifficultyTier } from '../config/gameplayDifficulty';
 import { recordRunScore } from '../config/personalBest';
+import { AUTOSAVE_SLOT_ID, deleteSaveSlot } from '../systems/SaveSlotStorage';
 import { startFreshRun } from './shared/startRun';
 import { getDeathCauseText } from './gameOverScene/deathCause';
 import { addDriftingMotes, addEdgeVignette } from './shared/runSummaryPresentation';
@@ -55,6 +56,8 @@ export class GameOverScene extends Phaser.Scene {
     addDriftingMotes(this, bounds, [0xff5a55, 0xff8a4a, 0xffc36e], 1);
 
     const cause = getDeathCauseText(runSummary.deathCause);
+    // The run is over: its autosave would only offer a dead run.
+    deleteSaveSlot(AUTOSAVE_SLOT_ID);
     const { best, isNewBest } = recordRunScore(
       runSummary.finalScore,
       getPlayerState(this.registry).easiestDifficulty ?? getGameplayDifficultyTier()

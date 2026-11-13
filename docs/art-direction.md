@@ -91,7 +91,7 @@ The interface is one family, defined in `scenes/shared/neonUiTheme.ts` and `acti
 
 Screens:
 
-- **Main menu**: kicker, glowing title and tagline over the lit hero ship (an orbiting key light rolls highlights across its normal map) on a launch pad with scan rings; NEW RUN is the primary button, save slots are a row of glass cards, SETTINGS is a ghost button, and a planet horizon rises behind them while shooting stars cross the sky. Short landscape phones use two columns.
+- **Main menu**: kicker, glowing title and tagline over the lit hero ship (an orbiting key light rolls highlights across its normal map) on a launch pad with scan rings; NEW RUN is the primary button, save slots are a row of glass cards (two rows of two when an AUTOSAVE card leads them; each card names the run's ship systems), SETTINGS is a ghost button, and a planet horizon rises behind them while shooting stars cross the sky. Short landscape phones use two columns.
 - **HUD**: two floating corner clusters and a flight-vector rail, no bar. Left: hull as one slanted cell per hull point (cyan → amber → red), surge bar, shield pips, reserve-ship icons. Right: score readout under a gold label, chain badge. The rail sits top-centre with the sector and level name on wide viewports and runs edge to edge above the clusters on phones. Meters redraw only when their value changes (`hud/meterRenderers.ts`).
 - **Announcements**: title cards in the display face with a glow in the event colour and a fading rule.
 - **Pause**: compact panel, CHECKPOINTS / SETTINGS tab strip, slot cards with ghost SAVE / LOAD and danger DEL, RESUME primary.

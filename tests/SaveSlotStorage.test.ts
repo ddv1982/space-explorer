@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 
 import { getLevelConfig, getTotalLevels } from '../src/config/LevelsConfig';
 import {
+  AUTOSAVE_SLOT_ID,
   SAVE_SLOT_STORAGE_KEY,
   createSaveSlotRecord,
   deleteSaveSlot,
@@ -9,7 +10,9 @@ import {
   listSaveSlots,
   readSaveSlot,
   writeSaveSlot,
+  type SaveSlotId,
   type SaveSlotRecordV1,
+  type SaveSlotViewModel,
 } from '../src/systems/SaveSlotStorage';
 
 class MemoryStorage implements Storage {
@@ -92,6 +95,12 @@ function record(
   );
 }
 
+function slotView(id: SaveSlotId): SaveSlotViewModel {
+  const slot = listSaveSlots().find((entry) => entry.id === id);
+  if (!slot) throw new Error(`${id} is missing from the slot list`);
+  return slot;
+}
+
 /** Installs fresh storage holding the raw (possibly corrupt) slot payloads, bypassing write normalization. */
 function storeRaw(slots: Record<string, unknown>): MemoryStorage {
   const storage = new MemoryStorage();
@@ -108,7 +117,7 @@ describe('SaveSlotStorage', () => {
   test('returns empty slots and unavailable status when localStorage is missing', () => {
     expect(isSaveStorageAvailable()).toBe(false);
     expect(readSaveSlot('slot-1')).toBeNull();
-    expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, false, false]);
+    expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, false, false, false]);
   });
 
   test('reports unavailable when a write probe throws', () => {
@@ -135,15 +144,41 @@ describe('SaveSlotStorage', () => {
     expect(writeSaveSlot(saved)?.id).toBe('slot-1');
     expect(readSaveSlot('slot-1')?.playerState.currentShields).toBe(1);
 
-    const slots = listSaveSlots();
-    expect(slots[0].occupied).toBe(true);
-    expect(slots[0].title).toContain('SLOT 1');
-    expect(slots[0].subtitle).toContain('LVL 3');
-    expect(slots[0].savedAtLabel).toMatch(/^2026-04-27/);
-    expect(slots[1].occupied).toBe(false);
+    const slot = slotView('slot-1');
+    expect(slot.occupied).toBe(true);
+    expect(slot.title).toContain('SLOT 1');
+    expect(slot.subtitle).toContain('LVL 3');
+    expect(slot.systemsLabel).toBe('');
+    expect(slot.savedAtLabel).toMatch(/^2026-04-27/);
+    expect(slotView('slot-2').occupied).toBe(false);
 
     expect(deleteSaveSlot('slot-1')).toBe(true);
     expect(readSaveSlot('slot-1')).toBeNull();
+  });
+
+  test('restores picked ship systems and names them on the slot', () => {
+    installWindow(new MemoryStorage());
+    const systems = { gun: 'seekers', support: 'surgeCore', late: 'overdrive' } as const;
+
+    expect(writeSaveSlot(record({ level: 9, systems }, {}, 'slot-2'))).not.toBeNull();
+
+    expect(readSaveSlot('slot-2')?.playerState.systems).toEqual(systems);
+    expect(slotView('slot-2').systemsLabel).toBe('SYSTEMS: SEEKERS · SURGE CORE · OVERDRIVE');
+  });
+
+  test('keeps the autosave apart from the manual slots until the run ends', () => {
+    installWindow(new MemoryStorage());
+    expect(writeSaveSlot(record({ level: 3, score: 900 }, {}, 'slot-1'))).not.toBeNull();
+
+    expect(writeSaveSlot(record({ level: 6, score: 4200 }, {}, AUTOSAVE_SLOT_ID))).not.toBeNull();
+    expect(readSaveSlot(AUTOSAVE_SLOT_ID)?.playerState.score).toBe(4200);
+    expect(readSaveSlot('slot-1')?.playerState.score).toBe(900);
+    expect(slotView(AUTOSAVE_SLOT_ID).title).toBe(`AUTOSAVE — ${getLevelConfig(6).name.toUpperCase()}`);
+
+    expect(deleteSaveSlot(AUTOSAVE_SLOT_ID)).toBe(true);
+    expect(readSaveSlot(AUTOSAVE_SLOT_ID)).toBeNull();
+    expect(slotView(AUTOSAVE_SLOT_ID).occupied).toBe(false);
+    expect(readSaveSlot('slot-1')?.playerState.score).toBe(900);
   });
 
   test('round-trips a valid v1 save record unchanged', () => {
@@ -185,7 +220,7 @@ describe('SaveSlotStorage', () => {
       'slot-2': record({ level: 2, score: 500 }, {}, 'slot-2'),
     });
 
-    expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, true, false]);
+    expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, false, true, false]);
     expect(readSaveSlot('slot-2')?.playerState.score).toBe(500);
   });
 
@@ -193,7 +228,7 @@ describe('SaveSlotStorage', () => {
     installWindow(new MemoryStorage());
 
     expect(writeSaveSlot(record({ level: Number.NaN }, { levelReached: 1 }))?.playerState.level).toBe(1);
-    expect(listSaveSlots()[0].subtitle).toContain('LVL 1');
+    expect(slotView('slot-1').subtitle).toContain('LVL 1');
   });
 
   test('clamps corrupt saved levels to the configured campaign range before loading', () => {
@@ -214,8 +249,8 @@ describe('SaveSlotStorage', () => {
     expect(loadedRecord?.runSummary.levelReached).toBe(totalLevels);
     expect(loadedRecord?.label.level).toBe(totalLevels);
     expect(loadedRecord?.label.levelName).toBe(getLevelConfig(totalLevels).name);
-    expect(listSaveSlots()[0].title).toContain(getLevelConfig(totalLevels).name.toUpperCase());
-    expect(listSaveSlots()[0].subtitle).toContain(`LVL ${totalLevels}`);
+    expect(slotView('slot-1').title).toContain(getLevelConfig(totalLevels).name.toUpperCase());
+    expect(slotView('slot-1').subtitle).toContain(`LVL ${totalLevels}`);
   });
 
   test('replaces stale saved label metadata with canonical player state values', () => {
@@ -231,15 +266,15 @@ describe('SaveSlotStorage', () => {
     expect(readSaveSlot('slot-1')?.label.levelName).toBe(getLevelConfig(2).name);
     expect(readSaveSlot('slot-1')?.label.score).toBe(100);
     expect(readSaveSlot('slot-1')?.label.remainingLives).toBe(3);
-    expect(listSaveSlots()[0].title).toContain(getLevelConfig(2).name.toUpperCase());
-    expect(listSaveSlots()[0].subtitle).toContain('SCORE 100');
-    expect(listSaveSlots()[0].subtitle).toContain('3 LIVES');
+    expect(slotView('slot-1').title).toContain(getLevelConfig(2).name.toUpperCase());
+    expect(slotView('slot-1').subtitle).toContain('SCORE 100');
+    expect(slotView('slot-1').subtitle).toContain('3 LIVES');
   });
 
   test('renders legacy save labels that are missing level names', () => {
     storeRaw({ 'slot-1': { ...record({ level: 2 }), label: { level: 2, score: 100, remainingLives: 3 } } });
 
-    expect(listSaveSlots()[0].title).toContain(getLevelConfig(2).name.toUpperCase());
+    expect(slotView('slot-1').title).toContain(getLevelConfig(2).name.toUpperCase());
   });
 
   test('normalizes corrupt saved levels below the first mission to level one', () => {
@@ -247,7 +282,7 @@ describe('SaveSlotStorage', () => {
 
     expect(writeSaveSlot(record({ level: -5 }))?.playerState.level).toBe(1);
     expect(readSaveSlot('slot-1')?.runSummary.levelReached).toBe(1);
-    expect(listSaveSlots()[0].subtitle).toContain('LVL 1');
+    expect(slotView('slot-1').subtitle).toContain('LVL 1');
   });
 
   test('caps corrupt helper-wing granted slots during slot normalization', () => {

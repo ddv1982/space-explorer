@@ -264,3 +264,48 @@ test('a swapped gun carries into the next sector and is what a checkpoint stores
   await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
   assertNoBrowserErrors();
 });
+
+test('leaving the refit bay autosaves the run, picks included, until the run ends', async ({
+  page,
+  isMobile,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(120_000);
+  await pinQualityTier(page, 'low');
+  await openMenu(page);
+  await expect(page.getByRole('button', { name: /^Load AUTOSAVE/ })).toHaveCount(0);
+  await startNewRun(page);
+
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(2));
+  await page
+    .getByRole('dialog', { name: 'CHOOSE YOUR MAIN GUN' })
+    .getByRole('button', { name: /^SCATTER/ })
+    .click();
+  await page.getByRole('button', { name: /Continue to/ }).click();
+  await waitForScene(page, 'Game');
+
+  // Closing the tab mid-sector keeps the run: the menu offers it as its own entry beside the slots.
+  await page.reload();
+  await waitForScene(page, 'Menu');
+  const autosave = page.getByRole('button', { name: /^Load AUTOSAVE/ });
+  await expect(autosave).toBeVisible();
+  await expect(autosave).toContainText('LVL 3');
+  await expect(autosave).toContainText('SYSTEMS: SCATTER');
+  await page.screenshot({ path: test.info().outputPath('menu-autosave.png') });
+
+  await autosave.click();
+  await waitForScene(page, 'Game');
+  await openPause(page, isMobile);
+  await page.getByRole('tab', { name: 'SYSTEMS' }).click();
+  await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
+  // The autosave is not one of the pause panel's checkpoints.
+  await expect(page.getByRole('button', { name: /AUTOSAVE/ })).toHaveCount(0);
+
+  // A finished run is never offered again.
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.route('GameOver'));
+  await waitForScene(page, 'GameOver');
+  await page.reload();
+  await waitForScene(page, 'Menu');
+  await expect(page.getByRole('button', { name: /^Load AUTOSAVE/ })).toHaveCount(0);
+  assertNoBrowserErrors();
+});

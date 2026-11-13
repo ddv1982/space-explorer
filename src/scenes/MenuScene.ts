@@ -9,6 +9,7 @@ import { getVisualQualityTier, setVisualQualityTier, type VisualQualityTier } fr
 import { ParallaxBackground } from '../systems/ParallaxBackground';
 import {
   deleteSaveSlot,
+  getSaveSlotName,
   isSaveStorageAvailable,
   listSaveSlots,
   readSaveSlot,
@@ -190,7 +191,7 @@ export class MenuScene extends Phaser.Scene {
 
     const record = this.readSaveSlotRecord(slotId);
     if (!record) {
-      this.showSaveSlotError(`Slot ${slotId.slice(-1)} is empty.`);
+      this.showSaveSlotError(`${getSaveSlotName(slotId)} is empty.`);
       return;
     }
 
@@ -213,7 +214,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     if (!deleteArm.trigger(slotId)) {
-      this.refreshSaveSlots(`Tap DEL again to confirm slot ${slotId.slice(-1)}.`);
+      this.refreshSaveSlots(`Tap DEL again to confirm ${getSaveSlotName(slotId)}.`);
     }
   }
 
@@ -231,7 +232,7 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
 
-    this.refreshSaveSlots(`Slot ${slotId.slice(-1)} cleared.`);
+    this.refreshSaveSlots(`${getSaveSlotName(slotId)} cleared.`);
   }
 
   private playMenuClick(): void {

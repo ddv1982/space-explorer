@@ -682,6 +682,12 @@
   color: var(--t-gold);
 }
 
+.menu-slot__systems {
+  font-size: 12px;
+  letter-spacing: 0.75px;
+  color: var(--c-cyan);
+}
+
 .menu-slot__time {
   font-size: 11px;
   letter-spacing: 0.5px;
@@ -746,6 +752,8 @@
   position: absolute;
   inset: 0;
   display: grid;
+  /* One row the height of the layer, so a sheet's max-height holds and its list scrolls on short screens. */
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   padding: 4px 8px;
   background: rgb(1 4 10 / 0.78);
@@ -880,6 +888,21 @@
 
   .menu-slot {
     flex: 1 1 0;
+  }
+
+  /*
+   * With the autosave shown there are four cards: two rows of two keep every label readable. Short
+   * landscape phones stack the cards in their own column instead.
+   */
+  @container layer (min-height: 540px) {
+    .menu__slots:has(> .menu-slot:first-child:not([hidden])) {
+      flex-wrap: wrap;
+      flex-basis: calc(2 * var(--slot-h) + var(--slot-gap));
+    }
+
+    .menu__slots:has(> .menu-slot:first-child:not([hidden])) .menu-slot {
+      flex-basis: calc(50% - var(--slot-gap) / 2);
+    }
   }
 }
 
@@ -1049,10 +1072,9 @@
 .pause-slot {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  grid-template-areas: 'title time actions' 'sub sub actions';
+  grid-template-areas: 'title time actions' 'sub sub actions' 'systems systems actions';
   align-content: center;
   column-gap: 10px;
-  row-gap: 4px;
   position: relative;
   isolation: isolate;
   height: var(--row-h);
@@ -1085,12 +1107,20 @@
 
 .pause-slot__sub {
   grid-area: sub;
+  margin-top: 4px;
   font-size: 13px;
   color: var(--t-muted);
 }
 
 .pause-slot[data-occupied] .pause-slot__sub {
   color: var(--c-cyan);
+}
+
+.pause-slot__systems {
+  grid-area: systems;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--t-secondary);
 }
 
 .pause-slot__time {
@@ -1219,13 +1249,13 @@
 /* Narrow panels stack each checkpoint card: text over the buttons. */
 @container layer (max-width: 519px) and (min-height: 640px) {
   .pause {
-    --row-h: 88px;
+    --row-h: 100px;
   }
 
   .pause-slot {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto 1fr;
-    grid-template-areas: 'title title' 'sub time' 'actions actions';
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: 'title title' 'sub time' 'systems systems' 'actions actions';
     align-content: stretch;
     padding: 9px 10px 10px 14px;
   }
@@ -1294,7 +1324,8 @@
     gap: 6px 16px;
   }
 
-  .pause__hint {
+  .pause__hint,
+  .pause-slot__systems {
     display: none;
   }
 
@@ -2211,14 +2242,19 @@
 
 .pick .ui-heading {
   --heading-size: 22px;
-  margin-bottom: 16px;
+  /* 16px to the first option once the list's negative top margin is taken off. */
+  margin-bottom: 22px;
 }
 
+/* A scrolling list clips whatever its children draw outside it, so it carries 6px of room for the focus glow. */
 .pick__options {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin: -6px;
+  padding: 6px;
   overflow-y: auto;
+  scroll-padding: 6px;
 }
 
 .pick__option.ui-btn {
@@ -2230,6 +2266,12 @@
   min-height: 64px;
   padding: 10px 14px;
   text-align: left;
+}
+
+.pick__option.ui-btn:focus-visible {
+  outline: none;
+  --edge: var(--c-cyan-bright);
+  --glow: drop-shadow(0 0 1.5px var(--c-cyan-bright)) drop-shadow(0 0 5px rgb(var(--c-cyan-rgb) / 0.7));
 }
 
 .pick__name {

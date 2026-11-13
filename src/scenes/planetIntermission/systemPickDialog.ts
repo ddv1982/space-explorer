@@ -45,7 +45,10 @@ export function createSystemPickDialog(slot: ShipSystemSlotDef, onPick: (id: Shi
     if (!forward && !backward) return;
     event.preventDefault();
     const current = options.indexOf(document.activeElement as HTMLButtonElement);
-    options[(current + (forward ? 1 : -1) + options.length) % options.length].focus({ preventScroll: true });
+    const next = options[(current + (forward ? 1 : -1) + options.length) % options.length];
+    next.focus({ preventScroll: true });
+    // On a short screen the list scrolls: bring the focused option, ring and all, into view.
+    next.scrollIntoView({ block: 'nearest' });
   });
 
   // The dialog lives in its own layer above the refit bay; the scene makes the bay inert meanwhile.

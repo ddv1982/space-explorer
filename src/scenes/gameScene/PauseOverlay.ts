@@ -2,7 +2,12 @@ import type Phaser from 'phaser';
 import { getGameplayDifficultyTier } from '../../config/gameplayDifficulty';
 import { getVisualQualityTier } from '../../config/visualQuality';
 import { describePickedShipSystems, NO_SHIP_SYSTEMS, type ShipSystemSlot } from '../../config/shipSystems';
-import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
+import {
+  MANUAL_SAVE_SLOT_IDS,
+  getSaveSlotName,
+  type SaveSlotId,
+  type SaveSlotViewModel,
+} from '../../systems/SaveSlotStorage';
 import { h, mountUiLayer, releaseFocus, setStatus } from '../../ui/dom';
 import { createSettingsForm } from '../../ui/settingsForm';
 import type { PauseOverlayHandlers, PauseOverlayState, PauseSubview } from './pauseOverlay/types';
@@ -29,15 +34,16 @@ export function describePauseStatus(
 }
 
 interface SlotRow {
+  id: SaveSlotId;
   element: HTMLElement;
   refresh: (model: SaveSlotViewModel | undefined, state: PauseOverlayState) => void;
 }
 
 /** A checkpoint card with ghost SAVE / LOAD and a danger DEL; RESUME stays the panel's one solid key. */
-function createSlotRow(slotNumber: number, handlers: PauseOverlayHandlers): SlotRow {
-  const slotId = `slot-${slotNumber}` as SaveSlotId;
+function createSlotRow(slotId: SaveSlotId, handlers: PauseOverlayHandlers): SlotRow {
   const title = h('span', { className: 'pause-slot__title ui-ellipsis' });
   const subtitle = h('span', { className: 'pause-slot__sub ui-ellipsis' });
+  const systems = h('span', { className: 'pause-slot__systems ui-ellipsis' });
   const savedAt = h('span', { className: 'pause-slot__time' });
   const action = (label: string, onClick: (id: SaveSlotId) => void, danger = false): HTMLButtonElement => {
     const button = h(
@@ -56,18 +62,23 @@ function createSlotRow(slotNumber: number, handlers: PauseOverlayHandlers): Slot
     { className: 'ui-card pause-slot' },
     title,
     subtitle,
+    systems,
     savedAt,
     h('div', { className: 'pause-slot__actions' }, save, load, del)
   );
 
   return {
+    id: slotId,
     element,
     refresh(model, state) {
       const occupied = Boolean(model?.occupied);
-      const name = model?.title || `SLOT ${slotNumber}`;
+      const name = model?.title || getSaveSlotName(slotId);
       element.toggleAttribute('data-occupied', occupied);
       title.textContent = name;
       subtitle.textContent = model?.subtitle || 'EMPTY';
+      systems.textContent = model?.systemsLabel ?? '';
+      // Left out when there is nothing to name, so the row's text stays centred.
+      systems.hidden = !systems.textContent;
       savedAt.textContent = occupied ? (model?.savedAtLabel ?? '') : '';
       save.disabled = !state.storageAvailable || !state.canSave;
       load.disabled = del.disabled = !state.storageAvailable || !occupied;
@@ -153,7 +164,8 @@ export class PauseOverlay {
     const layer = mountUiLayer();
     layer.hidden = true;
 
-    this.rows = [1, 2, 3].map((slotNumber) => createSlotRow(slotNumber, handlers));
+    // The autosave is loaded from the main menu only; pause saves and loads the player's own slots.
+    this.rows = MANUAL_SAVE_SLOT_IDS.map((slotId) => createSlotRow(slotId, handlers));
     this.systemRows = SYSTEM_SLOTS.map((slot) => createSystemRow(slot, handlers));
     const settings = createSettingsForm({
       captions: false,
@@ -241,7 +253,12 @@ export class PauseOverlay {
     if (!this.state.visible) releaseFocus(this.layer);
     this.layer.hidden = !this.state.visible;
     this.resume.disabled = !this.state.canResume;
-    this.rows.forEach((row, index) => row.refresh(this.state.saveSlots[index], this.state));
+    for (const row of this.rows) {
+      row.refresh(
+        this.state.saveSlots.find((slot) => slot.id === row.id),
+        this.state
+      );
+    }
     this.systemRows.forEach((row) => row.refresh(this.state));
     this.hint.textContent = this.state.systems.gun ? 'ESC  RESUME      Q  SWAP GUN IN FLIGHT' : 'ESC  RESUME';
     for (const [subview, { tab, view }] of this.tabs) {

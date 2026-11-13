@@ -120,6 +120,12 @@ export function getShipSystemName(id: ShipSystemId): string {
   return SHIP_SYSTEM_SLOTS.flatMap((def) => def.options).find((option) => option.id === id)?.name ?? '';
 }
 
+/** The picks as one line for a save slot, e.g. `SYSTEMS: LANCE · MAGNET`; empty with none. */
+export function describeShipSystems(systems: ShipSystems): string {
+  const names = describePickedShipSystems(systems).map((picked) => picked.option.name);
+  return names.length > 0 ? `SYSTEMS: ${names.join(' · ')}` : '';
+}
+
 /** Main-gun firing patterns. Damage per shot is unchanged; the fire cooldown pays for the pattern. */
 export interface MainGunProfile {
   /** Multiplies the fire cooldown. */
