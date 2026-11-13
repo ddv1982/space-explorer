@@ -51,7 +51,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Omega Null',
-    maxHp: 1300,
+    maxHp: 1230,
     parSeconds: 70,
     escalatesPastPar: true,
     phaseChangePauseMs: 240,

@@ -47,7 +47,7 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Bastion Bulwark',
-    maxHp: 520,
+    maxHp: 460,
     parSeconds: 60,
     escalatesPastPar: true,
     phaseChangePauseMs: 300,

@@ -33,7 +33,7 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Reef Stalker',
-    maxHp: 625,
+    maxHp: 550,
     parSeconds: 52,
     escalatesPastPar: true,
     phaseChangePauseMs: 280,

@@ -209,12 +209,19 @@ export function getNextMainGun(gun: MainGunId): MainGunId {
  * - `minToLeaveLance`: leaving Lance needs at least this much; below it the swap is refused. Moving
  *   between the special guns, or back to Lance, is always allowed.
  * The meter starts full every sector and after every respawn or checkpoint load, and is never saved.
+ *
+ * Tuned so the special guns stay a short boost, not the gun you fly. With `bun run balance:bosses`, a bot
+ * that swaps whenever the meter is full spent 17-29% of each boss fight on a special gun (one window in
+ * the short sector 3-4 fights, two in the longer ones). Over the first 40 s of sectors 3-5 (autofire,
+ * sweeping ship, same swap rule) it spent 20-35% and scored about what the standard gun did; at 0.01 per
+ * kill the meter refilled fast enough for a second window and scores ran well above it. The first guess
+ * (10 s drain, 30 s refill, 0.02 per kill) gave 26-39% in boss fights.
  */
 export const SPECIAL_GUN_CHARGE = {
   fromLevel: 3,
-  drainMs: 10_000,
-  refillMs: 30_000,
-  perKill: 0.02,
+  drainMs: 8_000,
+  refillMs: 40_000,
+  perKill: 0.005,
   minToLeaveLance: 0.2,
 } as const;
 

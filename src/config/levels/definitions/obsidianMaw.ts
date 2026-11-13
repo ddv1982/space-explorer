@@ -54,7 +54,7 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Hive Maelstrom',
-    maxHp: 1645,
+    maxHp: 1580,
     parSeconds: 65,
     escalatesPastPar: true,
     phaseChangePauseMs: 280,

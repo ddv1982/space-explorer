@@ -46,7 +46,7 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Choir Regent',
-    maxHp: 1040,
+    maxHp: 830,
     parSeconds: 58,
     escalatesPastPar: true,
     phaseChangePauseMs: 260,
