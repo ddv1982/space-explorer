@@ -205,6 +205,8 @@ export function createBossFightProbes(game: Phaser.Game) {
       };
       report = fight;
       let spawnedAt = 0;
+      // Hit-stop and pause freeze the gameplay clock, so time is counted from its advances.
+      let lastNow = scene.gameplayClock.now;
       const botMemory: BotMemory = { goalX: null, bossX: null };
       if (options.invulnerable) scene.player.shields = 0;
 
@@ -237,11 +239,13 @@ export function createBossFightProbes(game: Phaser.Game) {
           fight.bossMaxHp = boss.maxHp;
         }
         fight.peakShots = Math.max(fight.peakShots, scene.enemyPool.getEnemyBulletGroup().countActive(true));
+        const now = scene.gameplayClock.now;
         if (fight.spawned && !fight.killed) {
-          fight.seconds = (scene.gameplayClock.now - spawnedAt) / 1000;
+          fight.seconds = (now - spawnedAt) / 1000;
           const gun = scene.shipSystems.getGun();
-          if (gun === 'scatter' || gun === 'seekers') fight.specialGunSeconds += scene.gameplayClock.delta / 1000;
+          if (gun === 'scatter' || gun === 'seekers') fight.specialGunSeconds += (now - lastNow) / 1000;
         }
+        lastNow = now;
         if (options.bot) steerBot(scene, botMemory);
       };
       const bindings: Array<[string, (...args: never[]) => void]> = [
