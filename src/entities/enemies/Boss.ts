@@ -23,6 +23,8 @@ import { shakeCamera } from '@/systems/effects/cameraShake';
 const ARRIVAL_Y = 80;
 /** How fast a boss flies between anchors: quick enough to keep the rotation moving, slow enough to follow. */
 const TRAVEL_SPEED = 260;
+/** How fast the hull closes on its bob line, so leaving an anchor glides into the bob and never snaps. */
+const BOB_SETTLE_SPEED = 120;
 const SHIELD_TINT = 0x77ccff;
 
 /** A queued shot of an aimed burst, due at a time on the boss's gameplay clock. */
@@ -205,8 +207,9 @@ export class Boss extends EnemyBase {
       maxX: viewport.right,
     });
 
+    const maxRise = (BOB_SETTLE_SPEED * delta) / 1000;
     this.x = movement.x;
-    this.y = movement.y;
+    this.y += Phaser.Math.Clamp(movement.y - this.y, -maxRise, maxRise);
     this.moveDir = movement.moveDir;
   }
 
