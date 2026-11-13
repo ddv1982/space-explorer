@@ -96,7 +96,7 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 - **Scripted level sections** — pacing, hazard cadence, and encounter focus can shift inside a level
 - **Hazard scripting** — asteroid bursts, ring crossfire, nebula ambushes, gravity wells, and canyon-wall rock corridors
 - **Adaptive section pacing** — tension-arc shaping and fairness throttles smooth extreme overlap spikes
-- **Authored boss fights** — every boss runs its own set order of attacks across two to four phases, with a par time: beat it for a fast-kill bonus, outstay it and the boss fires faster. Boss hull is fixed, so upgrades make fights shorter
+- **Authored boss fights** — every boss runs its own set order of attacks across two to four phases, with a par time: beat it for a fast-kill bonus, outstay it and the boss fires faster (the first boss never does). Boss hull is fixed, so upgrades make fights shorter
 - **Per-level procedural music** — each level and boss has its own Web Audio-driven music identity
 - **Power-up drops** — temporary pickups such as health, shield, and rapid-fire boosts
 - **AEGIS Picket turrets** — a two-tier screen-edge support upgrade available for Level 5 onward
