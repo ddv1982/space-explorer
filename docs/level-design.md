@@ -148,7 +148,7 @@ All six hull styles are used; a phase can switch style (the finale does). Bastio
 | L6 | Bastion Bulwark | bulwark, 3 phases at 66% and 33%: rampart (shield only while charging a wall), breach (flank anchors, aimed burst, rotary), last stand (no shield, pursues, beam) | 60 s |
 | L7 | Choir Regent | pressure, 3 phases at 66% and 33%, each a fixed rhythm: hymn (two interleaving fans, then a fan aimed at you), antiphon (outward loft fans that leave the lane under it open, a nave fan that closes it, a cantor's aimed burst), crescendo (rotary, hymn, lofts with a short burst, over a faster patrol) | 58 s |
 | L8 | Umbral Ark | carrier (debut), 3 phases at 66% and 33%, each opening with a launch: hangar (fighter pair, crossing broadsides), convoy (a gunship escort, flak aimed at you, rotary), narrows (a wall whose gap moves, with a dodger pair launched into it) | 62 s |
-| L9 | Hive Maelstrom | maelstrom (debut), 2 phases | 65 s |
+| L9 | Hive Maelstrom | maelstrom (debut), 3 phases at 66% and 33%: brood wake (one turning ring fired twice, aimed sting, swarm pairs), maelstrom (counter-rotating rings from a fast patrol, aimed burst), eye of the storm (pursues, full-spin rings, splitter pairs) | 65 s |
 | L10 | Omega Null | pressure -> maelstrom (finale switch), 2 phases | 70 s |
 
 ## 3. The 10-level concept sheet
@@ -201,7 +201,8 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 
 ### L9: Swarmfront (H) - planet Hive Lathe - motif: hive
 - Set-piece level: swarm survival. Splitters return; density peaks here.
-- Boss: Hive Maelstrom (maelstrom debut, counter-rotating spirals).
+- Boss: Hive Maelstrom (maelstrom debut, three phases: one turning ring, then counter-rotating rings,
+  then it hunts the player; swarm and splitter pairs launch in front of the hull).
 - distance 20000, spawnRate 2.1; enemies: swarm 45, splitter 15, dodger 15, fighter 25.
 
 ### L10: Eventide Engine (H) - planet Omega Spire - motif: singularity engine
