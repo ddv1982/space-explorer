@@ -2436,3 +2436,10 @@
 .gun-intro .menu-sheet__done.ui-btn {
   --done-gap: 22px;
 }
+
+.gun-intro .menu-sheet__done.ui-btn:focus-visible {
+  outline: none;
+  --edge: #fff;
+  --fill: var(--c-cyan-bright);
+  --glow: drop-shadow(0 0 4px rgb(191 246 255 / calc(0.7 * var(--ui-glow))));
+}

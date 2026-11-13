@@ -73,6 +73,10 @@ test('clearing sector 2 explains the special guns once, with nothing to pick; se
   await expect(card.getByRole('button')).toHaveCount(1);
   const done = card.getByRole('button', { name: 'CONTINUE' });
   await expect(done).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(done).toBeFocused();
+  await expect(done).toHaveCSS('outline-style', 'none');
+  await expect(done).toHaveCSS('--edge', '#fff');
   await expect(card).toContainText('LANCE');
   await expect(card).toContainText(isMobile ? 'Tap the swap key' : 'Press Q');
   await expect(card).not.toContainText(isMobile ? 'Press Q' : 'Tap the swap key');

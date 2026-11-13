@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.1] - 2026-11-14
+
+### Fixed
+
+- The SPECIAL GUNS ONLINE card's CONTINUE button no longer has an extra rectangular border. Its keyboard focus highlight now follows the button's angled shape.
+
 ## [1.35.0] - 2026-11-14
 
 ### Added
