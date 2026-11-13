@@ -255,7 +255,9 @@ test('a swapped gun carries into the next sector and is what a checkpoint stores
     .getByRole('button', { name: /^Load / })
     .first()
     .click();
-  await waitForScene(page, 'Game');
+  // The load restarts the Game scene, so "Game is active" is true before and after. The old pause panel
+  // closing is what marks the restart; only then is a new pause the loaded run's.
+  await expect(page.getByRole('dialog', { name: 'Paused' })).toBeHidden();
   await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
   await openPause(page, false);
   await page.getByRole('tab', { name: 'SYSTEMS' }).click();
