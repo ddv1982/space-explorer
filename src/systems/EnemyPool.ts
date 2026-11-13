@@ -56,7 +56,10 @@ const GROUP_DESCRIPTORS: Record<PoolGroupKey, GroupDescriptor> = {
   boss: { maxSize: 1, classType: Boss },
   bomb: { maxSize: 30, classType: BomberBomb },
   mine: { maxSize: 24, classType: Mine },
-  enemyBullet: { maxSize: 80, classType: EnemyBullet },
+  // Sized for boss walls on an ultrawide screen: a wall is one shot every 44 px across the whole
+  // viewport and two can be in flight at once (129 shots measured at 2560 px wide). Bullets are created
+  // on demand, so a phone never builds this many.
+  enemyBullet: { maxSize: 256, classType: EnemyBullet },
 };
 
 interface EnemyGroupRegistration {
