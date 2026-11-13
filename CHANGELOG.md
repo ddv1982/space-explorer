@@ -37,6 +37,7 @@ All notable changes to this project will be documented in this file.
 
 - Pyre Herald (sector 3), the first boss, now alternates two slow attacks per phase instead of repeating one: twin ember fans and a fan that drifts with it, then a turning spiral and its first shots aimed at you. It stays as gentle as before, never speeds up and needs no main gun.
 - Marshal Vectra (sector 4) now drills two line fans and then a crossfire that leaves a safe pocket right under it, so flying in close is the opening. At half health it starts stepping forward to a post at the centre, closer to you, and adds a turning spiral.
+- Reef Stalker (sector 5) now fights in three phases. It follows your lane with an aimed fan and a burst of shots that re-aim one by one, then darts to each edge of the screen and fans across it (the way out is right under it), and in its last third chases faster with longer bursts and a wide fan to read.
 
 
 

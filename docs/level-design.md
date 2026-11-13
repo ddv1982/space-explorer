@@ -144,7 +144,7 @@ All six hull styles are used; a phase can switch style (the finale does). Bastio
 |---|---|---|---|
 | L3 | Pyre Herald | barrage, 2 phases at 50% (no escalation), two attacks each with slow shots and long gaps: kindling (twin ember fans, a fan that leans with its patrol), pyre (faster patrol, turning spiral, the first aimed fan) | 45 s |
 | L4 | Marshal Vectra | pressure, 2 phases at 50%; introduces anchors: drill (two line fans, then a crossfire with a pocket under the hull), advance (steps forward to a centre post for the crossfire, then a line fan and a spiral) | 50 s |
-| L5 | Reef Stalker | pursuit, 2 phases | 52 s |
+| L5 | Reef Stalker | pursuit, 3 phases at 66% and 33%; introduces the aimed burst: stalk (aimed fan, 3-shot lock-on), flank (darts to each edge and fans across the screen, safe under its hull, 4-shot lock-on), frenzy (fast chase, aimed double fan, 5-shot lock-on, wide shatter fan) | 52 s |
 | L6 | Bastion Bulwark | bulwark, 3 phases at 66% and 33%: rampart (shield only while charging a wall), breach (flank anchors, aimed burst, rotary), last stand (no shield, pursues, beam) | 60 s |
 | L7 | Choir Regent | pressure, 3 phases at 66% and 33%, each a fixed rhythm: hymn (two interleaving fans, then a fan aimed at you), antiphon (outward loft fans that leave the lane under it open, a nave fan that closes it, a cantor's aimed burst), crescendo (rotary, hymn, lofts with a short burst, over a faster patrol) | 58 s |
 | L8 | Umbral Ark | carrier (debut), 3 phases at 66% and 33%, each opening with a launch: hangar (fighter pair, crossing broadsides), convoy (a gunship escort, flak aimed at you, rotary), narrows (a wall whose gap moves, with a dodger pair launched into it) | 62 s |
@@ -180,7 +180,7 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 
 ### L5: Shatter Reef (R) - planet Korra Vale - motif: coral reef
 - Splitter debut (kills multiply); nebula-ambush remix. Mid-campaign exam.
-- Boss: Reef Stalker (pursuit). distance 17500, spawnRate 1.75, encounter 2-3.
+- Boss: Reef Stalker (pursuit, three phases; debuts the aimed burst and breaks off the chase to strike from the flanks). distance 17500, spawnRate 1.75, encounter 2-3.
 - enemies: fighter 25, splitter 25, bomber 20, gunship 30.
 
 ### L6: Debris Gauntlet (R->H) - planet Bastion Fall - motif: wreckage ramparts

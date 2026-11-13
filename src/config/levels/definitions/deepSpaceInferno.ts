@@ -2,6 +2,9 @@ import type { LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
 
+/** Keeps slipping toward the player's lane, swaying like a reef predator. */
+const STALKER_SWAY = { amplitude: 14, periodMs: 1257 };
+
 export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   name: 'Shatter Reef',
   planetName: 'Korra Vale',
@@ -30,30 +33,59 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Reef Stalker',
-    maxHp: 615,
+    maxHp: 625,
     parSeconds: 52,
     escalatesPastPar: true,
     phaseChangePauseMs: 280,
+    // A hunter: it follows the player's lane all fight, breaks off once to strike from the reef's edges,
+    // and comes back faster.
     phases: [
       {
+        // Stalk: shadows the player with an aimed fan, then locks on with the first aimed burst.
         startsAtHull: 1,
         style: 'pursuit',
-        movement: { kind: 'pursuit', speed: 92, edgePadding: 70, bob: { amplitude: 14, periodMs: 1257 } },
+        movement: { kind: 'pursuit', speed: 92, edgePadding: 70, bob: STALKER_SWAY },
         attacks: [
-          { cooldownMs: 1040, volley: [{ kind: 'aimedArc', shots: 5, arcDegrees: 28.6, speed: 1, originY: 28 }] },
+          { cooldownMs: 1050, volley: [{ kind: 'aimedArc', shots: 5, arcDegrees: 28, speed: 1, originY: 28 }] },
+          { cooldownMs: 1150, volley: [{ kind: 'aimedBurst', shots: 3, intervalMs: 200, speed: 1, originY: 28 }] },
         ],
       },
       {
-        startsAtHull: 0.5,
+        // Flank: darts to each edge and fans across the screen; the way out is under its own hull.
+        startsAtHull: 0.66,
         style: 'pursuit',
-        movement: { kind: 'pursuit', speed: 241.5, edgePadding: 70, bob: { amplitude: 14, periodMs: 1257 } },
+        movement: { kind: 'pursuit', speed: 120, edgePadding: 70, bob: STALKER_SWAY },
         attacks: [
           {
-            cooldownMs: 530,
+            cooldownMs: 1000,
+            anchor: { x: 0.2, y: 130 },
+            volley: [{ kind: 'arc', shots: 6, arcDegrees: 30, speed: 0.95, originY: 28, angle: -38 }],
+          },
+          {
+            cooldownMs: 1000,
+            anchor: { x: 0.8, y: 130 },
+            volley: [{ kind: 'arc', shots: 6, arcDegrees: 30, speed: 0.95, originY: 28, angle: 38 }],
+          },
+          { cooldownMs: 900, volley: [{ kind: 'aimedBurst', shots: 4, intervalMs: 160, speed: 1, originY: 28 }] },
+        ],
+      },
+      {
+        // Frenzy: a fast chase with a leaning double fan, a long lock-on, then a shatter burst to read.
+        startsAtHull: 0.33,
+        style: 'pursuit',
+        movement: { kind: 'pursuit', speed: 200, edgePadding: 70, bob: STALKER_SWAY },
+        attacks: [
+          {
+            cooldownMs: 750,
             volley: [
-              { kind: 'aimedArc', shots: 6, arcDegrees: 21.8, speed: 1.08, originY: 28 },
-              { kind: 'arc', shots: 4, arcDegrees: 18, speed: 1.06, originY: 28, lean: 10 },
+              { kind: 'aimedArc', shots: 6, arcDegrees: 22, speed: 1.05, originY: 28 },
+              { kind: 'arc', shots: 4, arcDegrees: 18, speed: 1.05, originY: 28, lean: 10 },
             ],
+          },
+          { cooldownMs: 850, volley: [{ kind: 'aimedBurst', shots: 5, intervalMs: 130, speed: 1.1, originY: 28 }] },
+          {
+            cooldownMs: 1000,
+            volley: [{ kind: 'arc', shots: 8, arcDegrees: 105, speed: 0.85, originY: 28 }],
           },
         ],
       },
