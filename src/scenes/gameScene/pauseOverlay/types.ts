@@ -11,7 +11,7 @@ export interface PauseOverlayHandlers {
   onDeleteSlot: (slotId: SaveSlotId) => void;
   onSelectDifficulty: (tier: GameplayDifficultyTier) => boolean;
   onSelectQuality: (tier: VisualQualityTier) => boolean;
-  onCycleSystem: (slot: PauseSwappableSlot) => void;
+  onCycleSystem: (slot: ShipSystemSlot) => void;
 }
 
 export interface PauseOverlayState {
@@ -22,11 +22,10 @@ export interface PauseOverlayState {
   saveSlots: SaveSlotViewModel[];
   /** The run's ship systems; the SYSTEMS tab shows only when one is picked. */
   systems: ShipSystems;
+  /** From sector 3 the swap key borrows a special gun; the controls hint names it. */
+  specialGuns: boolean;
   statusMessage: string;
   statusOk?: boolean;
 }
-
-/** The main gun is swapped in flight only, so pausing can never skip its cooldown. */
-export type PauseSwappableSlot = Exclude<ShipSystemSlot, 'gun'>;
 
 export type PauseSubview = 'checkpoints' | 'systems' | 'settings';

@@ -112,7 +112,7 @@ function createUpgradeCard(evaluation: UpgradeEvaluation, onBuy: (key: UpgradeKe
   };
 }
 
-const SYSTEM_SLOTS: readonly ShipSystemSlot[] = ['gun', 'support', 'late'];
+const SYSTEM_SLOTS: readonly ShipSystemSlot[] = ['support', 'late'];
 
 interface SystemKey {
   slot: ShipSystemSlot;

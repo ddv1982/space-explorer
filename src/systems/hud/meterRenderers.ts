@@ -1,9 +1,11 @@
 import type Phaser from 'phaser';
 import { NEON } from '../../scenes/shared/neonUiTheme';
+import { SPECIAL_GUN_CHARGE } from '../../config/shipSystems';
 import { mixColor } from '../../utils/colorUtils';
 import { scaleUiGlowAlpha } from '../../utils/renderingCompat';
 import {
   BOSS_BAR_HEIGHT,
+  GUN_CHARGE_BAR_HEIGHT,
   HULL_CELL_HEIGHT,
   RESERVE_ICON_HEIGHT,
   SURGE_BAR_HEIGHT,
@@ -108,6 +110,50 @@ export function renderSurgeBar(graphics: Graphics, ratio: number | null, layout:
   const width = (layout.hullWidth - SLANT) * Math.min(1, ratio);
   slantedPath(graphics, layout.hullX, layout.surgeY, width, SURGE_BAR_HEIGHT);
   graphics.fillStyle(charged ? mixColor(SURGE_COLOR, 0xffffff, 0.55) : SURGE_COLOR, 1);
+  graphics.fillPath();
+}
+
+/** Lance refilling reads cyan like the hull; a special gun burning its charge reads amber. */
+const GUN_CHARGE_COLORS = { refilling: NEON.cyan, draining: NEON.amber } as const;
+
+/** Where the charge bar sits: centred on the gun name's line. */
+function gunChargeBarY(layout: HudLayoutMetrics): number {
+  return layout.gunY + 2;
+}
+
+/** The unlit charge bar, with a tick where the meter is full enough to leave Lance. */
+export function renderGunChargeTrack(graphics: Graphics, layout: HudLayoutMetrics): void {
+  graphics.clear();
+  const y = gunChargeBarY(layout);
+  slantedPath(graphics, layout.gunBarX, y, layout.gunBarWidth, GUN_CHARGE_BAR_HEIGHT);
+  graphics.fillStyle(TRACK_COLOR, TRACK_ALPHA);
+  graphics.fillPath();
+  const tickX = layout.gunBarX + layout.gunBarWidth * SPECIAL_GUN_CHARGE.minToLeaveLance + SLANT / 2;
+  graphics.fillStyle(NEON.cyan, 0.55);
+  graphics.fillRect(tickX, y - 2, 1, GUN_CHARGE_BAR_HEIGHT + 4);
+}
+
+/**
+ * The special-gun charge. Draining (a special gun is out) burns amber; refilling on Lance is cyan, dim
+ * until it passes the threshold to leave Lance and bright once full.
+ */
+export function renderGunChargeBar(
+  graphics: Graphics,
+  charge: number,
+  draining: boolean,
+  layout: HudLayoutMetrics
+): void {
+  graphics.clear();
+  if (charge <= 0) return;
+  const width = layout.gunBarWidth * Math.min(1, charge);
+  const y = gunChargeBarY(layout);
+  if (draining) {
+    fillLitSegment(graphics, layout.gunBarX, y, width, GUN_CHARGE_BAR_HEIGHT, GUN_CHARGE_COLORS.draining);
+    return;
+  }
+  const color = charge >= 1 ? mixColor(GUN_CHARGE_COLORS.refilling, 0xffffff, 0.45) : GUN_CHARGE_COLORS.refilling;
+  slantedPath(graphics, layout.gunBarX, y, width, GUN_CHARGE_BAR_HEIGHT);
+  graphics.fillStyle(color, charge < SPECIAL_GUN_CHARGE.minToLeaveLance ? 0.45 : 1);
   graphics.fillPath();
 }
 

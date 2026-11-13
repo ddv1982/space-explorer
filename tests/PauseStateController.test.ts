@@ -54,7 +54,8 @@ function createOverlayState(overrides: Partial<PauseOverlayState>): PauseOverlay
     canSave: false,
     storageAvailable: false,
     saveSlots: [],
-    systems: { gun: null, support: null, late: null },
+    systems: { support: null, late: null },
+    specialGuns: false,
     statusMessage: '',
     statusOk: true,
     ...overrides,
@@ -346,7 +347,7 @@ describe('PauseStateController regression coverage', () => {
   });
 
   test('the SYSTEMS tab cycles a slot through the ship-systems port, only while paused', () => {
-    let systems = { gun: 'lance', support: 'magnet', late: null } as PauseOverlayState['systems'];
+    let systems = { support: 'magnet', late: null } as PauseOverlayState['systems'];
     const cycled: string[] = [];
     const harness = createPauseHarness(undefined, {
       shipSystems: {
@@ -355,6 +356,7 @@ describe('PauseStateController regression coverage', () => {
           cycled.push(slot);
           systems = { ...systems, support: 'surgeCore' };
         },
+        hasSpecialGuns: () => true,
       },
     });
 

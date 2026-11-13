@@ -4,6 +4,7 @@ import {
   getMainGunProfile,
   OVERDRIVE_COOLDOWN_STEP,
   WINGMAN,
+  type MainGunId,
   type PlayerShotLook,
   type ShipSystems,
 } from '../config/shipSystems';
@@ -15,6 +16,8 @@ interface Point {
 }
 
 export interface MainGunVolley {
+  /** Null fires the standard bolt (sectors 1-2). */
+  gun: MainGunId | null;
   systems: ShipSystems;
   /** Counts volleys since the run began, so the Wingman fires on every Nth. */
   volleyIndex: number;
@@ -40,9 +43,9 @@ function rotate(direction: Point, degrees: number): Point {
   return { x: direction.x * cos - direction.y * sin, y: direction.x * sin + direction.y * cos };
 }
 
-/** Fires one volley of the picked main gun, plus the Wingman's shot when it is due. */
+/** Fires one volley of the current main gun, plus the Wingman's shot when it is due. */
 export function fireMainGunVolley(volley: MainGunVolley): void {
-  const profile = getMainGunProfile(volley.systems.gun);
+  const profile = getMainGunProfile(volley.gun);
   const behaviour: BulletBehaviour | undefined =
     profile.pierce || profile.seekDegreesPerSecond > 0
       ? {
@@ -79,8 +82,13 @@ export function fireMainGunVolley(volley: MainGunVolley): void {
  * The main gun's cooldown: the ship's fire rate, stretched by the gun's pattern, then shortened by the
  * score chain. Overdrive rewards every chain step; without it only the max chain speeds the gun up.
  */
-export function resolveMainGunCooldownMs(fireRateMs: number, chainMultiplier: number, systems: ShipSystems): number {
-  const patterned = fireRateMs * getMainGunProfile(systems.gun).cooldownScale;
+export function resolveMainGunCooldownMs(
+  fireRateMs: number,
+  chainMultiplier: number,
+  gun: MainGunId | null,
+  systems: ShipSystems
+): number {
+  const patterned = fireRateMs * getMainGunProfile(gun).cooldownScale;
   if (systems.late !== 'overdrive') return resolvePlayerFireCooldownMs(patterned, chainMultiplier);
   const steps = Math.max(0, Math.floor(chainMultiplier) - 1);
   return Math.max(PLAYER_CONFIG.absoluteMinFireRate, patterned * (1 - OVERDRIVE_COOLDOWN_STEP * steps));

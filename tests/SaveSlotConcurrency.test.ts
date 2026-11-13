@@ -83,7 +83,7 @@ function createRecord(id: 'slot-1' | 'slot-2' | 'slot-3', score: number): SaveSl
       currentShields: 0,
       remainingLives: 3,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-      systems: { gun: null, support: null, late: null },
+      systems: { support: null, late: null },
       helperWing: { grantedSlots: 0, slots: [] },
     },
     { finalScore: score, levelReached: 2, deathCause: null },

@@ -67,8 +67,8 @@ function resolveJumpUpgrades(raw: string | null, level: number): PlayerUpgradeLe
  * progression-legal max loadout for that level. `&upgrades=3,3,3,2` (hp,damage,
  * fireRate,shield) forces an explicit loadout with stock turrets; append an optional
  * fifth value (`&upgrades=3,3,3,2,1`) to include a turret tier. `&upgrades=0` jumps
- * with a stock ship. `&systems=lance,magnet,overdrive` (gun,support,doctrine) picks ship systems; leave
- * a place empty to skip it (`&systems=scatter` or `&systems=,wingman`).
+ * with a stock ship. `&systems=magnet,overdrive` (support,doctrine) picks ship systems; leave a place
+ * empty to skip it (`&systems=wingman` or `&systems=,bulwark`).
  */
 export function resolveDevLevelJump(search: string): DevLevelJumpRequest | null {
   const params = new URLSearchParams(search);
@@ -84,12 +84,12 @@ export function resolveDevLevelJump(search: string): DevLevelJumpRequest | null 
 
   const level = Math.min(getTotalLevels(), Math.max(1, parsed));
   const upgrades = resolveJumpUpgrades(params.get(UPGRADES_PARAM), level);
-  const [gun, support, late] = (params.get(SYSTEMS_PARAM) ?? '').split(',').map((part) => part.trim());
+  const [support, late] = (params.get(SYSTEMS_PARAM) ?? '').split(',').map((part) => part.trim());
   const seed = Number.parseInt(params.get(SEED_PARAM) ?? '', 10);
   return {
     level,
     upgrades,
-    systems: normalizeShipSystems({ gun, support, late }),
+    systems: normalizeShipSystems({ support, late }),
     runSeed: Number.isFinite(seed) && seed > 0 ? seed : null,
   };
 }

@@ -4,6 +4,7 @@ import { getViewportBounds } from '../utils/layout';
 import { drawAngledRectPath, NEON } from '../scenes/shared/neonUiTheme';
 import { scaleUiGlowAlpha } from '../utils/renderingCompat';
 import { beginDrag, dragDesiredVelocity, dragTarget, type DragState } from './input/relativeDrag';
+import { SPECIAL_GUN_CHARGE, type MainGunId } from '../config/shipSystems';
 
 const CONTROLS_DEPTH = 1000;
 const PAUSE_BUTTON_SIZE = 44;
@@ -11,8 +12,8 @@ const PAUSE_BUTTON_TOP_INSET = 84;
 const PAUSE_BUTTON_RIGHT_INSET = 22;
 /** The gun-swap key sits under pause: on the edge, clear of the steering thumb and the lane centre. */
 const SWAP_BUTTON_GAP = 14;
-/** Cooldown redraws in steps, not every frame. */
-const SWAP_COOLDOWN_STEPS = 20;
+/** The charge bar redraws in steps, not every frame. */
+const SWAP_CHARGE_STEPS = 20;
 /** Keeps the dragged ship clear of the very edge so it stays fully visible. */
 const DRAG_EDGE_MARGIN = 18;
 
@@ -24,8 +25,8 @@ interface ControlKey {
 
 /**
  * Touch controls for momentum flight: drag anywhere and the ship follows the finger's movement,
- * while the main gun autofires. A pause button stays available in the top-right corner, and once the
- * run has a main gun a swap button sits under it.
+ * while the main gun autofires. A pause button stays available in the top-right corner, and from sector 3
+ * a swap button sits under it that borrows a special gun and shows the charge.
  */
 export class MobileControls {
   private scene: Phaser.Scene | null = null;
@@ -42,8 +43,10 @@ export class MobileControls {
   private swapButtonPointerId: number | null = null;
   private swapButtonY: number = 0;
   private swapAvailable: boolean = false;
-  /** Cooldown left, in `SWAP_COOLDOWN_STEPS` (0 = ready). */
-  private swapCooldownStep: number = 0;
+  /** A special gun is out and burning the charge. */
+  private swapDraining: boolean = false;
+  /** Special-gun charge, in `SWAP_CHARGE_STEPS` (the full count = full). */
+  private swapChargeStep: number = SWAP_CHARGE_STEPS;
   private swapPressPending: boolean = false;
   private dragPointerId: number | null = null;
   private dragState: DragState | null = null;
@@ -147,7 +150,8 @@ export class MobileControls {
     this.touchSteeringSuppressed = false;
     this.pauseButtonHandler = null;
     this.swapAvailable = false;
-    this.swapCooldownStep = 0;
+    this.swapDraining = false;
+    this.swapChargeStep = SWAP_CHARGE_STEPS;
     this.swapPressPending = false;
   }
 
@@ -210,15 +214,21 @@ export class MobileControls {
   }
 
   /**
-   * Shows the swap button only while the run has a main gun, dimmed and charging while
-   * `cooldownRatio` (1 just swapped, 0 ready) runs down.
+   * Shows the swap button only while there is a gun to swap (sector 3 on), with the special-gun charge
+   * along its foot: amber and draining while a special gun is out, cyan and refilling on Lance.
    */
-  setGunSwapState(available: boolean, cooldownRatio: number): void {
-    const step = available ? Math.ceil(cooldownRatio * SWAP_COOLDOWN_STEPS) : 0;
-    if (available === this.swapAvailable && step === this.swapCooldownStep) return;
+  setGunChargeState(gun: MainGunId | null, charge: number): void {
+    const available = gun !== null;
+    const draining = available && gun !== 'lance';
+    const steps = Math.max(0, Math.min(1, charge)) * SWAP_CHARGE_STEPS;
+    // Rounded down on Lance, so the key never looks ready before the charge allows leaving; up while
+    // draining, so a special gun never shows an empty bar.
+    const step = draining ? Math.ceil(steps) : Math.floor(steps);
+    if (available === this.swapAvailable && draining === this.swapDraining && step === this.swapChargeStep) return;
     const visibilityChanged = available !== this.swapAvailable;
     this.swapAvailable = available;
-    this.swapCooldownStep = step;
+    this.swapDraining = draining;
+    this.swapChargeStep = step;
     if (visibilityChanged) this.refreshVisibility();
     this.updateSwapButtonVisual();
   }
@@ -353,28 +363,30 @@ export class MobileControls {
     key.hitArea.setPosition(x, y);
   }
 
-  /** Two opposed arrows; while cooling the key dims and a bar charges along its foot. */
+  /**
+   * Two opposed arrows over the charge bar. A special gun out lights the key's edge and bar amber while
+   * it drains; on Lance the bar refills cyan, and the key dims until there is enough charge to leave.
+   */
   private updateSwapButtonVisual(): void {
     const key = this.swapKey;
     if (!key) return;
     const active = this.swapButtonPointerId !== null && this.isEnabled();
-    const cooling = this.swapCooldownStep > 0;
+    const charge = this.swapChargeStep / SWAP_CHARGE_STEPS;
+    const ready = this.swapDraining || charge >= SPECIAL_GUN_CHARGE.minToLeaveLance;
     const x = this.pauseButtonX;
     const y = this.swapButtonY;
     const half = PAUSE_BUTTON_SIZE / 2;
+    const barColor = this.swapDraining ? NEON.amber : NEON.cyanBright;
 
-    drawKeyFrame(key.bg, x, y, active, cooling ? 0.55 : 1);
-    if (cooling) {
-      const charged = 1 - this.swapCooldownStep / SWAP_COOLDOWN_STEPS;
-      const barWidth = PAUSE_BUTTON_SIZE - 20;
-      key.bg.fillStyle(NEON.cyan, 0.25);
-      key.bg.fillRect(x - barWidth / 2, y + half - 8, barWidth, 3);
-      key.bg.fillStyle(NEON.cyanBright, 0.95);
-      key.bg.fillRect(x - barWidth / 2, y + half - 8, barWidth * charged, 3);
-    }
+    drawKeyFrame(key.bg, x, y, active, ready ? 1 : 0.55, this.swapDraining ? NEON.amber : NEON.cyan);
+    const barWidth = PAUSE_BUTTON_SIZE - 20;
+    key.bg.fillStyle(barColor, 0.25);
+    key.bg.fillRect(x - barWidth / 2, y + half - 8, barWidth, 3);
+    key.bg.fillStyle(barColor, 0.95);
+    key.bg.fillRect(x - barWidth / 2, y + half - 8, barWidth * charge, 3);
 
     key.icon.clear();
-    key.icon.fillStyle(active ? NEON.ink : 0xe8f9ff, cooling ? 0.45 : 1);
+    key.icon.fillStyle(active ? NEON.ink : 0xe8f9ff, ready ? 1 : 0.45);
     key.icon.fillRect(x - 9, y - 6, 12, 3);
     key.icon.fillTriangle(x + 3, y - 10, x + 3, y + 1, x + 10, y - 4.5);
     key.icon.fillRect(x - 3, y + 3, 12, 3);
@@ -406,17 +418,27 @@ function setControlKeyVisible(key: ControlKey | null, visible: boolean, interact
   if (key?.hitArea.input) key.hitArea.input.enabled = interactive;
 }
 
-/** Glass key in the shared cut-corner shape; pressing it lights it solid like a primary button. */
-function drawKeyFrame(bg: Phaser.GameObjects.Graphics, x: number, y: number, active: boolean, alpha: number): void {
+/**
+ * Glass key in the shared cut-corner shape; pressing it lights it solid like a primary button. `edge`
+ * tints the unpressed outline and glow (the swap key goes amber while a special gun is out).
+ */
+function drawKeyFrame(
+  bg: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  active: boolean,
+  alpha: number,
+  edge: number = NEON.cyan
+): void {
   const half = PAUSE_BUTTON_SIZE / 2;
   bg.clear();
   drawAngledRectPath(bg, x - half - 2, y - half - 2, PAUSE_BUTTON_SIZE + 4, PAUSE_BUTTON_SIZE + 4, 12);
-  bg.lineStyle(3, NEON.cyan, scaleUiGlowAlpha(active ? 0.3 : 0.1) * alpha);
+  bg.lineStyle(3, edge, scaleUiGlowAlpha(active ? 0.3 : 0.1) * alpha);
   bg.strokePath();
   drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
   bg.fillStyle(active ? NEON.cyan : NEON.panel, active ? 0.95 : 0.7);
   bg.fillPath();
   drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
-  bg.lineStyle(1.5, active ? NEON.cyanBright : NEON.cyan, (active ? 1 : 0.75) * alpha);
+  bg.lineStyle(1.5, active ? NEON.cyanBright : edge, (active ? 1 : 0.75) * alpha);
   bg.strokePath();
 }

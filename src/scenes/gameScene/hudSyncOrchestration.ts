@@ -1,4 +1,5 @@
 import type { Player } from '@/entities/Player';
+import type { MainGunId } from '@/config/shipSystems';
 import type { HUD } from '@/systems/HUD';
 import type { LevelManager } from '@/systems/LevelManager';
 import type { ScoreManager } from '@/systems/ScoreManager';
@@ -19,6 +20,9 @@ interface HudUpdateInput {
   lastHudShieldCount: number | null;
   now: number;
   surgeRatio: number;
+  /** Null before sector 3, where there is no gun row. */
+  gun: MainGunId | null;
+  gunCharge: number;
 }
 
 export function syncHudShields(input: HudSyncInput): number | null {
@@ -40,6 +44,7 @@ export function updateHud(input: HudUpdateInput): number | null {
   );
   input.hud.updateChainMeter(input.scoreManager.getChainState(input.now));
   input.hud.updateSurge(input.surgeRatio);
+  input.hud.updateGunCharge(input.gun, input.gunCharge);
 
   return syncHudShields({
     hud: input.hud,

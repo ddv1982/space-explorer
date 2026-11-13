@@ -45,7 +45,7 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
           remainingLives: 1,
           currentShields: 2,
           upgrades: { hp: 2, damage: 2, fireRate: 2, shield: 2, turrets: 1 },
-          systems: { gun: null, support: null, late: null },
+          systems: { support: null, late: null },
           helperWing: { grantedSlots: 1, slots: [{ hp: 4, remainingLives: 1 }] },
         },
         { finalScore: 9500, levelReached: 4 }
@@ -96,7 +96,7 @@ test('retry resets a loaded run while preserving checkpoints and settings', asyn
     remainingLives: 3,
     currentShields: 0,
     upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-    systems: { gun: null, support: null, late: null },
+    systems: { support: null, late: null },
     helperWing: { grantedSlots: 0, slots: [] },
   });
   // Retry changes nothing that was stored, apart from recording the lost run's score as the best.

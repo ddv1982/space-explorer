@@ -48,18 +48,22 @@ interface GameSceneGameplayFrameDelegate {
   } | null;
   shipSystems: {
     getSystems(): ShipSystems;
-    trySwapGun(now: number): GunSwapOutcome;
-    isGunSilenced(now: number): boolean;
-    getGunSwapCooldownRatio(now: number): number;
+    getGun(): MainGunId | null;
+    getGunCharge(): number;
+    trySwapGun(): GunSwapOutcome;
+    updateGunCharge(deltaMs: number): boolean;
     update(): void;
   };
-  /** Name flash and sound for a gun swap, or the quiet cue for one refused during the cooldown. */
+  /**
+   * Name flash and sound for a gun change (a swap, or the meter running out and handing back Lance), or
+   * the quiet cue for leaving Lance refused on a low meter.
+   */
   gunSwapFeedback: {
     swapped(gun: MainGunId): void;
     denied(): void;
   };
   mobileControls: {
-    setGunSwapState(available: boolean, cooldownRatio: number): void;
+    setGunChargeState(gun: MainGunId | null, charge: number): void;
   } | null;
   grazeSurge: {
     update(): void;
@@ -149,30 +153,30 @@ export function createGameSceneGameplayFrameBehavior(
     delegate.updateHud();
   };
 
-  const updateGunSwap = (time: number): void => {
+  const updateGunSwap = (delta: number): void => {
     const shipSystems = delegate.shipSystems;
     if (delegate.inputManager.consumeGunSwapRequest() && delegate.player.isAlive) {
-      const outcome = shipSystems.trySwapGun(time);
-      const gun = shipSystems.getSystems().gun;
+      const outcome = shipSystems.trySwapGun();
+      const gun = shipSystems.getGun();
       if (outcome === 'swapped' && gun) delegate.gunSwapFeedback.swapped(gun);
-      else if (outcome === 'cooling') delegate.gunSwapFeedback.denied();
+      else if (outcome === 'low-charge') delegate.gunSwapFeedback.denied();
     }
-    delegate.mobileControls?.setGunSwapState(
-      shipSystems.getSystems().gun !== null,
-      shipSystems.getGunSwapCooldownRatio(time)
-    );
+    if (shipSystems.updateGunCharge(delta)) delegate.gunSwapFeedback.swapped('lance');
+    delegate.mobileControls?.setGunChargeState(shipSystems.getGun(), shipSystems.getGunCharge());
   };
 
   const updatePlayerFiring = (time: number): void => {
     const shipSystems = delegate.shipSystems;
-    if (!delegate.inputManager.isFiring() || !delegate.player.isAlive || shipSystems.isGunSilenced(time)) {
+    if (!delegate.inputManager.isFiring() || !delegate.player.isAlive) {
       return;
     }
 
     const systems = shipSystems.getSystems();
+    const gun = shipSystems.getGun();
     const fireCooldown = resolveMainGunCooldownMs(
       delegate.player.fireRate,
       delegate.scoreManager.getChainState(time).multiplier,
+      gun,
       systems
     );
     if (time <= lastFireTime + fireCooldown) {
@@ -188,6 +192,7 @@ export function createGameSceneGameplayFrameBehavior(
 
     volleyIndex += 1;
     fireMainGunVolley({
+      gun,
       systems,
       volleyIndex,
       origin: shotOrigin,
@@ -305,7 +310,7 @@ export function createGameSceneGameplayFrameBehavior(
     delegate.shipSystems.update();
     delegate.grazeSurge.update();
 
-    updateGunSwap(time);
+    updateGunSwap(delta);
     updatePlayerFiring(time);
     updateEncounterAndLevelProgress(time, delta);
     updateBossHudIfNeeded();

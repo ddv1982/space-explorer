@@ -42,7 +42,6 @@ export type GameSceneBootstrapHost = {
   stopPlayerMotion: () => void;
   captureCurrentRunStateForSave: () => PlayerStateData;
   canSaveCurrentRun: () => boolean;
-  getGameplayNow: () => number;
 };
 
 export type GameSceneBootstrapRuntime = {
@@ -140,7 +139,8 @@ export function runGameSceneCreateBootstrap(
     canSaveCurrentRun: host.canSaveCurrentRun,
     shipSystems: {
       getSystems: () => gameplay.shipSystems.getSystems(),
-      cycleSystem: (slot) => gameplay.shipSystems.cycleSystem(slot, host.getGameplayNow()),
+      cycleSystem: (slot) => gameplay.shipSystems.cycleSystem(slot),
+      hasSpecialGuns: () => gameplay.shipSystems.getGun() !== null,
     },
   });
 
@@ -166,7 +166,7 @@ export function runGameSceneCreateBootstrap(
   host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeInput);
   dependencies.showControlsHint(host.scene, {
     mobile: dependencies.isTouchMobileDevice(),
-    gunSwap: state.systems.gun !== null,
+    gunSwap: gameplay.shipSystems.getGun() !== null,
   });
 
   return {

@@ -20,7 +20,7 @@ const SUBVIEWS: ReadonlyArray<[PauseSubview, string]> = [
   ['systems', 'SYSTEMS'],
   ['settings', 'SETTINGS'],
 ];
-const SYSTEM_SLOTS: readonly ShipSystemSlot[] = ['gun', 'support', 'late'];
+const SYSTEM_SLOTS: readonly ShipSystemSlot[] = ['support', 'late'];
 
 /** The status line: the controller's message, else a note about the active subview. */
 export function describePauseStatus(
@@ -94,25 +94,19 @@ interface SystemRow {
   refresh: (state: PauseOverlayState) => void;
 }
 
-/**
- * A picked ship system: its slot, name and what it does. Support and doctrine get SWAP to cycle to the
- * slot's next option; the main gun is swapped in flight only, where its cooldown applies.
- */
+/** A picked ship system: its slot, name, what it does, and SWAP to cycle to the slot's next option. */
 function createSystemRow(slot: ShipSystemSlot, handlers: PauseOverlayHandlers): SystemRow {
   const kicker = h('span', { className: 'pause-system__slot' });
   const name = h('span');
   const description = h('span', { className: 'pause-slot__sub ui-ellipsis' });
-  let swap: HTMLButtonElement | null = null;
-  if (slot !== 'gun') {
-    swap = h('button', { type: 'button', className: 'ui-btn ui-btn--slim' }, 'SWAP');
-    swap.addEventListener('click', () => handlers.onCycleSystem(slot));
-  }
+  const swap = h('button', { type: 'button', className: 'ui-btn ui-btn--slim' }, 'SWAP');
+  swap.addEventListener('click', () => handlers.onCycleSystem(slot));
   const element = h(
     'div',
     { className: 'ui-card pause-slot pause-system', 'data-occupied': '' },
     h('span', { className: 'pause-slot__title ui-ellipsis' }, kicker, name),
     description,
-    ...(swap ? [h('div', { className: 'pause-slot__actions' }, swap)] : [])
+    h('div', { className: 'pause-slot__actions' }, swap)
   );
 
   return {
@@ -124,7 +118,7 @@ function createSystemRow(slot: ShipSystemSlot, handlers: PauseOverlayHandlers): 
       kicker.textContent = picked.title;
       name.textContent = picked.option.name;
       description.textContent = picked.option.description;
-      swap?.setAttribute('aria-label', `Swap ${picked.title.toLowerCase()}, now ${picked.option.name}`);
+      swap.setAttribute('aria-label', `Swap ${picked.title.toLowerCase()}, now ${picked.option.name}`);
     },
   };
 }
@@ -152,6 +146,7 @@ export class PauseOverlay {
     storageAvailable: false,
     saveSlots: [],
     systems: NO_SHIP_SYSTEMS,
+    specialGuns: false,
     statusMessage: '',
   };
 
@@ -260,7 +255,7 @@ export class PauseOverlay {
       );
     }
     this.systemRows.forEach((row) => row.refresh(this.state));
-    this.hint.textContent = this.state.systems.gun ? 'ESC  RESUME      Q  SWAP GUN IN FLIGHT' : 'ESC  RESUME';
+    this.hint.textContent = this.state.specialGuns ? 'ESC  RESUME      Q  SPECIAL GUN WHILE CHARGED' : 'ESC  RESUME';
     for (const [subview, { tab, view }] of this.tabs) {
       const active = subview === this.activeSubview;
       if (subview === 'systems') tab.hidden = describePickedShipSystems(this.state.systems).length === 0;

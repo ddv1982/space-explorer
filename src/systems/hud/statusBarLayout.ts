@@ -9,11 +9,15 @@ export const HULL_CELL_HEIGHT = 10;
 export const SURGE_BAR_HEIGHT = 3;
 export const RESERVE_ICON_HEIGHT = 9;
 export const BOSS_BAR_HEIGHT = 12;
+export const GUN_CHARGE_BAR_HEIGHT = 4;
+/** Room the gun name takes before the charge bar starts; fits `SEEKERS`. */
+const GUN_NAME_WIDTH = 64;
 
 /**
- * Where every HUD instrument sits. Two floating clusters hold the top corners (hull, surge, shields and
- * reserve ships on the left; score and chain on the right) and a flight-vector rail runs along the top:
- * between the clusters on wide viewports, edge to edge above them on phones.
+ * Where every HUD instrument sits. Two floating clusters hold the top corners (hull, surge, shields,
+ * reserve ships and, from sector 3, the gun and its charge on the left; score and chain on the right) and
+ * a flight-vector rail runs along the top: between the clusters on wide viewports, edge to edge above
+ * them on phones.
  */
 export interface HudLayoutMetrics {
   left: number;
@@ -32,6 +36,12 @@ export interface HudLayoutMetrics {
   surgeY: number;
   reserveY: number;
   reserveIconsX: number;
+  /** The gun row under the reserve ships: its name, then the special-gun charge bar. */
+  gunY: number;
+  gunBarX: number;
+  gunBarWidth: number;
+  /** Bottom of the left cluster: under the gun row when it shows, else under the reserve ships. */
+  hullClusterBottom: number;
   scoreRight: number;
   scoreLabelY: number;
   scoreY: number;
@@ -57,7 +67,7 @@ export interface HudLayoutMetrics {
   announcementMaxWidth: number;
 }
 
-export function getLayoutMetrics(scene: Phaser.Scene): HudLayoutMetrics {
+export function getLayoutMetrics(scene: Phaser.Scene, gunRow: boolean): HudLayoutMetrics {
   const viewport = getViewportBounds(scene);
   const compact = viewport.width < COMPACT_WIDTH;
   const clusterTop = viewport.top + (compact ? 22 : 12);
@@ -66,6 +76,8 @@ export function getLayoutMetrics(scene: Phaser.Scene): HudLayoutMetrics {
   const hullCellsY = clusterTop + 17;
   const surgeY = hullCellsY + HULL_CELL_HEIGHT + 4;
   const reserveY = surgeY + SURGE_BAR_HEIGHT + 7;
+  const gunY = reserveY + RESERVE_ICON_HEIGHT + 8;
+  const hullClusterBottom = gunRow ? gunY + RESERVE_ICON_HEIGHT : reserveY + RESERVE_ICON_HEIGHT;
   const scoreRight = viewport.right - EDGE_INSET;
   const progressWidth = compact
     ? viewport.width - EDGE_INSET * 2
@@ -83,6 +95,10 @@ export function getLayoutMetrics(scene: Phaser.Scene): HudLayoutMetrics {
     surgeY,
     reserveY,
     reserveIconsX: hullX + 32,
+    gunY,
+    gunBarX: hullX + GUN_NAME_WIDTH,
+    gunBarWidth: hullWidth - GUN_NAME_WIDTH - 4,
+    hullClusterBottom,
     scoreRight,
     scoreLabelY: clusterTop,
     scoreY: compact ? clusterTop - 3 : clusterTop + 11,
@@ -92,7 +108,7 @@ export function getLayoutMetrics(scene: Phaser.Scene): HudLayoutMetrics {
     levelX: compact ? scoreRight : progressX + progressWidth,
     levelY: compact ? clusterTop + 36 : viewport.top + 9,
     chainX: compact ? hullX : scoreRight,
-    chainY: compact ? reserveY + RESERVE_ICON_HEIGHT + 10 : clusterTop + 44,
+    chainY: compact ? hullClusterBottom + 10 : clusterTop + 44,
     chainOriginX: compact ? 0 : 1,
     progressX,
     progressY: viewport.top + (compact ? 9 : 28),
