@@ -47,7 +47,7 @@ Per-level identity: each level keeps its `accentColor` from the level definition
 | --- | --- | --- |
 | Player ship | cyan `#5bd8ff` | hero |
 | Helper wing | teal `#58f0d8` | ally |
-| Player bullets | cyan-white | friendly fire |
+| Player bullets | cyan-white; each main gun varies shape, length and brightness (bolt, long lance, round pellet, arrowhead dart), never the palette | friendly fire |
 | Scout | red `#ff5d73` | fast flanker |
 | Fighter | green `#52f28e` | balanced |
 | Bomber | amber `#ffb14b` | heavy ordnance |

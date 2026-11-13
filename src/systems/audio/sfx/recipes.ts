@@ -465,6 +465,35 @@ export const SFX = {
     jitter: 0,
     maxVoices: 1,
   },
+  /**
+   * Changing the main gun: a dry unlatch tick, a short rising whir and a higher lock-in tick. Mechanical
+   * rather than chimed so it never reads as a menu sound, and quiet because it plays mid-fight.
+   */
+  gunSwap: {
+    layers: [
+      {
+        source: 'noise',
+        filter: { type: 'bandpass', freq: [2600, 1800], q: 3 },
+        attack: 0.001,
+        decay: 0.03,
+        gain: 0.5,
+      },
+      { source: 'square', freq: [220, 660], filter: SOFT_LOWPASS, attack: 0.02, decay: 0.12, gain: 0.35, at: 0.03 },
+      {
+        source: 'noise',
+        filter: { type: 'bandpass', freq: [4200, 3000], q: 3 },
+        attack: 0.001,
+        decay: 0.03,
+        gain: 0.5,
+        at: 0.15,
+      },
+      note(1318.5, 0.15, 0.08, 0.25, 'triangle'),
+    ],
+    gain: 0.2,
+    variants: 1,
+    jitter: 0,
+    maxVoices: 1,
+  },
   uiClick: {
     layers: [
       note(920, 0, 0.045, 0.6, 'sine', { freq: [920, 700] }),

@@ -9,14 +9,15 @@ declare global {
 
 test('paints the player bullet once before firing and reuses it', async ({ page, isMobile, assertNoBrowserErrors }) => {
   await page.addInitScript(() => {
-    // The bolt is painted once into a 4x-density 14x30 canvas (56x120 physical) with one sheath gradient.
+    // Every gun's look is painted into one 4x-density strip of four 14x44 frames (224x176 physical).
+    // Each paint of that strip draws gradients, so their count only moves when the strip is painted.
     window.__PLAYER_BULLET_PAINT_COUNT__ = 0;
     const original = CanvasRenderingContext2D.prototype.createLinearGradient;
     CanvasRenderingContext2D.prototype.createLinearGradient = function (
       this: CanvasRenderingContext2D,
       ...args: Parameters<typeof original>
     ) {
-      if (this.canvas.width === 56 && this.canvas.height === 120) {
+      if (this.canvas.width === 224 && this.canvas.height === 176) {
         window.__PLAYER_BULLET_PAINT_COUNT__ = (window.__PLAYER_BULLET_PAINT_COUNT__ ?? 0) + 1;
       }
       return original.apply(this, args);
@@ -29,7 +30,7 @@ test('paints the player bullet once before firing and reuses it', async ({ page,
   const beforePath = test.info().outputPath('before-fire-paints.json');
   writeFileSync(beforePath, JSON.stringify({ beforeFire }));
   await test.info().attach('before-fire-paints.json', { path: beforePath, contentType: 'application/json' });
-  expect(beforeFire, 'player bullet texture must be ready before the first firing update').toBe(1);
+  expect(beforeFire, 'player bullet texture must be ready before the first firing update').toBeGreaterThan(0);
 
   const touch = isMobile ? await page.context().newCDPSession(page) : null;
   try {

@@ -4,10 +4,10 @@ import { BULLET_SPEED } from '@/utils/constants';
 import { getActiveSection, getSectionProgress } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
 import { audioManager } from '@/systems/AudioManager';
-import type { BulletBehaviour, BulletTargetFinder } from '@/entities/Bullet';
+import type { BulletTargetFinder } from '@/entities/Bullet';
 import type { MainGunId, ShipSystems } from '@/config/shipSystems';
 import type { GunSwapOutcome } from '@/systems/ShipSystemsRuntime';
-import { fireMainGunVolley, resolveMainGunCooldownMs } from '@/systems/mainGun';
+import { fireMainGunVolley, resolveMainGunCooldownMs, type MainGunVolley } from '@/systems/mainGun';
 import { GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
 import type { ChainState } from '@/systems/ScoreManager';
 import { resolveSectionMusicIntensity } from '@/systems/sectionIdentity';
@@ -88,9 +88,7 @@ interface GameSceneGameplayFrameDelegate {
     hideBossBar(): void;
     updateBossHp(hp: number, maxHp: number): void;
   };
-  bulletPool: {
-    fire(x: number, y: number, velocityX: number, velocityY: number, behaviour?: BulletBehaviour): void;
-  };
+  bulletPool: Pick<MainGunVolley, 'fire'>;
   /** The nearest live enemy to a point, for seeking shots. */
   findBulletTarget: BulletTargetFinder;
   effectsManager: {
@@ -196,7 +194,8 @@ export function createGameSceneGameplayFrameBehavior(
       direction: shotDirection,
       speed: shotSpeed,
       findTarget: delegate.findBulletTarget,
-      fire: (x, y, velocityX, velocityY, behaviour) => delegate.bulletPool.fire(x, y, velocityX, velocityY, behaviour),
+      fire: (x, y, velocityX, velocityY, behaviour, look) =>
+        delegate.bulletPool.fire(x, y, velocityX, velocityY, behaviour, look),
     });
     delegate.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
     audioManager.playSfx('playerShot');

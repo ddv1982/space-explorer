@@ -425,7 +425,7 @@ export class GameScene extends Phaser.Scene {
       gunSwapFeedback: {
         swapped: (gun) => {
           createShipLabel(this, this.player.x, this.player.y, getShipSystemName(gun), NEON_TEXT.cyan);
-          audioManager.playSfx('uiConfirm');
+          audioManager.playSfx('gunSwap');
         },
         denied: () => audioManager.playSfx('uiClick'),
       },

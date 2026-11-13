@@ -16,10 +16,6 @@ export function inspectPreparedBulletPool(): Promise<{
     class ProbeScene extends Phaser.Scene {
       create(): void {
         try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 8;
-          canvas.height = 18;
-          this.textures.addCanvas('player-bullet', canvas);
           const pool = new BulletPool();
           pool.create(this);
           const group = pool.getGroup();

@@ -4,6 +4,7 @@ import { despawnEntity, isArcadeSimulationPaused, spawnEntity } from '../utils/e
 import { GAME_SCENE_EVENTS } from '../systems/GameplayFlow';
 import { ensurePlayerBulletTexture } from '../utils/SpriteFactory';
 import { getRuntimeTrailInterval } from '../systems/RuntimePerformanceBudget';
+import type { PlayerShotLook } from '../config/shipSystems';
 
 /** Where a seeking shot should steer: the nearest live target, or null to fly straight. */
 export type BulletTargetFinder = (x: number, y: number) => { x: number; y: number } | null;
@@ -27,20 +28,29 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensurePlayerBulletTexture(scene);
 
-    super(scene, x, y, 'player-bullet');
+    super(scene, x, y, 'player-bullet', 'bolt');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     despawnEntity(this);
     this.setDepth(4);
     this.setBlendMode(Phaser.BlendModes.ADD);
-    // The texture carries a glow halo; the hitbox stays the original 8x18 bolt.
+    // The texture carries a glow halo; the hitbox stays the original 8x18 bolt, centred in every look.
     (this.body as Phaser.Physics.Arcade.Body | null)?.setSize(8, 18);
   }
 
-  fire(x: number, y: number, velocityX: number = 0, velocityY?: number, behaviour: BulletBehaviour = {}): void {
+  fire(
+    x: number,
+    y: number,
+    velocityX: number = 0,
+    velocityY?: number,
+    behaviour: BulletBehaviour = {},
+    look: PlayerShotLook = 'bolt'
+  ): void {
     const resolvedVelocityY = velocityY ?? BULLET_SPEED;
 
+    // Every look is a same-sized frame of one texture, so this never resizes the body or breaks a batch.
+    this.setFrame(look);
     spawnEntity(this, x, y);
     this.lastTrailTime = 0;
     this.pierce = behaviour.pierce === true;
