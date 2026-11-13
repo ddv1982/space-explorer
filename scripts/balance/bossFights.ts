@@ -4,12 +4,13 @@
  * Fights every boss with a scripted bot and reports how long each fight took and what it cost.
  *
  *   bun run balance:bosses
- *   bun run balance:bosses --sectors 6 --guns standard,lance --port 4302
+ *   bun run balance:bosses --sectors 6 --port 4302
  *   bun run balance:bosses --invulnerable      # time to kill even where the bot would die
  *
  * Starts its own dev server (the browser harness is dev-only), jumps straight to each boss with the
  * sector's representative ship, and lets `startBossFight` in the browser harness fly a fixed bot: it
- * holds a low line under the boss and steps away from shots that will cross it. Fights run in real
+ * holds a low line under the boss and steps away from shots that will cross it. Every boss sector flies
+ * Lance; the bot never spends the special-gun charge. Fights run in real
  * time on the gameplay clock (no speed-up), several at once in separate pages; `seconds` is gameplay
  * time from the boss alarm to the kill, so pauses and hit-stops do not count.
  */
@@ -18,13 +19,10 @@ import { createServer } from 'vite';
 import type { BossFightReport } from '../../src/browserHarness';
 import { getUpgradeByKey, getUpgradeProgressionLimit, type UpgradeKey } from '../../src/config/UpgradesConfig';
 
-const GUNS = ['standard', 'lance', 'scatter', 'seekers'] as const;
-type Gun = (typeof GUNS)[number];
 const BOSS_SECTORS = [3, 4, 5, 6, 7, 8, 9, 10];
 
 interface Options {
   sectors: number[];
-  guns: Gun[];
   parallel: number;
   limitSeconds: number;
   invulnerable: boolean;
@@ -41,11 +39,8 @@ function parseOptions(argv: readonly string[]): Options {
     flag(name)
       ?.split(',')
       .map((part) => part.trim());
-  const guns = (list('--guns') ?? [...GUNS]) as Gun[];
-  if (guns.some((gun) => !GUNS.includes(gun))) throw new Error(`--guns takes ${GUNS.join(',')}`);
   return {
     sectors: list('--sectors')?.map(Number) ?? BOSS_SECTORS,
-    guns,
     parallel: Number(flag('--parallel') ?? 4),
     limitSeconds: Number(flag('--limit') ?? 240),
     invulnerable: argv.includes('--invulnerable'),
@@ -67,12 +62,11 @@ function representativeUpgrades(sector: number): string {
 
 interface FightResult extends BossFightReport {
   sector: number;
-  gun: Gun;
   /** Frames per second the page held; the bot needs a real frame rate to dodge like a player. */
   fps: number;
 }
 
-async function fight(browser: Browser, baseUrl: string, sector: number, gun: Gun, options: Options) {
+async function fight(browser: Browser, baseUrl: string, sector: number, options: Options) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await context.newPage();
   try {
@@ -81,9 +75,8 @@ async function fight(browser: Browser, baseUrl: string, sector: number, gun: Gun
       // Low effects keep several pages at full frame rate; quality never changes the simulation.
       window.localStorage.setItem('space-explorer.visualQuality.v1', 'low');
     });
-    const systems = gun === 'standard' ? '' : `&systems=${gun}`;
     const upgrades = representativeUpgrades(sector);
-    await page.goto(`${baseUrl}/?browserHarness=1&startLevel=${sector}&upgrades=${upgrades}${systems}&seed=1`);
+    await page.goto(`${baseUrl}/?browserHarness=1&startLevel=${sector}&upgrades=${upgrades}&seed=1`);
     await page.waitForFunction(
       () => window.__SPACE_EXPLORER_BROWSER_HARNESS__?.snapshot().activeScenes.includes('Game') ?? false,
       undefined,
@@ -108,10 +101,10 @@ async function fight(browser: Browser, baseUrl: string, sector: number, gun: Gun
         .catch(() => false);
       if (!report || report.killed || gameOver || report.seconds > options.limitSeconds) break;
     }
-    if (!report) throw new Error(`Sector ${sector} ${gun}: no fight report`);
+    if (!report) throw new Error(`Sector ${sector}: no fight report`);
     const frames = await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.renderStats.read().frames);
     const fps = frames / ((Date.now() - startedAt) / 1000);
-    return { ...report, sector, gun, fps } satisfies FightResult;
+    return { ...report, sector, fps } satisfies FightResult;
   } finally {
     await context.close();
   }
@@ -128,7 +121,7 @@ async function main(): Promise<void> {
   if (!address || typeof address === 'string') throw new Error('Dev server did not report a port');
   const baseUrl = `http://127.0.0.1:${address.port}`;
 
-  const queue = options.sectors.flatMap((sector) => options.guns.map((gun) => ({ sector, gun })));
+  const queue = [...options.sectors];
   const results: FightResult[] = [];
   // Without the GPU, headless Chromium renders the game at about 10 fps and the bot reacts too late.
   const browser = await chromium.launch({
@@ -137,9 +130,9 @@ async function main(): Promise<void> {
   });
   try {
     const workers = Array.from({ length: Math.max(1, options.parallel) }, async () => {
-      for (let job = queue.shift(); job; job = queue.shift()) {
-        const result = await fight(browser, baseUrl, job.sector, job.gun, options);
-        console.error(`sector ${result.sector} ${result.gun}: ${result.seconds.toFixed(1)} s`);
+      for (let sector = queue.shift(); sector !== undefined; sector = queue.shift()) {
+        const result = await fight(browser, baseUrl, sector, options);
+        console.error(`sector ${result.sector}: ${result.seconds.toFixed(1)} s`);
         results.push(result);
       }
     });
@@ -149,12 +142,11 @@ async function main(): Promise<void> {
     await server.close();
   }
 
-  results.sort((a, b) => a.sector - b.sector || GUNS.indexOf(a.gun) - GUNS.indexOf(b.gun));
+  results.sort((a, b) => a.sector - b.sector);
   console.log(`Boss fights${options.invulnerable ? ' (invulnerable bot)' : ''}`);
   console.table(
     results.map((result) => ({
       sector: result.sector,
-      gun: result.gun,
       upgrades: representativeUpgrades(result.sector),
       'kill s': result.killed ? Number(result.seconds.toFixed(1)) : `- (${Math.round(result.seconds)})`,
       'boss hp': result.killed ? 0 : `${Math.round(result.bossHp)}/${result.bossMaxHp}`,

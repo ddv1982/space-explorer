@@ -1,18 +1,18 @@
 /**
  * Ship systems: free picks that change how the ship plays, offered at the refit bay. Once picked, a slot
- * can be changed to another of its options: freely at any later refit bay, and mid-run the main gun on
- * the swap key or touch button (`GUN_SWAP` keeps it a decision), support and doctrine from the pause panel. Nothing else needs input,
- * so touch and keyboard stay equal. Stat upgrades are bought separately.
+ * can be changed to another of its options: freely at any later refit bay, and mid-run from the pause
+ * panel. Nothing needs input, so touch and keyboard stay equal. Stat upgrades are bought separately.
+ *
+ * The main gun is not a pick: from sector 3 on the ship flies Lance, and the swap key borrows one of the
+ * two special guns for as long as `SPECIAL_GUN_CHARGE` lasts (see below).
  */
 export type MainGunId = 'lance' | 'scatter' | 'seekers';
 type SupportSystemId = 'magnet' | 'surgeCore' | 'wingman';
 type LateSystemId = 'overdrive' | 'bulwark' | 'salvager';
-export type ShipSystemId = MainGunId | SupportSystemId | LateSystemId;
-export type ShipSystemSlot = 'gun' | 'support' | 'late';
+export type ShipSystemId = SupportSystemId | LateSystemId;
+export type ShipSystemSlot = 'support' | 'late';
 
 export interface ShipSystems {
-  /** Null keeps the standard bolt. */
-  gun: MainGunId | null;
   support: SupportSystemId | null;
   late: LateSystemId | null;
 }
@@ -34,17 +34,6 @@ export interface ShipSystemSlotDef {
 }
 
 const SHIP_SYSTEM_SLOTS: readonly ShipSystemSlotDef[] = [
-  {
-    slot: 'gun',
-    title: 'MAIN GUN',
-    shortTitle: 'GUN',
-    offeredAfterLevel: 2,
-    options: [
-      { id: 'lance', name: 'LANCE', description: 'Slower shots that pierce every ship in a line.' },
-      { id: 'scatter', name: 'SCATTER', description: 'Three-way spread. Strong up close, thin at range.' },
-      { id: 'seekers', name: 'SEEKERS', description: 'Shots curve toward targets. Slow to fire, rarely miss.' },
-    ],
-  },
   {
     slot: 'support',
     title: 'SUPPORT SYSTEM',
@@ -73,7 +62,7 @@ const SHIP_SYSTEM_SLOTS: readonly ShipSystemSlotDef[] = [
   },
 ];
 
-export const NO_SHIP_SYSTEMS: ShipSystems = { gun: null, support: null, late: null };
+export const NO_SHIP_SYSTEMS: ShipSystems = { support: null, late: null };
 
 /** A slot's title and options, e.g. to offer them again at the refit bay. */
 export function getShipSystemSlot(slot: ShipSystemSlot): ShipSystemSlotDef {
@@ -85,12 +74,12 @@ function optionIds(slot: ShipSystemSlot): readonly ShipSystemId[] {
   return getShipSystemSlot(slot).options.map((option) => option.id);
 }
 
-/** Clamps untrusted persisted picks to the authored options. */
+/** Clamps untrusted persisted picks to the authored options; anything else stored with them is dropped. */
 export function normalizeShipSystems(value: unknown): ShipSystems {
   const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   const pick = <T extends ShipSystemId>(slot: ShipSystemSlot): T | null =>
     optionIds(slot).includes(record[slot] as ShipSystemId) ? (record[slot] as T) : null;
-  return { gun: pick('gun'), support: pick('support'), late: pick('late') };
+  return { support: pick('support'), late: pick('late') };
 }
 
 /** The pick to offer after clearing `level`: the earliest unlocked slot that is still empty. */
@@ -98,12 +87,12 @@ export function getPendingShipSystemSlot(level: number, systems: ShipSystems): S
   return SHIP_SYSTEM_SLOTS.find((def) => level >= def.offeredAfterLevel && systems[def.slot] === null) ?? null;
 }
 
-/** Puts `id` in its slot. Usable anywhere a pick changes: the refit bay, the swap key, the pause panel. */
+/** Puts `id` in its slot. Usable anywhere a pick changes: the refit bay and the pause panel. */
 export function setShipSystem(systems: ShipSystems, slot: ShipSystemSlot, id: ShipSystemId): ShipSystems {
   return normalizeShipSystems({ ...systems, [slot]: id });
 }
 
-/** The slot's next option, wrapping around (Lance -> Scatter -> Seekers -> Lance). An empty slot stays empty. */
+/** The slot's next option, wrapping around (Magnet -> Surge Core -> Wingman -> Magnet). An empty slot stays empty. */
 export function selectNextShipSystem(systems: ShipSystems, slot: ShipSystemSlot): ShipSystems {
   const current = systems[slot];
   if (current === null) return systems;
@@ -113,7 +102,7 @@ export function selectNextShipSystem(systems: ShipSystems, slot: ShipSystemSlot)
 
 interface PickedShipSystem {
   slot: ShipSystemSlot;
-  /** The slot's title, e.g. `MAIN GUN`. */
+  /** The slot's title, e.g. `SUPPORT SYSTEM`. */
   title: string;
   shortTitle: string;
   option: ShipSystemOption;
@@ -127,12 +116,7 @@ export function describePickedShipSystems(systems: ShipSystems): PickedShipSyste
   });
 }
 
-/** The display name of a system, e.g. `SCATTER`. */
-export function getShipSystemName(id: ShipSystemId): string {
-  return SHIP_SYSTEM_SLOTS.flatMap((def) => def.options).find((option) => option.id === id)?.name ?? '';
-}
-
-/** The picks as one line for a save slot, e.g. `SYSTEMS: LANCE · MAGNET`; empty with none. */
+/** The picks as one line for a save slot, e.g. `SYSTEMS: MAGNET · BULWARK`; empty with none. */
 export function describeShipSystems(systems: ShipSystems): string {
   const names = describePickedShipSystems(systems).map((picked) => picked.option.name);
   return names.length > 0 ? `SYSTEMS: ${names.join(' · ')}` : '';
@@ -147,6 +131,8 @@ export type PlayerShotLook = 'bolt' | 'lance' | 'pellet' | 'dart';
 
 /** Main-gun firing patterns. Damage per shot is unchanged; the fire cooldown pays for the pattern. */
 export interface MainGunProfile {
+  /** Shown in the HUD and flashed over the ship on a change, e.g. `SCATTER`. */
+  name: string;
   look: PlayerShotLook;
   /** Multiplies the fire cooldown. */
   cooldownScale: number;
@@ -158,6 +144,7 @@ export interface MainGunProfile {
 }
 
 const STANDARD_GUN: MainGunProfile = {
+  name: 'STANDARD',
   look: 'bolt',
   cooldownScale: 1,
   spreadDegrees: [0],
@@ -166,21 +153,70 @@ const STANDARD_GUN: MainGunProfile = {
 };
 
 /**
+ * Lance is the home gun from sector 3 on; Scatter and Seekers are the special guns, used on the charge.
  * Tuned by measurement, not only arithmetic: 40 s of sector 5 with autofire and a sweeping ship scored
  * 72k-132k with the standard gun over four runs, and each of these landed inside that spread.
  */
 const GUN_PROFILES: Record<MainGunId, MainGunProfile> = {
   // One target: 0.77x the standard gun. Two in a line: 1.54x. Rewards lining ships up.
-  lance: { look: 'lance', cooldownScale: 1.3, spreadDegrees: [0], pierce: true, seekDegreesPerSecond: 0 },
+  lance: {
+    name: 'LANCE',
+    look: 'lance',
+    cooldownScale: 1.3,
+    spreadDegrees: [0],
+    pierce: true,
+    seekDegreesPerSecond: 0,
+  },
   // All three hit up close: 1.67x. Only the centre shot at range: 0.56x. Rewards flying in.
-  scatter: { look: 'pellet', cooldownScale: 1.8, spreadDegrees: [-13, 0, 13], pierce: false, seekDegreesPerSecond: 0 },
+  scatter: {
+    name: 'SCATTER',
+    look: 'pellet',
+    cooldownScale: 1.8,
+    spreadDegrees: [-13, 0, 13],
+    pierce: false,
+    seekDegreesPerSecond: 0,
+  },
   // Half the shots of the standard gun, but almost every one connects. Rewards dodging over aiming.
-  seekers: { look: 'dart', cooldownScale: 2, spreadDegrees: [0], pierce: false, seekDegreesPerSecond: 150 },
+  seekers: {
+    name: 'SEEKERS',
+    look: 'dart',
+    cooldownScale: 2,
+    spreadDegrees: [0],
+    pierce: false,
+    seekDegreesPerSecond: 150,
+  },
 };
+
+/** The order the swap key steps through: Lance -> Scatter -> Seekers -> Lance. */
+const MAIN_GUN_CYCLE: readonly MainGunId[] = ['lance', 'scatter', 'seekers'];
 
 export function getMainGunProfile(gun: MainGunId | null): MainGunProfile {
   return gun ? GUN_PROFILES[gun] : STANDARD_GUN;
 }
+
+export function getNextMainGun(gun: MainGunId): MainGunId {
+  return MAIN_GUN_CYCLE[(MAIN_GUN_CYCLE.indexOf(gun) + 1) % MAIN_GUN_CYCLE.length];
+}
+
+/**
+ * The special-gun charge: one meter (0 empty, 1 full) on the gameplay clock, so pause and hit-stop never
+ * run it. Sectors before `fromLevel` fly the standard gun and have no meter; from there the ship flies
+ * Lance and the swap key steps to Scatter, Seekers and back.
+ * - `drainMs`: a full meter lasts this long while a special gun is selected; at empty the gun returns
+ *   to Lance by itself.
+ * - `refillMs`: on Lance an empty meter refills in this long, plus `perKill` for every enemy destroyed.
+ *   It never refills while a special gun is selected.
+ * - `minToLeaveLance`: leaving Lance needs at least this much; below it the swap is refused. Moving
+ *   between the special guns, or back to Lance, is always allowed.
+ * The meter starts full every sector and after every respawn or checkpoint load, and is never saved.
+ */
+export const SPECIAL_GUN_CHARGE = {
+  fromLevel: 3,
+  drainMs: 10_000,
+  refillMs: 30_000,
+  perKill: 0.02,
+  minToLeaveLance: 0.2,
+} as const;
 
 /** Surge Core: grazes count for more and the pulse clears a wider circle. */
 export const SURGE_CORE = { grazeValueScale: 1.6, clearRadiusScale: 1.35 } as const;
@@ -192,8 +228,3 @@ export const WINGMAN = { offsetX: 34, offsetY: 10, everyNthVolley: 2 } as const;
 export const OVERDRIVE_COOLDOWN_STEP = 0.06;
 /** Bulwark: a shield hit clears enemy shots inside this radius. */
 export const BULWARK_CLEAR_RADIUS = 160;
-/**
- * Changing the main gun mid-run, counted on the gameplay clock: the next change waits `cooldownMs` and
- * the new gun stays silent for `fireSilenceMs`, so swapping is a decision and never a free best-of-all.
- */
-export const GUN_SWAP = { cooldownMs: 2000, fireSilenceMs: 500 } as const;

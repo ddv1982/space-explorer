@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
 import type { LevelConfig } from '../config/LevelsConfig';
 import { colorToHexString, mixColor } from '../utils/colorUtils';
+import { getMainGunProfile, type MainGunId } from '../config/shipSystems';
+import { NEON_TEXT } from '../scenes/shared/neonUiTheme';
 import type { ChainState } from './ScoreManager';
 import { HudAnnouncementTweens } from './hud/announcementTweens';
 import { resolveChainReadout } from './hud/chainReadout';
 import {
   renderBossBar,
   renderChainBadge,
+  renderGunChargeBar,
   renderHullCells,
   renderProgressBar,
   renderReserveIcons,
@@ -40,6 +43,8 @@ export class HUD {
   private currentSurgeRatio: number | null = null;
   private currentBossHp: number | null = null;
   private currentBossMaxHp: number | null = null;
+  private currentGun: MainGunId | null = null;
+  private currentGunCharge: number | null = null;
 
   create(scene: Phaser.Scene, levelConfig?: LevelConfig): void {
     this.scene = scene;
@@ -54,6 +59,8 @@ export class HUD {
     this.currentSurgeRatio = null;
     this.currentBossHp = null;
     this.currentBossMaxHp = null;
+    this.currentGun = null;
+    this.currentGunCharge = null;
     this.bossVisible = false;
 
     const levelAccent = levelConfig?.accentColor ?? DEFAULT_ACCENT;
@@ -91,6 +98,7 @@ export class HUD {
     renderReserveIcons(this.widgets.reserveIcons, this.currentLives ?? 0, layout);
     renderShieldPips(this.widgets.shieldPips, this.currentShields ?? 0, layout);
     renderSurgeBar(this.widgets.surgeFill, this.currentSurgeRatio, layout);
+    this.renderGunCharge(layout);
     renderProgressBar(this.widgets.progressFill, this.currentProgress, this.accentColor, layout);
     this.renderChainBadge();
     this.renderBossBar();
@@ -201,6 +209,27 @@ export class HUD {
     renderSurgeBar(this.widgets.surgeFill, clampedRatio, layout);
   }
 
+  /**
+   * The gun row: from sector 3 the current gun's name and the special-gun charge. A sector without one
+   * (gun null) keeps the row hidden and the cluster its old size.
+   */
+  updateGunCharge(gun: MainGunId | null, charge: number): void {
+    const clampedCharge = Math.max(0, Math.min(1, charge));
+    if (gun !== this.currentGun) {
+      const rowChanged = (gun === null) !== (this.currentGun === null);
+      this.currentGun = gun;
+      this.currentGunCharge = clampedCharge;
+      if (rowChanged) this.relayout();
+      else this.renderGunCharge(this.layout());
+      return;
+    }
+    if (gun === null) return;
+    const layout = this.layout();
+    if (!shouldRenderMeterRatio(this.currentGunCharge, clampedCharge, 1 / layout.gunBarWidth)) return;
+    this.currentGunCharge = clampedCharge;
+    this.renderGunCharge(layout);
+  }
+
   showBossWarning(): void {
     this.announcementTweens.showBossWarning();
   }
@@ -226,7 +255,17 @@ export class HUD {
   }
 
   private layout(): HudLayoutMetrics {
-    return getLayoutMetrics(this.scene);
+    return getLayoutMetrics(this.scene, this.currentGun !== null);
+  }
+
+  private renderGunCharge(layout: HudLayoutMetrics): void {
+    const { gunName, gunChargeTrack, gunChargeFill } = this.widgets;
+    const gun = this.currentGun;
+    for (const widget of [gunName, gunChargeTrack, gunChargeFill]) widget.setVisible(gun !== null);
+    if (gun === null) return;
+    const draining = gun !== 'lance';
+    gunName.setText(getMainGunProfile(gun).name).setColor(draining ? NEON_TEXT.gold : NEON_TEXT.cyan);
+    renderGunChargeBar(gunChargeFill, this.currentGunCharge ?? 1, draining, layout);
   }
 
   private renderChainBadge(): void {

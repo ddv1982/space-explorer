@@ -1,13 +1,13 @@
 import type Phaser from 'phaser';
 import { noteRunDifficulty } from '@/systems/PlayerState';
-import { NO_SHIP_SYSTEMS, type ShipSystems } from '@/config/shipSystems';
+import { NO_SHIP_SYSTEMS, type ShipSystems, type ShipSystemSlot } from '@/config/shipSystems';
 import { setGameplayDifficultyTier, type GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { setVisualQualityTier, type VisualQualityTier } from '@/config/visualQuality';
 import { createArmingAction } from '@/systems/armingAction';
 import { audioManager } from '@/systems/AudioManager';
 import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { PauseOverlay } from './PauseOverlay';
-import type { PauseOverlayHandlers, PauseOverlayState, PauseSwappableSlot } from './pauseOverlay/types';
+import type { PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
 
 type SaveSlotActionResult = { ok: true; message: string } | { ok: false; message: string };
 
@@ -23,7 +23,9 @@ export interface PauseSaveSlotAdapter {
 /** The run's current ship systems, which the pause panel shows and can cycle. */
 export interface PauseShipSystemsPort {
   getSystems: () => ShipSystems;
-  cycleSystem: (slot: PauseSwappableSlot) => void;
+  cycleSystem: (slot: ShipSystemSlot) => void;
+  /** True from sector 3, where the swap key borrows a special gun. */
+  hasSpecialGuns: () => boolean;
 }
 
 interface PauseOverlayPort {
@@ -233,7 +235,7 @@ export class PauseStateController {
   }
 
   /** The change takes effect at once; the frozen clock means it is felt on resume. */
-  private handleCycleSystemRequested(slot: PauseSwappableSlot): void {
+  private handleCycleSystemRequested(slot: ShipSystemSlot): void {
     if (!this.manualPauseRequested || !this.shipSystems) return;
     this.playClick?.();
     this.shipSystems.cycleSystem(slot);
@@ -277,6 +279,7 @@ export class PauseStateController {
       storageAvailable: this.saveSlotAdapter.isAvailable(),
       saveSlots: this.saveSlotAdapter.list(),
       systems: this.shipSystems?.getSystems() ?? NO_SHIP_SYSTEMS,
+      specialGuns: this.shipSystems?.hasSpecialGuns() ?? false,
       statusMessage: this.statusMessage,
       statusOk: this.statusOk,
     };

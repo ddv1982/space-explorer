@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
 import { NEON, NEON_FONT, NEON_TEXT, neonLabelStyle, neonReadoutStyle } from '../../scenes/shared/neonUiTheme';
 import { getVisualQualityProfile } from '../../config/visualQuality';
-import { renderProgressTrack, renderSurgeTrack } from './meterRenderers';
-import { RESERVE_ICON_HEIGHT, type HudLayoutMetrics } from './statusBarLayout';
+import { renderGunChargeTrack, renderProgressTrack, renderSurgeTrack } from './meterRenderers';
+import type { HudLayoutMetrics } from './statusBarLayout';
 
 interface CreateHudWidgetsParams {
   scene: Phaser.Scene;
@@ -20,6 +20,10 @@ export interface HudWidgets {
   surgeFill: Phaser.GameObjects.Graphics;
   reserveLabel: Phaser.GameObjects.Text;
   reserveIcons: Phaser.GameObjects.Graphics;
+  /** From sector 3: the current gun's name and the special-gun charge. Hidden before then. */
+  gunName: Phaser.GameObjects.Text;
+  gunChargeTrack: Phaser.GameObjects.Graphics;
+  gunChargeFill: Phaser.GameObjects.Graphics;
   scoreLabel: Phaser.GameObjects.Text;
   scoreText: Phaser.GameObjects.Text;
   sectorText: Phaser.GameObjects.Text;
@@ -55,6 +59,9 @@ export function createHudWidgets({ scene, labelColor, sectorColor }: CreateHudWi
   const surgeFill = graphics(101);
   const reserveLabel = label('RES', neonLabelStyle(11, labelColor));
   const reserveIcons = graphics(100);
+  const gunName = label('', neonLabelStyle(11, NEON_TEXT.cyan)).setVisible(false);
+  const gunChargeTrack = graphics(100).setVisible(false);
+  const gunChargeFill = graphics(101).setVisible(false);
 
   const scoreLabel = label('SCORE', neonLabelStyle(11, NEON_TEXT.gold)).setOrigin(1, 0);
   const scoreText = label('0', neonReadoutStyle(24)).setOrigin(1, 0);
@@ -119,6 +126,9 @@ export function createHudWidgets({ scene, labelColor, sectorColor }: CreateHudWi
     surgeFill,
     reserveLabel,
     reserveIcons,
+    gunName,
+    gunChargeTrack,
+    gunChargeFill,
     scoreLabel,
     scoreText,
     sectorText,
@@ -154,7 +164,7 @@ function drawPlate(
 /** Positions every static HUD element and repaints the parts that only change with the viewport. */
 export function relayoutHudWidgets(widgets: HudWidgets, layout: HudLayoutMetrics, accentColor: number): void {
   const clusterTop = layout.hullLabelY - 5;
-  const hullClusterHeight = layout.reserveY + RESERVE_ICON_HEIGHT + 6 - clusterTop;
+  const hullClusterHeight = layout.hullClusterBottom + 6 - clusterTop;
   const scoreClusterWidth = layout.compact ? 126 : 148;
   const scoreClusterBottom = layout.compact ? layout.levelY + 19 : layout.scoreY + 31;
 
@@ -184,6 +194,8 @@ export function relayoutHudWidgets(widgets: HudWidgets, layout: HudLayoutMetrics
   widgets.hpText.setPosition(layout.hullX + 42, layout.hullLabelY);
   widgets.reserveLabel.setPosition(layout.hullX, layout.reserveY - 3);
   renderSurgeTrack(widgets.surgeTrack, layout);
+  widgets.gunName.setPosition(layout.hullX, layout.gunY - 3);
+  renderGunChargeTrack(widgets.gunChargeTrack, layout);
 
   widgets.scoreLabel.setPosition(layout.scoreRight, layout.scoreLabelY).setVisible(!layout.compact);
   widgets.scoreText.setFontSize(layout.compact ? 22 : 24).setPosition(layout.scoreRight, layout.scoreY);

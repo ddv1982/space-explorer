@@ -161,6 +161,8 @@ function createCombatFeedbackHarness(
   const showBossWarning = mock();
   const showBossBar = mock();
   const hitStop = mock();
+  const recordGunChargeKill = mock();
+  const resetGunCharge = mock();
 
   const handlers = createGameSceneCombatFeedbackHandlers({
     scene: {
@@ -173,7 +175,9 @@ function createCombatFeedbackHarness(
       time: { now: 1000 },
     } as never,
     player: player as never,
-    getShipSystems: () => ({ gun: null, support: null, late: options.late ?? null }),
+    getShipSystems: () => ({ support: null, late: options.late ?? null }),
+    recordGunChargeKill,
+    resetGunCharge,
     scoreManager: {
       addScore,
       registerKill,
@@ -228,6 +232,8 @@ function createCombatFeedbackHarness(
 
   return {
     hitStop,
+    recordGunChargeKill,
+    resetGunCharge,
     clearBulletsAround,
     handlers,
     onPlayerHit,
@@ -281,6 +287,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(trySpawnRandomPowerUp).toHaveBeenCalledWith({ id: 'powerups' }, 12, 34);
     expect(spawnGuaranteedPowerUp).not.toHaveBeenCalled();
     expect(harness.hitStop).not.toHaveBeenCalled();
+    expect(harness.recordGunChargeKill).toHaveBeenCalledTimes(1);
   });
 
   test('handleEnemyDeath grants a marked ace exactly one guaranteed drop and skips the random roll', () => {
@@ -315,6 +322,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(harness.createExplosion).toHaveBeenCalledWith(24, 48, 2.2, 0.6);
     expect(harness.handlePlayerDeath).toHaveBeenCalledWith(harness.flowContext, 'unknown');
     expect(harness.syncLastLifeHelperWingState).toHaveBeenCalledTimes(1);
+    expect(harness.resetGunCharge).toHaveBeenCalledTimes(1);
   });
 
   test('handlePlayerDeath suppresses helper wing sync when level completion remains queued', () => {
@@ -353,6 +361,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     terminalHarness.handlers.handlePlayerDeath({ outcome: 'fatal', source: 'unknown', hullDamage: 1 });
 
     expect(gameOverHarness.syncLastLifeHelperWingState).not.toHaveBeenCalled();
+    expect(gameOverHarness.resetGunCharge).not.toHaveBeenCalled();
     expect(terminalHarness.syncLastLifeHelperWingState).not.toHaveBeenCalled();
     expect(terminalHarness.handlePlayerDeath).toHaveBeenCalledWith(terminalHarness.flowContext, 'unknown');
     expect(terminalHarness.player.playDeathAnimation).not.toHaveBeenCalled();

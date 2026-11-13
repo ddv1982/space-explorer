@@ -36,15 +36,15 @@ Open `http://localhost:5173` in your browser.
 |-------|--------|
 | Arrow keys / WASD | Move ship |
 | Space / Click | Fire weapons |
-| Q | Swap main gun (once the run has picked one) |
+| Q | From sector 3: switch to a special gun while its charge lasts (Lance → Scatter → Seekers → Lance) |
 | Esc | Pause (closes the settings sheet on the menu) |
 
 The ship flies with inertia: it builds speed over about a second and slides after you let go.
 
 On touch devices, drag anywhere to fly: the ship follows your finger's movement and the main gun
 fires automatically. Pressing a key on a hardware keyboard hands steering and firing to the
-keyboard, and the next touch hands them back (tap-to-pause stays available). Once the run has a main
-gun, a swap button sits under the pause button.
+keyboard, and the next touch hands them back (tap-to-pause stays available). From sector 3, a swap
+button under the pause button switches guns and shows the special-gun charge.
 
 Autofire is set in SETTINGS (menu or pause panel). Touch flight autofires by default; turn it off
 to fire only while your finger is on the screen. Keyboard and mouse play can turn autofire on, so
@@ -114,7 +114,8 @@ Bought during the planet intermission screen using score as currency:
 - **Fire Rate** — improves firing speed
 - **Shield** — increases hit absorption
 - **AEGIS Picket** — installs and overclocks automatic flank-defense turrets
-- **Ship systems** — free picks after sectors 2, 5 and 8 that change how the ship plays: a main gun (Lance, Scatter, Seekers), a support system (Magnet, Surge Core, Wingman) and a doctrine (Overdrive, Bulwark, Salvager). Picks can be changed freely at any later refit bay, and mid-run: the main gun on Q or the touch swap button, the others from the pause panel
+- **Lance and special guns** — from sector 3 the ship flies Lance, a piercing gun. Q (or the touch swap button) switches to Scatter or Seekers for as long as a charge meter lasts: a full meter gives 10 seconds, then the gun returns to Lance. On Lance the meter refills over time and a little with every kill, and you need a fifth of it to switch again. The meter starts full every sector and after every respawn
+- **Ship systems** — free picks after sectors 5 and 8 that change how the ship plays: a support system (Magnet, Surge Core, Wingman) and a doctrine (Overdrive, Bulwark, Salvager). Picks can be changed freely at any later refit bay, and mid-run from the pause panel
 - **A different run every time** — each run has its own sky and may fly sectors mirrored; RETRY replays the same run, NEW RUN starts a fresh one
 
 Some upgrades unlock later in the campaign and use progression caps so the run scales in a controlled way.

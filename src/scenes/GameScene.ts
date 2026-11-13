@@ -50,7 +50,7 @@ import { GameplayClock, runGameSceneUpdateFrame } from './gameScene/updateFrame'
 import { HitStop } from '@/systems/HitStop';
 import { getGameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import type { ShipSystemsRuntime } from '@/systems/ShipSystemsRuntime';
-import { getShipSystemName } from '@/config/shipSystems';
+import { getMainGunProfile } from '@/config/shipSystems';
 import { createShipLabel } from '@/systems/effects/ephemeralOverlayTweens';
 import { NEON_TEXT } from './shared/neonUiTheme';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
@@ -125,7 +125,6 @@ export class GameScene extends Phaser.Scene {
       stopPlayerMotion: () => this.stopPlayerMotion(),
       captureCurrentRunStateForSave: () => this.captureCurrentRunStateForSave(),
       canSaveCurrentRun: () => this.canSaveCurrentRun(),
-      getGameplayNow: () => this.gameplayClock.now,
     });
     this.installBootstrapRuntime(runtime);
     const handlers = this.createCombatFeedbackHandlers();
@@ -202,6 +201,8 @@ export class GameScene extends Phaser.Scene {
       syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
       getGameplayNow: () => this.gameplayClock.now,
       getShipSystems: () => this.shipSystems.getSystems(),
+      recordGunChargeKill: () => this.shipSystems.recordKill(),
+      resetGunCharge: () => this.shipSystems.resetGunCharge(),
       hitStop: (durationMs) => this.hitStop.trigger(durationMs),
       constants: {
         bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
@@ -409,6 +410,8 @@ export class GameScene extends Phaser.Scene {
       lastHudShieldCount: this.lastHudShieldCount,
       now: this.gameplayClock.now,
       surgeRatio: this.grazeSurge?.getGaugeRatio() ?? 0,
+      gun: this.shipSystems?.getGun() ?? null,
+      gunCharge: this.shipSystems?.getGunCharge() ?? 0,
     });
   }
 
@@ -424,7 +427,7 @@ export class GameScene extends Phaser.Scene {
       shipSystems: this.shipSystems,
       gunSwapFeedback: {
         swapped: (gun) => {
-          createShipLabel(this, this.player.x, this.player.y, getShipSystemName(gun), NEON_TEXT.cyan);
+          createShipLabel(this, this.player.x, this.player.y, getMainGunProfile(gun).name, NEON_TEXT.cyan);
           audioManager.playSfx('gunSwap');
         },
         denied: () => audioManager.playSfx('uiClick'),

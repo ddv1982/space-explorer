@@ -24,6 +24,8 @@ export interface BrowserHarnessSnapshot {
   audioPauseReasons: readonly AudioPauseReason[];
   audioContextState: AudioContextState | null;
   levelProgress: number | null;
+  /** The Game scene's main gun and special-gun charge (0..1); null before sector 3 or outside a sector. */
+  gun: Readonly<{ id: string; charge: number }> | null;
   preload: Readonly<{ status: number; progress: number; texts: readonly string[] }> | null;
   texts: readonly Readonly<{ text: string; x: number; y: number; width: number; height: number; shown: boolean }>[];
   objects: readonly Readonly<{
@@ -121,7 +123,12 @@ export function createBrowserHarnessSnapshot(game: Phaser.Game): BrowserHarnessS
 
   const physicsWorld = primaryScene?.physics?.world;
   const gameScene = activeScenes.find((scene) => scene.scene.key === 'Game') as
-    (Phaser.Scene & { levelManager?: { progress: number } }) | undefined;
+    | (Phaser.Scene & {
+        levelManager?: { progress: number };
+        shipSystems?: { getGun(): string | null; getGunCharge(): number };
+      })
+    | undefined;
+  const gunId = gameScene?.shipSystems?.getGun() ?? null;
   const preloadScene = game.scene.getScene('Preload');
   const preloadTexts = preloadScene.children.list
     .filter((child): child is Phaser.GameObjects.Text => child instanceof Phaser.GameObjects.Text)
@@ -149,6 +156,7 @@ export function createBrowserHarnessSnapshot(game: Phaser.Game): BrowserHarnessS
     audioPauseReasons: Object.freeze([...audioManager.getPauseReasons()]),
     audioContextState: audioManager.getContextState(),
     levelProgress: gameScene?.levelManager?.progress ?? null,
+    gun: gunId === null ? null : Object.freeze({ id: gunId, charge: gameScene!.shipSystems!.getGunCharge() }),
     preload: Object.freeze({
       status: preloadScene.sys.settings.status,
       progress: preloadScene.load.progress,

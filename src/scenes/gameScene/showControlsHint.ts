@@ -9,7 +9,7 @@ const AUTO_FIRE_HINT = 'Guns fire automatically';
 const MOBILE_FIRE_HINT = 'Guns fire while you touch';
 const KEYBOARD_TITLE = 'WASD / Arrows to Move';
 const KEYBOARD_FIRE_HINT = 'SPACE / Click to Fire';
-const KEYBOARD_SWAP_HINT = 'Q to Swap Main Gun';
+const KEYBOARD_SWAP_HINT = 'Q for a Special Gun';
 
 /** The fire line follows the autofire setting for the input in use. */
 function fireHintFor(mobile: boolean): string {
@@ -20,7 +20,7 @@ function fireHintFor(mobile: boolean): string {
 
 type ShowControlsHintOptions = {
   mobile?: boolean;
-  /** The run has a main gun, so the keyboard card adds the swap key (touch has its own button). */
+  /** Sector 3 on: the keyboard card adds the special-gun key (touch has its own button). */
   gunSwap?: boolean;
 };
 

@@ -50,6 +50,10 @@ interface GameSceneCombatFeedbackDeps {
   getGameplayNow: () => number;
   /** The run's current ship systems; doctrine effects read them on every event. */
   getShipSystems: () => ShipSystems;
+  /** Tops up the special-gun charge for an enemy destroyed (only counts while on Lance). */
+  recordGunChargeKill: () => void;
+  /** A respawn returns to Lance with a full special-gun charge. */
+  resetGunCharge: () => void;
   /** Briefly slows gameplay on a big impact (see `HitStop`). */
   hitStop: (durationMs: number) => void;
   constants: CombatFeedbackConstants;
@@ -176,6 +180,7 @@ export function createGameSceneCombatFeedbackHandlers(
   return {
     handleEnemyDeath: (score, x, y, isAce): void => {
       const awarded = deps.scoreManager.registerKill(score, deps.getGameplayNow());
+      deps.recordGunChargeKill();
       deps.effectsManager.createScorePopup(x, y, awarded);
       runBestEffort(() => audioManager.playSfx('explosionSmall', stereoPan(deps.scene, x)));
       if (isAce) {
@@ -201,6 +206,7 @@ export function createGameSceneCombatFeedbackHandlers(
         deps.scoreManager.onPlayerDeath();
         deps.collisionManager.clearPlayerHazards();
         deps.waveManager.applyDeathRelief();
+        deps.resetGunCharge();
       }
 
       if (shouldSyncHelperWingAfterPlayerDeath(outcome)) {

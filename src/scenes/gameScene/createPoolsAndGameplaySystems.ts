@@ -248,7 +248,7 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
   });
   waveManager.setPowerUpGroup?.(powerUpGroup);
 
-  const shipSystems = new ShipSystemsRuntime(scene, player, powerUpGroup, state.systems);
+  const shipSystems = new ShipSystemsRuntime(scene, player, powerUpGroup, state.systems, state.level);
 
   const grazeSurge = new GrazeSurgeSystem(
     {

@@ -40,7 +40,7 @@ describe('canonical new run action', () => {
       remainingLives: 0,
       currentShields: 2,
       upgrades: { hp: 3, damage: 3, fireRate: 3, shield: 3, turrets: 3 },
-      systems: { gun: null, support: null, late: null },
+      systems: { support: null, late: null },
       helperWing: { grantedSlots: 1, slots: [{ remainingLives: 0, hp: 0 }] },
     });
     setRunSummary(registry, { finalScore: 16000, levelReached: 8 });
@@ -58,7 +58,7 @@ describe('canonical new run action', () => {
       currentShields: 0,
       remainingLives: 3,
       upgrades: { hp: 0, damage: 0, fireRate: 0, shield: 0, turrets: 0 },
-      systems: { gun: null, support: null, late: null },
+      systems: { support: null, late: null },
       helperWing: { grantedSlots: 0, slots: [] },
     });
     expect(getRunSummary(registry)).toMatchObject({ finalScore: 0, levelReached: 1 });

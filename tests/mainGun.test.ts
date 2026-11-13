@@ -1,10 +1,17 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { getMainGunProfile, NO_SHIP_SYSTEMS, type PlayerShotLook, type ShipSystems } from '../src/config/shipSystems';
+import {
+  getMainGunProfile,
+  NO_SHIP_SYSTEMS,
+  type MainGunId,
+  type PlayerShotLook,
+  type ShipSystems,
+} from '../src/config/shipSystems';
 import { fireMainGunVolley, resolveMainGunCooldownMs } from '../src/systems/mainGun';
 
-function volley(systems: Partial<ShipSystems>, volleyIndex = 1) {
+function volley(gun: MainGunId | null, systems: Partial<ShipSystems> = {}, volleyIndex = 1) {
   const fire = mock();
   fireMainGunVolley({
+    gun,
     systems: { ...NO_SHIP_SYSTEMS, ...systems },
     volleyIndex,
     origin: { x: 100, y: 500 },
@@ -20,19 +27,19 @@ function volley(systems: Partial<ShipSystems>, volleyIndex = 1) {
 
 describe('main gun', () => {
   test('the standard gun fires one plain bolt straight ahead', () => {
-    const shots = volley({});
+    const shots = volley(null);
     expect(shots).toHaveLength(1);
     expect(shots[0].slice(0, 4)).toEqual([100, 500, 0, -600]);
     expect(shots[0][4]).toBeUndefined();
   });
 
   test('Lance fires one piercing shot, Seekers one seeking shot', () => {
-    expect(volley({ gun: 'lance' })[0][4]?.pierce).toBe(true);
-    expect(volley({ gun: 'seekers' })[0][4]?.seekDegreesPerSecond).toBeGreaterThan(0);
+    expect(volley('lance')[0][4]?.pierce).toBe(true);
+    expect(volley('seekers')[0][4]?.seekDegreesPerSecond).toBeGreaterThan(0);
   });
 
   test('Scatter fires three shots fanned evenly around straight ahead, all at full speed', () => {
-    const shots = volley({ gun: 'scatter' });
+    const shots = volley('scatter');
     expect(shots).toHaveLength(3);
     const [left, centre, right] = shots;
     expect(centre[2]).toBeCloseTo(0);
@@ -42,26 +49,26 @@ describe('main gun', () => {
   });
 
   test('Wingman adds a plain bolt from the drone on every other volley', () => {
-    expect(volley({ support: 'wingman', gun: 'lance' }, 1)).toHaveLength(1);
-    const shots = volley({ support: 'wingman', gun: 'lance' }, 2);
+    expect(volley('lance', { support: 'wingman' }, 1)).toHaveLength(1);
+    const shots = volley('lance', { support: 'wingman' }, 2);
     expect(shots).toHaveLength(2);
     expect(shots[1][0]).toBeGreaterThan(100);
     expect(shots[1][4]).toBeUndefined();
   });
 
   test('each gun fires in its own look; the standard gun and the Wingman keep the plain bolt', () => {
-    expect(volley({}).map((shot) => shot[5])).toEqual(['bolt']);
-    expect(volley({ gun: 'lance' }).map((shot) => shot[5])).toEqual(['lance']);
-    expect(volley({ gun: 'scatter' }).map((shot) => shot[5])).toEqual(['pellet', 'pellet', 'pellet']);
-    expect(volley({ gun: 'seekers' }).map((shot) => shot[5])).toEqual(['dart']);
+    expect(volley(null).map((shot) => shot[5])).toEqual(['bolt']);
+    expect(volley('lance').map((shot) => shot[5])).toEqual(['lance']);
+    expect(volley('scatter').map((shot) => shot[5])).toEqual(['pellet', 'pellet', 'pellet']);
+    expect(volley('seekers').map((shot) => shot[5])).toEqual(['dart']);
     // The drone's shot leaves the look out, so the bullet keeps its standard bolt.
-    expect(volley({ support: 'wingman', gun: 'lance' }, 2)[1][5]).toBeUndefined();
+    expect(volley('lance', { support: 'wingman' }, 2)[1][5]).toBeUndefined();
   });
 
   test('each gun pays for its pattern with a slower cooldown', () => {
-    expect(resolveMainGunCooldownMs(150, 1, NO_SHIP_SYSTEMS)).toBe(150);
+    expect(resolveMainGunCooldownMs(150, 1, null, NO_SHIP_SYSTEMS)).toBe(150);
     for (const gun of ['lance', 'scatter', 'seekers'] as const) {
-      const cooldown = resolveMainGunCooldownMs(150, 1, { ...NO_SHIP_SYSTEMS, gun });
+      const cooldown = resolveMainGunCooldownMs(150, 1, gun, NO_SHIP_SYSTEMS);
       expect(cooldown).toBeCloseTo(150 * getMainGunProfile(gun).cooldownScale);
       expect(cooldown).toBeGreaterThan(150);
     }
@@ -85,10 +92,10 @@ describe('main gun', () => {
 
   test('Overdrive speeds the gun up with every chain step; without it only the max chain does', () => {
     const overdrive = { ...NO_SHIP_SYSTEMS, late: 'overdrive' as const };
-    expect(resolveMainGunCooldownMs(150, 1, overdrive)).toBe(150);
-    expect(resolveMainGunCooldownMs(150, 3, overdrive)).toBeCloseTo(150 * 0.88);
-    expect(resolveMainGunCooldownMs(150, 5, overdrive)).toBeCloseTo(150 * 0.76);
-    expect(resolveMainGunCooldownMs(150, 3, NO_SHIP_SYSTEMS)).toBe(150);
-    expect(resolveMainGunCooldownMs(150, 5, NO_SHIP_SYSTEMS)).toBeCloseTo(150 * 0.85);
+    expect(resolveMainGunCooldownMs(150, 1, null, overdrive)).toBe(150);
+    expect(resolveMainGunCooldownMs(150, 3, null, overdrive)).toBeCloseTo(150 * 0.88);
+    expect(resolveMainGunCooldownMs(150, 5, null, overdrive)).toBeCloseTo(150 * 0.76);
+    expect(resolveMainGunCooldownMs(150, 3, null, NO_SHIP_SYSTEMS)).toBe(150);
+    expect(resolveMainGunCooldownMs(150, 5, null, NO_SHIP_SYSTEMS)).toBeCloseTo(150 * 0.85);
   });
 });

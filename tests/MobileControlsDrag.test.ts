@@ -156,12 +156,12 @@ describe('MobileControls relative drag', () => {
 });
 
 describe('MobileControls gun-swap key', () => {
-  test('a tap requests one swap, only while the run has a main gun', () => {
+  test('a tap requests one swap, only from sector 3 where there is a gun to swap', () => {
     const { controls, tapKey } = createControls();
     tapKey(SWAP_KEY, { id: 4, ...SWAP });
     expect(controls.consumeGunSwapPress()).toBe(false);
 
-    controls.setGunSwapState(true, 0);
+    controls.setGunChargeState('lance', 1);
     tapKey(SWAP_KEY, { id: 4, ...SWAP });
     expect(controls.consumeGunSwapPress()).toBe(true);
     expect(controls.consumeGunSwapPress()).toBe(false);
@@ -170,19 +170,19 @@ describe('MobileControls gun-swap key', () => {
 
   test('the swap key never starts a drag, and its spot steers again when there is no key', () => {
     const { controls, emit } = createControls();
-    controls.setGunSwapState(true, 0.5);
+    controls.setGunChargeState('scatter', 0.5);
     emit('pointerdown', { id: 4, ...SWAP });
     expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toBeNull();
     emit('pointerup', { id: 4, ...SWAP });
 
-    controls.setGunSwapState(false, 0);
+    controls.setGunChargeState(null, 0);
     emit('pointerdown', { id: 5, ...SWAP });
     expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toEqual({ vx: 0, vy: 0 });
   });
 
   test('pausing drops a tap that has not been handled yet', () => {
     const { controls, tapKey } = createControls();
-    controls.setGunSwapState(true, 0);
+    controls.setGunChargeState('lance', 1);
     tapKey(SWAP_KEY, { id: 4, ...SWAP });
     controls.setBlocked(true);
     expect(controls.consumeGunSwapPress()).toBe(false);

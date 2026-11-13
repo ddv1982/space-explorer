@@ -147,7 +147,7 @@ describe('rival duel hold', () => {
       getLastLifeHelperWing: () => null,
       getPicketTurrets: () => null,
       grazeSurge: { update: noop },
-      shipSystems: { update: noop, getSystems: () => ({ gun: null }), getGunSwapCooldownRatio: () => 0 },
+      shipSystems: { update: noop, getSystems: () => ({}), getGun: () => null, updateGunCharge: () => false },
       mobileControls: null,
       waveManager: { update: waveUpdate, updateBossAdds: noop, getDuelHull: () => duel },
       levelManager: {
