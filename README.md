@@ -13,6 +13,14 @@ Playable here:
 ![Bun](https://img.shields.io/badge/Bun-1.3.5-f9f1e1)
 [![License](https://img.shields.io/github/license/ddv1982/space-explorer)](LICENSE)
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Main menu](docs/screenshots/menu.webp) | ![A sector 3 fight with the Scatter gun](docs/screenshots/sector-3-scatter.webp) |
+| ![Choosing a main gun at the refit bay](docs/screenshots/ship-system-pick.webp) | ![The refit bay between sectors](docs/screenshots/refit-bay.webp) |
+| ![A sector 4 fight with the Lance gun](docs/screenshots/sector-4-lance.webp) | ![The first boss, Pyre Herald](docs/screenshots/first-boss.webp) |
+
 ## Quick start
 
 ```bash
@@ -88,7 +96,7 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 - **Scripted level sections** — pacing, hazard cadence, and encounter focus can shift inside a level
 - **Hazard scripting** — asteroid bursts, ring crossfire, nebula ambushes, gravity wells, and canyon-wall rock corridors
 - **Adaptive section pacing** — tension-arc shaping and fairness throttles smooth extreme overlap spikes
-- **Adaptive boss scaling** — boss durability scales with player upgrade investment and campaign progression
+- **Authored boss fights** — every boss runs its own set order of attacks across two to four phases, with a par time: beat it for a fast-kill bonus, outstay it and the boss fires faster. Boss hull is fixed, so upgrades make fights shorter
 - **Per-level procedural music** — each level and boss has its own Web Audio-driven music identity
 - **Power-up drops** — temporary pickups such as health, shield, and rapid-fire boosts
 - **AEGIS Picket turrets** — a two-tier screen-edge support upgrade available for Level 5 onward
