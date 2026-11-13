@@ -104,6 +104,7 @@ function createFiringHarness(chainMultiplier: number) {
       getGunCharge: () => 0,
       trySwapGun: () => 'unavailable',
       updateGunCharge: () => false,
+      isSwapHintPending: () => false,
       update: () => {},
     },
     gunSwapFeedback: { swapped: () => {}, denied: () => {} },
@@ -129,6 +130,7 @@ function createFiringHarness(chainMultiplier: number) {
       showBossBar: () => undefined,
       hideBossBar: () => undefined,
       updateBossHp: () => {},
+      setSwapHint: () => {},
     },
     findBulletTarget: () => null,
     bulletPool: {

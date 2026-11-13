@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { isTouchMobileDevice } from '../utils/device';
+import { isTouchMobileDevice, prefersReducedMotion } from '../utils/device';
+import { isHardwareKeyboardDetected } from './hardwareKeyboardDetection';
 import { getViewportBounds } from '../utils/layout';
 import { drawAngledRectPath, NEON } from '../scenes/shared/neonUiTheme';
 import { scaleUiGlowAlpha } from '../utils/renderingCompat';
@@ -14,6 +15,9 @@ const PAUSE_BUTTON_RIGHT_INSET = 22;
 const SWAP_BUTTON_GAP = 14;
 /** The charge bar redraws in steps, not every frame. */
 const SWAP_CHARGE_STEPS = 20;
+/** The hint ring sits this far outside the swap key and breathes over one period. */
+const SWAP_HINT_RING_OUTSET = 6;
+const SWAP_HINT_PULSE_MS = 700;
 /** Keeps the dragged ship clear of the very edge so it stays fully visible. */
 const DRAG_EDGE_MARGIN = 18;
 
@@ -48,6 +52,10 @@ export class MobileControls {
   /** Special-gun charge, in `SWAP_CHARGE_STEPS` (the full count = full). */
   private swapChargeStep: number = SWAP_CHARGE_STEPS;
   private swapPressPending: boolean = false;
+  /** A ring pulses around the swap key until the player first uses it (sector 3). */
+  private swapHint: boolean = false;
+  private swapHintRing: Phaser.GameObjects.Graphics | null = null;
+  private swapHintPulse: Phaser.Tweens.Tween | null = null;
   private dragPointerId: number | null = null;
   private dragState: DragState | null = null;
   private dragFingerX: number = 0;
@@ -115,6 +123,7 @@ export class MobileControls {
     this.pauseKey.hitArea.on('pointerdown', this.handlePauseButtonDown, this);
     this.swapKey = createControlKey(scene);
     this.swapKey.hitArea.on('pointerdown', this.handleSwapButtonDown, this);
+    this.swapHintRing = scene.add.graphics().setDepth(CONTROLS_DEPTH).setScrollFactor(0);
 
     scene.input.on('pointerdown', this.handlePointerDown);
     scene.input.on('pointermove', this.handlePointerMove);
@@ -141,6 +150,8 @@ export class MobileControls {
       key?.icon.destroy();
       key?.hitArea.destroy();
     }
+    this.swapHintPulse?.remove();
+    this.swapHintRing?.destroy();
 
     this.scene = null;
     this.pauseKey = null;
@@ -153,6 +164,9 @@ export class MobileControls {
     this.swapDraining = false;
     this.swapChargeStep = SWAP_CHARGE_STEPS;
     this.swapPressPending = false;
+    this.swapHint = false;
+    this.swapHintRing = null;
+    this.swapHintPulse = null;
   }
 
   relayout(): void {
@@ -213,11 +227,22 @@ export class MobileControls {
     this.pauseButtonHandler = handler;
   }
 
+  /** True on a touch device with no hardware keyboard in use: hints then point at the touch keys. */
+  showsTouchHints(): boolean {
+    return this.enabledForTouchDevice && !isHardwareKeyboardDetected();
+  }
+
   /**
    * Shows the swap button only while there is a gun to swap (sector 3 on), with the special-gun charge
-   * along its foot: amber and draining while a special gun is out, cyan and refilling on Lance.
+   * along its foot: amber and draining while a special gun is out, cyan and refilling on Lance. `hint`
+   * pulses a ring around it to point it out.
    */
-  setGunChargeState(gun: MainGunId | null, charge: number): void {
+  setGunChargeState(gun: MainGunId | null, charge: number, hint: boolean): void {
+    if (hint !== this.swapHint) {
+      this.swapHint = hint;
+      this.syncSwapHintPulse();
+      this.refreshVisibility();
+    }
     const available = gun !== null;
     const draining = available && gun !== 'lance';
     const steps = Math.max(0, Math.min(1, charge)) * SWAP_CHARGE_STEPS;
@@ -300,6 +325,25 @@ export class MobileControls {
     const swapVisible = pauseVisible && this.swapAvailable && !this.blocked;
     setControlKeyVisible(this.pauseKey, pauseVisible, pauseVisible && !this.blocked);
     setControlKeyVisible(this.swapKey, swapVisible, swapVisible);
+    this.swapHintRing?.setVisible(swapVisible && this.swapHint);
+  }
+
+  /** The hint ring breathes while shown; with reduced motion it holds still. */
+  private syncSwapHintPulse(): void {
+    const ring = this.swapHintRing;
+    if (!ring || !this.scene) return;
+    this.swapHintPulse?.remove();
+    this.swapHintPulse = null;
+    ring.setAlpha(1);
+    if (!this.swapHint || prefersReducedMotion()) return;
+    this.swapHintPulse = this.scene.tweens.add({
+      targets: ring,
+      alpha: { from: 1, to: 0.3 },
+      duration: SWAP_HINT_PULSE_MS,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+    });
   }
 
   private releaseActiveTouches(): void {
@@ -346,6 +390,7 @@ export class MobileControls {
   private updateKeyVisuals(): void {
     this.updatePauseButtonVisual();
     this.updateSwapButtonVisual();
+    this.drawSwapHintRing();
   }
 
   private updatePauseButtonVisual(): void {
@@ -392,6 +437,22 @@ export class MobileControls {
     key.icon.fillRect(x - 3, y + 3, 12, 3);
     key.icon.fillTriangle(x - 3, y - 1, x - 3, y + 10, x - 10, y + 4.5);
     key.hitArea.setPosition(x, y);
+  }
+
+  /** A lit outline just outside the swap key; only its position ever changes. */
+  private drawSwapHintRing(): void {
+    const ring = this.swapHintRing;
+    if (!ring) return;
+    const size = PAUSE_BUTTON_SIZE + SWAP_HINT_RING_OUTSET * 2;
+    const left = this.pauseButtonX - size / 2;
+    const top = this.swapButtonY - size / 2;
+    ring.clear();
+    drawAngledRectPath(ring, left, top, size, size, 14);
+    ring.lineStyle(6, NEON.cyan, scaleUiGlowAlpha(0.3));
+    ring.strokePath();
+    drawAngledRectPath(ring, left, top, size, size, 14);
+    ring.lineStyle(2, NEON.cyanBright, 0.95);
+    ring.strokePath();
   }
 }
 

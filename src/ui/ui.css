@@ -2405,3 +2405,34 @@
   font: 12px / 1 var(--f-mono);
   letter-spacing: 1.5px;
 }
+
+/* ---------- special gun intro ---------- */
+/* Higher specificity than the sheet's container profiles, which widen settings to 720px. */
+.menu-sheet.gun-intro {
+  width: min(100%, 440px);
+}
+
+.gun-intro .ui-caption {
+  flex: none;
+}
+
+.gun-intro .ui-heading {
+  --heading-size: 22px;
+  margin-bottom: 16px;
+}
+
+.gun-intro__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.35;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  color: var(--t-secondary);
+}
+
+.gun-intro .menu-sheet__done.ui-btn {
+  --done-gap: 22px;
+}

@@ -12,6 +12,8 @@ export const BOSS_BAR_HEIGHT = 12;
 export const GUN_CHARGE_BAR_HEIGHT = 4;
 /** Room the gun name takes before the charge bar starts; fits `SEEKERS`. */
 const GUN_NAME_WIDTH = 64;
+/** Clears the left cluster's plate, which reaches 9px past the hull meter. */
+const GUN_HINT_GAP = 16;
 
 /**
  * Where every HUD instrument sits. Two floating clusters hold the top corners (hull, surge, shields,
@@ -40,6 +42,8 @@ export interface HudLayoutMetrics {
   gunY: number;
   gunBarX: number;
   gunBarWidth: number;
+  /** The first-swap hint, just outside the left cluster on the gun row. */
+  gunHintX: number;
   /** Bottom of the left cluster: under the gun row when it shows, else under the reserve ships. */
   hullClusterBottom: number;
   scoreRight: number;
@@ -98,6 +102,7 @@ export function getLayoutMetrics(scene: Phaser.Scene, gunRow: boolean): HudLayou
     gunY,
     gunBarX: hullX + GUN_NAME_WIDTH,
     gunBarWidth: hullWidth - GUN_NAME_WIDTH - 4,
+    gunHintX: hullX + hullWidth + GUN_HINT_GAP,
     hullClusterBottom,
     scoreRight,
     scoreLabelY: clusterTop,

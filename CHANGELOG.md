@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- The refit bay after sector 2 now opens with a short SPECIAL GUNS ONLINE card: Lance is your main gun from now on, Q (or the swap button on touch screens) switches to Scatter or Seekers, and special guns run on a charge that Lance refills. There is nothing to choose; CONTINUE (or Enter, Space or Escape) takes you to the upgrades. It shows every time a run reaches that refit bay, and at no other.
+- In sector 3 the HUD points at the swap until you first use it: `Q  SPECIAL GUN` beside the charge bar on a keyboard, a pulsing ring around the swap button on touch screens. It goes away after your first swap and stays away for the rest of the sector.
+
 ### Changed
 
 - Lance is now your main gun from sector 3 on, and Scatter and Seekers are special guns you use on a charge. Press Q (or the swap button on touch screens) to go Lance → Scatter → Seekers → Lance. A special gun runs down a charge meter: a full meter lasts 10 seconds, and when it empties you go back to Lance on your own, with the gun's name flashing over your ship. The meter only refills on Lance, over 30 seconds, and every enemy you destroy tops it up a little. You need a fifth of the meter to leave Lance; below that Q just clicks. Switching between the special guns, or back to Lance, always works.

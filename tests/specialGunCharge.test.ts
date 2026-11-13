@@ -204,12 +204,13 @@ describe('live ship-system changes', () => {
   });
 });
 
-function createFrameHarness(level: number) {
+function createFrameHarness(level: number, touch = false) {
   const { runtime } = createRuntime(level);
   const clock = new GameplayClock();
   const shots: number[] = [];
   const feedback: string[] = [];
   const buttonStates: Array<[string | null, number]> = [];
+  const hints = { hud: false, key: false };
   let swapPressed = false;
   let paused = false;
   let realTime = 0;
@@ -246,7 +247,13 @@ function createFrameHarness(level: number) {
       swapped: (gun) => feedback.push(gun),
       denied: () => feedback.push('denied'),
     },
-    mobileControls: { setGunChargeState: (gun, charge) => buttonStates.push([gun, charge]) },
+    mobileControls: {
+      showsTouchHints: () => touch,
+      setGunChargeState: (gun, charge, hint) => {
+        buttonStates.push([gun, charge]);
+        hints.key = hint;
+      },
+    },
     grazeSurge: { update: () => {} },
     waveManager: { update: () => {}, updateBossAdds: () => {}, getDuelHull: () => null },
     levelManager: {
@@ -259,7 +266,14 @@ function createFrameHarness(level: number) {
     },
     scoreManager: { getChainState: () => ({ chain: 0, multiplier: 1 }) },
     events: { emit: () => {} },
-    hud: { showBossBar: () => {}, hideBossBar: () => {}, updateBossHp: () => {} },
+    hud: {
+      showBossBar: () => {},
+      hideBossBar: () => {},
+      updateBossHp: () => {},
+      setSwapHint: (visible) => {
+        hints.hud = visible;
+      },
+    },
     bulletPool: { fire: () => shots.push(clock.now) },
     findBulletTarget: () => null,
     effectsManager: { createMuzzleFlash: () => {}, updateLighting: () => {} },
@@ -284,6 +298,7 @@ function createFrameHarness(level: number) {
     shots,
     feedback,
     buttonStates,
+    hints,
     run,
     pressSwap: () => {
       swapPressed = true;
@@ -352,5 +367,53 @@ describe('special guns during play', () => {
     expect(harness.feedback).toEqual([]);
     expect(harness.buttonStates.every(([gun]) => gun === null)).toBe(true);
     expect(harness.shots.length).toBeGreaterThan(0);
+  });
+});
+
+describe('first-swap hint', () => {
+  test('only the first sector with special guns starts with it pending', () => {
+    expect(createRuntime(GUN_SECTOR - 1).runtime.isSwapHintPending()).toBe(false);
+    expect(createRuntime(GUN_SECTOR).runtime.isSwapHintPending()).toBe(true);
+    expect(createRuntime(GUN_SECTOR + 1).runtime.isSwapHintPending()).toBe(false);
+  });
+
+  test('the meter and a respawn leave it pending; a swap clears it', () => {
+    const { runtime } = createRuntime(GUN_SECTOR);
+    runtime.trySwapGun();
+    expect(runtime.isSwapHintPending()).toBe(false);
+
+    const other = createRuntime(GUN_SECTOR).runtime;
+    other.updateGunCharge(SPECIAL_GUN_CHARGE.refillMs);
+    other.resetGunCharge();
+    expect(other.isSwapHintPending()).toBe(true);
+  });
+
+  test('with a keyboard the HUD shows the hint until the first swap, then never again', () => {
+    const harness = createFrameHarness(GUN_SECTOR);
+    harness.run(32);
+    expect(harness.hints).toEqual({ hud: true, key: false });
+    harness.pressSwap();
+    harness.run(16);
+    expect(harness.hints).toEqual({ hud: false, key: false });
+    harness.run(SPECIAL_GUN_CHARGE.drainMs + 32);
+    expect(harness.runtime.getGun()).toBe('lance');
+    expect(harness.hints).toEqual({ hud: false, key: false });
+  });
+
+  test('on touch the swap key pulses instead, until the first swap', () => {
+    const harness = createFrameHarness(GUN_SECTOR, true);
+    harness.run(32);
+    expect(harness.hints).toEqual({ hud: false, key: true });
+    harness.pressSwap();
+    harness.run(16);
+    expect(harness.hints).toEqual({ hud: false, key: false });
+  });
+
+  test('sectors without special guns never show it', () => {
+    for (const level of [GUN_SECTOR - 1, GUN_SECTOR + 1]) {
+      const harness = createFrameHarness(level);
+      harness.run(32);
+      expect(harness.hints).toEqual({ hud: false, key: false });
+    }
   });
 });

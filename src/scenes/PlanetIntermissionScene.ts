@@ -4,7 +4,8 @@ import {
   setShipSystem,
   type ShipSystemSlotDef,
 } from '../config/shipSystems';
-import { createSystemPickDialog, type SystemPickDialog } from './planetIntermission/systemPickDialog';
+import { createSystemPickDialog } from './planetIntermission/systemPickDialog';
+import { createSpecialGunIntroCard, isSpecialGunIntroDue } from './planetIntermission/specialGunIntro';
 import Phaser from 'phaser';
 
 import { getLevelConfig, getTotalLevels, isLastLevel } from '@/config/LevelsConfig';
@@ -22,6 +23,8 @@ import {
 import { AUTOSAVE_SLOT_ID, createSaveSlotRecord, writeSaveSlot } from '@/systems/SaveSlotStorage';
 import { WarpTransition } from '@/systems/WarpTransition';
 import { measureInGame } from '@/ui/dom';
+import { isTouchMobileDevice } from '@/utils/device';
+import { isHardwareKeyboardDetected } from '@/systems/hardwareKeyboardDetection';
 import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
 
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
@@ -49,7 +52,13 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private state!: PlayerStateData;
   private warpTransition!: WarpTransition;
   private view?: RefitView;
-  private pickDialog?: SystemPickDialog;
+  /** The pick dialog or the special-gun card, whichever is open over the bay. */
+  private dialog?: { destroy: () => void };
+  /**
+   * Set once the special-gun card is closed, so a resize restart of this visit does not show it again;
+   * cleared on leaving, so the next run that reaches this bay sees it once more.
+   */
+  private specialGunIntroClosed = false;
   private isFinalMissionComplete = false;
   private transitioning = false;
   private pointerdownHandler?: () => void;
@@ -112,7 +121,23 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.warpTransition = new WarpTransition();
     this.warpTransition.create(this);
     this.bindContinueInputs();
-    this.offerShipSystemPick();
+    this.offerSpecialGunIntro();
+  }
+
+  /** Before the first sector that flies Lance, a card explains the special guns before the shop opens. */
+  private offerSpecialGunIntro(): void {
+    if (this.specialGunIntroClosed || !isSpecialGunIntroDue(this.state.level)) {
+      this.offerShipSystemPick();
+      return;
+    }
+    this.view?.setInert(true);
+    const touch = isTouchMobileDevice() && !isHardwareKeyboardDetected();
+    this.dialog = createSpecialGunIntroCard(touch, () => {
+      this.closeDialog();
+      this.specialGunIntroClosed = true;
+      audioManager.playUi();
+      this.offerShipSystemPick();
+    });
   }
 
   /**
@@ -133,9 +158,8 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private openSystemPick(slot: ShipSystemSlotDef): void {
     const current = this.state.systems[slot.slot];
     this.view?.setInert(true);
-    this.pickDialog = createSystemPickDialog(slot, current, (id) => {
-      this.pickDialog?.destroy();
-      this.pickDialog = undefined;
+    this.dialog = createSystemPickDialog(slot, current, (id) => {
+      this.closeDialog();
       if (id !== current) {
         this.state.systems = setShipSystem(this.state.systems, slot.slot, id);
         setPlayerState(this.registry, this.state);
@@ -144,6 +168,11 @@ export class PlanetIntermissionScene extends Phaser.Scene {
       // A late start can owe more than one pick: offer the next before the shop opens.
       this.offerShipSystemPick();
     });
+  }
+
+  private closeDialog(): void {
+    this.dialog?.destroy();
+    this.dialog = undefined;
   }
 
   private evaluate(): UpgradeEvaluation[] {
@@ -164,7 +193,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
 
     this.pointerdownHandler = () => this.continueToNextLevel();
     this.keydownHandler = (event: KeyboardEvent) => {
-      if (this.transitioning || this.pickDialog || event.repeat || NON_PROCEED_KEYS.has(event.code)) return;
+      if (this.transitioning || this.dialog || event.repeat || NON_PROCEED_KEYS.has(event.code)) return;
       if (event.target instanceof Element && event.target.closest('input, select, textarea')) return;
       if (!this.view?.handleUnfocusedKey(event.code)) this.continueToNextLevel();
     };
@@ -173,8 +202,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private handleSceneShutdown(): void {
-    this.pickDialog?.destroy();
-    this.pickDialog = undefined;
+    this.closeDialog();
     this.view?.destroy();
     this.view = undefined;
     if (this.pointerdownHandler) this.input.off('pointerdown', this.pointerdownHandler);
@@ -201,8 +229,9 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   }
 
   private continueToNextLevel(): void {
-    if (this.transitioning || this.pickDialog) return;
+    if (this.transitioning || this.dialog) return;
     this.transitioning = true;
+    this.specialGunIntroClosed = false;
     audioManager.playUi();
     this.view?.leave();
 

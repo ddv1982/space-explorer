@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
-mock.module('../src/utils/device', () => ({ isTouchMobileDevice: () => true }));
+mock.module('../src/utils/device', () => ({ isTouchMobileDevice: () => true, prefersReducedMotion: () => false }));
 
 const { MobileControls } = await import('../src/systems/MobileControls');
 
@@ -18,6 +18,8 @@ function createScene(viewport = { x: 0, y: 0, width: 390, height: 844 }) {
   const handlers = new Map<string, Array<(pointer: unknown) => void>>();
   /** Each control key's `pointerdown` handler, in creation order: pause, then swap. */
   const keyTaps: Array<(pointer: unknown) => void> = [];
+  /** Tweens still running: the swap-hint pulse is the only one. */
+  const tweens = new Set<object>();
   const zone = (): Record<string, unknown> => {
     const target: Record<string, unknown> = {};
     target.on = (_event: string, handler: (pointer: unknown) => void, context: unknown) => {
@@ -43,6 +45,13 @@ function createScene(viewport = { x: 0, y: 0, width: 390, height: 844 }) {
       },
     },
     scale: { getViewPort: () => viewport },
+    tweens: {
+      add: () => {
+        const tween = { remove: () => tweens.delete(tween) };
+        tweens.add(tween);
+        return tween;
+      },
+    },
   };
   const emit = (event: string, pointer: { id: number; x: number; y: number; wasTouch?: boolean }) => {
     for (const handler of handlers.get(event) ?? []) handler({ wasTouch: true, ...pointer });
@@ -51,7 +60,7 @@ function createScene(viewport = { x: 0, y: 0, width: 390, height: 844 }) {
     emit('pointerdown', pointer);
     keyTaps[index]({ wasTouch: true, ...pointer });
   };
-  return { scene, emit, tapKey, viewport };
+  return { scene, emit, tapKey, viewport, tweens };
 }
 
 function createControls(viewport?: { x: number; y: number; width: number; height: number }) {
@@ -161,7 +170,7 @@ describe('MobileControls gun-swap key', () => {
     tapKey(SWAP_KEY, { id: 4, ...SWAP });
     expect(controls.consumeGunSwapPress()).toBe(false);
 
-    controls.setGunChargeState('lance', 1);
+    controls.setGunChargeState('lance', 1, false);
     tapKey(SWAP_KEY, { id: 4, ...SWAP });
     expect(controls.consumeGunSwapPress()).toBe(true);
     expect(controls.consumeGunSwapPress()).toBe(false);
@@ -170,21 +179,36 @@ describe('MobileControls gun-swap key', () => {
 
   test('the swap key never starts a drag, and its spot steers again when there is no key', () => {
     const { controls, emit } = createControls();
-    controls.setGunChargeState('scatter', 0.5);
+    controls.setGunChargeState('scatter', 0.5, false);
     emit('pointerdown', { id: 4, ...SWAP });
     expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toBeNull();
     emit('pointerup', { id: 4, ...SWAP });
 
-    controls.setGunChargeState(null, 0);
+    controls.setGunChargeState(null, 0, false);
     emit('pointerdown', { id: 5, ...SWAP });
     expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toEqual({ vx: 0, vy: 0 });
   });
 
   test('pausing drops a tap that has not been handled yet', () => {
     const { controls, tapKey } = createControls();
-    controls.setGunChargeState('lance', 1);
+    controls.setGunChargeState('lance', 1, false);
     tapKey(SWAP_KEY, { id: 4, ...SWAP });
     controls.setBlocked(true);
     expect(controls.consumeGunSwapPress()).toBe(false);
+  });
+
+  test('the swap hint pulses only while asked for, and stops with the controls', () => {
+    const { controls, tweens } = createControls();
+    expect(controls.showsTouchHints()).toBe(true);
+    controls.setGunChargeState('lance', 1, true);
+    expect(tweens.size).toBe(1);
+    controls.setGunChargeState('lance', 1, true);
+    expect(tweens.size).toBe(1);
+    controls.setGunChargeState('scatter', 0.9, false);
+    expect(tweens.size).toBe(0);
+
+    controls.setGunChargeState('lance', 1, true);
+    controls.destroy();
+    expect(tweens.size).toBe(0);
   });
 });
