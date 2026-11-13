@@ -30,18 +30,29 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Hive Maelstrom',
-    maxHp: 1650,
-    phase1Cooldown: 1010,
-    phase2Cooldown: 510,
-    phase2MoveSpeed: 190,
-    phaseTransitionPauseMs: 280,
-    attackStyle: 'maelstrom',
-    phase1SpreadShotCount: 7,
-    phase1SpreadArcDegrees: 64,
-    phase1BulletSpeedScale: 1,
-    phase2SpiralShotCount: 7,
-    phase2SpiralTurnRate: 112,
-    phase2BulletSpeedScale: 1.08,
+    maxHp: 1645,
+    parSeconds: 65,
+    escalatesPastPar: true,
+    phaseChangePauseMs: 280,
+    phases: [
+      {
+        startsAtHull: 1,
+        style: 'maelstrom',
+        movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
+        attacks: [{ cooldownMs: 1010, volley: [{ kind: 'arc', shots: 7, arcDegrees: 64, speed: 1, originY: 30 }] }],
+      },
+      {
+        startsAtHull: 0.5,
+        style: 'maelstrom',
+        movement: { kind: 'patrol', speed: 190, edgePadding: 60 },
+        attacks: [
+          {
+            cooldownMs: 510,
+            volley: [{ kind: 'spiral', shots: 7, degreesPerSecond: 224, speed: 1.08, originY: 30, mirrored: true }],
+          },
+        ],
+      },
+    ],
   },
   bossAddWaves: true,
   lastLifeHelperWing: {

@@ -109,6 +109,21 @@ function bossProblems(level: LevelConfig): string[] {
   const problems: string[] = [];
   if (!level.boss) return ['hasBoss=true requires a boss config'];
   if (!(level.bossTriggerProgress > 0 && level.bossTriggerProgress < 1)) problems.push('bossTriggerProgress');
+  const { boss } = level;
+  if (!positive(boss.maxHp)) problems.push('boss.maxHp');
+  // Par sits in the 45-70 s band the fights are tuned to (`bun run balance:bosses`).
+  if (!within(boss.parSeconds, 45, 70)) problems.push('boss.parSeconds');
+  if (boss.phases[0]?.startsAtHull !== 1) problems.push('boss: the first phase starts at full hull');
+  boss.phases.forEach((phase, index) => {
+    const previous = boss.phases[index - 1];
+    if (previous && !(phase.startsAtHull < previous.startsAtHull && phase.startsAtHull > 0)) {
+      problems.push(`boss phase ${index + 1}: thresholds fall from 1 toward 0`);
+    }
+    if (phase.attacks.length === 0) problems.push(`boss phase ${index + 1}: no attacks`);
+    if (phase.attacks.some((attack) => !positive(attack.cooldownMs) || attack.volley.length === 0)) {
+      problems.push(`boss phase ${index + 1}: every attack needs a cooldown and a volley`);
+    }
+  });
   return problems;
 }
 

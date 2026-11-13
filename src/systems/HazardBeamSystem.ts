@@ -2,9 +2,11 @@ import Phaser from 'phaser';
 import { HazardBeam } from '../entities/HazardBeam';
 import { BEAM_HIT_FRACTION } from '../entities/hazardBeamGeometry';
 import { getViewportBounds } from '../utils/layout';
+import type { BossBeamShot } from '../entities/enemies/boss/volleys';
 
 const SOLAR_FLARE_TINT = 0xffb066;
 const LASER_LATTICE_TINT = 0xff6a8d;
+const BOSS_BEAM_TINT = 0xff4f7a;
 const SOLAR_FLARE_TELEGRAPH_MS = 1300;
 const SOLAR_FLARE_MIN_GAP = 120;
 const SOLAR_FLARE_MAX_GAP = 170;
@@ -137,6 +139,20 @@ export class HazardBeamSystem {
       tint: LASER_LATTICE_TINT,
       telegraphMs,
       activeMs: LASER_LATTICE_ACTIVE_MS,
+    });
+  }
+
+  /** A boss's beam: straight down from under its hull to below the screen, after its own telegraph. */
+  launchBossBeam(shot: BossBeamShot): void {
+    const bottom = getViewportBounds(this.scene).bottom + 30;
+    this.launchBeam({
+      x: shot.x,
+      y: (shot.top + bottom) / 2,
+      width: shot.width,
+      height: bottom - shot.top,
+      tint: BOSS_BEAM_TINT,
+      telegraphMs: shot.telegraphMs,
+      activeMs: shot.activeMs,
     });
   }
 

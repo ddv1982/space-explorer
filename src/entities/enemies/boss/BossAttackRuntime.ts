@@ -4,12 +4,15 @@ import type { EnemyType } from '@/config/LevelsConfig';
 import { EnemyBullet } from '@/entities/EnemyBullet';
 import { Player } from '@/entities/Player';
 import { getViewportBounds } from '@/utils/layout';
+import type { BossBeamShot } from './volleys';
 
-type BossSummonHandler = (type: EnemyType, x: number, y: number) => void;
+export type BossSummonHandler = (type: EnemyType, x: number, y: number) => void;
+export type BossBeamLauncher = (beam: BossBeamShot) => void;
 
 export class BossAttackRuntime {
   private bulletGroup: Phaser.Physics.Arcade.Group | null = null;
   private summonHandler: BossSummonHandler | null = null;
+  private beamLauncher: BossBeamLauncher | null = null;
   private player: Player | null = null;
 
   constructor(
@@ -23,6 +26,14 @@ export class BossAttackRuntime {
 
   setSummonHandler(handler: BossSummonHandler): void {
     this.summonHandler = handler;
+  }
+
+  setBeamLauncher(launcher: BossBeamLauncher): void {
+    this.beamLauncher = launcher;
+  }
+
+  launchBeam(beam: BossBeamShot): void {
+    this.beamLauncher?.(beam);
   }
 
   setPlayer(player: Player | null): void {
@@ -43,7 +54,7 @@ export class BossAttackRuntime {
     bullet.setVelocity(velocityX, velocityY);
   }
 
-  summonEscorts(types: EnemyType[]): void {
+  summonEscorts(types: readonly EnemyType[]): void {
     if (!this.summonHandler) return;
     const boss = this.getBossPosition();
     const viewport = getViewportBounds(this.scene);

@@ -30,18 +30,34 @@ export const DEEP_SPACE_INFERNO_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Reef Stalker',
-    maxHp: 1325,
-    phase1Cooldown: 1040,
-    phase2Cooldown: 530,
-    phase2MoveSpeed: 210,
-    phaseTransitionPauseMs: 280,
-    attackStyle: 'pursuit',
-    phase1SpreadShotCount: 5,
-    phase1SpreadArcDegrees: 52,
-    phase1BulletSpeedScale: 1.0,
-    phase2SpiralShotCount: 5,
-    phase2SpiralTurnRate: 100,
-    phase2BulletSpeedScale: 1.06,
+    maxHp: 615,
+    parSeconds: 52,
+    escalatesPastPar: true,
+    phaseChangePauseMs: 280,
+    phases: [
+      {
+        startsAtHull: 1,
+        style: 'pursuit',
+        movement: { kind: 'pursuit', speed: 92, edgePadding: 70, bob: { amplitude: 14, periodMs: 1257 } },
+        attacks: [
+          { cooldownMs: 1040, volley: [{ kind: 'aimedArc', shots: 5, arcDegrees: 28.6, speed: 1, originY: 28 }] },
+        ],
+      },
+      {
+        startsAtHull: 0.5,
+        style: 'pursuit',
+        movement: { kind: 'pursuit', speed: 241.5, edgePadding: 70, bob: { amplitude: 14, periodMs: 1257 } },
+        attacks: [
+          {
+            cooldownMs: 530,
+            volley: [
+              { kind: 'aimedArc', shots: 6, arcDegrees: 21.8, speed: 1.08, originY: 28 },
+              { kind: 'arc', shots: 4, arcDegrees: 18, speed: 1.06, originY: 28, lean: 10 },
+            ],
+          },
+        ],
+      },
+    ],
   },
   bossAddWaves: true,
   bossTriggerProgress: 0.746,

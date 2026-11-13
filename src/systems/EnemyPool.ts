@@ -14,6 +14,7 @@ import { Rival } from '../entities/enemies/Rival';
 import { Courier } from '../entities/enemies/Courier';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { Boss } from '../entities/enemies/Boss';
+import type { BossBeamLauncher } from '../entities/enemies/boss/BossAttackRuntime';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { BomberBomb } from '../entities/BomberBomb';
 import { Mine } from '../entities/Mine';
@@ -55,7 +56,10 @@ const GROUP_DESCRIPTORS: Record<PoolGroupKey, GroupDescriptor> = {
   boss: { maxSize: 1, classType: Boss },
   bomb: { maxSize: 30, classType: BomberBomb },
   mine: { maxSize: 24, classType: Mine },
-  enemyBullet: { maxSize: 80, classType: EnemyBullet },
+  // Sized for boss walls on an ultrawide screen: a wall is one shot every 44 px across the whole
+  // viewport and two can be in flight at once (129 shots measured at 2560 px wide). Bullets are created
+  // on demand, so a phone never builds this many.
+  enemyBullet: { maxSize: 256, classType: EnemyBullet },
 };
 
 interface EnemyGroupRegistration {
@@ -70,6 +74,7 @@ export class EnemyPool {
   private targetProvider: (() => { x: number; y: number } | null) | null = null;
   private playerDamage = 1;
   private seekGroups: Phaser.Physics.Arcade.Group[] | null = null;
+  private bossBeamLauncher: BossBeamLauncher | null = null;
 
   private acquireFromGroup<T>(group: Phaser.Physics.Arcade.Group, x: number, y: number): T | null {
     const existing = group.getFirstDead(false) as T | null;
@@ -248,7 +253,12 @@ export class EnemyPool {
     }
   }
 
-  spawnBoss(x: number, y: number, config?: BossConfig): Boss | null {
+  /** Boss beams are hazard beams, owned by the scene's `HazardBeamSystem`. */
+  setBossBeamLauncher(launcher: BossBeamLauncher): void {
+    this.bossBeamLauncher = launcher;
+  }
+
+  spawnBoss(x: number, y: number, config: BossConfig): Boss | null {
     const bossGroup = this.ensureGroup('boss');
     const activeBoss = this.getGroupChildrenSafely(bossGroup).find((c) => c.active) as Boss | undefined;
     if (activeBoss) return null;
@@ -266,6 +276,7 @@ export class EnemyPool {
     boss.setSummonHandler((type, spawnX, spawnY) => {
       this.spawnEnemy(type, spawnX, spawnY);
     });
+    if (this.bossBeamLauncher) boss.setBeamLauncher(this.bossBeamLauncher);
   }
 
   getScoutGroup(): Phaser.Physics.Arcade.Group {

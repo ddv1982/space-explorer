@@ -30,19 +30,37 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Omega Null',
-    maxHp: 1875,
-    phase1Cooldown: 970,
-    phase2Cooldown: 460,
-    phase2MoveSpeed: 200,
-    phaseTransitionPauseMs: 240,
-    attackStyle: 'pressure',
-    phase2AttackStyle: 'maelstrom',
-    phase1SpreadShotCount: 8,
-    phase1SpreadArcDegrees: 66,
-    phase1BulletSpeedScale: 1.04,
-    phase2SpiralShotCount: 8,
-    phase2SpiralTurnRate: 120,
-    phase2BulletSpeedScale: 1.12,
+    maxHp: 1880,
+    parSeconds: 70,
+    escalatesPastPar: true,
+    phaseChangePauseMs: 240,
+    phases: [
+      {
+        startsAtHull: 1,
+        style: 'pressure',
+        movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
+        attacks: [
+          {
+            cooldownMs: 970,
+            volley: [
+              { kind: 'arc', shots: 8, arcDegrees: 36.3, speed: 1.04, originY: 30, lean: 6, leanEveryOther: true },
+            ],
+          },
+        ],
+      },
+      {
+        // The finale switches hulls: pressure into maelstrom.
+        startsAtHull: 0.5,
+        style: 'maelstrom',
+        movement: { kind: 'patrol', speed: 200, edgePadding: 60 },
+        attacks: [
+          {
+            cooldownMs: 460,
+            volley: [{ kind: 'spiral', shots: 8, degreesPerSecond: 240, speed: 1.12, originY: 30, mirrored: true }],
+          },
+        ],
+      },
+    ],
   },
   bossAddWaves: true,
   lastLifeHelperWing: {

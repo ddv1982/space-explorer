@@ -27,7 +27,9 @@ Levels 5–10 add payoff without adding player inputs:
 - **Ship systems** are free one-of-three picks at the refit bay after sectors 2, 5 and 8 (`config/shipSystems.ts`). They change how the ship plays rather than how hard it hits, and are balanced by measurement: each main gun trades single-target damage for one strength and scored inside the standard gun's run-to-run spread in sector 5. Nothing is offered in sectors 1–2, which stay a gentle introduction. A system works without input; the only new input is changing one. Once a slot has a pick the player may cycle it to another option of that slot: the main gun mid-flight on Q or the touch swap key, support and doctrine from the pause panel's SYSTEMS tab. A gun change costs `GUN_SWAP` (0.5 s of silence, 2 s before the next change, both on the gameplay clock), so swapping is a decision and never a free best-of-all-guns. Feedback is a brief name flash over the ship; there is no persistent panel. The current pick is saved with the run.
 - **Run variation** comes from one seed per run (`systems/runVariation.ts`, `systems/gameplayRandom.ts`). It decides the wave choices, whether each sector is mirrored left to right, and the sky. Two rules keep scores comparable: the sky is looks only, and the only layout change is the mirror, which is as hard by symmetry. Never vary wave order, enemy counts or timing by seed. RETRY keeps the seed; NEW RUN draws a new one. Enemies, asteroids and wormholes each draw from their own seeded stream, so one cannot shift another's choices; how far a run gets through a stream still depends on play. Enemy jitter and pickup drops stay unseeded because they depend on how the fight goes.
 - **Marked Aces** are sparse authored variants of existing enemies. Their gilded treatment signals 2× durability, 4× score, and exactly one guaranteed power-up.
-- **Boss volleys are telegraphed.** For the last 400 ms before every volley the boss's core swells and its hardpoints flash white. Bosses have no stun or bonus-damage window; fights are paced by the wind-up and the volley cooldown.
+- **Boss volleys are telegraphed.** For the last 400 ms before every volley the boss's core swells and its hardpoints flash white. Bosses have no stun or bonus-damage window; fights are paced by the wind-up and each attack's cooldown.
+- **Boss fights are authored rotations.** A boss's whole fight lives in its level file (`BossConfig`): phases start at hull thresholds (any number of them), and each phase steps through an ordered list of attacks, each with its own cooldown, never picked at random. An attack can send the boss to an anchor first (`x` a share of the screen width, `y` pixels from the top) and holds the volley until it arrives, so a safe spot does not stay safe. Shared building blocks live in `entities/enemies/boss/volleys.ts`: arcs, aimed arcs, spirals, escort summons, a wall with one gap, an aimed burst, and a beam that reuses the hazard beam and its telegraph. A shielded attack keeps the hull closed from the previous volley until it fires, and only then.
+- **Boss hull is authored, not scaled.** Upgrades shorten boss fights; nothing raises boss hull. Each boss has a par time (45-70 s) and a hull tuned so the sector's representative ship meets it with the measurement bot (`bun run balance:bosses`, which states the ship). Past par, cooldowns shrink evenly to 25% faster over 30 s; the wind-up keeps its length. The sector 3 boss does not escalate. A kill under par pays 200 points per whole second left. Fight time is the boss's gameplay clock, so pause and hit-stop never count.
 - **Max-chain Overdrive** reduces the main-gun cooldown by 15% while the existing chain multiplier remains at x5. It adds no input and ends immediately when the chain falls.
 
 These systems must preserve Lane-Reading, avoid persistent HUD panels, and remain independently removable through upgrade/config gates.
@@ -94,8 +96,8 @@ that powers the frontier itself.
 
 - Boss death: ~0.6s slow-motion hitstop, white flash, expanding shockwave ring, debris burst, large
   score popup. Reuses the explosion flash + shockwave choreography from the VFX overhaul.
-- Phase change: short firing pause (exists), plus a 400ms pattern-reset beat with camera nudge.
-- The final boss (L10) switches attack style between phases (pressure into maelstrom).
+- Phase change: short firing pause, flash, hit-stop and announcement on every phase change; the new phase's rotation starts from its first attack.
+- The final boss (L10) switches hull style between phases (pressure into maelstrom).
 
 ### 2.6 Wave choreography grammar
 
@@ -136,18 +138,18 @@ exclusive to L5, L9, and L10.
 
 ### 2.9 Boss attack-style plan
 
-All six existing styles are used; the finale adds a phase style switch (`phase2AttackStyle`).
+All six hull styles are used; a phase can switch style (the finale does). Bastion Bulwark is the first boss authored for the rotation engine; the others still fire one attack per phase and are due their own rotations.
 
-| Level | Boss | Style (phase 1 -> phase 2) |
-|---|---|---|
-| L3 | Pyre Herald | barrage |
-| L4 | Marshal Vectra | pressure |
-| L5 | Reef Stalker | pursuit |
-| L6 | Bastion Bulwark | bulwark |
-| L7 | Choir Regent | pressure (tuned harder) |
-| L8 | Umbral Ark | carrier (debut) |
-| L9 | Hive Maelstrom | maelstrom (debut) |
-| L10 | Omega Null | pressure -> maelstrom (finale switch) |
+| Level | Boss | Phases | Par |
+|---|---|---|---|
+| L3 | Pyre Herald | barrage, 2 phases (no escalation) | 45 s |
+| L4 | Marshal Vectra | pressure, 2 phases | 50 s |
+| L5 | Reef Stalker | pursuit, 2 phases | 52 s |
+| L6 | Bastion Bulwark | bulwark, 3 phases at 66% and 33%: rampart (shield only while charging a wall), breach (flank anchors, aimed burst, rotary), last stand (no shield, pursues, beam) | 60 s |
+| L7 | Choir Regent | pressure, 2 phases | 58 s |
+| L8 | Umbral Ark | carrier (debut), 2 phases | 62 s |
+| L9 | Hive Maelstrom | maelstrom (debut), 2 phases | 65 s |
+| L10 | Omega Null | pressure -> maelstrom (finale switch), 2 phases | 70 s |
 
 ## 3. The 10-level concept sheet
 
@@ -184,7 +186,7 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 ### L6: Debris Gauntlet (R->H) - planet Bastion Fall - motif: wreckage ramparts
 - Set-piece level: enemy-light, hazard-dense. Solar-flare and laser-lattice debut;
   rock corridors with destructible cover return.
-- Boss: Bastion Bulwark (bulwark shield cycle). Helper wing unlocks.
+- Boss: Bastion Bulwark (three phases; its shield closes only while it charges a wall). Helper wing unlocks.
 - distance 18500, spawnRate 1.55; enemies: fighter 30, bomber 25, gunship 35, scout 10.
 
 ### L7: Hollow Choir (H) - planet Vesper Nine - motif: cathedral

@@ -31,7 +31,7 @@ type GameSceneEventPayloads = {
   [GAME_SCENE_EVENTS.enemySpawnWarning]: [x: number];
   [GAME_SCENE_EVENTS.wormholeTelegraph]: [x: number, y: number];
   [GAME_SCENE_EVENTS.eliteWave]: [title?: string];
-  [GAME_SCENE_EVENTS.bossDeath]: [score: number, x: number, y: number];
+  [GAME_SCENE_EVENTS.bossDeath]: [score: number, x: number, y: number, fastKillBonus: number];
   [GAME_SCENE_EVENTS.bossPhaseChange]: [phase: number];
   [GAME_SCENE_EVENTS.helperWingActivated]: [helperCount: number];
   [GAME_SCENE_EVENTS.helperWingDepleted]: [];

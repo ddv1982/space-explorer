@@ -26,6 +26,9 @@ _Avoid_: surprise, cheap shot
 
 ## Decisions
 
+**Boss fights are authored rotations with a par time (2026-11)**:
+Bosses got harder by soaking up more hull, which made late fights long, easy and repetitive. Boss hull no longer scales with sector or with the player's upgrades; each boss has an authored hull and a par time (45-70 s) measured with `bun run balance:bosses`. Difficulty lives in what the boss does: phases at hull thresholds, an ordered (never random) attack rotation per phase, anchors that move the boss between attacks, and escalation of up to 25% faster volleys past par (never a shorter wind-up; the first boss is exempt). A kill under par pays a fixed bonus per second. Fight time is the boss's gameplay clock, so pause and hit-stop never count. Difficulty tiers still only scale accepted hull damage.
+
 **Rival duels hold the sector (2026-11)**:
 A rival is the player's hull flown at half strength, authored only as a choreographed wave. While one is alive the wave clock, hazards and route progress stop, so a duel is a clean one-on-one that must be won. Upgrade tiers open across all ten sectors instead of all being available after sector 4, and purchased shields recharge on every respawn. Difficulty tiers still only scale hull damage.
 

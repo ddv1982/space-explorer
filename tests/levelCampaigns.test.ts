@@ -90,10 +90,10 @@ describe('campaign helper regression coverage', () => {
     expect(level1.hasBoss).toBe(false);
     expect(countSignatureWaves(level1)).toBe(0);
 
-    expect(level5.boss?.attackStyle).toBe('pursuit');
+    expect(level5.boss?.phases[0]?.style).toBe('pursuit');
     expect(countRecoveryDrops(level5)).toBeGreaterThanOrEqual(2);
 
-    expect(level6.boss?.attackStyle).toBe('bulwark');
+    expect(level6.boss?.phases[0]?.style).toBe('bulwark');
     expect(hasProjectileBlockingCover(level6)).toBe(true);
     expect(countRecoveryDrops(level6)).toBeGreaterThanOrEqual(1);
 

@@ -146,6 +146,8 @@ function createCombatFeedbackHarness(
   const queueLevelComplete = mock(() => options.queueLevelComplete?.());
   const createExplosion = mock();
   const createScorePopup = mock();
+  const createFastKillPopup = mock();
+  const addScore = mock();
   const registerKill = mock(options.registerKill ?? ((score: number) => score));
   const hideBossBar = mock();
   const markBossDefeated = mock();
@@ -173,13 +175,14 @@ function createCombatFeedbackHarness(
     player: player as never,
     getShipSystems: () => ({ gun: null, support: null, late: options.late ?? null }),
     scoreManager: {
-      addScore: mock(),
+      addScore,
       registerKill,
       onPlayerHit,
       onPlayerDeath: mock(),
     } as never,
     effectsManager: {
       createScorePopup,
+      createFastKillPopup,
       createExplosion,
       createSurgePulse: mock(),
       pulseCameraColor: mock(),
@@ -209,7 +212,6 @@ function createCombatFeedbackHarness(
     } as never,
     getBoss: () => (options.boss ?? null) as never,
     setBoss,
-    scaledBossConfig: { name: 'Scaled Boss' } as never,
     lastLifeHelperWing: { suspendForTransition } as never,
     picketTurrets: { suspendForTransition: suspendPicketsForTransition } as never,
     powerUpGroup: { id: 'powerups' } as never,
@@ -235,6 +237,8 @@ function createCombatFeedbackHarness(
     queueLevelComplete,
     createExplosion,
     createScorePopup,
+    createFastKillPopup,
+    addScore,
     registerKill,
     hideBossBar,
     markBossDefeated,
@@ -367,7 +371,7 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
       queueLevelComplete: () => order.push('queue'),
     });
 
-    harness.handlers.handleBossDeath();
+    harness.handlers.handleBossDeath(2000, 320, 96, 0);
 
     expect(harness.createExplosion).toHaveBeenCalledWith(320, 96, 3);
     expect(playSfx).toHaveBeenCalledWith('explosionBoss', expect.any(Number));
@@ -379,6 +383,17 @@ describe('createGameSceneCombatFeedbackHandlers', () => {
     expect(harness.suspendForTransition).toHaveBeenCalledTimes(1);
     expect(harness.suspendPicketsForTransition).toHaveBeenCalledTimes(1);
     expect(harness.queueLevelComplete).toHaveBeenCalledWith(harness.flowContext);
+    expect(harness.addScore).not.toHaveBeenCalled();
+    expect(harness.createFastKillPopup).not.toHaveBeenCalled();
+  });
+
+  test('a boss killed under par adds its fast-kill bonus to the score and shows it', () => {
+    const harness = createCombatFeedbackHarness({ boss: { x: 320, y: 96 } });
+
+    harness.handlers.handleBossDeath(2000, 320, 96, 1800);
+
+    expect(harness.addScore).toHaveBeenCalledWith(1800);
+    expect(harness.createFastKillPopup).toHaveBeenCalledWith(320, 130, 1800);
   });
 
   test('handleBossSpawn clears hazards, hides active enemies, starts boss music, and shows the boss bar', () => {

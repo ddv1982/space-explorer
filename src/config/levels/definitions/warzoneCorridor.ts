@@ -30,18 +30,36 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Marshal Vectra',
-    maxHp: 1700,
-    phase1Cooldown: 940,
-    phase2Cooldown: 470,
-    phase2MoveSpeed: 195,
-    phaseTransitionPauseMs: 280,
-    attackStyle: 'pressure',
-    phase1SpreadShotCount: 7,
-    phase1SpreadArcDegrees: 58,
-    phase1BulletSpeedScale: 0.98,
-    phase2SpiralShotCount: 5,
-    phase2SpiralTurnRate: 94,
-    phase2BulletSpeedScale: 1.05,
+    maxHp: 585,
+    parSeconds: 50,
+    escalatesPastPar: true,
+    phaseChangePauseMs: 280,
+    phases: [
+      {
+        startsAtHull: 1,
+        style: 'pressure',
+        movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
+        attacks: [
+          {
+            cooldownMs: 940,
+            volley: [
+              { kind: 'arc', shots: 7, arcDegrees: 31.9, speed: 0.98, originY: 30, lean: 6, leanEveryOther: true },
+            ],
+          },
+        ],
+      },
+      {
+        startsAtHull: 0.5,
+        style: 'pressure',
+        movement: { kind: 'patrol', speed: 195, edgePadding: 60 },
+        attacks: [
+          {
+            cooldownMs: 470,
+            volley: [{ kind: 'spiral', shots: 5, degreesPerSecond: 257.4, speed: 1.05, originY: 30 }],
+          },
+        ],
+      },
+    ],
   },
   bossTriggerProgress: 0.752,
   asteroidInterval: 3600,

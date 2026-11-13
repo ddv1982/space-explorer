@@ -12,10 +12,15 @@ All notable changes to this project will be documented in this file.
 - The controls card at the start of a sector and the pause panel show the Q key, but only once the run has a main gun. Sectors 1 and 2 are unchanged.
 - The game saves your run when you leave the refit bay for the next sector, so closing the tab no longer loses the ship system you just picked. The save appears in the main menu as AUTOSAVE, next to your three slots, and loads and deletes like them. It never overwrites a slot of yours, and it goes away when the run ends or you start a new one.
 - Save slots in the main menu and the pause panel name the ship systems the saved run has picked.
+- Fast-kill bonus: beat a boss under its par time and you score 200 points for every second left on the clock, shown as FAST KILL next to the kill. Pausing never costs you any of it.
 
 ### Changed
 
 - The pause panel's `SYSTEMS:` line is replaced by the SYSTEMS tab.
+- Boss fights are shorter and have more to read. Each boss phase now runs through a set order of attacks instead of one pattern on repeat, and some bosses fly to new spots between attacks, so no place under them stays safe. Every volley still has its wind-up.
+- Boss health no longer grows when you buy weapons, fire rate, hull or shields. Upgrades now make boss fights shorter, as they should. Every boss has a fixed health tuned so a typical ship for that sector beats it in about 45 to 70 seconds.
+- A boss that is still alive after its par time slowly fires faster, up to a quarter faster. The wind-up before each volley never gets shorter. The first boss (sector 3) keeps its pace, and sectors 1 and 2 are unchanged.
+- Bastion Bulwark (sector 6) is rebuilt in three phases. Its shield now only closes while it charges a wall of shots with one gap in it, so you spend that time dodging, not waiting. At two thirds it starts flying from flank to flank, and at one third its shield breaks and it chases you and drops a beam on your lane.
 
 ### Fixed
 
