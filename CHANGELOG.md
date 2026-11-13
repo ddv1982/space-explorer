@@ -14,6 +14,12 @@ All notable changes to this project will be documented in this file.
 - Save slots in the main menu and the pause panel name the ship systems the saved run has picked.
 - Fast-kill bonus: beat a boss under its par time and you score 200 points for every second left on the clock, shown as FAST KILL next to the kill. Pausing never costs you any of it.
 
+
+
+- The refit bay lists your ship systems next to the upgrades once you have one. Select one to see its three options again, with the current one marked, and pick another: changing here is free, as often as you like, with no wait. Escape, or picking the current one again, keeps it. The next sector flies with your choice, and the autosave and your checkpoints store it.
+
+
+
 ### Changed
 
 - The pause panel's `SYSTEMS:` line is replaced by the SYSTEMS tab.

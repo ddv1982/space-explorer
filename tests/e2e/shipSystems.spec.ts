@@ -59,6 +59,7 @@ test('a free main-gun pick is offered after sector 2, must be made, and changes 
   await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(1));
   await waitForScene(page, 'PlanetIntermission');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Ship systems' })).toHaveCount(0);
 
   await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(2));
   const dialog = page.getByRole('dialog', { name: 'CHOOSE YOUR MAIN GUN' });
@@ -77,9 +78,13 @@ test('a free main-gun pick is offered after sector 2, must be made, and changes 
     true
   );
 
-  // The run waits for the pick: a plain key does not carry on to the next sector.
-  await page.keyboard.press('KeyX');
+  // The run waits for the pick: neither a plain key nor Escape carries on or closes the dialog. Both are
+  // held across game frames so Phaser would see them.
+  await page.keyboard.down('KeyX');
+  await page.keyboard.down('Escape');
   await page.waitForTimeout(600);
+  await page.keyboard.up('Escape');
+  await page.keyboard.up('KeyX');
   expect((await snapshot(page)).activeScenes).toContain('PlanetIntermission');
   await expect(dialog).toBeVisible();
 
@@ -109,6 +114,54 @@ test('a free main-gun pick is offered after sector 2, must be made, and changes 
     await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
     await page.screenshot({ path: test.info().outputPath('pause-systems.png') });
   }
+  assertNoBrowserErrors();
+});
+
+test('a picked system can be kept or swapped for free at a later refit bay, and the next sector flies the swap', async ({
+  page,
+  isMobile,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(120_000);
+  await startSector(page, 3, 'lance');
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(3));
+  await waitForScene(page, 'PlanetIntermission');
+  const gun = page.getByRole('group', { name: 'Ship systems' }).getByRole('button', { name: /^Swap main gun/ });
+  await expect(gun).toHaveAccessibleName('Swap main gun, now LANCE');
+  await expect(gun).toBeInViewport({ ratio: 1 });
+  await page.screenshot({ path: test.info().outputPath('refit-systems.png') });
+
+  // Reopening shows the same three options with the current one marked and focused. Dismissing keeps it:
+  // Escape on a keyboard, the current option on touch.
+  const dialog = page.getByRole('dialog', { name: 'SWAP YOUR MAIN GUN' });
+  const current = dialog.getByRole('button', { name: /^LANCE/ });
+  await gun.click();
+  await expect(current).toHaveAttribute('aria-pressed', 'true');
+  await expect(current).toBeFocused();
+  await expect(dialog.getByRole('button', { name: /^SCATTER/ })).toHaveAttribute('aria-pressed', 'false');
+  expect(await page.locator('.refit').evaluate((element) => (element.closest('.ui-layer') as HTMLElement).inert)).toBe(
+    true
+  );
+  await page.screenshot({ path: test.info().outputPath('refit-swap-dialog.png') });
+  if (isMobile) await current.tap();
+  else await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(gun).toHaveAccessibleName('Swap main gun, now LANCE');
+  await expect(gun).toBeFocused();
+  // Neither opening nor closing the dialog carried on to the next sector.
+  await page.waitForTimeout(600);
+  expect((await snapshot(page)).activeScenes).toContain('PlanetIntermission');
+
+  await gun.click();
+  await dialog.getByRole('button', { name: /^SCATTER/ }).click();
+  await expect(gun).toHaveAccessibleName('Swap main gun, now SCATTER');
+  await page.getByRole('button', { name: /Continue to/ }).click();
+  await waitForScene(page, 'Game');
+  if (isMobile) await page.touchscreen.tap(195, 700);
+  await expect.poll(async () => (await playerShots(page)).some((shot) => Math.abs(shot.rotation) > 0.1)).toBe(true);
+  await openPause(page, isMobile);
+  await page.getByRole('tab', { name: 'SYSTEMS' }).click();
+  await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
   assertNoBrowserErrors();
 });
 

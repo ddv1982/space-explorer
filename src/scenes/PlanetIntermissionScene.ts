@@ -1,4 +1,9 @@
-import { getPendingShipSystemSlot, setShipSystem } from '../config/shipSystems';
+import {
+  getPendingShipSystemSlot,
+  getShipSystemSlot,
+  setShipSystem,
+  type ShipSystemSlotDef,
+} from '../config/shipSystems';
 import { createSystemPickDialog, type SystemPickDialog } from './planetIntermission/systemPickDialog';
 import Phaser from 'phaser';
 
@@ -92,6 +97,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
         : `Campaign complete. Final score ${score}.`,
       evaluations: this.evaluate(),
       onBuy: (key) => this.tryBuyUpgrade(key),
+      onSwapSystem: (slot) => this.openSystemPick(getShipSystemSlot(slot)),
       onContinue: () => this.continueToNextLevel(),
     });
 
@@ -109,17 +115,32 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.offerShipSystemPick();
   }
 
-  /** A free ship-system pick is offered before the shop whenever one is due; the run waits for it. */
+  /**
+   * A free ship-system pick is offered before the shop whenever one is due; the run waits for it. Once
+   * none is due, the bay lists the run's picks so the player can swap them.
+   */
   private offerShipSystemPick(): void {
     const slot = this.isFinalMissionComplete ? null : getPendingShipSystemSlot(this.state.level, this.state.systems);
-    this.view?.setInert(slot !== null);
-    if (!slot) return;
-    this.pickDialog = createSystemPickDialog(slot, (id) => {
-      this.state.systems = setShipSystem(this.state.systems, slot.slot, id);
-      setPlayerState(this.registry, this.state);
-      audioManager.playUi('uiConfirm');
+    if (slot) {
+      this.openSystemPick(slot);
+      return;
+    }
+    if (!this.isFinalMissionComplete) this.view?.showSystems(this.state.systems);
+    this.view?.setInert(false);
+  }
+
+  /** The pick dialog for `slot`: its first pick, or a free swap when the slot already has one. */
+  private openSystemPick(slot: ShipSystemSlotDef): void {
+    const current = this.state.systems[slot.slot];
+    this.view?.setInert(true);
+    this.pickDialog = createSystemPickDialog(slot, current, (id) => {
       this.pickDialog?.destroy();
       this.pickDialog = undefined;
+      if (id !== current) {
+        this.state.systems = setShipSystem(this.state.systems, slot.slot, id);
+        setPlayerState(this.registry, this.state);
+        audioManager.playUi('uiConfirm');
+      } else audioManager.playUi();
       // A late start can owe more than one pick: offer the next before the shop opens.
       this.offerShipSystemPick();
     });
