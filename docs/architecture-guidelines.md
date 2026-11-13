@@ -35,6 +35,7 @@ This document describes the scene boundaries, system contracts, and coding rules
 
 - `src/systems/PlayerState.ts` is the only place that should define registry keys and helper functions for persistent run data.
 - Use `getPlayerState`, `setPlayerState`, `saveScoreToState`, `saveCurrentHp`, `advanceToNextLevel`, `getRunSummary`, and `setRunSummary` instead of writing raw registry keys in scenes.
+- During a sector, `ShipSystemsRuntime` is the one owner of the run's current ship systems. The gun, the surge, doctrine effects and the pause panel read them from it, and every mid-run change goes through it so the live effects (Wingman's drone, Magnet, the gun-swap cost) and `saveShipSystems` stay in step. Do not copy the systems onto other objects.
 - `PlayerStateData` is the long-lived run state used between scenes.
 - `RunSummaryData` is the terminal summary contract used by `GameOverScene` and `VictoryScene`.
 - When adding new terminal UI data, extend `RunSummaryData` and update the setter/getter helpers first so every scene reads the same contract.
