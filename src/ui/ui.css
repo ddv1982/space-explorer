@@ -2006,6 +2006,20 @@
     --frame-fill: 0.78;
   }
 
+  /* A short phone has no spare row for the ship systems: drop the two lines the CONTINUE key repeats... */
+  @container layer (max-height: 759px) {
+    .refit:has(.refit__systems) :is(.refit__caption, .refit__next) {
+      display: none;
+    }
+  }
+
+  /* ...and on the smallest phones the destination line under the planet's name too. */
+  @container layer (max-height: 659px) {
+    .refit:has(.refit__systems) .refit__destination {
+      display: none;
+    }
+  }
+
   @container layer (min-height: 760px) {
     .refit {
       --d: min(56cqw, 204px);
