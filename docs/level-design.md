@@ -149,7 +149,7 @@ All six hull styles are used; a phase can switch style (the finale does). Bastio
 | L7 | Choir Regent | pressure, 3 phases at 66% and 33%, each a fixed rhythm: hymn (two interleaving fans, then a fan aimed at you), antiphon (outward loft fans that leave the lane under it open, a nave fan that closes it, a cantor's aimed burst), crescendo (rotary, hymn, lofts with a short burst, over a faster patrol) | 58 s |
 | L8 | Umbral Ark | carrier (debut), 3 phases at 66% and 33%, each opening with a launch: hangar (fighter pair, crossing broadsides), convoy (a gunship escort, flak aimed at you, rotary), narrows (a wall whose gap moves, with a dodger pair launched into it) | 62 s |
 | L9 | Hive Maelstrom | maelstrom (debut), 3 phases at 66% and 33%: brood wake (one turning ring fired twice, aimed sting, swarm pairs), maelstrom (counter-rotating rings from a fast patrol, aimed burst), eye of the storm (pursues, full-spin rings, splitter pairs) | 65 s |
-| L10 | Omega Null | pressure -> maelstrom (finale switch), 2 phases | 70 s |
+| L10 | Omega Null | pressure -> maelstrom (finale switch at 50%), 4 phases at 75%, 50% and 25%: pressure (interleaving fans, aimed burst), siege (shielded wall, gunship guard, aimed fan), maelstrom (counter-rotating rings, low flank beam), null (pursues: beam inside sparse rings, aimed burst, shielded wall) | 70 s |
 
 ## 3. The 10-level concept sheet
 
@@ -208,7 +208,8 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 ### L10: Eventide Engine (H) - planet Omega Spire - motif: singularity engine
 - Final exam: the level reprises every gimmick in sequence (wormholes, minefields, flares,
   lattice, corridors) across 6 sections.
-- Boss: Omega Null, pressure into maelstrom phase switch, the hardest fight in the game.
+- Boss: Omega Null, the hardest fight in the game: four phases that reprise earlier bosses (fans,
+  shielded walls, gunship guard, rings, beams), switching pressure into maelstrom at half hull.
 - distance 21000, spawnRate 2.25; enemies: fighter 30, lancer 18, gunship 32, sower 20.
 
 ## 4. Re-theme sync points

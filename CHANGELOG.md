@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - Umbral Ark (sector 8) now fights in three phases, and each one opens by launching escorts in front of it. First a pair of fighters, then a gunship, and in the last third a pair of dodgers launched with a wall of shots whose gap moves each time. Lance shots pierce the escorts on their way to the hull; Seekers tend to chase the escorts instead of the Ark.
 
 - Hive Maelstrom (sector 9) is rebuilt in three phases. It starts with one ring of shots that turns between volleys, then spins two rings against each other while it sweeps the screen, and at one third it chases you and fires its fastest rings. Every other round it launches swarms (later splitters) in front of its hull, which Lance cuts through and which pull Seekers off the boss.
+- Omega Null (sector 10), the final boss, now has four phases that bring back what earlier bosses taught: leaning fans and aimed bursts, a shielded wall with a gunship guard, counter-rotating rings and a beam, and at the end all of them in turn while it chases you. It switches hulls at half health as before, and has less health, so the fight is about reading attacks rather than wearing it down.
 
 
 
