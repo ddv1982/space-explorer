@@ -1,7 +1,7 @@
 /**
  * Ship systems: free picks that change how the ship plays, offered at the refit bay. Once picked, a slot
- * can be changed to another of its options mid-run: the main gun on the swap key or touch button
- * (`GUN_SWAP` keeps it a decision), support and doctrine from the pause panel. Nothing else needs input,
+ * can be changed to another of its options: freely at any later refit bay, and mid-run the main gun on
+ * the swap key or touch button (`GUN_SWAP` keeps it a decision), support and doctrine from the pause panel. Nothing else needs input,
  * so touch and keyboard stay equal. Stat upgrades are bought separately.
  */
 export type MainGunId = 'lance' | 'scatter' | 'seekers';
@@ -26,6 +26,8 @@ interface ShipSystemOption {
 export interface ShipSystemSlotDef {
   slot: ShipSystemSlot;
   title: string;
+  /** For narrow spaces, e.g. three systems side by side at the refit bay. */
+  shortTitle: string;
   /** Offered at the refit bay after clearing this sector (and later, until a pick is made). */
   offeredAfterLevel: number;
   options: readonly [ShipSystemOption, ShipSystemOption, ShipSystemOption];
@@ -35,6 +37,7 @@ const SHIP_SYSTEM_SLOTS: readonly ShipSystemSlotDef[] = [
   {
     slot: 'gun',
     title: 'MAIN GUN',
+    shortTitle: 'GUN',
     offeredAfterLevel: 2,
     options: [
       { id: 'lance', name: 'LANCE', description: 'Slower shots that pierce every ship in a line.' },
@@ -45,6 +48,7 @@ const SHIP_SYSTEM_SLOTS: readonly ShipSystemSlotDef[] = [
   {
     slot: 'support',
     title: 'SUPPORT SYSTEM',
+    shortTitle: 'SUPPORT',
     offeredAfterLevel: 5,
     options: [
       { id: 'magnet', name: 'MAGNET', description: 'Pickups drift toward your ship.' },
@@ -59,6 +63,7 @@ const SHIP_SYSTEM_SLOTS: readonly ShipSystemSlotDef[] = [
   {
     slot: 'late',
     title: 'COMBAT DOCTRINE',
+    shortTitle: 'DOCTRINE',
     offeredAfterLevel: 8,
     options: [
       { id: 'overdrive', name: 'OVERDRIVE', description: 'Every step of your score chain speeds up the gun.' },
@@ -70,8 +75,14 @@ const SHIP_SYSTEM_SLOTS: readonly ShipSystemSlotDef[] = [
 
 export const NO_SHIP_SYSTEMS: ShipSystems = { gun: null, support: null, late: null };
 
+/** A slot's title and options, e.g. to offer them again at the refit bay. */
+export function getShipSystemSlot(slot: ShipSystemSlot): ShipSystemSlotDef {
+  // Every slot is authored above, so the lookup cannot miss.
+  return SHIP_SYSTEM_SLOTS.find((def) => def.slot === slot)!;
+}
+
 function optionIds(slot: ShipSystemSlot): readonly ShipSystemId[] {
-  return SHIP_SYSTEM_SLOTS.find((def) => def.slot === slot)?.options.map((option) => option.id) ?? [];
+  return getShipSystemSlot(slot).options.map((option) => option.id);
 }
 
 /** Clamps untrusted persisted picks to the authored options. */
@@ -104,14 +115,15 @@ interface PickedShipSystem {
   slot: ShipSystemSlot;
   /** The slot's title, e.g. `MAIN GUN`. */
   title: string;
+  shortTitle: string;
   option: ShipSystemOption;
 }
 
-/** The run's picks in slot order, for the pause panel; empty slots are left out. */
+/** The run's picks in slot order, for the pause panel and the refit bay; empty slots are left out. */
 export function describePickedShipSystems(systems: ShipSystems): PickedShipSystem[] {
   return SHIP_SYSTEM_SLOTS.flatMap((def) => {
     const option = def.options.find((candidate) => candidate.id === systems[def.slot]);
-    return option ? [{ slot: def.slot, title: def.title, option }] : [];
+    return option ? [{ slot: def.slot, title: def.title, shortTitle: def.shortTitle, option }] : [];
   });
 }
 

@@ -106,7 +106,7 @@ Bought during the planet intermission screen using score as currency:
 - **Fire Rate** — improves firing speed
 - **Shield** — increases hit absorption
 - **AEGIS Picket** — installs and overclocks automatic flank-defense turrets
-- **Ship systems** — free picks after sectors 2, 5 and 8 that change how the ship plays: a main gun (Lance, Scatter, Seekers), a support system (Magnet, Surge Core, Wingman) and a doctrine (Overdrive, Bulwark, Salvager). Picks can be changed mid-run: the main gun on Q or the touch swap button, the others from the pause panel
+- **Ship systems** — free picks after sectors 2, 5 and 8 that change how the ship plays: a main gun (Lance, Scatter, Seekers), a support system (Magnet, Surge Core, Wingman) and a doctrine (Overdrive, Bulwark, Salvager). Picks can be changed freely at any later refit bay, and mid-run: the main gun on Q or the touch swap button, the others from the pause panel
 - **A different run every time** — each run has its own sky and may fly sectors mirrored; RETRY replays the same run, NEW RUN starts a fresh one
 
 Some upgrades unlock later in the campaign and use progression caps so the run scales in a controlled way.

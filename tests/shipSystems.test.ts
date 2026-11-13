@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   describePickedShipSystems,
   getPendingShipSystemSlot,
+  getShipSystemSlot,
   NO_SHIP_SYSTEMS,
   normalizeShipSystems,
   selectNextShipSystem,
@@ -57,6 +58,13 @@ describe('ship systems', () => {
   test("setting a slot only accepts that slot's own options", () => {
     expect(setShipSystem(NO_SHIP_SYSTEMS, 'support', 'wingman').support).toBe('wingman');
     expect(setShipSystem(NO_SHIP_SYSTEMS, 'support', 'lance').support).toBeNull();
+  });
+
+  test('a picked slot can be offered again at the refit bay with its own three options', () => {
+    const gun = getShipSystemSlot('gun');
+    expect(gun.title).toBe('MAIN GUN');
+    expect(gun.options.map((option) => option.id)).toEqual(['lance', 'scatter', 'seekers']);
+    expect(getShipSystemSlot('late').options.map((option) => option.id)).toEqual(['overdrive', 'bulwark', 'salvager']);
   });
 
   test('the pause panel lists only picked slots, in slot order', () => {

@@ -1781,6 +1781,88 @@
   background: rgb(var(--accent-rgb));
 }
 
+/* ---------- ship system keys: the run's picks in the grid's last cell, each opening the swap dialog ---------- */
+
+.refit__systems {
+  display: flex;
+  gap: var(--card-gap);
+  min-width: 0;
+}
+
+.refit-system.ui-btn {
+  --cut: var(--card-cut);
+  --edge: rgb(var(--c-cyan-rgb) / 0.8);
+  --fill: rgb(10 28 54 / 0.92);
+  --glow: drop-shadow(0 0 2.5px rgb(var(--c-cyan-rgb) / calc(0.4 * var(--ui-glow))));
+  container-type: inline-size;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(var(--card-rows) - 4px);
+  height: var(--card-h);
+  padding: 0 6px 0 12px;
+  color: #f4fbff;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* The upgrade cards' lit rail and top tint, in the systems' cyan. */
+.refit-system.ui-btn::after {
+  background:
+    linear-gradient(rgb(var(--c-cyan-rgb) / 0.95), rgb(var(--c-cyan-rgb) / 0.95)) 0 var(--cut) / 3px 100% no-repeat,
+    linear-gradient(rgb(var(--c-cyan-rgb) / 0.1) 0 46%, transparent 46%),
+    var(--fill);
+}
+
+.refit-system.ui-btn:focus-visible {
+  outline: none;
+  --edge: var(--c-cyan-bright);
+  --glow: drop-shadow(0 0 1.5px var(--c-cyan-bright)) drop-shadow(0 0 5px rgb(var(--c-cyan-rgb) / 0.7));
+}
+
+.refit-system__slot {
+  font: calc(var(--card-cost) - 1px) / 1 var(--f-mono);
+  color: var(--c-cyan);
+}
+
+.refit-system__name {
+  font: 700 var(--card-title) / 1 var(--f-display);
+}
+
+.refit-system__detail {
+  font-size: calc(var(--card-detail) - 1px);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: #b4cbdb;
+}
+
+/* Two or three keys share the cell: no description, the dialog has it. */
+@container (max-width: 239px) {
+  .refit-system__detail {
+    display: none;
+  }
+}
+
+.refit-system__slot--short {
+  display: none;
+}
+
+/* Three across on a phone or a small window: the short slot title, and the names in the condensed label font. */
+@container (max-width: 139px) {
+  .refit-system__slot {
+    display: none;
+  }
+
+  .refit-system__slot--short {
+    display: block;
+  }
+
+  .refit-system__name {
+    font-family: var(--f-label);
+  }
+}
+
 @keyframes ui-flash {
   from {
     filter: brightness(2.2);
@@ -1934,6 +2016,10 @@
       --m-caption: 10px;
       --m-cards: 9px;
       --show-note: block;
+    }
+
+    /* Once the run has ship systems they take a row of their own: the cards keep the compact size to make room. */
+    .refit:not(:has(.refit__systems)) {
       --card-h: 60px;
       --card-gap: 7px;
       --icon: 38px;
@@ -2286,4 +2372,22 @@
   letter-spacing: 0.3px;
   text-transform: none;
   color: var(--t-secondary);
+}
+
+/* A swap marks the current option with the pressed key's fill and a tag at the end of its name line. */
+.pick__option[aria-pressed='true'] :is(.pick__name, .pick__detail) {
+  color: inherit;
+}
+
+.pick__option[aria-pressed='true'] .pick__name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  align-self: stretch;
+  gap: 12px;
+}
+
+.pick__current {
+  font: 12px / 1 var(--f-mono);
+  letter-spacing: 1.5px;
 }

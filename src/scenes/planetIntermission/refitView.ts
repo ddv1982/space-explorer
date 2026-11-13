@@ -1,5 +1,6 @@
 import type { LevelConfig } from '../../config/LevelsConfig';
 import type { UpgradeEvaluation, UpgradeKey } from '../../config/UpgradesConfig';
+import { describePickedShipSystems, type ShipSystems, type ShipSystemSlot } from '../../config/shipSystems';
 import { colorToHexString, mixColor } from '../../utils/colorUtils';
 import { h, liveRegion, mountUiLayer, releaseFocus } from '../../ui/dom';
 import { findArrowFocusIndex, findLinearFocusIndex, findNextPurchasableAfter } from './navigation';
@@ -111,6 +112,48 @@ function createUpgradeCard(evaluation: UpgradeEvaluation, onBuy: (key: UpgradeKe
   };
 }
 
+const SYSTEM_SLOTS: readonly ShipSystemSlot[] = ['gun', 'support', 'late'];
+
+interface SystemKey {
+  slot: ShipSystemSlot;
+  button: HTMLButtonElement;
+  refresh: (systems: ShipSystems) => void;
+}
+
+/**
+ * One picked system: its slot over its name, and what it does where there is room. Narrow keys swap in
+ * the slot's short title. Opens the swap dialog.
+ */
+function createSystemKey(slot: ShipSystemSlot, onSwap: (slot: ShipSystemSlot) => void): SystemKey {
+  const title = h('span', { className: 'refit-system__slot ui-ellipsis' });
+  const shortTitle = h('span', { className: 'refit-system__slot refit-system__slot--short ui-ellipsis' });
+  const name = h('span', { className: 'refit-system__name ui-ellipsis' });
+  const description = h('span', { className: 'refit-system__detail ui-ellipsis', id: `refit-system-${slot}` });
+  const button = h(
+    'button',
+    { type: 'button', className: 'ui-btn refit-system', 'aria-describedby': description.id },
+    title,
+    shortTitle,
+    name,
+    description
+  );
+  button.addEventListener('click', () => onSwap(slot));
+  return {
+    slot,
+    button,
+    refresh(systems) {
+      const picked = describePickedShipSystems(systems).find((system) => system.slot === slot);
+      button.hidden = !picked;
+      if (!picked) return;
+      title.textContent = picked.title;
+      shortTitle.textContent = picked.shortTitle;
+      name.textContent = picked.option.name;
+      description.textContent = picked.option.description;
+      button.setAttribute('aria-label', `Swap ${picked.title.toLowerCase()}, now ${picked.option.name}`);
+    },
+  };
+}
+
 interface RefitViewConfig {
   levelConfig: LevelConfig;
   profile: PlanetIntermissionProfile;
@@ -123,6 +166,7 @@ interface RefitViewConfig {
   summary: string;
   evaluations: UpgradeEvaluation[];
   onBuy: (key: UpgradeKey) => void;
+  onSwapSystem: (slot: ShipSystemSlot) => void;
   onContinue: () => void;
 }
 
@@ -131,9 +175,14 @@ export interface RefitView {
   planetSlot: HTMLElement;
   /** New balance and evaluations after a purchase: refreshes every card and announces the result. */
   refresh: (credits: number, evaluations: UpgradeEvaluation[], purchased: UpgradeKey, message: string) => void;
+  /** Lists the run's picked systems beside the cards, each a key that swaps it; nothing before the first pick. */
+  showSystems: (systems: ShipSystems) => void;
   /** Arrow keys and Enter / Space while no card holds focus; returns whether the key was used. */
   handleUnfocusedKey: (code: string) => boolean;
-  /** Puts the whole bay out of reach of pointer and keyboard while a dialog is open over it. */
+  /**
+   * Puts the whole bay out of reach of pointer and keyboard while a dialog is open over it; when it
+   * comes back, focus returns to the system key that opened the dialog.
+   */
   setInert: (inert: boolean) => void;
   /** Fades the UI out under the warp. */
   leave: () => void;
@@ -151,6 +200,19 @@ export function createRefitView(config: RefitViewConfig): RefitView {
   const cards = config.evaluations.map((evaluation) => createUpgradeCard(evaluation, config.onBuy));
   cards.forEach((card, index) => card.refresh(config.evaluations[index]));
   const grid = h('div', { className: 'refit__cards' }, ...cards.map((card) => card.button));
+  let swapOpener: HTMLButtonElement | null = null;
+  const systemKeys = SYSTEM_SLOTS.map((slot) =>
+    createSystemKey(slot, (picked) => {
+      swapOpener = systemKeys.find((key) => key.slot === picked)?.button ?? null;
+      config.onSwapSystem(picked);
+    })
+  );
+  // The systems fill the grid's last cell: beside the odd last card on two columns, a row of their own on one.
+  const systemsCell = h(
+    'div',
+    { className: 'refit__systems', role: 'group', 'aria-label': 'Ship systems' },
+    ...systemKeys.map((key) => key.button)
+  );
   const status = liveRegion(config.summary);
   const continueButton = h(
     'button',
@@ -252,6 +314,12 @@ export function createRefitView(config: RefitViewConfig): RefitView {
       // A card that just capped drops out of the focus order: hand focus to the next one that can buy.
       if (hadFocus && !next[index].canPurchase) focusCard(findNextPurchasableAfter(purchasable(), index));
     },
+    showSystems(systems) {
+      systemKeys.forEach((key) => key.refresh(systems));
+      // Appended once there is a pick, so the odd last card keeps spanning the row until then. Only once:
+      // moving the cell would drop the focus a closed dialog hands back.
+      if (!systemsCell.isConnected && describePickedShipSystems(systems).length > 0) grid.append(systemsCell);
+    },
     handleUnfocusedKey(code) {
       if (code !== 'Enter' && code !== 'Space') return moveFocus(code);
       const first = findLinearFocusIndex(purchasable(), -1, 1);
@@ -262,6 +330,9 @@ export function createRefitView(config: RefitViewConfig): RefitView {
     setInert(inert) {
       if (inert) releaseFocus(layer);
       layer.inert = inert;
+      if (inert) return;
+      swapOpener?.focus({ preventScroll: true });
+      swapOpener = null;
     },
     leave() {
       releaseFocus(layer);
