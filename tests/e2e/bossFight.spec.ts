@@ -23,6 +23,9 @@ test('Bastion Bulwark fights through all three phases and pays a fast-kill bonus
 
   const read = () => page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.readBossFight()!);
   await expect.poll(async () => (await read()).bossMaxHp, { timeout: 30_000 }).toBeGreaterThan(0);
+  // A boss changes phase only once it has flown in (about 2.3 s of gameplay). CI's software renderer
+  // runs gameplay slower than real time, so wait on the fight clock, not the wall clock.
+  await expect.poll(async () => (await read()).seconds, { timeout: 60_000 }).toBeGreaterThan(3);
 
   // Wear the hull down in small bites; a shielded boss shrugs some of them off, so keep going until each
   // phase has been announced and the boss is dead.
