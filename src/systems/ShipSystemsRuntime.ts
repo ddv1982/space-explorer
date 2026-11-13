@@ -51,9 +51,8 @@ export class ShipSystemsRuntime {
   }
 
   /**
-   * Moves a picked slot to its next option (the pause panel and the swap key both land here) and keeps
-   * the change for the next sector and for saves. A gun changed from the pause panel pays the same swap
-   * cost once play resumes.
+   * Moves a picked slot to its next option and keeps the change for the next sector and for saves. The
+   * pause panel calls this for support and doctrine; the main gun goes through `trySwapGun`.
    */
   cycleSystem(slot: ShipSystemSlot, now: number): void {
     const previous = this.systems;

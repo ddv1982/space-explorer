@@ -11,7 +11,7 @@ export interface PauseOverlayHandlers {
   onDeleteSlot: (slotId: SaveSlotId) => void;
   onSelectDifficulty: (tier: GameplayDifficultyTier) => boolean;
   onSelectQuality: (tier: VisualQualityTier) => boolean;
-  onCycleSystem: (slot: ShipSystemSlot) => void;
+  onCycleSystem: (slot: PauseSwappableSlot) => void;
 }
 
 export interface PauseOverlayState {
@@ -25,5 +25,8 @@ export interface PauseOverlayState {
   statusMessage: string;
   statusOk?: boolean;
 }
+
+/** The main gun is swapped in flight only, so pausing can never skip its cooldown. */
+export type PauseSwappableSlot = Exclude<ShipSystemSlot, 'gun'>;
 
 export type PauseSubview = 'checkpoints' | 'systems' | 'settings';

@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Change your ship systems while you play. Once a run has a main gun, press Q (or tap the new swap button under pause on touch screens) to switch Lance, Scatter and Seekers in turn. The new gun's name flashes over your ship. Swapping has a cost: the new gun takes half a second to start firing, and you can swap again only after 2 seconds (the button dims and charges up meanwhile). Pausing does not shorten either wait.
-- The pause panel has a SYSTEMS tab once you have a pick. It shows each system with what it does, and SWAP moves that slot to its next option: main gun, support or doctrine. A change applies as soon as you resume. Switching to Wingman launches the drone straight away, and switching away from Magnet lets go of the pickups it was pulling.
+- The pause panel has a SYSTEMS tab once you have a pick. It shows each system with what it does, and SWAP moves support or doctrine to its next option; the main gun is swapped in flight only, so pausing never skips its wait. A change applies as soon as you resume. Switching to Wingman launches the drone straight away, and switching away from Magnet lets go of the pickups it was pulling.
 - A swapped system stays for the rest of the run: into the next sector and in any checkpoint you save.
 - The controls card at the start of a sector and the pause panel show the Q key, but only once the run has a main gun. Sectors 1 and 2 are unchanged.
 

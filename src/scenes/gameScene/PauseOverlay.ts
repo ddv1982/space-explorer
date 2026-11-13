@@ -83,19 +83,25 @@ interface SystemRow {
   refresh: (state: PauseOverlayState) => void;
 }
 
-/** A picked ship system: its slot, name and what it does, with SWAP to cycle to the slot's next option. */
+/**
+ * A picked ship system: its slot, name and what it does. Support and doctrine get SWAP to cycle to the
+ * slot's next option; the main gun is swapped in flight only, where its cooldown applies.
+ */
 function createSystemRow(slot: ShipSystemSlot, handlers: PauseOverlayHandlers): SystemRow {
   const kicker = h('span', { className: 'pause-system__slot' });
   const name = h('span');
   const description = h('span', { className: 'pause-slot__sub ui-ellipsis' });
-  const swap = h('button', { type: 'button', className: 'ui-btn ui-btn--slim' }, 'SWAP');
-  swap.addEventListener('click', () => handlers.onCycleSystem(slot));
+  let swap: HTMLButtonElement | null = null;
+  if (slot !== 'gun') {
+    swap = h('button', { type: 'button', className: 'ui-btn ui-btn--slim' }, 'SWAP');
+    swap.addEventListener('click', () => handlers.onCycleSystem(slot));
+  }
   const element = h(
     'div',
     { className: 'ui-card pause-slot pause-system', 'data-occupied': '' },
     h('span', { className: 'pause-slot__title ui-ellipsis' }, kicker, name),
     description,
-    h('div', { className: 'pause-slot__actions' }, swap)
+    ...(swap ? [h('div', { className: 'pause-slot__actions' }, swap)] : [])
   );
 
   return {
@@ -107,7 +113,7 @@ function createSystemRow(slot: ShipSystemSlot, handlers: PauseOverlayHandlers): 
       kicker.textContent = picked.title;
       name.textContent = picked.option.name;
       description.textContent = picked.option.description;
-      swap.setAttribute('aria-label', `Swap ${picked.title.toLowerCase()}, now ${picked.option.name}`);
+      swap?.setAttribute('aria-label', `Swap ${picked.title.toLowerCase()}, now ${picked.option.name}`);
     },
   };
 }

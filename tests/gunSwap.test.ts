@@ -93,14 +93,11 @@ describe('live ship-system changes', () => {
     expect(runtime.getSystems().gun).toBe('seekers');
   });
 
-  test('a gun changed from the pause panel pays the same swap cost', () => {
+  test('changing support leaves the gun firing', () => {
     const { runtime } = createRuntime({ gun: 'seekers', support: 'magnet' });
     runtime.cycleSystem('support', 500);
     expect(runtime.isGunSilenced(500)).toBe(false);
-    runtime.cycleSystem('gun', 500);
-    expect(runtime.getSystems().gun).toBe('lance');
-    expect(runtime.isGunSilenced(500)).toBe(true);
-    expect(runtime.trySwapGun(600)).toBe('cooling');
+    expect(runtime.trySwapGun(500)).toBe('swapped');
   });
 
   test('switching support to Wingman launches the drone and switching away removes it', () => {
