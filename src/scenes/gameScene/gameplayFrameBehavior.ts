@@ -5,7 +5,8 @@ import { getActiveSection, getSectionProgress } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
 import { audioManager } from '@/systems/AudioManager';
 import type { BulletBehaviour, BulletTargetFinder } from '@/entities/Bullet';
-import type { ShipSystems } from '@/config/shipSystems';
+import type { MainGunId, ShipSystems } from '@/config/shipSystems';
+import type { GunSwapOutcome } from '@/systems/ShipSystemsRuntime';
 import { fireMainGunVolley, resolveMainGunCooldownMs } from '@/systems/mainGun';
 import { GAME_SCENE_EVENTS } from '@/systems/GameplayFlow';
 import type { ChainState } from '@/systems/ScoreManager';
@@ -16,6 +17,7 @@ const MUSIC_INTENSITY_UPDATE_THRESHOLD = 0.01;
 interface GameSceneGameplayFrameDelegate {
   inputManager: {
     consumePauseToggleRequest(): boolean;
+    consumeGunSwapRequest(): boolean;
     isFiring(): boolean;
   };
   pauseStateController: {
@@ -34,7 +36,6 @@ interface GameSceneGameplayFrameDelegate {
   player: {
     isAlive: boolean;
     fireRate: number;
-    systems: ShipSystems;
     getFireDirection(out: Phaser.Math.Vector2): Phaser.Math.Vector2;
     getMuzzlePosition(distance: number, out: Phaser.Math.Vector2): Phaser.Math.Vector2;
     update(inputManager: unknown, delta: number): void;
@@ -45,7 +46,21 @@ interface GameSceneGameplayFrameDelegate {
   getPicketTurrets(): {
     update(time: number): void;
   } | null;
-  getShipSystems?(): { update(): void } | null;
+  shipSystems: {
+    getSystems(): ShipSystems;
+    trySwapGun(now: number): GunSwapOutcome;
+    isGunSilenced(now: number): boolean;
+    getGunSwapCooldownRatio(now: number): number;
+    update(): void;
+  };
+  /** Name flash and sound for a gun swap, or the quiet cue for one refused during the cooldown. */
+  gunSwapFeedback: {
+    swapped(gun: MainGunId): void;
+    denied(): void;
+  };
+  mobileControls: {
+    setGunSwapState(available: boolean, cooldownRatio: number): void;
+  } | null;
   grazeSurge: {
     update(): void;
   };
@@ -128,17 +143,35 @@ export function createGameSceneGameplayFrameBehavior(
   };
 
   const updatePausedFrame = (delta: number): void => {
+    // A swap pressed while paused, dead or mid-transition is dropped, not saved for later; a hit-stop
+    // is too short to drop a press, so it waits for the next gameplay frame.
+    if (isPausedOrLockedFrame()) delegate.inputManager.consumeGunSwapRequest();
     delegate.flow.sampleRespawnTransitionFrame(delta);
     updateLockedFrameLighting(delegate, delta);
     delegate.updateHud();
   };
 
+  const updateGunSwap = (time: number): void => {
+    const shipSystems = delegate.shipSystems;
+    if (delegate.inputManager.consumeGunSwapRequest() && delegate.player.isAlive) {
+      const outcome = shipSystems.trySwapGun(time);
+      const gun = shipSystems.getSystems().gun;
+      if (outcome === 'swapped' && gun) delegate.gunSwapFeedback.swapped(gun);
+      else if (outcome === 'cooling') delegate.gunSwapFeedback.denied();
+    }
+    delegate.mobileControls?.setGunSwapState(
+      shipSystems.getSystems().gun !== null,
+      shipSystems.getGunSwapCooldownRatio(time)
+    );
+  };
+
   const updatePlayerFiring = (time: number): void => {
-    if (!delegate.inputManager.isFiring() || !delegate.player.isAlive) {
+    const shipSystems = delegate.shipSystems;
+    if (!delegate.inputManager.isFiring() || !delegate.player.isAlive || shipSystems.isGunSilenced(time)) {
       return;
     }
 
-    const systems = delegate.player.systems;
+    const systems = shipSystems.getSystems();
     const fireCooldown = resolveMainGunCooldownMs(
       delegate.player.fireRate,
       delegate.scoreManager.getChainState(time).multiplier,
@@ -270,9 +303,10 @@ export function createGameSceneGameplayFrameBehavior(
     delegate.effectsManager.updateLighting(delta);
     delegate.getLastLifeHelperWing()?.update(time, delta);
     delegate.getPicketTurrets()?.update(time);
-    delegate.getShipSystems?.()?.update();
+    delegate.shipSystems.update();
     delegate.grazeSurge.update();
 
+    updateGunSwap(time);
     updatePlayerFiring(time);
     updateEncounterAndLevelProgress(time, delta);
     updateBossHudIfNeeded();

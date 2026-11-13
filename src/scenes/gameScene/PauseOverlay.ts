@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { getGameplayDifficultyTier } from '../../config/gameplayDifficulty';
 import { getVisualQualityTier } from '../../config/visualQuality';
+import { describePickedShipSystems, NO_SHIP_SYSTEMS, type ShipSystemSlot } from '../../config/shipSystems';
 import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
 import { h, mountUiLayer, releaseFocus, setStatus } from '../../ui/dom';
 import { createSettingsForm } from '../../ui/settingsForm';
@@ -11,8 +12,10 @@ const SETTINGS_NOTE = 'Quality applies after restart.';
 const STORAGE_UNAVAILABLE_NOTE = 'Checkpoint storage unavailable in this browser.';
 const SUBVIEWS: ReadonlyArray<[PauseSubview, string]> = [
   ['checkpoints', 'CHECKPOINTS'],
+  ['systems', 'SYSTEMS'],
   ['settings', 'SETTINGS'],
 ];
+const SYSTEM_SLOTS: readonly ShipSystemSlot[] = ['gun', 'support', 'late'];
 
 /** The status line: the controller's message, else a note about the active subview. */
 export function describePauseStatus(
@@ -75,16 +78,53 @@ function createSlotRow(slotNumber: number, handlers: PauseOverlayHandlers): Slot
   };
 }
 
+interface SystemRow {
+  element: HTMLElement;
+  refresh: (state: PauseOverlayState) => void;
+}
+
+/** A picked ship system: its slot, name and what it does, with SWAP to cycle to the slot's next option. */
+function createSystemRow(slot: ShipSystemSlot, handlers: PauseOverlayHandlers): SystemRow {
+  const kicker = h('span', { className: 'pause-system__slot' });
+  const name = h('span');
+  const description = h('span', { className: 'pause-slot__sub ui-ellipsis' });
+  const swap = h('button', { type: 'button', className: 'ui-btn ui-btn--slim' }, 'SWAP');
+  swap.addEventListener('click', () => handlers.onCycleSystem(slot));
+  const element = h(
+    'div',
+    { className: 'ui-card pause-slot pause-system', 'data-occupied': '' },
+    h('span', { className: 'pause-slot__title ui-ellipsis' }, kicker, name),
+    description,
+    h('div', { className: 'pause-slot__actions' }, swap)
+  );
+
+  return {
+    element,
+    refresh(state) {
+      const picked = describePickedShipSystems(state.systems).find((system) => system.slot === slot);
+      element.hidden = !picked;
+      if (!picked) return;
+      kicker.textContent = picked.title;
+      name.textContent = picked.option.name;
+      description.textContent = picked.option.description;
+      swap.setAttribute('aria-label', `Swap ${picked.title.toLowerCase()}, now ${picked.option.name}`);
+    },
+  };
+}
+
 /**
- * The pause panel in HTML over the frozen battlefield: PAUSED, a CHECKPOINTS / SETTINGS tab strip, the
- * active subview, one status line and RESUME / MAIN MENU. Reopening always starts on checkpoints.
+ * The pause panel in HTML over the frozen battlefield: PAUSED, a CHECKPOINTS / SYSTEMS / SETTINGS tab
+ * strip (SYSTEMS only once the run has a ship system), the active subview, one status line and
+ * RESUME / MAIN MENU. Reopening always starts on checkpoints.
  */
 export class PauseOverlay {
   private layer: HTMLElement | null = null;
   private panel: HTMLElement | null = null;
   private status: HTMLElement | null = null;
   private resume: HTMLButtonElement | null = null;
+  private hint: HTMLElement | null = null;
   private rows: SlotRow[] = [];
+  private systemRows: SystemRow[] = [];
   private tabs = new Map<PauseSubview, { tab: HTMLButtonElement; view: HTMLElement }>();
   private syncSettings: (() => void) | null = null;
   private activeSubview: PauseSubview = 'checkpoints';
@@ -94,6 +134,7 @@ export class PauseOverlay {
     canSave: false,
     storageAvailable: false,
     saveSlots: [],
+    systems: NO_SHIP_SYSTEMS,
     statusMessage: '',
   };
 
@@ -107,6 +148,7 @@ export class PauseOverlay {
     layer.hidden = true;
 
     this.rows = [1, 2, 3].map((slotNumber) => createSlotRow(slotNumber, handlers));
+    this.systemRows = SYSTEM_SLOTS.map((slot) => createSystemRow(slot, handlers));
     const settings = createSettingsForm({
       captions: false,
       difficulty: getGameplayDifficultyTier(),
@@ -117,6 +159,7 @@ export class PauseOverlay {
     this.syncSettings = settings.sync;
     const views: Record<PauseSubview, HTMLElement> = {
       checkpoints: h('div', { className: 'pause__slots' }, ...this.rows.map((row) => row.element)),
+      systems: h('div', { className: 'pause__slots' }, ...this.systemRows.map((row) => row.element)),
       settings: h('div', { className: 'pause__settings' }, settings.element),
     };
     const tabStrip = h('div', { className: 'ui-tabs', role: 'tablist' });
@@ -135,6 +178,7 @@ export class PauseOverlay {
     const mainMenu = h('button', { type: 'button', className: 'ui-btn' }, 'MAIN MENU');
     mainMenu.addEventListener('click', () => handlers.onMainMenu());
     this.status = h('p', { className: 'ui-status pause__status' });
+    this.hint = h('p', { className: 'pause__hint', 'aria-hidden': 'true' });
     this.panel = h(
       'section',
       {
@@ -146,10 +190,10 @@ export class PauseOverlay {
       },
       h('div', { className: 'ui-frame', 'aria-hidden': 'true' }),
       h('div', { className: 'pause__header' }, h('h2', { className: 'ui-title pause__title' }, 'PAUSED'), tabStrip),
-      h('div', { className: 'pause__body' }, views.checkpoints, views.settings),
+      h('div', { className: 'pause__body' }, views.checkpoints, views.systems, views.settings),
       this.status,
       h('div', { className: 'pause__actions' }, this.resume, mainMenu),
-      h('p', { className: 'pause__hint', 'aria-hidden': 'true' }, 'ESC  RESUME')
+      this.hint
     );
     layer.append(h('div', { className: 'pause' }, this.panel));
     this.layer = layer;
@@ -174,8 +218,9 @@ export class PauseOverlay {
 
   destroy(): void {
     this.layer?.remove();
-    this.layer = this.panel = this.status = this.resume = this.syncSettings = null;
+    this.layer = this.panel = this.status = this.resume = this.hint = this.syncSettings = null;
     this.rows = [];
+    this.systemRows = [];
     this.tabs.clear();
   }
 
@@ -186,13 +231,16 @@ export class PauseOverlay {
   }
 
   private applyState(): void {
-    if (!this.layer || !this.status || !this.resume) return;
+    if (!this.layer || !this.status || !this.resume || !this.hint) return;
     if (!this.state.visible) releaseFocus(this.layer);
     this.layer.hidden = !this.state.visible;
     this.resume.disabled = !this.state.canResume;
     this.rows.forEach((row, index) => row.refresh(this.state.saveSlots[index], this.state));
+    this.systemRows.forEach((row) => row.refresh(this.state));
+    this.hint.textContent = this.state.systems.gun ? 'ESC  RESUME      Q  SWAP GUN' : 'ESC  RESUME';
     for (const [subview, { tab, view }] of this.tabs) {
       const active = subview === this.activeSubview;
+      if (subview === 'systems') tab.hidden = describePickedShipSystems(this.state.systems).length === 0;
       tab.setAttribute('aria-selected', String(active));
       view.toggleAttribute('data-inactive', !active);
       view.inert = !active;

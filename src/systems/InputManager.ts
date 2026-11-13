@@ -13,7 +13,9 @@ export class InputManager {
   };
   private space!: Phaser.Input.Keyboard.Key;
   private escape!: Phaser.Input.Keyboard.Key;
+  private swapGun!: Phaser.Input.Keyboard.Key;
   private lastPausePressAt = 0;
+  private lastSwapPressAt = 0;
   private scene!: Phaser.Scene;
   private mobileControls: MobileControls | null = null;
 
@@ -23,7 +25,9 @@ export class InputManager {
     this.cursors = scene.input.keyboard!.createCursorKeys();
     this.space = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.escape = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.swapGun = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
     this.lastPausePressAt = this.escape.timeDown;
+    this.lastSwapPressAt = this.swapGun.timeDown;
 
     this.wasd = {
       W: scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -74,12 +78,17 @@ export class InputManager {
 
   consumePauseToggleRequest(): boolean {
     const pressedAt = this.escape.timeDown;
-    if (pressedAt === 0) {
-      this.lastPausePressAt = 0;
-      return false;
-    }
-    if (pressedAt === this.lastPausePressAt) return false;
+    const pressed = pressedAt !== 0 && pressedAt !== this.lastPausePressAt;
     this.lastPausePressAt = pressedAt;
-    return true;
+    return pressed;
+  }
+
+  /** One request per press of Q or the touch swap button; the caller decides whether a swap is allowed. */
+  consumeGunSwapRequest(): boolean {
+    const pressedAt = this.swapGun.timeDown;
+    const keyPressed = pressedAt !== 0 && pressedAt !== this.lastSwapPressAt;
+    this.lastSwapPressAt = pressedAt;
+    const buttonPressed = this.mobileControls?.consumeGunSwapPress() ?? false;
+    return keyPressed || buttonPressed;
   }
 }

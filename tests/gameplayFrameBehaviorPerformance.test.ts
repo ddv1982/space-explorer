@@ -48,6 +48,7 @@ function createHarness(level = 1): {
   const delegate: GameplayDelegate = {
     inputManager: {
       consumePauseToggleRequest: () => false,
+      consumeGunSwapRequest: () => false,
       isFiring: () => false,
     },
     pauseStateController: { togglePauseRequest: () => {}, isGameplayPaused: () => paused },
@@ -65,7 +66,6 @@ function createHarness(level = 1): {
     player: {
       isAlive: true,
       fireRate: 100,
-      systems: { gun: null, support: null, late: null },
       getFireDirection: (out) => out,
       getMuzzlePosition: (_distance, out) => out,
       update: () => {},
@@ -73,6 +73,15 @@ function createHarness(level = 1): {
     getLastLifeHelperWing: () => null,
     getPicketTurrets: () => null,
     grazeSurge: { update: () => {} },
+    shipSystems: {
+      getSystems: () => ({ gun: null, support: null, late: null }),
+      trySwapGun: () => 'unavailable',
+      isGunSilenced: () => false,
+      getGunSwapCooldownRatio: () => 0,
+      update: () => {},
+    },
+    gunSwapFeedback: { swapped: () => {}, denied: () => {} },
+    mobileControls: null,
     waveManager: {
       update: () => waveCalls.push('waves'),
       updateBossAdds: () => waveCalls.push('boss-adds'),

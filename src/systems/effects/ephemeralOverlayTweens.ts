@@ -115,7 +115,7 @@ export function createScorePopup(scene: Phaser.Scene, x: number, y: number, scor
   floatLabel(scene, x, y, `+${score}`, scorePopupLook(score));
 }
 
-/** Short tracked label in the pickup's own colour, lifted off the ship that collected it. */
-export function createPickupLabel(scene: Phaser.Scene, x: number, y: number, label: string, color: string): void {
+/** Short tracked label lifted off the ship: a pickup in its own colour, or the gun just swapped in. */
+export function createShipLabel(scene: Phaser.Scene, x: number, y: number, label: string, color: string): void {
   floatLabel(scene, x, y - 34, label, { fontSize: 16, color, rise: 34, duration: 900 });
 }

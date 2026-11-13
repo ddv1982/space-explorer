@@ -42,6 +42,7 @@ export type GameSceneBootstrapHost = {
   stopPlayerMotion: () => void;
   captureCurrentRunStateForSave: () => PlayerStateData;
   canSaveCurrentRun: () => boolean;
+  getGameplayNow: () => number;
 };
 
 export type GameSceneBootstrapRuntime = {
@@ -138,6 +139,10 @@ export function runGameSceneCreateBootstrap(
     getMobileControls: () => input.mobileControls,
     captureCurrentRunStateForSave: host.captureCurrentRunStateForSave,
     canSaveCurrentRun: host.canSaveCurrentRun,
+    shipSystems: {
+      getSystems: () => gameplay.shipSystems.getSystems(),
+      cycleSystem: (slot) => gameplay.shipSystems.cycleSystem(slot, host.getGameplayNow()),
+    },
   });
 
   input.mobileControls.setPauseButtonHandler(() => {
@@ -160,7 +165,10 @@ export function runGameSceneCreateBootstrap(
     host.scene.input.keyboard?.off('keydown', suppressTouchSteering);
   };
   host.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribeInput);
-  dependencies.showControlsHint(host.scene, { mobile: dependencies.isTouchMobileDevice() });
+  dependencies.showControlsHint(host.scene, {
+    mobile: dependencies.isTouchMobileDevice(),
+    gunSwap: state.systems.gun !== null,
+  });
 
   return {
     levelManager: levelRuntime.levelManager,

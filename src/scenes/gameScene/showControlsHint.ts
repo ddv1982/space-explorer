@@ -9,6 +9,7 @@ const AUTO_FIRE_HINT = 'Guns fire automatically';
 const MOBILE_FIRE_HINT = 'Guns fire while you touch';
 const KEYBOARD_TITLE = 'WASD / Arrows to Move';
 const KEYBOARD_FIRE_HINT = 'SPACE / Click to Fire';
+const KEYBOARD_SWAP_HINT = 'Q to Swap Main Gun';
 
 /** The fire line follows the autofire setting for the input in use. */
 function fireHintFor(mobile: boolean): string {
@@ -19,12 +20,15 @@ function fireHintFor(mobile: boolean): string {
 
 type ShowControlsHintOptions = {
   mobile?: boolean;
+  /** The run has a main gun, so the keyboard card adds the swap key (touch has its own button). */
+  gunSwap?: boolean;
 };
 
 type SceneWithControlsHint = Phaser.Scene & { __controlsHintCleanup?: () => void };
 
 const CARD_WIDTH = 332;
 const CARD_HEIGHT = 78;
+const SWAP_LINE_HEIGHT = 22;
 /** The card sits below centre so it clears the sector title card that opens every level. */
 const CARD_DROP = 64;
 const ICON_COLUMN = 84;
@@ -90,17 +94,27 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
     .setDepth(HINT_DEPTH + 1)
     .setScrollFactor(0);
 
+  const swapHint = scene.add
+    .text(0, 0, KEYBOARD_SWAP_HINT, neonLabelStyle(15, NEON_TEXT.cyan, 1))
+    .setOrigin(0, 0.5)
+    .setDepth(HINT_DEPTH + 1)
+    .setScrollFactor(0);
+
   const relayout = (): void => {
+    const showSwap = options.gunSwap === true && !mobile;
+    const cardHeight = CARD_HEIGHT + (showSwap ? SWAP_LINE_HEIGHT : 0);
     const layout = getViewportLayout(scene);
     const cardX = centerHorizontally(layout, CARD_WIDTH);
     const cardCenterY = layout.centerY + CARD_DROP;
-    const cardY = cardCenterY - CARD_HEIGHT / 2;
+    const cardY = cardCenterY - cardHeight / 2;
+    const textTop = cardCenterY - (showSwap ? SWAP_LINE_HEIGHT / 2 : 0);
 
     bg.clear();
-    drawNeonFrame(bg, cardX, cardY, CARD_WIDTH, CARD_HEIGHT, { fillAlpha: 0.78, cornerCut: 14 });
+    drawNeonFrame(bg, cardX, cardY, CARD_WIDTH, cardHeight, { fillAlpha: 0.78, cornerCut: 14 });
     (mobile ? drawDragGlyph : drawKeyCluster)(bg, cardX + ICON_COLUMN / 2 + 4, cardCenterY);
-    title.setPosition(cardX + ICON_COLUMN, cardCenterY - 12);
-    fireHint.setPosition(cardX + ICON_COLUMN, cardCenterY + 12);
+    title.setPosition(cardX + ICON_COLUMN, textTop - 12);
+    fireHint.setPosition(cardX + ICON_COLUMN, textTop + 12);
+    swapHint.setPosition(cardX + ICON_COLUMN, textTop + 12 + SWAP_LINE_HEIGHT).setVisible(showSwap);
   };
 
   const stopKeyboardWatch = onHardwareKeyboardDetected(() => {
@@ -131,7 +145,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
   relayout();
 
   scene.tweens.add({
-    targets: [bg, title, fireHint],
+    targets: [bg, title, fireHint, swapHint],
     alpha: { from: 1, to: 0 },
     duration: 1000,
     delay: 4000,
@@ -141,6 +155,7 @@ export function showControlsHint(scene: Phaser.Scene, options: ShowControlsHintO
       bg.destroy();
       title.destroy();
       fireHint.destroy();
+      swapHint.destroy();
     },
   });
 }

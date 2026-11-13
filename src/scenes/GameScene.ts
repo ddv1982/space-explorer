@@ -50,6 +50,9 @@ import { GameplayClock, runGameSceneUpdateFrame } from './gameScene/updateFrame'
 import { HitStop } from '@/systems/HitStop';
 import { getGameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import type { ShipSystemsRuntime } from '@/systems/ShipSystemsRuntime';
+import { getShipSystemName } from '@/config/shipSystems';
+import { createShipLabel } from '@/systems/effects/ephemeralOverlayTweens';
+import { NEON_TEXT } from './shared/neonUiTheme';
 import { clampPlayerToViewport, getPlayerSpawnPoint, syncSceneViewport } from './gameScene/viewport';
 import { startRegisteredScene } from './sceneRegistry';
 
@@ -75,7 +78,7 @@ export class GameScene extends Phaser.Scene {
   private mobileControls: MobileControls | null = null;
   private scaledBossConfig: BossConfig | null = null;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
-  private shipSystems: ShipSystemsRuntime | null = null;
+  private shipSystems!: ShipSystemsRuntime;
   private readonly flow = new GameSceneFlowController();
   private boss: Boss | null = null;
   private lastLifeHelperWing: LastLifeHelperWing | null = null;
@@ -123,6 +126,7 @@ export class GameScene extends Phaser.Scene {
       stopPlayerMotion: () => this.stopPlayerMotion(),
       captureCurrentRunStateForSave: () => this.captureCurrentRunStateForSave(),
       canSaveCurrentRun: () => this.canSaveCurrentRun(),
+      getGameplayNow: () => this.gameplayClock.now,
     });
     this.installBootstrapRuntime(runtime);
     const handlers = this.createCombatFeedbackHandlers();
@@ -201,6 +205,7 @@ export class GameScene extends Phaser.Scene {
       persistHelperWingState: () => this.persistHelperWingState(),
       syncLastLifeHelperWingState: () => this.syncLastLifeHelperWingState(),
       getGameplayNow: () => this.gameplayClock.now,
+      getShipSystems: () => this.shipSystems.getSystems(),
       hitStop: (durationMs) => this.hitStop.trigger(durationMs),
       constants: {
         bossExplosionVisualIntensity: GameScene.BOSS_EXPLOSION_VISUAL_INTENSITY,
@@ -420,7 +425,15 @@ export class GameScene extends Phaser.Scene {
       player: this.player,
       getLastLifeHelperWing: () => this.lastLifeHelperWing,
       getPicketTurrets: () => this.picketTurrets,
-      getShipSystems: () => this.shipSystems,
+      shipSystems: this.shipSystems,
+      gunSwapFeedback: {
+        swapped: (gun) => {
+          createShipLabel(this, this.player.x, this.player.y, getShipSystemName(gun), NEON_TEXT.cyan);
+          audioManager.playSfx('uiConfirm');
+        },
+        denied: () => audioManager.playSfx('uiClick'),
+      },
+      mobileControls: this.mobileControls,
       grazeSurge: this.grazeSurge,
       waveManager: this.waveManager,
       levelManager: this.levelManager,

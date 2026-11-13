@@ -75,6 +75,7 @@ function createFiringHarness(chainMultiplier: number) {
   const delegate: GameplayDelegate = {
     inputManager: {
       consumePauseToggleRequest: () => false,
+      consumeGunSwapRequest: () => false,
       isFiring: () => true,
     },
     pauseStateController: null,
@@ -90,7 +91,6 @@ function createFiringHarness(chainMultiplier: number) {
     player: {
       isAlive: true,
       fireRate: 100,
-      systems: { gun: null, support: null, late: null },
       getFireDirection: (out) => out,
       getMuzzlePosition: (_distance, out) => out,
       update: () => {},
@@ -98,6 +98,15 @@ function createFiringHarness(chainMultiplier: number) {
     getLastLifeHelperWing: () => null,
     getPicketTurrets: () => null,
     grazeSurge: { update: () => {} },
+    shipSystems: {
+      getSystems: () => ({ gun: null, support: null, late: null }),
+      trySwapGun: () => 'unavailable',
+      isGunSilenced: () => false,
+      getGunSwapCooldownRatio: () => 0,
+      update: () => {},
+    },
+    gunSwapFeedback: { swapped: () => {}, denied: () => {} },
+    mobileControls: null,
     waveManager: {
       update: () => {},
       updateBossAdds: () => {},

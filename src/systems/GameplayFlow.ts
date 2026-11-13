@@ -6,7 +6,7 @@ import { Player } from '../entities/Player';
 import { PowerUp, PowerUpType } from '../entities/PowerUp';
 import { EffectsManager } from './EffectsManager';
 import { audioManager } from './AudioManager';
-import { createPickupLabel } from './effects/ephemeralOverlayTweens';
+import { createShipLabel } from './effects/ephemeralOverlayTweens';
 export { GAME_SCENE_EVENTS } from './GameSceneEvents';
 export type { GameSceneEventHandler, GameSceneEventName } from './GameSceneEvents';
 
@@ -82,5 +82,5 @@ export function applyPowerUpPickup(
   effectsManager.createSparkBurst(player.x, player.y);
   effectsManager.createPowerUpBurst(player.x, player.y, POWER_UP_TINTS[type]);
 
-  createPickupLabel(scene, player.x, player.y, POWER_UP_LABELS[type], colorToHexString(POWER_UP_TINTS[type]));
+  createShipLabel(scene, player.x, player.y, POWER_UP_LABELS[type], colorToHexString(POWER_UP_TINTS[type]));
 }

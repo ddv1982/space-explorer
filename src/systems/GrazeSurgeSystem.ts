@@ -24,6 +24,13 @@ const BOSS_GRAZE_VALUE = 2;
 
 export const SURGE_SCORE_PER_BULLET = 25;
 
+interface SurgeTuning {
+  grazeValueScale: number;
+  clearRadiusScale: number;
+}
+
+const STANDARD_SURGE: SurgeTuning = { grazeValueScale: 1, clearRadiusScale: 1 };
+
 export class GrazeSurgeSystem {
   private gauge = 0;
   private bossActive = false;
@@ -31,11 +38,11 @@ export class GrazeSurgeSystem {
 
   constructor(
     private readonly callbacks: GrazeSurgeCallbacks,
-    /** Surge Core scales how much each graze charges and how far the pulse reaches. */
-    private readonly tuning: { grazeValueScale: number; clearRadiusScale: number } = {
-      grazeValueScale: 1,
-      clearRadiusScale: 1,
-    }
+    /**
+     * Surge Core scales how much each graze charges and how far the pulse reaches. Read on every graze
+     * and pulse, so switching to or from Surge Core mid-sector applies at once.
+     */
+    private readonly getTuning: () => SurgeTuning | undefined = () => undefined
   ) {}
 
   setBossActive(active: boolean): void {
@@ -65,7 +72,7 @@ export class GrazeSurgeSystem {
       this.tracked.add(bullet);
       this.gauge = Math.min(
         SURGE_GAUGE_CAPACITY,
-        this.gauge + (this.bossActive ? BOSS_GRAZE_VALUE : 1) * this.tuning.grazeValueScale
+        this.gauge + (this.bossActive ? BOSS_GRAZE_VALUE : 1) * (this.getTuning() ?? STANDARD_SURGE).grazeValueScale
       );
       this.callbacks.onGraze(bullet.x, bullet.y);
 
@@ -107,7 +114,10 @@ export class GrazeSurgeSystem {
 
   private fireSurgePulse(player: GrazeSurgePosition): void {
     this.gauge = 0;
-    const clearedBullets = this.clearBulletsAround(player, SURGE_CLEAR_RADIUS * this.tuning.clearRadiusScale);
+    const clearedBullets = this.clearBulletsAround(
+      player,
+      SURGE_CLEAR_RADIUS * (this.getTuning() ?? STANDARD_SURGE).clearRadiusScale
+    );
     this.callbacks.onSurgePulse(player.x, player.y, clearedBullets);
   }
 }

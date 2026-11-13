@@ -16,7 +16,7 @@ import { getViewportBounds, stereoPan } from '@/utils/layout';
 import { runBestEffort } from '@/utils/runBestEffort';
 import { shakeCamera } from '@/systems/effects/cameraShake';
 import { HIT_STOP_MS } from '@/systems/HitStop';
-import { BULWARK_CLEAR_RADIUS } from '@/config/shipSystems';
+import { BULWARK_CLEAR_RADIUS, type ShipSystems } from '@/config/shipSystems';
 
 /** Salvager's second pickup lands beside the first so both can be seen. */
 const SALVAGER_SECOND_DROP_OFFSET = 28;
@@ -50,6 +50,8 @@ interface GameSceneCombatFeedbackDeps {
   persistHelperWingState: () => void;
   syncLastLifeHelperWingState: () => void;
   getGameplayNow: () => number;
+  /** The run's current ship systems; doctrine effects read them on every event. */
+  getShipSystems: () => ShipSystems;
   /** Briefly slows gameplay on a big impact (see `HitStop`). */
   hitStop: (durationMs: number) => void;
   constants: CombatFeedbackConstants;
@@ -186,7 +188,7 @@ export function createGameSceneCombatFeedbackHandlers(
       if (isAce) {
         deps.hitStop(HIT_STOP_MS.aceKill);
         dropGuaranteedPowerUp(x, y);
-        if (deps.player.systems.late === 'salvager') dropGuaranteedPowerUp(x + SALVAGER_SECOND_DROP_OFFSET, y);
+        if (deps.getShipSystems().late === 'salvager') dropGuaranteedPowerUp(x + SALVAGER_SECOND_DROP_OFFSET, y);
       } else {
         tryDropPowerUp(x, y);
       }
@@ -240,7 +242,7 @@ export function createGameSceneCombatFeedbackHandlers(
     handlePlayerHit: (result): void => {
       deps.scoreManager.onPlayerHit();
       if (result.outcome !== 'absorbed') deps.hitStop(HIT_STOP_MS.playerHullHit);
-      else if (deps.player.systems.late === 'bulwark' && deps.grazeSurge) {
+      else if (deps.getShipSystems().late === 'bulwark' && deps.grazeSurge) {
         // Bulwark: the shield that took the hit throws back the shots around the ship.
         deps.grazeSurge.clearBulletsAround(deps.player, BULWARK_CLEAR_RADIUS);
         runBestEffort(() => deps.effectsManager.createSurgePulse(deps.player.x, deps.player.y));

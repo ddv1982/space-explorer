@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'bun:test';
-import { getPendingShipSystemSlot, NO_SHIP_SYSTEMS, normalizeShipSystems } from '../src/config/shipSystems';
+import {
+  describePickedShipSystems,
+  getPendingShipSystemSlot,
+  NO_SHIP_SYSTEMS,
+  normalizeShipSystems,
+  selectNextShipSystem,
+  setShipSystem,
+  type ShipSystems,
+} from '../src/config/shipSystems';
 
 describe('ship systems', () => {
   test('nothing is offered during the two gentle opening sectors', () => {
@@ -27,5 +35,35 @@ describe('ship systems', () => {
       late: null,
     });
     expect(normalizeShipSystems(undefined)).toEqual(NO_SHIP_SYSTEMS);
+  });
+
+  test('cycling a slot steps through its options and wraps around', () => {
+    let systems: ShipSystems = { ...NO_SHIP_SYSTEMS, gun: 'lance', support: 'magnet' };
+    const guns: Array<string | null> = [];
+    for (let step = 0; step < 3; step += 1) {
+      systems = selectNextShipSystem(systems, 'gun');
+      guns.push(systems.gun);
+    }
+    expect(guns).toEqual(['scatter', 'seekers', 'lance']);
+    expect(systems.support).toBe('magnet');
+    expect(selectNextShipSystem(systems, 'support').support).toBe('surgeCore');
+  });
+
+  test('cycling an empty slot leaves it empty, so nothing can be picked early', () => {
+    expect(selectNextShipSystem(NO_SHIP_SYSTEMS, 'gun')).toEqual(NO_SHIP_SYSTEMS);
+    expect(selectNextShipSystem({ ...NO_SHIP_SYSTEMS, gun: 'seekers' }, 'late').late).toBeNull();
+  });
+
+  test("setting a slot only accepts that slot's own options", () => {
+    expect(setShipSystem(NO_SHIP_SYSTEMS, 'support', 'wingman').support).toBe('wingman');
+    expect(setShipSystem(NO_SHIP_SYSTEMS, 'support', 'lance').support).toBeNull();
+  });
+
+  test('the pause panel lists only picked slots, in slot order', () => {
+    const picked = describePickedShipSystems({ gun: 'scatter', support: null, late: 'bulwark' });
+    expect(picked.map((system) => [system.title, system.option.name])).toEqual([
+      ['MAIN GUN', 'SCATTER'],
+      ['COMBAT DOCTRINE', 'BULWARK'],
+    ]);
   });
 });

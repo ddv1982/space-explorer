@@ -1,4 +1,4 @@
-import { getPendingShipSystemSlot, normalizeShipSystems } from '../config/shipSystems';
+import { getPendingShipSystemSlot, setShipSystem } from '../config/shipSystems';
 import { createSystemPickDialog, type SystemPickDialog } from './planetIntermission/systemPickDialog';
 import Phaser from 'phaser';
 
@@ -114,7 +114,7 @@ export class PlanetIntermissionScene extends Phaser.Scene {
     this.view?.setInert(slot !== null);
     if (!slot) return;
     this.pickDialog = createSystemPickDialog(slot, (id) => {
-      this.state.systems = normalizeShipSystems({ ...this.state.systems, [slot.slot]: id });
+      this.state.systems = setShipSystem(this.state.systems, slot.slot, id);
       setPlayerState(this.registry, this.state);
       audioManager.playUi('uiConfirm');
       this.pickDialog?.destroy();
