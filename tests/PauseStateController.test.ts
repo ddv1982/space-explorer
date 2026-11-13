@@ -39,10 +39,10 @@ type PauseHarness = {
 function createSlotViewModel(index: number, occupied = false): SaveSlotViewModel {
   return {
     id: `slot-${index}` as SaveSlotId,
-    index,
     occupied,
     title: `SLOT ${index}`,
     subtitle: occupied ? `LVL ${index} • SCORE ${index * 1000} • 3 LIVES` : 'EMPTY',
+    systemsLabel: '',
     savedAtLabel: occupied ? '2026-04-27 10:00' : '',
   };
 }

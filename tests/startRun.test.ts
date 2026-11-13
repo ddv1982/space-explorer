@@ -7,6 +7,8 @@ const startScene = mock();
 mock.module('../src/scenes/sceneRegistry', () => ({ startRegisteredScene: startScene }));
 const { startFreshRun, startPreparedRun } = await import('../src/scenes/shared/startRun');
 const { getPlayerState, setPlayerState, getRunSummary, setRunSummary } = await import('../src/systems/PlayerState');
+const { AUTOSAVE_SLOT_ID, createSaveSlotRecord, readSaveSlot, writeSaveSlot } =
+  await import('../src/systems/SaveSlotStorage');
 
 function fixture() {
   const values = new Map<string, unknown>();
@@ -81,5 +83,28 @@ describe('canonical new run action', () => {
     expect(getPlayerState(registry).runSeed).toBe(4242);
     startFreshRun(scene);
     expect(getPlayerState(registry).runSeed).not.toBe(4242);
+  });
+
+  test('a new run clears the autosave so the menu never offers the run it replaced', () => {
+    const values = new Map<string, string>();
+    const localStorage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => void values.set(key, value),
+      removeItem: (key: string) => void values.delete(key),
+    };
+    const globalScope = globalThis as unknown as { window?: unknown };
+    globalScope.window = { localStorage };
+    try {
+      const { registry, scene } = fixture();
+      const state = { ...getPlayerState(registry), level: 4 };
+      writeSaveSlot(createSaveSlotRecord(AUTOSAVE_SLOT_ID, state, getRunSummary(registry)));
+      expect(readSaveSlot(AUTOSAVE_SLOT_ID)?.playerState.level).toBe(4);
+
+      startFreshRun(scene);
+
+      expect(readSaveSlot(AUTOSAVE_SLOT_ID)).toBeNull();
+    } finally {
+      delete globalScope.window;
+    }
   });
 });

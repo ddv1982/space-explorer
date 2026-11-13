@@ -1,11 +1,17 @@
 import { getLevelConfig, getTotalLevels } from '../config/LevelsConfig';
+import { describeShipSystems } from '../config/shipSystems';
 import { normalizeDeathCause } from './PlayerDamage';
 import type { PlayerStateData, RunSummaryData } from './PlayerState';
 import { normalizePersistedPlayerState, normalizePersistedScore } from './PlayerState';
 
 export const SAVE_SLOT_STORAGE_KEY = 'space-explorer.saveSlots.v1';
 export const SAVE_SLOT_ENTRY_STORAGE_KEY_PREFIX = 'space-explorer.saveSlot.v2.';
-const SAVE_SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
+/** The slots the player saves to from the pause panel. */
+export const MANUAL_SAVE_SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
+/** Written on leaving the refit bay and cleared when the run ends, so it never offers a dead run. */
+export const AUTOSAVE_SLOT_ID = 'autosave';
+/** Every stored slot in menu order: the autosave holds the latest progress, so it leads. */
+export const SAVE_SLOT_IDS = [AUTOSAVE_SLOT_ID, ...MANUAL_SAVE_SLOT_IDS] as const;
 
 export type SaveSlotId = (typeof SAVE_SLOT_IDS)[number];
 
@@ -39,10 +45,11 @@ interface SaveSlotEntryV2 {
 
 export interface SaveSlotViewModel {
   id: SaveSlotId;
-  index: number;
   occupied: boolean;
   title: string;
   subtitle: string;
+  /** The picked ship systems, e.g. `SYSTEMS: LANCE · MAGNET`; empty when there are none. */
+  systemsLabel: string;
   savedAtLabel: string;
 }
 
@@ -263,14 +270,20 @@ function formatSavedAtLabel(savedAt: string): string {
   return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
-function toViewModel(id: SaveSlotId, index: number, record: SaveSlotRecordV1 | null): SaveSlotViewModel {
+/** What the player calls a slot: `SLOT 1` or `AUTOSAVE`. */
+export function getSaveSlotName(id: SaveSlotId): string {
+  return id === AUTOSAVE_SLOT_ID ? 'AUTOSAVE' : `SLOT ${id.slice(-1)}`;
+}
+
+function toViewModel(id: SaveSlotId, record: SaveSlotRecordV1 | null): SaveSlotViewModel {
+  const name = getSaveSlotName(id);
   if (!record) {
     return {
       id,
-      index,
       occupied: false,
-      title: `SLOT ${index}`,
+      title: name,
       subtitle: 'EMPTY',
+      systemsLabel: '',
       savedAtLabel: '',
     };
   }
@@ -279,10 +292,10 @@ function toViewModel(id: SaveSlotId, index: number, record: SaveSlotRecordV1 | n
 
   return {
     id,
-    index,
     occupied: true,
-    title: `SLOT ${index} — ${label.levelName.toUpperCase()}`,
+    title: `${name} — ${label.levelName.toUpperCase()}`,
     subtitle: `LVL ${label.level} • SCORE ${label.score} • ${formatLivesLabel(label.remainingLives)}`,
+    systemsLabel: describeShipSystems(record.playerState.systems),
     savedAtLabel: formatSavedAtLabel(record.savedAt),
   };
 }
@@ -304,7 +317,7 @@ export function isSaveStorageAvailable(): boolean {
 
 export function listSaveSlots(): SaveSlotViewModel[] {
   const envelope = readEnvelope();
-  return SAVE_SLOT_IDS.map((id, index) => toViewModel(id, index + 1, envelope.slots[id] ?? null));
+  return SAVE_SLOT_IDS.map((id) => toViewModel(id, envelope.slots[id] ?? null));
 }
 
 export function readSaveSlot(id: SaveSlotId): SaveSlotRecordV1 | null {

@@ -1,4 +1,10 @@
-import type { SaveSlotId, SaveSlotViewModel } from '../../systems/SaveSlotStorage';
+import {
+  AUTOSAVE_SLOT_ID,
+  SAVE_SLOT_IDS,
+  getSaveSlotName,
+  type SaveSlotId,
+  type SaveSlotViewModel,
+} from '../../systems/SaveSlotStorage';
 import { getAutoFireSettings } from '../../config/autoFireSettings';
 import { isTouchMobileDevice } from '../../utils/device';
 import { h, mountUiLayer, releaseFocus, setStatus } from '../../ui/dom';
@@ -24,30 +30,38 @@ export interface MenuView {
 }
 
 interface SlotCard {
+  id: SaveSlotId;
   element: HTMLElement;
   refresh: (model: SaveSlotViewModel | undefined, storageAvailable: boolean) => void;
 }
 
-/** A save slot as a glass card: tap to resume, DEL to clear; dim and inert when empty. */
-function createSlotCard(slotNumber: number, handlers: MenuViewHandlers): SlotCard {
-  const slotId = `slot-${slotNumber}` as SaveSlotId;
+/**
+ * A save slot as a glass card: tap to resume, DEL to clear; dim and inert when empty. The autosave
+ * card shows only while it holds a run, since it is not a slot the player chose.
+ */
+function createSlotCard(slotId: SaveSlotId, handlers: MenuViewHandlers): SlotCard {
   const title = h('span', { className: 'menu-slot__title ui-ellipsis' });
   const detail = h('span', { className: 'menu-slot__detail ui-ellipsis' });
+  const systems = h('span', { className: 'menu-slot__systems ui-ellipsis' });
   const savedAt = h('span', { className: 'menu-slot__time ui-ellipsis' });
-  const load = h('button', { type: 'button', className: 'ui-btn menu-slot__load' }, title, detail, savedAt);
+  const load = h('button', { type: 'button', className: 'ui-btn menu-slot__load' }, title, detail, systems, savedAt);
   const del = h('button', { type: 'button', className: 'ui-btn ui-btn--danger menu-slot__del' }, 'DEL');
   load.addEventListener('click', () => handlers.onLoadSlot(slotId));
   del.addEventListener('click', () => handlers.onDeleteSlot(slotId));
   const element = h('div', { className: 'menu-slot' }, load, del);
 
   return {
+    id: slotId,
     element,
     refresh(model, storageAvailable) {
       const occupied = Boolean(model?.occupied);
-      const name = model?.title || `SLOT ${slotNumber}`;
+      const name = model?.title || getSaveSlotName(slotId);
       element.toggleAttribute('data-occupied', occupied);
+      element.hidden = slotId === AUTOSAVE_SLOT_ID && !occupied;
       title.textContent = name;
       detail.textContent = model?.subtitle || 'EMPTY';
+      systems.textContent = model?.systemsLabel ?? '';
+      systems.hidden = !systems.textContent;
       savedAt.textContent = occupied ? (model?.savedAtLabel ?? '') : '';
       savedAt.hidden = !occupied;
       load.disabled = !occupied || !storageAvailable;
@@ -79,7 +93,7 @@ export function createMenuView(handlers: MenuViewHandlers): MenuView {
     'NEW RUN'
   );
   launch.addEventListener('click', handlers.onNewRun);
-  const cards = [1, 2, 3].map((slotNumber) => createSlotCard(slotNumber, handlers));
+  const cards = SAVE_SLOT_IDS.map((slotId) => createSlotCard(slotId, handlers));
   const settingsButton = h('button', { type: 'button', className: 'ui-btn menu__settings' }, 'SETTINGS');
   const status = h('p', { className: 'ui-status menu__status' });
 
@@ -147,7 +161,12 @@ export function createMenuView(handlers: MenuViewHandlers): MenuView {
     heroSlot,
     settings,
     refreshSlots(slots, storageAvailable) {
-      cards.forEach((card, index) => card.refresh(slots[index], storageAvailable));
+      for (const card of cards) {
+        card.refresh(
+          slots.find((slot) => slot.id === card.id),
+          storageAvailable
+        );
+      }
     },
     setStatus(message, isError = false) {
       setStatus(status, message || idleHint(), isError ? 'error' : message ? 'info' : 'idle');

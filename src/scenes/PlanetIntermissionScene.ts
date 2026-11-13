@@ -14,6 +14,7 @@ import {
   getAvailableCredits,
   type PlayerStateData,
 } from '@/systems/PlayerState';
+import { AUTOSAVE_SLOT_ID, createSaveSlotRecord, writeSaveSlot } from '@/systems/SaveSlotStorage';
 import { WarpTransition } from '@/systems/WarpTransition';
 import { measureInGame } from '@/ui/dom';
 import { rebindSceneLifecycleHandlers } from '@/utils/sceneLifecycle';
@@ -197,6 +198,11 @@ export class PlanetIntermissionScene extends Phaser.Scene {
   private transitionToNextGameLevel(): void {
     this.warpTransition.play(() => {
       advanceToNextLevel(this.registry);
+      // Saving progress is manual from the pause panel, so closing the tab would lose this refit's
+      // picks and purchases without it. Best effort: a failed write must not block the next sector.
+      writeSaveSlot(
+        createSaveSlotRecord(AUTOSAVE_SLOT_ID, getPlayerState(this.registry), getRunSummary(this.registry))
+      );
       startRegisteredScene(this, 'Game');
     });
   }

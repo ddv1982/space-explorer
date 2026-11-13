@@ -11,6 +11,7 @@ import { h, liveRegion, measureInGame, mountUiLayer } from '../ui/dom';
 import { bestScoreNote, countUp, formatScore, statCell } from '../ui/summary';
 import { getGameplayDifficultyTier } from '../config/gameplayDifficulty';
 import { recordRunScore } from '../config/personalBest';
+import { AUTOSAVE_SLOT_ID, deleteSaveSlot } from '../systems/SaveSlotStorage';
 import { bindProceedOnInput } from './shared/bindProceedOnInput';
 import { NEON } from './shared/neonUiTheme';
 import { prefersReducedMotion } from '../utils/device';
@@ -120,6 +121,8 @@ export class VictoryScene extends Phaser.Scene {
   private createSummary(onContinue: () => void): HTMLElement {
     const finalScore = getRunSummary(this.registry).finalScore;
     const totalLevels = getTotalLevels();
+    // The run is over: its autosave would only offer a dead run.
+    deleteSaveSlot(AUTOSAVE_SLOT_ID);
     const { best, isNewBest } = recordRunScore(
       finalScore,
       getPlayerState(this.registry).easiestDifficulty ?? getGameplayDifficultyTier()

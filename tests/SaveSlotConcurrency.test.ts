@@ -167,7 +167,12 @@ describe('concurrent save-slot persistence', () => {
     storage.setItem(SAVE_SLOT_STORAGE_KEY, '{bad json');
 
     expect(readSaveSlot('slot-2')?.playerState.score).toBe(200);
-    expect(listSaveSlots().map((slot) => slot.occupied)).toEqual([false, true, false]);
+    expect(listSaveSlots().map((slot) => [slot.id, slot.occupied])).toEqual([
+      ['autosave', false],
+      ['slot-1', false],
+      ['slot-2', true],
+      ['slot-3', false],
+    ]);
   });
 
   test('preserves legacy data when per-slot writes and deletes are rejected', () => {
