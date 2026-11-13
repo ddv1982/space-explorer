@@ -12,6 +12,7 @@ export interface BossFightReport {
   spawned: boolean;
   killed: boolean;
   seconds: number;
+  fastKillBonus: number;
   hullHits: number;
   shieldHits: number;
   deaths: number;
@@ -187,6 +188,7 @@ export function createBossFightProbes(game: Phaser.Game) {
         spawned: false,
         killed: false,
         seconds: 0,
+        fastKillBonus: 0,
         hullHits: 0,
         shieldHits: 0,
         deaths: 0,
@@ -218,8 +220,9 @@ export function createBossFightProbes(game: Phaser.Game) {
       const onPhase = (phase: number): void => {
         fight.phases.push(phase);
       };
-      const onBossDeath = (): void => {
+      const onBossDeath = (_score: number, _x: number, _y: number, fastKillBonus: number): void => {
         fight.killed = true;
+        fight.fastKillBonus = fastKillBonus;
         fight.seconds = (scene.gameplayClock.now - spawnedAt) / 1000;
       };
       const onUpdate = (): void => {

@@ -1,71 +1,61 @@
 import Phaser from 'phaser';
 import { EnemyBase } from './EnemyBase';
 import { Player } from '../Player';
-import type { BossAttackStyle, BossConfig, EnemyType } from '../../config/LevelsConfig';
+import type {
+  BossAnchor,
+  BossAttackConfig,
+  BossConfig,
+  BossPhaseConfig,
+  BossShotPattern,
+} from '../../config/LevelsConfig';
 import { GAME_SCENE_EVENTS } from '../../systems/GameplayFlow';
-import { fireBossPattern } from './boss/attacks';
-import { getBossShieldActive, updateBossMovement } from './boss/behavior';
-import { resolveBossPhaseTransition } from './boss/phaseTransition';
-import { bossAttackWindup, firstVolleyLastFireTime } from './boss/attackWindup';
+import { fireAt, fireBossPattern } from './boss/volleys';
+import { resolveBossMovement, resolveBossTravel } from './boss/movement';
+import { resolveBossPhaseIndex } from './boss/phaseTransition';
+import { BossAttackSchedule, resolveFastKillBonus } from './boss/attackSchedule';
 import { getViewportBounds } from '../../utils/layout';
 import { bossTextureKey } from '../../config/shipyardSprites';
 import { BossVisualRig } from './boss/BossVisualRig';
-import { BossAttackRuntime } from './boss/BossAttackRuntime';
+import { BossAttackRuntime, type BossBeamLauncher, type BossSummonHandler } from './boss/BossAttackRuntime';
 import { shakeCamera } from '@/systems/effects/cameraShake';
 
-const DEFAULT_BOSS_CONFIG: BossConfig = {
-  name: 'Dreadnought Core',
-  maxHp: 48,
-  phase1Cooldown: 1200,
-  phase2Cooldown: 650,
-  phase2MoveSpeed: 150,
-  phaseTransitionPauseMs: 320,
-  attackStyle: 'barrage',
-  phase1SpreadShotCount: 5,
-  phase1SpreadArcDegrees: 60,
-  phase1BulletSpeedScale: 0.8,
-  phase2SpiralShotCount: 3,
-  phase2SpiralTurnRate: 60,
-  phase2BulletSpeedScale: 0.9,
-};
+/** The line a boss descends to on arrival, before any anchor moves it. */
+const ARRIVAL_Y = 80;
+/** How fast a boss flies between anchors: quick enough to keep the rotation moving, slow enough to follow. */
+const TRAVEL_SPEED = 260;
+const SHIELD_TINT = 0x77ccff;
 
-type BossSummonHandler = (type: EnemyType, x: number, y: number) => void;
+/** A queued shot of an aimed burst, due at a time on the boss's gameplay clock. */
+interface QueuedShot {
+  at: number;
+  speed: number;
+  originY: number;
+}
 
 export class Boss extends EnemyBase {
+  /** 1-based, as announced to the player. */
   phase = 1;
-  private targetY = 80;
+  private config: BossConfig | null = null;
+  private schedule = new BossAttackSchedule(0, false);
+  private baseY = ARRIVAL_Y;
   private moveDir = 1;
-  private moveSpeed = 80;
-  private lastFireTime = 0;
   /** 0-1 charge before the next volley, drawn by the visual rig. */
   private attackWindup = 0;
-  private phase1Cooldown = DEFAULT_BOSS_CONFIG.phase1Cooldown;
-  private phase2Cooldown = DEFAULT_BOSS_CONFIG.phase2Cooldown;
-  private phase2MoveSpeed = DEFAULT_BOSS_CONFIG.phase2MoveSpeed;
-  private phaseTransitionPauseMs = DEFAULT_BOSS_CONFIG.phaseTransitionPauseMs ?? 320;
-  private attackStyle: BossAttackStyle = DEFAULT_BOSS_CONFIG.attackStyle;
-  private phase2AttackStyle: BossAttackStyle | null = null;
-  private bossName: string = DEFAULT_BOSS_CONFIG.name;
-  private phase1SpreadShotCount = DEFAULT_BOSS_CONFIG.phase1SpreadShotCount;
-  private phase1SpreadArcDegrees = DEFAULT_BOSS_CONFIG.phase1SpreadArcDegrees;
-  private phase1BulletSpeedScale = DEFAULT_BOSS_CONFIG.phase1BulletSpeedScale;
-  private phase2SpiralShotCount = DEFAULT_BOSS_CONFIG.phase2SpiralShotCount;
-  private phase2SpiralTurnRate = DEFAULT_BOSS_CONFIG.phase2SpiralTurnRate;
-  private phase2BulletSpeedScale = DEFAULT_BOSS_CONFIG.phase2BulletSpeedScale;
   private arrived = false;
-  private attackCycle = 0;
+  private volleysFired = 0;
+  private readonly patternUses = new Map<BossShotPattern, number>();
+  private queuedShots: QueuedShot[] = [];
+  /** Where the boss is flying for the next attack, or null once there (or when it has no anchor). */
+  private travelTarget: { x: number; y: number } | null = null;
+  /** The anchored attack the boss has reached and holds still for until it fires. */
+  private holdingFor: BossAttackConfig | null = null;
   private shieldActive = false;
-  private phaseStartedAt = 0;
   private bossFlashToken = 0;
   private readonly visualRig: BossVisualRig;
   private attackRuntime!: BossAttackRuntime;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const textureKey = bossTextureKey(DEFAULT_BOSS_CONFIG.attackStyle);
-
-    super(scene, x, y, textureKey);
-    this.maxHp = DEFAULT_BOSS_CONFIG.maxHp;
-    this.hp = DEFAULT_BOSS_CONFIG.maxHp;
+    super(scene, x, y, bossTextureKey('barrage'));
     this.speed = 0;
     this.scoreValue = 2000;
     this.enemyType = 'boss';
@@ -91,14 +81,22 @@ export class Boss extends EnemyBase {
     this.getAttackRuntime().setSummonHandler(handler);
   }
 
+  setBeamLauncher(launcher: BossBeamLauncher): void {
+    this.getAttackRuntime().setBeamLauncher(launcher);
+  }
+
   setPlayer(player: Player | null): void {
     this.getAttackRuntime().setPlayer(player);
   }
 
-  spawn(x: number, y: number, config: BossConfig = DEFAULT_BOSS_CONFIG): void {
+  /** `config` is required on first spawn; a pooled respawn without one replays the last fight. */
+  override spawn(x: number, y: number, config: BossConfig | null = this.config): void {
+    if (!config) throw new Error('A boss needs its fight config to spawn');
     this.bossFlashToken += 1;
-    this.applyConfig(config);
-    this.setTexture(bossTextureKey(config.attackStyle));
+    this.config = config;
+    this.maxHp = config.maxHp;
+    this.schedule = new BossAttackSchedule(config.parSeconds * 1000, config.escalatesPastPar);
+    this.setTexture(bossTextureKey(this.getPhaseConfig().style));
     super.spawn(x, y);
     this.resetCombatState();
   }
@@ -121,55 +119,84 @@ export class Boss extends EnemyBase {
     super.despawn();
   }
 
+  /** `time` is this boss's gameplay clock: milliseconds of unpaused fight since it spawned. */
   updateBehavior(time: number, delta: number): void {
     this.attackWindup = 0;
+    if (!this.config) return;
     if (!this.arrived) {
+      this.schedule.hold(time);
       this.handleArrival(time);
       return;
     }
 
-    this.updateMovement(time, delta);
     this.updatePhaseState(time);
-    this.updateShieldState(time);
+    this.updateMovement(time, delta);
+    this.setShieldActive(this.schedule.upcoming?.shielded === true);
+    if (!this.getAttackRuntime().hasBulletGroup()) return;
 
-    this.tryFirePattern(time);
-    if (this.getAttackRuntime().hasBulletGroup()) {
-      this.attackWindup = bossAttackWindup(time, this.lastFireTime, this.getCurrentAttackCooldown());
-    }
+    this.fireQueuedShots(time);
+    const attack = this.schedule.takeDue(time);
+    if (attack) this.fireAttack(attack, time);
+    this.attackWindup = this.schedule.windup(time);
   }
 
   private resetCombatState(): void {
     this.phase = 1;
     this.arrived = false;
-    this.lastFireTime = 0;
-    this.attackCycle = 0;
+    this.baseY = ARRIVAL_Y;
     this.moveDir = 1;
-    this.moveSpeed = 80;
+    this.volleysFired = 0;
+    this.patternUses.clear();
+    this.queuedShots = [];
+    this.travelTarget = null;
+    this.holdingFor = null;
     this.shieldActive = false;
-    this.phaseStartedAt = 0;
+    this.schedule.start(this.getPhaseConfig().attacks, 0);
     this.setVelocityY(60);
     this.clearTint();
   }
 
+  private getPhaseConfig(): BossPhaseConfig {
+    const phases = this.config?.phases ?? [];
+    const phase = phases[this.phase - 1] ?? phases[0];
+    if (!phase) throw new Error('A boss needs at least one phase');
+    return phase;
+  }
+
   private handleArrival(time: number): void {
-    if (this.y < this.targetY) {
+    if (this.y < this.baseY) {
       return;
     }
 
     this.arrived = true;
-    this.phaseStartedAt = time;
-    this.lastFireTime = firstVolleyLastFireTime(time, this.lastFireTime, this.getCurrentAttackCooldown());
+    this.schedule.hold(time);
     this.setVelocityY(0);
   }
 
   private updateMovement(time: number, delta: number): void {
     const viewport = getViewportBounds(this.scene);
-    const movement = updateBossMovement({
-      attackStyle: this.attackStyle,
+    const upcoming = this.schedule.upcoming;
+    if (upcoming?.anchor && this.holdingFor !== upcoming) {
+      this.travelTarget ??= this.resolveAnchor(upcoming.anchor, viewport);
+      const step = resolveBossTravel({ x: this.x, y: this.y }, this.travelTarget, TRAVEL_SPEED, delta);
+      this.x = step.x;
+      this.y = step.y;
+      // The volley waits until the boss is in place, then charges in full.
+      this.schedule.hold(time);
+      if (step.arrived) {
+        this.holdingFor = upcoming;
+        this.travelTarget = null;
+        this.baseY = step.y;
+      }
+      return;
+    }
+    if (this.holdingFor) return;
+
+    const movement = resolveBossMovement({
+      movement: this.getPhaseConfig().movement,
       x: this.x,
-      targetY: this.targetY,
+      baseY: this.baseY,
       moveDir: this.moveDir,
-      moveSpeed: this.moveSpeed,
       time,
       delta,
       playerX: this.getAttackRuntime().getPlayer()?.x,
@@ -182,33 +209,26 @@ export class Boss extends EnemyBase {
     this.moveDir = movement.moveDir;
   }
 
-  private updatePhaseState(time: number): void {
-    const transition = resolveBossPhaseTransition({
-      phase: this.phase,
-      hp: this.hp,
-      maxHp: this.maxHp,
-      time,
-      phase2MoveSpeed: this.phase2MoveSpeed,
-      phaseTransitionPauseMs: this.phaseTransitionPauseMs,
-      attackStyle: this.attackStyle,
-      phase2AttackStyle: this.phase2AttackStyle,
-    });
-    if (!transition) return;
-
-    this.phase = transition.phase;
-    this.moveSpeed = transition.moveSpeed;
-    this.phaseStartedAt = transition.phaseStartedAt;
-    this.lastFireTime = transition.nextFireTime;
-    if (transition.textureChanges) {
-      this.attackStyle = transition.attackStyle;
-      this.setTexture(bossTextureKey(this.attackStyle));
-    }
-    this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
-    this.flashPhaseChange();
+  private resolveAnchor(anchor: BossAnchor, viewport: ReturnType<typeof getViewportBounds>): { x: number; y: number } {
+    return { x: viewport.left + anchor.x * viewport.width, y: viewport.top + anchor.y };
   }
 
-  private updateShieldState(time: number): void {
-    this.setShieldActive(getBossShieldActive(this.attackStyle, this.phase, this.phaseStartedAt, time));
+  private updatePhaseState(time: number): void {
+    const config = this.config;
+    if (!config) return;
+    const next = resolveBossPhaseIndex(config.phases, this.phase - 1, this.hp / this.maxHp);
+    if (next === null) return;
+
+    const previousStyle = this.getPhaseConfig().style;
+    this.phase = next + 1;
+    const phase = this.getPhaseConfig();
+    this.schedule.start(phase.attacks, time, config.phaseChangePauseMs);
+    this.queuedShots = [];
+    this.travelTarget = null;
+    this.holdingFor = null;
+    if (phase.style !== previousStyle) this.setTexture(bossTextureKey(phase.style));
+    this.scene.events.emit(GAME_SCENE_EVENTS.bossPhaseChange, this.phase);
+    this.flashPhaseChange();
   }
 
   private setShieldActive(active: boolean): void {
@@ -219,7 +239,7 @@ export class Boss extends EnemyBase {
     this.shieldActive = active;
     this.invalidateHitFlash();
     if (active) {
-      this.setTint(0x77ccff);
+      this.setTint(SHIELD_TINT);
       this.setTintMode(Phaser.TintModes.MULTIPLY);
       return;
     }
@@ -227,48 +247,45 @@ export class Boss extends EnemyBase {
     this.clearTint();
   }
 
-  private tryFirePattern(time: number): void {
-    if (!this.canFirePattern(time)) {
-      return;
+  private fireAttack(attack: BossAttackConfig, time: number): void {
+    const runtime = this.getAttackRuntime();
+    const viewport = getViewportBounds(this.scene);
+    for (const pattern of attack.volley) {
+      const uses = this.patternUses.get(pattern) ?? 0;
+      this.patternUses.set(pattern, uses + 1);
+      fireBossPattern(pattern, {
+        x: this.x,
+        y: this.y,
+        moveDir: this.moveDir,
+        volley: this.volleysFired,
+        time,
+        patternUses: uses,
+        viewport: { left: viewport.left, width: viewport.width },
+        fireBullet: (x, y, velocityX, velocityY) => runtime.fireBullet(x, y, velocityX, velocityY),
+        getPlayerAimAngle: () => runtime.getPlayerAimAngle(),
+        summonEscorts: (types) => runtime.summonEscorts(types),
+        launchBeam: (beam) => runtime.launchBeam(beam),
+        queueAimedShot: (delayMs, speed, originY) => this.queuedShots.push({ at: time + delayMs, speed, originY }),
+      });
     }
-
-    this.lastFireTime = time;
-    this.firePattern(time);
-    this.attackCycle += 1;
+    this.volleysFired += 1;
+    this.holdingFor = null;
   }
 
-  private canFirePattern(time: number): boolean {
-    if (!this.getAttackRuntime().hasBulletGroup()) {
-      return false;
+  private fireQueuedShots(time: number): void {
+    if (this.queuedShots.length === 0) return;
+    const runtime = this.getAttackRuntime();
+    const due = this.queuedShots.filter((shot) => shot.at <= time);
+    this.queuedShots = this.queuedShots.filter((shot) => shot.at > time);
+    for (const shot of due) {
+      fireAt(
+        (x, y, velocityX, velocityY) => runtime.fireBullet(x, y, velocityX, velocityY),
+        this.x,
+        this.y + shot.originY,
+        runtime.getPlayerAimAngle(),
+        shot.speed
+      );
     }
-
-    return time > this.lastFireTime + this.getCurrentAttackCooldown();
-  }
-
-  private getCurrentAttackCooldown(): number {
-    return this.phase === 1 ? this.phase1Cooldown : this.phase2Cooldown;
-  }
-
-  private firePattern(time: number): void {
-    fireBossPattern({
-      attackStyle: this.attackStyle,
-      phase: this.phase,
-      x: this.x,
-      y: this.y,
-      moveDir: this.moveDir,
-      attackCycle: this.attackCycle,
-      shieldActive: this.shieldActive,
-      phase1SpreadShotCount: this.phase1SpreadShotCount,
-      phase1SpreadArcDegrees: this.phase1SpreadArcDegrees,
-      phase1BulletSpeedScale: this.phase1BulletSpeedScale,
-      phase2SpiralShotCount: this.phase2SpiralShotCount,
-      phase2SpiralTurnRate: this.phase2SpiralTurnRate,
-      phase2BulletSpeedScale: this.phase2BulletSpeedScale,
-      time,
-      fireBullet: (x, y, velocityX, velocityY) => this.getAttackRuntime().fireBullet(x, y, velocityX, velocityY),
-      summonEscorts: (types) => this.getAttackRuntime().summonEscorts(types),
-      getPlayerAimAngle: () => this.getAttackRuntime().getPlayerAimAngle(),
-    });
   }
 
   private getAttackRuntime(): BossAttackRuntime {
@@ -276,26 +293,9 @@ export class Boss extends EnemyBase {
     return this.attackRuntime;
   }
 
-  private applyConfig(config: BossConfig): void {
-    this.maxHp = config.maxHp;
-    this.phase1Cooldown = config.phase1Cooldown;
-    this.phase2Cooldown = config.phase2Cooldown;
-    this.phase2MoveSpeed = config.phase2MoveSpeed;
-    this.phaseTransitionPauseMs = config.phaseTransitionPauseMs ?? DEFAULT_BOSS_CONFIG.phaseTransitionPauseMs ?? 320;
-    this.attackStyle = config.attackStyle;
-    this.phase2AttackStyle = config.phase2AttackStyle ?? null;
-    this.bossName = config.name;
-    this.phase1SpreadShotCount = config.phase1SpreadShotCount;
-    this.phase1SpreadArcDegrees = config.phase1SpreadArcDegrees;
-    this.phase1BulletSpeedScale = config.phase1BulletSpeedScale;
-    this.phase2SpiralShotCount = config.phase2SpiralShotCount;
-    this.phase2SpiralTurnRate = config.phase2SpiralTurnRate;
-    this.phase2BulletSpeedScale = config.phase2BulletSpeedScale;
-  }
-
   protected override restoreBaseTint(): void {
     if (this.shieldActive) {
-      this.setTint(0x77ccff);
+      this.setTint(SHIELD_TINT);
       this.setTintMode(Phaser.TintModes.MULTIPLY);
       return;
     }
@@ -321,7 +321,7 @@ export class Boss extends EnemyBase {
 
   private restoreShieldTintAfterImpact(flashToken: number): void {
     if (this.active && this.shieldActive && flashToken === this.bossFlashToken) {
-      this.setTint(0x77ccff);
+      this.setTint(SHIELD_TINT);
       this.setTintMode(Phaser.TintModes.MULTIPLY);
     }
   }
@@ -335,7 +335,10 @@ export class Boss extends EnemyBase {
   }
 
   override die(): void {
-    this.scene.events.emit(GAME_SCENE_EVENTS.bossDeath, this.scoreValue, this.x, this.y);
+    // The fight clock is this boss's gameplay time, so pauses and hit-stops never cost the bonus.
+    const parMs = (this.config?.parSeconds ?? 0) * 1000;
+    const fastKillBonus = resolveFastKillBonus(this.getGameplayTime(), parMs);
+    this.scene.events.emit(GAME_SCENE_EVENTS.bossDeath, this.scoreValue, this.x, this.y, fastKillBonus);
     this.scene.events.emit(GAME_SCENE_EVENTS.enemyDeath, this.scoreValue, this.x, this.y);
     this.shieldActive = false;
     this.clearTint();

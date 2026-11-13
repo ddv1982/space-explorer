@@ -1,4 +1,4 @@
-import type { BossAttackStyle } from './levels/types';
+import type { BossStyle } from './levels/types';
 
 /**
  * Every ship, boss, turret, mine and asteroid is a code-built 3D model rendered by `scripts/shipyard`
@@ -36,7 +36,7 @@ export const BOSS_STYLES = [
   'pursuit',
   'maelstrom',
   'pressure',
-] as const satisfies readonly BossAttackStyle[];
+] as const satisfies readonly BossStyle[];
 
 export const ASTEROID_VARIANTS = 4;
 
@@ -71,7 +71,7 @@ export const SHIPYARD_SPRITES: readonly ShipyardSpriteSpec[] = [
 
 export const PLAYER_SPRITE = SHIPYARD_SPRITES[0]!;
 
-export function bossTextureKey(style: BossAttackStyle): string {
+export function bossTextureKey(style: BossStyle): string {
   return `boss-${style}`;
 }
 

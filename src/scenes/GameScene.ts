@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { finishShipyardLoading, queueShipyardAssets } from '../utils/shipyardAssets';
 
-import { getActiveSection, getSectionProgress, type BossConfig } from '@/config/LevelsConfig';
+import { getActiveSection, getSectionProgress } from '@/config/LevelsConfig';
 import type { Player } from '@/entities/Player';
 import type { Boss } from '@/entities/enemies/Boss';
 import type { PowerUpType } from '@/entities/PowerUp';
@@ -76,7 +76,6 @@ export class GameScene extends Phaser.Scene {
   private warpTransition!: WarpTransition;
   private pauseStateController: PauseStateController | null = null;
   private mobileControls: MobileControls | null = null;
-  private scaledBossConfig: BossConfig | null = null;
   private powerUpGroup!: Phaser.Physics.Arcade.Group;
   private shipSystems!: ShipSystemsRuntime;
   private readonly flow = new GameSceneFlowController();
@@ -138,7 +137,6 @@ export class GameScene extends Phaser.Scene {
 
   private installBootstrapRuntime(runtime: GameSceneBootstrapRuntime): void {
     this.levelManager = runtime.levelManager;
-    this.scaledBossConfig = runtime.scaledBossConfig;
     this.parallax = runtime.parallax;
     this.effectsManager = runtime.effectsManager;
     this.mobileControls = runtime.mobileControls;
@@ -167,7 +165,6 @@ export class GameScene extends Phaser.Scene {
     this.boss = null;
     this.lastLifeHelperWing = null;
     this.picketTurrets = null;
-    this.scaledBossConfig = null;
     this.lastHudShieldCount = null;
     this.gameplayFrameBehavior = null;
   }
@@ -198,7 +195,6 @@ export class GameScene extends Phaser.Scene {
       setBoss: (boss) => {
         this.boss = boss;
       },
-      scaledBossConfig: this.scaledBossConfig,
       lastLifeHelperWing: this.lastLifeHelperWing,
       picketTurrets: this.picketTurrets,
       powerUpGroup: this.powerUpGroup,

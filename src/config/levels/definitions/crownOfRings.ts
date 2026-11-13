@@ -30,18 +30,42 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Umbral Ark',
-    maxHp: 1575,
-    phase1Cooldown: 1060,
-    phase2Cooldown: 550,
-    phase2MoveSpeed: 180,
-    phaseTransitionPauseMs: 300,
-    attackStyle: 'carrier',
-    phase1SpreadShotCount: 6,
-    phase1SpreadArcDegrees: 56,
-    phase1BulletSpeedScale: 0.98,
-    phase2SpiralShotCount: 5,
-    phase2SpiralTurnRate: 96,
-    phase2BulletSpeedScale: 1.04,
+    maxHp: 1120,
+    parSeconds: 62,
+    escalatesPastPar: true,
+    phaseChangePauseMs: 300,
+    phases: [
+      {
+        startsAtHull: 1,
+        style: 'carrier',
+        movement: { kind: 'patrol', speed: 57.6, edgePadding: 90, bob: { amplitude: 10, periodMs: 2417 } },
+        attacks: [
+          {
+            cooldownMs: 1060,
+            volley: [
+              { kind: 'arc', shots: 4, arcDegrees: 54, speed: 0.931, originsX: [-22], originY: 24, angle: -8 },
+              { kind: 'arc', shots: 4, arcDegrees: 54, speed: 0.931, originsX: [22], originY: 24, angle: 8 },
+              { kind: 'summon', escorts: ['swarm', 'scout'], onVolleys: 'even' },
+            ],
+          },
+        ],
+      },
+      {
+        startsAtHull: 0.5,
+        style: 'carrier',
+        movement: { kind: 'patrol', speed: 129.6, edgePadding: 90, bob: { amplitude: 10, periodMs: 2417 } },
+        attacks: [
+          {
+            cooldownMs: 550,
+            volley: [
+              { kind: 'spiral', shots: 5, degreesPerSecond: 192, speed: 1.04, originY: 30 },
+              { kind: 'arc', shots: 5, arcDegrees: 38, speed: 1.04, originY: 26, lean: 4 },
+              { kind: 'summon', escorts: ['fighter', 'swarm'], onVolleys: 'odd' },
+            ],
+          },
+        ],
+      },
+    ],
   },
   bossAddWaves: true,
   lastLifeHelperWing: {

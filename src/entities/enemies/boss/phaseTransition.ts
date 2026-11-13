@@ -1,35 +1,14 @@
-import type { BossAttackStyle } from '@/config/LevelsConfig';
+import type { BossPhaseConfig } from '@/config/LevelsConfig';
 
-export interface BossPhaseTransitionInput {
-  phase: number;
-  hp: number;
-  maxHp: number;
-  time: number;
-  phase2MoveSpeed: number;
-  phaseTransitionPauseMs: number;
-  attackStyle: BossAttackStyle;
-  phase2AttackStyle: BossAttackStyle | null;
-}
-
-export interface BossPhaseTransition {
-  phase: 2;
-  moveSpeed: number;
-  phaseStartedAt: number;
-  nextFireTime: number;
-  attackStyle: BossAttackStyle;
-  textureChanges: boolean;
-}
-
-export function resolveBossPhaseTransition(input: BossPhaseTransitionInput): BossPhaseTransition | null {
-  if (input.phase !== 1 || input.hp / input.maxHp > 0.5) return null;
-
-  const attackStyle = input.phase2AttackStyle ?? input.attackStyle;
-  return {
-    phase: 2,
-    moveSpeed: input.phase2MoveSpeed,
-    phaseStartedAt: input.time,
-    nextFireTime: input.time + input.phaseTransitionPauseMs,
-    attackStyle,
-    textureChanges: attackStyle !== input.attackStyle,
-  };
+/**
+ * The phase a boss moves on to at this hull share, or null to stay. Phases advance one at a time, so a
+ * burst of damage that skips past two thresholds still plays every phase change in order.
+ */
+export function resolveBossPhaseIndex(
+  phases: readonly BossPhaseConfig[],
+  currentIndex: number,
+  hullShare: number
+): number | null {
+  const next = phases[currentIndex + 1];
+  return next && hullShare <= next.startsAtHull ? currentIndex + 1 : null;
 }

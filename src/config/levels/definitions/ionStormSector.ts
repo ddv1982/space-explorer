@@ -30,18 +30,32 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Pyre Herald',
-    maxHp: 1500,
-    phase1Cooldown: 1050,
-    phase2Cooldown: 560,
-    phase2MoveSpeed: 170,
-    phaseTransitionPauseMs: 260,
-    attackStyle: 'barrage',
-    phase1SpreadShotCount: 5,
-    phase1SpreadArcDegrees: 70,
-    phase1BulletSpeedScale: 0.92,
-    phase2SpiralShotCount: 4,
-    phase2SpiralTurnRate: 80,
-    phase2BulletSpeedScale: 0.98,
+    maxHp: 275,
+    parSeconds: 45,
+    // The first boss keeps its pace however long the fight runs.
+    escalatesPastPar: false,
+    phaseChangePauseMs: 260,
+    phases: [
+      {
+        startsAtHull: 1,
+        style: 'barrage',
+        movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
+        attacks: [
+          {
+            cooldownMs: 1050,
+            volley: [{ kind: 'arc', shots: 5, arcDegrees: 80.5, speed: 0.92, originsX: [-18, 18], originY: 30 }],
+          },
+        ],
+      },
+      {
+        startsAtHull: 0.5,
+        style: 'barrage',
+        movement: { kind: 'patrol', speed: 170, edgePadding: 60 },
+        attacks: [
+          { cooldownMs: 560, volley: [{ kind: 'spiral', shots: 4, degreesPerSecond: 160, speed: 0.98, originY: 30 }] },
+        ],
+      },
+    ],
   },
   bossTriggerProgress: 0.78,
   asteroidInterval: 3900,

@@ -15,6 +15,8 @@ const { Lancer } = await import('../src/entities/enemies/Lancer');
 const { Splitter } = await import('../src/entities/enemies/Splitter');
 const { Swarmling } = await import('../src/entities/enemies/Swarmling');
 const { Boss } = await import('../src/entities/enemies/Boss');
+const { getLevelConfig } = await import('../src/config/LevelsConfig');
+const BOSS_CONFIG = getLevelConfig(3).boss!;
 const { BomberBomb } = await import('../src/entities/BomberBomb');
 const { EnemyBullet } = await import('../src/entities/EnemyBullet');
 type EnemyPoolInstance = InstanceType<typeof EnemyPool>;
@@ -307,8 +309,8 @@ describe('EnemyPool regression coverage', () => {
   test('spawnBoss enforces singleton active boss', () => {
     const harness = createEnemyPoolHarness();
 
-    const firstBoss = harness.pool.spawnBoss(100, 100);
-    const secondBoss = harness.pool.spawnBoss(120, 120);
+    const firstBoss = harness.pool.spawnBoss(100, 100, BOSS_CONFIG);
+    const secondBoss = harness.pool.spawnBoss(120, 120, BOSS_CONFIG);
 
     expect(firstBoss).toBeTruthy();
     expect(secondBoss).toBeNull();
@@ -337,7 +339,7 @@ describe('EnemyPool regression coverage', () => {
       if (!enemy) throw new Error(`Failed to spawn ${type}`);
       return enemy;
     });
-    harness.pool.spawnBoss(30, 40);
+    harness.pool.spawnBoss(30, 40, BOSS_CONFIG);
     for (const group of [
       harness.pool.getBombGroup(),
       harness.pool.getMineGroup(),

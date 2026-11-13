@@ -6,6 +6,7 @@ import { PARTICLE, generateEffectsParticleTextures } from './effects/particleTex
 import { EngineFlame, type EngineFlameTarget } from './effects/engineFlame';
 import { NEUTRAL_EXPLOSION_STYLE, getEnemyExplosionStyle, type ExplosionStyle } from './effects/explosionStyles';
 import {
+  createFastKillPopup as createOverlayFastKillPopup,
   createScorePopup as createOverlayScorePopup,
   createSpawnWarning as createOverlaySpawnWarning,
 } from './effects/ephemeralOverlayTweens';
@@ -391,6 +392,10 @@ export class EffectsManager {
 
   createScorePopup(x: number, y: number, score: number): void {
     createOverlayScorePopup(this.scene, x, y, score);
+  }
+
+  createFastKillPopup(x: number, y: number, bonus: number): void {
+    createOverlayFastKillPopup(this.scene, x, y, bonus);
   }
 
   createBulletTrail(x: number, y: number): void {

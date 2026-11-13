@@ -25,23 +25,133 @@ interface EncounterSizeConfig {
   max: number;
 }
 
-export type BossAttackStyle = 'barrage' | 'pressure' | 'maelstrom' | 'carrier' | 'pursuit' | 'bulwark';
+/** Hull look: picks the boss sprite (`boss-<style>`). A phase can switch it. */
+export type BossStyle = 'barrage' | 'pressure' | 'maelstrom' | 'carrier' | 'pursuit' | 'bulwark';
+
+/**
+ * One emitter in a volley. Speeds scale `ENEMY_BULLET_SPEED`; angles are degrees, 90 is straight
+ * down; origins are pixel offsets from the boss centre.
+ */
+export type BossShotPattern =
+  | {
+      /** A fan of shots around a fixed heading. */
+      kind: 'arc';
+      shots: number;
+      arcDegrees: number;
+      speed: number;
+      /** One fan per origin; defaults to the centre line. */
+      originsX?: readonly number[];
+      originY: number;
+      /** Fixed turn off straight down. */
+      angle?: number;
+      /** Leans the fan this many degrees the way the boss is moving... */
+      lean?: number;
+      /** ...only on every other volley, so consecutive fans interleave. */
+      leanEveryOther?: boolean;
+    }
+  | {
+      /** A fan centred on the player. */
+      kind: 'aimedArc';
+      shots: number;
+      arcDegrees: number;
+      speed: number;
+      originY: number;
+    }
+  | {
+      /** Evenly spaced spokes all around, turning with the fight clock. */
+      kind: 'spiral';
+      shots: number;
+      degreesPerSecond: number;
+      speed: number;
+      originY: number;
+      /** Adds a counter-rotating set offset by half a spoke. */
+      mirrored?: boolean;
+    }
+  | {
+      /**
+       * A line of shots across the whole screen with one gap to fly through. Gaps are screen
+       * fractions, used in turn on each use of this attack.
+       */
+      kind: 'wall';
+      gaps: readonly number[];
+      gapWidth: number;
+      spacing: number;
+      speed: number;
+      originY: number;
+    }
+  | {
+      /** Single aimed shots in quick succession, re-aimed at the player for each shot. */
+      kind: 'aimedBurst';
+      shots: number;
+      intervalMs: number;
+      speed: number;
+      originY: number;
+    }
+  | {
+      /** A telegraphed hazard beam straight down from the boss (`HazardBeam`). */
+      kind: 'beam';
+      width: number;
+      telegraphMs: number;
+      activeMs: number;
+      originY: number;
+    }
+  | {
+      /** Escorts launched beside the boss; `onVolleys` limits them to even or odd volleys of the fight. */
+      kind: 'summon';
+      escorts: readonly EnemyType[];
+      onVolleys?: 'even' | 'odd';
+    };
+
+/** A spot the boss flies to before an attack: `x` is a share of the screen width, `y` pixels from the top. */
+export interface BossAnchor {
+  x: number;
+  y: number;
+}
+
+/** One step of a phase's rotation: everything in `volley` fires together after one wind-up. */
+export interface BossAttackConfig {
+  /** Time since the previous volley. */
+  cooldownMs: number;
+  volley: readonly BossShotPattern[];
+  /** Flies here first and holds still until the volley fires. */
+  anchor?: BossAnchor;
+  /** The hull is shielded from the previous volley until this one fires. */
+  shielded?: boolean;
+}
+
+interface BossMovementBob {
+  amplitude: number;
+  periodMs: number;
+}
+
+/** How the boss moves between attacks (and around its last anchor). */
+export type BossMovementConfig =
+  | { kind: 'patrol'; speed: number; edgePadding: number; bob?: BossMovementBob }
+  /** Slides toward the player's x, capped at `speed`. */
+  | { kind: 'pursuit'; speed: number; edgePadding: number; bob?: BossMovementBob };
+
+export interface BossPhaseConfig {
+  /** The phase begins once the hull falls to this share; the first phase starts at 1. */
+  startsAtHull: number;
+  style: BossStyle;
+  movement: BossMovementConfig;
+  /** Fired in order, then from the top again. */
+  attacks: readonly BossAttackConfig[];
+}
 
 export interface BossConfig {
   name: string;
   maxHp: number;
-  phase1Cooldown: number;
-  phase2Cooldown: number;
-  phase2MoveSpeed: number;
-  phaseTransitionPauseMs?: number;
-  attackStyle: BossAttackStyle;
-  phase2AttackStyle?: BossAttackStyle;
-  phase1SpreadShotCount: number;
-  phase1SpreadArcDegrees: number;
-  phase1BulletSpeedScale: number;
-  phase2SpiralShotCount: number;
-  phase2SpiralTurnRate: number;
-  phase2BulletSpeedScale: number;
+  /**
+   * Fight length, in seconds, for the sector's representative ship (`bun run balance:bosses`).
+   * A kill under par pays a fast-kill bonus; past par, volleys come faster (see `escalatesPastPar`).
+   */
+  parSeconds: number;
+  /** False keeps the fight's pace fixed however long it runs (the gentle first boss). */
+  escalatesPastPar: boolean;
+  /** Firing pause after each phase change. */
+  phaseChangePauseMs: number;
+  phases: readonly BossPhaseConfig[];
 }
 
 export interface LastLifeHelperWingConfig {

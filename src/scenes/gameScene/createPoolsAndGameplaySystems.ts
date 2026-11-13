@@ -216,6 +216,7 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
 
   const hazardBeamSystem = createHazardBeamSystem();
   hazardBeamSystem.create(scene);
+  enemyPool.setBossBeamLauncher((beam) => hazardBeamSystem.launchBossBeam(beam));
 
   // Wave choices and the sector's left-right orientation both come from the run's seed.
   seedWaveRandom(state.runSeed, state.level);

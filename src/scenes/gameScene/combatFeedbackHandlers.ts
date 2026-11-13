@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import type { PlayerFatalResult, PlayerHitResult } from '@/systems/PlayerDamage';
-import type { BossConfig } from '@/config/LevelsConfig';
 import type { Boss } from '@/entities/enemies/Boss';
 import type { Player } from '@/entities/Player';
 import { audioManager } from '@/systems/AudioManager';
@@ -43,7 +42,6 @@ interface GameSceneCombatFeedbackDeps {
   hud: HUD;
   getBoss: () => Boss | null;
   setBoss: (boss: Boss | null) => void;
-  scaledBossConfig: BossConfig | null;
   lastLifeHelperWing: { suspendForTransition(): void } | null;
   picketTurrets: { suspendForTransition(): void } | null;
   powerUpGroup: Phaser.Physics.Arcade.Group;
@@ -71,7 +69,7 @@ interface GameSceneCombatFeedbackHandlers {
   handleEnemySpawnWarning: (x: number) => void;
   handleWormholeTelegraph: (x: number, y: number) => void;
   handleEliteWave: (title?: string) => void;
-  handleBossDeath: () => void;
+  handleBossDeath: (score: number, x: number, y: number, fastKillBonus: number) => void;
   handleBossPhaseChange: (phase: number) => void;
   handleHelperWingActivated: (helperCount: number) => void;
   handleHelperWingDepleted: () => void;
@@ -125,23 +123,18 @@ export function createGameSceneCombatFeedbackHandlers(
     }
   };
 
-  const getBossSpawnConfig = (): BossConfig | undefined => {
-    const levelConfig = deps.levelManager.getLevelConfig();
-    return deps.scaledBossConfig ?? levelConfig.boss ?? undefined;
-  };
-
   const spawnBoss = (): void => {
     const viewport = getViewportBounds(deps.scene);
-    const levelConfig = deps.levelManager.getLevelConfig();
-    const boss = deps.enemyPool.spawnBoss(viewport.centerX, -60, getBossSpawnConfig());
+    const config = deps.levelManager.getLevelConfig().boss;
+    const boss = config ? deps.enemyPool.spawnBoss(viewport.centerX, -60, config) : null;
 
-    if (!boss) {
+    if (!config || !boss) {
       return;
     }
 
     boss.setPlayer(deps.player);
     deps.setBoss(boss);
-    deps.hud.showBossBar(levelConfig.boss?.name ?? 'BOSS');
+    deps.hud.showBossBar(config.name);
   };
 
   const playBossPhaseChangeEffects = (): void => {
@@ -281,7 +274,12 @@ export function createGameSceneCombatFeedbackHandlers(
       );
     },
 
-    handleBossDeath: (): void => {
+    handleBossDeath: (_score, x, y, fastKillBonus): void => {
+      if (fastKillBonus > 0) {
+        deps.scoreManager.addScore(fastKillBonus);
+        // Below the kill's own score popup, which the enemy-death handler shows at the same spot.
+        deps.effectsManager.createFastKillPopup(x, y + 34, fastKillBonus);
+      }
       handleBossDefeatCleanup(deps.getBoss());
     },
 

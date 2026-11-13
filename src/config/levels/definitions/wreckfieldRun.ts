@@ -1,6 +1,22 @@
-import type { LevelConfig } from '../types';
+import type { BossMovementConfig, BossShotPattern, LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
+
+/** Three narrow fans from the hull's gun decks. */
+const BULWARK_BATTERY: BossShotPattern = {
+  kind: 'arc',
+  shots: 3,
+  arcDegrees: 18,
+  speed: 0.96,
+  originsX: [-28, 0, 28],
+  originY: 26,
+};
+const BULWARK_PATROL: BossMovementConfig = {
+  kind: 'patrol',
+  speed: 36,
+  edgePadding: 100,
+  bob: { amplitude: 6, periodMs: 3491 },
+};
 
 export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
   name: 'Debris Gauntlet',
@@ -11,7 +27,8 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
   pacingSummary: 'Hazard-dense corridors with destructible cover build to the Bastion Bulwark siege.',
   enemyCompositionSummary: 'A lean enemy roster; gunships and bombers hold the ramparts.',
   hazardSummary: 'Solar-flare sweeps, laser-lattice patterns, and rock corridors with destructible cover.',
-  bossConcept: 'Bastion Bulwark cycles bulwark shields while anchoring the gauntlet.',
+  bossConcept:
+    'Bastion Bulwark shields only while it charges a wall, breaks out flank to flank, then hunts with a beam.',
   difficultyRole: 'Ramp-to-hard pivot and hazard-literacy exam; helper wing unlocks here.',
   journeyNote: 'Bastion Fall is a wall of wreckage; the gauntlet tests nerve over firepower.',
   bgColor: '#0a0c10',
@@ -30,18 +47,74 @@ export const WRECKFIELD_RUN_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Bastion Bulwark',
-    maxHp: 1500,
-    phase1Cooldown: 1150,
-    phase2Cooldown: 600,
-    phase2MoveSpeed: 150,
-    phaseTransitionPauseMs: 300,
-    attackStyle: 'bulwark',
-    phase1SpreadShotCount: 6,
-    phase1SpreadArcDegrees: 60,
-    phase1BulletSpeedScale: 0.96,
-    phase2SpiralShotCount: 4,
-    phase2SpiralTurnRate: 86,
-    phase2BulletSpeedScale: 1.0,
+    maxHp: 520,
+    parSeconds: 60,
+    escalatesPastPar: true,
+    phaseChangePauseMs: 300,
+    // Its shield is the tell for the wall: it only closes while the boss charges one, so the shielded
+    // stretch is a dodge, not a wait. Phase 2 breaks out of the patrol line; phase 3 has lost the shield.
+    phases: [
+      {
+        // Rampart: slow patrol, two battery salvoes, then a shielded charge into a wall.
+        startsAtHull: 1,
+        style: 'bulwark',
+        movement: BULWARK_PATROL,
+        attacks: [
+          { cooldownMs: 1150, volley: [BULWARK_BATTERY] },
+          { cooldownMs: 1000, volley: [BULWARK_BATTERY] },
+          {
+            cooldownMs: 1300,
+            shielded: true,
+            anchor: { x: 0.5, y: 80 },
+            volley: [{ kind: 'wall', gaps: [0.3, 0.7, 0.5], gapWidth: 120, spacing: 44, speed: 0.6, originY: 30 }],
+          },
+        ],
+      },
+      {
+        // Breach: flies flank to flank, so no spot under it stays safe.
+        startsAtHull: 0.66,
+        style: 'bulwark',
+        movement: BULWARK_PATROL,
+        attacks: [
+          {
+            cooldownMs: 1100,
+            anchor: { x: 0.22, y: 100 },
+            volley: [{ kind: 'aimedBurst', shots: 4, intervalMs: 150, speed: 1.1, originY: 28 }],
+          },
+          {
+            cooldownMs: 1100,
+            anchor: { x: 0.78, y: 100 },
+            volley: [{ kind: 'spiral', shots: 6, degreesPerSecond: 165, speed: 0.9, originY: 26 }, BULWARK_BATTERY],
+          },
+          {
+            cooldownMs: 1300,
+            shielded: true,
+            anchor: { x: 0.5, y: 70 },
+            volley: [{ kind: 'wall', gaps: [0.2, 0.8], gapWidth: 120, spacing: 44, speed: 0.65, originY: 30 }],
+          },
+        ],
+      },
+      {
+        // Last stand: shield gone, it hunts the player's lane and drops a beam on it.
+        startsAtHull: 0.33,
+        style: 'bulwark',
+        movement: { kind: 'pursuit', speed: 70, edgePadding: 80, bob: { amplitude: 6, periodMs: 3491 } },
+        attacks: [
+          {
+            cooldownMs: 1200,
+            volley: [
+              { kind: 'beam', width: 36, telegraphMs: 650, activeMs: 800, originY: 30 },
+              { kind: 'arc', shots: 3, arcDegrees: 24, speed: 0.9, originsX: [-40, 40], originY: 26 },
+            ],
+          },
+          { cooldownMs: 900, volley: [{ kind: 'aimedBurst', shots: 5, intervalMs: 120, speed: 1.15, originY: 28 }] },
+          {
+            cooldownMs: 1100,
+            volley: [{ kind: 'wall', gaps: [0.35, 0.65], gapWidth: 120, spacing: 44, speed: 0.7, originY: 30 }],
+          },
+        ],
+      },
+    ],
   },
   lastLifeHelperWing: {
     shipCount: 2,

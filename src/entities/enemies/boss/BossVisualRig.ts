@@ -87,7 +87,7 @@ export class BossVisualRig {
       return;
     }
 
-    const pulse = (Math.sin(params.time * (params.phase === 2 ? 0.008 : 0.0045)) + 1) * 0.5;
+    const pulse = (Math.sin(params.time * (params.phase > 1 ? 0.008 : 0.0045)) + 1) * 0.5;
     this.aura.setPosition(params.x, params.y + 2).setScale(0.98 + pulse * 0.08);
     this.aura.setAlpha(0.42 + pulse * 0.3);
     this.corona.setPosition(params.x, params.y + 2).setScale(1.02 + pulse * 0.06);
@@ -96,12 +96,12 @@ export class BossVisualRig {
     this.shield.setScale(0.98 + pulse * 0.045).setAlpha(0.62 + pulse * 0.28);
     const windup = params.windup ?? 0;
     this.core.setPosition(params.x, params.y - 1).setScale(0.82 + pulse * 0.44 * (1 - windup) + windup * 1.35);
-    this.core.setFillStyle(params.phase === 2 ? 0xffffff : 0xffd7e0, 0.92);
+    this.core.setFillStyle(params.phase > 1 ? 0xffffff : 0xffd7e0, 0.92);
     this.hardpoints.forEach((hardpoint, index) => {
       hardpoint.setPosition(params.x + (index === 0 ? -31 : 31), params.y + 5);
       hardpoint.setScale(0.82 + (1 - pulse) * 0.32 * (1 - windup) + windup * 0.7);
       const charged = windup > 0.5;
-      hardpoint.setFillStyle(charged ? 0xffffff : params.phase === 2 ? 0xff335f : 0xff6688, charged ? 0.95 : 0.78);
+      hardpoint.setFillStyle(charged ? 0xffffff : params.phase > 1 ? 0xff335f : 0xff6688, charged ? 0.95 : 0.78);
     });
   }
 

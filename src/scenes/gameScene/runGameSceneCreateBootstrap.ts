@@ -47,7 +47,6 @@ export type GameSceneBootstrapHost = {
 
 export type GameSceneBootstrapRuntime = {
   levelManager: ReturnType<typeof initializeLevelRuntime>['levelManager'];
-  scaledBossConfig: ReturnType<typeof initializeLevelRuntime>['scaledBossConfig'];
   parallax: ReturnType<typeof createWorldPresentation>['parallax'];
   effectsManager: ReturnType<typeof createWorldPresentation>['effectsManager'];
   mobileControls: ReturnType<typeof createInputAndPlayer>['mobileControls'];
@@ -172,7 +171,6 @@ export function runGameSceneCreateBootstrap(
 
   return {
     levelManager: levelRuntime.levelManager,
-    scaledBossConfig: levelRuntime.scaledBossConfig,
     ...world,
     ...input,
     ...gameplay,

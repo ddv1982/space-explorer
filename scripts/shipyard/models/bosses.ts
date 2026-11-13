@@ -6,7 +6,7 @@ import { buildBossMaelstrom } from './bossMaelstrom';
 import { buildBossPressure } from './bossPressure';
 import { buildBossPursuit } from './bossPursuit';
 
-/** Boss hulls keyed by sheet file (`boss-<attackStyle>`), each 88×56 logical, nose down. */
+/** Boss hulls keyed by sheet file (`boss-<style>`), each 88×56 logical, nose down. */
 export const BOSS_BUILDERS: Record<string, () => THREE.Object3D> = {
   'boss-barrage': buildBossBarrage,
   'boss-bulwark': buildBossBulwark,

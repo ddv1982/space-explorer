@@ -14,6 +14,7 @@ import { Rival } from '../entities/enemies/Rival';
 import { Courier } from '../entities/enemies/Courier';
 import { EnemyBase } from '../entities/enemies/EnemyBase';
 import { Boss } from '../entities/enemies/Boss';
+import type { BossBeamLauncher } from '../entities/enemies/boss/BossAttackRuntime';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { BomberBomb } from '../entities/BomberBomb';
 import { Mine } from '../entities/Mine';
@@ -70,6 +71,7 @@ export class EnemyPool {
   private targetProvider: (() => { x: number; y: number } | null) | null = null;
   private playerDamage = 1;
   private seekGroups: Phaser.Physics.Arcade.Group[] | null = null;
+  private bossBeamLauncher: BossBeamLauncher | null = null;
 
   private acquireFromGroup<T>(group: Phaser.Physics.Arcade.Group, x: number, y: number): T | null {
     const existing = group.getFirstDead(false) as T | null;
@@ -248,7 +250,12 @@ export class EnemyPool {
     }
   }
 
-  spawnBoss(x: number, y: number, config?: BossConfig): Boss | null {
+  /** Boss beams are hazard beams, owned by the scene's `HazardBeamSystem`. */
+  setBossBeamLauncher(launcher: BossBeamLauncher): void {
+    this.bossBeamLauncher = launcher;
+  }
+
+  spawnBoss(x: number, y: number, config: BossConfig): Boss | null {
     const bossGroup = this.ensureGroup('boss');
     const activeBoss = this.getGroupChildrenSafely(bossGroup).find((c) => c.active) as Boss | undefined;
     if (activeBoss) return null;
@@ -266,6 +273,7 @@ export class EnemyPool {
     boss.setSummonHandler((type, spawnX, spawnY) => {
       this.spawnEnemy(type, spawnX, spawnY);
     });
+    if (this.bossBeamLauncher) boss.setBeamLauncher(this.bossBeamLauncher);
   }
 
   getScoutGroup(): Phaser.Physics.Arcade.Group {
