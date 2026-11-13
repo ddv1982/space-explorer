@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PauseStateController, type PauseSaveSlotAdapter } from './PauseStateController';
+import { PauseStateController, type PauseSaveSlotAdapter, type PauseShipSystemsPort } from './PauseStateController';
 import { audioManager } from '@/systems/AudioManager';
 import type { MobileControls } from '@/systems/MobileControls';
 import { getRunSummary, setPlayerState, setRunSummary, type PlayerStateData } from '@/systems/PlayerState';
@@ -19,6 +19,7 @@ interface PauseViewportWiringContext {
   getMobileControls: () => MobileControls | null;
   captureCurrentRunStateForSave: () => PlayerStateData;
   canSaveCurrentRun: () => boolean;
+  shipSystems: PauseShipSystemsPort;
 }
 
 interface PauseViewportWiring {
@@ -84,6 +85,7 @@ export function createPauseViewportWiring(context: PauseViewportWiringContext): 
       context.scene.scene.start('Menu');
     },
     saveSlotAdapter: createPauseSaveSlotAdapter(context),
+    shipSystems: context.shipSystems,
   });
 
   return {

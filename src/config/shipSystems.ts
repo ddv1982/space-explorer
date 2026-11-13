@@ -1,12 +1,14 @@
 /**
- * Ship systems: free picks that change how the ship plays, offered at the refit bay. Every system is
- * automatic (no new input), so touch and keyboard stay equal. Stat upgrades are bought separately.
+ * Ship systems: free picks that change how the ship plays, offered at the refit bay. Once picked, a slot
+ * can be changed to another of its options mid-run: the main gun on the swap key or touch button
+ * (`GUN_SWAP` keeps it a decision), support and doctrine from the pause panel. Nothing else needs input,
+ * so touch and keyboard stay equal. Stat upgrades are bought separately.
  */
 export type MainGunId = 'lance' | 'scatter' | 'seekers';
 type SupportSystemId = 'magnet' | 'surgeCore' | 'wingman';
 type LateSystemId = 'overdrive' | 'bulwark' | 'salvager';
 export type ShipSystemId = MainGunId | SupportSystemId | LateSystemId;
-type ShipSystemSlot = 'gun' | 'support' | 'late';
+export type ShipSystemSlot = 'gun' | 'support' | 'late';
 
 export interface ShipSystems {
   /** Null keeps the standard bolt. */
@@ -85,12 +87,37 @@ export function getPendingShipSystemSlot(level: number, systems: ShipSystems): S
   return SHIP_SYSTEM_SLOTS.find((def) => level >= def.offeredAfterLevel && systems[def.slot] === null) ?? null;
 }
 
-/** The picked systems as one line for the pause panel, e.g. `SYSTEMS: LANCE · MAGNET`; empty with none. */
-export function describeShipSystems(systems: ShipSystems): string {
-  const names = SHIP_SYSTEM_SLOTS.flatMap(
-    (def) => def.options.find((option) => option.id === systems[def.slot])?.name ?? []
-  );
-  return names.length > 0 ? `SYSTEMS: ${names.join(' · ')}` : '';
+/** Puts `id` in its slot. Usable anywhere a pick changes: the refit bay, the swap key, the pause panel. */
+export function setShipSystem(systems: ShipSystems, slot: ShipSystemSlot, id: ShipSystemId): ShipSystems {
+  return normalizeShipSystems({ ...systems, [slot]: id });
+}
+
+/** The slot's next option, wrapping around (Lance -> Scatter -> Seekers -> Lance). An empty slot stays empty. */
+export function selectNextShipSystem(systems: ShipSystems, slot: ShipSystemSlot): ShipSystems {
+  const current = systems[slot];
+  if (current === null) return systems;
+  const ids = optionIds(slot);
+  return setShipSystem(systems, slot, ids[(ids.indexOf(current) + 1) % ids.length]);
+}
+
+interface PickedShipSystem {
+  slot: ShipSystemSlot;
+  /** The slot's title, e.g. `MAIN GUN`. */
+  title: string;
+  option: ShipSystemOption;
+}
+
+/** The run's picks in slot order, for the pause panel; empty slots are left out. */
+export function describePickedShipSystems(systems: ShipSystems): PickedShipSystem[] {
+  return SHIP_SYSTEM_SLOTS.flatMap((def) => {
+    const option = def.options.find((candidate) => candidate.id === systems[def.slot]);
+    return option ? [{ slot: def.slot, title: def.title, option }] : [];
+  });
+}
+
+/** The display name of a system, e.g. `SCATTER`. */
+export function getShipSystemName(id: ShipSystemId): string {
+  return SHIP_SYSTEM_SLOTS.flatMap((def) => def.options).find((option) => option.id === id)?.name ?? '';
 }
 
 /** Main-gun firing patterns. Damage per shot is unchanged; the fire cooldown pays for the pattern. */
@@ -133,3 +160,8 @@ export const WINGMAN = { offsetX: 34, offsetY: 10, everyNthVolley: 2 } as const;
 export const OVERDRIVE_COOLDOWN_STEP = 0.06;
 /** Bulwark: a shield hit clears enemy shots inside this radius. */
 export const BULWARK_CLEAR_RADIUS = 160;
+/**
+ * Changing the main gun mid-run, counted on the gameplay clock: the next change waits `cooldownMs` and
+ * the new gun stays silent for `fireSilenceMs`, so swapping is a decision and never a free best-of-all.
+ */
+export const GUN_SWAP = { cooldownMs: 2000, fireSilenceMs: 500 } as const;

@@ -1,7 +1,7 @@
 import type { GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { normalizeDeathCause } from './PlayerDamage';
 import { getUpgradeByKey, normalizeUpgradeLevel } from '../config/UpgradesConfig';
-import { NO_SHIP_SYSTEMS, normalizeShipSystems } from '@/config/shipSystems';
+import { NO_SHIP_SYSTEMS, normalizeShipSystems, type ShipSystems } from '@/config/shipSystems';
 import { normalizeAuthoredLevelNumber } from '../config/levels/selectors';
 import { PLAYER_CONFIG } from '../config/playerConfig';
 import type { PersistentHelperWingState, PlayerStateData, RunSummaryData } from './playerState/types';
@@ -276,6 +276,13 @@ export function saveScoreToState(registry: PlayerStateRegistry, score: number): 
 export function saveCurrentHp(registry: PlayerStateRegistry, hp: number): void {
   const state = getPlayerState(registry);
   state.currentHp = hp;
+  setPlayerState(registry, state);
+}
+
+/** Keeps a mid-run system change for the next sector and for saves. */
+export function saveShipSystems(registry: PlayerStateRegistry, systems: ShipSystems): void {
+  const state = getPlayerState(registry);
+  state.systems = normalizeShipSystems(systems);
   setPlayerState(registry, state);
 }
 

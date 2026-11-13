@@ -1,4 +1,46 @@
-import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test, waitForScene } from './fixtures';
+import { expect, openMenu, pinQualityTier, snapshot, startNewRun, test, waitForScene, type Page } from './fixtures';
+
+/** The pause panel's SYSTEMS card for one slot, e.g. `MAIN GUN`. */
+function systemRow(page: Page, slotTitle: string) {
+  return page.locator('.pause-system').filter({ hasText: slotTitle });
+}
+
+/** Touch keys sit on the right edge: pause, and the gun-swap key under it (see `MobileControls`). */
+const TOUCH_KEY_X = 390 - 22 - 22;
+const TOUCH_PAUSE_Y = 84 + 22;
+const TOUCH_SWAP_Y = TOUCH_PAUSE_Y + 44 + 14;
+
+async function startSector(page: Page, level: number, systems: string): Promise<void> {
+  await pinQualityTier(page, 'low');
+  await page.addInitScript(() =>
+    window.localStorage.setItem('space-explorer.autoFire.v1', JSON.stringify({ touch: true, keyboard: true }))
+  );
+  await page.goto(`/?browserHarness=1&startLevel=${level}&systems=${systems}`);
+  await waitForScene(page, 'Game');
+}
+
+async function playerShots(page: Page) {
+  return (await snapshot(page)).objects.filter((object) => object.active && object.textureKey === 'player-bullet');
+}
+
+async function shownTexts(page: Page): Promise<string[]> {
+  return (await snapshot(page)).texts.filter((text) => text.shown).map((text) => text.text);
+}
+
+/** Wingman's drone: a body-less `helper-ship` image (couriers share the texture but have bodies). */
+async function wingmanDrones(page: Page): Promise<number> {
+  return (await snapshot(page)).objects.filter(
+    (object) => object.active && object.textureKey === 'helper-ship' && !object.hasBody
+  ).length;
+}
+
+async function openPause(page: Page, isMobile: boolean): Promise<void> {
+  // Phaser only sees Escape if it is still held on a game frame, so hold it until the panel shows.
+  if (isMobile) await page.touchscreen.tap(TOUCH_KEY_X, TOUCH_PAUSE_Y);
+  else await page.keyboard.down('Escape');
+  await expect(page.getByRole('dialog', { name: 'Paused' })).toBeVisible();
+  if (!isMobile) await page.keyboard.up('Escape');
+}
 
 test('a free main-gun pick is offered after sector 2, must be made, and changes how the gun fires', async ({
   page,
@@ -62,8 +104,9 @@ test('a free main-gun pick is offered after sector 2, must be made, and changes 
 
   // The pause panel names the pick.
   if (!isMobile) {
-    await page.keyboard.press('Escape');
-    await expect(page.getByText('SYSTEMS: SCATTER')).toBeVisible();
+    await openPause(page, false);
+    await page.getByRole('tab', { name: 'SYSTEMS' }).click();
+    await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
     await page.screenshot({ path: test.info().outputPath('pause-systems.png') });
   }
   assertNoBrowserErrors();
@@ -88,11 +131,136 @@ test('every ship system runs in a real sector without errors', async ({ page, is
       await page.waitForTimeout(900);
       await page.keyboard.up(key);
     }
-    await page.keyboard.press('Escape');
+    await openPause(page, false);
+    await page.getByRole('tab', { name: 'SYSTEMS' }).click();
     const [gun, support, late] = systems.split(',');
     const label = { surgeCore: 'SURGE CORE' }[support] ?? support.toUpperCase();
-    await expect(page.getByText(`SYSTEMS: ${gun.toUpperCase()} · ${label} · ${late.toUpperCase()}`)).toBeVisible();
+    await expect(systemRow(page, 'MAIN GUN')).toContainText(gun.toUpperCase());
+    await expect(systemRow(page, 'SUPPORT SYSTEM')).toContainText(label);
+    await expect(systemRow(page, 'COMBAT DOCTRINE')).toContainText(late.toUpperCase());
     await page.screenshot({ path: test.info().outputPath(`systems-${gun}.png`) });
   }
+  assertNoBrowserErrors();
+});
+
+test('the main gun swaps mid-sector on Q or the touch key, and a second swap waits for the cooldown', async ({
+  page,
+  isMobile,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(90_000);
+  await startSector(page, 3, 'lance');
+  const swap = async (): Promise<void> => {
+    if (isMobile) await page.touchscreen.tap(TOUCH_KEY_X, TOUCH_SWAP_Y);
+    else await page.keyboard.press('KeyQ');
+  };
+
+  // Lance fires straight ahead.
+  await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
+  expect((await playerShots(page)).every((shot) => Math.abs(shot.rotation) < 0.01)).toBe(true);
+
+  await swap();
+  await expect.poll(() => shownTexts(page)).toContain('SCATTER');
+  await page.screenshot({ path: test.info().outputPath('swap-flash.png') });
+  // A second press inside the cooldown is ignored: the gun stays Scatter.
+  await swap();
+  if (isMobile) await page.screenshot({ path: test.info().outputPath('swap-key-cooling.png') });
+  await page.waitForTimeout(300);
+  expect(await shownTexts(page)).not.toContain('SEEKERS');
+
+  // Scatter fans its shots.
+  await expect.poll(async () => (await playerShots(page)).some((shot) => Math.abs(shot.rotation) > 0.1)).toBe(true);
+
+  await openPause(page, isMobile);
+  await page.getByRole('tab', { name: 'SYSTEMS' }).click();
+  await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
+  await page.screenshot({ path: test.info().outputPath('pause-systems-tab.png') });
+  assertNoBrowserErrors();
+});
+
+test('sectors 1-2 have no swap: Q does nothing and the pause panel has no SYSTEMS tab', async ({
+  page,
+  isMobile,
+  assertNoBrowserErrors,
+}) => {
+  await startSector(page, 2, '');
+  await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
+  if (!isMobile) await page.keyboard.press('KeyQ');
+  await page.waitForTimeout(300);
+  expect(await shownTexts(page)).not.toContain('LANCE');
+  if (isMobile) await page.screenshot({ path: test.info().outputPath('no-swap-key.png') });
+  await openPause(page, isMobile);
+  await expect(page.getByRole('tab', { name: 'SYSTEMS' })).toBeHidden();
+  assertNoBrowserErrors();
+});
+
+test('switching support to Wingman from the pause panel launches the drone; switching away removes it', async ({
+  page,
+  isMobile,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(90_000);
+  await startSector(page, 6, 'lance,surgeCore');
+  await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
+  expect(await wingmanDrones(page)).toBe(0);
+
+  const swapSupport = async (expected: string): Promise<void> => {
+    await openPause(page, isMobile);
+    await page.getByRole('tab', { name: 'SYSTEMS' }).click();
+    const support = systemRow(page, 'SUPPORT SYSTEM');
+    await support.getByRole('button', { name: /^Swap support system/ }).click();
+    await expect(support).toContainText(expected);
+    await page.screenshot({ path: test.info().outputPath(`pause-support-${expected.toLowerCase()}.png`) });
+    await page.getByRole('button', { name: 'RESUME' }).click();
+    await expect(page.getByRole('dialog', { name: 'Paused' })).toBeHidden();
+  };
+
+  await swapSupport('WINGMAN');
+  await expect.poll(() => wingmanDrones(page)).toBe(1);
+  await swapSupport('MAGNET');
+  await expect.poll(() => wingmanDrones(page)).toBe(0);
+  assertNoBrowserErrors();
+});
+
+test('a swapped gun carries into the next sector and is what a checkpoint stores @desktop-only', async ({
+  page,
+  assertNoBrowserErrors,
+}) => {
+  test.setTimeout(120_000);
+  await startSector(page, 3, 'lance');
+  await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
+  await page.keyboard.press('KeyQ');
+  await expect.poll(() => shownTexts(page)).toContain('SCATTER');
+
+  // Checkpoint with Scatter, then fly on to the next sector.
+  await openPause(page, false);
+  await page.getByRole('button', { name: 'Save to SLOT 1' }).click();
+  await expect(page.getByText(/checkpoint to slot 1/)).toBeVisible();
+  await page.getByRole('button', { name: 'RESUME' }).click();
+  await page.evaluate(() => window.__SPACE_EXPLORER_BROWSER_HARNESS__!.showPlanetIntermission(3));
+  await page.getByRole('button', { name: /Continue to/ }).click();
+  await waitForScene(page, 'Game');
+
+  await openPause(page, false);
+  await page.getByRole('tab', { name: 'SYSTEMS' }).click();
+  await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
+  await page.getByRole('button', { name: 'RESUME' }).click();
+
+  // Swap on to Seekers, then load the checkpoint: it brings back the Scatter it stored.
+  await page.waitForTimeout(300);
+  await page.keyboard.press('KeyQ');
+  await expect.poll(() => shownTexts(page)).toContain('SEEKERS');
+  await openPause(page, false);
+  await page
+    .getByRole('button', { name: /^Load / })
+    .first()
+    .click();
+  // The load restarts the Game scene, so "Game is active" is true before and after. The old pause panel
+  // closing is what marks the restart; only then is a new pause the loaded run's.
+  await expect(page.getByRole('dialog', { name: 'Paused' })).toBeHidden();
+  await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
+  await openPause(page, false);
+  await page.getByRole('tab', { name: 'SYSTEMS' }).click();
+  await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
   assertNoBrowserErrors();
 });

@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import type { SaveSlotId, SaveSlotViewModel } from '../src/systems/SaveSlotStorage';
-import type { PauseSaveSlotAdapter } from '../src/scenes/gameScene/PauseStateController';
+import type { PauseSaveSlotAdapter, PauseShipSystemsPort } from '../src/scenes/gameScene/PauseStateController';
 import type { PauseOverlayHandlers, PauseOverlayState } from '../src/scenes/gameScene/pauseOverlay/types';
 
 mock.module('phaser', () => ({ default: {} }));
@@ -54,6 +54,7 @@ function createOverlayState(overrides: Partial<PauseOverlayState>): PauseOverlay
     canSave: false,
     storageAvailable: false,
     saveSlots: [],
+    systems: { gun: null, support: null, late: null },
     statusMessage: '',
     statusOk: true,
     ...overrides,
@@ -62,7 +63,7 @@ function createOverlayState(overrides: Partial<PauseOverlayState>): PauseOverlay
 
 function createPauseHarness(
   saveSlotAdapter?: Partial<PauseSaveSlotAdapter>,
-  options: { worldPaused?: boolean } = {}
+  options: { worldPaused?: boolean; shipSystems?: PauseShipSystemsPort } = {}
 ): PauseHarness {
   const overlayStates: PauseOverlayState[] = [];
   const mobileControlBlocked: boolean[] = [];
@@ -119,6 +120,7 @@ function createPauseHarness(
       // not needed for these tests
     },
     saveSlotAdapter: adapter,
+    shipSystems: options.shipSystems,
     playClick: () => {
       playClickCalls += 1;
     },
@@ -341,5 +343,30 @@ describe('PauseStateController regression coverage', () => {
       statusMessage: 'Unable to save difficulty in this browser context.',
       statusOk: false,
     });
+  });
+
+  test('the SYSTEMS tab cycles a slot through the ship-systems port, only while paused', () => {
+    let systems = { gun: 'lance', support: 'magnet', late: null } as PauseOverlayState['systems'];
+    const cycled: string[] = [];
+    const harness = createPauseHarness(undefined, {
+      shipSystems: {
+        getSystems: () => systems,
+        cycleSystem: (slot) => {
+          cycled.push(slot);
+          systems = { ...systems, support: 'surgeCore' };
+        },
+      },
+    });
+
+    harness.handlers.onCycleSystem('support');
+    expect(cycled).toEqual([]);
+
+    harness.controller.togglePauseRequest(false);
+    expect(harness.overlayStates.at(-1)?.systems.support).toBe('magnet');
+    harness.handlers.onCycleSystem('support');
+    expect(cycled).toEqual(['support']);
+    expect(harness.playClickCalls).toBe(2);
+    expect(harness.overlayStates.at(-1)?.systems.support).toBe('surgeCore');
+    expect(harness.controller.isGameplayPaused()).toBe(true);
   });
 });

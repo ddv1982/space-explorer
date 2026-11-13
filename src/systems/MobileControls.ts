@@ -9,18 +9,28 @@ const CONTROLS_DEPTH = 1000;
 const PAUSE_BUTTON_SIZE = 44;
 const PAUSE_BUTTON_TOP_INSET = 84;
 const PAUSE_BUTTON_RIGHT_INSET = 22;
+/** The gun-swap key sits under pause: on the edge, clear of the steering thumb and the lane centre. */
+const SWAP_BUTTON_GAP = 14;
+/** Cooldown redraws in steps, not every frame. */
+const SWAP_COOLDOWN_STEPS = 20;
 /** Keeps the dragged ship clear of the very edge so it stays fully visible. */
 const DRAG_EDGE_MARGIN = 18;
 
+interface ControlKey {
+  bg: Phaser.GameObjects.Graphics;
+  icon: Phaser.GameObjects.Graphics;
+  hitArea: Phaser.GameObjects.Zone;
+}
+
 /**
  * Touch controls for momentum flight: drag anywhere and the ship follows the finger's movement,
- * while the main gun autofires. A pause button stays available in the top-right corner.
+ * while the main gun autofires. A pause button stays available in the top-right corner, and once the
+ * run has a main gun a swap button sits under it.
  */
 export class MobileControls {
   private scene: Phaser.Scene | null = null;
-  private pauseButtonBg: Phaser.GameObjects.Graphics | null = null;
-  private pauseButtonIcon: Phaser.GameObjects.Graphics | null = null;
-  private pauseButtonHitArea: Phaser.GameObjects.Zone | null = null;
+  private pauseKey: ControlKey | null = null;
+  private swapKey: ControlKey | null = null;
   private enabledForTouchDevice: boolean = false;
   private blocked: boolean = false;
   /** Set once a hardware keyboard is in use; cleared by the next touch. */
@@ -29,6 +39,12 @@ export class MobileControls {
   private pauseButtonX: number = 0;
   private pauseButtonY: number = 0;
   private pauseButtonHandler: (() => void) | null = null;
+  private swapButtonPointerId: number | null = null;
+  private swapButtonY: number = 0;
+  private swapAvailable: boolean = false;
+  /** Cooldown left, in `SWAP_COOLDOWN_STEPS` (0 = ready). */
+  private swapCooldownStep: number = 0;
+  private swapPressPending: boolean = false;
   private dragPointerId: number | null = null;
   private dragState: DragState | null = null;
   private dragFingerX: number = 0;
@@ -41,7 +57,7 @@ export class MobileControls {
   private readonly handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
     // Drag steering is a touch control: trackpad or mouse presses on hybrid devices never start it.
     // Suppression is not checked here because this listener runs before the bootstrap's touch restore.
-    if (!pointer.wasTouch || !this.isEnabled() || this.dragPointerId !== null || this.isOverPauseButton(pointer)) {
+    if (!pointer.wasTouch || !this.isEnabled() || this.dragPointerId !== null || this.isOverControlKey(pointer)) {
       return;
     }
 
@@ -69,6 +85,9 @@ export class MobileControls {
     if (pointer.id === this.pauseButtonPointerId) {
       this.releasePauseButton();
     }
+    if (pointer.id === this.swapButtonPointerId) {
+      this.releaseSwapButton();
+    }
   };
 
   create(scene: Phaser.Scene): this {
@@ -89,18 +108,10 @@ export class MobileControls {
 
     this.updateControlAnchors();
 
-    this.pauseButtonBg = scene.add.graphics().setDepth(CONTROLS_DEPTH).setScrollFactor(0);
-    this.pauseButtonIcon = scene.add
-      .graphics()
-      .setDepth(CONTROLS_DEPTH + 1)
-      .setScrollFactor(0);
-    this.pauseButtonHitArea = scene.add
-      .zone(0, 0, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE)
-      .setOrigin(0.5)
-      .setDepth(CONTROLS_DEPTH + 2)
-      .setScrollFactor(0)
-      .setInteractive({ useHandCursor: true });
-    this.pauseButtonHitArea.on('pointerdown', this.handlePauseButtonDown, this);
+    this.pauseKey = createControlKey(scene);
+    this.pauseKey.hitArea.on('pointerdown', this.handlePauseButtonDown, this);
+    this.swapKey = createControlKey(scene);
+    this.swapKey.hitArea.on('pointerdown', this.handleSwapButtonDown, this);
 
     scene.input.on('pointerdown', this.handlePointerDown);
     scene.input.on('pointermove', this.handlePointerMove);
@@ -108,7 +119,7 @@ export class MobileControls {
     scene.input.on('pointerupoutside', this.handlePointerUp);
 
     this.refreshVisibility();
-    this.updatePauseButtonVisual();
+    this.updateKeyVisuals();
 
     return this;
   }
@@ -122,19 +133,22 @@ export class MobileControls {
     }
 
     this.releaseActiveTouches();
-    this.pauseButtonHitArea?.off('pointerdown', this.handlePauseButtonDown, this);
-    this.pauseButtonBg?.destroy();
-    this.pauseButtonIcon?.destroy();
-    this.pauseButtonHitArea?.destroy();
+    for (const key of [this.pauseKey, this.swapKey]) {
+      key?.bg.destroy();
+      key?.icon.destroy();
+      key?.hitArea.destroy();
+    }
 
     this.scene = null;
-    this.pauseButtonBg = null;
-    this.pauseButtonIcon = null;
-    this.pauseButtonHitArea = null;
+    this.pauseKey = null;
+    this.swapKey = null;
     this.enabledForTouchDevice = false;
     this.blocked = false;
     this.touchSteeringSuppressed = false;
     this.pauseButtonHandler = null;
+    this.swapAvailable = false;
+    this.swapCooldownStep = 0;
+    this.swapPressPending = false;
   }
 
   relayout(): void {
@@ -145,7 +159,7 @@ export class MobileControls {
     this.updateControlAnchors();
     this.releaseActiveTouches();
     this.refreshVisibility();
-    this.updatePauseButtonVisual();
+    this.updateKeyVisuals();
   }
 
   setBlocked(blocked: boolean): void {
@@ -153,10 +167,11 @@ export class MobileControls {
 
     if (blocked) {
       this.releaseActiveTouches();
+      this.swapPressPending = false;
     }
 
     this.refreshVisibility();
-    this.updatePauseButtonVisual();
+    this.updateKeyVisuals();
   }
 
   /** A hardware keyboard takes over steering and firing; the next touch hands control back. */
@@ -183,12 +198,36 @@ export class MobileControls {
 
   isControlPointer(pointer: Phaser.Input.Pointer): boolean {
     return (
-      this.enabledForTouchDevice && (pointer.id === this.pauseButtonPointerId || pointer.id === this.dragPointerId)
+      this.enabledForTouchDevice &&
+      (pointer.id === this.pauseButtonPointerId ||
+        pointer.id === this.swapButtonPointerId ||
+        pointer.id === this.dragPointerId)
     );
   }
 
   setPauseButtonHandler(handler: (() => void) | null): void {
     this.pauseButtonHandler = handler;
+  }
+
+  /**
+   * Shows the swap button only while the run has a main gun, dimmed and charging while
+   * `cooldownRatio` (1 just swapped, 0 ready) runs down.
+   */
+  setGunSwapState(available: boolean, cooldownRatio: number): void {
+    const step = available ? Math.ceil(cooldownRatio * SWAP_COOLDOWN_STEPS) : 0;
+    if (available === this.swapAvailable && step === this.swapCooldownStep) return;
+    const visibilityChanged = available !== this.swapAvailable;
+    this.swapAvailable = available;
+    this.swapCooldownStep = step;
+    if (visibilityChanged) this.refreshVisibility();
+    this.updateSwapButtonVisual();
+  }
+
+  /** True once per tap of the swap button. */
+  consumeGunSwapPress(): boolean {
+    const pressed = this.swapPressPending;
+    this.swapPressPending = false;
+    return pressed;
   }
 
   /**
@@ -235,20 +274,27 @@ export class MobileControls {
     this.pauseButtonHandler?.();
   }
 
+  private handleSwapButtonDown(pointer: Phaser.Input.Pointer): void {
+    if (!this.isEnabled() || !this.swapAvailable) {
+      return;
+    }
+
+    this.swapButtonPointerId = pointer.id;
+    this.swapPressPending = true;
+    this.updateSwapButtonVisual();
+  }
+
   private refreshVisibility(): void {
     const pauseVisible = this.enabledForTouchDevice && this.scene !== null;
-
-    this.pauseButtonBg?.setVisible(pauseVisible);
-    this.pauseButtonIcon?.setVisible(pauseVisible);
-    this.pauseButtonHitArea?.setVisible(pauseVisible);
-
-    if (this.pauseButtonHitArea?.input) {
-      this.pauseButtonHitArea.input.enabled = pauseVisible && !this.blocked;
-    }
+    // The pause panel covers the field, so the swap key hides with it.
+    const swapVisible = pauseVisible && this.swapAvailable && !this.blocked;
+    setControlKeyVisible(this.pauseKey, pauseVisible, pauseVisible && !this.blocked);
+    setControlKeyVisible(this.swapKey, swapVisible, swapVisible);
   }
 
   private releaseActiveTouches(): void {
     this.releasePauseButton();
+    this.releaseSwapButton();
     this.releaseDrag();
   }
 
@@ -263,9 +309,17 @@ export class MobileControls {
     this.updatePauseButtonVisual();
   }
 
-  private isOverPauseButton(pointer: Phaser.Input.Pointer): boolean {
+  private releaseSwapButton(): void {
+    this.swapButtonPointerId = null;
+    this.updateSwapButtonVisual();
+  }
+
+  private isOverControlKey(pointer: Phaser.Input.Pointer): boolean {
     const half = PAUSE_BUTTON_SIZE / 2;
-    return Math.abs(pointer.x - this.pauseButtonX) <= half && Math.abs(pointer.y - this.pauseButtonY) <= half;
+    const overColumn = Math.abs(pointer.x - this.pauseButtonX) <= half;
+    const overPause = Math.abs(pointer.y - this.pauseButtonY) <= half;
+    const overSwap = this.swapAvailable && Math.abs(pointer.y - this.swapButtonY) <= half;
+    return overColumn && (overPause || overSwap);
   }
 
   private updateControlAnchors(): void {
@@ -276,33 +330,93 @@ export class MobileControls {
     const viewport = getViewportBounds(this.scene);
     this.pauseButtonX = viewport.right - PAUSE_BUTTON_RIGHT_INSET - PAUSE_BUTTON_SIZE / 2;
     this.pauseButtonY = viewport.top + PAUSE_BUTTON_TOP_INSET + PAUSE_BUTTON_SIZE / 2;
+    this.swapButtonY = this.pauseButtonY + PAUSE_BUTTON_SIZE + SWAP_BUTTON_GAP;
+  }
+
+  private updateKeyVisuals(): void {
+    this.updatePauseButtonVisual();
+    this.updateSwapButtonVisual();
   }
 
   private updatePauseButtonVisual(): void {
+    const key = this.pauseKey;
+    if (!key) return;
     const active = this.pauseButtonPointerId !== null && this.isEnabled();
     const x = this.pauseButtonX;
     const y = this.pauseButtonY;
+
+    drawKeyFrame(key.bg, x, y, active, 1);
+    key.icon.clear();
+    key.icon.fillStyle(active ? NEON.ink : 0xe8f9ff, 1);
+    key.icon.fillRect(x - 7, y - 8, 4.5, 16);
+    key.icon.fillRect(x + 2.5, y - 8, 4.5, 16);
+    key.hitArea.setPosition(x, y);
+  }
+
+  /** Two opposed arrows; while cooling the key dims and a bar charges along its foot. */
+  private updateSwapButtonVisual(): void {
+    const key = this.swapKey;
+    if (!key) return;
+    const active = this.swapButtonPointerId !== null && this.isEnabled();
+    const cooling = this.swapCooldownStep > 0;
+    const x = this.pauseButtonX;
+    const y = this.swapButtonY;
     const half = PAUSE_BUTTON_SIZE / 2;
 
-    // Glass key in the shared cut-corner shape; pressing it lights it solid like a primary button.
-    const bg = this.pauseButtonBg;
-    if (bg) {
-      bg.clear();
-      drawAngledRectPath(bg, x - half - 2, y - half - 2, PAUSE_BUTTON_SIZE + 4, PAUSE_BUTTON_SIZE + 4, 12);
-      bg.lineStyle(3, NEON.cyan, scaleUiGlowAlpha(active ? 0.3 : 0.1));
-      bg.strokePath();
-      drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
-      bg.fillStyle(active ? NEON.cyan : NEON.panel, active ? 0.95 : 0.7);
-      bg.fillPath();
-      drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
-      bg.lineStyle(1.5, active ? NEON.cyanBright : NEON.cyan, active ? 1 : 0.75);
-      bg.strokePath();
+    drawKeyFrame(key.bg, x, y, active, cooling ? 0.55 : 1);
+    if (cooling) {
+      const charged = 1 - this.swapCooldownStep / SWAP_COOLDOWN_STEPS;
+      const barWidth = PAUSE_BUTTON_SIZE - 20;
+      key.bg.fillStyle(NEON.cyan, 0.25);
+      key.bg.fillRect(x - barWidth / 2, y + half - 8, barWidth, 3);
+      key.bg.fillStyle(NEON.cyanBright, 0.95);
+      key.bg.fillRect(x - barWidth / 2, y + half - 8, barWidth * charged, 3);
     }
 
-    this.pauseButtonIcon?.clear();
-    this.pauseButtonIcon?.fillStyle(active ? NEON.ink : 0xe8f9ff, 1);
-    this.pauseButtonIcon?.fillRect(x - 7, y - 8, 4.5, 16);
-    this.pauseButtonIcon?.fillRect(x + 2.5, y - 8, 4.5, 16);
-    this.pauseButtonHitArea?.setPosition(x, y);
+    key.icon.clear();
+    key.icon.fillStyle(active ? NEON.ink : 0xe8f9ff, cooling ? 0.45 : 1);
+    key.icon.fillRect(x - 9, y - 6, 12, 3);
+    key.icon.fillTriangle(x + 3, y - 10, x + 3, y + 1, x + 10, y - 4.5);
+    key.icon.fillRect(x - 3, y + 3, 12, 3);
+    key.icon.fillTriangle(x - 3, y - 1, x - 3, y + 10, x - 10, y + 4.5);
+    key.hitArea.setPosition(x, y);
   }
+}
+
+function createControlKey(scene: Phaser.Scene): ControlKey {
+  return {
+    bg: scene.add.graphics().setDepth(CONTROLS_DEPTH).setScrollFactor(0),
+    icon: scene.add
+      .graphics()
+      .setDepth(CONTROLS_DEPTH + 1)
+      .setScrollFactor(0),
+    hitArea: scene.add
+      .zone(0, 0, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE)
+      .setOrigin(0.5)
+      .setDepth(CONTROLS_DEPTH + 2)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true }),
+  };
+}
+
+function setControlKeyVisible(key: ControlKey | null, visible: boolean, interactive: boolean): void {
+  key?.bg.setVisible(visible);
+  key?.icon.setVisible(visible);
+  key?.hitArea.setVisible(visible);
+  if (key?.hitArea.input) key.hitArea.input.enabled = interactive;
+}
+
+/** Glass key in the shared cut-corner shape; pressing it lights it solid like a primary button. */
+function drawKeyFrame(bg: Phaser.GameObjects.Graphics, x: number, y: number, active: boolean, alpha: number): void {
+  const half = PAUSE_BUTTON_SIZE / 2;
+  bg.clear();
+  drawAngledRectPath(bg, x - half - 2, y - half - 2, PAUSE_BUTTON_SIZE + 4, PAUSE_BUTTON_SIZE + 4, 12);
+  bg.lineStyle(3, NEON.cyan, scaleUiGlowAlpha(active ? 0.3 : 0.1) * alpha);
+  bg.strokePath();
+  drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
+  bg.fillStyle(active ? NEON.cyan : NEON.panel, active ? 0.95 : 0.7);
+  bg.fillPath();
+  drawAngledRectPath(bg, x - half, y - half, PAUSE_BUTTON_SIZE, PAUSE_BUTTON_SIZE, 11);
+  bg.lineStyle(1.5, active ? NEON.cyanBright : NEON.cyan, (active ? 1 : 0.75) * alpha);
+  bg.strokePath();
 }

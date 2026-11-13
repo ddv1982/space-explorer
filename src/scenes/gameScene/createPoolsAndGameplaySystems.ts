@@ -239,6 +239,16 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
   const scoreManager = createScoreManager();
   scoreManager.addScore(state.score);
 
+  const powerUpGroup = createPowerUpGroup({
+    scene,
+    player,
+    applyPowerUp,
+    isTerminalTransitionActive,
+  });
+  waveManager.setPowerUpGroup?.(powerUpGroup);
+
+  const shipSystems = new ShipSystemsRuntime(scene, player, powerUpGroup, state.systems);
+
   const grazeSurge = new GrazeSurgeSystem(
     {
       getPlayerPosition: () => (player.isAlive ? { x: player.x, y: player.y } : null),
@@ -255,16 +265,8 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
         audioManager.playSfx('surgePulse');
       },
     },
-    state.systems.support === 'surgeCore' ? SURGE_CORE : undefined
+    () => (shipSystems.getSystems().support === 'surgeCore' ? SURGE_CORE : undefined)
   );
-
-  const powerUpGroup = createPowerUpGroup({
-    scene,
-    player,
-    applyPowerUp,
-    isTerminalTransitionActive,
-  });
-  waveManager.setPowerUpGroup?.(powerUpGroup);
 
   return {
     bulletPool,
@@ -276,6 +278,6 @@ export function createPoolsAndGameplaySystems(params: CreatePoolsAndGameplaySyst
     scoreManager,
     grazeSurge,
     powerUpGroup,
-    shipSystems: new ShipSystemsRuntime(scene, player, powerUpGroup, state.systems),
+    shipSystems,
   };
 }

@@ -1,13 +1,13 @@
 import type Phaser from 'phaser';
-import { getPlayerState, noteRunDifficulty } from '@/systems/PlayerState';
-import { describeShipSystems } from '@/config/shipSystems';
+import { noteRunDifficulty } from '@/systems/PlayerState';
+import { NO_SHIP_SYSTEMS, type ShipSystems } from '@/config/shipSystems';
 import { setGameplayDifficultyTier, type GameplayDifficultyTier } from '@/config/gameplayDifficulty';
 import { setVisualQualityTier, type VisualQualityTier } from '@/config/visualQuality';
 import { createArmingAction } from '@/systems/armingAction';
 import { audioManager } from '@/systems/AudioManager';
 import type { SaveSlotId, SaveSlotViewModel } from '@/systems/SaveSlotStorage';
 import { PauseOverlay } from './PauseOverlay';
-import type { PauseOverlayHandlers, PauseOverlayState } from './pauseOverlay/types';
+import type { PauseOverlayHandlers, PauseOverlayState, PauseSwappableSlot } from './pauseOverlay/types';
 
 type SaveSlotActionResult = { ok: true; message: string } | { ok: false; message: string };
 
@@ -18,6 +18,12 @@ export interface PauseSaveSlotAdapter {
   load: (slotId: SaveSlotId) => SaveSlotActionResult;
   delete: (slotId: SaveSlotId) => SaveSlotActionResult;
   canSave: () => boolean;
+}
+
+/** The run's current ship systems, which the pause panel shows and can cycle. */
+export interface PauseShipSystemsPort {
+  getSystems: () => ShipSystems;
+  cycleSystem: (slot: PauseSwappableSlot) => void;
 }
 
 interface PauseOverlayPort {
@@ -31,6 +37,7 @@ interface PauseStateControllerConfig {
   setMobileControlsBlocked: (blocked: boolean) => void;
   onReturnToMenu: () => void;
   saveSlotAdapter?: PauseSaveSlotAdapter;
+  shipSystems?: PauseShipSystemsPort;
   createOverlay?: (scene: Phaser.Scene, handlers: PauseOverlayHandlers) => PauseOverlayPort;
   playClick?: () => void;
   setAudioPaused?: (paused: boolean) => void;
@@ -52,6 +59,7 @@ export class PauseStateController {
   private setMobileControlsBlocked: ((blocked: boolean) => void) | null = null;
   private onReturnToMenu: (() => void) | null = null;
   private saveSlotAdapter: PauseSaveSlotAdapter = createUnavailableSaveSlotAdapter();
+  private shipSystems: PauseShipSystemsPort | null = null;
   private playClick: (() => void) | null = null;
   private setAudioPaused: ((paused: boolean) => void) | null = null;
 
@@ -75,6 +83,7 @@ export class PauseStateController {
     this.setMobileControlsBlocked = config.setMobileControlsBlocked;
     this.onReturnToMenu = config.onReturnToMenu;
     this.saveSlotAdapter = config.saveSlotAdapter ?? createUnavailableSaveSlotAdapter();
+    this.shipSystems = config.shipSystems ?? null;
     this.playClick = config.playClick ?? (() => audioManager.playUi());
     this.setAudioPaused = config.setAudioPaused ?? ((paused) => audioManager.setPaused('gameplay', paused));
 
@@ -95,6 +104,7 @@ export class PauseStateController {
       onDeleteSlot: (slotId) => this.handleDeleteSlotRequested(slotId),
       onSelectDifficulty: (tier) => this.handleDifficultyRequested(tier),
       onSelectQuality: (tier) => this.handleQualityRequested(tier),
+      onCycleSystem: (slot) => this.handleCycleSystemRequested(slot),
     });
 
     this.syncGameplayPauseState();
@@ -114,6 +124,7 @@ export class PauseStateController {
     this.setMobileControlsBlocked = null;
     this.onReturnToMenu = null;
     this.saveSlotAdapter = createUnavailableSaveSlotAdapter();
+    this.shipSystems = null;
     this.playClick = null;
     this.setAudioPaused = null;
     this.manualPauseRequested = false;
@@ -221,8 +232,12 @@ export class PauseStateController {
     this.syncGameplayPauseState();
   }
 
-  private describeSystems(): string {
-    return this.scene ? describeShipSystems(getPlayerState(this.scene.registry).systems) : '';
+  /** The change takes effect at once; the frozen clock means it is felt on resume. */
+  private handleCycleSystemRequested(slot: PauseSwappableSlot): void {
+    if (!this.manualPauseRequested || !this.shipSystems) return;
+    this.playClick?.();
+    this.shipSystems.cycleSystem(slot);
+    this.syncGameplayPauseState();
   }
 
   private handleDifficultyRequested(tier: GameplayDifficultyTier): boolean {
@@ -261,8 +276,8 @@ export class PauseStateController {
       canSave: this.saveSlotAdapter.isAvailable() && this.saveSlotAdapter.canSave(),
       storageAvailable: this.saveSlotAdapter.isAvailable(),
       saveSlots: this.saveSlotAdapter.list(),
-      // With nothing to report, the line shows which ship systems this run has picked.
-      statusMessage: this.statusMessage || this.describeSystems(),
+      systems: this.shipSystems?.getSystems() ?? NO_SHIP_SYSTEMS,
+      statusMessage: this.statusMessage,
       statusOk: this.statusOk,
     };
 

@@ -7,8 +7,7 @@ mock.module('../src/utils/device', () => ({ isTouchMobileDevice: () => true }));
 const { MobileControls } = await import('../src/systems/MobileControls');
 
 /** Any game object call chains back to the same stub. */
-function chainable(): Record<string, unknown> {
-  const target: Record<string, unknown> = {};
+function chainable(target: Record<string, unknown> = {}): Record<string, unknown> {
   const proxy: Record<string, unknown> = new Proxy(target, {
     get: (object, key) => (key in object ? object[key as string] : () => proxy),
   });
@@ -17,8 +16,19 @@ function chainable(): Record<string, unknown> {
 
 function createScene(viewport = { x: 0, y: 0, width: 390, height: 844 }) {
   const handlers = new Map<string, Array<(pointer: unknown) => void>>();
+  /** Each control key's `pointerdown` handler, in creation order: pause, then swap. */
+  const keyTaps: Array<(pointer: unknown) => void> = [];
+  const zone = (): Record<string, unknown> => {
+    const target: Record<string, unknown> = {};
+    target.on = (_event: string, handler: (pointer: unknown) => void, context: unknown) => {
+      keyTaps.push((pointer) => handler.call(context, pointer));
+      return proxy;
+    };
+    const proxy = chainable(target);
+    return proxy;
+  };
   const scene = {
-    add: { graphics: () => chainable(), zone: () => chainable(), circle: () => chainable() },
+    add: { graphics: () => chainable(), zone, circle: () => chainable() },
     input: {
       manager: { pointersTotal: 3 },
       addPointer: () => {},
@@ -37,7 +47,11 @@ function createScene(viewport = { x: 0, y: 0, width: 390, height: 844 }) {
   const emit = (event: string, pointer: { id: number; x: number; y: number; wasTouch?: boolean }) => {
     for (const handler of handlers.get(event) ?? []) handler({ wasTouch: true, ...pointer });
   };
-  return { scene, emit, viewport };
+  const tapKey = (index: number, pointer: { id: number; x: number; y: number }) => {
+    emit('pointerdown', pointer);
+    keyTaps[index]({ wasTouch: true, ...pointer });
+  };
+  return { scene, emit, tapKey, viewport };
 }
 
 function createControls(viewport?: { x: number; y: number; width: number; height: number }) {
@@ -48,6 +62,9 @@ function createControls(viewport?: { x: number; y: number; width: number; height
 
 // Pause button centre for a 390-wide viewport: right - 22 - 22, top + 84 + 22.
 const PAUSE = { x: 346, y: 106 };
+// The swap key sits 44 px + a 14 px gap under it.
+const SWAP = { x: 346, y: 164 };
+const SWAP_KEY = 1;
 
 describe('MobileControls relative drag', () => {
   test('touch steering is active until a hardware keyboard takes over, and a touch hands it back', () => {
@@ -135,5 +152,39 @@ describe('MobileControls relative drag', () => {
     viewport.height = 844;
     // Ship already at the new right margin: it must not be pushed further off-screen.
     expect(controls.getDragDesiredVelocity(372, 300, 0, 480)).toEqual({ vx: 0, vy: 0 });
+  });
+});
+
+describe('MobileControls gun-swap key', () => {
+  test('a tap requests one swap, only while the run has a main gun', () => {
+    const { controls, tapKey } = createControls();
+    tapKey(SWAP_KEY, { id: 4, ...SWAP });
+    expect(controls.consumeGunSwapPress()).toBe(false);
+
+    controls.setGunSwapState(true, 0);
+    tapKey(SWAP_KEY, { id: 4, ...SWAP });
+    expect(controls.consumeGunSwapPress()).toBe(true);
+    expect(controls.consumeGunSwapPress()).toBe(false);
+    expect(controls.isControlPointer({ id: 4 } as never)).toBe(true);
+  });
+
+  test('the swap key never starts a drag, and its spot steers again when there is no key', () => {
+    const { controls, emit } = createControls();
+    controls.setGunSwapState(true, 0.5);
+    emit('pointerdown', { id: 4, ...SWAP });
+    expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toBeNull();
+    emit('pointerup', { id: 4, ...SWAP });
+
+    controls.setGunSwapState(false, 0);
+    emit('pointerdown', { id: 5, ...SWAP });
+    expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toEqual({ vx: 0, vy: 0 });
+  });
+
+  test('pausing drops a tap that has not been handled yet', () => {
+    const { controls, tapKey } = createControls();
+    controls.setGunSwapState(true, 0);
+    tapKey(SWAP_KEY, { id: 4, ...SWAP });
+    controls.setBlocked(true);
+    expect(controls.consumeGunSwapPress()).toBe(false);
   });
 });

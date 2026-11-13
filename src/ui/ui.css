@@ -1018,6 +1018,12 @@
   border-bottom: 0;
 }
 
+/* Two or three tabs (SYSTEMS joins once the run has a ship system) share the strip evenly. */
+.pause__header .ui-tab {
+  flex: 0 1 180px;
+  min-width: 0;
+}
+
 /* Both subviews share one cell so switching tabs never resizes the panel. */
 .pause__body {
   display: grid;
@@ -1110,6 +1116,13 @@
   .pause-slot__time {
     display: none;
   }
+}
+
+/* The slot name rides ahead of the system's name, quieter, like a checkpoint's timestamp. */
+.pause-system__slot {
+  margin-right: 10px;
+  font: 12px / 1 var(--f-mono);
+  color: var(--t-muted);
 }
 
 .pause__settings {
@@ -1229,6 +1242,28 @@
   }
 }
 
+/* A system card keeps SWAP beside its text instead, so the description gets two lines. */
+@container layer (max-width: 519px) and (min-height: 640px) {
+  .pause-slot.pause-system {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: none;
+    grid-template-areas: 'title actions' 'sub actions';
+    align-content: center;
+  }
+
+  .pause-system .pause-slot__sub {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.3;
+  }
+
+  .pause-system .pause-slot__actions {
+    align-self: center;
+  }
+}
+
 /* Short viewports: tighter bands, and the title beside the tabs when both fit on one line. */
 @container layer (max-height: 520px) or ((max-width: 519px) and (max-height: 639px)) {
   .pause {
@@ -1291,7 +1326,9 @@
     }
 
     .pause__header .ui-tab {
-      width: 132px;
+      flex: none;
+      width: auto;
+      padding: 0 16px;
     }
   }
 }
@@ -1573,8 +1610,8 @@
 
 .card.ui-btn::after {
   background:
-    linear-gradient(rgb(var(--accent-rgb) / var(--rail)), rgb(var(--accent-rgb) / var(--rail))) 0 var(--cut) / 3px
-      100% no-repeat,
+    linear-gradient(rgb(var(--accent-rgb) / var(--rail)), rgb(var(--accent-rgb) / var(--rail))) 0 var(--cut) / 3px 100%
+      no-repeat,
     linear-gradient(rgb(var(--accent-rgb) / var(--tint)) 0 46%, transparent 46%),
     var(--fill);
 }

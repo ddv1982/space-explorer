@@ -23,6 +23,7 @@ mock.module('phaser', () => ({
           A: 65,
           S: 83,
           D: 68,
+          Q: 81,
         },
       },
     },
@@ -209,4 +210,29 @@ test('a brief pause press survives release before the next gameplay update', () 
   expect(manager.consumePauseToggleRequest()).toBe(false);
   escape.timeDown = 300;
   expect(manager.consumePauseToggleRequest()).toBe(true);
+});
+
+test('Q and the touch swap button each request one gun swap per press', () => {
+  const scene = createScene();
+  let buttonPresses = 0;
+  const manager = new InputManager();
+  manager.create(
+    scene as never,
+    {
+      consumeGunSwapPress: () => {
+        const pressed = buttonPresses > 0;
+        buttonPresses = 0;
+        return pressed;
+      },
+    } as never
+  );
+  const swapKey = scene.keys.get(81);
+  if (!swapKey) throw new Error('Q was not registered');
+  expect(manager.consumeGunSwapRequest()).toBe(false);
+  swapKey.timeDown = 100;
+  expect(manager.consumeGunSwapRequest()).toBe(true);
+  expect(manager.consumeGunSwapRequest()).toBe(false);
+  buttonPresses = 1;
+  expect(manager.consumeGunSwapRequest()).toBe(true);
+  expect(manager.consumeGunSwapRequest()).toBe(false);
 });

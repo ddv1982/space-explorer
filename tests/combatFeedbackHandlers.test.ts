@@ -131,7 +131,6 @@ function createCombatFeedbackHarness(
   const player = {
     x: 24,
     y: 48,
-    systems: { gun: null, support: null, late: options.late ?? null },
     playDeathAnimation: mock(),
   };
   const clearBulletsAround = mock(() => 3);
@@ -172,6 +171,7 @@ function createCombatFeedbackHarness(
       time: { now: 1000 },
     } as never,
     player: player as never,
+    getShipSystems: () => ({ gun: null, support: null, late: options.late ?? null }),
     scoreManager: {
       addScore: mock(),
       registerKill,

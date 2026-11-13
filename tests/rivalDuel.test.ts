@@ -136,13 +136,19 @@ describe('rival duel hold', () => {
     const emit = mock();
     const noop = (): void => {};
     const behavior = createGameSceneGameplayFrameBehavior({
-      inputManager: { consumePauseToggleRequest: () => false, isFiring: () => false },
+      inputManager: {
+        consumePauseToggleRequest: () => false,
+        consumeGunSwapRequest: () => false,
+        isFiring: () => false,
+      },
       pauseStateController: null,
       parallax: { update: noop, setSectionAtmosphere: noop },
       player: { update: noop },
       getLastLifeHelperWing: () => null,
       getPicketTurrets: () => null,
       grazeSurge: { update: noop },
+      shipSystems: { update: noop, getSystems: () => ({ gun: null }), getGunSwapCooldownRatio: () => 0 },
+      mobileControls: null,
       waveManager: { update: waveUpdate, updateBossAdds: noop, getDuelHull: () => duel },
       levelManager: {
         progress: 0.5,
