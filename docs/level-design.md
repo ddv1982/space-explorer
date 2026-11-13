@@ -143,7 +143,7 @@ All six hull styles are used; a phase can switch style (the finale does). Bastio
 | Level | Boss | Phases | Par |
 |---|---|---|---|
 | L3 | Pyre Herald | barrage, 2 phases at 50% (no escalation), two attacks each with slow shots and long gaps: kindling (twin ember fans, a fan that leans with its patrol), pyre (faster patrol, turning spiral, the first aimed fan) | 45 s |
-| L4 | Marshal Vectra | pressure, 2 phases | 50 s |
+| L4 | Marshal Vectra | pressure, 2 phases at 50%; introduces anchors: drill (two line fans, then a crossfire with a pocket under the hull), advance (steps forward to a centre post for the crossfire, then a line fan and a spiral) | 50 s |
 | L5 | Reef Stalker | pursuit, 2 phases | 52 s |
 | L6 | Bastion Bulwark | bulwark, 3 phases at 66% and 33%: rampart (shield only while charging a wall), breach (flank anchors, aimed burst, rotary), last stand (no shield, pursues, beam) | 60 s |
 | L7 | Choir Regent | pressure, 3 phases at 66% and 33%, each a fixed rhythm: hymn (two interleaving fans, then a fan aimed at you), antiphon (outward loft fans that leave the lane under it open, a nave fan that closes it, a cantor's aimed burst), crescendo (rotary, hymn, lofts with a short burst, over a faster patrol) | 58 s |
@@ -175,7 +175,7 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 
 ### L4: Clockwork Causeway (R) - planet Gearhaven - motif: clockwork
 - Waves arrive on the musical beat; lancer debut (telegraphed sniper duels).
-- Boss: Marshal Vectra (pressure). distance 16000, spawnRate 1.55, encounter 2-2.
+- Boss: Marshal Vectra (pressure; the first boss to fly to an anchor, stepping forward to a centre post in phase 2). distance 16000, spawnRate 1.55, encounter 2-2.
 - enemies: fighter 30, lancer 20, diver 20, gunship 30.
 
 ### L5: Shatter Reef (R) - planet Korra Vale - motif: coral reef

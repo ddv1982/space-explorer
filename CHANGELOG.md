@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - Omega Null (sector 10), the final boss, now has four phases that bring back what earlier bosses taught: leaning fans and aimed bursts, a shielded wall with a gunship guard, counter-rotating rings and a beam, and at the end all of them in turn while it chases you. It switches hulls at half health as before, and has less health, so the fight is about reading attacks rather than wearing it down.
 
 - Pyre Herald (sector 3), the first boss, now alternates two slow attacks per phase instead of repeating one: twin ember fans and a fan that drifts with it, then a turning spiral and its first shots aimed at you. It stays as gentle as before, never speeds up and needs no main gun.
+- Marshal Vectra (sector 4) now drills two line fans and then a crossfire that leaves a safe pocket right under it, so flying in close is the opening. At half health it starts stepping forward to a post at the centre, closer to you, and adds a turning spiral.
 
 
 
