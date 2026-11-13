@@ -35,9 +35,11 @@ async function wingmanDrones(page: Page): Promise<number> {
 }
 
 async function openPause(page: Page, isMobile: boolean): Promise<void> {
+  // Phaser only sees Escape if it is still held on a game frame, so hold it until the panel shows.
   if (isMobile) await page.touchscreen.tap(TOUCH_KEY_X, TOUCH_PAUSE_Y);
-  else await page.keyboard.press('Escape');
+  else await page.keyboard.down('Escape');
   await expect(page.getByRole('dialog', { name: 'Paused' })).toBeVisible();
+  if (!isMobile) await page.keyboard.up('Escape');
 }
 
 test('a free main-gun pick is offered after sector 2, must be made, and changes how the gun fires', async ({
@@ -102,7 +104,7 @@ test('a free main-gun pick is offered after sector 2, must be made, and changes 
 
   // The pause panel names the pick.
   if (!isMobile) {
-    await page.keyboard.press('Escape');
+    await openPause(page, false);
     await page.getByRole('tab', { name: 'SYSTEMS' }).click();
     await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
     await page.screenshot({ path: test.info().outputPath('pause-systems.png') });
@@ -129,7 +131,7 @@ test('every ship system runs in a real sector without errors', async ({ page, is
       await page.waitForTimeout(900);
       await page.keyboard.up(key);
     }
-    await page.keyboard.press('Escape');
+    await openPause(page, false);
     await page.getByRole('tab', { name: 'SYSTEMS' }).click();
     const [gun, support, late] = systems.split(',');
     const label = { surgeCore: 'SURGE CORE' }[support] ?? support.toUpperCase();
@@ -231,7 +233,7 @@ test('a swapped gun carries into the next sector and is what a checkpoint stores
   await expect.poll(() => shownTexts(page)).toContain('SCATTER');
 
   // Checkpoint with Scatter, then fly on to the next sector.
-  await page.keyboard.press('Escape');
+  await openPause(page, false);
   await page.getByRole('button', { name: 'Save to SLOT 1' }).click();
   await expect(page.getByText(/checkpoint to slot 1/)).toBeVisible();
   await page.getByRole('button', { name: 'RESUME' }).click();
@@ -239,7 +241,7 @@ test('a swapped gun carries into the next sector and is what a checkpoint stores
   await page.getByRole('button', { name: /Continue to/ }).click();
   await waitForScene(page, 'Game');
 
-  await page.keyboard.press('Escape');
+  await openPause(page, false);
   await page.getByRole('tab', { name: 'SYSTEMS' }).click();
   await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
   await page.getByRole('button', { name: 'RESUME' }).click();
@@ -248,14 +250,14 @@ test('a swapped gun carries into the next sector and is what a checkpoint stores
   await page.waitForTimeout(300);
   await page.keyboard.press('KeyQ');
   await expect.poll(() => shownTexts(page)).toContain('SEEKERS');
-  await page.keyboard.press('Escape');
+  await openPause(page, false);
   await page
     .getByRole('button', { name: /^Load / })
     .first()
     .click();
   await waitForScene(page, 'Game');
   await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
-  await page.keyboard.press('Escape');
+  await openPause(page, false);
   await page.getByRole('tab', { name: 'SYSTEMS' }).click();
   await expect(systemRow(page, 'MAIN GUN')).toContainText('SCATTER');
   assertNoBrowserErrors();

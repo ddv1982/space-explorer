@@ -243,7 +243,7 @@ export class PauseOverlay {
     this.resume.disabled = !this.state.canResume;
     this.rows.forEach((row, index) => row.refresh(this.state.saveSlots[index], this.state));
     this.systemRows.forEach((row) => row.refresh(this.state));
-    this.hint.textContent = this.state.systems.gun ? 'ESC  RESUME      Q  SWAP GUN' : 'ESC  RESUME';
+    this.hint.textContent = this.state.systems.gun ? 'ESC  RESUME      Q  SWAP GUN IN FLIGHT' : 'ESC  RESUME';
     for (const [subview, { tab, view }] of this.tabs) {
       const active = subview === this.activeSubview;
       if (subview === 'systems') tab.hidden = describePickedShipSystems(this.state.systems).length === 0;
