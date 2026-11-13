@@ -17,9 +17,9 @@ Playable here:
 
 | | |
 |---|---|
-| ![Main menu](docs/screenshots/menu.webp) | ![A sector 3 fight with the Scatter gun](docs/screenshots/sector-3-scatter.webp) |
-| ![Choosing a main gun at the refit bay](docs/screenshots/ship-system-pick.webp) | ![The refit bay between sectors](docs/screenshots/refit-bay.webp) |
-| ![A sector 4 fight with the Lance gun](docs/screenshots/sector-4-lance.webp) | ![The first boss, Pyre Herald](docs/screenshots/first-boss.webp) |
+| ![Main menu](docs/screenshots/menu.webp) | ![A sector 3 fight with Scatter out on the charge](docs/screenshots/sector-3-scatter.webp) |
+| ![The card that introduces the special guns](docs/screenshots/special-guns-card.webp) | ![The refit bay between sectors](docs/screenshots/refit-bay.webp) |
+| ![A sector 4 fight with the Lance, the main gun](docs/screenshots/sector-4-lance.webp) | ![The first boss, Pyre Herald](docs/screenshots/first-boss.webp) |
 
 ## Quick start
 
