@@ -45,6 +45,7 @@ export default defineConfig({
         '**/shipSystems.spec.ts',
         '**/runVariation.spec.ts',
         '**/renderBudget.spec.ts',
+        '**/bossFight.spec.ts',
       ],
       use: { viewport: { width: 1280, height: 720 } },
     },
@@ -65,6 +66,7 @@ export default defineConfig({
         '**/fairScoring.spec.ts',
         '**/shipSystems.spec.ts',
         '**/runVariation.spec.ts',
+        '**/bossFight.spec.ts',
       ],
       use: {
         viewport: { width: 390, height: 844 },
