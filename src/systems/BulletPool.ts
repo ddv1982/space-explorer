@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Bullet, type BulletBehaviour } from '../entities/Bullet';
+import type { PlayerShotLook } from '../config/shipSystems';
 import { BULLET_POOL_SIZE } from '../utils/constants';
 import { ensurePlayerBulletTexture } from '../utils/SpriteFactory';
 
@@ -27,10 +28,17 @@ export class BulletPool {
     firstBullet.kill();
   }
 
-  fire(x: number, y: number, velocityX: number = 0, velocityY?: number, behaviour?: BulletBehaviour): Bullet | null {
+  fire(
+    x: number,
+    y: number,
+    velocityX: number = 0,
+    velocityY?: number,
+    behaviour?: BulletBehaviour,
+    look?: PlayerShotLook
+  ): Bullet | null {
     const bullet = this.acquireBullet(x, y);
     if (bullet) {
-      bullet.fire(x, y, velocityX, velocityY, behaviour);
+      bullet.fire(x, y, velocityX, velocityY, behaviour, look);
       return bullet;
     }
     return null;

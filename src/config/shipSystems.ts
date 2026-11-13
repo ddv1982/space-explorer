@@ -138,8 +138,16 @@ export function describeShipSystems(systems: ShipSystems): string {
   return names.length > 0 ? `SYSTEMS: ${names.join(' · ')}` : '';
 }
 
+/**
+ * How a gun's shots look: a frame of the shared `player-bullet` texture, so every gun's fire batches
+ * together. Each look says what the gun does (a long piercing lance, short pellets, homing darts) while
+ * staying in the friendly cyan-white family; the hitbox is the same for all of them.
+ */
+export type PlayerShotLook = 'bolt' | 'lance' | 'pellet' | 'dart';
+
 /** Main-gun firing patterns. Damage per shot is unchanged; the fire cooldown pays for the pattern. */
 export interface MainGunProfile {
+  look: PlayerShotLook;
   /** Multiplies the fire cooldown. */
   cooldownScale: number;
   /** Shot directions in degrees off straight ahead. */
@@ -149,7 +157,13 @@ export interface MainGunProfile {
   seekDegreesPerSecond: number;
 }
 
-const STANDARD_GUN: MainGunProfile = { cooldownScale: 1, spreadDegrees: [0], pierce: false, seekDegreesPerSecond: 0 };
+const STANDARD_GUN: MainGunProfile = {
+  look: 'bolt',
+  cooldownScale: 1,
+  spreadDegrees: [0],
+  pierce: false,
+  seekDegreesPerSecond: 0,
+};
 
 /**
  * Tuned by measurement, not only arithmetic: 40 s of sector 5 with autofire and a sweeping ship scored
@@ -157,11 +171,11 @@ const STANDARD_GUN: MainGunProfile = { cooldownScale: 1, spreadDegrees: [0], pie
  */
 const GUN_PROFILES: Record<MainGunId, MainGunProfile> = {
   // One target: 0.77x the standard gun. Two in a line: 1.54x. Rewards lining ships up.
-  lance: { cooldownScale: 1.3, spreadDegrees: [0], pierce: true, seekDegreesPerSecond: 0 },
+  lance: { look: 'lance', cooldownScale: 1.3, spreadDegrees: [0], pierce: true, seekDegreesPerSecond: 0 },
   // All three hit up close: 1.67x. Only the centre shot at range: 0.56x. Rewards flying in.
-  scatter: { cooldownScale: 1.8, spreadDegrees: [-13, 0, 13], pierce: false, seekDegreesPerSecond: 0 },
+  scatter: { look: 'pellet', cooldownScale: 1.8, spreadDegrees: [-13, 0, 13], pierce: false, seekDegreesPerSecond: 0 },
   // Half the shots of the standard gun, but almost every one connects. Rewards dodging over aiming.
-  seekers: { cooldownScale: 2, spreadDegrees: [0], pierce: false, seekDegreesPerSecond: 150 },
+  seekers: { look: 'dart', cooldownScale: 2, spreadDegrees: [0], pierce: false, seekDegreesPerSecond: 150 },
 };
 
 export function getMainGunProfile(gun: MainGunId | null): MainGunProfile {

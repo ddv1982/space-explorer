@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { BEAM_TEXTURE_WIDTH } from '../../entities/hazardBeamGeometry';
-import { withCanvasTexture } from '../generatedTexture';
+import type { PlayerShotLook } from '../../config/shipSystems';
+import { withCanvasFrameStrip, withCanvasTexture } from '../generatedTexture';
 
 /**
  * Projectiles are light, so they are painted with soft gradients rather than lit 3D models. Textures
@@ -63,13 +64,76 @@ function paintBolt(context: CanvasRenderingContext2D, width: number, height: num
   glowEllipse(context, x, height * 0.2, width * 0.3, width * 0.3, [255, 255, 255], 0.9);
 }
 
+const PLAYER_CYAN: Rgb = [70, 200, 255];
+const PLAYER_CORE: Rgb = [225, 250, 255];
+/** Every look shares one cell, tall enough for the lance; the 8x18 hitbox sits at its centre. */
+const PLAYER_SHOT_CELL = { width: 14, height: 44 } as const;
+
+type Painter = (context: CanvasRenderingContext2D, width: number, height: number) => void;
+
+/**
+ * Player fire stays in the cyan-white family and never uses a ring or dark band, so it can't be read
+ * as a hostile orb; the looks differ by shape, length and brightness instead.
+ */
+const PLAYER_SHOT_PAINTERS: Record<PlayerShotLook, Painter> = {
+  // The standard 14x30 bolt, unchanged, centred in the taller cell.
+  bolt: (context) => {
+    context.translate(0, 7);
+    paintBolt(context, 14, 30, PLAYER_CYAN, PLAYER_CORE);
+  },
+  // A long, thin, white-hot needle: it reads as something that goes through things.
+  lance: (context, width, height) => {
+    context.translate((width - 12) / 2, 1);
+    paintBolt(context, 12, height - 2, [150, 228, 255], [248, 255, 255]);
+  },
+  // A short, round slug: a burst of these reads as a shotgun spread.
+  pellet: (context, width, height) => {
+    const x = width / 2;
+    const y = height / 2;
+    glowEllipse(context, x, y, 6, 7.5, [80, 182, 255], 0.6);
+    const body = context.createLinearGradient(0, y - 6, 0, y + 6);
+    body.addColorStop(0, rgba(PLAYER_CORE, 1));
+    body.addColorStop(1, rgba([80, 182, 255], 0.75));
+    context.fillStyle = body;
+    capsule(context, x, y - 6, y + 6, 3.2);
+    context.fill();
+    glowEllipse(context, x, y - 2.5, 2.6, 2.6, [255, 255, 255], 1);
+  },
+  // An arrowhead on a thin tail, in a cooler periwinkle: a dart that steers.
+  dart: (context, width, height) => {
+    const x = width / 2;
+    const top = height / 2 - 12;
+    const color: Rgb = [130, 175, 255];
+    glowEllipse(context, x, top + 7, 6.5, 9, color, 0.6);
+    const tail = context.createLinearGradient(0, top + 8, 0, top + 26);
+    tail.addColorStop(0, rgba(color, 1));
+    tail.addColorStop(1, rgba(color, 0));
+    context.fillStyle = tail;
+    capsule(context, x, top + 8, top + 26, 1.3);
+    context.fill();
+    const head = context.createLinearGradient(0, top, 0, top + 11);
+    head.addColorStop(0, rgba([255, 255, 255], 1));
+    head.addColorStop(1, rgba(color, 1));
+    context.fillStyle = head;
+    context.beginPath();
+    context.moveTo(x, top);
+    context.lineTo(x + 5.4, top + 11);
+    context.lineTo(x, top + 8);
+    context.lineTo(x - 5.4, top + 11);
+    context.closePath();
+    context.fill();
+    glowEllipse(context, x, top + 2.5, 2.2, 2.2, [255, 255, 255], 0.9);
+  },
+};
+
+/** One texture, one frame per look (see `MainGunProfile.look`), painted before the sector starts. */
 export function ensurePlayerBulletTexture(scene: Phaser.Scene): string {
-  return withCanvasTexture(
+  return withCanvasFrameStrip(
     scene,
     'player-bullet',
-    14,
-    30,
-    (context, width, height) => paintBolt(context, width, height, [70, 200, 255], [225, 250, 255]),
+    PLAYER_SHOT_CELL.width,
+    PLAYER_SHOT_CELL.height,
+    PLAYER_SHOT_PAINTERS,
     DENSITY
   );
 }

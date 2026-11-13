@@ -208,9 +208,11 @@ test('the main gun swaps mid-sector on Q or the touch key, and a second swap wai
     else await page.keyboard.press('KeyQ');
   };
 
-  // Lance fires straight ahead.
+  // Lance fires long piercing bolts straight ahead.
   await expect.poll(async () => (await playerShots(page)).length).toBeGreaterThan(0);
-  expect((await playerShots(page)).every((shot) => Math.abs(shot.rotation) < 0.01)).toBe(true);
+  expect((await playerShots(page)).every((shot) => Math.abs(shot.rotation) < 0.01 && shot.frameName === 'lance')).toBe(
+    true
+  );
 
   await swap();
   await expect.poll(() => shownTexts(page)).toContain('SCATTER');
@@ -221,8 +223,12 @@ test('the main gun swaps mid-sector on Q or the touch key, and a second swap wai
   await page.waitForTimeout(300);
   expect(await shownTexts(page)).not.toContain('SEEKERS');
 
-  // Scatter fans its shots.
-  await expect.poll(async () => (await playerShots(page)).some((shot) => Math.abs(shot.rotation) > 0.1)).toBe(true);
+  // Scatter fans its shots, and they are pellets.
+  await expect
+    .poll(async () =>
+      (await playerShots(page)).some((shot) => Math.abs(shot.rotation) > 0.1 && shot.frameName === 'pellet')
+    )
+    .toBe(true);
 
   await openPause(page, isMobile);
   await page.getByRole('tab', { name: 'SYSTEMS' }).click();

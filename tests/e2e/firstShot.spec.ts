@@ -9,14 +9,17 @@ declare global {
 
 test('paints the player bullet once before firing and reuses it', async ({ page, isMobile, assertNoBrowserErrors }) => {
   await page.addInitScript(() => {
-    // The bolt is painted once into a 4x-density 14x30 canvas (56x120 physical) with one sheath gradient.
+    // Every gun's look is painted once into one 4x-density strip of four 14x44 frames (224x176 physical);
+    // count the canvases painted at that size.
     window.__PLAYER_BULLET_PAINT_COUNT__ = 0;
+    const painted = new WeakSet<HTMLCanvasElement | OffscreenCanvas>();
     const original = CanvasRenderingContext2D.prototype.createLinearGradient;
     CanvasRenderingContext2D.prototype.createLinearGradient = function (
       this: CanvasRenderingContext2D,
       ...args: Parameters<typeof original>
     ) {
-      if (this.canvas.width === 56 && this.canvas.height === 120) {
+      if (this.canvas.width === 224 && this.canvas.height === 176 && !painted.has(this.canvas)) {
+        painted.add(this.canvas);
         window.__PLAYER_BULLET_PAINT_COUNT__ = (window.__PLAYER_BULLET_PAINT_COUNT__ ?? 0) + 1;
       }
       return original.apply(this, args);

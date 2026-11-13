@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { getMainGunProfile, NO_SHIP_SYSTEMS, type ShipSystems } from '../src/config/shipSystems';
+import { getMainGunProfile, NO_SHIP_SYSTEMS, type PlayerShotLook, type ShipSystems } from '../src/config/shipSystems';
 import { fireMainGunVolley, resolveMainGunCooldownMs } from '../src/systems/mainGun';
 
 function volley(systems: Partial<ShipSystems>, volleyIndex = 1) {
@@ -14,7 +14,7 @@ function volley(systems: Partial<ShipSystems>, volleyIndex = 1) {
     fire,
   });
   return fire.mock.calls as Array<
-    [number, number, number, number, { pierce?: boolean; seekDegreesPerSecond?: number }?]
+    [number, number, number, number, { pierce?: boolean; seekDegreesPerSecond?: number }?, PlayerShotLook?]
   >;
 }
 
@@ -47,6 +47,15 @@ describe('main gun', () => {
     expect(shots).toHaveLength(2);
     expect(shots[1][0]).toBeGreaterThan(100);
     expect(shots[1][4]).toBeUndefined();
+  });
+
+  test('each gun fires in its own look; the standard gun and the Wingman keep the plain bolt', () => {
+    expect(volley({}).map((shot) => shot[5])).toEqual(['bolt']);
+    expect(volley({ gun: 'lance' }).map((shot) => shot[5])).toEqual(['lance']);
+    expect(volley({ gun: 'scatter' }).map((shot) => shot[5])).toEqual(['pellet', 'pellet', 'pellet']);
+    expect(volley({ gun: 'seekers' }).map((shot) => shot[5])).toEqual(['dart']);
+    // The drone's shot leaves the look out, so the bullet keeps its standard bolt.
+    expect(volley({ support: 'wingman', gun: 'lance' }, 2)[1][5]).toBeUndefined();
   });
 
   test('each gun pays for its pattern with a slower cooldown', () => {

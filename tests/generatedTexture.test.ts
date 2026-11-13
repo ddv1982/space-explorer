@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 mock.module('phaser', () => ({ default: {} }));
 
-const { withCanvasTexture, withGeneratedTexture } = await import('../src/utils/generatedTexture');
+const { withCanvasFrameStrip, withCanvasTexture, withGeneratedTexture } = await import('../src/utils/generatedTexture');
 
 function fakeContext() {
   const calls: string[] = [];
@@ -108,5 +108,58 @@ describe('withCanvasTexture', () => {
     } finally {
       restore();
     }
+  });
+});
+
+describe('withCanvasFrameStrip', () => {
+  test('paints each frame in its own cell and cuts named frames at logical size', () => {
+    const translations: number[] = [];
+    const context = new Proxy(
+      { translate: (x: number) => translations.push(x) },
+      { get: (target, name) => (name in target ? target[name as 'translate'] : () => {}) }
+    );
+    const canvas = { width: 0, height: 0, getContext: () => context };
+    const previous = globalThis.document;
+    globalThis.document = { createElement: () => canvas } as never;
+    const cuts: unknown[][] = [];
+    const frames = new Map<string, ReturnType<typeof fakeFrame>>();
+    const source = { resolution: 1 };
+    const texture = {
+      source: [source],
+      dataSource: [],
+      add: (name: string, ...cut: unknown[]) => {
+        cuts.push([name, ...cut]);
+        frames.set(name, fakeFrame());
+        return frames.get(name);
+      },
+      get: () => fakeFrame(),
+    };
+    const scene = { textures: { exists: () => false, create: () => texture, get: () => texture } };
+    const painted: string[] = [];
+
+    try {
+      withCanvasFrameStrip(
+        scene as never,
+        'shots',
+        14,
+        44,
+        {
+          bolt: (_context, width, height) => painted.push(`bolt ${width}x${height}`),
+          dart: (_context, width, height) => painted.push(`dart ${width}x${height}`),
+        },
+        4
+      );
+    } finally {
+      globalThis.document = previous;
+    }
+
+    expect(painted).toEqual(['bolt 14x44', 'dart 14x44']);
+    expect(translations).toEqual([0, 14]);
+    expect(cuts).toEqual([
+      ['__BASE', 0, 0, 0, 112, 176],
+      ['bolt', 0, 0, 0, 56, 176],
+      ['dart', 0, 56, 0, 56, 176],
+    ]);
+    expect(frames.get('dart')?.trim).toEqual([14, 44, 0, 0, 14, 44]);
   });
 });

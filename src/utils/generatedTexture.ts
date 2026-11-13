@@ -68,6 +68,48 @@ export function withCanvasTexture(
 }
 
 /**
+ * Paints same-sized frames side by side on one canvas texture, named by `frames`' keys. A sprite that
+ * switches between them keeps its texture, so it keeps batching with its siblings and its size.
+ */
+export function withCanvasFrameStrip<Name extends string>(
+  scene: Phaser.Scene,
+  key: string,
+  width: number,
+  height: number,
+  frames: Readonly<Record<Name, (context: CanvasRenderingContext2D, width: number, height: number) => void>>,
+  density = 1
+): string {
+  if (scene.textures.exists(key)) return key;
+  const names = Object.keys(frames) as Name[];
+  withCanvasTexture(
+    scene,
+    key,
+    width * names.length,
+    height,
+    (context) =>
+      names.forEach((name, index) => {
+        context.save();
+        context.translate(index * width, 0);
+        // A glow never bleeds into the neighbouring frame.
+        context.beginPath();
+        context.rect(0, 0, width, height);
+        context.clip();
+        frames[name](context, width, height);
+        context.restore();
+      }),
+    density
+  );
+  const texture = scene.textures.get(key);
+  const cuts = names.map((name, index) => {
+    const frame = texture.add(name, 0, index * width * density, 0, width * density, height * density);
+    if (!frame) throw new Error(`Unable to cut frame ${name} of ${key}`);
+    return frame;
+  });
+  setLogicalFrameSize(texture, density, width, height, cuts);
+  return key;
+}
+
+/**
  * Makes a texture authored at `density` physical pixels per logical pixel display and collide at its
  * logical size: Phaser draws the physical cut at source resolution while bounds use the trim.
  */

@@ -1,6 +1,12 @@
 import type { BulletBehaviour, BulletTargetFinder } from '../entities/Bullet';
 import { PLAYER_CONFIG } from '../config/playerConfig';
-import { getMainGunProfile, OVERDRIVE_COOLDOWN_STEP, WINGMAN, type ShipSystems } from '../config/shipSystems';
+import {
+  getMainGunProfile,
+  OVERDRIVE_COOLDOWN_STEP,
+  WINGMAN,
+  type PlayerShotLook,
+  type ShipSystems,
+} from '../config/shipSystems';
 import { resolvePlayerFireCooldownMs } from './chainOverdrive';
 
 interface Point {
@@ -17,7 +23,14 @@ export interface MainGunVolley {
   direction: Point;
   speed: number;
   findTarget: BulletTargetFinder;
-  fire(x: number, y: number, velocityX: number, velocityY: number, behaviour?: BulletBehaviour): void;
+  fire(
+    x: number,
+    y: number,
+    velocityX: number,
+    velocityY: number,
+    behaviour?: BulletBehaviour,
+    look?: PlayerShotLook
+  ): void;
 }
 
 function rotate(direction: Point, degrees: number): Point {
@@ -41,11 +54,18 @@ export function fireMainGunVolley(volley: MainGunVolley): void {
 
   for (const degrees of profile.spreadDegrees) {
     const heading = degrees === 0 ? volley.direction : rotate(volley.direction, degrees);
-    volley.fire(volley.origin.x, volley.origin.y, heading.x * volley.speed, heading.y * volley.speed, behaviour);
+    volley.fire(
+      volley.origin.x,
+      volley.origin.y,
+      heading.x * volley.speed,
+      heading.y * volley.speed,
+      behaviour,
+      profile.look
+    );
   }
 
   if (volley.systems.support === 'wingman' && volley.volleyIndex % WINGMAN.everyNthVolley === 0) {
-    // The drone fires a plain bolt straight ahead, whatever the main gun is.
+    // The drone fires a plain bolt straight ahead, in the standard look, whatever the main gun is.
     volley.fire(
       volley.origin.x + WINGMAN.offsetX,
       volley.origin.y + WINGMAN.offsetY,
