@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - The controls card at the start of a sector and the pause panel show the Q key, but only once the run has a main gun. Sectors 1 and 2 are unchanged.
 - The game saves your run when you leave the refit bay for the next sector, so closing the tab no longer loses the ship system you just picked. The save appears in the main menu as AUTOSAVE, next to your three slots, and loads and deletes like them. It never overwrites a slot of yours, and it goes away when the run ends or you start a new one.
 - Save slots in the main menu and the pause panel name the ship systems the saved run has picked.
+- Swapping guns has its own quiet click-and-whir sound instead of the menu confirm chime.
 - Fast-kill bonus: beat a boss under its par time and you score 200 points for every second left on the clock, shown as FAST KILL next to the kill. Pausing never costs you any of it.
 - The refit bay lists your ship systems next to the upgrades once you have one. Select one to see its three options again, with the current one marked, and pick another: changing here is free, as often as you like, with no wait. Escape, or picking the current one again, keeps it. The next sector flies with your choice, and the autosave and your checkpoints store it.
 

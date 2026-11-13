@@ -64,4 +64,9 @@ describe('sound effect recipes', () => {
       expect(definition.gain).toBeLessThan(SFX.explosionSmall.gain);
     }
   });
+
+  test('the gun-swap cue is short and quieter than the menu confirm it replaced', () => {
+    expect(getSfxSeconds(SFX.gunSwap.layers)).toBeLessThan(0.3);
+    expect(SFX.gunSwap.gain).toBeLessThan(SFX.uiConfirm.gain);
+  });
 });
