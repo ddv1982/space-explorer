@@ -142,7 +142,7 @@ All six hull styles are used; a phase can switch style (the finale does). Bastio
 
 | Level | Boss | Phases | Par |
 |---|---|---|---|
-| L3 | Pyre Herald | barrage, 2 phases (no escalation) | 45 s |
+| L3 | Pyre Herald | barrage, 2 phases at 50% (no escalation), two attacks each with slow shots and long gaps: kindling (twin ember fans, a fan that leans with its patrol), pyre (faster patrol, turning spiral, the first aimed fan) | 45 s |
 | L4 | Marshal Vectra | pressure, 2 phases | 50 s |
 | L5 | Reef Stalker | pursuit, 2 phases | 52 s |
 | L6 | Bastion Bulwark | bulwark, 3 phases at 66% and 33%: rampart (shield only while charging a wall), breach (flank anchors, aimed burst, rotary), last stand (no shield, pursues, beam) | 60 s |
@@ -169,7 +169,7 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 
 ### L3: Ember Monsoon (G->R) - planet Cinderreach - motif: ember storm
 - Sower + minefield debut; energy-storm returns as the weather.
-- First boss: Pyre Herald (barrage), taught by a mid-boss elite wave at 60%.
+- First boss: Pyre Herald (barrage), taught by a mid-boss elite wave at 60%. Two gentle phases of two attacks each; it never escalates and needs no gun pick.
 - distance 14500, spawnRate 1.35; enemies: fighter 30, sower 18, swarm 27, diver 25.
 - Drops: health at the heat front, shield pre-boss.
 
