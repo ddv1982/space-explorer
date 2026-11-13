@@ -220,7 +220,10 @@ export class MobileControls {
   setGunChargeState(gun: MainGunId | null, charge: number): void {
     const available = gun !== null;
     const draining = available && gun !== 'lance';
-    const step = Math.ceil(Math.max(0, Math.min(1, charge)) * SWAP_CHARGE_STEPS);
+    const steps = Math.max(0, Math.min(1, charge)) * SWAP_CHARGE_STEPS;
+    // Rounded down on Lance, so the key never looks ready before the charge allows leaving; up while
+    // draining, so a special gun never shows an empty bar.
+    const step = draining ? Math.ceil(steps) : Math.floor(steps);
     if (available === this.swapAvailable && draining === this.swapDraining && step === this.swapChargeStep) return;
     const visibilityChanged = available !== this.swapAvailable;
     this.swapAvailable = available;
