@@ -20,7 +20,8 @@
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.ts' '*.{json,js,ts}'",
     "knip": "knip",
     "test:e2e": "playwright test --project=chromium-desktop --project=chromium-mobile",
-    "perf:profile": "bun scripts/perf/profile.ts"
+    "perf:profile": "bun scripts/perf/profile.ts",
+    "balance:bosses": "bun scripts/balance/bossFights.ts"
   },
   "knip": {
     "entry": [

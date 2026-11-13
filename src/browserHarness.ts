@@ -4,6 +4,7 @@ import { createShipyardProbes } from './browserHarness/shipyardProbes';
 import { createProceduralBackgroundProbes } from './browserHarness/proceduralBackgroundProbes';
 
 import { createBrowserHarnessGameplayProbes } from './browserHarness/gameplayProbes';
+import { createBossFightProbes } from './browserHarness/bossFightProbes';
 import { createBrowserHarnessNavigation } from './browserHarness/navigation';
 import { createRenderStatsProbe } from './browserHarness/renderStatsProbe';
 
@@ -14,6 +15,7 @@ import { audioManager } from './systems/AudioManager';
 export type { BrowserHarnessSnapshot } from './browserHarness/snapshot';
 export type * from './browserHarness/types';
 export type { RenderStats } from './browserHarness/renderStatsProbe';
+export type { BossFightReport } from './browserHarness/bossFightProbes';
 
 const HARNESS_GLOBAL = '__SPACE_EXPLORER_BROWSER_HARNESS__';
 
@@ -44,6 +46,7 @@ function createBrowserHarnessApi(game: Phaser.Game): BrowserHarnessApi {
       if (context.state === 'running') await context.suspend();
     },
     ...gameplayProbes,
+    ...createBossFightProbes(game),
     ...createShipyardProbes(game),
     ...createProceduralBackgroundProbes(game),
     ...navigation,

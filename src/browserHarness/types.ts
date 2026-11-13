@@ -4,9 +4,13 @@ import type { createRenderStatsProbe } from './renderStatsProbe';
 import type { BrowserHarnessSnapshot } from './snapshot';
 import type { createShipyardProbes } from './shipyardProbes';
 import type { createProceduralBackgroundProbes } from './proceduralBackgroundProbes';
+import type { createBossFightProbes } from './bossFightProbes';
 
 export interface BrowserHarnessApi
-  extends ReturnType<typeof createShipyardProbes>, ReturnType<typeof createProceduralBackgroundProbes> {
+  extends
+    ReturnType<typeof createShipyardProbes>,
+    ReturnType<typeof createProceduralBackgroundProbes>,
+    ReturnType<typeof createBossFightProbes> {
   gameFeel: ReturnType<typeof createGameFeelProbes>;
   renderStats: ReturnType<typeof createRenderStatsProbe>;
   destroyGame: () => void;
