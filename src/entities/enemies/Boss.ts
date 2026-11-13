@@ -131,13 +131,14 @@ export class Boss extends EnemyBase {
 
     this.updatePhaseState(time);
     this.updateMovement(time, delta);
+    if (this.getAttackRuntime().hasBulletGroup()) {
+      this.fireQueuedShots(time);
+      const attack = this.schedule.takeDue(time);
+      if (attack) this.fireAttack(attack, time);
+      this.attackWindup = this.schedule.windup(time);
+    }
+    // After firing, so the shield opens on the frame a shielded volley leaves, not one frame later.
     this.setShieldActive(this.schedule.upcoming?.shielded === true);
-    if (!this.getAttackRuntime().hasBulletGroup()) return;
-
-    this.fireQueuedShots(time);
-    const attack = this.schedule.takeDue(time);
-    if (attack) this.fireAttack(attack, time);
-    this.attackWindup = this.schedule.windup(time);
   }
 
   private resetCombatState(): void {
