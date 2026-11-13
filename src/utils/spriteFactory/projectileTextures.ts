@@ -76,9 +76,13 @@ type Painter = (context: CanvasRenderingContext2D, width: number, height: number
  * as a hostile orb; the looks differ by shape, length and brightness instead.
  */
 const PLAYER_SHOT_PAINTERS: Record<PlayerShotLook, Painter> = {
-  // The standard 14x30 bolt, unchanged, centred in the taller cell.
+  // The standard 14x30 bolt, unchanged, centred in the taller cell. Its halo used to be cut off by its
+  // own 14x30 canvas, so it is clipped to that box here to stay pixel for pixel the same.
   bolt: (context) => {
     context.translate(0, 7);
+    context.beginPath();
+    context.rect(0, 0, 14, 30);
+    context.clip();
     paintBolt(context, 14, 30, PLAYER_CYAN, PLAYER_CORE);
   },
   // A long, thin, white-hot needle: it reads as something that goes through things.

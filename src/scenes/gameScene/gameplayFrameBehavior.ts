@@ -194,7 +194,8 @@ export function createGameSceneGameplayFrameBehavior(
       direction: shotDirection,
       speed: shotSpeed,
       findTarget: delegate.findBulletTarget,
-      fire: (...shot) => delegate.bulletPool.fire(...shot),
+      fire: (x, y, velocityX, velocityY, behaviour, look) =>
+        delegate.bulletPool.fire(x, y, velocityX, velocityY, behaviour, look),
     });
     delegate.effectsManager.createMuzzleFlash(muzzleFlashOrigin.x, muzzleFlashOrigin.y);
     audioManager.playSfx('playerShot');
