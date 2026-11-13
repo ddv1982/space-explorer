@@ -1,6 +1,29 @@
-import type { LevelConfig } from '../types';
+import type { BossShotPattern, LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
+
+/** One ring of spokes, turning between volleys. */
+const HIVE_RING: BossShotPattern = { kind: 'spiral', shots: 10, degreesPerSecond: 120, speed: 1, originY: 30 };
+/** A swarm pair beside the hull on every other round: enough to tax homing shots, not to starve the boss. */
+const HIVE_BROOD: BossShotPattern = { kind: 'summon', escorts: ['swarm', 'swarm'], onVolleys: 'even' };
+/** Two rings turning against each other: their spokes cross and part again. */
+const HIVE_VORTEX: BossShotPattern = {
+  kind: 'spiral',
+  shots: 7,
+  degreesPerSecond: 200,
+  speed: 1.05,
+  originY: 30,
+  mirrored: true,
+};
+/** The vortex at full spin, fired from right above the player. */
+const HIVE_EYE: BossShotPattern = {
+  kind: 'spiral',
+  shots: 8,
+  degreesPerSecond: 240,
+  speed: 1.1,
+  originY: 30,
+  mirrored: true,
+};
 
 export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   name: 'Swarmfront',
@@ -11,7 +34,8 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
   pacingSummary: 'Escalating swarm fronts crest into the Hive Maelstrom vortex.',
   enemyCompositionSummary: 'Swarms flood; splitters multiply; dodgers and fighters harry.',
   hazardSummary: 'Debris surges and ring crossfire woven through swarm fronts.',
-  bossConcept: 'Hive Maelstrom debuts the maelstrom style with counter-rotating spirals.',
+  bossConcept:
+    'Hive Maelstrom spins one ring, then two against each other, then hunts the player while splitters pour out.',
   difficultyRole: 'Hard set-piece with maximum density before the finale.',
   journeyNote: 'The hive never stops; survival is the only objective.',
   bgColor: '#0a1006',
@@ -34,21 +58,51 @@ export const OBSIDIAN_MAW_LEVEL: LevelConfig = {
     parSeconds: 65,
     escalatesPastPar: true,
     phaseChangePauseMs: 280,
+    // A vortex that tightens: it teaches one turning ring, then two rings turning against each other,
+    // then hunts the player with them. Its brood launches beside the hull and dives at the player, so a
+    // piercing gun clears it on the way to the boss while homing shots get pulled off the boss.
     phases: [
       {
+        // Brood wake: the same ring twice in quick succession, so the turn is easy to see, then a sting
+        // aimed at whoever settled into a gap.
         startsAtHull: 1,
         style: 'maelstrom',
         movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
-        attacks: [{ cooldownMs: 1010, volley: [{ kind: 'arc', shots: 7, arcDegrees: 64, speed: 1, originY: 30 }] }],
+        attacks: [
+          { cooldownMs: 1000, volley: [HIVE_RING, HIVE_BROOD] },
+          { cooldownMs: 650, volley: [HIVE_RING] },
+          { cooldownMs: 1100, volley: [{ kind: 'aimedArc', shots: 5, arcDegrees: 36, speed: 1.05, originY: 30 }] },
+        ],
       },
       {
-        startsAtHull: 0.5,
+        // Maelstrom: counter-rotating rings from a fast patrol, so the crossing points never stay put.
+        startsAtHull: 0.66,
         style: 'maelstrom',
-        movement: { kind: 'patrol', speed: 190, edgePadding: 60 },
+        movement: { kind: 'patrol', speed: 170, edgePadding: 60 },
         attacks: [
+          { cooldownMs: 950, volley: [HIVE_VORTEX] },
+          { cooldownMs: 600, volley: [HIVE_VORTEX] },
           {
-            cooldownMs: 510,
-            volley: [{ kind: 'spiral', shots: 7, degreesPerSecond: 224, speed: 1.08, originY: 30, mirrored: true }],
+            cooldownMs: 1150,
+            volley: [HIVE_BROOD, { kind: 'aimedBurst', shots: 4, intervalMs: 140, speed: 1.15, originY: 30 }],
+          },
+        ],
+      },
+      {
+        // Eye of the storm: it slides after the player and the brood turns to splitters, whose kills
+        // multiply; the gaps between spokes are the only shelter.
+        startsAtHull: 0.33,
+        style: 'maelstrom',
+        movement: { kind: 'pursuit', speed: 85, edgePadding: 60 },
+        attacks: [
+          { cooldownMs: 850, volley: [HIVE_EYE] },
+          { cooldownMs: 650, volley: [HIVE_EYE] },
+          {
+            cooldownMs: 1250,
+            volley: [
+              { kind: 'summon', escorts: ['splitter', 'splitter'], onVolleys: 'even' },
+              { kind: 'aimedArc', shots: 5, arcDegrees: 30, speed: 1.15, originY: 30 },
+            ],
           },
         ],
       },

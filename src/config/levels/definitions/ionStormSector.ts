@@ -1,6 +1,16 @@
-import type { LevelConfig } from '../types';
+import type { BossShotPattern, LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
+
+/** Twin wide fans from the hull's flanks: wide lanes, slow embers. */
+const HERALD_EMBER_FANS: BossShotPattern = {
+  kind: 'arc',
+  shots: 5,
+  arcDegrees: 80,
+  speed: 0.9,
+  originsX: [-18, 18],
+  originY: 30,
+};
 
 export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
   name: 'Ember Monsoon',
@@ -30,29 +40,35 @@ export const ION_STORM_SECTOR_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Pyre Herald',
-    maxHp: 275,
+    maxHp: 335,
     parSeconds: 45,
     // The first boss keeps its pace however long the fight runs.
     escalatesPastPar: false,
     phaseChangePauseMs: 260,
+    // The first boss teaches reading a volley: two attacks per phase, slow shots and long gaps,
+    // nothing that needs a gun pick.
     phases: [
       {
+        // Kindling: a slow patrol that rains embers straight down, then lets them drift with it.
         startsAtHull: 1,
         style: 'barrage',
         movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
         attacks: [
+          { cooldownMs: 1100, volley: [HERALD_EMBER_FANS] },
           {
-            cooldownMs: 1050,
-            volley: [{ kind: 'arc', shots: 5, arcDegrees: 80.5, speed: 0.92, originsX: [-18, 18], originY: 30 }],
+            cooldownMs: 1300,
+            volley: [{ kind: 'arc', shots: 7, arcDegrees: 60, speed: 0.8, originY: 30, lean: 14 }],
           },
         ],
       },
       {
+        // Pyre: a faster patrol throws a turning spiral, then the first shots aimed at the player.
         startsAtHull: 0.5,
         style: 'barrage',
-        movement: { kind: 'patrol', speed: 170, edgePadding: 60 },
+        movement: { kind: 'patrol', speed: 150, edgePadding: 60 },
         attacks: [
-          { cooldownMs: 560, volley: [{ kind: 'spiral', shots: 4, degreesPerSecond: 160, speed: 0.98, originY: 30 }] },
+          { cooldownMs: 700, volley: [{ kind: 'spiral', shots: 5, degreesPerSecond: 160, speed: 0.92, originY: 30 }] },
+          { cooldownMs: 1000, volley: [{ kind: 'aimedArc', shots: 3, arcDegrees: 36, speed: 0.85, originY: 30 }] },
         ],
       },
     ],

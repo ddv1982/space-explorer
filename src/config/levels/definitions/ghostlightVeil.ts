@@ -1,6 +1,22 @@
-import type { LevelConfig } from '../types';
+import type { BossShotPattern, LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
+
+/** The hymn: a wide fan that leans with the patrol on every other beat, so consecutive fans interleave. */
+const CHOIR_HYMN: BossShotPattern = {
+  kind: 'arc',
+  shots: 7,
+  arcDegrees: 34,
+  speed: 1.08,
+  originY: 30,
+  lean: 6,
+  leanEveryOther: true,
+};
+/** Two loft fans turned outward, which keep the lane straight under the boss clear. */
+const CHOIR_LOFTS: readonly BossShotPattern[] = [
+  { kind: 'arc', shots: 6, arcDegrees: 34, speed: 1, originsX: [-70], originY: 26, angle: 18 },
+  { kind: 'arc', shots: 6, arcDegrees: 34, speed: 1, originsX: [70], originY: 26, angle: -18 },
+];
 
 export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   name: 'Hollow Choir',
@@ -11,7 +27,7 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   pacingSummary: 'Ghostly fade-in ambushes crescendo into the Choir Regent sermon.',
   enemyCompositionSummary: 'Lancers duel from the vaults; gunships lead; swarms fill the nave.',
   hazardSummary: 'Wormhole-spawn ambushes with elite escorts.',
-  bossConcept: 'Choir Regent conducts pressure patterns tuned harder than Marshal Vectra.',
+  bossConcept: 'Choir Regent conducts three movements of fans on a beat, each leaving a different lane open.',
   difficultyRole: 'Hard level demanding elite telegraph mastery.',
   journeyNote: 'The choir sings through portals; every verse arrives armed.',
   bgColor: '#0a0614',
@@ -30,32 +46,47 @@ export const GHOSTLIGHT_VEIL_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Choir Regent',
-    maxHp: 1100,
+    maxHp: 1040,
     parSeconds: 58,
     escalatesPastPar: true,
     phaseChangePauseMs: 260,
+    // A sermon in three movements on a beat: every phase is a fixed rhythm of volleys, and each one
+    // keeps the same few lanes so the player learns where the choir leaves room before it sings.
     phases: [
       {
+        // Hymn: beat, beat, answer. Two interleaving fans, then a fan aimed at the player's lane.
         startsAtHull: 1,
         style: 'pressure',
         movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
         attacks: [
-          {
-            cooldownMs: 990,
-            volley: [
-              { kind: 'arc', shots: 7, arcDegrees: 34.1, speed: 1.02, originY: 30, lean: 6, leanEveryOther: true },
-            ],
-          },
+          { cooldownMs: 700, volley: [CHOIR_HYMN] },
+          { cooldownMs: 700, volley: [CHOIR_HYMN] },
+          { cooldownMs: 1000, volley: [{ kind: 'aimedArc', shots: 7, arcDegrees: 42, speed: 1.05, originY: 30 }] },
         ],
       },
       {
-        startsAtHull: 0.5,
+        // Antiphon: the lofts and the nave answer each other. The lofts leave the lane under the boss
+        // open (fly in close), the nave closes it and opens the flanks, then a cantor picks you out.
+        startsAtHull: 0.66,
         style: 'pressure',
-        movement: { kind: 'patrol', speed: 205, edgePadding: 60 },
+        movement: { kind: 'patrol', speed: 60, edgePadding: 60 },
         attacks: [
+          { cooldownMs: 900, volley: CHOIR_LOFTS },
+          { cooldownMs: 900, volley: [{ kind: 'arc', shots: 7, arcDegrees: 30, speed: 1, originY: 30 }] },
+          { cooldownMs: 1100, volley: [{ kind: 'aimedBurst', shots: 5, intervalMs: 120, speed: 1.15, originY: 30 }] },
+        ],
+      },
+      {
+        // Crescendo: the same voices, faster, over a sweeping patrol, with the rotary turning between them.
+        startsAtHull: 0.33,
+        style: 'pressure',
+        movement: { kind: 'patrol', speed: 120, edgePadding: 60 },
+        attacks: [
+          { cooldownMs: 600, volley: [{ kind: 'spiral', shots: 8, degreesPerSecond: 285, speed: 1.08, originY: 30 }] },
+          { cooldownMs: 600, volley: [CHOIR_HYMN] },
           {
-            cooldownMs: 490,
-            volley: [{ kind: 'spiral', shots: 6, degreesPerSecond: 284.8, speed: 1.08, originY: 30 }],
+            cooldownMs: 850,
+            volley: [...CHOIR_LOFTS, { kind: 'aimedBurst', shots: 4, intervalMs: 120, speed: 1.15, originY: 30 }],
           },
         ],
       },

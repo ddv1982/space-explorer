@@ -138,18 +138,18 @@ exclusive to L5, L9, and L10.
 
 ### 2.9 Boss attack-style plan
 
-All six hull styles are used; a phase can switch style (the finale does). Bastion Bulwark is the first boss authored for the rotation engine; the others still fire one attack per phase and are due their own rotations.
+All six hull styles are used; a phase can switch style (the finale does). Every boss is authored for the rotation engine, each in its own level file; the early bosses teach one idea each (fans, anchors, the aimed burst) and the finale reprises them.
 
 | Level | Boss | Phases | Par |
 |---|---|---|---|
-| L3 | Pyre Herald | barrage, 2 phases (no escalation) | 45 s |
-| L4 | Marshal Vectra | pressure, 2 phases | 50 s |
-| L5 | Reef Stalker | pursuit, 2 phases | 52 s |
+| L3 | Pyre Herald | barrage, 2 phases at 50% (no escalation), two attacks each with slow shots and long gaps: kindling (twin ember fans, a fan that leans with its patrol), pyre (faster patrol, turning spiral, the first aimed fan) | 45 s |
+| L4 | Marshal Vectra | pressure, 2 phases at 50%; introduces anchors: drill (two line fans, then a crossfire with a pocket under the hull), advance (steps forward to a centre post for the crossfire, then a line fan and a spiral) | 50 s |
+| L5 | Reef Stalker | pursuit, 3 phases at 66% and 33%; introduces the aimed burst: stalk (aimed fan, 3-shot lock-on), flank (darts to each edge and fans across the screen, safe under its hull, 4-shot lock-on), frenzy (fast chase, aimed double fan, 5-shot lock-on, wide shatter fan) | 52 s |
 | L6 | Bastion Bulwark | bulwark, 3 phases at 66% and 33%: rampart (shield only while charging a wall), breach (flank anchors, aimed burst, rotary), last stand (no shield, pursues, beam) | 60 s |
-| L7 | Choir Regent | pressure, 2 phases | 58 s |
-| L8 | Umbral Ark | carrier (debut), 2 phases | 62 s |
-| L9 | Hive Maelstrom | maelstrom (debut), 2 phases | 65 s |
-| L10 | Omega Null | pressure -> maelstrom (finale switch), 2 phases | 70 s |
+| L7 | Choir Regent | pressure, 3 phases at 66% and 33%, each a fixed rhythm: hymn (two interleaving fans, then a fan aimed at you), antiphon (outward loft fans that leave the lane under it open, a nave fan that closes it, a cantor's aimed burst), crescendo (rotary, hymn, lofts with a short burst, over a faster patrol) | 58 s |
+| L8 | Umbral Ark | carrier (debut), 3 phases at 66% and 33%, each opening with a launch: hangar (fighter pair, crossing broadsides), convoy (a gunship escort, flak aimed at you, rotary), narrows (a wall whose gap moves, with a dodger pair launched into it) | 62 s |
+| L9 | Hive Maelstrom | maelstrom (debut), 3 phases at 66% and 33%: brood wake (one turning ring fired twice, aimed sting, swarm pairs), maelstrom (counter-rotating rings from a fast patrol, aimed burst), eye of the storm (pursues, full-spin rings, splitter pairs) | 65 s |
+| L10 | Omega Null | pressure -> maelstrom (finale switch at 50%), 4 phases at 75%, 50% and 25%: pressure (interleaving fans, aimed burst), siege (shielded wall, gunship guard, aimed fan), maelstrom (counter-rotating rings, low flank beam), null (pursues: beam inside sparse rings, aimed burst, shielded wall) | 70 s |
 
 ## 3. The 10-level concept sheet
 
@@ -169,18 +169,18 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 
 ### L3: Ember Monsoon (G->R) - planet Cinderreach - motif: ember storm
 - Sower + minefield debut; energy-storm returns as the weather.
-- First boss: Pyre Herald (barrage), taught by a mid-boss elite wave at 60%.
+- First boss: Pyre Herald (barrage), taught by a mid-boss elite wave at 60%. Two gentle phases of two attacks each; it never escalates and needs no gun pick.
 - distance 14500, spawnRate 1.35; enemies: fighter 30, sower 18, swarm 27, diver 25.
 - Drops: health at the heat front, shield pre-boss.
 
 ### L4: Clockwork Causeway (R) - planet Gearhaven - motif: clockwork
 - Waves arrive on the musical beat; lancer debut (telegraphed sniper duels).
-- Boss: Marshal Vectra (pressure). distance 16000, spawnRate 1.55, encounter 2-2.
+- Boss: Marshal Vectra (pressure; the first boss to fly to an anchor, stepping forward to a centre post in phase 2). distance 16000, spawnRate 1.55, encounter 2-2.
 - enemies: fighter 30, lancer 20, diver 20, gunship 30.
 
 ### L5: Shatter Reef (R) - planet Korra Vale - motif: coral reef
 - Splitter debut (kills multiply); nebula-ambush remix. Mid-campaign exam.
-- Boss: Reef Stalker (pursuit). distance 17500, spawnRate 1.75, encounter 2-3.
+- Boss: Reef Stalker (pursuit, three phases; debuts the aimed burst and breaks off the chase to strike from the flanks). distance 17500, spawnRate 1.75, encounter 2-3.
 - enemies: fighter 25, splitter 25, bomber 20, gunship 30.
 
 ### L6: Debris Gauntlet (R->H) - planet Bastion Fall - motif: wreckage ramparts
@@ -191,23 +191,25 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 
 ### L7: Hollow Choir (H) - planet Vesper Nine - motif: cathedral
 - Elite remix: lancers and gunships behind wormhole warp-ins, ghostly fade-in ambushes.
-- Boss: Choir Regent (pressure, tuned hard). distance 19000, spawnRate 1.9.
+- Boss: Choir Regent (pressure, tuned hard; three phases, each a fixed rhythm of fans and aimed bursts). distance 19000, spawnRate 1.9.
 - enemies: fighter 28, lancer 22, swarm 26, gunship 24.
 
 ### L8: Eclipse Narrows (H) - planet Umbral Rook - motif: eclipse
 - Convoy escort fantasy through tight corridors; bombers and gunships in pincer waves.
-- Boss: Umbral Ark (carrier debut, escort summons). distance 19500, spawnRate 2.0.
+- Boss: Umbral Ark (carrier debut; three phases, each opening with an escort launch in front of the hull). distance 19500, spawnRate 2.0.
 - enemies: bomber 22, gunship 30, dodger 20, fighter 28.
 
 ### L9: Swarmfront (H) - planet Hive Lathe - motif: hive
 - Set-piece level: swarm survival. Splitters return; density peaks here.
-- Boss: Hive Maelstrom (maelstrom debut, counter-rotating spirals).
+- Boss: Hive Maelstrom (maelstrom debut, three phases: one turning ring, then counter-rotating rings,
+  then it hunts the player; swarm and splitter pairs launch in front of the hull).
 - distance 20000, spawnRate 2.1; enemies: swarm 45, splitter 15, dodger 15, fighter 25.
 
 ### L10: Eventide Engine (H) - planet Omega Spire - motif: singularity engine
 - Final exam: the level reprises every gimmick in sequence (wormholes, minefields, flares,
   lattice, corridors) across 6 sections.
-- Boss: Omega Null, pressure into maelstrom phase switch, the hardest fight in the game.
+- Boss: Omega Null, the hardest fight in the game: four phases that reprise earlier bosses (fans,
+  shielded walls, gunship guard, rings, beams), switching pressure into maelstrom at half hull.
 - distance 21000, spawnRate 2.25; enemies: fighter 30, lancer 18, gunship 32, sower 20.
 
 ## 4. Re-theme sync points

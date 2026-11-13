@@ -1,6 +1,22 @@
-import type { LevelConfig } from '../types';
+import type { BossShotPattern, LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
+
+/** The Marshal's line fan: narrow, a lane to step out of; every other one leans the way it marches. */
+const VECTRA_LINE_FAN: BossShotPattern = {
+  kind: 'arc',
+  shots: 7,
+  arcDegrees: 32,
+  speed: 0.98,
+  originY: 30,
+  lean: 6,
+  leanEveryOther: true,
+};
+/** Two fans splayed outward, leaving a pocket right under the hull for a pilot bold enough to close in. */
+const VECTRA_CROSSFIRE: readonly BossShotPattern[] = [
+  { kind: 'arc', shots: 4, arcDegrees: 16, speed: 0.95, originY: 30, angle: -26 },
+  { kind: 'arc', shots: 4, arcDegrees: 16, speed: 0.95, originY: 30, angle: 26 },
+];
 
 export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
   name: 'Clockwork Causeway',
@@ -30,33 +46,34 @@ export const WARZONE_CORRIDOR_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Marshal Vectra',
-    maxHp: 585,
+    maxHp: 505,
     parSeconds: 50,
     escalatesPastPar: true,
     phaseChangePauseMs: 280,
+    // The fight that introduces anchors: the Marshal drills on its patrol line, then keeps stepping
+    // forward to a post at the centre, so the pocket it opens moves closer and the march pulls it away.
     phases: [
       {
+        // Drill: two line fans to step out of, then a crossfire whose pocket under the hull is the opening.
         startsAtHull: 1,
         style: 'pressure',
         movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
         attacks: [
-          {
-            cooldownMs: 940,
-            volley: [
-              { kind: 'arc', shots: 7, arcDegrees: 31.9, speed: 0.98, originY: 30, lean: 6, leanEveryOther: true },
-            ],
-          },
+          { cooldownMs: 950, volley: [VECTRA_LINE_FAN] },
+          { cooldownMs: 950, volley: [VECTRA_LINE_FAN] },
+          { cooldownMs: 1000, volley: VECTRA_CROSSFIRE },
         ],
       },
       {
+        // Advance: it steps forward to a post at the centre and opens the crossfire there, closer to the
+        // player, then patrols off it with a line fan and a turning spiral.
         startsAtHull: 0.5,
         style: 'pressure',
-        movement: { kind: 'patrol', speed: 195, edgePadding: 60 },
+        movement: { kind: 'patrol', speed: 70, edgePadding: 60 },
         attacks: [
-          {
-            cooldownMs: 470,
-            volley: [{ kind: 'spiral', shots: 5, degreesPerSecond: 257.4, speed: 1.05, originY: 30 }],
-          },
+          { cooldownMs: 1000, anchor: { x: 0.5, y: 150 }, volley: VECTRA_CROSSFIRE },
+          { cooldownMs: 900, volley: [VECTRA_LINE_FAN] },
+          { cooldownMs: 950, volley: [{ kind: 'spiral', shots: 6, degreesPerSecond: 257, speed: 0.9, originY: 30 }] },
         ],
       },
     ],

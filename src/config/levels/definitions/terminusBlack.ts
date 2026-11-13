@@ -1,6 +1,27 @@
-import type { LevelConfig } from '../types';
+import type { BossMovementConfig, BossShotPattern, LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
+
+/** Its signature fan: leans with the patrol on every other volley, so consecutive fans interleave. */
+const OMEGA_FANS: BossShotPattern = {
+  kind: 'arc',
+  shots: 8,
+  arcDegrees: 36,
+  speed: 1,
+  originY: 30,
+  lean: 6,
+  leanEveryOther: true,
+};
+/** Two rings turning against each other, the maelstrom hull's answer to the fans. */
+const OMEGA_VORTEX: BossShotPattern = {
+  kind: 'spiral',
+  shots: 6,
+  degreesPerSecond: 220,
+  speed: 1,
+  originY: 30,
+  mirrored: true,
+};
+const OMEGA_PATROL: BossMovementConfig = { kind: 'patrol', speed: 90, edgePadding: 60 };
 
 export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   name: 'Eventide Engine',
@@ -11,7 +32,7 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   pacingSummary: 'Wormholes, minefields, flares, lattices, and corridors reprise before Omega Null.',
   enemyCompositionSummary: 'An elite lineup: lancers and gunships lead, sowers deny, fighters press.',
   hazardSummary: 'Every hazard type returns as a reprise sequence.',
-  bossConcept: 'Omega Null switches pressure into maelstrom at phase two; the hardest fight.',
+  bossConcept: 'Omega Null reprises every boss lesson in four phases, switching pressure into maelstrom at half hull.',
   difficultyRole: 'Finale and total mastery check.',
   journeyNote: 'The Eventide Engine powers down only for the worthy.',
   bgColor: '#04060f',
@@ -30,33 +51,81 @@ export const TERMINUS_BLACK_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Omega Null',
-    maxHp: 1880,
+    maxHp: 1300,
     parSeconds: 70,
     escalatesPastPar: true,
     phaseChangePauseMs: 240,
+    // The final exam, like the sector that leads to it: each phase reprises a lesson from an earlier boss, and
+    // the last one asks for all of them in turn. The hull switches from pressure to maelstrom at half.
     phases: [
       {
+        // Pressure: interleaving fans that lean with its patrol, then a burst aimed at the player's lane.
         startsAtHull: 1,
         style: 'pressure',
-        movement: { kind: 'patrol', speed: 80, edgePadding: 60 },
+        movement: OMEGA_PATROL,
+        attacks: [
+          { cooldownMs: 950, volley: [OMEGA_FANS] },
+          { cooldownMs: 950, volley: [OMEGA_FANS] },
+          { cooldownMs: 1150, volley: [{ kind: 'aimedBurst', shots: 4, intervalMs: 140, speed: 1.15, originY: 30 }] },
+        ],
+      },
+      {
+        // Siege: it shields while it charges a wall, and every other round launches a gunship guard
+        // in front of the hull, which a piercing gun cuts through on its way to the boss.
+        startsAtHull: 0.75,
+        style: 'pressure',
+        movement: OMEGA_PATROL,
         attacks: [
           {
-            cooldownMs: 970,
-            volley: [
-              { kind: 'arc', shots: 8, arcDegrees: 36.3, speed: 1.04, originY: 30, lean: 6, leanEveryOther: true },
-            ],
+            cooldownMs: 1200,
+            shielded: true,
+            volley: [{ kind: 'wall', gaps: [0.25, 0.75, 0.5], gapWidth: 120, spacing: 44, speed: 0.7, originY: 30 }],
+          },
+          {
+            cooldownMs: 1000,
+            volley: [OMEGA_FANS, { kind: 'summon', escorts: ['gunship', 'gunship'], onVolleys: 'even' }],
+          },
+          {
+            cooldownMs: 1000,
+            volley: [{ kind: 'aimedArc', shots: 5, arcDegrees: 30, speed: 1.1, originY: 30 }],
           },
         ],
       },
       {
-        // The finale switches hulls: pressure into maelstrom.
+        // Maelstrom: counter-rotating rings from its patrol, then it drops low on one flank and burns
+        // a beam straight down. Beside the beam, close under the hull, is the place to be for a short gun.
         startsAtHull: 0.5,
         style: 'maelstrom',
-        movement: { kind: 'patrol', speed: 200, edgePadding: 60 },
+        movement: OMEGA_PATROL,
+        attacks: [
+          { cooldownMs: 900, volley: [OMEGA_VORTEX] },
+          { cooldownMs: 600, volley: [OMEGA_VORTEX] },
+          {
+            cooldownMs: 1100,
+            anchor: { x: 0.7, y: 140 },
+            volley: [{ kind: 'beam', width: 40, telegraphMs: 700, activeMs: 700, originY: 30 }],
+          },
+        ],
+      },
+      {
+        // Null: it hunts the player's lane with everything it has taught, one lesson per volley, so
+        // each still reads on its own: a beam inside sparse rings, an aimed burst, a shielded wall.
+        startsAtHull: 0.25,
+        style: 'maelstrom',
+        movement: { kind: 'pursuit', speed: 70, edgePadding: 60 },
         attacks: [
           {
-            cooldownMs: 460,
-            volley: [{ kind: 'spiral', shots: 8, degreesPerSecond: 240, speed: 1.12, originY: 30, mirrored: true }],
+            cooldownMs: 1200,
+            volley: [
+              { kind: 'beam', width: 36, telegraphMs: 650, activeMs: 750, originY: 30 },
+              { kind: 'spiral', shots: 5, degreesPerSecond: 90, speed: 0.85, originY: 30, mirrored: true },
+            ],
+          },
+          { cooldownMs: 1000, volley: [{ kind: 'aimedBurst', shots: 5, intervalMs: 120, speed: 1.15, originY: 30 }] },
+          {
+            cooldownMs: 1300,
+            shielded: true,
+            volley: [{ kind: 'wall', gaps: [0.3, 0.7], gapWidth: 120, spacing: 44, speed: 0.75, originY: 30 }],
           },
         ],
       },
