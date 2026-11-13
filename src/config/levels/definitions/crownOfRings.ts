@@ -1,6 +1,20 @@
-import type { LevelConfig } from '../types';
+import type { BossMovementConfig, BossShotPattern, LevelConfig } from '../types';
 import { arpeggiatorPatterns, bassPatterns } from '../music';
 import { createSignatureMusic } from './reimaginedMusic';
+
+/** Two fans from the hangar decks, each turned in so they cross below the hull. */
+const ARK_BROADSIDE: readonly BossShotPattern[] = [
+  { kind: 'arc', shots: 5, arcDegrees: 54, speed: 0.95, originsX: [-22], originY: 24, angle: -8 },
+  { kind: 'arc', shots: 5, arcDegrees: 54, speed: 0.95, originsX: [22], originY: 24, angle: 8 },
+];
+/** Flak: a fan centred on the player. */
+const ARK_FLAK: BossShotPattern = { kind: 'aimedArc', shots: 7, arcDegrees: 48, speed: 1.05, originY: 30 };
+const ARK_PATROL: BossMovementConfig = {
+  kind: 'patrol',
+  speed: 58,
+  edgePadding: 90,
+  bob: { amplitude: 10, periodMs: 2417 },
+};
 
 export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   name: 'Eclipse Narrows',
@@ -11,7 +25,7 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   pacingSummary: 'Corridor escort beats tighten into the Umbral Ark carrier engagement.',
   enemyCompositionSummary: 'Bombers and gunships pincer; dodgers harry the convoy line; fighters screen.',
   hazardSummary: 'Rock corridors and mirrored crossfire in eclipse shadow.',
-  bossConcept: 'Umbral Ark debuts the carrier style, summoning escorts through the narrows.',
+  bossConcept: 'Umbral Ark debuts the carrier style: every phase opens with an escort launch in front of the hull.',
   difficultyRole: 'Hard level testing convoy discipline under pincer pressure.',
   journeyNote: 'In the shadow of the eclipse, the convoy runs the narrows with the Ark astern.',
   bgColor: '#060608',
@@ -30,39 +44,57 @@ export const CROWN_OF_RINGS_LEVEL: LevelConfig = {
   hasBoss: true,
   boss: {
     name: 'Umbral Ark',
-    maxHp: 1120,
+    maxHp: 1320,
     parSeconds: 62,
     escalatesPastPar: true,
     phaseChangePauseMs: 300,
+    // A carrier: every phase opens with a launch, and the escorts arrive in the line between the ship
+    // and the Ark. Clearing them costs time; ignoring them costs room. The broadside is its one gun.
     phases: [
       {
+        // Hangar: a fighter pair, then two crossing broadsides; the crossing leaves the flanks open.
         startsAtHull: 1,
         style: 'carrier',
-        movement: { kind: 'patrol', speed: 57.6, edgePadding: 90, bob: { amplitude: 10, periodMs: 2417 } },
+        movement: ARK_PATROL,
         attacks: [
           {
-            cooldownMs: 1060,
+            cooldownMs: 1100,
             volley: [
-              { kind: 'arc', shots: 4, arcDegrees: 54, speed: 0.931, originsX: [-22], originY: 24, angle: -8 },
-              { kind: 'arc', shots: 4, arcDegrees: 54, speed: 0.931, originsX: [22], originY: 24, angle: 8 },
-              { kind: 'summon', escorts: ['swarm', 'scout'], onVolleys: 'even' },
+              { kind: 'summon', escorts: ['fighter', 'fighter'] },
+              { kind: 'arc', shots: 3, arcDegrees: 14, speed: 0.9, originY: 30 },
             ],
           },
+          { cooldownMs: 1000, volley: ARK_BROADSIDE },
+          { cooldownMs: 1000, volley: ARK_BROADSIDE },
         ],
       },
       {
-        startsAtHull: 0.5,
+        // Convoy: a gunship rides ahead of the hull, flak follows the player, and the rotary turns.
+        startsAtHull: 0.66,
         style: 'carrier',
-        movement: { kind: 'patrol', speed: 129.6, edgePadding: 90, bob: { amplitude: 10, periodMs: 2417 } },
+        movement: { ...ARK_PATROL, speed: 75 },
+        attacks: [
+          { cooldownMs: 1100, volley: [{ kind: 'summon', escorts: ['gunship'] }, ...ARK_BROADSIDE] },
+          { cooldownMs: 900, volley: [ARK_FLAK] },
+          { cooldownMs: 900, volley: [{ kind: 'spiral', shots: 5, degreesPerSecond: 192, speed: 1.04, originY: 30 }] },
+        ],
+      },
+      {
+        // Narrows: every launch comes with a wall, so the dodger pair is met inside the one corridor
+        // left open, and the gap moves each time.
+        startsAtHull: 0.33,
+        style: 'carrier',
+        movement: { ...ARK_PATROL, speed: 90 },
         attacks: [
           {
-            cooldownMs: 550,
+            cooldownMs: 1300,
             volley: [
-              { kind: 'spiral', shots: 5, degreesPerSecond: 192, speed: 1.04, originY: 30 },
-              { kind: 'arc', shots: 5, arcDegrees: 38, speed: 1.04, originY: 26, lean: 4 },
-              { kind: 'summon', escorts: ['fighter', 'swarm'], onVolleys: 'odd' },
+              { kind: 'wall', gaps: [0.3, 0.7, 0.5], gapWidth: 120, spacing: 44, speed: 0.8, originY: 30 },
+              { kind: 'summon', escorts: ['dodger', 'dodger'] },
             ],
           },
+          { cooldownMs: 900, volley: ARK_BROADSIDE },
+          { cooldownMs: 900, volley: [ARK_FLAK] },
         ],
       },
     ],

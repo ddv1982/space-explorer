@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - A boss that is still alive after its par time slowly fires faster, up to a quarter faster. The wind-up before each volley never gets shorter. The first boss (sector 3) keeps its pace, and sectors 1 and 2 are unchanged.
 - Bastion Bulwark (sector 6) is rebuilt in three phases. Its shield now only closes while it charges a wall of shots with one gap in it, so you spend that time dodging, not waiting. At two thirds it starts flying from flank to flank, and at one third its shield breaks and it chases you and drops a beam on your lane.
 - Choir Regent (sector 7) now fights in three phases, each with its own rhythm. First it fires two fans that interleave and then one aimed at you. At two thirds its fans turn outward and leave the lane under it open, then a fan closes that lane, then a quick burst follows you. At one third it adds a spinning volley and speeds up.
+- Umbral Ark (sector 8) now fights in three phases, and each one opens by launching escorts in front of it. First a pair of fighters, then a gunship, and in the last third a pair of dodgers launched with a wall of shots whose gap moves each time. Lance shots pierce the escorts on their way to the hull; Seekers tend to chase the escorts instead of the Ark.
 
 ### Fixed
 

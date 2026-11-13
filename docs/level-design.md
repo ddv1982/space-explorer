@@ -147,7 +147,7 @@ All six hull styles are used; a phase can switch style (the finale does). Bastio
 | L5 | Reef Stalker | pursuit, 2 phases | 52 s |
 | L6 | Bastion Bulwark | bulwark, 3 phases at 66% and 33%: rampart (shield only while charging a wall), breach (flank anchors, aimed burst, rotary), last stand (no shield, pursues, beam) | 60 s |
 | L7 | Choir Regent | pressure, 3 phases at 66% and 33%, each a fixed rhythm: hymn (two interleaving fans, then a fan aimed at you), antiphon (outward loft fans that leave the lane under it open, a nave fan that closes it, a cantor's aimed burst), crescendo (rotary, hymn, lofts with a short burst, over a faster patrol) | 58 s |
-| L8 | Umbral Ark | carrier (debut), 2 phases | 62 s |
+| L8 | Umbral Ark | carrier (debut), 3 phases at 66% and 33%, each opening with a launch: hangar (fighter pair, crossing broadsides), convoy (a gunship escort, flak aimed at you, rotary), narrows (a wall whose gap moves, with a dodger pair launched into it) | 62 s |
 | L9 | Hive Maelstrom | maelstrom (debut), 2 phases | 65 s |
 | L10 | Omega Null | pressure -> maelstrom (finale switch), 2 phases | 70 s |
 
@@ -196,7 +196,7 @@ Difficulty shorthand: G = gentle, R = ramp, H = hard.
 
 ### L8: Eclipse Narrows (H) - planet Umbral Rook - motif: eclipse
 - Convoy escort fantasy through tight corridors; bombers and gunships in pincer waves.
-- Boss: Umbral Ark (carrier debut, escort summons). distance 19500, spawnRate 2.0.
+- Boss: Umbral Ark (carrier debut; three phases, each opening with an escort launch in front of the hull). distance 19500, spawnRate 2.0.
 - enemies: bomber 22, gunship 30, dodger 20, fighter 28.
 
 ### L9: Swarmfront (H) - planet Hive Lathe - motif: hive
