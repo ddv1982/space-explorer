@@ -138,7 +138,7 @@ exclusive to L5, L9, and L10.
 
 ### 2.9 Boss attack-style plan
 
-All six hull styles are used; a phase can switch style (the finale does). Bastion Bulwark is the first boss authored for the rotation engine; the others still fire one attack per phase and are due their own rotations.
+All six hull styles are used; a phase can switch style (the finale does). Every boss is authored for the rotation engine, each in its own level file; the early bosses teach one idea each (fans, anchors, the aimed burst) and the finale reprises them.
 
 | Level | Boss | Phases | Par |
 |---|---|---|---|

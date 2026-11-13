@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+
 ### Added
 
 - Change your ship systems while you play. Once a run has a main gun, press Q (or tap the new swap button under pause on touch screens) to switch Lance, Scatter and Seekers in turn. The new gun's name flashes over your ship. Swapping has a cost: the new gun takes half a second to start firing, and you can swap again only after 2 seconds (the button dims and charges up meanwhile). Pausing does not shorten either wait.
@@ -13,12 +14,7 @@ All notable changes to this project will be documented in this file.
 - The game saves your run when you leave the refit bay for the next sector, so closing the tab no longer loses the ship system you just picked. The save appears in the main menu as AUTOSAVE, next to your three slots, and loads and deletes like them. It never overwrites a slot of yours, and it goes away when the run ends or you start a new one.
 - Save slots in the main menu and the pause panel name the ship systems the saved run has picked.
 - Fast-kill bonus: beat a boss under its par time and you score 200 points for every second left on the clock, shown as FAST KILL next to the kill. Pausing never costs you any of it.
-
-
-
 - The refit bay lists your ship systems next to the upgrades once you have one. Select one to see its three options again, with the current one marked, and pick another: changing here is free, as often as you like, with no wait. Escape, or picking the current one again, keeps it. The next sector flies with your choice, and the autosave and your checkpoints store it.
-
-
 
 ### Changed
 
@@ -27,19 +23,17 @@ All notable changes to this project will be documented in this file.
 - Boss health no longer grows when you buy weapons, fire rate, hull or shields. Upgrades now make boss fights shorter, as they should. Every boss has a fixed health tuned so a typical ship for that sector beats it in about 45 to 70 seconds.
 - A boss that is still alive after its par time slowly fires faster, up to a quarter faster. The wind-up before each volley never gets shorter. The first boss (sector 3) keeps its pace, and sectors 1 and 2 are unchanged.
 - Bastion Bulwark (sector 6) is rebuilt in three phases. Its shield now only closes while it charges a wall of shots with one gap in it, so you spend that time dodging, not waiting. At two thirds it starts flying from flank to flank, and at one third its shield breaks and it chases you and drops a beam on your lane.
-### Fixed
-
-- The keyboard focus ring on the ship-system choices was cut off, leaving only a stray line under the first choice. The focused choice now lights up fully, and on very short screens the list scrolls to keep it in view instead of cutting off the last choice.
+- Pyre Herald (sector 3), the first boss, now alternates two slow attacks per phase instead of repeating one: twin ember fans and a fan that drifts with it, then a turning spiral and its first shots aimed at you. It stays as gentle as before, never speeds up and needs no main gun.
+- Marshal Vectra (sector 4) now drills two line fans and then a crossfire that leaves a safe pocket right under it, so flying in close is the opening. At half health it starts stepping forward to a post at the centre, closer to you, and adds a turning spiral.
+- Reef Stalker (sector 5) now fights in three phases. It follows your lane with an aimed fan and a burst of shots that re-aim one by one, then darts to each edge of the screen and fans across it (the way out is right under it), and in its last third chases faster with longer bursts and a wide fan to read.
 - Choir Regent (sector 7) now fights in three phases, each with its own rhythm. First it fires two fans that interleave and then one aimed at you. At two thirds its fans turn outward and leave the lane under it open, then a fan closes that lane, then a quick burst follows you. At one third it adds a spinning volley and speeds up.
 - Umbral Ark (sector 8) now fights in three phases, and each one opens by launching escorts in front of it. First a pair of fighters, then a gunship, and in the last third a pair of dodgers launched with a wall of shots whose gap moves each time. Lance shots pierce the escorts on their way to the hull; Seekers tend to chase the escorts instead of the Ark.
 - Hive Maelstrom (sector 9) is rebuilt in three phases. It starts with one ring of shots that turns between volleys, then spins two rings against each other while it sweeps the screen, and at one third it chases you and fires its fastest rings. Every other round it launches swarms (later splitters) in front of its hull, which Lance cuts through and which pull Seekers off the boss.
 - Omega Null (sector 10), the final boss, now has four phases that bring back what earlier bosses taught: leaning fans and aimed bursts, a shielded wall with a gunship guard, counter-rotating rings and a beam, and at the end all of them in turn while it chases you. It switches hulls at half health as before, and has less health, so the fight is about reading attacks rather than wearing it down.
 
-- Pyre Herald (sector 3), the first boss, now alternates two slow attacks per phase instead of repeating one: twin ember fans and a fan that drifts with it, then a turning spiral and its first shots aimed at you. It stays as gentle as before, never speeds up and needs no main gun.
-- Marshal Vectra (sector 4) now drills two line fans and then a crossfire that leaves a safe pocket right under it, so flying in close is the opening. At half health it starts stepping forward to a post at the centre, closer to you, and adds a turning spiral.
-- Reef Stalker (sector 5) now fights in three phases. It follows your lane with an aimed fan and a burst of shots that re-aim one by one, then darts to each edge of the screen and fans across it (the way out is right under it), and in its last third chases faster with longer bursts and a wide fan to read.
+### Fixed
 
-
+- The keyboard focus ring on the ship-system choices was cut off, leaving only a stray line under the first choice. The focused choice now lights up fully, and on very short screens the list scrolls to keep it in view instead of cutting off the last choice.
 
 ## [1.33.0] - 2026-11-12
 
