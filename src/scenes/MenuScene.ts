@@ -76,9 +76,10 @@ export class MenuScene extends Phaser.Scene {
         onSelectQuality: (tier) => this.selectVisualQualityTier(tier),
       },
     });
+    // Before the hero is measured: an empty autosave card is hidden here, which changes the band's size.
+    this.refreshSaveSlots('');
     this.hero = createMenuHero(this, this.measureHeroBand(this.view.heroSlot));
     this.input.keyboard?.on('keydown-ESC', this.closeSettingsSheet, this);
-    this.refreshSaveSlots('');
     this.maybeStartDevLevelJump();
   }
 
