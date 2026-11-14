@@ -23,6 +23,8 @@ Playable here:
 
 ## Quick start
 
+Use Node.js 26.x and Bun 1.3.5. CI and the Vercel project use Node 26 as well.
+
 ```bash
 bun install
 bun run dev

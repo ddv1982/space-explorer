@@ -21,6 +21,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Set up Node
+        # Node is also used directly by typecheck/build scripts and Vercel.
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -65,6 +71,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -130,6 +141,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -143,18 +159,18 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: bunx vercel@59.1.4 pull --yes --environment=production --token="${VERCEL_TOKEN}"
+        run: bunx vercel@65.16.0 pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel prebuilt output
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: bunx vercel@59.1.4 build --prod --token="${VERCEL_TOKEN}"
+        run: bunx vercel@65.16.0 build --prod --token="${VERCEL_TOKEN}"
 
       - name: Deploy production to Vercel
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: bunx vercel@59.1.4 deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+        run: bunx vercel@65.16.0 deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
