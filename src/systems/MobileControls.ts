@@ -28,7 +28,7 @@ interface ControlKey {
 }
 
 /**
- * Touch controls for momentum flight: drag anywhere and the ship follows the finger's movement,
+ * Pointer buttons for every device, with touch controls for momentum flight: drag anywhere and the ship follows the finger's movement,
  * while the main gun autofires. A pause button stays available in the top-right corner, and from sector 3
  * a swap button sits under it that borrows a special gun and shows the charge.
  */
@@ -68,7 +68,13 @@ export class MobileControls {
   private readonly handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
     // Drag steering is a touch control: trackpad or mouse presses on hybrid devices never start it.
     // Suppression is not checked here because this listener runs before the bootstrap's touch restore.
-    if (!pointer.wasTouch || !this.isEnabled() || this.dragPointerId !== null || this.isOverControlKey(pointer)) {
+    if (
+      !pointer.wasTouch ||
+      !this.enabledForTouchDevice ||
+      !this.isEnabled() ||
+      this.dragPointerId !== null ||
+      this.isOverControlKey(pointer)
+    ) {
       return;
     }
 
@@ -107,10 +113,6 @@ export class MobileControls {
     this.scene = scene;
     this.enabledForTouchDevice = isTouchMobileDevice();
     this.blocked = false;
-
-    if (!this.enabledForTouchDevice) {
-      return this;
-    }
 
     const extraPointers = Math.max(0, 3 - scene.input.manager.pointersTotal);
     if (extraPointers > 0) {
@@ -170,7 +172,7 @@ export class MobileControls {
   }
 
   relayout(): void {
-    if (!this.scene || !this.enabledForTouchDevice) {
+    if (!this.scene) {
       return;
     }
 
@@ -201,12 +203,12 @@ export class MobileControls {
   }
 
   isEnabled(): boolean {
-    return this.enabledForTouchDevice && !this.blocked && this.scene !== null;
+    return !this.blocked && this.scene !== null;
   }
 
   /** True while touch is the active input; the gun then autofires unless touch autofire is off. */
   isTouchSteeringActive(): boolean {
-    return this.isEnabled() && !this.touchSteeringSuppressed;
+    return this.enabledForTouchDevice && this.isEnabled() && !this.touchSteeringSuppressed;
   }
 
   /** True while the steering finger is on the screen, whatever other fingers tap meanwhile. */
@@ -216,7 +218,7 @@ export class MobileControls {
 
   isControlPointer(pointer: Phaser.Input.Pointer): boolean {
     return (
-      this.enabledForTouchDevice &&
+      this.scene !== null &&
       (pointer.id === this.pauseButtonPointerId ||
         pointer.id === this.swapButtonPointerId ||
         pointer.id === this.dragPointerId)
@@ -320,7 +322,7 @@ export class MobileControls {
   }
 
   private refreshVisibility(): void {
-    const pauseVisible = this.enabledForTouchDevice && this.scene !== null;
+    const pauseVisible = this.scene !== null;
     // The pause panel covers the field, so the swap key hides with it.
     const swapVisible = pauseVisible && this.swapAvailable && !this.blocked;
     setControlKeyVisible(this.pauseKey, pauseVisible, pauseVisible && !this.blocked);

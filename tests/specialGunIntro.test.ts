@@ -14,7 +14,7 @@ describe('special gun intro card', () => {
   test('names Q on a keyboard and the swap key on touch, and nothing else changes', () => {
     const keyboard = describeSpecialGunIntro(false);
     const touch = describeSpecialGunIntro(true);
-    expect(keyboard[1]).toBe('Press Q to switch to SCATTER or SEEKERS.');
+    expect(keyboard[1]).toBe('Press Q or click the swap key to switch to SCATTER or SEEKERS.');
     expect(touch[1]).toBe('Tap the swap key to switch to SCATTER or SEEKERS.');
     expect(touch.filter((line, index) => line !== keyboard[index])).toEqual([touch[1]]);
     expect(keyboard[0]).toContain('LANCE');

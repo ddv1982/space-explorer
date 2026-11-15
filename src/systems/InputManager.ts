@@ -63,7 +63,8 @@ export class InputManager {
     }
 
     // Keyboard and mouse play can opt in to autofire from settings.
-    return autoFire.keyboard || this.space.isDown || this.scene.input.activePointer.isDown;
+    const pointer = this.scene.input.activePointer;
+    return autoFire.keyboard || this.space.isDown || (pointer.isDown && !mobileControls?.isControlPointer(pointer));
   }
 
   /** Touch drag steering velocity for the ship at (x, y), or null when no finger is steering. */

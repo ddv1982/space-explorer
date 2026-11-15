@@ -9,7 +9,7 @@ const AUTO_FIRE_HINT = 'Guns fire automatically';
 const MOBILE_FIRE_HINT = 'Guns fire while you touch';
 const KEYBOARD_TITLE = 'WASD / Arrows to Move';
 const KEYBOARD_FIRE_HINT = 'SPACE / Click to Fire';
-const KEYBOARD_SWAP_HINT = 'Q for a Special Gun';
+const KEYBOARD_SWAP_HINT = 'Q / swap button: Special Gun';
 
 /** The fire line follows the autofire setting for the input in use. */
 function fireHintFor(mobile: boolean): string {

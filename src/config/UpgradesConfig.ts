@@ -50,7 +50,7 @@ const UPGRADES: UpgradeDef[] = [
   {
     key: 'hp',
     name: 'HULL ARMOR',
-    description: '+2 Max HP',
+    description: '+1 Max HP',
     maxLevel: 5,
     progressionCaps: [1, 2, 2, 3, 3, 4, 4, 5, 5, 5],
     baseCost: 500,
@@ -85,8 +85,8 @@ const UPGRADES: UpgradeDef[] = [
     name: 'SHIELD',
     description: '+1 Shield each life',
     maxLevel: 3,
-    progressionCaps: [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
-    // A shield tier is one absorbed hit per life, where a hull tier is two: priced a little above hull.
+    progressionCaps: [0, 0, 1, 1, 1, 2, 2, 2, 3, 3],
+    // Shields absorb a full hit at any difficulty; later tiers open gradually to limit defensive stacking.
     baseCost: 1000,
     costMultiplier: 2,
     unlock: {

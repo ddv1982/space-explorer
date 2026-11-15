@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.0] - 2026-11-15
+
+### Added
+
+- Pause and gun-swap buttons are available with a mouse as well as touch. The swap button appears when special guns unlock in sector 3; its charge bar and first-use ring show when and where to switch. Q still works, and touch steering remains independent of the buttons.
+
+### Changed
+
+- Hull Armor now adds 1 HP per tier instead of 2, for 10 HP at the maximum tier instead of 15. The first tier still costs 500 credits after sector 1.
+- Shield tiers open after sectors 3, 6 and 9 instead of 3, 5 and 7. High scores cannot skip these limits. Hull and shields still recover between sectors and on respawn; offensive upgrades and enemy patterns are unchanged.
+- Older saves keep their purchased upgrade tiers; hull health is clamped to the new maximum when loaded.
+
 ## [1.35.1] - 2026-11-14
 
 ### Fixed

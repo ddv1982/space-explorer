@@ -236,3 +236,21 @@ test('Q and the touch swap button each request one gun swap per press', () => {
   expect(manager.consumeGunSwapRequest()).toBe(true);
   expect(manager.consumeGunSwapRequest()).toBe(false);
 });
+
+test('clicking an on-screen control does not fire the main gun', () => {
+  autoFire = { touch: true, keyboard: false };
+  const scene = createScene([]);
+  let overControl = true;
+  const inputManager = new InputManager();
+  inputManager.create(
+    scene as never,
+    {
+      isTouchSteeringActive: () => false,
+      isControlPointer: () => overControl,
+    } as never
+  );
+  scene.input.activePointer.isDown = true;
+  expect(inputManager.isFiring()).toBe(false);
+  overControl = false;
+  expect(inputManager.isFiring()).toBe(true);
+});

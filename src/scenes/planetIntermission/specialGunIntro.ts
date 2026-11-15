@@ -14,7 +14,7 @@ export function isSpecialGunIntroDue(clearedLevel: number): boolean {
 export function describeSpecialGunIntro(touch: boolean): readonly string[] {
   return [
     'Your main gun is now the LANCE: slower shots that pierce every ship in a line.',
-    `${touch ? 'Tap the swap key' : 'Press Q'} to switch to SCATTER or SEEKERS.`,
+    `${touch ? 'Tap the swap key' : 'Press Q or click the swap key'} to switch to SCATTER or SEEKERS.`,
     'Special guns run on a charge. When it is empty you drop back to the Lance, which refills it.',
   ];
 }

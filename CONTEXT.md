@@ -26,6 +26,9 @@ _Avoid_: surprise, cheap shot
 
 ## Decisions
 
+**Defensive progression stays bounded even with high scores (2026-11)**:
+Score buys upgrades but never advances the campaign or grants level-ups. Chain multipliers and fast-kill bonuses made the defensive caps easy to buy, so Hull Armor now grants one HP per tier (5 base, 10 maximum), and shield tiers open after sectors 3, 6 and 9. The first hull purchase stays affordable at 500 credits. Sector recovery and respawn shields remain deliberate recovery beats; offense and encounter grammar are unchanged. Pointer buttons for pause and special-gun swap appear on all devices, while relative drag and touch autofire remain touch-only.
+
 **Boss fights are authored rotations with a par time (2026-11)**:
 Bosses got harder by soaking up more hull, which made late fights long, easy and repetitive. Boss hull no longer scales with sector or with the player's upgrades; each boss has an authored hull and a par time (45-70 s) measured with `bun run balance:bosses`. Difficulty lives in what the boss does: phases at hull thresholds, an ordered (never random) attack rotation per phase, anchors that move the boss between attacks, and escalation of up to 25% faster volleys past par (never a shorter wind-up; the first boss is exempt). A kill under par pays a fixed bonus per second. Fight time is the boss's gameplay clock, so pause and hit-stop never count. Difficulty tiers still only scale accepted hull damage.
 

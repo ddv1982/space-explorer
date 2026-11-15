@@ -38,20 +38,21 @@ Open `http://localhost:5173` in your browser.
 |-------|--------|
 | Arrow keys / WASD | Move ship |
 | Space / Click | Fire weapons |
-| Q | From sector 3: switch to a special gun while its charge lasts (Lance → Scatter → Seekers → Lance) |
-| Esc | Pause (closes the settings sheet on the menu) |
+| Q / Swap button | From sector 3: switch to a special gun while its charge lasts (Lance → Scatter → Seekers → Lance) |
+| Esc / Pause button | Pause (closes the settings sheet on the menu) |
 
 The ship flies with inertia: it builds speed over about a second and slides after you let go.
 
 On touch devices, drag anywhere to fly: the ship follows your finger's movement and the main gun
 fires automatically. Pressing a key on a hardware keyboard hands steering and firing to the
 keyboard, and the next touch hands them back (tap-to-pause stays available). From sector 3, a swap
-button under the pause button switches guns and shows the special-gun charge.
+button under the pause button switches guns and shows the special-gun charge. Both buttons also
+accept mouse clicks on desktop and hybrid devices; gun switching appears only when it unlocks.
 
 The refit bay after sector 2 opens with a short SPECIAL GUNS ONLINE card that explains Lance, the
 swap key and the charge. In sector 3 the swap is pointed out until you first use it: a
-`Q  SPECIAL GUN` label beside the HUD charge bar on a keyboard, a pulsing ring around the swap
-button on touch.
+`Q  SPECIAL GUN` label beside the HUD charge bar on a keyboard, and a pulsing ring around the swap
+button on every device.
 
 Autofire is set in SETTINGS (menu or pause panel). Touch flight autofires by default; turn it off
 to fire only while your finger is on the screen. Keyboard and mouse play can turn autofire on, so
@@ -116,7 +117,7 @@ Menu → Game → Planet Intermission → Game → ... → Victory
 
 Bought during the planet intermission screen using score as currency:
 
-- **Hull Armor** — raises max HP
+- **Hull Armor** — adds 1 max HP per tier, up to 10 HP
 - **Weapons** — increases damage
 - **Fire Rate** — improves firing speed
 - **Shield** — increases hit absorption
