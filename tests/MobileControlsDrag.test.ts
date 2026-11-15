@@ -2,7 +2,11 @@ import { describe, expect, mock, test } from 'bun:test';
 import { mockPhaserModule } from './helpers/phaserMock';
 
 mockPhaserModule();
-mock.module('../src/utils/device', () => ({ isTouchMobileDevice: () => true, prefersReducedMotion: () => false }));
+let touchDevice = true;
+mock.module('../src/utils/device', () => ({
+  isTouchMobileDevice: () => touchDevice,
+  prefersReducedMotion: () => false,
+}));
 
 const { MobileControls } = await import('../src/systems/MobileControls');
 
@@ -211,4 +215,38 @@ describe('MobileControls gun-swap key', () => {
     controls.destroy();
     expect(tweens.size).toBe(0);
   });
+});
+
+test('desktop and hybrid pointer keys work without enabling touch steering or autofire', () => {
+  touchDevice = false;
+  try {
+    const { controls, tapKey, emit } = createControls();
+    expect(controls.isEnabled()).toBe(true);
+    expect(controls.isTouchSteeringActive()).toBe(false);
+    expect(controls.showsTouchHints()).toBe(false);
+    tapKey(SWAP_KEY, { id: 0, ...SWAP });
+    expect(controls.consumeGunSwapPress()).toBe(false);
+    controls.setGunChargeState('lance', 1, false);
+    tapKey(SWAP_KEY, { id: 0, ...SWAP });
+    expect(controls.consumeGunSwapPress()).toBe(true);
+    expect(controls.consumeGunSwapPress()).toBe(false);
+    expect(controls.isControlPointer({ id: 0 } as never)).toBe(true);
+    emit('pointerup', { id: 0, ...SWAP });
+    expect(controls.isControlPointer({ id: 0 } as never)).toBe(false);
+    controls.setBlocked(true);
+    tapKey(SWAP_KEY, { id: 0, ...SWAP });
+    expect(controls.consumeGunSwapPress()).toBe(false);
+    controls.setBlocked(false);
+    let paused = false;
+    controls.setPauseButtonHandler(() => {
+      paused = true;
+    });
+    tapKey(0, { id: 0, ...PAUSE });
+    expect(paused).toBe(true);
+    emit('pointerdown', { id: 2, x: 100, y: 700, wasTouch: false });
+    expect(controls.getDragDesiredVelocity(195, 760, 0, 480)).toBeNull();
+    controls.destroy();
+  } finally {
+    touchDevice = true;
+  }
 });

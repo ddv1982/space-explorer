@@ -183,14 +183,14 @@ describe('PlayerState schema behavior', () => {
       creditsSpent: 0,
       runSeed: 0,
       easiestDifficulty: null,
-      currentHp: 15,
+      currentHp: 10,
       currentShields: 8,
       remainingLives: 3,
       upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
       systems: { support: null, late: null },
       helperWing: {
         grantedSlots: 1,
-        slots: [{ remainingLives: 3, hp: 15 }],
+        slots: [{ remainingLives: 3, hp: 10 }],
       },
     });
   });
@@ -322,7 +322,7 @@ describe('PlayerState schema behavior', () => {
 
     const state = getPlayerState(registry);
     expect(state.level).toBe(3);
-    expect(state.currentHp).toBe(9);
+    expect(state.currentHp).toBe(7);
     expect(state.currentShields).toBe(3);
   });
 

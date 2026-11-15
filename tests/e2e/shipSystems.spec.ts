@@ -337,3 +337,45 @@ test('leaving the refit bay autosaves the run, picks included, until the run end
   await expect(page.getByRole('button', { name: /^Load AUTOSAVE/ })).toHaveCount(0);
   assertNoBrowserErrors();
 });
+
+test('on-screen pause and unlocked gun swap work without a keyboard', async ({
+  page,
+  isMobile,
+  assertNoBrowserErrors,
+}) => {
+  await pinQualityTier(page, 'low');
+  await page.addInitScript(() =>
+    window.localStorage.setItem('space-explorer.autoFire.v1', JSON.stringify({ touch: false, keyboard: false }))
+  );
+  const viewport = page.viewportSize()!;
+  const x = viewport.width - 44;
+  const tap = async (y: number) => {
+    if (isMobile) await page.touchscreen.tap(x, y);
+    else await page.mouse.click(x, y);
+  };
+  await page.goto('/?browserHarness=1&startLevel=2');
+  await waitForScene(page, 'Game');
+  await tap(TOUCH_SWAP_Y);
+  expect(await gunState(page)).toBeNull();
+  await page.goto('/?browserHarness=1&startLevel=3');
+  await waitForScene(page, 'Game');
+  await expect.poll(async () => (await gunState(page))?.id).toBe('lance');
+  await tap(TOUCH_SWAP_Y);
+  await expect.poll(async () => (await gunState(page))?.id).toBe('scatter');
+  await page.screenshot({ path: test.info().outputPath('pointer-swap.png') });
+  // A held mouse button over swap changes once and never doubles as a fire press.
+  if (!isMobile) {
+    await page.mouse.move(x, TOUCH_SWAP_Y);
+    await page.mouse.down();
+    await expect.poll(async () => (await gunState(page))?.id).toBe('seekers');
+    await page.waitForTimeout(300);
+    expect((await gunState(page))?.id).toBe('seekers');
+    expect(await playerShots(page)).toHaveLength(0);
+    await page.mouse.up();
+  }
+  await tap(TOUCH_PAUSE_Y);
+  await expect(page.getByRole('dialog', { name: 'Paused' })).toBeVisible();
+  await page.getByRole('button', { name: 'RESUME', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Paused' })).toBeHidden();
+  assertNoBrowserErrors();
+});

@@ -133,7 +133,7 @@ describe('SaveSlotStorage', () => {
       creditsSpent: 0,
       runSeed: 0,
       easiestDifficulty: null,
-      currentHp: 6.25,
+      currentHp: 5.25,
       currentShields: 1,
       remainingLives: 2,
       upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
@@ -190,7 +190,7 @@ describe('SaveSlotStorage', () => {
         creditsSpent: 0,
         runSeed: 0,
         easiestDifficulty: null,
-        currentHp: 6.25,
+        currentHp: 5.25,
         currentShields: 1,
         remainingLives: 2,
         upgrades: { hp: 1, damage: 2, fireRate: 1, shield: 2, turrets: 1 },
@@ -202,7 +202,7 @@ describe('SaveSlotStorage', () => {
 
     expect(writeSaveSlot(saved)).toEqual(saved);
     expect(readSaveSlot('slot-1')).toEqual(saved);
-    expect(readSaveSlot('slot-1')?.playerState.currentHp).toBe(6.25);
+    expect(readSaveSlot('slot-1')?.playerState.currentHp).toBe(5.25);
   });
 
   test('gracefully falls back to empty state for corrupt JSON payloads', () => {
@@ -374,12 +374,12 @@ describe('SaveSlotStorage', () => {
       creditsSpent: 0,
       runSeed: 0,
       easiestDifficulty: null,
-      currentHp: 15,
+      currentHp: 10,
       currentShields: 8,
       remainingLives: 3,
       upgrades: { hp: 5, damage: 4, fireRate: 4, shield: 3, turrets: 2 },
       systems: { support: null, late: null },
-      helperWing: { grantedSlots: 1, slots: [{ remainingLives: 3, hp: 15 }] },
+      helperWing: { grantedSlots: 1, slots: [{ remainingLives: 3, hp: 10 }] },
     });
     expect(readSaveSlot('slot-1')?.runSummary.finalScore).toBe(Number.MAX_SAFE_INTEGER);
   });

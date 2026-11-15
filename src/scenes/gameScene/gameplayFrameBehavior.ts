@@ -166,10 +166,10 @@ export function createGameSceneGameplayFrameBehavior(
       else if (outcome === 'low-charge') delegate.gunSwapFeedback.denied();
     }
     if (shipSystems.updateGunCharge(delta)) delegate.gunSwapFeedback.swapped('lance');
-    // Until the first swap of sector 3 the swap is pointed out: a pulse on the touch key, else a Q label.
+    // Until the first swap of sector 3, pulse the on-screen key and also show Q for keyboard players.
     const hint = shipSystems.isSwapHintPending();
     const touchHint = hint && (delegate.mobileControls?.showsTouchHints() ?? false);
-    delegate.mobileControls?.setGunChargeState(shipSystems.getGun(), shipSystems.getGunCharge(), touchHint);
+    delegate.mobileControls?.setGunChargeState(shipSystems.getGun(), shipSystems.getGunCharge(), hint);
     delegate.hud.setSwapHint(hint && !touchHint);
   };
 

@@ -388,10 +388,10 @@ describe('first-swap hint', () => {
     expect(other.isSwapHintPending()).toBe(true);
   });
 
-  test('with a keyboard the HUD shows the hint until the first swap, then never again', () => {
+  test('with a keyboard both the HUD and pointer key hint until the first swap, then never again', () => {
     const harness = createFrameHarness(GUN_SECTOR);
     harness.run(32);
-    expect(harness.hints).toEqual({ hud: true, key: false });
+    expect(harness.hints).toEqual({ hud: true, key: true });
     harness.pressSwap();
     harness.run(16);
     expect(harness.hints).toEqual({ hud: false, key: false });
